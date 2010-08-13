@@ -22,6 +22,8 @@ module postprocessing
   use derivatives
   use triangulation
   use pprocerror
+  use mprimitives
+  use cubature
   
   use ucd
  
@@ -35,7 +37,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine stpp_postproc (rphysics,rvector,bwriteUCD,bcalcError)
+  subroutine stpp_postproc (rphysics,rvector,bwriteUCD,bcalcError,ccubTimeError)
 
     ! Postprocessing of a space-time vector.
     
@@ -50,6 +52,9 @@ contains
 
     ! Whether to calculate the error to an analytical reference function or not.
     logical, intent(in) :: bcalcError
+    
+    ! Cubature formula to use for the time error.
+    integer(I32), intent(in) :: ccubTimeError
   
     ! local variables
     integer :: istep
@@ -113,6 +118,8 @@ contains
           rcollection%IquickAccess (3) = rphysics%creferenceProblem
           rcollection%DquickAccess (2) = rphysics%doptControlAlpha
           rcollection%DquickAccess (3) = rphysics%dpar
+          rcollection%DquickAccess (4) = rphysics%dtimemin
+          rcollection%DquickAccess (5) = rphysics%dtimemax
 
           rcollection%DquickAccess (1) = dtimePrimal
           rcollection%IquickAccess (1) = 1
@@ -184,6 +191,8 @@ contains
           rcollection%IquickAccess (3) = rphysics%creferenceProblem
           rcollection%DquickAccess (2) = rphysics%doptControlAlpha
           rcollection%DquickAccess (3) = rphysics%dpar
+          rcollection%DquickAccess (4) = rphysics%dtimemin
+          rcollection%DquickAccess (5) = rphysics%dtimemax
 
           rcollection%DquickAccess (1) = dtimePrimal
           rcollection%IquickAccess (1) = 1
@@ -257,9 +266,238 @@ contains
     end do
     
     call lsysbl_releaseVector (rspaceVec)
+    
+    if (bcalcError) then
+      call stpp_printError (rphysics,rvector,ccubTimeError)
+    end if
   
   end subroutine
   
+  ! ***************************************************************************
+
+  subroutine stpp_printError (rphysics,rvector,ccubType)
+
+    ! Prints the space-time error according to a specific 1D cubature formula.
+    
+    ! Structure defining the problem physics
+    type(t_physics), intent(in) :: rphysics
+    
+    ! Vector to be postprocessed.
+    type(t_spacetimeVector), intent(in) :: rvector
+    
+    ! Id of a 1D cubature formula which is used to calculate the error.
+    integer(I32), intent(in) :: ccubType
+  
+    ! local variables
+    integer :: istep
+    type(t_vectorBlock) :: rspaceVec
+    type(t_vectorBlock), pointer :: p_rx1,p_rx2
+    integer :: ithetaschemetype
+    real(DP) :: dtimePrimalStart,dtimePrimalEnd, dtimeDualStart,dtimeDualEnd,dtstep
+    type(t_spaceTimeVectorAccess) :: raccessPool
+    integer :: ncubp,icubp
+    real(DP), dimension(:,:), allocatable :: Dpoints
+    real(DP), dimension(:), allocatable :: Domega
+    real(DP), dimension(6) :: Derrors, DerrorsInterval
+    real(DP), dimension(6) :: DerrorTotal
+    real(DP) :: dpar
+    type(t_collection) :: rcollection
+
+    ! Create a temp vector pool for accessing space-time vectors.
+    call sptivec_createAccessPool (rvector,raccessPool,2)
+    call lsysbl_createVectorblock (rvector%p_rspaceDiscr,rspaceVec)
+
+    ! Prepeate the cubature formula.
+    ncubp = cub_igetNumPts(ccubType)
+    allocate (Dpoints(NDIM1D,ncubp))
+    allocate (Domega(ncubp))
+    call cub_getCubature(ccubType, Dpoints, Domega)
+
+    ithetaschemetype = rvector%p_rtimeDiscr%itag
+
+    DerrorTotal(:) = 0.0_DP
+    
+    call output_lbrk()
+    call output_line ("Error using cubature formula "//trim(sys_siL(ccubType,10))//":")
+
+    do istep=1,rvector%NEQtime-1
+      
+      ! Get the interval points in time for the primal and dual equation;
+      ! they may be different in case of CN!
+      call tdiscr_getTimestep(rvector%p_rtimeDiscr,istep,&
+          dtimePrimalEnd,dtstep,dtimePrimalStart)
+      dtimeDualStart = dtimePrimalStart
+      dtimeDualEnd = dtimePrimalEnd
+
+      ! Modified time scheme?
+      if (ithetaschemetype .eq. 1) then
+        if (istep .ne. 1) then
+          dtimeDualStart = dtimePrimalStart - (1.0_DP-rvector%p_rtimeDiscr%dtheta)*dtstep
+        end if
+        dtimeDualEnd = dtimePrimalEnd - (1.0_DP-rvector%p_rtimeDiscr%dtheta)*dtstep
+      end if
+      
+      ! Read the timesteps at the ends of the interval.
+      call sptivec_getVectorFromPool (raccessPool,istep,p_rx1)
+      call sptivec_getVectorFromPool (raccessPool,istep+1,p_rx2)
+      
+      ! Perform a linear interpolation of the two vectors in time according to the
+      ! cubature formula.
+  
+      DerrorsInterval(:) = 0.0_DP
+  
+      do icubp = 1,ncubp
+        
+        call mprim_linearRescale (Dpoints(1,icubp),-1.0_DP,1.0_DP,0.0_DP,1.0_DP,dpar)
+        call lsysbl_copyVector (p_rx2,rspaceVec)
+        call lsysbl_vectorLinearComb (p_rx1,rspaceVec,1.0_DP-dpar,dpar)
+        
+        ! Calculate the error in that point
+        
+        select case (rphysics%cequation)
+        case (0,2)
+          ! Heat equation
+        
+          rcollection%IquickAccess (2) = rphysics%cequation
+          rcollection%IquickAccess (3) = rphysics%creferenceProblem
+          rcollection%DquickAccess (2) = rphysics%doptControlAlpha
+          rcollection%DquickAccess (3) = rphysics%dpar
+          rcollection%DquickAccess (4) = rphysics%dtimemin
+          rcollection%DquickAccess (5) = rphysics%dtimemax
+
+          rcollection%DquickAccess (1) = (1.0_DP-dpar)*dtimePrimalStart + dpar*dtimePrimalEnd
+          rcollection%IquickAccess (1) = 1
+          call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)),&
+              rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
+              rcollection)
+
+          rcollection%DquickAccess (1) = (1.0_DP-dpar)*dtimeDualStart + dpar*dtimeDualEnd
+          rcollection%IquickAccess (1) = 2
+          call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)),&
+              rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
+              rcollection)
+          
+          call output_line ("  Error("//trim(sys_siL(istep,10))//"/"// &
+              trim(sys_siL(icubp,10))//") = "// &
+              trim(sys_sdEL(Derrors(1),5))//" "// &
+              trim(sys_sdEL(Derrors(2),5)) )
+              
+          ! Sum up the error to the global error according to the cubature formula.
+          DerrorsInterval(:) = DerrorsInterval(:) + &
+              dtstep*0.5_DP*Domega(icubp) * Derrors(:)**2
+              
+          if ((istep .ne. 1) .and. (istep .ne. rvector%NEQtime)) then
+            DerrorTotal(:) = DerrorTotal(:) + &
+                0.5_DP*Domega(icubp) * Derrors(:)**2
+          end if
+              
+        case (1)
+          ! Stokes equation
+          rcollection%IquickAccess (2) = rphysics%cequation
+          rcollection%IquickAccess (3) = rphysics%creferenceProblem
+          rcollection%DquickAccess (2) = rphysics%doptControlAlpha
+          rcollection%DquickAccess (3) = rphysics%dpar
+          rcollection%DquickAccess (4) = rphysics%dtimemin
+          rcollection%DquickAccess (5) = rphysics%dtimemax
+          
+          rcollection%DquickAccess (1) = (1.0_DP-dpar)*dtimePrimalStart + dpar*dtimePrimalEnd
+          rcollection%IquickAccess (1) = 1
+          call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
+              rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
+              rcollection)
+
+          rcollection%IquickAccess (1) = 2
+          call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
+              rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
+              rcollection)
+          
+          rcollection%IquickAccess (1) = 6
+          call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
+              rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
+              rcollection)
+
+          rcollection%DquickAccess (1) = (1.0_DP-dpar)*dtimeDualStart + dpar*dtimeDualEnd
+          rcollection%IquickAccess (1) = 3
+          call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
+              rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
+              rcollection)
+
+          rcollection%IquickAccess (1) = 4
+          call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
+              rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
+              rcollection)
+          
+          rcollection%IquickAccess (1) = 5
+          call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
+              rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
+              rcollection)
+          
+          call output_line ("  Error("//trim(sys_siL(istep,10))//"/"// &
+              trim(sys_siL(icubp,10))//") = "// &
+              trim(sys_sdEL(Derrors(1),5))//" "// &
+              trim(sys_sdEL(Derrors(2),5))//" "// &
+              trim(sys_sdEL(Derrors(3),5))//" "// &
+              trim(sys_sdEL(Derrors(4),5))//" "// &
+              trim(sys_sdEL(Derrors(5),5))//" "// &
+              trim(sys_sdEL(Derrors(6),5)) )
+
+          ! Sum up the error to the global error according to the cubature formula.
+          DerrorsInterval(:) = DerrorsInterval(:) + &
+              dtstep*0.5_DP*Domega(icubp) * Derrors(:)**2
+              
+          if ((istep .ne. 1) .and. (istep .ne. rvector%NEQtime)) then
+            DerrorTotal(:) = DerrorTotal(:) + &
+                0.5_DP*Domega(icubp) * Derrors(:)**2
+          end if
+              
+        end select
+      
+      end do
+      
+      ! Print the interval error
+      select case (rphysics%cequation)
+      case (0,2)
+        call output_line ("Error("//trim(sys_siL(istep,10))//") = "// &
+            trim(sys_sdEL(DerrorsInterval(1),5))//" "// &
+            trim(sys_sdEL(DerrorsInterval(2),5)) )
+      case (1)
+        call output_line ("Error("//trim(sys_siL(istep,10))//") = "// &
+            trim(sys_sdEL(DerrorsInterval(1),5))//" "// &
+            trim(sys_sdEL(DerrorsInterval(2),5))//" "// &
+            trim(sys_sdEL(DerrorsInterval(3),5))//" "// &
+            trim(sys_sdEL(DerrorsInterval(4),5))//" "// &
+            trim(sys_sdEL(DerrorsInterval(5),5))//" "// &
+            trim(sys_sdEL(DerrorsInterval(6),5)) )
+      end select
+      
+    end do
+    
+    call lsysbl_releaseVector (rspaceVec)
+    call sptivec_releaseAccessPool (raccessPool)
+    
+    deallocate (Domega)
+    deallocate (Dpoints)
+
+    ! Print the Total error
+    call output_lbrk()
+    select case (rphysics%cequation)
+    case (0,2)
+      call output_line ("Error(Total,cub) = "// &
+          trim(sys_sdEL(DerrorTotal(1),5))//" "// &
+          trim(sys_sdEL(DerrorTotal(2),5)) )
+    case (1)
+      call output_line ("Error(Total,cub) = "// &
+          trim(sys_sdEL(DerrorTotal(1),5))//" "// &
+          trim(sys_sdEL(DerrorTotal(2),5))//" "// &
+          trim(sys_sdEL(DerrorTotal(3),5))//" "// &
+          trim(sys_sdEL(DerrorTotal(4),5))//" "// &
+          trim(sys_sdEL(DerrorTotal(5),5))//" "// &
+          trim(sys_sdEL(DerrorTotal(6),5)) )
+    end select
+    call output_lbrk()
+  
+  end subroutine
+
   ! ***************************************************************************
 
   subroutine stpp_printDefectSubnorms (rmatrix,rx,rb,rd)

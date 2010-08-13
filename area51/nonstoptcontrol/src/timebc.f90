@@ -70,6 +70,8 @@ contains
     rcollection%IquickAccess (3) = rmatrix%p_rphysics%creferenceProblem
     rcollection%DquickAccess (2) = rmatrix%p_rphysics%doptControlAlpha
     rcollection%DquickAccess (3) = rmatrix%p_rphysics%dpar
+    rcollection%DquickAccess (4) = rmatrix%p_rphysics%dtimemin
+    rcollection%DquickAccess (5) = rmatrix%p_rphysics%dtimemax
     
     ! Project the analytical solution to this vector.
     select case (rmatrix%p_rphysics%cequation)

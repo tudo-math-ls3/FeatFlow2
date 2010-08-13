@@ -206,6 +206,8 @@ contains
           rcollection%DquickAccess(2) = rbc%p_rphysics%doptControlAlpha
           rcollection%DquickAccess(3) = rbc%p_rphysics%doptControlGamma
           rcollection%DquickAccess(4) = rbc%p_rphysics%dpar
+          rcollection%DquickAccess(5) = rbc%p_rphysics%dtimeMin
+          rcollection%DquickAccess(6) = rbc%p_rphysics%dtimeMax
           call bcasm_newDirichletBConRealBd (p_rfeSpaceLevel%p_rdiscretisation, &
               icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
         end do
@@ -233,6 +235,8 @@ contains
             rcollection%DquickAccess(2) = rbc%p_rphysics%doptControlAlpha
             rcollection%DquickAccess(3) = rbc%p_rphysics%doptControlGamma
             rcollection%DquickAccess(4) = rbc%p_rphysics%dpar
+            rcollection%DquickAccess(5) = rbc%p_rphysics%dtimeMin
+            rcollection%DquickAccess(6) = rbc%p_rphysics%dtimeMax
             call bcasm_newDirichletBConRealBd (p_rfeSpaceLevel%p_rdiscretisation, &
                 icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
           end if
@@ -249,13 +253,17 @@ contains
         ! 1.)
         if (icomponent .eq. 1) then
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatY1 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatY1 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY1 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY1 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatLambda1 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatLambda1 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda1 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda1 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
         end if
 
@@ -263,13 +271,17 @@ contains
         ! 2.)
         if (icomponent .eq. 1) then
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatY2 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatY2 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY2 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY2 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatLambda2 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha),  &
-              fct_heatLambda2 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda2 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha),  &
+              fct_heatLambda2 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
         end if
 
@@ -277,13 +289,17 @@ contains
         ! 3.)
         if (icomponent .eq. 1) then
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatY3 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatY3 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY3 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY3 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatLambda3 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatLambda3 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda3 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda3 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
         end if
         
@@ -291,13 +307,17 @@ contains
         ! 4.)
         if (icomponent .eq. 1) then
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatY4 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatY4 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY4 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY4 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatLambda4 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatLambda4 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda4 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda4 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
         end if
         
@@ -305,13 +325,17 @@ contains
         ! 5.)
         if (icomponent .eq. 1) then
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatY5 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatY5 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY5 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY5 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatLambda5 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatLambda5 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda5 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda5 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
         end if
         
@@ -319,13 +343,17 @@ contains
         ! 6.)
         if (icomponent .eq. 1) then
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatY6 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatY6 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY6 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY6 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatLambda6 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatLambda6 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda6 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda6 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
         end if
         
@@ -333,13 +361,17 @@ contains
         ! 7.)
         if (icomponent .eq. 1) then
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatY7 (rbc%p_rphysics%dpar,0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatY7 (rbc%p_rphysics%dpar,1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY7 (rbc%p_rphysics%dpar,0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY7 (rbc%p_rphysics%dpar,1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
-              fct_heatLambda7 (rbc%p_rphysics%dpar,0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
-              fct_heatLambda7 (rbc%p_rphysics%dpar,1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda7 (rbc%p_rphysics%dpar,0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda7 (rbc%p_rphysics%dpar,1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
         end if
         

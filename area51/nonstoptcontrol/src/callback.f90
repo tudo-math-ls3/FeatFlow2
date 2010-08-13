@@ -74,6 +74,10 @@ contains
         "dcoupleDualToPrimal", rphysics%dcoupleDualToPrimal)
     call parlst_getvalue_double (rparlist, "PHYSICS", &
         "dcoupleTermCond", rphysics%dcoupleTermCond)
+    call parlst_getvalue_double (rparlist, "PHYSICS", &
+        "dtimemin", rphysics%dtimemin)
+    call parlst_getvalue_double (rparlist, "PHYSICS", &
+        "dtimemax", rphysics%dtimemax)
   
   end subroutine
 
@@ -85,23 +89,23 @@ contains
   !   y = t^2   x1 
   ! ***************************************************************************
 
-  elemental real(DP) function fct_heatY1 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatY1 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatY1 = dtime**2 * dx 
   end function
 
-  elemental real(DP) function fct_heatLambda1 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatLambda1 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatLambda1 = dalpha * (- 2.0_DP*dtime * dx) + 2*dalpha*dx
   end function
     
-  elemental real(DP) function fct_heatF1 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatF1 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatF1 = 2.0_DP*dtime*dx - 2.0_DP*dx*(dtime-1.0_DP)
   end function
   
-  elemental real(DP) function fct_heatZ1 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatZ1 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatZ1 = -2.0_DP*dalpha*dx + dtime**2*dx
   end function
 
@@ -112,23 +116,23 @@ contains
   ! No factor 4 due to inconsistent terminal condition.
   ! ***************************************************************************
   
-  elemental real(DP) function fct_heatY2 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatY2 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatY2 = dtime**2 * (1.0_DP-dtime)**2 * dx 
   end function
 
-  elemental real(DP) function fct_heatLambda2 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatLambda2 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatLambda2 = dalpha * dtime * (1.0_DP-dtime) * dx 
   end function
 
-  elemental real(DP) function fct_heatF2 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatF2 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatF2 = 3.0_DP*dtime*dx-7.0_DP*dtime**2*dx+4*dtime**3*dx
   end function
 
-  elemental real(DP) function fct_heatZ2 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatZ2 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatZ2 = (1.0_DP-dtime)*dx-dtime*dx+dtime**2*(1.0_DP-dtime)**2*dx 
   end function
 
@@ -139,24 +143,24 @@ contains
   ! Gives factor 4 with CN due to proper terminal condition.
   ! ***************************************************************************
 
-  elemental real(DP) function fct_heatY3 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatY3 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatY3 = dtime**2 * (1.0_DP-dtime)**2 * dx 
   end function
 
-  elemental real(DP) function fct_heatLambda3 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatLambda3 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatLambda3 = dalpha * dtime * (1.0_DP-dtime)**2 * dx 
   end function
 
-  elemental real(DP) function fct_heatF3 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatF3 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatF3 = &
       3.0_DP*dtime*dx-8.0_DP*dtime**2*dx+5*dtime**3*dx
   end function
 
-  elemental real(DP) function fct_heatZ3 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatZ3 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatZ3 = &
          (1.0_DP-dtime)**2*dx-2.0_DP*dtime*(1.0_DP-dtime)*dx+&
           dtime**2*(1.0_DP-dtime)**2*dx 
@@ -167,23 +171,23 @@ contains
   !   y = t^2 (1-t)^2   x1 
   ! ***************************************************************************
     
-  elemental real(DP) function fct_heatY4 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatY4 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatY4 = dtime**2 * (1.0_DP-dtime)**2 * dx 
   end function
 
-  elemental real(DP) function fct_heatLambda4 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatLambda4 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatLambda4 = dalpha * (-2.0_DP*dtime*(1.0_DP-dtime)**2*dx + 2.0_DP*dtime**2*(1.0_DP-dtime)*dx)
   end function
     
-  elemental real(DP) function fct_heatF4 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatF4 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatF4 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_heatZ4 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatZ4 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatZ4 = &
         - dalpha*2.0_DP*(1-dtime)**2*dx + dalpha*8.0_DP*dtime*(1-dtime)*dx &
         - dalpha*2.0_DP*dtime**2*dx + dtime**2*(1.0_DP-dtime)**2*dx
@@ -196,23 +200,23 @@ contains
   ! Does not produce error=0, only at the beginning.
   ! ***************************************************************************
 
-  elemental real(DP) function fct_heatY5 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatY5 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatY5 = dtime * dx 
   end function
 
-  elemental real(DP) function fct_heatLambda5 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatLambda5 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatLambda5 = (1.0_DP-dtime)*dx
   end function
     
-  elemental real(DP) function fct_heatF5 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatF5 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatF5 = -(dtime-dalpha-1.0_DP)*dx/dalpha
   end function
   
-  elemental real(DP) function fct_heatZ5 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatZ5 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatZ5 = (dtime-1.0_DP)*dx
   end function
 
@@ -222,23 +226,23 @@ contains
   !   l = (1-t)^2 x1
   ! ***************************************************************************
 
-  elemental real(DP) function fct_heatY6 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatY6 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatY6 = dtime**2 * dx
   end function
 
-  elemental real(DP) function fct_heatLambda6 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatLambda6 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatLambda6 = (1.0_DP-dtime)**2*dx
   end function
     
-  elemental real(DP) function fct_heatF6 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatF6 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatF6 = dx*(2.0_DP*dtime*dalpha+1.0_DP-2.0_DP*dtime+dtime**2)/dalpha
   end function
   
-  elemental real(DP) function fct_heatZ6 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatZ6 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatZ6 = dtime**2*dx-2.0_DP*(1.0_DP-dtime)*dx
   end function
 
@@ -254,31 +258,31 @@ contains
     fct_eig7 = exp(da*SYS_PI**2*dtime) * sin(SYS_PI*dx) * sin(SYS_PI*dy)
   end function
 
-  elemental real(DP) function fct_heatY7 (da,dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: da,dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatY7 (da,dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: da,dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatY7 = -SYS_PI**2/(2.0_DP+da) * fct_eig7 (da,dx,dy,dtime,dalpha)
   end function
 
-  elemental real(DP) function fct_heatLambda7 (da,dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: da,dx,dy,dtime,dalpha
-    fct_heatLambda7 = fct_eig7 (da,dx,dy,dtime,dalpha) - fct_eig7 (da,dx,dy,1.0_DP,dalpha)
+  elemental real(DP) function fct_heatLambda7 (da,dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: da,dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_heatLambda7 = fct_eig7 (da,dx,dy,dtime,dalpha) - fct_eig7 (da,dx,dy,dtimemax,dalpha)
   end function
     
-  elemental real(DP) function fct_heatF7 (da,dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: da,dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatF7 (da,dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: da,dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatF7 = - ( SYS_PI**4 * dalpha * fct_eig7 (da,dx,dy,dtime,dalpha) - &
                      fct_eig7 (da,dx,dy,dtime,dalpha) + &
-                     fct_eig7 (da,dx,dy,1.0_DP,dalpha) ) / dalpha
+                     fct_eig7 (da,dx,dy,dtimemax,dalpha) ) / dalpha
     !fct_heatF7 = -SYS_PI**4 * fct_eig7 (da,dx,dy,1.0_DP,dalpha)
   end function
   
-  elemental real(DP) function fct_heatZ7 (da,dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: da,dx,dy,dtime,dalpha
+  elemental real(DP) function fct_heatZ7 (da,dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: da,dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_heatZ7 = SYS_PI**2 / (2.0_DP+da) * &
         ( da**2 * fct_eig7 (da,dx,dy,dtime,dalpha) - &
           5.0_DP * fct_eig7 (da,dx,dy,dtime,dalpha) + &
-          4.0_DP * fct_eig7 (da,dx,dy,1.0_DP,dalpha) + &
-          2.0_DP * da * fct_eig7 (da,dx,dy,1.0_DP,dalpha) )
+          4.0_DP * fct_eig7 (da,dx,dy,dtimemax,dalpha) + &
+          2.0_DP * da * fct_eig7 (da,dx,dy,dtimemax,dalpha) )
     !fct_heatZ7 = (da**2-2.0_DP)/(1.0_DP+da) * SYS_PI**2 * fct_eig7 (da,dx,dy,dtime,dalpha) + &
     !    SYS_PI**2*fct_eig7 (da,dx,dy,1.0_DP,dalpha)
   end function
@@ -291,43 +295,43 @@ contains
   !   y = t^2  ( x1 , -x2 , 0)
   ! ***************************************************************************
 
-  elemental real(DP) function fct_stokesY1_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY1_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY1_x = dtime**2 * dx
   end function
 
-  elemental real(DP) function fct_stokesY1_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY1_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY1_y = - dtime**2 * dy
   end function
 
-  elemental real(DP) function fct_stokesP1 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesP1 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesP1 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesLambda1_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda1_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda1_x = dalpha * (-2.0_DP*dtime*dx)
   end function
 
-  elemental real(DP) function fct_stokesLambda1_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda1_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda1_y = dalpha * (2.0_DP*dtime*dy)
   end function
 
-  elemental real(DP) function fct_stokesXi1 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesXi1 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesXi1 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesZ1_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ1_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ1_x = -2.0_DP*dx + dtime**2*dx
   end function
 
-  elemental real(DP) function fct_stokesZ1_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ1_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ1_y = 2.0_DP*dy - dtime**2*dy
   end function
 
@@ -336,40 +340,40 @@ contains
   !   y = t^2 (1-t)^3  ( x2(1-x2) , 0 , 0 )
   ! ***************************************************************************
 
-  elemental real(DP) function fct_stokesY2_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY2_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY2_x = dy * (-1 + dy) * dtime ** 2 * (-1 + dtime) ** 3
   end function
 
-  elemental real(DP) function fct_stokesY2_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY2_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY2_y = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesP2 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesP2 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesP2 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesLambda2_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda2_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda2_x = &
         - dalpha * dtime * (-1 + dtime) ** 2 * (2 * dtime - 2 * dtime ** 2 &
         + 2 * dy - 5 * dy * dtime - 2 * dy ** 2 + 5 * dy ** 2 * dtime)
   end function
 
-  elemental real(DP) function fct_stokesLambda2_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda2_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda2_y = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesXi2 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesXi2 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesXi2 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesZ2_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ2_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ2_x = &
           dy * dtime ** 2 - 3 * dy * dtime ** 3 + 3 * dy * dtime ** 4 &
         - dy * dtime ** 5 - dy ** 2 * dtime ** 2 + 3 * dy ** 2 * dtime ** 3 &
@@ -380,8 +384,8 @@ contains
         - 0.20D2 * dalpha * dy ** 2 * dtime ** 3
   end function
 
-  elemental real(DP) function fct_stokesZ2_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ2_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ2_y = 0.0_DP
   end function
 
@@ -390,50 +394,50 @@ contains
   !   y = t^2 (x1^2 x2 , -x1 x2^2 , 0)
   ! ***************************************************************************
 
-  elemental real(DP) function fct_stokesY3_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY3_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY3_x = dtime**2 * dx**2 * dy
   end function
 
-  elemental real(DP) function fct_stokesY3_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY3_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY3_y = - dtime**2 * dx**2 * dy
   end function
 
-  elemental real(DP) function fct_stokesP3 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesP3 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesP3 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesLambda3_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda3_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda3_x = -dalpha*(-2*dy*dtime**2*(1-dtime)**2 &
         +2*dx**2*dy*dtime*(1-dtime)**2 &
         -2*dx**2*dy*dtime**2*(1-dtime) )
   end function
 
-  elemental real(DP) function fct_stokesLambda3_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda3_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda3_y = -dalpha*(-2*dx*dtime**2*(1-dtime)**2 &
         +2*dx*dy**2*dtime*(1-dtime)**2 &
         -2*dx*dy**2*dtime**2*(1-dtime) )
   end function
 
-  elemental real(DP) function fct_stokesXi3 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesXi3 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesXi3 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesZ3_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ3_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ3_x = (dx**2*dy*dtime**2*(-1+dtime)**2) &
         - dalpha*(-4*dy*dtime+12*dy*dtime**2 &
                   -8*dy*dtime**3+2*dx**2*dy &
                   -12*dx**2*dy*dtime+12*dx**2*dy*dtime**2)
   end function
 
-  elemental real(DP) function fct_stokesZ3_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ3_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ3_y = (dx*dy**2*dtime**2*(-1+dtime)**2) &
           - dalpha*(-4*dx*dtime+12*dx*dtime**2 &
                     -8*dx*dtime**3+2*dx*dy**2 &
@@ -445,43 +449,43 @@ contains
   !   y = t^2 (1-t)^2  (x1^3 x2^2 , -x1^2 x2^3 , 0)
   ! ***************************************************************************
 
-  elemental real(DP) function fct_stokesY4_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY4_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY4_x = dx ** 3 * dy ** 2 * dtime ** 2 * (-1.0_DP + dtime) ** 2
   end function
 
-  elemental real(DP) function fct_stokesY4_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY4_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY4_y = -dx ** 2 * dy ** 3 * dtime ** 2 * (-1.0_DP + dtime) ** 2
   end function
 
-  elemental real(DP) function fct_stokesP4 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesP4 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesP4 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesLambda4_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda4_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda4_x = -2 * dalpha * dx * dtime * (-1 + dtime) * &
               (3 * dy ** 2 * dtime - 3 * dy ** 2 * dtime ** 2 + dx ** 2 * dtime &
               - dx ** 2 * dtime ** 2 - dx ** 2 * dy ** 2 + 2 * dx ** 2 * dy ** 2 * dtime)
   end function
 
-  elemental real(DP) function fct_stokesLambda4_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda4_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda4_y = 2 * dalpha * dy * dtime * (-1 + dtime) * &
               (dy ** 2 * dtime - dy ** 2 * dtime ** 2 + 3 * dx ** 2 * dtime &
                - 3 * dx ** 2 * dtime ** 2 - dx ** 2 * dy ** 2 &
                + 2 * dx ** 2 * dy ** 2 * dtime)
   end function
 
-  elemental real(DP) function fct_stokesXi4 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesXi4 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesXi4 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesZ4_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ4_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ4_x = 6 * dx * dy ** 2 * dtime ** 2 &
         - 0.12D2 * dx * dy ** 2 * dtime ** 3 &
         + 6 * dx * dy ** 2 * dtime ** 4 + 2 * dx ** 3 * dtime ** 2 &
@@ -498,8 +502,8 @@ contains
         - 0.12D2 * dalpha * dx ** 3 * dy ** 2 * dtime ** 2
   end function
 
-  elemental real(DP) function fct_stokesZ4_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ4_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ4_y = -2 * dy ** 3 * dtime ** 2 + 4 * dy ** 3 * dtime ** 3 &
         - 2 * dy ** 3 * dtime ** 4 - 6 * dx ** 2 * dy * dtime ** 2 &
         + 0.12D2 * dx ** 2 * dy * dtime ** 3 - 6 * dx ** 2 * dy * dtime ** 4 &
@@ -522,41 +526,41 @@ contains
   ! EXAMPLE DOES NOT WORK, NOT DIVERGENCE FREE WHEN BEING TIME DEPENDENT!
   ! ***************************************************************************
 
-  elemental real(DP) function fct_stokesY5_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY5_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY5_x = dtime * dy*(1.0_DP-dy)
   end function
 
-  elemental real(DP) function fct_stokesY5_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY5_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY5_y = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesP5 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesP5 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesP5 = dtime*(1.0_DP-dx) !0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesLambda5_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda5_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda5_x = 0.0_DP !-dalpha*( &
 !                2.0_DP*dtime**2*(1.0_DP-dtime)**2 &
 !              + 2.0_DP*dy*(1.0_DP-dy)*dtime*(1.0_DP-dtime)**2 &
 !              - 2.0_DP*dy*(1.0_DP-dy)*dtime**2*(1.0_DP-dtime))
   end function
 
-  elemental real(DP) function fct_stokesLambda5_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda5_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda5_y = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesXi5 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesXi5 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesXi5 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesZ5_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ5_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ5_x = 0.0_DP !- dy*(-1.0_DP+dy)*dtime**2*(-1.0_DP+dtime)**2 &
 !            - dalpha*(4.0_DP*dtime-12.0_DP*dtime**2+8.0_DP*dtime**3+2.0_DP*dy &
 !                      -12.0_DP*dy*dtime+12.0_DP*dy*dtime**2 &
@@ -564,8 +568,8 @@ contains
 !                      -12.0_DP*dy**2*dtime**2)
   end function
 
-  elemental real(DP) function fct_stokesZ5_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ5_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ5_y = 0.0_DP
   end function
 
@@ -575,55 +579,55 @@ contains
   !   lambda = (1-t) ( x2(1-x2) , 0 , 0 )
   ! ***************************************************************************
 
-  elemental real(DP) function fct_stokesY6_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY6_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY6_x = dtime * dy*(1.0_DP-dy)
   end function
 
-  elemental real(DP) function fct_stokesY6_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY6_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY6_y = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesP6 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesP6 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesP6 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesLambda6_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda6_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda6_x = (1.0_DP-dtime) * dy*(1.0_DP-dy)
   end function
 
-  elemental real(DP) function fct_stokesLambda6_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda6_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda6_y = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesXi6 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesXi6 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesXi6 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesZ6_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ6_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ6_x = -0.2D1 + 0.2D1 * dtime - dy + dy ** 2 + dy * dtime &
         - dy ** 2 * dtime
   end function
 
-  elemental real(DP) function fct_stokesZ6_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ6_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ6_y = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesF6_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesF6_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesF6_x = (0.2D1 * dtime * dalpha + dy * dalpha - dy ** 2 * dalpha + dy &
         - dy * dtime - dy ** 2 + dy ** 2 * dtime) / dalpha
   end function
 
-  elemental real(DP) function fct_stokesF6_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesF6_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesF6_y = 0.0_DP
   end function
 
@@ -633,58 +637,58 @@ contains
   !   lambda = (1-t)^2 ( x2(1-x2) , 0 , 0 )
   ! ***************************************************************************
 
-  elemental real(DP) function fct_stokesY7_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY7_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY7_x = dtime**2 * dy*(1.0_DP-dy)
   end function
 
-  elemental real(DP) function fct_stokesY7_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesY7_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesY7_y = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesP7 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesP7 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesP7 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesLambda7_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda7_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda7_x = (1.0_DP-dtime)**2 * dy*(1.0_DP-dy)
   end function
 
-  elemental real(DP) function fct_stokesLambda7_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesLambda7_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda7_y = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesXi7 (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesXi7 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesXi7 = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesZ7_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ7_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ7_x = -0.2D1 + 0.4D1 * dtime - 0.2D1 * dtime ** 2 &
         - 0.2D1 * dy + 0.2D1 * dy * dtime + 0.2D1 * dy ** 2 &
         - 0.2D1 * dy ** 2 * dtime + dy * dtime ** 2 - dy ** 2 * dtime ** 2
   end function
 
-  elemental real(DP) function fct_stokesZ7_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesZ7_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ7_y = 0.0_DP
   end function
 
-  elemental real(DP) function fct_stokesF7_x (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesF7_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesF7_x = -(-0.2D1 * dtime ** 2 * dalpha &
         - 0.2D1 * dy * dtime * dalpha + 0.2D1 * dy ** 2 * dtime * dalpha &
         - dy + 0.2D1 * dy * dtime - dy * dtime ** 2 + dy ** 2 &
         - 0.2D1 * dy ** 2 * dtime + dy ** 2 * dtime ** 2) / dalpha
   end function
 
-  elemental real(DP) function fct_stokesF7_y (dx,dy,dtime,dalpha)
-  real(DP), intent(in) :: dx,dy,dtime,dalpha
+  elemental real(DP) function fct_stokesF7_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesF7_y = 0.0_DP
   end function
 
@@ -758,7 +762,7 @@ contains
   
 !</subroutine>
     integer :: icomponent,cequation,creferenceProblem,ierrType
-    real(DP) :: dtime,dalpha,dpar
+    real(DP) :: dtime,dalpha,dpar,dtimemin,dtimemax
 
     ! Get the settings of the equation
     icomponent = rcollection%IquickAccess (1)
@@ -767,6 +771,8 @@ contains
     dtime = rcollection%DquickAccess (1)
     dalpha = rcollection%DquickAccess (2)
     dpar = rcollection%DquickAccess (3)
+    dtimemin = rcollection%DquickAccess (4)
+    dtimemax = rcollection%DquickAccess (5)
 
     if (cderivative .eq. DER_FUNC) then
       ! Select the equation and calculate the error.
@@ -785,57 +791,57 @@ contains
           case (1)
             ! 1.)
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatY1 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatY1 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatY1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatY1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
           
           case (2)
             ! 2.) -> BC in spacetimebc.f90 beachten!
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatY2 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatY2 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatY2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatY2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
 
           case (3)
             ! 3.) -> BC in spacetimebc.f90 beachten!
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatY3 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatY3 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatY3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatY3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
 
           case (4)
             ! 4.) -> BC in spacetimebc.f90 beachten!
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatY4 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatY4 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatY4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatY4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
 
           case (5)
             ! 5.) -> BC in spacetimebc.f90 beachten!
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatY5 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatY5 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatY5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatY5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
 
           case (6)
             ! 6.) -> BC in spacetimebc.f90 beachten!
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatY6 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatY6 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatY6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatY6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
 
           case (7)
             ! 7.) -> BC in spacetimebc.f90 beachten!
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatY7 (dpar,Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatY7 (dpar,Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatY7 (dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatY7 (dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
 
           case default
@@ -855,57 +861,57 @@ contains
           case (1)
             ! 1.)
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatLambda1 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda1 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatLambda1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
             
           case (2)
             ! 2.) 
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatLambda2 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda2 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatLambda2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
 
           case (3)
             ! 3.) 
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatLambda3 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda3 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatLambda3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
             
           case (4)
             ! 4.) 
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatLambda4 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda4 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatLambda4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
             
           case (5)
             ! 5.) 
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatLambda5 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda5 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatLambda5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
             
           case (6)
             ! 6.) 
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatLambda6 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda6 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatLambda6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
             
           case (7)
             ! 7.) 
             if (ubound(Dpoints,1) .eq. NDIM1D) then
-              Dvalues(:,:) = fct_heatLambda7 (dpar,Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda7 (dpar,Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
-              Dvalues(:,:) = fct_heatLambda7 (dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              Dvalues(:,:) = fct_heatLambda7 (dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
             
           case default
@@ -929,31 +935,31 @@ contains
           case (0)
           case (1)
             ! 1.)
-            Dvalues(:,:) = fct_stokesY1_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY1_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
           
           case (2)
             ! 2.)
-            Dvalues(:,:) = fct_stokesY2_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY2_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
           
           case (3)
             ! 3.)
-            Dvalues(:,:) = fct_stokesY3_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY3_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (4)
             ! 4.)
-            Dvalues(:,:) = fct_stokesY4_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY4_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (5)
             ! 5.)
-            Dvalues(:,:) = fct_stokesY5_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY5_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (6)
             ! 6.)
-            Dvalues(:,:) = fct_stokesY6_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY6_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (7)
             ! 7.)
-            Dvalues(:,:) = fct_stokesY7_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY7_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case default
             call output_line ("Problem not supported.")
@@ -965,31 +971,31 @@ contains
           case (0)
           case (1)
             ! 1.)
-            Dvalues(:,:) = fct_stokesY1_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY1_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (2)
             ! 2.)
-            Dvalues(:,:) = fct_stokesY2_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY2_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (3)
             ! 3.)
-            Dvalues(:,:) = fct_stokesY3_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY3_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (4)
             ! 4.)
-            Dvalues(:,:) = fct_stokesY4_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY4_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (5)
             ! 5.)
-            Dvalues(:,:) = fct_stokesY5_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY5_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (6)
             ! 6.)
-            Dvalues(:,:) = fct_stokesY6_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY6_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (7)
             ! 7.)
-            Dvalues(:,:) = fct_stokesY7_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesY7_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case default
             call output_line ("Problem not supported.")
@@ -1001,31 +1007,31 @@ contains
           case (0)
           case (1)
             ! 1.)
-            Dvalues(:,:) = fct_stokesP1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesP1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (2)
             ! 2.)
-            Dvalues(:,:) = fct_stokesP2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesP2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (3)
             ! 3.)
-            Dvalues(:,:) = fct_stokesP3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesP3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (4)
             ! 4.)
-            Dvalues(:,:) = fct_stokesP4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesP4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (5)
             ! 5.)
-            Dvalues(:,:) = fct_stokesP5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesP5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (6)
             ! 6.)
-            Dvalues(:,:) = fct_stokesP6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesP6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (7)
             ! 7.)
-            Dvalues(:,:) = fct_stokesP7 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesP7 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case default
             call output_line ("Problem not supported.")
@@ -1039,29 +1045,29 @@ contains
           case (0)
           case (1)
             ! 1.)
-            Dvalues(:,:) = fct_stokesLambda1_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda1_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
           case (2)
             ! 2.)
-            Dvalues(:,:) = fct_stokesLambda2_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda2_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
           case (3)
             ! 3.)
-            Dvalues(:,:) = fct_stokesLambda3_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda3_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (4)
             ! 4.)
-            Dvalues(:,:) = fct_stokesLambda4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (5)
             ! 5.)
-            Dvalues(:,:) = fct_stokesLambda5_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda5_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (6)
             ! 6.)
-            Dvalues(:,:) = fct_stokesLambda6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (7)
             ! 7.)
-            Dvalues(:,:) = fct_stokesLambda7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case default
             call output_line ("Problem not supported.")
@@ -1074,31 +1080,31 @@ contains
           case (0)
           case (1)
             ! 1.)
-            Dvalues(:,:) = fct_stokesLambda1_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda1_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
           
           case (2)
             ! 2.)
-            Dvalues(:,:) = fct_stokesLambda2_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda2_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
           
           case (3)
             ! 3.)
-            Dvalues(:,:) = fct_stokesLambda3_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda3_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (4)
             ! 4.)
-            Dvalues(:,:) = fct_stokesLambda4_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda4_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (5)
             ! 5.)
-            Dvalues(:,:) = fct_stokesLambda5_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda5_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (6)
             ! 6.)
-            Dvalues(:,:) = fct_stokesLambda6_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda6_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (7)
             ! 7.)
-            Dvalues(:,:) = fct_stokesLambda7_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesLambda7_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case default
             call output_line ("Problem not supported.")
@@ -1111,31 +1117,31 @@ contains
           case (0)
           case (1)
             ! 1.)
-            Dvalues(:,:) = fct_stokesXi1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesXi1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (2)
             ! 2.)
-            Dvalues(:,:) = fct_stokesXi2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesXi2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (3)
             ! 3.)
-            Dvalues(:,:) = fct_stokesXi3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesXi3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (4)
             ! 4.)
-            Dvalues(:,:) = fct_stokesXi4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesXi4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (5)
             ! 5.)
-            Dvalues(:,:) = fct_stokesXi5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesXi5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (6)
             ! 6.)
-            Dvalues(:,:) = fct_stokesXi6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesXi6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case (7)
             ! 7.)
-            Dvalues(:,:) = fct_stokesXi7 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            Dvalues(:,:) = fct_stokesXi7 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
 
           case default
             call output_line ("Problem not supported.")
@@ -1181,6 +1187,7 @@ contains
   type(t_domainIntSubset), intent(in) :: rdomainIntSubset    
   type(t_collection), intent(inout), optional :: rcollection
   real(DP) :: dcouplePrimalToDual,dcoupleDualToPrimal
+  real(DP) :: dtimeMin,dtimeMax
 
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   
@@ -1198,6 +1205,8 @@ contains
     dpar = rcollection%DquickAccess(6)
     dcouplePrimalToDual = rcollection%DquickAccess(7)
     dcoupleDualToPrimal = rcollection%DquickAccess(8)
+    dtimeMin = rcollection%DquickAccess(9)
+    dtimeMax = rcollection%DquickAccess(10)
     
     Dcoefficients(1,:,:) = 0.0_DP
     
@@ -1221,60 +1230,60 @@ contains
         case (1)
           ! 1.)
           if (ubound(Dpoints,1) .eq. NDIM1D) then
-            Dcoefficients(1,:,:) = fct_heatF1(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF1(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) 
           else
-            Dcoefficients(1,:,:) = fct_heatF1(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF1(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
           end if
         
         case (2)
           ! 2.)
           if (ubound(Dpoints,1) .eq. NDIM1D) then
-            Dcoefficients(1,:,:) = fct_heatF2(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF2(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) 
           else
-            Dcoefficients(1,:,:) = fct_heatF2(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF2(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
           end if
 
         case (3)
           ! 3.)
           if (ubound(Dpoints,1) .eq. NDIM1D) then
-            Dcoefficients(1,:,:) = fct_heatF3(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF3(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) 
           else
-            Dcoefficients(1,:,:) = fct_heatF3(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF3(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
           end if
 
         case (4)
           ! 4.)
           if (ubound(Dpoints,1) .eq. NDIM1D) then
-            Dcoefficients(1,:,:) = fct_heatF4(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF4(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) 
           else
-            Dcoefficients(1,:,:) = fct_heatF4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
           end if
 
         case (5)
           ! 5.)
           if (ubound(Dpoints,1) .eq. NDIM1D) then
-            Dcoefficients(1,:,:) = fct_heatF5(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF5(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) 
           else
-            Dcoefficients(1,:,:) = fct_heatF5(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF5(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
           end if
 
         case (6)
           ! 6.)
           if (ubound(Dpoints,1) .eq. NDIM1D) then
-            Dcoefficients(1,:,:) = fct_heatF6(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF6(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) 
           else
-            Dcoefficients(1,:,:) = fct_heatF6(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF6(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
           end if
 
         case (7)
           ! 7.)
           if (ubound(Dpoints,1) .eq. NDIM1D) then
-            Dcoefficients(1,:,:) = fct_heatF7(dpar,Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+            Dcoefficients(1,:,:) = fct_heatF7(dpar,Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) 
           else
             Dcoefficients(1,:,:) = &
               -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
-                (fct_heatLambda7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)) &
-              + fct_heatF7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+                (fct_heatLambda7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
+              + fct_heatF7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
           end if
 
         case default
@@ -1306,72 +1315,72 @@ contains
         ! 1.)
         if (ubound(Dpoints,1) .eq. NDIM1D) then
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ1(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+            - (fct_heatZ1(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) )
         else
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ1(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_heatZ1(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
         end if
       
       case (2)  
         ! 2.)
         if (ubound(Dpoints,1) .eq. NDIM1D) then
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ2(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+            - (fct_heatZ2(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) )
         else
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ2(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_heatZ2(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
         end if
 
       case (3)  
         ! 3.)
         if (ubound(Dpoints,1) .eq. NDIM1D) then
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ3(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+            - (fct_heatZ3(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) )
         else
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ3(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_heatZ3(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
         end if
               
       case (4)
         ! 4.)
         if (ubound(Dpoints,1) .eq. NDIM1D) then
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ4(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+            - (fct_heatZ4(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) )
         else
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_heatZ4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
         end if
 
       case (5)
         ! 5.)
         if (ubound(Dpoints,1) .eq. NDIM1D) then
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ5(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+            - (fct_heatZ5(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) )
         else
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ5(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_heatZ5(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
         end if
 
       case (6)
         ! 6.)
         if (ubound(Dpoints,1) .eq. NDIM1D) then
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ6(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+            - (fct_heatZ6(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) )
         else
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ6(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_heatZ6(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
         end if
 
       case (7)
         ! 7.)
         if (ubound(Dpoints,1) .eq. NDIM1D) then
           Dcoefficients(1,:,:) = &
-            - (fct_heatZ7(dpar,Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+            - (fct_heatZ7(dpar,Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) )
         else
           Dcoefficients(1,:,:) = &
             (1.0_DP-dcouplePrimalToDual) * &
-                (fct_heatY7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)) &
-            - (fct_heatZ7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+                (fct_heatY7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
+            - (fct_heatZ7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
         end if
 
       case default
@@ -1431,7 +1440,7 @@ contains
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   
     integer :: icomponent,creferenceProblem,ithetaschemetype
-    real(DP) :: dtime,dalpha,dtstep,dtheta,dgamma
+    real(DP) :: dtime,dalpha,dtstep,dtheta,dgamma,dtimeMin,dtimeMax
     
     icomponent = rcollection%IquickAccess(1)
     creferenceProblem = rcollection%IquickAccess(2)
@@ -1441,6 +1450,8 @@ contains
     dalpha = rcollection%DquickAccess(3)
     dgamma = rcollection%DquickAccess(4)
     dtheta = rcollection%DquickAccess(5)
+    dtimeMin = rcollection%DquickAccess(9)
+    dtimeMax = rcollection%DquickAccess(10)
     
     Dcoefficients(1,:,:) = 0.0_DP
     
@@ -1454,14 +1465,14 @@ contains
         ! be =0 there.
         if (dtime .gt. 0.0_DP) then
           Dcoefficients(1,:,:) =  &
-              fct_stokesF6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              fct_stokesF6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
         end if
       case (7)
         ! No RHS in initial condition since the solution should
         ! be =0 there.
         if (dtime .gt. 0.0_DP) then
           Dcoefficients(1,:,:) =  &
-              fct_stokesF7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              fct_stokesF7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
         end if
       end select
 
@@ -1473,14 +1484,14 @@ contains
         ! be =0 there.
         if (dtime .gt. 0.0_DP) then
           Dcoefficients(1,:,:) =  &
-              fct_stokesF6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              fct_stokesF6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
         end if
       case (7)
         ! No RHS in initial condition since the solution should
         ! be =0 there.
         if (dtime .gt. 0.0_DP) then
           Dcoefficients(1,:,:) =  &
-              fct_stokesF7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+              fct_stokesF7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
         end if
       end select
       
@@ -1492,35 +1503,35 @@ contains
       case (1)
         ! 1.)
         Dcoefficients(1,:,:) =  &
-            - (fct_stokesZ1_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ1_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (2)
         ! 2.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ2_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ2_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (3)
         ! 3.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ3_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ3_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       
       case (4)
         ! 4.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
 
       case (5)
         ! 5.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ5_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ5_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       
       case (6)
         ! 6.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       
       case (7)
         ! 7.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       
       case default
         call output_line ("Problem not supported.")
@@ -1557,31 +1568,31 @@ contains
       case (1)
         ! 1.)
         Dcoefficients(1,:,:) =  &
-            - (fct_stokesZ1_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ1_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (2)
         ! 2.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ2_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ2_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (3)
         ! 3.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ3_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ3_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (4)
         ! 4.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (5)
         ! 5.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ5_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ5_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (6)
         ! 6.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (7)
         ! 6.)
         Dcoefficients(1,:,:) = &
-            - (fct_stokesZ7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+            - (fct_stokesZ7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       
       case default
         call output_line ("Problem not supported.")
@@ -1639,7 +1650,7 @@ contains
     ! To get the X/Y-coordinates of the boundary point, use:
     !
     real(DP) :: dx,dy
-    real(DP) :: dtime,dalpha,dpar
+    real(DP) :: dtime,dalpha,dpar,dtimeMin,dtimeMax
     integer :: icomponent,cequation,creferenceProblem
     
     icomponent = rcollection%IquickAccess(1)
@@ -1648,6 +1659,8 @@ contains
     dtime = rcollection%DquickAccess(1)
     dalpha = rcollection%DquickAccess(2)
     dpar = rcollection%DquickAccess(4)
+    dtimeMin = rcollection%DquickAccess(5)
+    dtimeMax = rcollection%DquickAccess(6)
     
     if (rdiscretisation%p_rtriangulation%ndim .eq. NDIM2D) then
       call boundary_getCoords(rdiscretisation%p_rboundary, &
@@ -1673,31 +1686,31 @@ contains
         case (0)
         case (1)
           ! 1.)
-          Dvalues(1) = fct_heatY1 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatY1 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
         
         case (2)
           ! 2.) -> BC in spacetimebc.f90 beachten!
-          Dvalues(1) = fct_heatY2 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatY2 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (3)
           ! 3.) -> BC in spacetimebc.f90 beachten!
-          Dvalues(1) = fct_heatY3 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatY3 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (4)
           ! 4.) -> BC in spacetimebc.f90 beachten!
-          Dvalues(1) = fct_heatY4 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatY4 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (5)
           ! 5.) -> BC in spacetimebc.f90 beachten!
-          Dvalues(1) = fct_heatY5 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatY5 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (6)
           ! 6.) -> BC in spacetimebc.f90 beachten!
-          Dvalues(1) = fct_heatY6 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatY6 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (7)
           ! 6.) -> BC in spacetimebc.f90 beachten!
-          Dvalues(1) = fct_heatY7 (dpar,dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatY7 (dpar,dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case default
           call output_line ("Problem not supported.")
@@ -1714,31 +1727,31 @@ contains
         case (0)
         case (1)
           ! 1.)
-          Dvalues(1) = fct_heatLambda1 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatLambda1 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
           
         case (2)
           ! 2.) 
-          Dvalues(1) = fct_heatLambda2 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatLambda2 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (3)
           ! 3.) 
-          Dvalues(1) = fct_heatLambda3 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatLambda3 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
           
         case (4)
           ! 4.) 
-          Dvalues(1) = fct_heatLambda4 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatLambda4 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
           
         case (5)
           ! 5.) 
-          Dvalues(1) = fct_heatLambda5 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatLambda5 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
           
         case (6)
           ! 6.) 
-          Dvalues(1) = fct_heatLambda6 (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatLambda6 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
           
         case (7)
           ! 6.) 
-          Dvalues(1) = fct_heatLambda7 (dpar,dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_heatLambda7 (dpar,dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
           
         case default
           call output_line ("Problem not supported.")
@@ -1761,31 +1774,31 @@ contains
         case (0)
         case (1)
           ! 1.)
-          Dvalues(1) = fct_stokesY1_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY1_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
     
         case (2)
           ! 2.)
-          Dvalues(1) = fct_stokesY2_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY2_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
      
         case (3)
           ! 3.)
-          Dvalues(1) = fct_stokesY3_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY3_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (4)
           ! 4.)
-          Dvalues(1) = fct_stokesY4_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY4_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (5)
           ! 5.)
-          Dvalues(1) = fct_stokesY5_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY5_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (6)
           ! 6.)
-          Dvalues(1) = fct_stokesY6_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY6_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (7)
           ! 7.)
-          Dvalues(1) = fct_stokesY7_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY7_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case default
           call output_line ("Problem not supported.")
@@ -1797,31 +1810,31 @@ contains
         case (0)
         case (1)
           ! 1.)
-          Dvalues(1) = fct_stokesY1_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY1_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (2)
           ! 2.)
-          Dvalues(1) = fct_stokesY2_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY2_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (3)
           ! 3.)
-          Dvalues(1) = fct_stokesY3_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY3_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (4)
           ! 4.)
-          Dvalues(1) = fct_stokesY4_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY4_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (5)
           ! 5.)
-          Dvalues(1) = fct_stokesY5_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY5_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (6)
           ! 6.)
-          Dvalues(1) = fct_stokesY6_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY6_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (7)
           ! 7.)
-          Dvalues(1) = fct_stokesY7_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesY7_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case default
           call output_line ("Problem not supported.")
@@ -1835,31 +1848,31 @@ contains
         case (0)
         case (1)
           ! 1.)
-          Dvalues(1) = fct_stokesLambda1_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda1_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
           
         case (2)
           ! 2.)
-          Dvalues(1) = fct_stokesLambda2_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda2_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
           
         case (3)
           ! 3.)
-          Dvalues(1) = fct_stokesLambda3_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda3_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (4)
           ! 4.)
-          Dvalues(1) = fct_stokesLambda4_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda4_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (5)
           ! 5.)
-          Dvalues(1) = fct_stokesLambda5_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda5_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (6)
           ! 6.)
-          Dvalues(1) = fct_stokesLambda6_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda6_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case (7)
           ! 7.)
-          Dvalues(1) = fct_stokesLambda7_x (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda7_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
         case default
           call output_line ("Problem not supported.")
@@ -1872,31 +1885,31 @@ contains
         case (0)
         case (1)
           ! 1.)
-          Dvalues(1) = fct_stokesLambda1_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda1_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
         
         case (2)
           ! 2.)
-          Dvalues(1) = fct_stokesLambda2_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda2_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
         
         case (3)
           ! 3.)
-          Dvalues(1) = fct_stokesLambda3_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda3_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
         
         case (4)
           ! 4.)
-          Dvalues(1) = fct_stokesLambda4_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda4_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
         
         case (5)
           ! 5.)
-          Dvalues(1) = fct_stokesLambda5_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda5_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
         
         case (6)
           ! 6.)
-          Dvalues(1) = fct_stokesLambda6_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda6_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
         
         case (7)
           ! 7.)
-          Dvalues(1) = fct_stokesLambda7_y (dx,dy,dtime,dalpha)
+          Dvalues(1) = fct_stokesLambda7_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
         
         case default
           call output_line ("Problem not supported.")

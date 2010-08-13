@@ -84,6 +84,8 @@ contains
     rcollection%DquickAccess(6) = rphysics%dpar
     rcollection%DquickAccess(7) = rphysics%dcouplePrimalToDual
     rcollection%DquickAccess(8) = rphysics%dcoupleDualToPrimal
+    rcollection%DquickAccess(9) = rphysics%dtimeMin
+    rcollection%DquickAccess(10) = rphysics%dtimeMax
     
     select case (rphysics%cequation)
     case (0,2)

@@ -82,6 +82,12 @@ module physics
     
     ! Couple the terminal condition to the dual solution.
     real(DP) :: dcoupleTermCond = 1.0_DP
+    
+    ! Minimum time
+    real(DP) :: dtimemin = 0.0_DP
+    
+    ! Maximum time
+    real(DP) :: dtimemax = 1.0_DP
 
   end type
 

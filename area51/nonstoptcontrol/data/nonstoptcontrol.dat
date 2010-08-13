@@ -89,9 +89,22 @@ dcoupleTermCond = 1.0
 
 dpar = 0.1013211836
 
+# Minimum time, maximum time
+dtimemin = 0.0
+dtimemax = 1.0
+
+##########
 [POSTPROC]
+##########
+
+# Whether or not to write UCD output
 iwriteUCD = 1
+
+# Whether or not to calculate the error to an analytical ref. fct.
 icalcerror = 1
+
+# Type of 1D cubature formula to use in time for error calc.
+scubTimeError = TRZ_1D
 
 ##########################
 [SPACETIME-DISCRETISATION]
@@ -102,7 +115,7 @@ icalcerror = 1
 # =1: 1st order (Q1, Q1~/Q0)
 # =2: 2nd order (Q2, Q2/QP1)
 
-cfespace = 1
+cfespace = -1
 
 nspacelevels = 3
 ntimelevels = 2
@@ -116,6 +129,9 @@ dtheta = 1.0
 # =1: modified theta scheme, dual solutions located
 #     inbetween primal solutions in time.
 ithetaschemetype = 1
+
+# Number of timesteps on the time coarse mesh
+ntimestepsCoarse = 5
 
 ########################
 [SPACETIME-LINEARSOLVER]

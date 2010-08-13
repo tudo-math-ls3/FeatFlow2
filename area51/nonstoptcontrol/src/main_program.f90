@@ -723,7 +723,8 @@ contains
     type(t_triangulation) :: rtria1D
     integer :: iwriteUCD, cfespace, icalcError
     character(LEN=SYS_STRLEN) :: smesh, sboundary
-    integer :: ithetaschemetype
+    integer :: ithetaschemetype,ntimestepsCoarse
+    character(len=SYS_STRLEN) :: scubTimeError
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
     
@@ -756,18 +757,24 @@ contains
 
     call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
         "cfespace", cfespace, -1)
+        
+    call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
+        "ntimestepsCoarse", ntimestepsCoarse, 5)
 
+    call parlst_getvalue_string (rparlist, "PARAMTRIANG", &
+        "scubTimeError", scubTimeError,bdequote=.true.)    
+
+    ! Get parameters
+    call cb_getPhysics(rparlist,rparams%rphysics)
+      
     do nminleveltime = nminminleveltime,nmaxminleveltime
 
       call output_separator (OU_SEP_MINUS)
       call output_line ("Level "//trim(sys_siL(nminleveltime+ntimelevels-1,10)))
       call output_lbrk
 
-      ntstepscoarse = 5*2**(nminleveltime-1) !1 !5*2**(nminleveltime-1)
+      ntstepscoarse = ntimestepsCoarse*2**(nminleveltime-1) !1 !5*2**(nminleveltime-1)
     
-      ! Get parameters
-      call cb_getPhysics(rparlist,rparams%rphysics)
-      
       ! Read boundary and generate mesh hierarchy
       select case (rparams%rphysics%cequation)
       case (0,1)
@@ -804,7 +811,8 @@ contains
           rparams%rmeshHierarchy,main_getDiscr,rcollection,rparams%rboundary)
 
       ! Time coarse mesh and time hierarchy
-      call tdiscr_initOneStepTheta (rparams%rtimecoarse, 0.0_DP, 1.0_DP, ntstepscoarse, dtheta)
+      call tdiscr_initOneStepTheta (rparams%rtimecoarse, &
+          rparams%rphysics%dtimemin,rparams%rphysics%dtimemax, ntstepscoarse, dtheta)
       
       ! The ithetaschemetype flag is saved as tag.
       rparams%rtimecoarse%itag = ithetaschemetype
@@ -921,7 +929,8 @@ contains
       !call sptivec_saveToFileSequence (rsolution,"('ns/solution_"//&
       !    trim(sys_siL(nminleveltime,2))//"-"//&
       !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
-      call stpp_postproc (rparams%rphysics,rsolution,iwriteUCD .ne. 0,icalcError .ne. 0)
+      call stpp_postproc (rparams%rphysics,rsolution,iwriteUCD .ne. 0,&
+          icalcError .ne. 0,cub_igetID(scubTimeError))
       call output_line ("CPU time for complete solver:               "//&
           trim(sys_sdL(rlinearSolver%rsolver%rtotalTime%delapsedCPU, 2)))
       call output_line ("Wallclock time for complete solver:         "//&
