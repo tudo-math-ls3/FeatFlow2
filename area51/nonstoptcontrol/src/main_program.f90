@@ -755,14 +755,14 @@ contains
     call parlst_getvalue_int (rparlist, "POSTPROC", &
         "icalcError", icalcError)
 
+    call parlst_getvalue_string (rparlist, "POSTPROC", &
+        "scubTimeError", scubTimeError,bdequote=.true.)    
+
     call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
         "cfespace", cfespace, -1)
         
     call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
         "ntimestepsCoarse", ntimestepsCoarse, 5)
-
-    call parlst_getvalue_string (rparlist, "PARAMTRIANG", &
-        "scubTimeError", scubTimeError,bdequote=.true.)    
 
     ! Get parameters
     call cb_getPhysics(rparlist,rparams%rphysics)

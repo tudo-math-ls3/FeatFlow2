@@ -382,15 +382,6 @@ contains
               trim(sys_sdEL(Derrors(1),5))//" "// &
               trim(sys_sdEL(Derrors(2),5)) )
               
-          ! Sum up the error to the global error according to the cubature formula.
-          DerrorsInterval(:) = DerrorsInterval(:) + &
-              dtstep*0.5_DP*Domega(icubp) * Derrors(:)**2
-              
-          if ((istep .ne. 1) .and. (istep .ne. rvector%NEQtime)) then
-            DerrorTotal(:) = DerrorTotal(:) + &
-                0.5_DP*Domega(icubp) * Derrors(:)**2
-          end if
-              
         case (1)
           ! Stokes equation
           rcollection%IquickAccess (2) = rphysics%cequation
@@ -441,18 +432,21 @@ contains
               trim(sys_sdEL(Derrors(5),5))//" "// &
               trim(sys_sdEL(Derrors(6),5)) )
 
-          ! Sum up the error to the global error according to the cubature formula.
-          DerrorsInterval(:) = DerrorsInterval(:) + &
-              dtstep*0.5_DP*Domega(icubp) * Derrors(:)**2
-              
-          if ((istep .ne. 1) .and. (istep .ne. rvector%NEQtime)) then
-            DerrorTotal(:) = DerrorTotal(:) + &
-                0.5_DP*Domega(icubp) * Derrors(:)**2
-          end if
-              
         end select
       
+        ! Sum up the error to the global error according to the cubature formula.
+        DerrorsInterval(:) = DerrorsInterval(:) + &
+            dtstep*0.5_DP*Domega(icubp) * Derrors(:)**2
+            
       end do
+
+      ! Sum up the interval error to the global error.
+      if ((istep .ne. 1) .and. (istep .ne. rvector%NEQtime-1)) then
+        DerrorTotal(:) = DerrorTotal(:) + DerrorsInterval(:)
+      end if
+      
+      ! To create the norm of the error on the interval, take the square root.
+      DerrorsInterval(:) = sqrt(DerrorsInterval(:))
       
       ! Print the interval error
       select case (rphysics%cequation)
@@ -477,7 +471,10 @@ contains
     
     deallocate (Domega)
     deallocate (Dpoints)
-
+    
+    ! To create the norm of the error, take the square root.
+    DerrorTotal(:) = sqrt(DerrorTotal(:))
+    
     ! Print the Total error
     call output_lbrk()
     select case (rphysics%cequation)
