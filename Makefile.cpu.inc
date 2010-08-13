@@ -270,6 +270,12 @@ include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
+ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-atlas.*),yes)
+# Use ATLAS BLAS
+include $(TEMPLATESDIR)/atlasblas-generic.mk
+endif
+
+
 ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-dxml.*),yes)
 # Use Digital BLAS
 TOKEN5 := 1
@@ -280,6 +286,12 @@ endif
 ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-goto.*),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
 endif
 
 
@@ -553,10 +565,12 @@ ifeq ($(call match,$(ID),pc-athlon64-linux-.*-goto),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+
 ifeq ($(call match,$(ID),pc-athlon64-linux-.*-goto2),yes)
-# Use Goto BLAS
+# Use Goto BLAS 2
 include $(TEMPLATESDIR)/gotoblas2-generic.mk
 endif
+
 
 ################################# Phenom II x4 ##################################
 ifeq ($(call match,$(ID),pc64-phenomIIx4-linux-gcc-.*),yes)
@@ -714,6 +728,11 @@ include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
+ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
+
 
 ################################# CoreDuo 32bit ################################
 
@@ -804,6 +823,12 @@ include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
+ifeq ($(call match,$(ID),pc-coreduo-linux-.*-atlas.*),yes)
+# Use ATLAS BLAS
+include $(TEMPLATESDIR)/atlasblas-generic.mk
+endif
+
+
 ifeq ($(call match,$(ID),pc-coreduo-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
 include $(TEMPLATESDIR)/blas-generic.mk
@@ -815,6 +840,17 @@ ifeq ($(call match,$(ID),pc-coreduo-linux-.*-goto.*),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+
+ifeq ($(call match,$(ID),pc-coreduo-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc-coreduo-linux-.*-mkl.*),yes)
+# Use MKL BLAS
+include $(TEMPLATESDIR)/mkl-generic.mk
+endif
 
 
 ################################# CoreDuo 64bit ################################
@@ -929,17 +965,24 @@ ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-goto.*),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+
+ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
+
+
 ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-mkl.*),yes)
 # Use MKL BLAS
 include $(TEMPLATESDIR)/mkl-generic.mk
 endif
+
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-woodymkl.*),yes)
 # Use special BKL blas on Woodcrest cluster of the RRZE Erlangen
 LIBS := $(LIBS) $(MKL_LIB)
 TOKEN5 := 1
 endif
-
 
 
 ################################# CoreSolo 32 bit ###############################
@@ -1051,6 +1094,11 @@ include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
+ifeq ($(call match,$(ID),pc-coresolo-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
+
 
 ############################### Opteron 32bit ################################
 
@@ -1158,6 +1206,12 @@ include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
+ifeq ($(call match,$(ID),pc-opteron-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
+
+
 ########################### Opteron 32bit DualCore ##########################
 
 ifeq ($(call match,$(ID),pc-opteronx2-linux-intel-.*),yes)
@@ -1191,6 +1245,11 @@ ifeq ($(call match,$(ID),pc-opteronx2-linux-.*-goto.*),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+
+ifeq ($(call match,$(ID),pc-opteronx2-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
 
 
 ########################### Opteron 64bit DualCore ##########################
@@ -1330,7 +1389,6 @@ ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-.*),yes)
 #CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
 #CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
 endif
-
 
 
 ############################### Opteron 64bit ################################
@@ -1569,6 +1627,13 @@ ifeq ($(call match,$(ID),pc64-opteron-linux-.*-goto.*),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+
+ifeq ($(call match,$(ID),pc64-opteron-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
+
+
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-mkl.*),yes)
 # Use Intel Math Kernel Library
 include $(TEMPLATESDIR)/mkl-generic.mk
@@ -1584,7 +1649,6 @@ CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
 CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
 endif
 endif
-
 
 
 ###################### Opteron 64bit running 32bit app #######################
@@ -1638,6 +1702,11 @@ ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-.*-goto.*),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+
+ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
 
 
 ################################# Pentium 3 ##################################
@@ -1722,6 +1791,11 @@ include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
+ifeq ($(call match,$(ID),pc-pentium3-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
+
 
 ################################# Pentium M ##################################
 
@@ -1755,6 +1829,11 @@ ifeq ($(call match,$(ID),pc-pentiumm-linux-.*-goto.*),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+
+ifeq ($(call match,$(ID),pc-pentiumm-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
 
 
 ################################# Pentium 4 ##################################
@@ -1825,6 +1904,11 @@ include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
+ifeq ($(call match,$(ID),pc-pentium4-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
+
 
 ############################# Pentium 4 (Nocona) #############################
 
@@ -1865,6 +1949,11 @@ ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-goto.*),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+
+ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
 
 
 ############################## Pentium 4 Mobile ##############################
@@ -1941,6 +2030,12 @@ endif
 ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-goto.*),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
 endif
 
 
@@ -2024,6 +2119,12 @@ endif
 ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-goto.*),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
 endif
 
 
@@ -2119,6 +2220,11 @@ endif
 ifeq ($(call match,$(ID),pc-penryn-darwin-.*-goto.*),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+ifeq ($(call match,$(ID),pc-penryn-darwin-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
 endif
 
 ######################### Penryn 64 bit (Xeon E5450) #########################
@@ -2294,6 +2400,10 @@ ifeq ($(call match,$(ID),pc64-penryn-linux-.*-goto.*),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+ifeq ($(call match,$(ID),pc64-penryn-linux-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
 
 ifeq ($(call match,$(ID),pc64-penryn-darwin-g95-.*),yes)
 # invokes the GNU Fortran 77/90 compiler, local umfpack
@@ -2362,6 +2472,11 @@ endif
 ifeq ($(call match,$(ID),pc64-penryn-darwin-.*-goto.*),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+ifeq ($(call match,$(ID),pc64-penryn-darwin-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
 endif
 
 
