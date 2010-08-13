@@ -61,8 +61,8 @@
 !#     -> Get the ID of a summed cubature formula.
 !#
 !#
-!# A note on cub_getCubPoints and cub_getCubature \\
-!# ---------------------------------------------- \\
+!# A note on cub_getCubPoints and cub_getCubature
+!# ---------------------------------------------- 
 !# The old routine 'cub_getCubPoints' and the parameter 'CUB_MAXCUBP' have
 !# been marked as deprecated for several reasons:
 !# 1. The CUB_MAXCUBP constant leads to a kind of 'sloppy' programming style,
@@ -139,8 +139,8 @@
 !#
 !# </code>
 !#
-!# About the cubature ID \\
-!# --------------------- \\
+!# About the cubature ID 
+!# --------------------- 
 !# The cubature ID is interpreted as a bitfield that codes the necessary
 !# information about the cubature rule. The following bits are used:
 !#
