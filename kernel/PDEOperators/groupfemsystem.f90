@@ -324,9 +324,14 @@ contains
     ! Check if block matrix has only one block
     if ((rmatrixBlockTemplate%nblocksPerCol .eq. 1) .and. &
         (rmatrixBlockTemplate%nblocksPerRow .eq. 1)) then
-      call gfsys_initStabilisationScalar(&
-          rmatrixBlockTemplate%RmatrixBlock(1,1),&
-          rafcstab, NVARtransformed, rblockDiscretisation)
+      if (present(rblockDiscretisation)) then
+        call gfsys_initStabilisationScalar(&
+            rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab, NVARtransformed,&
+            rblockDiscretisation%RspatialDiscr(1))
+      else
+        call gfsys_initStabilisationScalar(&
+            rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab, NVARtransformed)
+      end if
       return
     end if
 
@@ -548,7 +553,7 @@ contains
 
 !<subroutine>
   subroutine gfsys_initStabilisationScalar(rmatrixTemplate, rafcstab,&
-      NVARtransformed, rblockDiscretisation)
+      NVARtransformed, rspatialDiscretisation)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -568,9 +573,9 @@ contains
     ! NVAR is taken from the template matrix
     integer, intent(in), optional :: NVARtransformed
 
-    ! OPTIONAL: block discretisation structure which is used to
+    ! OPTIONAL: spatial discretisation structure which is used to
     ! create auxiliary vectors, e.g., for the predictor
-    type(t_blockDiscretisation), intent(in), optional :: rblockDiscretisation
+    type(t_spatialDiscretisation), intent(in), optional :: rspatialDiscretisation
 !</input>
 
 !<inputoutput>
@@ -664,15 +669,16 @@ contains
       ! We need 1 nodal block vector for the low-order predictor
       allocate(rafcstab%RnodalBlockVectors(1))
 
-      if (present(rblockDiscretisation)) then
-        call lsysbl_createVectorBlock(rblockDiscretisation,&
-            rafcstab%RnodalBlockVectors(1), .false., ST_DOUBLE)
+      if (present(rspatialDiscretisation)) then
+        call lsyssc_createVecByDiscr(rspatialDiscretisation,&
+            rafcstab%RnodalVectors(7), rafcstab%NVAR, .false., ST_DOUBLE)
       else
         call lsyssc_createVector(rafcstab%RnodalVectors(7),&
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
-        call lsysbl_createVecFromScalar(rafcstab%RnodalVectors(7),&
-            rafcstab%RnodalBlockVectors(1))
       end if
+      ! Convert into 1-block vector
+      call lsysbl_createVecFromScalar(rafcstab%RnodalVectors(7),&
+          rafcstab%RnodalBlockVectors(1))
       
       ! Associate vector
       rafcstab%p_rvectorPredictor => rafcstab%RnodalBlockVectors(1)
@@ -736,15 +742,16 @@ contains
       ! We need 1 nodal block vector for the low-order predictor
       allocate(rafcstab%RnodalBlockVectors(1))
 
-      if (present(rblockDiscretisation)) then
-        call lsysbl_createVectorBlock(rblockDiscretisation,&
-            rafcstab%RnodalBlockVectors(1), .false., ST_DOUBLE)
+      if (present(rspatialDiscretisation)) then
+        call lsyssc_createVecByDiscr(rspatialDiscretisation,&
+            rafcstab%RnodalVectors(7), rafcstab%NVAR, .false., ST_DOUBLE)
       else
         call lsyssc_createVector(rafcstab%RnodalVectors(7),&
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
-        call lsysbl_createVecFromScalar(rafcstab%RnodalVectors(7),&
-            rafcstab%RnodalBlockVectors(1))
       end if
+      ! Convert into 1-block vector
+      call lsysbl_createVecFromScalar(rafcstab%RnodalVectors(7),&
+          rafcstab%RnodalBlockVectors(1))
 
       ! Associate vector
       rafcstab%p_rvectorPredictor => rafcstab%RnodalBlockVectors(1)
