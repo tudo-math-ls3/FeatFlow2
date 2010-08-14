@@ -237,6 +237,7 @@ contains
         rsettingsSolver%rtimeHierarchy,&
         rsettingsSolver%rspaceTimeHierPrimal,rsettingsSolver%rspaceTimeHierPrimalDual)    
     if (ioutputLevel .ge. 2) then
+      call output_lbrk()
       call output_line("Space-time hierarchy statistics:")
       call output_lbrk()
       call sth_printHierStatistics(rsettingsSolver%rspaceTimeHierPrimalDual)
@@ -266,8 +267,17 @@ contains
         rsettingsSolver%rfeHierPrimal,rsettingsSolver%rfeHierMass,&
         rsettingsSolver%rstabilPrimal,rsettingsSolver%rstabilDual)
 
+    if (ioutputLevel .ge. 2) then
+      call output_lbrk()
+      call output_line ("Matrix assembly template statistics:")
+      call output_lbrk()
+
+      call inmat_printTmplHierStatistic(rsettingsSolver%rspaceAsmHierarchy)
+    end if
+
     ! Calculate template matrices, independent of the physics
     if (ioutputLevel .ge. 1) then
+      call output_lbrk()
       call output_line ("Calculating template matrices.")
       call output_line ("Level: [",bnoLineBreak=.true.)
     end if
@@ -276,7 +286,7 @@ contains
         rsettingsSolver,ioutputlevel .ge. 1)
 
     if (ioutputLevel .ge. 1) then
-      call output_line ("]")
+      call output_line ("]",cdateTimeLogPolicy = OU_DTP_NONE)
     end if
 
     ! Initialise the nonlinear solver
@@ -402,6 +412,7 @@ contains
     ! Now we calculate all assembly template data.
     !
     if (ioutputLevel .ge. 1) then
+      call output_lbrk()
       call output_line ("Calculating template optimal control matrices.")
       call output_line ("Level: [",bnoLineBreak=.true.)
     end if
@@ -415,7 +426,7 @@ contains
         rsettingsSolver,ioutputlevel .ge. 1)
 
     if (ioutputLevel .ge. 1) then
-      call output_line ("]")
+      call output_line ("]",cdateTimeLogPolicy = OU_DTP_NONE)
     end if
 
   end subroutine
@@ -911,7 +922,8 @@ contains
         rrefinement%npreref,rrefinement%nlevels,rboundary)
         
     if (ioutputLevel .ge. 1) then
-      call output_line (" Done. Creating Hierarchy-Level: [1",bnolinebreak=.true.)
+      call output_line (" Done. Creating Hierarchy-Level: [1",bnolinebreak=.true.,&
+          cdateTimeLogPolicy = OU_DTP_NONE)
     end if
 
     ! Refine the coarse mesh.
@@ -919,7 +931,7 @@ contains
         rboundary=rboundary,bprint=ioutputLevel .ge. 1)
 
     if (ioutputLevel .ge. 1) then
-      call output_line ("]",bnolinebreak=.true.)
+      call output_line ("]",cdateTimeLogPolicy = OU_DTP_NONE)
     end if
 
     if (ioutputLevel .ge. 2) then
@@ -969,7 +981,7 @@ contains
         rrefinement%npreref,rrefinement%nlevels,ioutputLevel .ge. 1)
 
     if (ioutputLevel .ge. 1) then
-      call output_line ("]",bnolinebreak=.true.)
+      call output_line ("]",cdateTimeLogPolicy = OU_DTP_NONE)
     end if
 
     if (ioutputLevel .ge. 2) then
@@ -1097,6 +1109,7 @@ contains
     
     if (ioutputLevel .ge. 2) then
       ! Print statistics about the discretisation
+      call output_lbrk ()
       call output_line ("Space discretisation hierarchy statistics:")
       call output_lbrk ()
       call fesph_printHierStatistics (rsettings%rfeHierPrimalDual)

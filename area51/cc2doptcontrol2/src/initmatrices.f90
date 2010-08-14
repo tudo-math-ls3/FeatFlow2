@@ -76,6 +76,7 @@ module initmatrices
   public :: inmat_calcStaticLevelAsmHier
   public :: inmat_calcStaticLvlAsmHierOptC
   public :: imnat_getL2PrjMatrix
+  public :: inmat_printTmplHierStatistic
   
 contains
 
@@ -611,6 +612,37 @@ contains
 
 !<subroutine>
 
+  subroutine inmat_printTmplHierStatistic(rhierarchy)
+  
+!<description>
+  ! Prints a statistic about the matrices in the hierarchy.
+!</description>
+
+!<input>
+  ! Level info hierarchy 
+  type(t_staticSpaceAsmHierarchy), intent(in) :: rhierarchy
+!</input>
+
+!</subroutine>
+
+    integer :: ilevel
+
+    ! Print statistic data.
+    call output_line ("Lv.       NA V-Mat       NA B-mat")
+    call output_line ("---------------------------------")
+    do ilevel = 1,rhierarchy%nlevels
+      call output_line (&
+          trim(sys_si(ilevel,3)) //" "// &
+          trim(sys_si(rhierarchy%p_RasmTemplList(ilevel)%rmatrixTemplateFEM%NA,14)) //" "// &
+          trim(sys_si(rhierarchy%p_RasmTemplList(ilevel)%rmatrixTemplateFEMPressure%NA,14)))
+    end do
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine inmat_initStaticTemplHierOptC(rhierarchy,rfeHierPrimal)
   
 !<description>
@@ -671,9 +703,11 @@ contains
       if (bprint) then
         ! Print current state.
         if (ilevel .eq. 1) then
-          call output_line (trim(sys_siL(ilevel,10)),bnolinebreak=.true.)
+          call output_line (trim(sys_siL(ilevel,10)),bnolinebreak=.true., &
+              cdateTimeLogPolicy = OU_DTP_NONE)
         else
-          call output_line (" "//trim(sys_siL(ilevel,10)),bnolinebreak=.true.)
+          call output_line (" "//trim(sys_siL(ilevel,10)),bnolinebreak=.true.,&
+              cdateTimeLogPolicy = OU_DTP_NONE)
         end if
       end if
 
@@ -732,9 +766,11 @@ contains
       if (bprint) then
         ! Print current state.
         if (ilevel .eq. 1) then
-          call output_line (trim(sys_siL(ilevel,10)),bnolinebreak=.true.)
+          call output_line (trim(sys_siL(ilevel,10)),bnolinebreak=.true.,&
+              cdateTimeLogPolicy = OU_DTP_NONE)
         else
-          call output_line (" "//trim(sys_siL(ilevel,10)),bnolinebreak=.true.)
+          call output_line (" "//trim(sys_siL(ilevel,10)),bnolinebreak=.true.,&
+              cdateTimeLogPolicy = OU_DTP_NONE)
         end if
       end if
 
