@@ -1311,6 +1311,9 @@ fb_createLogDir() {
 #
 # $CONSECJOB is set to the job identifier if the job is 
 # successfully scheduled.
+#
+# On successful schedule, the job id is appended to the
+# file "schedule_ok.log".
 # ==================================================
 
 fb_submitJobfile() {
@@ -1333,9 +1336,19 @@ fb_submitJobfile() {
         output="`qsub $jobfile 2>./schedule_err.log`"
       fi
     returncode=$?
-    echo "$output"
+    
+    # Print/log output of last qsub command.
+    if test "$output" != ""
+      then
+        echo "$output"
+      fi
+    echo "$output" >> ./schedule_ok.log
     erroutput="`cat schedule_err.log`"
-    echo "$erroutput"
+    if test "$erroutput" != ""
+      then
+        echo "$erroutput"
+      fi
+    
     if [ $returncode -eq 0 ]; then
         success=1
         
@@ -1405,6 +1418,10 @@ fb_submitJobfiles()
       parexec=1
     fi
   maxjobsmessage="$2"
+  
+  # Remove the file "schedule_ok.log" which collects all
+  # successfully scheduled jobs.
+  rm -f ./schedule_ok.log
   
   # Loop over all jobs, submit them if they exist.
   for testid in $ALLTESTS
