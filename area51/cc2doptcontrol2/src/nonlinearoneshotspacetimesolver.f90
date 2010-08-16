@@ -570,7 +570,7 @@ contains
             rnlstsolver%rtimeProlRest)
             
         rnlstsolver%ncoarsegridIterations = rnlstsolver%ncoarsegridIterations + &
-            rnlstsolver%p_rspaceTimePrec%iiterations
+            rnlstsolver%p_rspaceTimePrec%p_rsubnodeMultigrid%niteLinSolveCoarse
 
         ! Print some statistical output
         if (rnlstSolver%ioutputLevel .ge. 1) then
