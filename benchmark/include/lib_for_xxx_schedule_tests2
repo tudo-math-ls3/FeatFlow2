@@ -318,6 +318,10 @@ submits the job file to the scheduler.
   --consecutive
       Runs the tests consecutively, i.e. each job waits for its predecessor
       to be completed until it starts. Cannot be combined with --collectjobs!
+  --hold
+      Scheduled jobs are initially marked with a 'hold' status that prevents
+      the jobs from being started. The user has to manually release
+      the hold status from the jobs to be executed.
   TEST ID
       a valid identifier for a FEAST benchmark test, defined in one of
       the *.fbdef files stored in directory benchmark/tests.
@@ -372,6 +376,12 @@ fb_readargs() {
       --consecutive) # run scripts consecutively
           echo "$0: Scripts scheduled consecutively."
           CONSEC=1
+          shift
+          ;;
+
+      --hold) # run scripts consecutively
+          echo "$0: Scripts scheduled with initial 'hold' status."
+          JOBHOLD=1
           shift
           ;;
 
@@ -1328,13 +1338,18 @@ fb_submitJobfile() {
     maxwaitcycles=512
     iteration=1
     while test $success -eq 0 -a $iteration -le $maxwaitcycles; do
+    CMD_DEPEND=""
+    CMD_HOLD=""
     if test "$consecjobid" != ""
       then
         echo "Scheduling job after $consecjobid."
-        output="`qsub -W depend=afterok:$consecjobid $jobfile 2>./schedule_err.log`"
-      else
-        output="`qsub $jobfile 2>./schedule_err.log`"
+        CMD_DEPEND="-W depend=afterok:$consecjobid"
       fi
+    if test "$JOBHOLD" != ""
+      then
+        CMD_HOLD="-h"
+      fi
+    output="`qsub $CMD_DEPEND $CMD_HOLD $jobfile 2>./schedule_err.log`"
     returncode=$?
     
     # Print/log output of last qsub command.

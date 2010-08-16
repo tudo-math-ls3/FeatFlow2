@@ -75,6 +75,9 @@ VMEM=
 # Whether or not to start the scripts consecutively.
 CONSEC=0
 
+# Whether or not to schedule jobs with initial 'hold' status.
+JOBHOLD=0
+
 # ==================================================================
 # Global status variables
 
