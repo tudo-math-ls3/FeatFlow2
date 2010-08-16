@@ -167,6 +167,9 @@ module structuresoptcspacetimenlsol
     ! Number of nonlinear iterations
     integer :: nnonlinearIterations = 0
     
+    ! Number of iterations on the coarse grid
+    integer :: ncoarsegridIterations = 0
+    
     ! STATISTICS: Total time for nonlinear iteration
     type(t_timer) :: rtimerNonlinear
     
@@ -339,6 +342,8 @@ contains
         trim(sys_siL(rsolver%nnonlinearIterations,10)))
     call output_line ('#iterations preconditioner         = '//&
         trim(sys_siL(rsolver%nlinearIterations,10)))
+    call output_line ('#iterations coarse-grid solver     = '//&
+        trim(sys_siL(rsolver%ncoarsegridIterations,10)))
     call output_line ('#iterations space-preconditioners  = '//&
         trim(sys_siL(rsolver%nlinearIterationsSpace,10)))
     call output_line ('Total time for postprocessing      = '// &

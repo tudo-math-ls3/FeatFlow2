@@ -962,6 +962,10 @@ module spacetimelinearsolver
     ! STATISTICS OUTPUT: Time needed for prolongation/restriction
     type(t_timer) :: rtimeProlRest
     
+    ! STATISTICS OUTPUT: Total number of iterations, the linear space-time solver
+    ! needed for all coarse mesh solutions.
+    integer :: niteLinSolveCoarse = 0
+
     ! STATISTICS OUTPUT: Total number of iterations, the linear solver in space
     ! needed for all coarse mesh solutions.
     integer :: niteLinSolveSpaceCoarse = 0
@@ -7799,6 +7803,7 @@ contains
     p_rsubnode%niteLinSolveSpaceCoarse = 0
     p_rsubnode%niteLinSolveSpaceSmooth = 0
     p_rsubnode%niteLinSolveSpaceSmoothFine = 0
+    p_rsubnode%niteLinSolveCoarse = 0
     
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
 
@@ -7850,6 +7855,8 @@ contains
       call stat_stopTimer (p_rsubnode%rtimeCoarseGridSolver)
       p_rsubnode%niteLinSolveSpaceCoarse = p_rsubnode%niteLinSolveSpaceCoarse + &
           p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%niteLinSolveSpace
+      p_rsubnode%niteLinSolveCoarse = p_rsubnode%niteLinSolveCoarse + &
+          p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%iiterations
       
       ! Sum up the time for space preconditioning
       call stat_addTimers (&
@@ -8164,6 +8171,8 @@ contains
             call stat_stopTimer (p_rsubnode%rtimeCoarseGridSolver)
             p_rsubnode%niteLinSolveSpaceCoarse = p_rsubnode%niteLinSolveSpaceCoarse &
                 + p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%niteLinSolveSpace
+            p_rsubnode%niteLinSolveCoarse = p_rsubnode%niteLinSolveCoarse + &
+                p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%iiterations
 
             ! Sum up the time for space preconditioning
             call stat_addTimers (&

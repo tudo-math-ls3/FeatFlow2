@@ -394,6 +394,7 @@ contains
     rnlstsolver%nnonlinearIterations = 0
     rnlstsolver%nlinearIterations = 0
     rnlstsolver%nlinearIterationsSpace = 0
+    rnlstsolver%ncoarsegridIterations = 0
     
     do while ((rnlstsolver%nnonlinearIterations .lt. rnlstsolver%nminIterations) .or. &
               ((((ddefNorm .gt. rnlstsolver%depsRel*dinitDefNorm) .or. &
@@ -567,7 +568,10 @@ contains
             rnlstsolver%rtimeLinearAlgebra)
         call stat_addtimers (rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeProlRest,&
             rnlstsolver%rtimeProlRest)
-      
+            
+        rnlstsolver%ncoarsegridIterations = rnlstsolver%ncoarsegridIterations + &
+            rnlstsolver%p_rspaceTimePrec%iiterations
+
         ! Print some statistical output
         if (rnlstSolver%ioutputLevel .ge. 1) then
           call stat_sampleTimer(rnlstsolver%rtimerNonlinear,delapsedReal)
