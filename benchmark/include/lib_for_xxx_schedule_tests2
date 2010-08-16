@@ -315,6 +315,9 @@ submits the job file to the scheduler.
       Allows up to <count> makefile jobs to be run in parallel.
       Each makefile job creates a script of one test. Can be used to speed up
       the creation of multiple scripts in parallel.
+  --consecutive
+      Runs the tests consecutively, i.e. each job waits for its predecessor
+      to be completed until it starts. Cannot be combined with --collectjobs!
   TEST ID
       a valid identifier for a FEAST benchmark test, defined in one of
       the *.fbdef files stored in directory benchmark/tests.
@@ -366,22 +369,32 @@ fb_readargs() {
           exit
           ;;
 
+      --consecutive) # run scripts consecutively
+          echo "$0: Scripts scheduled consecutively."
+          CONSEC=1
+          shift
+          ;;
+
       --noscheduleonerr|--no-schedule-on-err) # only create jobfile if everything works fine
+          echo "$0: Calcelling schedule on error."
           NOSCHEDULEONERR=1
           shift
           ;;
 
       --noschedule|--no-schedule) # only create jobfile, don't submit to queue
+          echo "$0: Creating jobs without scheduling."
           NOSCHEDULE=1
           shift
           ;;
 
       --overwrite-log-director*|-o) # don't rename existing log directories
+          echo "$0: Overwriting old log directories."
           OVERWRITE_LOG_DIRECTORY=1
           shift
           ;;
 
       --prefix|-p)  # jobfile prefix
+          echo "$0: Using jobfile prefix <$2>."
           JOBFILEPREFIX="$2"
           shift
           shift
@@ -462,6 +475,15 @@ fb_readargs() {
     echo "For help invoke '$0 --help'."
     exit
     fi
+    
+    if test "$CONSEC" -eq "1" 
+      then
+        if test "$COLLECTJOBS" -eq "1"
+	  then
+            echo "$0: --collectjobs cannot be combined with --consecutive!"
+            exit
+          fi
+      fi
 }
 
 
@@ -1261,10 +1283,10 @@ fb_createLogDir() {
     directory="$1"  # IN
 
     if [ -r $directory ]; then
-    echo $0": Log directory exists."
+      echo $0": Log directory exists."
     else
-    echo $0": Creating log directory."
-    mkdir $directory
+      echo $0": Creating log directory."
+      mkdir $directory
     fi
 }
 
@@ -1274,20 +1296,27 @@ fb_createLogDir() {
 # Tries to submit a job file to the queueing system of the cluster.
 #
 # Call:
-#    fb_submitJobfile [jobfile] [maxjobsmessage]
+#    fb_submitJobfile [jobfile] [maxjobsmessage] [consecjobid]
 #
 # where
 #    [jobfile]        = name of the jobfile to submit
 #    [maxjobsmessage] = Output of qsub if the queue is full
+#    [consecjobid]    = OPTIONAL. Id of a job which has to be
+#                       completed before the current job
+#                       is executed.
 #
 # During the call of "qsub", the screen output is checked
 # against [maxjobsmessage]. If that message appears, the
 # queue is assumed to be full.
+#
+# $CONSECJOB is set to the job identifier if the job is 
+# successfully scheduled.
 # ==================================================
 
 fb_submitJobfile() {
     jobfile="$1"           # IN
     maxjobsmessage="$2"    # IN
+    consecjobid="$3"
 
     success=0
     # time to wait (in seconds) between subsequent qstat calls
@@ -1296,16 +1325,30 @@ fb_submitJobfile() {
     maxwaitcycles=512
     iteration=1
     while test $success -eq 0 -a $iteration -le $maxwaitcycles; do
-    output="`qsub $jobfile 2>&1`"
+    if test "$consecjobid" != ""
+      then
+        echo "Scheduling job after $consecjobid."
+        output="`qsub -W depend=afterok:$consecjobid $jobfile 2>./schedule_err.log`"
+      else
+        output="`qsub $jobfile 2>./schedule_err.log`"
+      fi
     returncode=$?
+    echo "$output"
+    erroutput="`cat schedule_err.log`"
+    echo "$erroutput"
     if [ $returncode -eq 0 ]; then
-        echo $output
         success=1
+        
+        if test "$CONSEC" -eq "1" 
+          then
+            # Consecutive mode. Set "after-job" to the job id we just
+            # received.
+            CONSECJOB="$output"
+          fi
 
     # Catch case "invalid credential" aka error code 171. Just
     # re-submit in this case.
     elif [ $returncode -eq 171 ]; then
-        echo $output
         # Wait and try again
         iteration=`expr $iteration + 1`
         echo $0": Waiting 1 second, then retrying submission..."
@@ -1315,8 +1358,7 @@ fb_submitJobfile() {
     # Currently, the message seems not related one to one to
     # a particular return code of the qsub command.
     # So, check for the screen message itself.
-    elif [ -n "`echo \"$output\" | grep \"$maxjobsmessage\"`" ]; then
-        echo $output
+    elif [ -n "`echo \"$erroutput\" | grep \"$maxjobsmessage\"`" ]; then
         echo "(error code: $returncode)"
         # Wait and try again
         iteration=`expr $iteration + 1`
@@ -1325,7 +1367,6 @@ fb_submitJobfile() {
 
     # All other errors: end script
     else
-        echo $output
         cat <<EOF 1>&2
 $0: Error while submitting jobfile <$jobfile>:
 $0: qsub returned error code $returncode.
@@ -1364,9 +1405,16 @@ fb_submitJobfiles()
       parexec=1
     fi
   maxjobsmessage="$2"
+  
   # Loop over all jobs, submit them if they exist.
   for testid in $ALLTESTS
     do
+      if test "$CONSEC" -ne "1"
+        then
+          # Reset id of last scheduled job.
+          CONSECJOB=""
+        fi
+
       # Get the filename.
       fb_getJobfileName $testid $parexec
       
@@ -1374,7 +1422,7 @@ fb_submitJobfiles()
       # that merge a couple of serial tests), submit the job.
       if test -e $JOBFILE
         then
-          fb_submitJobfile $JOBFILE $maxjobsmessage
+          fb_submitJobfile $JOBFILE $maxjobsmessage "$CONSECJOB"
         fi
     done
 }

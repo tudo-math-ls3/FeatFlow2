@@ -72,6 +72,9 @@ QNAME=
 # ="": Automatic
 VMEM=
 
+# Whether or not to start the scripts consecutively.
+CONSEC=0
+
 # ==================================================================
 # Global status variables
 
@@ -122,6 +125,9 @@ MPIENVSETTING=
 # Number of parallel make files to execute.
 # Default=1 make job.
 PARMAKECOUNT=1
+
+# Id of the last scheduled job.
+CONSECJOB=
 
 # ==================================================================
 # IMPORTANT
