@@ -1094,6 +1094,30 @@ fb_readLogPath()
 }
 
 # ==================================================
+# FUNCTION: Reads the task ooutput dir
+#
+# Parses the file [jobfile] to find the log directory
+# that is used for the job.
+#
+# Call:
+#    fb_readTaskLogDir [jobfile]
+#
+# Returns:
+#    [LOG_DIR] = Name of the output file or "" if not found.
+#
+# Note: This does not work for parallel jobfiles!!!
+# ==================================================
+fb_readTaskLogDir()
+{
+  # Grep for "LOGDIR".
+  LOG_DIR=`grep "LOGDIR=" $1 | head -1`
+  # Cut off everything which does not belong to the directory.
+  LOG_DIR=`echo $LOG_DIR|sed 's/[^=]*=//'`
+  # The log directory is a combination the current directory
+  # and $LOG_DIR
+  LOG_DIR="`pwd`/$LOG_DIR"
+}
+# ==================================================
 # FUNCTION: Reads the number of tasks for that job.
 #
 # Parses the file [jobfile] to find the 1st occurrence
@@ -1306,10 +1330,11 @@ fb_createLogDir() {
 # Tries to submit a job file to the queueing system of the cluster.
 #
 # Call:
-#    fb_submitJobfile [jobfile] [maxjobsmessage] [consecjobid]
+#    fb_submitJobfile [jobfile] [logfolder] [maxjobsmessage] [consecjobid]
 #
 # where
 #    [jobfile]        = name of the jobfile to submit
+#    [logfolder]      = folder, the job writes logfiles to.
 #    [maxjobsmessage] = Output of qsub if the queue is full
 #    [consecjobid]    = OPTIONAL. Id of a job which has to be
 #                       completed before the current job
@@ -1323,15 +1348,20 @@ fb_createLogDir() {
 # successfully scheduled.
 #
 # On successful schedule, the job id is appended to the
-# file "schedule_ok.log".
+# file "schedule_ok.log". Furthermore, the variable
+# success is set to 1.
 # ==================================================
 
 fb_submitJobfile() {
     jobfile="$1"           # IN
-    maxjobsmessage="$2"    # IN
-    consecjobid="$3"
+    logfolder="$2"         # IN
+    maxjobsmessage="$3"    # IN
+    consecjobid="$4"       # IN
 
     success=0
+    # Append a delete command to the jobfile to delete all
+    # jobid.* files in the log directory when finished.
+    echo "rm \"$logfolder\"/jobid.*" >> "$jobfile"
     # time to wait (in seconds) between subsequent qstat calls
     sleeptime=60
     # how many cycles to wait till for all jobs to finish
@@ -1367,6 +1397,12 @@ fb_submitJobfile() {
     if [ $returncode -eq 0 ]; then
         success=1
         
+          # Create a file in the log folder that has the job id
+          # as part of the filename. Allows later on easier identification for 
+          # the user which jobs are running.
+          filename="$logfolder/jobid.$output"
+          echo -n "" > $filename
+          # Check for successor in consecutive mode.
         if test "$CONSEC" -eq "1" 
           then
             # Consecutive mode. Set "after-job" to the job id we just
@@ -1454,7 +1490,12 @@ fb_submitJobfiles()
       # that merge a couple of serial tests), submit the job.
       if test -e $JOBFILE
         then
-          fb_submitJobfile $JOBFILE $maxjobsmessage "$CONSECJOB"
+          # Get the output path for log files using the serial file.
+          TEMPJOBFILE=$JOBFILE
+          fb_getJobfileName $testid 0
+          fb_readTaskLogDir $JOBFILE
+          # Submit the job.
+          fb_submitJobfile "$TEMPJOBFILE" "$LOG_DIR" "$maxjobsmessage" "$CONSECJOB"
         fi
     done
 }
