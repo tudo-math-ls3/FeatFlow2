@@ -6189,6 +6189,10 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
     character(LEN=SYS_STRLEN) :: ssolutionname
 
+    ! Variables for the computation of the particle velocity
+    real(DP), dimension(2) :: Dnumerator, Ddenominator
+    real(DP) :: dalpha
+
     character(LEN=SYS_STRLEN) :: sselectforce, cforce
     integer :: nselectforce, iselectforce, isubstring
 
@@ -6294,6 +6298,14 @@ contains
     F_M = 0.0_dp
     F_S = 0.0_dp
 
+    ! Set numerator as the old velocity of the particle
+    Dnumerator(1)= rParticles%p_xvelo_old(iPart)
+    Dnumerator(2)= rParticles%p_yvelo_old(iPart)
+    
+    ! Set denominator as 1
+    Ddenominator(1)= 1.0_dp
+    Ddenominator(2)= 1.0_dp
+    
     ! Set temperature of the particles
     select case(isolutionpart)
     case (1)  
@@ -6321,8 +6333,11 @@ contains
         if (Re_p<1000) then
 	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
         else
-	        C_W= 0.44_dp    !24.0_dp/Re_p
+	        C_W= 0.44_dp  !24.0_dp/Re_p 
         end if
+
+        ! Compute \alpha= \frac{3}{4} * \frac{\rho_g}{d_p*\tho_p}*C_W*v_{rel}
+        dalpha= (3*rho_g*C_W*Velo_rel)/(rParticles%p_diam(iPart)*rParticles%p_density(iPart))
 
         ! Loop over all forces
         do iselectforce = 1, nselectforce
@@ -6332,64 +6347,38 @@ contains
             'sselectforce', cforce, isubstring=iselectforce)
 
             if (trim(cforce) .eq. 'dragforce') then
-
-                ! Compute the dragforce
-                ! F_D = \frac{3}{4} * \frac{\rho_g}{d\rho_p} * m_p * C_W * v_{rel} * \vec{v}_{rel}
-                F_D(1)= (3*rho_g*C_W*Velo_rel*rParticles%p_mass(iPart))/&
-                        (4*rParticles%p_diam(iPart)*rParticles%p_density(iPart))*&
-                        (rParticles%p_xvelo_gas(iPart)-rParticles%p_xvelo_old(iPart))
-                F_D(2)= (3*rho_g*C_W*Velo_rel*rParticles%p_mass(iPart))/&
-                        (4*rParticles%p_diam(iPart)*rParticles%p_density(iPart))*&
-                        (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))
+            
+                ! To compute the dragforce
+                ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
+                !(\Delta t * \alpha * v_g)  will be added to the numerator
+                ! and (\Delta t * \alpha) will be added to the denominator 
+                ! with \alpha=\frac{3}{4} \frac{\rho_g}{d_p*\rho_p} C_W * Velo_rel
+                        
+                ! Add (dt*dalpha*v_g) to the numerator
+                Dnumerator(1)= Dnumerator(1) + dt*dalpha*rParticles%p_xvelo_gas(iPart)
+                Dnumerator(2)= Dnumerator(2) + dt*dalpha*rParticles%p_yvelo_gas(iPart)
+                
+                ! Add \Delta t * to the denominator
+                Ddenominator(1)= Ddenominator(1)+dt*dalpha
+                Ddenominator(2)= Ddenominator(2)+dt*dalpha
 
             elseif (trim(cforce) .eq. 'gravity') then
 
-                ! Compute the gravity
+                ! To compute the gravity
                 ! F_G = m * g
-                F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
-                F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
-
-            elseif (trim(cforce) .eq. 'virtualmassforce') then
-
-                ! Compute the virtualmass force
-                ! F_VM = C_VM * \frac{\rho_g}{\rho_p} * m_p *
-                !           ((\partial_t v_g + v_g \cdot \nabla v_g)-
-                !            (\partial_t v_p + v_p \cdot \nabla v_p))
-                F_VM(1)= 0.0_dp
-                F_VM(2)= 0.0_dp
-
-            elseif (trim(cforce) .eq. 'bassetforce') then
-            
-                ! Compute the Basset force
-                F_B(1)= 0.0_dp
-                F_B(2)= 0.0_dp
-
-
-            elseif (trim(cforce) .eq. 'magnusforce') then
-
-                ! Compute the Magnus force
-                F_M(1)= 0.0_dp
-                F_M(2)= 0.0_dp
-           
-
-            elseif (trim(cforce) .eq. 'saffmanforce') then
-
-                ! Compute the Saffman force
-                F_S(1)= 0.0_dp
-                F_S(2)= 0.0_dp
-                      
+                ! The numerator will be added by (\Delta t * g)
+                ! Set numerator as the old velocity of the particle
+                Dnumerator(1)= Dnumerator(1)+dt*rParticles%gravity(1)
+                Dnumerator(2)= Dnumerator(2)+dt*rParticles%gravity(2)
+                    
             end if
 
         end do ! Loop over all forces
 
-        ! Set resulting force for the particle
-        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1) 
-        F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
-
         ! Compute new velocity of the particle
-        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_old(iPart)+dt*F_ges(1)/rParticles%p_mass(iPart)
-        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_old(iPart)+dt*F_ges(2)/rParticles%p_mass(iPart)
-        
+        rParticles%p_xvelo(iPart)= Dnumerator(1)/Ddenominator(1)
+        rParticles%p_yvelo(iPart)= Dnumerator(2)/Ddenominator(2)
+         
         ! Compute the new position of the particle
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* rParticles%p_xvelo(iPart)/domscalex
         rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* rParticles%p_yvelo(iPart)/domscaley
@@ -6669,7 +6658,7 @@ contains
 
             if (trim(cforce) .eq. 'dragforce') then
 
-                ! Compute the dragforce
+                ! To compute the dragforce
                 ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
                 F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
                         (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
@@ -6678,7 +6667,7 @@ contains
 
             elseif (trim(cforce) .eq. 'gravity') then
 
-                ! Compute the gravity
+                ! To compute the gravity
                 ! F_G = m * g
                 F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
                 F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
@@ -7129,8 +7118,8 @@ contains
         !*******************************************************************
 
         ! Set the velocity of the particle
-        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)*velogasx
-        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)*velogasy
+        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)
+        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)
         
         ! Compute the new position
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* rParticles%p_xvelo(iPart)/domscalex
