@@ -1113,9 +1113,6 @@ fb_readTaskLogDir()
   LOG_DIR=`grep "LOGDIR=" $1 | head -1`
   # Cut off everything which does not belong to the directory.
   LOG_DIR=`echo $LOG_DIR|sed 's/[^=]*=//'`
-  # The log directory is a combination the current directory
-  # and $LOG_DIR
-  LOG_DIR="`pwd`/$LOG_DIR"
 }
 # ==================================================
 # FUNCTION: Reads the number of tasks for that job.
@@ -1397,12 +1394,16 @@ fb_submitJobfile() {
     if [ $returncode -eq 0 ]; then
         success=1
         
-          # Create a file in the log folder that has the job id
-          # as part of the filename. Allows later on easier identification for 
-          # the user which jobs are running.
-          filename="$logfolder/jobid.$output"
-          echo -n "" > $filename
-          # Check for successor in consecutive mode.
+        # Create a file in the log folder that has the job id
+        # as part of the filename. Allows later on easier identification for 
+        # the user which jobs are running.
+        # The file contains in the first line the job id and later
+        # on the result of "qstat -f".
+        filename="$logfolder/jobid.$output"
+        echo $output > $filename
+        qstat -f $output >> $filename
+        
+        # Check for successor in consecutive mode.
         if test "$CONSEC" -eq "1" 
           then
             # Consecutive mode. Set "after-job" to the job id we just
