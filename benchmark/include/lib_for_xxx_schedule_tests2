@@ -1372,7 +1372,7 @@ fb_submitJobfile() {
         echo "Scheduling job after $consecjobid."
         CMD_DEPEND="-W depend=afterok:$consecjobid"
       fi
-    if test "$JOBHOLD" != ""
+    if test "$JOBHOLD" == "1"
       then
         CMD_HOLD="-h"
       fi
