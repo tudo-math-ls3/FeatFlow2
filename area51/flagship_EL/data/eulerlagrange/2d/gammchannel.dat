@@ -38,7 +38,7 @@ ndimension = 2
 algorithm = transient_primal
 
 ################################################################################ 
-# initialisation for Euler-Lagrange
+# Initialisation for Euler-Lagrange
 ################################################################################
 
 #-------------------------------------------------------------------------------
@@ -65,13 +65,13 @@ search = midpoint
 #	ymin = minval(p_DvertexCoords(2,:))
 #	ymax = maxval(p_DvertexCoords(2,:))
 # 1 individual startingposition
-# 2 initialize the starting position by the data of a graymap image
+# 2 initialize the starting position by the data of a graymap image (PGM in ASCII-Format)
 # 3 uniformly distributed over the domain
 #-------------------------------------------------------------------------------
 startpos = 3
 
 # PGM-file for startingpositions
-filestartpoints = data/eulerlagrange/2d/drop.pgm
+filestartpoints = data/eulerlagrange/2d/bart.pgm
 
 # minimum particle-position in x-direction 
 xmin = 1.5e-4
@@ -244,8 +244,9 @@ icouplingpart = 1
 # -1 	Runge-Kutta first order / explicit Euler method (particle tracing)
 # -2 	Runge-Kutta second order / improved Euler method (particle tracing)
 # -3	Runge-Kutta fourth order / classic Runge-Kutta (particle tracing)
+# 11 	implicit Euler method (interfacial forces)
 #-------------------------------------------------------------------------------
-isolutionpart = 1
+isolutionpart = 11
 
 #-------------------------------------------------------------------------------
 # select interfacial forces for the particle movement
@@ -473,7 +474,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.000
+dfinalTime = 0.1000
 
 # initial time step size
 dinitialStep = 1e-3

@@ -6308,10 +6308,9 @@ contains
     
     ! Set temperature of the particles
     select case(isolutionpart)
-    case (1)  
+    case (11)  
         !*******************************************************************
-        ! explicit Euler method (interfacial forces)
-        ! x_i+1 = x_i + \Delta t v_i
+        ! implicit Euler method (interfacial forces)
         !*******************************************************************
 
         ! Get number of interfacial forces
@@ -6330,7 +6329,7 @@ contains
         Re_p= rho_g*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
 
         ! Calculate the drag force coefficient
-        if (Re_p<1000) then
+        if (0<Re_p .and. Re_p<1000) then
 	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
         else
 	        C_W= 0.44_dp  !24.0_dp/Re_p 
@@ -6383,6 +6382,107 @@ contains
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* rParticles%p_xvelo(iPart)/domscalex
         rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* rParticles%p_yvelo(iPart)/domscaley
 
+ 
+   case (1)  
+        !*******************************************************************
+        ! explicit Euler method (interfacial forces)
+        ! x_i+1 = x_i + \Delta t v_i
+        !*******************************************************************
+
+        ! Get number of interfacial forces
+        nselectforce = max(1,&
+        parlst_querysubstrings(rparlist,'Eulerlagrange', 'nselectforce'))
+
+        ! Calculate the relative velocity
+        Velo_rel= sqrt((rParticles%p_xvelo(iPart)-rParticles%p_xvelo_old(iPart))**2.0_dp +&
+                       (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))**2.0_dp)
+
+        ! Calculate particle Reynoldsnumber
+        !
+        ! Re_p= \frac{d_p\ \left|\textbf{u}_g-\textbf{u}_p\right|}{\nu_g}
+        ! with \nu_g=\frac{\eta_g}{\rho_g}
+        !
+        Re_p= rho_g*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
+
+        ! Calculate the drag force coefficient
+        if (Re_p<1000) then
+	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
+        else
+	        C_W= 0.44_dp    !24.0_dp/Re_p
+        end if
+
+        ! Loop over all forces
+        do iselectforce = 1, nselectforce
+
+            ! Get name of the force
+            call parlst_getvalue_string(rparlist, 'Eulerlagrange',&
+            'sselectforce', cforce, isubstring=iselectforce)
+
+            if (trim(cforce) .eq. 'dragforce') then
+
+                ! Compute the dragforce
+                ! F_D = \frac{3}{4} * \frac{\rho_g}{d\rho_p} * m_p * C_W * v_{rel} * \vec{v}_{rel}
+                F_D(1)= (3*rho_g*C_W*Velo_rel*rParticles%p_mass(iPart))/&
+                        (4*rParticles%p_diam(iPart)*rParticles%p_density(iPart))*&
+                        (rParticles%p_xvelo_gas(iPart)-rParticles%p_xvelo_old(iPart))
+                F_D(2)= (3*rho_g*C_W*Velo_rel*rParticles%p_mass(iPart))/&
+                        (4*rParticles%p_diam(iPart)*rParticles%p_density(iPart))*&
+                        (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))
+
+            elseif (trim(cforce) .eq. 'gravity') then
+
+                ! Compute the gravity
+                ! F_G = m * g
+                F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
+                F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+
+            elseif (trim(cforce) .eq. 'virtualmassforce') then
+
+                ! Compute the virtualmass force
+                ! F_VM = C_VM * \frac{\rho_g}{\rho_p} * m_p *
+                !           ((\partial_t v_g + v_g \cdot \nabla v_g)-
+                !            (\partial_t v_p + v_p \cdot \nabla v_p))
+                F_VM(1)= 0.0_dp
+                F_VM(2)= 0.0_dp
+
+            elseif (trim(cforce) .eq. 'bassetforce') then
+            
+                ! Compute the Basset force
+                F_B(1)= 0.0_dp
+                F_B(2)= 0.0_dp
+
+
+            elseif (trim(cforce) .eq. 'magnusforce') then
+
+                ! Compute the Magnus force
+                F_M(1)= 0.0_dp
+                F_M(2)= 0.0_dp
+           
+
+            elseif (trim(cforce) .eq. 'saffmanforce') then
+
+                ! Compute the Saffman force
+                F_S(1)= 0.0_dp
+                F_S(2)= 0.0_dp
+                      
+            end if
+
+        end do ! Loop over all forces
+
+        ! Set resulting force for the particle
+        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1) 
+        F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
+
+        ! Compute new velocity of the particle
+        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_old(iPart)+dt*F_ges(1)/rParticles%p_mass(iPart)
+        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_old(iPart)+dt*F_ges(2)/rParticles%p_mass(iPart)
+        
+        ! Compute the new position of the particle
+        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* rParticles%p_xvelo(iPart)/domscalex
+        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* rParticles%p_yvelo(iPart)/domscaley
+        
+
+ 
                              
     case (2)
         !*******************************************************************

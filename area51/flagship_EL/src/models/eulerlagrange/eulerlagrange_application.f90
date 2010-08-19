@@ -4004,7 +4004,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call eulerlagrange_calcvolpart(p_rproblemLevel,rParticles)
 
     ! Subroutine to calculate the velocity of the particles 
-    call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
+    !call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
 
 
 end subroutine eulerlagrange_init
@@ -4064,7 +4064,7 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call eulerlagrange_calcvolpart(p_rproblemLevel,rParticles)
 
     ! Subroutine to calculate the velocity of the particles 
-    call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
+    !call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
 
 end subroutine eulerlagrange_step
 
