@@ -162,7 +162,7 @@ contains
     integer :: cnonmesh
     integer :: ipoint,indof,nve,ibas
     integer(I32) :: celement
-    integer :: iel
+    integer :: iel,iresult,iellast
     integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
@@ -254,7 +254,20 @@ contains
         ! to search for the element. Use raytracing search to find the element
         ! containing the point.
         call tsrch_getElem_raytrace2D (&
-          Dpoints(:,ipoint),rvectorScalar%p_rspatialDiscr%p_rtriangulation,iel)
+          Dpoints(:,ipoint),rvectorScalar%p_rspatialDiscr%p_rtriangulation,iel,&
+          iresult=iresult,ilastElement=iellast)
+          
+        if (iresult .eq. -2) then
+          ! Not found, too many iterations. Probably the domain is too big.
+          ! Search again starting from the last found element, specify
+          ! 2*sqrt(NEL) as maximum number of steps (should work for rather
+          ! isotropic meshes) and try again.
+          iel = iellast
+          call tsrch_getElem_raytrace2D (&
+            Dpoints(:,ipoint),rvectorScalar%p_rspatialDiscr%p_rtriangulation,iel,&
+            iresult=iresult,ilastElement=iellast,&
+            imaxIterations=max(100,2*int(sqrt(real(rvectorScalar%p_rspatialDiscr%p_rtriangulation%NEL,DP)))))
+        end if
 
         ! Ok, not found... Brute force search
         if (iel .eq. 0) then
@@ -444,7 +457,7 @@ contains
     integer :: cnonmesh
     integer :: ipoint, indof, nve, ibas, ider, iblock, iblMin, iblMax
     integer(I32) :: celement
-    integer :: iel
+    integer :: iel,iresult,iellast
     integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
     real(DP) :: dval
@@ -553,7 +566,19 @@ contains
         
         ! use raytracing search to find the element containing the point
         call tsrch_getElem_raytrace2D(Dpoints(:,ipoint), p_rspatDiscr%p_rtriangulation, &
-                                      iel)
+          iel, iresult=iresult,ilastElement=iellast)
+          
+        if (iresult .eq. -2) then
+          ! Not found, too many iterations. Probably the domain is too big.
+          ! Search again starting from the last found element, specify
+          ! 2*sqrt(NEL) as maximum number of steps (should work for rather
+          ! isotropic meshes) and try again.
+          iel = iellast
+          call tsrch_getElem_raytrace2D (&
+            Dpoints(:,ipoint), p_rspatDiscr%p_rtriangulation,iel,&
+            iresult=iresult,ilastElement=iellast,&
+            imaxIterations=max(100,2*int(sqrt(real(p_rspatDiscr%p_rtriangulation%NEL,DP)))))
+        end if
 
         if (iel .eq. 0) then
           ! if not found, use brute force search

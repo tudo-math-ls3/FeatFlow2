@@ -490,14 +490,16 @@ contains
     ! we need:
     if ((cdef .eq. CONV_MODDEFECT) .or. (cdef .eq. CONV_MODBOTH)) then
       if ((.not. present(rsolution)) .or. (.not. present(rdefect))) then
-        print *,'UPWIND: Solution/defect vector not present!'
+        call output_line ("Solution/defect vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_upwind2d")
         call sys_halt()
       end if
     end if
 
     if (rconfig%bALE) then
       if (.not. present(DmeshVelocity)) then
-        print *,'UPWIND: Mesh velocity vector not present!'
+        call output_line ("Mesh velocity vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_upwind2d")
         call sys_halt()
       end if
     end if
@@ -536,38 +538,44 @@ contains
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
     if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'UPWIND: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_upwind2d")
       call sys_halt()
     end if
 
     celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
     if ((rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) .or. &
         (elem_getPrimaryElement(celement) .ne. EL_Q1T)) then
-      print *,'UPWIND: Unsupported discretisation.'
+      call output_line ("Unsupported discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_upwind2d")
       call sys_halt()
     end if
 
     if ((rvecPrimary%cdataType .ne. ST_DOUBLE) .or. &
         (rvecSecondary%cdataType .ne. ST_DOUBLE)) then
-      print *,'UPWIND: Unsupported vector data type in velocity.'
+      call output_line ("Unsupported vector data type in velocity!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_upwind2d")
       call sys_halt()
     end if
 
     if (present(rdefect)) then
       if ((rsolution%cdataType .ne. ST_DOUBLE) .or. &
           (rdefect%cdataType .ne. ST_DOUBLE)) then
-        print *,'UPWIND: Unsupported vector data type in solution/defect'
+        call output_line ("Unsupported vector data type in solution/defect!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_upwind2d")
         call sys_halt()
       end if
     end if
 
     if (.not. rconfig%bconstViscosity) then
-      print *,'UPWIND: Only constant viscosity supported at the moment!'
+      call output_line ("Only constant viscosity supported at the moment!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_upwind2d")
       call sys_halt()
     end if
 
     if (rconfig%dnu .eq. SYS_INFINITY) then
-      print *,'UPWIND: Viscosity parameter nu not initialised!'
+      call output_line ("Viscosity parameter nu not initialised!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_upwind2d")
       call sys_halt()
     end if
 
@@ -1122,7 +1130,8 @@ contains
 
           ! Error case
 
-          print *,'ERROR in UPWIND: entry index ia not found'
+          call output_line ("Entry index ia not found!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"conv_upwind2dALE_Q1Tdouble")
           return
 
         end do dofsearch ! JJ
@@ -1425,14 +1434,16 @@ contains
     ! we need:
     if ((cdef .eq. CONV_MODDEFECT) .or. (cdef .eq. CONV_MODBOTH)) then
       if ((.not. present(rsolution)) .or. (.not. present(rdefect))) then
-        print *,'SD: Solution/defect vector not present!'
+        call output_line ("Solution/defect vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion2d")
         call sys_halt()
       end if
     end if
 
     if (rconfig%bALE) then
       if (.not. present(DmeshVelocity)) then
-        print *,'SD: Mesh velocity vector not present!'
+        call output_line ("Mesh velocity vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion2d")
         call sys_halt()
       end if
     end if
@@ -1443,37 +1454,43 @@ contains
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
     if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion2d")
       call sys_halt()
     end if
 
     celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
     if (rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'SD: Unsupported discretisation.'
+      call output_line ("Unsupported discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion2d")
       call sys_halt()
     end if
 
     if ((rvecPrimary%cdataType .ne. ST_DOUBLE) .or. &
         (rvecSecondary%cdataType .ne. ST_DOUBLE)) then
-      print *,'SD: Unsupported vector data type in velocity.'
+      call output_line ("Unsupported vector data type in velocity!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion2d")
       call sys_halt()
     end if
 
     if (present(rdefect)) then
       if ((rsolution%cdataType .ne. ST_DOUBLE) .or. &
           (rdefect%cdataType .ne. ST_DOUBLE)) then
-        print *,'SD: Unsupported vector data type in solution/defect'
+        call output_line ("Unsupported vector data type in solution/defect!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion2d")
         call sys_halt()
       end if
     end if
 
     if (.not. rconfig%bconstViscosity) then
-      print *,'SD: Only constant viscosity supported at the moment!'
+      call output_line ("Only constant viscosity supported at the moment!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion2d")
       call sys_halt()
     end if
 
     if (rconfig%dnu .eq. SYS_INFINITY) then
-      print *,'SD: Viscosity parameter nu not initialised!'
+      call output_line ("Viscosity parameter nu not initialised!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion2d")
       call sys_halt()
     end if
 
@@ -1524,6 +1541,13 @@ contains
 
           call lsyssc_getbase_double (rsolution%RvectorBlock(icomponent),p_DsolX)
           call lsyssc_getbase_double (rdefect%RvectorBlock(icomponent),p_DdefectX)
+
+          if (rmatrix%NEQ .ne. rdefect%RvectorBlock(icomponent)%NEQ) then
+            call output_line ("Velocity matrix not compatible to component "//&
+                trim(sys_siL(icomponent,10))//" of the defect/solution vector!", &
+                OU_CLASS_ERROR,OU_MODE_STD,'conv_streamlineDiffusion2d')
+            call sys_halt()
+          end if
 
           call conv_strdiff2dALEsingle_double ( &
                         p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
@@ -1832,7 +1856,8 @@ contains
 
     if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
       if (.not. (present(Ddef1) .and. present(Du1) )) then
-        print *,'conv_strdiff2dALE_double: Necessary arguments missing!'
+        call output_line ("Necessary arguments missing!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_strdiff2dALEsingle_double")
         call sys_halt()
       end if
     end if
@@ -1906,8 +1931,9 @@ contains
       ! the matrix.
       dny = dbeta*dnu
     else
-      print *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
-              ' from being build!'
+      call output_line ("NU=0 not allowed! Set dbeta=0 to prevent Stokes operator "//&
+          "from being build!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_strdiff2dALEsingle_double")
       call sys_halt()
     end if
 
@@ -2807,7 +2833,8 @@ contains
     if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
       if (.not. (present(Ddef1) .and. present(Ddef2) .and. &
                  present(Du1) .and. present(Du2))) then
-        print *,'conv_strdiff2dALE_double: Necessary arguments missing!'
+        call output_line ("Necessary arguments missing!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_strdiff2dALE_double")
         call sys_halt()
       end if
     end if
@@ -2881,8 +2908,9 @@ contains
       ! the matrix.
       dny = dbeta*dnu
     else
-      print *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
-              ' from being build!'
+      call output_line ("NU=0 not allowed! Set dbeta=0 to prevent Stokes operator "//&
+          "from being build!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_strdiff2dALE_double")
       call sys_halt()
     end if
 
@@ -3619,14 +3647,16 @@ contains
     ! we need:
     if ((cdef .eq. CONV_MODDEFECT) .or. (cdef .eq. CONV_MODBOTH)) then
       if ((.not. present(rsolution)) .or. (.not. present(rdefect))) then
-        print *,'SD: Solution/defect vector not present!'
+        call output_line ("Solution/defect vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
         call sys_halt()
       end if
     end if
 
     if (rconfig%bALE) then
       if (.not. present(DmeshVelocity)) then
-        print *,'SD: Mesh velocity vector not present!'
+        call output_line ("Mesh velocity vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
         call sys_halt()
       end if
     end if
@@ -3659,27 +3689,31 @@ contains
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
     if ((rmatrix%RmatrixBlock(1,1)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
       call sys_halt()
     end if
 
     if ((rmatrix%RmatrixBlock(2,2)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(2,2)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
       call sys_halt()
     end if
 
     if (lsysbl_isSubmatrixPresent(rmatrix,1,2) .and. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
       call sys_halt()
     end if
 
     if (lsysbl_isSubmatrixPresent(rmatrix,2,1) .and. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
       call sys_halt()
     end if
 
@@ -3688,14 +3722,16 @@ contains
     if ((rconfig%dnewton .ne. 0.0_DP) .or. (rconfig%dnewtonTransposed .ne. 0.0_DP)) then
       if (.not. lsysbl_isSubmatrixPresent(rmatrix,1,2) .or. &
           .not. lsysbl_isSubmatrixPresent(rmatrix,2,1)) then
-        print *,'SD: For the Newton matrix, A12 and A21 must be defined!'
+        call output_line ("For the Newton matrix, A12 and A21 must be defined!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
         call sys_halt()
       end if
       if (lsyssc_isMatrixContentShared ( &
               rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)) .or. &
           lsyssc_isMatrixContentShared ( &
               rmatrix%RmatrixBlock(1,2),rmatrix%RmatrixBlock(2,1)) ) then
-        print *,'SD: For the Newton matrix, the matrix blocks must be indepentent!'
+        call output_line ("For the Newton matrix, the matrix blocks must be indepentent!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
         call sys_halt()
       end if
     end if
@@ -3704,31 +3740,36 @@ contains
                 RelementDistr(1)%celement
     if (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
         .ne. SPDISC_UNIFORM) then
-      print *,'SD: Unsupported discretisation.'
+      call output_line ("Unsupported discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
       call sys_halt()
     end if
 
     if ((rvecPrimary%cdataType .ne. ST_DOUBLE) .or. &
         (rvecSecondary%cdataType .ne. ST_DOUBLE)) then
-      print *,'SD: Unsupported vector data type in velocity.'
+      call output_line ("Unsupported vector data type in velocity!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
       call sys_halt()
     end if
 
     if (present(rdefect)) then
       if ((rsolution%cdataType .ne. ST_DOUBLE) .or. &
           (rdefect%cdataType .ne. ST_DOUBLE)) then
-        print *,'SD: Unsupported vector data type in solution/defect'
+        call output_line ("Unsupported vector data type in solution/defect!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
         call sys_halt()
       end if
     end if
 
     if (.not. rconfig%bconstViscosity) then
-      print *,'SD: Only constant viscosity supported at the moment!'
+      call output_line ("Only constant viscosity supported at the moment!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
       call sys_halt()
     end if
 
     if (rconfig%dnu .eq. SYS_INFINITY) then
-      print *,'SD: Viscosity parameter nu not initialised!'
+      call output_line ("Viscosity parameter nu not initialised!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
       call sys_halt()
     end if
 
@@ -4116,7 +4157,8 @@ contains
     if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
       if (.not. (present(Ddef1) .and. present(Ddef2) .and. &
                  present(Du1) .and. present(Du2))) then
-        print *,'conv_strdiff2dALE_double: Necessary arguments missing!'
+        call output_line ("Necessary arguments missing!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_strdiff2dALEblk_double")
         call sys_halt()
       end if
     end if
@@ -4254,8 +4296,9 @@ contains
       ! the matrix.
       dny = dbeta*dnu
     else
-      print *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
-              ' from being build!'
+      call output_line ("NU=0 not allowed! Set dbeta=0 to prevent Stokes operator "//&
+          "from being build!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_strdiff2dALEblk_double")
       call sys_halt()
     end if
 
@@ -6202,14 +6245,16 @@ contains
     ! we need:
     if ((cdef .eq. CONV_MODDEFECT) .or. (cdef .eq. CONV_MODBOTH)) then
       if ((.not. present(rsolution)) .or. (.not. present(rdefect))) then
-        print *,'SD: Solution/defect vector not present!'
+        call output_line ("Solution/defect vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion3d")
         call sys_halt()
       end if
     end if
 
     if (rconfig%bALE) then
       if (.not. present(DmeshVelocity)) then
-        print *,'SD: Mesh velocity vector not present!'
+        call output_line ("Mesh velocity vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion3d")
         call sys_halt()
       end if
     end if
@@ -6254,37 +6299,43 @@ contains
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
     if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion3d")
       call sys_halt()
     end if
 
     celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
     if (rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'SD: Unsupported discretisation.'
+      call output_line ("Unsupported discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion3d")
       call sys_halt()
     end if
 
     if ((rvecPrimary%cdataType .ne. ST_DOUBLE) .or. &
         (rvecSecondary%cdataType .ne. ST_DOUBLE)) then
-      print *,'SD: Unsupported vector data type in velocity.'
+      call output_line ("Unsupported vector data type in velocity!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion3d")
       call sys_halt()
     end if
 
     if (present(rdefect)) then
       if ((rsolution%cdataType .ne. ST_DOUBLE) .or. &
           (rdefect%cdataType .ne. ST_DOUBLE)) then
-        print *,'SD: Unsupported vector data type in solution/defect'
+        call output_line ("Unsupported vector data type in solution/defect!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion3d")
         call sys_halt()
       end if
     end if
 
     if (.not. rconfig%bconstViscosity) then
-      print *,'SD: Only constant viscosity supported at the moment!'
+      call output_line ("Only constant viscosity supported at the moment!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion3d")
       call sys_halt()
     end if
 
     if (rconfig%dnu .eq. SYS_INFINITY) then
-      print *,'SD: Viscosity parameter nu not initialised!'
+      call output_line ("Viscosity parameter nu not initialised!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion3d")
       call sys_halt()
     end if
 
@@ -6626,7 +6677,8 @@ contains
       if (.not. (present(Ddef1) .and. present(Ddef2) .and. &
                  present(Ddef3) .and. present(Du1) .and. &
                  present(Du2) .and. present(Du3))) then
-        print *,'conv_strdiff3dALE_double: Necessary arguments missing!'
+        call output_line ("Necessary arguments missing!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_strdiff3dALE_double")
         call sys_halt()
       end if
     end if
@@ -6700,8 +6752,9 @@ contains
       ! the matrix.
       dny = dbeta*dnu
     else
-      print *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
-              ' from being build!'
+      call output_line ("NU=0 not allowed! Set dbeta=0 to prevent Stokes operator "//&
+          "from being build!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_strdiff3dALE_double")
       call sys_halt()
     end if
 
@@ -7467,14 +7520,16 @@ contains
     ! we need:
     if ((cdef .eq. CONV_MODDEFECT) .or. (cdef .eq. CONV_MODBOTH)) then
       if ((.not. present(rsolution)) .or. (.not. present(rdefect))) then
-        print *,'SD: Solution/defect vector not present!'
+        call output_line ("Solution/defect vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
         call sys_halt()
       end if
     end if
 
     if (rconfig%bALE) then
       if (.not. present(DmeshVelocity)) then
-        print *,'SD: Mesh velocity vector not present!'
+        call output_line ("Mesh velocity vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
         call sys_halt()
       end if
     end if
@@ -7513,61 +7568,70 @@ contains
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
     if ((rmatrix%RmatrixBlock(1,1)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if ((rmatrix%RmatrixBlock(2,2)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(2,2)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if ((rmatrix%RmatrixBlock(3,3)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if (lsysbl_isSubmatrixPresent(rmatrix,1,2) .and. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if (lsysbl_isSubmatrixPresent(rmatrix,2,1) .and. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if (lsysbl_isSubmatrixPresent(rmatrix,1,3) .and. &
         (rmatrix%RmatrixBlock(1,3)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(1,3)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if (lsysbl_isSubmatrixPresent(rmatrix,3,1) .and. &
         (rmatrix%RmatrixBlock(3,1)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(3,1)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if (lsysbl_isSubmatrixPresent(rmatrix,2,3) .and. &
         (rmatrix%RmatrixBlock(2,3)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(2,3)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if (lsysbl_isSubmatrixPresent(rmatrix,3,2) .and. &
         (rmatrix%RmatrixBlock(3,2)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(3,2)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
@@ -7580,7 +7644,8 @@ contains
           (.not. lsysbl_isSubmatrixPresent(rmatrix,3,1)) .or. &
           (.not. lsysbl_isSubmatrixPresent(rmatrix,2,3)) .or. &
           (.not. lsysbl_isSubmatrixPresent(rmatrix,3,2))) then
-        print *,'SD: For the Newton matrix, A12 and A21 must be defined!'
+        call output_line ("For the Newton matrix, A12 and A21 must be defined!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
         call sys_halt()
       end if
       if (lsyssc_isMatrixContentShared (rmatrix%RmatrixBlock(1,1),&
@@ -7595,7 +7660,8 @@ contains
                                         rmatrix%RmatrixBlock(3,1)) .or. &
           lsyssc_isMatrixContentShared (rmatrix%RmatrixBlock(2,3),&
                                         rmatrix%RmatrixBlock(3,2))) then
-        print *,'SD: For the Newton matrix, the matrix blocks must be indepentent!'
+        call output_line ("For the Newton matrix, the matrix blocks must be indepentent!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
         call sys_halt()
       end if
     end if
@@ -7604,31 +7670,36 @@ contains
                 RelementDistr(1)%celement
     if (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity &
         .ne. SPDISC_UNIFORM) then
-      print *,'SD: Unsupported discretisation.'
+      call output_line ("Unsupported discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if ((rvecPrimary%cdataType .ne. ST_DOUBLE) .or. &
         (rvecSecondary%cdataType .ne. ST_DOUBLE)) then
-      print *,'SD: Unsupported vector data type in velocity.'
+      call output_line ("Unsupported vector data type in velocity!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if (present(rdefect)) then
       if ((rsolution%cdataType .ne. ST_DOUBLE) .or. &
           (rdefect%cdataType .ne. ST_DOUBLE)) then
-        print *,'SD: Unsupported vector data type in solution/defect'
+        call output_line ("Unsupported vector data type in solution/defect!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
         call sys_halt()
       end if
     end if
 
     if (.not. rconfig%bconstViscosity) then
-      print *,'SD: Only constant viscosity supported at the moment!'
+      call output_line ("Only constant viscosity supported at the moment!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
     if (rconfig%dnu .eq. SYS_INFINITY) then
-      print *,'SD: Viscosity parameter nu not initialised!'
+      call output_line ("Viscosity parameter nu not initialised!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
     end if
 
@@ -8012,7 +8083,8 @@ contains
     if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
       if (.not. (present(Ddef1) .and. present(Ddef2) .and. present(Ddef3) .and. &
                  present(Du1) .and. present(Du2) .and. present(Du3))) then
-        print *,'conv_strdiff3dALE_double: Necessary arguments missing!'
+        call output_line ("Necessary arguments missing!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_strdiff3dALEblk_double")
         call sys_halt()
       end if
     end if
@@ -8143,8 +8215,9 @@ contains
       ! the matrix.
       dny = dbeta*dnu
     else
-      print *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
-              ' from being build!'
+      call output_line ("NU=0 not allowed! Set dbeta=0 to prevent Stokes operator "//&
+          "from being build!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_strdiff3dALEblk_double")
       call sys_halt()
     end if
 
@@ -10116,7 +10189,8 @@ contains
     ! we need:
     if ((cdef .eq. CONV_MODDEFECT) .or. (cdef .eq. CONV_MODBOTH)) then
       if ((.not. present(rsolution)) .or. (.not. present(rdefect))) then
-        print *,'EOS: Solution/defect vector not present!'
+        call output_line ("Solution/defect vector not present!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_JumpStabilisation2d")
         call sys_halt()
       end if
     end if
@@ -10126,12 +10200,14 @@ contains
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
     if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'EOS: Unsupported matrix format'
+      call output_line ("Unsupported matrix format!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_JumpStabilisation2d")
       call sys_halt()
     end if
 
     if (rmatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'EOS: Unsupported discretisation.'
+      call output_line ("Unsupported discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_JumpStabilisation2d")
       call sys_halt()
     end if
 
@@ -10150,12 +10226,14 @@ contains
     !end if
 
     if (.not. rconfig%bconstViscosity) then
-      print *,'EOS: Only constant viscosity supported at the moment!'
+      call output_line ("Only constant viscosity supported at the moment!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_JumpStabilisation2d")
       call sys_halt()
     end if
 
     if (rconfig%dnu .eq. SYS_INFINITY) then
-      print *,'EOS: Viscosity parameter nu not initialised!'
+      call output_line ("Viscosity parameter nu not initialised!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_JumpStabilisation2d")
       call sys_halt()
     end if
 
@@ -10200,7 +10278,8 @@ contains
       end if
 
     else
-      print *,'EOS: Unknown jump stabilisation!'
+      call output_line ("Unknown jump stabilisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"conv_JumpStabilisation2d")
       call sys_halt()
     end if
 

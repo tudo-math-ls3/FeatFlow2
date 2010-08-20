@@ -589,6 +589,7 @@ contains
   ! =1 : The element was found successfully.
   ! =0 : The raytracing search broke down inside of the domain. 
   ! =-1: The search broke down because the domain was left.
+  ! =-2: The maximum number of iterations was exceeded
   integer, intent(out), optional :: iresult
   
   ! OPTIONAL: Last analysed element.
@@ -597,6 +598,7 @@ contains
   !                was stopped.
   ! If iresult=-1: Number of the element through which the
   !                domain was left. 
+  ! If iresult=-2: Number of the last element in the raytracing search
   integer, intent(out), optional :: ilastElement
 
   ! OPTIONAL: Number of the last analysed edge. Range 1..NMT.
@@ -604,6 +606,7 @@ contains
   ! If iresult= 0: Number of the last analysed edge before the search
   !                was stopped.
   ! If iresult=-1: Number of the edge through which the domain was left. 
+  ! If iresult=-2: Number of the last element in the raytracing search
   integer, intent(out), optional :: ilastEdge
 !</output>
   
