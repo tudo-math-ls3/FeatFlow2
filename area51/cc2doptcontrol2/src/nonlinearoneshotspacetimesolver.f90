@@ -631,7 +631,7 @@ contains
           trim(sys_sdL(rtimerIterate%delapsedReal-rtimerPostproc%delapsedReal,10)))
       call output_line ('Time for postprocessing in this iterate:    '//&
           trim(sys_sdL(rtimerPostproc%delapsedReal,10)))
-      call output_line ('Total time for this nonlinear step: '//&
+      call output_line ('Total time for this nonlinear step:         '//&
           trim(sys_sdL(rtimerIterate%delapsedReal,10)))
           
       ! Measure the current wallclock
