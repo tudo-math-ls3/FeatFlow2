@@ -1200,31 +1200,16 @@ contains
     ! Discretise the RHS according to the time stepping scheme.
     call output_lbrk()
     call output_line ("Discretising RHS.")
+
+    call stat_clearTimer (rrhsvectime)
+    call stat_startTimer (rrhsvectime)
+    
     call sptivec_initVector (rrhsdiscrete,&
         p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
         p_rsettingsSolver%rfeHierPrimalDual% &
         p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
     call sptivec_clearVector (rrhsdiscrete)
     call init_discretiseRHS (p_rsettingsSolver,rrhs,rrhsDiscrete)
-    
-    ! DEBUG!!!
-    !call sptivec_saveToFileSequence(rrhsdiscrete,"(""rhs"// &
-    !    trim(sys_siL(p_rsettingsSolver%rtimeHierarchy%nlevels,10))// &
-    !    ".txt."",I5.5)",.true.)
-    
-    ! Create a start vector for the solver.
-    call output_lbrk()
-    call output_line ("Initialising start vector.")
-
-    call stat_clearTimer (rrhsvectime)
-    call stat_startTimer (rrhsvectime)
-
-    call sptivec_initVector (rsolution,&
-        p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
-        p_rsettingsSolver%rfeHierPrimalDual% &
-        p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
-    call init_getSpaceDiscrSettings (rparlist,rsettings%ssectionDiscrSpace,&
-        rsettingsSpaceDiscr)
     
     call stat_stopTimer (rrhsvectime)
     
@@ -1234,7 +1219,22 @@ contains
           sys_sdL(rrhsvectime%delapsedReal,10))
     end if
 
+    ! DEBUG!!!
+    !call sptivec_saveToFileSequence(rrhsdiscrete,"(""rhs"// &
+    !    trim(sys_siL(p_rsettingsSolver%rtimeHierarchy%nlevels,10))// &
+    !    ".txt."",I5.5)",.true.)
+    
+    ! Create a start vector for the solver.
+    call output_lbrk()
+    call output_line ("Initialising start vector.")
 
+    call sptivec_initVector (rsolution,&
+        p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
+        p_rsettingsSolver%rfeHierPrimalDual% &
+        p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
+    call init_getSpaceDiscrSettings (rparlist,rsettings%ssectionDiscrSpace,&
+        rsettingsSpaceDiscr)
+    
     call stat_clearTimer (rstartvectime)
     call stat_startTimer (rstartvectime)
 
