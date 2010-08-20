@@ -1165,6 +1165,7 @@ contains
     
     ! Some timers
     type(t_timer) :: rtotalTime,rinitTime,rsolverTime,rtimePostProc,rstartvectime
+    type(t_timer) :: rrhsvectime
 
     ! Ok, let us start. 
     !
@@ -1214,12 +1215,25 @@ contains
     ! Create a start vector for the solver.
     call output_lbrk()
     call output_line ("Initialising start vector.")
+
+    call stat_clearTimer (rrhsvectime)
+    call stat_startTimer (rrhsvectime)
+
     call sptivec_initVector (rsolution,&
         p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
         p_rsettingsSolver%rfeHierPrimalDual% &
         p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
     call init_getSpaceDiscrSettings (rparlist,rsettings%ssectionDiscrSpace,&
         rsettingsSpaceDiscr)
+    
+    call stat_stopTimer (rrhsvectime)
+    
+    if (rsettings%routput%ioutputInit .ge. 1) then
+      call output_lbrk ()
+      call output_line ("Time for discretisation of the RHS vector = "//&
+          sys_sdL(rrhsvectime%delapsedReal,10))
+    end if
+
 
     call stat_clearTimer (rstartvectime)
     call stat_startTimer (rstartvectime)

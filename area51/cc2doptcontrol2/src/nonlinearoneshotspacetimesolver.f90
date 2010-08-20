@@ -306,7 +306,7 @@ contains
     real(DP), dimension(4) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
     
     ! Some statistical data
-    type(t_timer) :: rtimeFactorisationStep,rtimerMGstep
+    type(t_timer) :: rtimeFactorisationStep,rtimerMGstep,rtimerIterate,rtimerPostproc
 
     ! Nonlinear space-time matrix representing the discrete operator
     type(t_spaceTimeMatrixDiscrData) :: rdiscrData
@@ -402,6 +402,13 @@ contains
                 (abs(ddefNorm-dlastDefNorm) .ge. rnlstsolver%depsDiff*dlastDefNorm)) &
               .and. (rnlstsolver%nnonlinearIterations .lt. rnlstsolver%nmaxIterations)))
     
+      ! Measure time for the current iterate.
+      call stat_clearTimer (rtimerIterate)
+      call stat_startTimer (rtimerIterate)
+    
+      ! Time for postprocessing in this iterate.
+      call stat_clearTimer (rtimerPostproc)
+    
       rnlstsolver%nnonlinearIterations = rnlstsolver%nnonlinearIterations+1
       
       if (rnlstsolver%ctypeNonlinearIteration .eq. CCNLS_INEXACTNEWTON) then
@@ -460,7 +467,7 @@ contains
       end if
 
       ! Value of the functional
-      call stat_startTimer (rnlstsolver%rtimePostprocessing)
+      call stat_startTimer (rtimerPostproc)
       call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
           rsettings%rsettingsOptControl%rconstraints,&
           rx,rsettings%rsettingsOptControl%rtargetFunction,&
@@ -504,7 +511,7 @@ contains
           call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))   
         end if
       end if
-      call stat_stopTimer (rnlstsolver%rtimePostprocessing)
+      call stat_stopTimer (rtimerPostproc)
 
       if (rnlstsolver%ioutputLevel .ge. 1) then
         if (rnlstsolver%ctypeNonlinearIteration .eq. CCNLS_INEXACTNEWTON) then
@@ -557,6 +564,7 @@ contains
       call stat_addtimers (rtimeFactorisationStep,rnlstsolver%rtimeFactorisation)
       call stat_addtimers (rnlstsolver%p_rspaceTimePrec%rtimeSpacePrecond,&
           rnlstsolver%rtimeSpacePrecond)
+      call stat_addtimers (rtimerPostProc,rnlstsolver%rtimePostprocessing)
 
       ! Sum up statistical multigrid data for if we have it.
       if (associated(rnlstsolver%p_rmgSolver)) then
@@ -574,9 +582,8 @@ contains
 
         ! Print some statistical output
         if (rnlstSolver%ioutputLevel .ge. 1) then
-          call stat_sampleTimer(rnlstsolver%rtimerNonlinear,delapsedReal)
           call output_line ("Time for non-c.grid solving : "//&
-              sys_sdL(delapsedReal-&
+              sys_sdL(rnlstsolver%p_rmgSolver%dtimeTotal-&
                       rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeCoarseGridSolver%delapsedReal,10))
           call output_line ("Time for smoothing          : "//&
               sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSmoothing%delapsedReal,10))
@@ -616,14 +623,20 @@ contains
       if (rnlstsolver%ioutputLevel .ge. 1) &
           call output_separator (OU_SEP_MINUS)
       
+      call stat_stopTimer (rtimerIterate)
+      
       call output_line ('Iteration: '//trim(sys_siL(rnlstsolver%nnonlinearIterations,10))//&
           '                          Defect of supersystem:  '//adjustl(sys_sdEP(ddefNorm,20,10)))
-      call output_line ('Time for computation of this iterate: '//&
-          trim(sys_sdL(rtimerMGStep%delapsedReal+rtimeFactorisationStep%delapsedReal,10)))
+      call output_line ('Time for computation of this iterate:       '//&
+          trim(sys_sdL(rtimerIterate%delapsedReal-rtimerPostproc%delapsedReal,10)))
+      call output_line ('Time for postprocessing in this iterate:    '//&
+          trim(sys_sdL(rtimerPostproc%delapsedReal,10)))
+      call output_line ('Total time for this nonlinear step: '//&
+          trim(sys_sdL(rtimerIterate%delapsedReal,10)))
           
       ! Measure the current wallclock
       call stat_sampleTimer(rnlstsolver%rtimerNonlinear,delapsedReal)
-      call output_line ('Total time for nonlinear iteration:   '//trim(sys_sdL(delapsedReal,10)))
+      call output_line ('Total time for nonlinear iteration:         '//trim(sys_sdL(delapsedReal,10)))
           
     end do
 
@@ -649,7 +662,8 @@ contains
     ! Value of the functional
     if (rnlstsolver%ioutputLevel .ge. 1) &
       call output_separator (OU_SEP_MINUS)
-    call stat_startTimer (rnlstsolver%rtimePostprocessing)
+    call stat_clearTimer (rtimerPostproc)
+    call stat_startTimer (rtimerPostproc)
     call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
         rsettings%rsettingsOptControl%rconstraints,&
         rx,rsettings%rsettingsOptControl%rtargetFunction,&
@@ -692,7 +706,8 @@ contains
         call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))   
       end if
     end if
-    call stat_stopTimer (rnlstsolver%rtimePostprocessing)
+    call stat_stopTimer (rtimerPostproc)
+    call stat_addtimers (rtimerPostProc,rnlstsolver%rtimePostprocessing)
 
   end subroutine
 
