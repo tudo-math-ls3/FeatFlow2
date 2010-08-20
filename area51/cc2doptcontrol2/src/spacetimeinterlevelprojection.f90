@@ -85,6 +85,12 @@ module spacetimeinterlevelprojection
     !     time endpoints. (not completely implemented)
     ! =5: Piecewise linear with larger stencil. Solutions located at the
     !     time endpoints. (not completely implemented)
+    ! =6: linear prolongation/restriction, primal+dual solutions located
+    !     according to the 1-step theta scheme. No time negotiation, so
+    !     the restriction uses a constant interpolation of the primal
+    !     space to synchronise in time with the dual space. Simple
+    !     restriction approach, i.e. R_p=P_p^T and R_d=P_d^T without
+    !     respecting that the matrices must be exchanged.
     integer :: ctimeProjection = -1
     
     ! Underlying physics
@@ -172,6 +178,12 @@ contains
   !     time endpoints.
   ! =5: Piecewise linear with larger stencil. Solutions located at the
   !     time endpoints. (not completely implemented)
+  ! =6: linear prolongation/restriction, primal+dual solutions located
+  !     according to the 1-step theta scheme. No time negotiation, so
+  !     the restriction uses a constant interpolation of the primal
+  !     space to synchronise in time with the dual space. Simple
+  !     restriction approach, i.e. R_p=P_p^T and R_d=P_d^T without
+  !     respecting that the matrices must be exchanged.
   integer, intent(in), optional :: ctimeProjection
   
 !</input>
@@ -246,7 +258,7 @@ contains
       ! This is because the primal RHS is located at the timesteps of the dual
       ! solution (between the primal timesteps) and vice versa!!!
       select case (rprojHier%ctimeProjection)
-      case (0:2,4)
+      case (0:2,4,6)
       
         if (i .lt. rspaceTimeHierarchy%nlevels) then
           call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
@@ -261,11 +273,25 @@ contains
           !call matio_writeMatrixHR (rprojHier%p_RprolongationMatDual(i), "dmat",&
           !    .true., 0, "matrixd."//trim(sys_siL(i,10)), "(E20.10)")
               
-          call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatPrimal(i),&
-              rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
-              
-          call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
-              rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
+          if (rprojHier%ctimeProjection .ne. 6) then
+            ! Restriction matrices are obtained by transposing the prolongation
+            ! matrices and exchanging the primal/dual matrices.
+            call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatPrimal(i),&
+                rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
+                
+            call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
+                rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
+          else
+            ! Restriction matrices are obtained by transposing the prolongation
+            ! matrices and NOT exchanging the primal/dual matrices.
+            !
+            ! This is actually the wrong approach, but needed for tests.
+            call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatPrimal(i),&
+                rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
+                
+            call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
+                rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
+          end if
         end if
 
       case (3)
@@ -507,7 +533,7 @@ contains
         p_Da(3+2*(icol-1)) = 1.0_DP
       end do
 
-    case (1,2,3)
+    case (1,2,3,6)
       ! Simplest case.
       ! For simplicity, we take the lineaer interpolation, which is also
       ! 2nd order. In contrast to case 2, this matrix has a reduced
@@ -800,7 +826,7 @@ contains
     ! Now depending on the order, create the matrix.
     select case (ctimeProjection)
 
-    case (2,3)
+    case (2,3,6)
       ! Slightly harder case.
       ! Because the dual solution is aligned between the primal,
       ! the prolongation stencil looks different.
@@ -987,7 +1013,7 @@ contains
         
     ! Now depending on the order, create the matrix.
     select case (ctimeProjection)
-    case (0,1,2,3,4)
+    case (0,1,2,3,4,6)
       ! The interpolation is just taking the values in the points in time.
       !
       ! Timestep: 
@@ -1094,7 +1120,7 @@ contains
     ! Now depending on the order, create the matrix.
     select case (ctimeProjection)
 
-    case (2,3)
+    case (2,3,6)
       ! Slightly harder case.
       ! Because the dual solution is aligned between the primal,
       ! the interpolation stencil looks different.
@@ -1558,7 +1584,7 @@ contains
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,3)
     case (1)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,3)
-    case (2,3)
+    case (2,3,6)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,3)
     case (4)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,4)
@@ -2340,7 +2366,7 @@ contains
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
     case (1)
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
-    case (2,3)
+    case (2,3,6)
       call sptivec_createAccessPool (rfineVector,raccessPool,7)
     case (4)
       call sptivec_createAccessPool (rfineVector,raccessPool,10)
@@ -2616,7 +2642,7 @@ contains
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
     case (1)
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
-    case (2,3)
+    case (2,3,6)
       call sptivec_createAccessPool (rfineVector,raccessPool,7)
     case (4)
       call sptivec_createAccessPool (rfineVector,raccessPool,10)
