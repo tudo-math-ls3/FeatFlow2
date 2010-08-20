@@ -96,7 +96,6 @@ dtimemax = 1.0
 ##########
 [POSTPROC]
 ##########
-
 # Whether or not to write UCD output
 iwriteUCD = 1
 
@@ -178,6 +177,12 @@ icoarsegridsolver = 0
 #     time endpoints. (not completely implemented)
 # =5: Piecewise linear with larger stencil. Solutions located at the
 #     time endpoints. (not completely implemented)
+# =6: linear prolongation/restriction, primal+dual solutions located
+#     according to the 1-step theta scheme. No time negotiation, so
+#     the restriction uses a constant interpolation of the primal
+#     space to synchronise in time with the dual space. Simple
+#     restriction approach, i.e. R_p=P_p^T and R_d=P_d^T without
+#     respecting that the matrices must be exchanged.
 
 itypeProjection = -1
 
