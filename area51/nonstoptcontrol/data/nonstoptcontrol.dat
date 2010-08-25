@@ -136,7 +136,14 @@ ntimestepsCoarse = 5
 [SPACETIME-LINEARSOLVER]
 ########################
 
-csolverType = -1    # -1=automatic
+# Type of the solver.
+# =-1: automatic
+# =0: Defect correction with Block-JAC preconditioning.
+# =1: Space-time MG
+# =2: Defect correction with Block-GS preconditioning.
+
+csolverType = -1   
+ 
 nsmoothingSteps = 4
 nmaxiterations = 1000
 
@@ -264,4 +271,5 @@ csolverType = 1
 
 # Type of smoother/coarse grid solver.
 # =0: Defect correction + Jacobi/VANKA preconditioning
+# =1: ILU-0(0.7). Only for the heat equation.
 cpreconditioner = 0

@@ -377,10 +377,21 @@ contains
       select case (rparams%rphysics%cequation)
       case (0,2)
         ! Jacobi
-        cspacePreconditioner = 0
+        cspacePreconditioner = STLS_PC_JACOBI
       case (1)
         ! VANKA
-        cspacePreconditioner = 1
+        cspacePreconditioner = STLS_PC_VANKA
+      end select
+    case (1)
+      ! ILU-0. Does only work for the heat equation.
+      select case (rparams%rphysics%cequation)
+      case (0,2)
+        ! Jacobi
+        cspacePreconditioner = STLS_PC_ILU0
+      case (1)
+        call output_line ("ILU not supported for Stokes equations",&
+            OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
+        call sys_halt()
       end select
     end select
     
