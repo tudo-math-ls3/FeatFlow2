@@ -884,6 +884,13 @@ contains
       ! Create the solver.
       call main_initLinearSolver (rparlist,rparams,ntimelevels,rlinearSolver)
       
+      !!! DEBUG!!!
+      !call test_Restriction (rparams%rphysics, rparams%rspaceTimeHierarchy, &
+      !    rparams%rspacetimeHierarchy%nlevels, rlinearSolver%rprojection,&
+      !    rparams%p_RspaceTimeBC)
+      !call sys_halt()
+      !!! DEBUG!!!
+      
       ! Attach matrices
       do ilev = 1,rparams%rspacetimeHierarchy%nlevels
         call stls_setMatrix (rlinearSolver%rsolver,ilev,p_Rmatrices(ilev))
@@ -1063,6 +1070,144 @@ contains
     call storage_done()
     call parlst_done (rparlist)
     
+  end subroutine
+
+  ! #####################################################################
+
+  subroutine test_Restriction (rphysics, rspaceTimeHierarchy, ilevel, rprojHier, RspaceTimeBC)
+
+    type(t_physics), intent(in) :: rphysics
+    type(t_spacetimeHierarchy), intent(in) :: rspaceTimeHierarchy
+    integer, intent(in) :: ilevel
+    type(t_sptiProjHierarchy), intent(in) :: rprojHier
+    type(t_spacetimeBC), dimension(:), intent(in) :: RspaceTimeBC
+
+    ! local variables
+    type(t_spaceTimeVector) :: rdefectFine, rdefectCoarse, rrestDefectCoarse
+    type(t_spaceTimeVector) :: rtempVecFine,rtempVecCoarse
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
+    type(t_blockDiscretisation), pointer :: p_rspaceDiscr
+    type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
+    type(t_vectorBlock) :: rspaceTempVecFine,rspaceTempVecCoarse
+    
+    ! Create the RHS vector on the two levels
+    call sth_getLevel (rspacetimeHierarchy,ilevel,p_rfeSpaceLevel,p_rtimeDiscr)
+    p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
+    
+    ! Create the right hand side.
+    call sptivec_initVector (rdefectFine,p_rtimeDiscr,p_rspaceDiscr)
+    call strhs_assembleRHS (rphysics,rdefectFine)
+
+    call spop_applyBC (RspaceTimeBC(ilevel), SPOP_DEFECT, rdefectFine)
+    
+    ! Allocate temp vectors
+    call sptivec_initVector (rtempVecFine,p_rtimeDiscr,p_rspaceDiscr)
+    call lsysbl_createVectorBlock (p_rspaceDiscr,rspaceTempVecFine,.false.)
+
+    ! Create the RHS vector on the lower levels
+    call sth_getLevel (rspacetimeHierarchy,ilevel-1,p_rfeSpaceLevel,p_rtimeDiscr)
+    p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
+    
+    call sptivec_initVector (rdefectCoarse,p_rtimeDiscr,p_rspaceDiscr)
+    call strhs_assembleRHS (rphysics,rdefectCoarse)
+
+    call spop_applyBC (RspaceTimeBC(ilevel-1), SPOP_DEFECT, rdefectCoarse)
+     
+    ! Allocate temp vectors
+    call sptivec_initVector (rtempVecCoarse,p_rtimeDiscr,p_rspaceDiscr)
+    
+    ! Restrict the fine grid defect.
+    call sptivec_initVector (rrestDefectCoarse,p_rtimeDiscr,p_rspaceDiscr)
+    call lsysbl_createVectorBlock (p_rspaceDiscr,rspaceTempVecCoarse,.false.)
+    
+    call sptipr_performRestriction (rprojHier,ilevel,rrestDefectCoarse, &
+      rdefectFine,rspaceTempVecCoarse,rspaceTempVecFine,&
+      rtempVecCoarse,rtempVecFine)
+    
+    call spop_applyBC (RspaceTimeBC(ilevel-1), SPOP_DEFECT, rdefectCoarse)
+      
+    ! Calculate the L2-norm of the difference
+    call sptivec_vectorLinearComb (rrestDefectCoarse,rdefectCoarse,1.0_DP,-1.0_DP)
+    call test_vectorNormExt (rdefectCoarse,LINALG_NORML2)
+      
+    ! Clean up
+    call lsysbl_releaseVector (rspaceTempVecFine)
+    call lsysbl_releaseVector (rspaceTempVecCoarse)
+    call sptivec_releaseVector (rtempVecFine)
+    call sptivec_releaseVector (rtempVecCoarse)
+    call sptivec_releaseVector (rdefectFine)
+    call sptivec_releaseVector (rdefectCoarse)
+    call sptivec_releaseVector (rrestDefectCoarse)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<function>
+
+  subroutine test_vectorNormExt (rx,cnorm)
+
+!<description>
+  ! Calculates the norm of the vector rx, printing the norm of the subvectors.
+!</desctiprion>
+
+!<input>
+  ! Source vector
+  type(t_spacetimeVector), intent(IN)   :: rx
+
+  ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
+  integer, intent(IN) :: cnorm
+!</input>
+
+!</function>
+
+    integer, dimension(1) :: Isize
+    type(t_vectorBlock) :: rxBlock
+    real(DP) :: dnorm, dsubnorm
+    integer :: i
+
+    Isize(1) = rx%NEQ
+
+    ! Allocate a 'little bit' of memory for the subvectors
+    call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
+    
+    dnorm = 0.0_DP
+    
+    ! Loop through the substeps, load the data in, sum up to the norm.
+    do i=rx%istartidx,rx%iendidx
+      if (rx%p_Dscale(i) .ne. 0.0_DP) then
+        call sptivec_getTimestepData (rx, i, rxBlock)
+        
+        select case (cnorm)
+        case (LINALG_NORML2)
+          dsubnorm = lsysbl_vectorNorm (rxBlock,cnorm)
+          call output_line ("||v_"//trim(sys_siL(i,10))//"|| = "//&
+              trim(sys_sdEL(dsubnorm,10)))
+          dsubnorm = dsubnorm ** 2
+        case DEFAULT
+          dsubnorm = lsysbl_vectorNorm (rxBlock,cnorm)
+          call output_line ("||v_"//trim(sys_siL(i,10))//"|| = "//&
+              trim(sys_sdEL(dsubnorm,10)))
+        end select
+        
+        dnorm = dnorm + dsubnorm
+      end if
+    end do
+
+    ! Release temp memory    
+    call lsysbl_releaseVector (rxBlock)
+    
+    ! Calculate the actual norm.
+    select case (cnorm)
+    case (LINALG_NORML1)
+      dnorm = dnorm / (rx%NEQtime)
+    case (LINALG_NORML2)
+      dnorm = sqrt(dnorm / (rx%NEQtime))
+    end select
+    
+    call output_line ("||v|| = "//&
+        trim(sys_sdEL(dnorm,10)))
+
   end subroutine
 
 end module

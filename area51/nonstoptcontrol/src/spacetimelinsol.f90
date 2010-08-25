@@ -1586,8 +1586,9 @@ contains
       ! Apply the space solver
       call linsol_initData(rsolver%p_rspaceSolver,ierror)
       if (ierror .ne. 0) then
-        call output_line ("Spatial system cannot be factorised in timestep "//&
-            trim(sys_siL(istep,10)))
+        call output_line ("Error "//trim(sys_siL(ierror,10))&
+            //". Spatial system cannot be factorised in timestep "//&
+            trim(sys_siL(istep,10)),OU_CLASS_ERROR,OU_MODE_STD,'stls_precondBlockJacobi')
         call sys_halt()
       end if
       
@@ -1731,11 +1732,12 @@ contains
         ! Apply the space solver
         call linsol_initData(rsolver%p_rspaceSolver,ierror)
         if (ierror .ne. 0) then
-          call output_line ("Spatial system cannot be factorised in timestep "//&
-              trim(sys_siL(istep,10)))
+          call output_line ("Error "//trim(sys_siL(ierror,10))&
+              //". Spatial system cannot be factorised in timestep "//&
+              trim(sys_siL(istep,10)),OU_CLASS_ERROR,OU_MODE_STD,'stls_precondBlockFBSIM')
               
-          call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(ispaceLevel), &
-              "matrix", .true., 0, "matrix.txt", "(E10.3)") 
+          !call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(ispaceLevel), &
+          !    "matrix", .true., 0, "matrix.txt", "(E10.3)") 
               
           call sys_halt()
         end if
@@ -1803,8 +1805,9 @@ contains
         ! Apply the space solver
         call linsol_initData(rsolver%p_rspaceSolver,ierror)
         if (ierror .ne. 0) then
-          call output_line ("Spatial system cannot be factorised in timestep "//&
-              trim(sys_siL(istep,10)))
+          call output_line ("Error "//trim(sys_siL(ierror,10))&
+              //". Spatial system cannot be factorised in timestep "//&
+              trim(sys_siL(istep,10)),OU_CLASS_ERROR,OU_MODE_STD,'stls_precondBlockFBSIM')
           call sys_halt()
         end if
         
@@ -1973,11 +1976,12 @@ contains
         ! Apply the space solver
         call linsol_initData(rsolver%p_rspaceSolver,ierror)
         if (ierror .ne. 0) then
-          call output_line ("Spatial system cannot be factorised in timestep "//&
-              trim(sys_siL(istep,10)))
+          call output_line ("Error "//trim(sys_siL(ierror,10))&
+              //". Spatial system cannot be factorised in timestep "//&
+              trim(sys_siL(istep,10)),OU_CLASS_ERROR,OU_MODE_STD,'stls_precondBlockFBGS')
               
-          call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(ispaceLevel), &
-              "matrix", .true., 0, "matrix.txt", "(E10.3)") 
+          !call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(ispaceLevel), &
+          !    "matrix", .true., 0, "matrix.txt", "(E10.3)") 
               
           call sys_halt()
         end if
@@ -2053,8 +2057,9 @@ contains
         ! Apply the space solver
         call linsol_initData(rsolver%p_rspaceSolver,ierror)
         if (ierror .ne. 0) then
-          call output_line ("Spatial system cannot be factorised in timestep "//&
-              trim(sys_siL(istep,10)))
+          call output_line ("Error "//trim(sys_siL(ierror,10))&
+              //". Spatial system cannot be factorised in timestep "//&
+              trim(sys_siL(istep,10)),OU_CLASS_ERROR,OU_MODE_STD,'stls_precondBlockFBGS')
           call sys_halt()
         end if
         
