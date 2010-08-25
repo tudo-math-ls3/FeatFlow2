@@ -271,6 +271,6 @@ csolverType = 0
 
 # Type of smoother/coarse grid solver.
 # =0: Defect correction + Jacobi/VANKA preconditioning
-# =1: ILU-0(0.7). Only for the heat equation.
-# =2: SSOR(0.7). Only for the heat equation.
+# =1: BiCGStab(ILU-0). Only for the heat equation.
+# =2: BiCGStab(SSOR). Only for the heat equation.
 cpreconditioner = 0
