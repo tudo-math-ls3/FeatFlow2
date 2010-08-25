@@ -10,15 +10,15 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/euler/default.dat'
+  'data/eulerlagrange/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
 
-application = euler
+application = eulerlagrange
 
 ################################################################################
-[Euler]
+[Eulerlagrange]
 ################################################################################
 
 # file which contains the application specific data
@@ -36,7 +36,242 @@ ndimension = 2
 # solution algorithm
 algorithm = transient_primal
 
+################################################################################ 
+# Initialisation for Euler-Lagrange
+################################################################################
+
 #-------------------------------------------------------------------------------
+# number of particles
+#-------------------------------------------------------------------------------
+
+nPart = 1000
+
+#-------------------------------------------------------------------------------
+# searchalgorithm for the particle
+#-------------------------------------------------------------------------------
+# bruteforce	Brute force method
+# raytrace2D	Raytracing method in 2D
+# midpoint		Find element with the nearest midpoint
+#-------------------------------------------------------------------------------
+search = midpoint
+
+#-------------------------------------------------------------------------------
+# startingposition of the particles
+#-------------------------------------------------------------------------------
+# 0 random startingposition 
+#	xmin = minval(p_DvertexCoords(1,:))
+#	xmax = 0.2*maxval(p_DvertexCoords(1,:))
+#	ymin = minval(p_DvertexCoords(2,:))
+#	ymax = maxval(p_DvertexCoords(2,:))
+# 1 individual startingposition
+# 2 initialize the starting position by the data of a graymap image (PGM in ASCII-Format)
+# 3 uniformly distributed over the domain
+#-------------------------------------------------------------------------------
+startpos = 3
+
+# PGM-file for startingpositions
+filestartpoints = data/eulerlagrange/2d/bart.pgm
+
+# minimum particle-position in x-direction 
+xmin = 1.5e-4
+# maximum particle-position in x-direction
+xmax = 8e-2
+# minimum particle-position in y-direction 
+ymin = 1.5e-3
+# maximum particle-position in y-direction
+ymax = 9.0e-2
+
+#-------------------------------------------------------------------------------
+# density of the particle
+#-------------------------------------------------------------------------------
+# 0 all particles have the same density (particledensity) 
+# 1 random density of the particles (0 to particledensity)
+# 2 random density of the particles (particledensitymin to particledensitymax)
+#-------------------------------------------------------------------------------
+idensitypart = 0
+
+# particle density in kg/m^3
+particledensity = 4000
+
+# particle density minimum in kg/m^3
+particledensitymin = 4000
+# particle density maximum in kg/m^3
+particledensitymax = 4000
+
+#-------------------------------------------------------------------------------
+# diameter of the particle 
+#-------------------------------------------------------------------------------
+# 0 all particles have the same diameter 
+# 1 random diameter of the particles (0 to particlediam)
+# 2 random diameter of the particles (particlediammin to particlediammax)
+#-------------------------------------------------------------------------------
+idiampart = 0
+
+#-------------------------------------------------------------------------------
+# typical diameters
+#-------------------------------------------------------------------------------
+# combustions or terpene: 	1e-10 m to 1e-9 m
+# soot from a blast furnace:	1e-9 m to 1e-6 m
+#-------------------------------------------------------------------------------
+# diameter of the particle in m
+particlediam = 1e-6
+
+# particle diameter minimum in m
+particlediammin = 1e-8
+# particle diameter maximum in m
+particlediammax = 1e-6
+
+
+#-------------------------------------------------------------------------------
+# initial velocity of the particles (particles have the same velocity)
+#-------------------------------------------------------------------------------
+
+# velocity in x-direction in m/s
+velopartx = 205.709277e0
+
+# velocity in y-direction in m/s
+veloparty = 0e0 
+               
+
+#-------------------------------------------------------------------------------
+# scaling for the domain (to handle very small domains)
+#-------------------------------------------------------------------------------
+
+# scalar in x-direction
+domscalex = 205.709277e0
+
+# scalar in y-direction
+domscaley = 205.709277e0
+
+
+#-------------------------------------------------------------------------------
+# scalars for the gas phase (from .indat file)
+#-------------------------------------------------------------------------------
+
+# scalar for the velocity in x-direction
+velogasx = 205.709277e0
+
+# scalar for the velocity in y-direction
+velogasy = 205.709277e0
+
+# scalar for density of the gas phase
+rho_gas= 1.5e0 
+    
+                                 
+#-------------------------------------------------------------------------------
+# boundarybehaviour of the particles
+#-------------------------------------------------------------------------------
+# 0 ideal wall collision (incidence angle is equal to emergent angle)
+# 1 slip condition (particle slips along the boundary)
+# 2 no slip condition 
+#-------------------------------------------------------------------------------
+boundbehav = 0
+
+
+#-------------------------------------------------------------------------------
+# gravity
+#-------------------------------------------------------------------------------
+
+# gravity in x-direction in m/s^2
+gravityx = 0
+
+# gravity in y-direction in m/s^2 (conventional standard value: -9.80665)
+gravityy = -9.80665
+
+
+#-------------------------------------------------------------------------------
+# temperature of the particles
+#-------------------------------------------------------------------------------
+# 0 all particles have the same temperature 
+# 1 random temperature of the particles (0 to parttemp)
+# 2 random temperature of the particles (parttempmin to parttempmax)
+#-------------------------------------------------------------------------------
+itemppart = 0
+
+# temperature of the particles in Kelvin
+parttemp = 277
+
+# particle temperature minimum in Kelvin
+parttempmin = 150
+# particle temperature maximum in Kelvin
+parttempmax = 300
+
+
+#-------------------------------------------------------------------------------
+# gas phase
+#-------------------------------------------------------------------------------
+
+# kinematic viscosity of the gas
+gas_nu = 1e-5
+
+# gas temperature in Kelvin
+temp_gas = 277
+
+#-------------------------------------------------------------------------------
+# specitic heats at konstant volumes (in J / kg * K)
+#-------------------------------------------------------------------------------
+
+# gas phase
+c_v_gas = 718
+
+# particle phase
+c_v_part = 1380
+
+#-------------------------------------------------------------------------------
+# output particle phase (additional to the data of the output file of the gasphase)
+#-------------------------------------------------------------------------------
+# 0 no output
+# 1 only particle positions
+# 2 position, velocity, diameter, mass, density and temperatur of the particles
+#-------------------------------------------------------------------------------
+ipartoutput = 2
+
+#-------------------------------------------------------------------------------
+# choice coupling mode (one-way or two-way coupling)
+#-------------------------------------------------------------------------------
+# 1 	one-way coupling (particles have no influence on the gas phase)
+# 2 	two-way coupling (!!!TODO!!!)
+#-------------------------------------------------------------------------------
+icouplingpart = 1
+
+#-------------------------------------------------------------------------------
+# choice solution algorithmn for the particle phase
+#-------------------------------------------------------------------------------
+# 1 	Runge-Kutta first order / explicit Euler method (interfacial forces)
+# 2 	Runge-Kutta second order / improved Euler or Heuns' method (interfacial forces)
+# 3	Runge-Kutta fourth order / classic Runge-Kutta (interfacial forces)
+# -1 	Runge-Kutta first order / explicit Euler method (particle tracing)
+# -2 	Runge-Kutta second order / improved Euler method (particle tracing)
+# -3	Runge-Kutta fourth order / classic Runge-Kutta (particle tracing)
+# 11 	implicit Euler method (interfacial forces)
+#-------------------------------------------------------------------------------
+isolutionpart = 11
+
+#-------------------------------------------------------------------------------
+# select interfacial forces for the particle movement
+#-------------------------------------------------------------------------------
+# dragforce (most important one)
+# gravity
+# virtualmassforce (TODO)
+# bassetforce (TODO) 
+# magnusforce (TODO)
+# saffmanforce (TODO)
+#-------------------------------------------------------------------------------
+sselectforce(1) =
+ dragforce
+
+#-------------------------------------------------------------------------------
+# domain with triangle or rectangles (!!!TODO!!!)
+#-------------------------------------------------------------------------------
+# 1 	triangles
+# 2 	rectangles
+# 3 	both
+#-------------------------------------------------------------------------------
+idomtype = 1
+
+
+################################################################################
+################################################################################
 
 # type of mass matrix
 # 0 = no mass matrix
@@ -195,10 +430,10 @@ iprelimiting = 1
 # 1 = GMV
 # 2 = AVS
 # 3 = Paraview (VTK)
-iformatUCD = 1
+iformatUCD = 3
 
 # time interval for UCD output
-dstepUCD = 0.005
+dstepUCD = 0.001
 
 # file for UCD output of solution
 sucdsolution = out/explosion
@@ -249,7 +484,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 0.1
 
 # initial time step size
 dinitialStep = 0.0005
