@@ -347,14 +347,16 @@ contains
             call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
             if (ilev .eq. 1) then
               call linsol_initILU0 (p_rpreconditioner)
-              call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
+              call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
               p_rlevelInfo%p_rcoarseGridSolver%depsRel = 1E-10_DP
+              p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = 1000
             else
               call linsol_initILU0 (p_rpreconditioner)
-              call linsol_initDefCorr (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
-              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,4,0.7_DP)
+              call linsol_initBiCGStab (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
+              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,4,1.0_DP)
             end if
           end do
+          rsolver%p_rspaceSolver%depsRel = 1E-5_DP
         
         case (STLS_PC_SSOR)
           ! Defect correction loops + Jacobi smoothing everywhere.
@@ -363,14 +365,16 @@ contains
             call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
             if (ilev .eq. 1) then
               call linsol_initSSOR (p_rpreconditioner)
-              call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
+              call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
               p_rlevelInfo%p_rcoarseGridSolver%depsRel = 1E-10_DP
+              p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = 1000
             else
               call linsol_initSSOR (p_rpreconditioner)
-              call linsol_initDefCorr (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
-              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,4,0.7_DP)
+              call linsol_initBiCGStab (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
+              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,4,1.0_DP)
             end if
           end do
+          rsolver%p_rspaceSolver%depsRel = 1E-5_DP
         
         case default
           call output_line ("Unknown preconditioner in stls_init")
