@@ -233,6 +233,9 @@ module spacetimelinsol
   
   ! ILU-0 preconditioner
   integer, parameter, public :: STLS_PC_ILU0 = 1
+
+  ! SSOR preconditioner
+  integer, parameter, public :: STLS_PC_SSOR = 2
   
 !</constantblock>
   
@@ -348,6 +351,22 @@ contains
               p_rlevelInfo%p_rcoarseGridSolver%depsRel = 1E-10_DP
             else
               call linsol_initILU0 (p_rpreconditioner)
+              call linsol_initDefCorr (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
+              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,4,0.7_DP)
+            end if
+          end do
+        
+        case (STLS_PC_SSOR)
+          ! Defect correction loops + Jacobi smoothing everywhere.
+          call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
+          do ilev =1,ispaceLevel
+            call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
+            if (ilev .eq. 1) then
+              call linsol_initSSOR (p_rpreconditioner)
+              call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
+              p_rlevelInfo%p_rcoarseGridSolver%depsRel = 1E-10_DP
+            else
+              call linsol_initSSOR (p_rpreconditioner)
               call linsol_initDefCorr (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
               call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,4,0.7_DP)
             end if
