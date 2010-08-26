@@ -2492,6 +2492,9 @@ contains
     call parlst_getvalue_int (rparlist, ssection, &
         'istoppingCriterion', rparams%istoppingCriterion, 1)
 
+    call parlst_getvalue_int (rparlist, ssection, &
+        'niteReinit', rparams%niteReinit, 0)
+
     ! Probably there is a linear subsolver. Get the name with the section
     ! configuring it.
     call parlst_getvalue_string (rparlist, ssection, &
@@ -2560,6 +2563,8 @@ contains
     call parlst_getvalue_int (rparlist, ssection, &
         'ioutputLevel', rparams%ioutputLevel, 100)
 
+    call parlst_getvalue_int (rparlist, ssection, &
+        'niteReinit', rparams%niteReinit, 0)
     ! ...
 
   end subroutine

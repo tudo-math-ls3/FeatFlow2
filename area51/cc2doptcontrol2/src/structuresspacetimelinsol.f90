@@ -98,6 +98,11 @@ module structuresspacetimelinsol
     ! on backward sweep).
     integer :: ifbSORPartialUpdate = 0
     
+    ! Reinitialisation counter, e.g. for BiCGStab.
+    ! Every niteReinit iterations, the algorithm reinitialises.
+    ! =0: no reinitialisation.
+    integer :: niteReinit = 0
+    
     ! Name of the section in the DAT file specifying a linear subsolver
     ! for the smoother.
     character(len=SYS_STRLEN) :: slinearSpaceSolver = ""
@@ -163,6 +168,11 @@ module structuresspacetimelinsol
     ! =0: Relative AND absolute stopping criterion must hold.
     ! =1: Relative OR absolute stopping criterion must hold.
     integer :: istoppingCriterion = 0
+
+    ! Reinitialisation counter, e.g. for BiCGStab.
+    ! Every niteReinit iterations, the algorithm reinitialises.
+    ! =0: no reinitialisation.
+    integer :: niteReinit = 0
 
   end type
 
@@ -645,6 +655,8 @@ contains
       ! Initialise the defect correction solver.
       call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
+          
+      p_rsolver%p_rsubnodeBiCGStab%niteReinit = rsolversettings%niteReinit
 
     case (3)
       ! BiCGStab with Block SOR preconditioning.
@@ -662,6 +674,8 @@ contains
       ! Initialise the defect correction solver.
       call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
+          
+      p_rsolver%p_rsubnodeBiCGStab%niteReinit = rsolversettings%niteReinit
 
     case (8)
       ! Simple defect correction with UMFPACK preconditioning.
@@ -723,6 +737,8 @@ contains
       ! Initialise the defect correction solver.
       call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
+
+      p_rsolver%p_rsubnodeBiCGStab%niteReinit = rsolversettings%niteReinit
 
     case (12)
       ! BiCGStab with right Forward backward preconditioning.
@@ -850,6 +866,8 @@ contains
       call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
+      p_rsolver%p_rsubnodeBiCGStab%niteReinit = rsolversettings%niteReinit
+
     case (3)
       ! BiCGStab with Block SOR preconditioning.
       !
@@ -866,6 +884,8 @@ contains
       ! Initialise the defect correction solver.
       call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
+
+      p_rsolver%p_rsubnodeBiCGStab%niteReinit = rsolversettings%niteReinit
 
     case (4)
       ! BiCGStab with Forward backward preconditioning.
@@ -885,6 +905,8 @@ contains
           p_rsolver,p_rprecond)
       !call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
       !    p_rsolver,p_rprecond)
+
+      p_rsolver%p_rsubnodeBiCGStab%niteReinit = rsolversettings%niteReinit
 
     case (6)
       ! Pure UMFPACK preconditioning.
@@ -949,8 +971,7 @@ contains
       call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
           
-      p_rsolver%p_rsubnodeBiCGStab%bstopOnRealResiduum = .true.
-      p_rsolver%p_rsubnodeBiCGStab%nitereinit = 4
+      p_rsolver%p_rsubnodeBiCGStab%niteReinit = rsolversettings%niteReinit
 
     case (12)
       ! BiCGStab with right forward-backward preconditioning.

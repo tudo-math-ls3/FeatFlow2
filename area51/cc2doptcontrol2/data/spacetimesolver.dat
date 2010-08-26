@@ -203,6 +203,12 @@ ioutputLevel = 2
 
 slinearSolver        = CC-LINEARSOLVER
 
+# Reinitialisation counter, e.g. for BiCGStab.
+# Every niteReinit iterations, the algorithm reinitialises.
+# =0: no reinitialisation.
+
+niteReinit = 0
+
 ######################
 [TIME-SMOOTHERPRECOND]
 ######################
@@ -292,6 +298,12 @@ ioutputLevel = 2
 # =1: Relative OR absolute stopping criterion must hold.
 
 istoppingCriterion = 1
+
+# Reinitialisation counter, e.g. for BiCGStab.
+# Every niteReinit iterations, the algorithm reinitialises.
+# =0: no reinitialisation.
+
+niteReinit = 0
 
 ########################
 [TIME-SINGLEGRIDPRECOND]
