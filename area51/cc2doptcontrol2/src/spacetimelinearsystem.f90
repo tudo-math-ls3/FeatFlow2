@@ -705,15 +705,15 @@ contains
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
               - dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
           
-          if (ieqTime .lt. neqTime) then
+!!?          if (ieqTime .lt. neqTime) then
             rnonlinearSpatialMatrix%Dnewton(1,1) = dtheta * dnewton
             rnonlinearSpatialMatrix%DnewtonT(2,2) = &
                   dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
-          else
-            rnonlinearSpatialMatrix%Dnewton(1,1) = dnewton
-            rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-                  real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
-          end if
+!!?          else
+!!?            rnonlinearSpatialMatrix%Dnewton(1,1) = dnewton
+!!?            rnonlinearSpatialMatrix%DnewtonT(2,2) = &
+!!?                  real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
+!!?          end if
                 
         end if
 
