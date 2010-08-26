@@ -157,18 +157,18 @@ dalphamax = 1.0
 # =1: Block Forward-Backward SOR (domega, Preconditioner-domega)
 # =2: BiCGStab with Block Jacobi preconditioner
 # =3: BiCGStab with Block Forward-Backward Gauss-Seidel preconditioning
-# =4: BiCGStab with Block Forward-Backward flow solver preconditioning
 # =6: CG (Jacobi)
 # =7: CG (Forward-Backward Gauss-Seidel)
 # =8: Defect correction with UMFPACK preconditioning
 # =9: Forward-Backward preconditioner
+# =10: Defect correction with Forward-Backward preconditioner
+# =11: BiCGStab with Block Forward-Backward solver preconditioning
 cspaceTimeSmoother = 1 
 
 # Damping parameter
 domega = 0.9
 
 # Relaxation parameter (e.g. in SOR)
-
 drelax = 1.0
 
 # Number of presmoothing steps
@@ -202,6 +202,12 @@ ioutputLevel = 2
 # smoothing.
 
 slinearSolver        = CC-LINEARSOLVER
+
+# Reinitialisation counter, e.g. for BiCGStab.
+# Every niteReinit iterations, the algorithm reinitialises.
+# =0: no reinitialisation.
+
+niteReinit = 0
 
 ######################
 [TIME-SMOOTHERPRECOND]
@@ -240,16 +246,19 @@ ifbSORPartialUpdate=0
 # =0: Iterative Defect correction with Block Jacobi ([PRECOND].drelax)
 # =1: Iterative Defect correction with Block SOR([PRECOND].drelax)
 # =2: Iterative BiCGStab with Block Jacobi preconditioner
-# =3: Iterative BiCGStab with Block Forward-Backward SOR
-# =4: Iterative BiCGStab with Block Forward-Backward flow solver preconditioning
+# =3: Iterative BiCGStab with Block Forward-Backward Gauss-Seidel
 # =5: Iterative CG
 # =6: direct (UMFPACK Gauss elimination)
-# =7: Pure block FBSOR solver
+# =7: Pure block FBGS solver
 # =8: Defect correction with UMFPACK preconditioning
-# =9: Defect correction with with a simple Forward-Backward preconditioner
+# =10: Defect correction with with a simple Forward-Backward preconditioner
+# =11: BiCGStab with a simple Forward-Backward preconditioner
+# =12: BiCGStab with a right simple Forward-Backward preconditioner
+# =13: Defect correction with with space-time VANKA and a simple 
+#      Forward-Backward preconditioner
 # If there's a preconditioner involved, its parameters can be found in the section
 # [TIME-SINGLEGRIDPRECOND] below!
-ctypeSolver = 5
+ctypeSolver = 1
 
 # Minimum number of time-iterations
 nminIterations = 1
@@ -289,6 +298,12 @@ ioutputLevel = 2
 # =1: Relative OR absolute stopping criterion must hold.
 
 istoppingCriterion = 1
+
+# Reinitialisation counter, e.g. for BiCGStab.
+# Every niteReinit iterations, the algorithm reinitialises.
+# =0: no reinitialisation.
+
+niteReinit = 0
 
 ########################
 [TIME-SINGLEGRIDPRECOND]
