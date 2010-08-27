@@ -908,7 +908,7 @@ contains
   
     ! local variables
     real(dp), dimension(:), pointer :: p_Ddata
-    integer(i32), dimension(:), allocatable :: p_Idofs
+    integer, dimension(:), allocatable :: p_Idofs
     integer :: i,nviolate
     real(dp) :: du
     
