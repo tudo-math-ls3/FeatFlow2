@@ -2068,7 +2068,7 @@ contains
     
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM2D, NVT)
-    Isize = (/NDIM2D,rtriangulation%NVT)/)
+    Isize = (/NDIM2D,rtriangulation%NVT/)
     call storage_new ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
@@ -2091,7 +2091,7 @@ contains
     ! Allocate memory for IverticesAtElement
     ! build the old KVERT...
     ! 2d array of size(NVE, NEL)
-    Isize = (/rtriangulation%NNVE,rtriangulation%NEL)/)
+    Isize = (/rtriangulation%NNVE,rtriangulation%NEL/)
     call storage_new ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
         rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
