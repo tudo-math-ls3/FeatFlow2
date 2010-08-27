@@ -2053,7 +2053,7 @@ contains
     integer(I32), dimension(:,:), pointer :: p_Idata2D
     integer(I32), dimension(:), pointer :: p_Idata,p_IverticesAtBoundary,p_IboundaryCpIdx
     integer(I32) :: ivt, iel
-    integer(I32), dimension(2) :: Isize
+    integer, dimension(2) :: Isize
     
     ! Initialise the basic mesh
     rtriangulation%ndim = NDIM2D
@@ -2068,7 +2068,7 @@ contains
     
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM2D, NVT)
-    Isize = (/NDIM2D,int(rtriangulation%NVT,I32)/)
+    Isize = (/NDIM2D,rtriangulation%NVT)/)
     call storage_new ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
@@ -2091,7 +2091,7 @@ contains
     ! Allocate memory for IverticesAtElement
     ! build the old KVERT...
     ! 2d array of size(NVE, NEL)
-    Isize = (/rtriangulation%NNVE,int(rtriangulation%NEL,I32)/)
+    Isize = (/rtriangulation%NNVE,rtriangulation%NEL)/)
     call storage_new ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
         rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
@@ -2109,7 +2109,7 @@ contains
     
     ! Allocate memory for InodalProperty 
     call storage_new ('tria_read_tri2D', 'KNPR', &
-        int(rtriangulation%NVT,I32), ST_INT, &
+        rtriangulation%NVT, ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
     
     ! Get the pointer to the InodalProperty array
@@ -2124,13 +2124,13 @@ contains
     
     ! Allocate memory for IverticesAtBoundary.
     call storage_new ('tria_generateBasicBoundary', &
-        'KVBD', int(rtriangulation%NVBD,I32), &
+        'KVBD', rtriangulation%NVBD, &
         ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         
     ! Allocate memory for the boundary component index vector.
     ! Initialise that with zero!
     call storage_new ('tria_generateBasicBoundary', &
-        'KBCT', int(rtriangulation%NBCT+1,I32), &
+        'KBCT', rtriangulation%NBCT+1, &
         ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
     ! Get pointers to the arrays
@@ -2152,7 +2152,7 @@ contains
     
     ! Allocate memory for  and DvertexParameterValue
     call storage_new ('tria_generateBasicBoundary', &
-        'DVBDP', int(rtriangulation%NVBD,I32), &
+        'DVBDP', rtriangulation%NVBD, &
         ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
     
     ! Get the array where to store boundary parameter values.
