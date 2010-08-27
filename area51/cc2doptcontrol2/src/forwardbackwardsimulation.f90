@@ -111,13 +111,13 @@ module forwardbackwardsimulation
 !<constantblock description="ID's that define the type of the solver.">
 
   ! Nonlinear forward simulation.
-  integer(I32), parameter, public :: FBSIM_SOLVER_NLFORWARD = 0
+  integer, parameter, public :: FBSIM_SOLVER_NLFORWARD = 0
 
   ! Linear forward simulation with prescribed nonlinearity.
-  integer(I32), parameter, public :: FBSIM_SOLVER_LINFORWARD = 1
+  integer, parameter, public :: FBSIM_SOLVER_LINFORWARD = 1
   
   ! Linear backward simulation with prescribed nonlinearity.
-  integer(I32), parameter, public :: FBSIM_SOLVER_LINBACKWARD = 2
+  integer, parameter, public :: FBSIM_SOLVER_LINBACKWARD = 2
 
 !</constantblock>
 
