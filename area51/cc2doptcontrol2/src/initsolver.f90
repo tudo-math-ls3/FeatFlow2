@@ -2050,9 +2050,9 @@ contains
     ! local variables
     real(DP), dimension(:,:), pointer :: p_Ddata2D
     real(DP), dimension(:), pointer :: p_DvertexParameterValue
-    integer(I32), dimension(:,:), pointer :: p_Idata2D
-    integer(I32), dimension(:), pointer :: p_Idata,p_IverticesAtBoundary,p_IboundaryCpIdx
-    integer(I32) :: ivt, iel
+    integer, dimension(:,:), pointer :: p_Idata2D
+    integer, dimension(:), pointer :: p_Idata,p_IverticesAtBoundary,p_IboundaryCpIdx
+    integer :: ivt, iel
     integer, dimension(2) :: Isize
     
     ! Initialise the basic mesh
