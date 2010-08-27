@@ -2646,7 +2646,7 @@ contains
   ! The value of the parameter an array. The destination array must have the
   ! same length as the array in the collection!
   ! A standard value if the value does not exist.
-  integer(I32), dimension(:), intent(inout) :: value
+  integer, dimension(:), intent(inout) :: value
 !</inputoutput>
 
 !<input>
