@@ -278,7 +278,8 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: ieltype,cflag,iunit
+  integer(I32) :: celement
+  integer :: cflag,iunit
   real(DP) :: dflux,denergy
   logical :: bfileexists
 
@@ -480,10 +481,10 @@ contains
   !      IF (rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
   !          ccomplexity .EQ. SPDISC_UNIFORM) THEN
   !          
-  !        ieltype = rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
+  !        celement = rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
   !                  RelementDistr(1)%itrialElement
   !                  
-  !        IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
+  !        IF (elem_getPrimaryElement(celement) .EQ. EL_Q1T) THEN
   !        
   !          ! Create a temporary vector 
   !          CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscretisation,&
@@ -587,11 +588,11 @@ contains
           
           ! Write out cell based or node based pressure.
           call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-          ieltype = rprjVector%p_rblockDiscr%RspatialDiscr(3)% &
+          celement = rprjVector%p_rblockDiscr%RspatialDiscr(3)% &
                     RelementDistr(1)%celement
                     
-          if ((elem_getPrimaryElement(ieltype) .eq. EL_Q1) .or. &
-              ((elem_getPrimaryElement(ieltype) .eq. EL_P1))) then
+          if ((elem_getPrimaryElement(celement) .eq. EL_Q1) .or. &
+              ((elem_getPrimaryElement(celement) .eq. EL_P1))) then
             call ucd_addVariableVertexBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
                 p_Ddata(1:p_rtriangulation%NVT))
           else
@@ -608,11 +609,11 @@ contains
           
           ! Write out cell based or node based dual pressure.
           call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
-          ieltype = rprjVector%p_rblockDiscr%RspatialDiscr(6)% &
+          celement = rprjVector%p_rblockDiscr%RspatialDiscr(6)% &
                     RelementDistr(1)%celement
                     
-          if ((elem_getPrimaryElement(ieltype) .eq. EL_Q1) .or. &
-              ((elem_getPrimaryElement(ieltype) .eq. EL_P1))) then
+          if ((elem_getPrimaryElement(celement) .eq. EL_Q1) .or. &
+              ((elem_getPrimaryElement(celement) .eq. EL_P1))) then
             call ucd_addVariableVertexBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
                 p_Ddata(1:p_rtriangulation%NVT))
           else
@@ -632,9 +633,9 @@ contains
           ! If we have a simple Q1~ discretisation, calculate the streamfunction.
           if (rvector%p_rblockDiscr%RspatialDiscr(1)%ccomplexity .eq. SPDISC_UNIFORM) then
               
-            ieltype = rpostproc%p_rspaceDiscr%RspatialDiscr(1)%RelementDistr(1)%celement
+            celement = rpostproc%p_rspaceDiscr%RspatialDiscr(1)%RelementDistr(1)%celement
                       
-            if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
+            if (elem_getPrimaryElement(celement) .eq. EL_Q1T) then
                 
               call ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
               
