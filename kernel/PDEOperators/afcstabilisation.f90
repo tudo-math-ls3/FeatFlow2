@@ -271,7 +271,7 @@ module afcstabilisation
     integer :: ctypeAFCstabilisation = AFCSTAB_GALERKIN
 
     ! Format Tag: Specifies the stabilisation
-    integer :: iSpec = AFCSTAB_UNDEFINED
+    integer(I32) :: iSpec = AFCSTAB_UNDEFINED
 
     ! Number of equations of the sparsity pattern
     integer :: NEQ = 0
