@@ -639,7 +639,7 @@ contains
   
 !</function>
 
-    integer :: ccubStd
+    integer(I32) :: ccubStd
 
     ! Get the underlying cubature formula   
     ccubStd = cub_getStdCubType(ccubType)
