@@ -803,7 +803,7 @@ contains
     type(t_afcstab), intent(in) :: rafcstabSrc
     
     ! Duplication flag that decides on how to set up the structure
-    integer, intent(in) :: idupFlag
+    integer(I32), intent(in) :: idupFlag
 !</input>
 
 !<inputoutput>
