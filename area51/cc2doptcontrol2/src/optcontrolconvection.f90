@@ -231,7 +231,7 @@ module optcontrolconvection
     real(DP), dimension(:), pointer :: DlocalDeltaDual
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
 
     ! Pointer to the primal/dual velocity field in the cubature points.
     real(DP), dimension(:,:,:), pointer :: Dpvel,Ddvel
