@@ -3298,6 +3298,7 @@ contains
 !</subroutine>
 
     character(len=SYS_STRLEN) :: sstr
+    integer :: icub
 
     call parlst_getvalue_int (rparlist,ssection,&
         'ielementType',rsettingsSpaceDiscr%ielementType,3)
@@ -3305,35 +3306,39 @@ contains
     call parlst_getvalue_string (rparlist,ssection,'scubStokes',sstr,"")
     if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssection,&
-          'icubStokes',rsettingsSpaceDiscr%icubStokes,int(SPDISC_CUB_AUTOMATIC))
+          'icubStokes',icub,int(SPDISC_CUB_AUTOMATIC))
     else
-      rsettingsSpaceDiscr%icubStokes = cub_igetID(sstr)
+      icub = cub_igetID(sstr)
     end if
+    rsettingsSpaceDiscr%icubStokes = icub
 
     call parlst_getvalue_string (rparlist,ssection,'scubB',sstr,"")
     if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssection,&
-          'icubB',rsettingsSpaceDiscr%icubB,int(SPDISC_CUB_AUTOMATIC))
+          'icubB',icub,int(SPDISC_CUB_AUTOMATIC))
     else
-      rsettingsSpaceDiscr%icubB = cub_igetID(sstr)
+      icub = cub_igetID(sstr)
     end if
+    rsettingsSpaceDiscr%icubB = icub
 
     call parlst_getvalue_string (rparlist,ssection,'scubF',sstr,"")
     if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssection,&
-          'icubF',rsettingsSpaceDiscr%icubF,int(SPDISC_CUB_AUTOMATIC))
+          'icubF',icub,int(SPDISC_CUB_AUTOMATIC))
     else
-      rsettingsSpaceDiscr%icubF = cub_igetID(sstr)
+      icub = cub_igetID(sstr)
     end if
+    rsettingsSpaceDiscr%icubF = icub
     
     ! Which cubature rule to use for mass matrices?
     call parlst_getvalue_string (rparlist,ssection,'scubMass',sstr,"")
     if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssection,&
-          'icubM',rsettingsSpaceDiscr%icubMass,int(SPDISC_CUB_AUTOMATIC))
+          'icubM',icub,int(SPDISC_CUB_AUTOMATIC))
     else
-      rsettingsSpaceDiscr%icubMass = cub_igetID(sstr)
+      icub = cub_igetID(sstr)
     end if    
+    rsettingsSpaceDiscr%icubMass = icub
 
   end subroutine
 
