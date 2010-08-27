@@ -1343,7 +1343,10 @@ contains
             rnonlinearSpatialMatrix,rtempMatrix,rtempVector,&
             rnonlinearSpatialMatrix%Dgamma(2,1),rnonlinearSpatialMatrix%DgammaT(2,1),&
             rnonlinearSpatialMatrix%Dnewton(2,1),rnonlinearSpatialMatrix%DnewtonT(2,1),&
-            rstabilisation)      
+            rstabilisation)
+            
+        if (rtempVector%NEQ .ne. 0) &
+          call lsysbl_releaseVector (rtempVector)
             
         ! There is probably a 2nd reactive term stemming from the next time step.
         ! Assemble it.
@@ -1365,6 +1368,9 @@ contains
             0.0_DP,rnonlinearSpatialMatrix%DgammaT2(2,1),&
             rnonlinearSpatialMatrix%Dnewton2(2,1),0.0_DP,&
             rstabilisation)      
+
+        if (rtempVector%NEQ .ne. 0) &
+          call lsysbl_releaseVector (rtempVector)
 
         ! Reintegrate the computed matrix
         call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,4,1)
@@ -1425,8 +1431,6 @@ contains
 
         ! Release memory
         call lsysbl_releaseMatrix(rtempMatrix)
-        if (rtempVector%NEQ .ne. 0) &
-          call lsysbl_releaseVector (rtempVector)
         call spdiscr_releaseBlockDiscr(rvelDiscr)
 
         !call matio_writeBlockMatrixHR (rmatrix, 'matrix',&
