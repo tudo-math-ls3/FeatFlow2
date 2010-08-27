@@ -561,7 +561,7 @@ contains
 
 !<function>
 
-  elemental integer function cub_getSummedCubType(ccubType,nlevels) result(n)
+  elemental integer(I32) function cub_getSummedCubType(ccubType,nlevels) result(n)
   
 !<description>
   ! Creates the identifier of a summed cubature rule based on a
