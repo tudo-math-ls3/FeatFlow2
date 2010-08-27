@@ -4526,8 +4526,8 @@ contains
     !CALL matio_spyMatrix('matrix','matrix',p_rmatrix,.TRUE.)
 
     ! Modify Kcol/Kld of the matrix. Subtract 1 to get them 0-based.
-    call lsyssc_addIndex (p_rmatrix%h_Kcol,-1_I32)
-    call lsyssc_addIndex (p_rmatrix%h_Kld,-1_I32)
+    call lsyssc_addIndex (p_rmatrix%h_Kcol,-1)
+    call lsyssc_addIndex (p_rmatrix%h_Kld,-1)
     
     ! Get the data arrays.
     call lsyssc_getbase_Kcol (p_rmatrix,p_Kcol)
