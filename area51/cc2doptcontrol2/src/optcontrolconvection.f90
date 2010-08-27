@@ -197,7 +197,7 @@ module optcontrolconvection
     real(DP), dimension(CUB_MAXCUBP) :: Domega
 
     ! Type of transformation from the reference to the real element 
-    integer :: ctrafoType
+    integer(I32) :: ctrafoType
 
     ! An element evaluation set for evaluating elements.
     type(t_evalElementSet) :: revalElementSet
