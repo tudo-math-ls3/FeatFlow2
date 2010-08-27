@@ -498,18 +498,6 @@ contains
       stop
     end select
     
-    ! Post correction of the cubature formulas: If icubF=automatic,
-    ! put the standard cubature formulas there.
-    if (icubF .eq. SPDISC_CUB_AUTOMATIC) then
-      do i=1,size(rdiscretisation%RspatialDiscr)
-        do j=1,size(rdiscretisation%RspatialDiscr(i)%RelementDistr)
-          rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeLinForm = &
-              spdiscr_getStdCubature(&
-              rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%celement)
-        end do
-      end do
-    end if
-    
     if (nequations .eq. 6) then
 
       ! -----------------------------------------------------------------------
@@ -528,6 +516,18 @@ contains
                                      rdiscretisation%RspatialDiscr(6))
           
     end if    
+    
+    ! Post correction of the cubature formulas: If icubF=automatic,
+    ! put the standard cubature formulas there.
+    if (icubF .eq. SPDISC_CUB_AUTOMATIC) then
+      do i=1,size(rdiscretisation%RspatialDiscr)
+        do j=1,size(rdiscretisation%RspatialDiscr(i)%RelementDistr)
+          rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeLinForm = &
+              spdiscr_getStdCubature(&
+              rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%celement)
+        end do
+      end do
+    end if
     
   end subroutine
 

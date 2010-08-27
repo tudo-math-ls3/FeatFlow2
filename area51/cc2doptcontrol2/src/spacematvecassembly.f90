@@ -3153,6 +3153,7 @@ contains
       
       ! Release the temp vectors/matrices, that's it.
       call spdiscr_releaseBlockDiscr(rvelDiscr)
+      call lsysbl_releaseVector (rvectorDual2)
       call lsysbl_releaseVector (rvectorDual)
       call lsysbl_releaseVector (rvectorPrimal)
       call lsysbl_releaseMatrix (rtempMatrix)
