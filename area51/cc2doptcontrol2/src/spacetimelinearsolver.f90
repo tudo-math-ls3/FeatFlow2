@@ -355,11 +355,11 @@ module spacetimelinearsolver
 
     ! OUTPUT PARAMETER:
     ! Total time for solver
-    real(DP)                        :: dtimeTotal
+    type(t_timer) :: rtimeTotal
 
     ! OUTPUT PARAMETER FOR SOLVERS THAT SUPPORT FILTERING:
     ! Total time for filtering
-    real(DP)                        :: dtimeFiltering
+    type(t_timer) :: rtimeFiltering
     
     ! INPUT PARAMETER:
     ! General damping parameter.
@@ -2128,6 +2128,9 @@ contains
     p_rx   => rsolverNode%p_rsubnodeDefCorr%rtempVector
     p_rdef => rsolverNode%p_rsubnodeDefCorr%rtempVector2
     
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+    call stat_startTimer (rsolverNode%rtimeTotal)
+    
     ! rd is our RHS. p_rx points to a new vector which will be our
     ! iteration vector. At the end of this routine, we replace
     ! rd by p_rx.
@@ -2263,6 +2266,8 @@ contains
     ! This completes the preconditioning.
     call sptivec_copyVector (p_rx,rd)
     call sptivec_scaleVector (rd,rsolverNode%domega)
+
+    call stat_stopTimer (rsolverNode%rtimeTotal)
       
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
@@ -2653,6 +2658,9 @@ contains
     ! Get pointers to the BC's.
     p_rdiscreteBC => p_rpreconditioner%p_RdiscreteBC(p_rpreconditioner%nlmax)
     p_rdiscreteFBC => p_rpreconditioner%p_RdiscreteFBC(p_rpreconditioner%nlmax)
+        
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+    call stat_startTimer (rsolverNode%rtimeTotal)
     
     ! ----------------------------------------------------------------------
     ! We use a block-Jacobi scheme for preconditioning...
@@ -2722,6 +2730,8 @@ contains
     end do
     
     call lsysbl_releaseVector (rtempVectorD)
+    
+    call stat_stopTimer (rsolverNode%rtimeTotal)    
     
   end subroutine
 
@@ -3067,6 +3077,9 @@ contains
     drelaxSOR = rsolverNode%drelax
     drelaxGS = rsolverNode%p_rsubnodeBlockFBSOR%drelaxGS
     
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+    call stat_startTimer (rsolverNode%rtimeTotal)   
+    
     if (rsolverNode%ioutputLevel .ge. 2) then
       ! Prepare a temp vector for residual output
       call sptivec_initVector (rtempVector,&
@@ -3140,6 +3153,8 @@ contains
     ! Replace rd by the new solution, damp it by the damping parameter.
     call sptivec_copyVector (p_rx,rd)
     call sptivec_scaleVector (rd,rsolverNode%domega)
+    
+    call stat_stopTimer (rsolverNode%rtimeTotal)
     
   contains
   
@@ -5173,6 +5188,9 @@ contains
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeUMFPACK4
     
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+    call stat_startTimer (rsolverNode%rtimeTotal)    
+    
     ! Copy the RHS rd to the temp vector; it will be overwritten
     ! by the solution vector
     call sptivec_convertSupervecToVector (rd,rb)
@@ -5224,6 +5242,8 @@ contains
     ! Release temp vectors
     call lsysbl_releaseVector (rx)
     call lsysbl_releaseVector (rb)
+    
+    call stat_stopTimer (rsolverNode%rtimeTotal)    
   
     ! Check the solver status
     select case (int(Dinfo(1)))
@@ -5683,6 +5703,9 @@ contains
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     end if
     
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+    call stat_startTimer (rsolverNode%rtimeTotal)
+    
     ! rd is our RHS. p_rx points to a new vector which will be our
     ! iteration vector. At the end of this routine, we replace
     ! rd by p_rx.
@@ -6091,6 +6114,8 @@ contains
     ! This completes the preconditioning.
     call sptivec_copyVector (p_rx,rd)
     call sptivec_scaleVector (rd,rsolverNode%domega)
+      
+    call stat_stopTimer (rsolverNode%rtimeTotal)
       
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
@@ -7786,9 +7811,6 @@ contains
   ! Our MG structure
   type(t_sptilsSubnodeMultigrid), pointer :: p_rsubnode
   
-  ! For statistics:
-  type(t_timer) :: rtimer
-  
     ! Solve the system!
     
     ! Getch some information
@@ -7806,6 +7828,8 @@ contains
     p_rsubnode%niteLinSolveCoarse = 0
     
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+    call stat_clearTimer (rsolverNode%rtimeFiltering)
 
     ! Get the system matrix on the finest level:
     p_rmatrix => rsolverNode%rmatrix
@@ -7862,6 +7886,10 @@ contains
       call stat_addTimers (&
           p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpacePrecond,&
           rsolverNode%rtimeSpacePrecond)
+          
+      ! Total time
+      call stat_addTimers (&
+          p_rsubnode%rtimeCoarseGridSolver,rsolverNode%rtimeTotal)
       
       ! Take the statistics from the coarse grid solver.
       rsolverNode%dinitialDefect = &
@@ -7876,10 +7904,10 @@ contains
         p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%iiterations
       
     else
-      ! rtimeLinearAlgebra calculates the total time. By subtracting all
+      ! rtimeTotal calculates the total time. By subtracting all
       ! other time information, we'll get at the end the time for
       ! linear algebra.
-      call stat_startTimer (p_rsubnode%rtimeLinearAlgebra)
+      call stat_startTimer (rsolverNode%rtimeTotal)
     
       ! Get the norm of the initial residuum.
       ! As the initial iteration vector is zero, this is the norm
@@ -8496,9 +8524,12 @@ contains
                       (1.0_DP/real(rsolverNode%iiterations,DP))
         end if
       end if
+
+      ! Total time    
+      call stat_stopTimer (rsolverNode%rtimeTotal)
     
       ! Calculate the time for linear algebra
-      call stat_stopTimer (p_rsubnode%rtimeLinearAlgebra)
+      call stat_addTimers (rsolverNode%rtimeTotal,p_rsubnode%rtimeLinearAlgebra)
       call stat_subTimers (p_rsubnode%rtimeSmoothing,p_rsubnode%rtimeLinearAlgebra)
       call stat_subTimers (p_rsubnode%rtimeCoarseGridSolver,p_rsubnode%rtimeLinearAlgebra)
       call stat_subTimers (p_rsubnode%rtimeProlRest,p_rsubnode%rtimeLinearAlgebra)
@@ -9034,6 +9065,9 @@ contains
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
     rsolverNode%niteLinSolveSpace = 0
 
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+    call stat_startTimer (rsolverNode%rtimeTotal)
+
     ! We iterate once forward in time and once backward in time using
     ! the simulation solvers. Clear the temp vector at first, which
     ! receives the preconditioned defect. rd is our RHS.
@@ -9087,6 +9121,8 @@ contains
     ! Replace rd
     call sptivec_copyVector (rsolverNode%p_rsubnodeFBsim%rtempVector,rd)
     call sptivec_scaleVector (rd,rsolverNode%domega)
+    
+    call stat_stopTimer (rsolverNode%rtimeTotal)    
 
   end subroutine
 

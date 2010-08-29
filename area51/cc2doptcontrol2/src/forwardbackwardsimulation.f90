@@ -1968,6 +1968,7 @@ contains
       call lsysbl_releaseVector(rpreconditioner%p_RtempVec(2,ilev))
       call lsysbl_releaseVector(rpreconditioner%p_RtempVec(3,ilev))
     end do
+    deallocate(rpreconditioner%p_RtempVec)
     
     rpreconditioner%ctypePreconditioner = 0
 

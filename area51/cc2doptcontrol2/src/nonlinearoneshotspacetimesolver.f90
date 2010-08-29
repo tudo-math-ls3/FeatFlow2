@@ -583,7 +583,7 @@ contains
         ! Print some statistical output
         if (rnlstSolver%ioutputLevel .ge. 1) then
           call output_line ("Time for non-c.grid solving : "//&
-              sys_sdL(rnlstsolver%p_rmgSolver%dtimeTotal-&
+              sys_sdL(rnlstsolver%p_rmgSolver%rtimeTotal%delapsedReal-&
                       rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeCoarseGridSolver%delapsedReal,10))
           call output_line ("Time for smoothing          : "//&
               sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSmoothing%delapsedReal,10))
