@@ -286,7 +286,7 @@ imassantidiffusiontype = 0
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -315,22 +315,10 @@ isystemPrecond = 2
 #      velocity
 slimitingvariable = density,energy,momentum
 
-# number of failsafe steps
-nfailsafe = 4
-
-# variables for failsafe flux correction
-sfailsafevariable(3) =
-  pressure
-  velocity_x
-  velocity_y
-
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution: pointwise values
-# 2 = PGM image
-# 3 = anayltical initial solution: consistent L2-projection
-# 4 = anayltical initial solution: lumped L2-projection
-isolutiontype = 3
+# 1 = analytical initial solution
+isolutiontype = 1
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -350,10 +338,10 @@ sexactsolutionname =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/scramjet_coarse_quads.prm
+prmfile = grids/2d/scramjet_coarse_trias.prm
 
 # file which contains the triangulation
-trifile = grids/2d/scramjet_coarse_quads.tri
+trifile = grids/2d/scramjet_coarse_trias.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -362,7 +350,7 @@ trifile = grids/2d/scramjet_coarse_quads.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = -1
+celement = 1
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -412,10 +400,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
-
-# perform prelimiting
-iprelimiting = 1
+istabilisation = 1
 
 
 ################################################################################
@@ -485,7 +470,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.01
+dfinalTime = 0.1
 
 # initial time step size
 dinitialStep = 0.001
