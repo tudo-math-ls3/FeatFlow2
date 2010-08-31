@@ -1549,14 +1549,16 @@ contains
               select case (cspace)
               case (CCSPACE_PRIMAL, CCSPACE_DUAL)
                 call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
+                rpreconditioner%bneedVirtTransposedD = .true.
               case (CCSPACE_PRIMALDUAL)
                 call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
+                rpreconditioner%bneedVirtTransposedD = .false.
               end select
               call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
                   rpreconditioner%RfilterChain)
 
               ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
-              rpreconditioner%bneedVirtTransposedD = .true.
+              !rpreconditioner%bneedVirtTransposedD = .true.
 
             case (9)
               select case (cspace)
@@ -2424,8 +2426,11 @@ contains
       
       ! Initialise data of the solver. This in fact performs a numeric
       ! factorisation of the matrices in UMFPACK-like solvers.
+      print *,"InitStruc"
       call linsol_initStructure (rpreconditioner%p_rsolverNode,ierror)
+      print *,"InitData"
       call linsol_initData (p_rsolverNode, ierror)
+      print *,"Ok"
       if (ierror .ne. LINSOL_ERR_NOERROR) then
         print *,'linsol_initData failed!'
         call sys_halt()
