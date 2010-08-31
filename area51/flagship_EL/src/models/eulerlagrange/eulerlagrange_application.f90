@@ -85,7 +85,7 @@
 !#      -> Solves the primal formulation of the time-dependent
 !#         compressible Euler equations.
 !#
-!# 12.) eulerlagrange_init
+!# 12.) eulerlagrange_initpart
 !#      -> Initialization for the particles
 !#
 !# 13.) eulerlagrange_step
@@ -162,7 +162,7 @@ module eulerlagrange_application
   public :: eulerlagrange_outputSolution
   public :: eulerlagrange_outputStatistics
   public :: eulerlagrange_solveTransientPrimal
-  public :: eulerlagrange_init
+  public :: eulerlagrange_initpart
   public :: eulerlagrange_step
 
   contains
@@ -371,7 +371,7 @@ module eulerlagrange_application
     !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! Euler-Lagrange
     !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    call eulerlagrange_init(rparlist,rproblem%p_rproblemLevelMax,rsolution,&
+    call eulerlagrange_initpart(rparlist,rproblem%p_rproblemLevelMax,rsolution,&
                             rtimestep,rcollection,rParticles)
     
     ! Stop time measurement for pre-processing
@@ -3393,11 +3393,11 @@ module eulerlagrange_application
 
 !<subroutine>
 
-subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
+subroutine eulerlagrange_initpart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
 
 
 !<description>
-    ! This subroutine initialise the particle data. 
+    ! This subroutine initialise the data for the particles. 
 
 !<input>
     ! Parameterlist
@@ -3415,7 +3415,6 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Particles
     type(t_Particles), intent(inout) :: rParticles
 
-    ! Local variables
     ! Pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
 
@@ -3479,10 +3478,10 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     real(DP) :: particlediam, particlediammin, particlediammax
     real(DP) :: parttemp, parttempmin, parttempmax
 
-    ! Gravity
+    ! Gravity in x- and y-direction
     real(DP) :: gravityx, gravityy
 
-    ! Quantity of particles
+    ! Number of particles
     integer :: nPart
   
     ! Boundarybehaviour
@@ -4007,7 +4006,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     !call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
 
 
-end subroutine eulerlagrange_init
+end subroutine eulerlagrange_initpart
 
   !*****************************************************************************
 

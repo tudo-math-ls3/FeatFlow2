@@ -7906,7 +7906,7 @@ end subroutine eulerlagrange_setnewinitialvalue
                 Dbarycoords,rParticles,currentElement,iPart)
 
 !<description>
-    ! This subroutine gets the velocity of the gas in a position.
+    ! This subroutine gets the velocity of the gas in a position und searchs for the right element.
 
 !<input>
     ! Particles
