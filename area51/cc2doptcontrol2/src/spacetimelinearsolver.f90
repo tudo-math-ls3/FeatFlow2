@@ -9221,8 +9221,17 @@ contains
           rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
           rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
 
+      ! Sum up statistical data.
       rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
           rsolverNode%p_rsubnodeFBsim%rforwardsolver%nlinearIterations
+
+      rsolverNode%rtimeSpaceMatrixAssembly%delapsedReal = &
+        rsolverNode%rtimeSpaceMatrixAssembly%delapsedReal + &
+        rsolverNode%p_rsubnodeFBsim%rforwardsolver%dtimeMatrixAssembly
+
+      rsolverNode%rtimeSpaceMatrixAssembly%delapsedCPU = &
+        rsolverNode%rtimeSpaceMatrixAssembly%delapsedCPU + &
+        rsolverNode%p_rsubnodeFBsim%rforwardsolver%dtimeMatrixAssembly
 
       if (.not. bsuccess) then
         call output_line("Forward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
@@ -9237,9 +9246,18 @@ contains
           rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
           rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
 
+      ! Sum up statistical data.
       rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
           rsolverNode%p_rsubnodeFBsim%rbackwardsolver%nlinearIterations
       
+      rsolverNode%rtimeSpaceMatrixAssembly%delapsedReal = &
+        rsolverNode%rtimeSpaceMatrixAssembly%delapsedReal + &
+        rsolverNode%p_rsubnodeFBsim%rbackwardsolver%dtimeMatrixAssembly
+
+      rsolverNode%rtimeSpaceMatrixAssembly%delapsedCPU = &
+        rsolverNode%rtimeSpaceMatrixAssembly%delapsedCPU + &
+        rsolverNode%p_rsubnodeFBsim%rbackwardsolver%dtimeMatrixAssembly
+
       if (.not. bsuccess) then
         call output_line("Backward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
             OU_CLASS_WARNING,OU_MODE_STD,'sptils_precFBsim')
