@@ -4064,16 +4064,11 @@ contains
     call stat_stopTimer(rtimerTotal)
     
     ! Gather statistics
-    rsimSolver%dtimeNonlinearSolver = rsimSolver%dtimeNonlinearSolver + &
-        rtimerNonlinearSolver%delapsedReal
-    rsimSolver%dtimeMatrixAssembly = rsimSolver%dtimeMatrixAssembly + &
-        rtimerMatrixAssembly%delapsedReal
-    rsimSolver%dtimeTotal = rsimSolver%dtimeTotal + &
-        rtimerTotal%delapsedReal
-    rsimSolver%dtimePostprocessing = rsimSolver%dtimePostprocessing + &
-        rtimerPostProc%delapsedReal
-    rsimSolver%dtimeDefectCalculation = rsimSolver%dtimeDefectCalculation + &
-        rtimerDefectCalc%delapsedReal
+    rsimSolver%dtimeNonlinearSolver = rtimerNonlinearSolver%delapsedReal
+    rsimSolver%dtimeMatrixAssembly = rtimerMatrixAssembly%delapsedReal
+    rsimSolver%dtimeTotal = rtimerTotal%delapsedReal
+    rsimSolver%dtimePostprocessing = rtimerPostProc%delapsedReal
+    rsimSolver%dtimeDefectCalculation = rtimerDefectCalc%delapsedReal
 
     if (present(bsuccess)) then
       bsuccess = blocalsuccess
