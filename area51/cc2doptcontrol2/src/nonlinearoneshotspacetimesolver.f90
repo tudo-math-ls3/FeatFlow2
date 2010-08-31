@@ -593,6 +593,14 @@ contains
               sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeLinearAlgebra%delapsedReal,10))
           call output_line ("Time for prol/rest          : "//&
               sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeProlRest%delapsedReal,10))
+          call output_line ("Time for def. asm. coarse gr: "//&
+              sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSpaceDefectAssemblyCoarse%delapsedReal,10))
+          call output_line ("Time for mat. asm. coarse gr: "//&
+              sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSpaceMatrixAssemblyCoarse%delapsedReal,10))
+          call output_line ("Time for def. asm. fine grid: "//&
+              sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSpaceDefectAssemblyFine%delapsedReal,10))
+          call output_line ("Time for mat. asm. fine grid: "//&
+              sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSpaceMatrixAssemblyFine%delapsedReal,10))
           call output_lbrk ()
         end if
       end if
@@ -600,6 +608,10 @@ contains
       if (rnlstSolver%ioutputLevel .ge. 1) then
         call output_line ("Time for prec. in space     : "//&
             sys_sdL(rnlstsolver%p_rspaceTimePrec%rtimeSpacePrecond%delapsedReal,10))
+        call output_line ("Time for def. asm. in space : "//&
+            sys_sdL(rnlstsolver%p_rspaceTimePrec%rtimeSpaceDefectAssembly%delapsedReal,10))
+        call output_line ("Time for mat. asm. in space : "//&
+            sys_sdL(rnlstsolver%p_rspaceTimePrec%rtimeSpaceMatrixAssembly%delapsedReal,10))
       end if  
 
       call sptivec_vectorLinearComb (rd,rx,rnlstsolver%domega,1.0_DP)

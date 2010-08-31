@@ -502,6 +502,12 @@ module spacetimelinearsolver
     ! STATUS FOR ITERATIVE SOLVERS: Last defect
     real(DP) :: dlastDefect
     
+    ! STATISTICS OUTPUT: Time for assembling defect vectors in space.
+    type(t_timer) :: rtimeSpaceDefectAssembly
+
+    ! STATISTICS OUTPUT: Time for assembling matrices in space.
+    type(t_timer) :: rtimeSpaceMatrixAssembly
+    
     ! STATISTICS OUTPUT: Time for solving problems in space.
     type(t_timer) :: rtimeSpacePrecond
     
@@ -962,6 +968,22 @@ module spacetimelinearsolver
     ! STATISTICS OUTPUT: Time needed for prolongation/restriction
     type(t_timer) :: rtimeProlRest
     
+    ! STATISTICS OUTPUT: Time for assembling defect vectors in space.
+    ! Coarse mesh.
+    type(t_timer) :: rtimeSpaceDefectAssemblyCoarse
+
+    ! STATISTICS OUTPUT: Time for assembling matrices in space.
+    ! Coarse mesh.
+    type(t_timer) :: rtimeSpaceMatrixAssemblyCoarse
+
+    ! STATISTICS OUTPUT: Time for assembling defect vectors in space.
+    ! All fine grid meshes.
+    type(t_timer) :: rtimeSpaceDefectAssemblyFine
+
+    ! STATISTICS OUTPUT: Time for assembling matrices in space.
+    ! All fine grid meshes.
+    type(t_timer) :: rtimeSpaceMatrixAssemblyFine
+
     ! STATISTICS OUTPUT: Total number of iterations, the linear space-time solver
     ! needed for all coarse mesh solutions.
     integer :: niteLinSolveCoarse = 0
@@ -2127,6 +2149,9 @@ contains
     
     p_rx   => rsolverNode%p_rsubnodeDefCorr%rtempVector
     p_rdef => rsolverNode%p_rsubnodeDefCorr%rtempVector2
+
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
     
     call stat_clearTimer (rsolverNode%rtimeTotal)
     call stat_startTimer (rsolverNode%rtimeTotal)
@@ -2183,6 +2208,8 @@ contains
           ! solver structure.
           call sptils_precondDefect (p_rprecSubnode,p_rdef)
           call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+          call stat_addTimers (p_rprecSubnode%rtimeSpaceDefectAssembly,rsolverNode%rtimeSpaceDefectAssembly)
+          call stat_addTimers (p_rprecSubnode%rtimeSpaceMatrixAssembly,rsolverNode%rtimeSpaceMatrixAssembly)
           rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
               p_rprecSubnode%niteLinSolveSpace
         end if
@@ -2659,6 +2686,9 @@ contains
     p_rdiscreteBC => p_rpreconditioner%p_RdiscreteBC(p_rpreconditioner%nlmax)
     p_rdiscreteFBC => p_rpreconditioner%p_RdiscreteFBC(p_rpreconditioner%nlmax)
         
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
+
     call stat_clearTimer (rsolverNode%rtimeTotal)
     call stat_startTimer (rsolverNode%rtimeTotal)
     
@@ -2707,8 +2737,10 @@ contains
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3)
         
       ! Assemble the preconditioner matrices on all levels.
+      call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
       call fbsim_assemblePrecMatrices (p_rpreconditioner,&
           iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+      call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
         
       !call matio_writeBlockMatrixHR (p_rpreconditioner%p_RmatrixPrecondFullSpace(2), "matrix",&
       !    .true., 0, "matrix.txt", "(E10.3)")
@@ -3077,6 +3109,9 @@ contains
     drelaxSOR = rsolverNode%drelax
     drelaxGS = rsolverNode%p_rsubnodeBlockFBSOR%drelaxGS
     
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
+    
     call stat_clearTimer (rsolverNode%rtimeTotal)
     call stat_startTimer (rsolverNode%rtimeTotal)   
     
@@ -3369,14 +3404,19 @@ contains
           ! Subtract drelaxGS M ( drelaxGS x1^new + (1-drelaxGS) x1).
           call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (rmatrix,iiterate,-1,rnonlinearSpatialMatrix)
+          
+          call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)          
           call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
+          call stat_stopTimer (rsolverNode%rtimeSpaceDefectAssembly)
               
           ! Is there a next timestep?
           if (iiterate .lt. NEQtime) then
             ! Subtract Ml3.
             call stlin_setupMatrixWeights (rmatrix,iiterate,1,rnonlinearSpatialMatrix)
             call sptivec_getTimestepData (rx, iiterate+1, rtempVectorX)
+            call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)
             call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
+            call stat_stopTimer (rsolverNode%rtimeSpaceDefectAssembly)
           end if
           
         else
@@ -3388,14 +3428,20 @@ contains
           call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (rmatrix,iiterate,1,rnonlinearSpatialMatrix)
           call sptivec_getTimestepData (rx, iiterate+1, rtempVectorX)
+
+          call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)
           call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
+          call stat_stopTimer (rsolverNode%rtimeSpaceDefectAssembly)
 
         end if
         
         ! Subtract Dx_n. Note that the nonlinear matrix is initialised for sure!
         call stlin_setupMatrixWeights (rmatrix,iiterate,0,rnonlinearSpatialMatrix)
         call sptivec_getTimestepData (rx, iiterate, rtempVectorX)
+
+        call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)
         call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
+        call stat_stopTimer (rsolverNode%rtimeSpaceDefectAssembly)
 
           ! DEBUG!!!
           !call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
@@ -3404,8 +3450,10 @@ contains
           !call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
 
         ! Assemble the preconditioner matrices on all levels.
+        call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
         call fbsim_assemblePrecMatrices (p_rpreconditioner,&
             iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+        call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
           
         ! Implement the boundary conditions        
         call vecfil_discreteBCdef(rtempVectorD,p_rdiscreteBC)
@@ -3556,14 +3604,20 @@ contains
           ! Subtract drelaxGS M ( drelaxGS l3^new + (1-drelaxGS) l3).
           call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (rmatrix,iiterate,1,rnonlinearSpatialMatrix)
+
+          call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)
           call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
+          call stat_stopTimer (rsolverNode%rtimeSpaceDefectAssembly)
               
           ! Is there a next timestep?
           if (iiterate .gt. 1) then
             ! Subtract Mx1.
             call stlin_setupMatrixWeights (rmatrix,iiterate,-1,rnonlinearSpatialMatrix)
             call sptivec_getTimestepData (rx, iiterate-1, rtempVectorX)
+
+            call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)
             call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
+            call stat_stopTimer (rsolverNode%rtimeSpaceDefectAssembly)
           end if
           
         else
@@ -3575,18 +3629,26 @@ contains
           call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (rmatrix,iiterate,-1,rnonlinearSpatialMatrix)
           call sptivec_getTimestepData (rx, iiterate-1, rtempVectorX)
+
+          call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)
           call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
+          call stat_stopTimer (rsolverNode%rtimeSpaceDefectAssembly)
 
         end if
         
         ! Subtract Dx_n. Note that the nonlinear matrix is initialised for sure!
         call stlin_setupMatrixWeights (rmatrix,iiterate,0,rnonlinearSpatialMatrix)
         call sptivec_getTimestepData (rx, iiterate, rtempVectorX)
+
+        call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)
         call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
+        call stat_stopTimer (rsolverNode%rtimeSpaceDefectAssembly)
 
         ! Assemble the preconditioner matrices on all levels.
+        call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
         call fbsim_assemblePrecMatrices (p_rpreconditioner,&
             iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+        call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
           
         ! Implement the boundary conditions        
         call vecfil_discreteBCdef(rtempVectorD,p_rdiscreteBC)
@@ -5702,6 +5764,9 @@ contains
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     end if
+
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)    
     
     call stat_clearTimer (rsolverNode%rtimeTotal)
     call stat_startTimer (rsolverNode%rtimeTotal)
@@ -5755,6 +5820,8 @@ contains
       ! solver structure.
       call sptils_precondDefect (p_rprecSubnode,p_DR)
       call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+      call stat_addTimers (p_rprecSubnode%rtimeSpaceDefectAssembly,rsolverNode%rtimeSpaceDefectAssembly)
+      call stat_addTimers (p_rprecSubnode%rtimeSpaceMatrixAssembly,rsolverNode%rtimeSpaceMatrixAssembly)
       rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
           p_rprecSubnode%niteLinSolveSpace
       
@@ -5868,6 +5935,8 @@ contains
               ! solver structure.
               call sptils_precondDefect (p_rprecSubnode,p_DR)
               call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+              call stat_addTimers (p_rprecSubnode%rtimeSpaceDefectAssembly,rsolverNode%rtimeSpaceDefectAssembly)
+              call stat_addTimers (p_rprecSubnode%rtimeSpaceMatrixAssembly,rsolverNode%rtimeSpaceMatrixAssembly)
               rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
                   p_rprecSubnode%niteLinSolveSpace
             end if
@@ -5928,6 +5997,8 @@ contains
           ! solver structure.
           call sptils_precondDefect (p_rprecSubnode,p_DPA)
           call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+          call stat_addTimers (p_rprecSubnode%rtimeSpaceDefectAssembly,rsolverNode%rtimeSpaceDefectAssembly)
+          call stat_addTimers (p_rprecSubnode%rtimeSpaceMatrixAssembly,rsolverNode%rtimeSpaceMatrixAssembly)
           rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
               p_rprecSubnode%niteLinSolveSpace
         end if
@@ -5962,6 +6033,8 @@ contains
           ! solver structure.
           call sptils_precondDefect (p_rprecSubnode,p_DSA)
           call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+          call stat_addTimers (p_rprecSubnode%rtimeSpaceDefectAssembly,rsolverNode%rtimeSpaceDefectAssembly)
+          call stat_addTimers (p_rprecSubnode%rtimeSpaceMatrixAssembly,rsolverNode%rtimeSpaceMatrixAssembly)
           rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
               p_rprecSubnode%niteLinSolveSpace
         end if
@@ -6720,6 +6793,8 @@ contains
           ! solver structure.
           call sptils_precondDefect (p_rprecSubnode,p_DPA)
           call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+          call stat_addTimers (p_rprecSubnode%rtimeSpaceDefectAssembly,rsolverNode%rtimeSpaceDefectAssembly)
+          call stat_addTimers (p_rprecSubnode%rtimeSpaceMatrixAssembly,rsolverNode%rtimeSpaceMatrixAssembly)
           rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
               p_rprecSubnode%niteLinSolveSpace
 
@@ -6767,6 +6842,8 @@ contains
           ! solver structure.
           call sptils_precondDefect (p_rprecSubnode,p_DSA)
           call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+          call stat_addTimers (p_rprecSubnode%rtimeSpaceDefectAssembly,rsolverNode%rtimeSpaceDefectAssembly)
+          call stat_addTimers (p_rprecSubnode%rtimeSpaceMatrixAssembly,rsolverNode%rtimeSpaceMatrixAssembly)
           rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
               p_rprecSubnode%niteLinSolveSpace
 
@@ -6869,6 +6946,8 @@ contains
       ! solver structure.
       call sptils_precondDefect (p_rprecSubnode,rd)
       call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+      call stat_addTimers (p_rprecSubnode%rtimeSpaceDefectAssembly,rsolverNode%rtimeSpaceDefectAssembly)
+      call stat_addTimers (p_rprecSubnode%rtimeSpaceMatrixAssembly,rsolverNode%rtimeSpaceMatrixAssembly)
       rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
           p_rprecSubnode%niteLinSolveSpace
 
@@ -7661,10 +7740,12 @@ contains
     integer :: iiterations,niteLinSolveSpace
     real(DP) :: dres,dresInit
     type(t_ccoptSpaceTimeMatrix), pointer :: p_rmatrix
-    type(t_timer) :: rtimer
+    type(t_timer) :: rtimeSpacePrecond,rtimeSpaceDefectAssembly,rtimeSpaceMatrixAssembly
     !DEBUG: REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
     
-    call stat_clearTimer (rtimer)
+    call stat_clearTimer (rtimeSpacePrecond)
+    call stat_clearTimer (rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rtimeSpaceMatrixAssembly)
     niteLinSolveSpace = 0
     
     ! Cancel if nmaxIterations = number of smoothing steps is =0.
@@ -7732,7 +7813,9 @@ contains
       
       ! Stop the time for space-preconditioning and sum it up. Return the sum as result.
       call sptils_precondDefect(rsolverNode,rtemp)
-      call stat_addTimers (rsolverNode%rtimeSpacePrecond,rtimer)
+      call stat_addTimers (rsolverNode%rtimeSpacePrecond,rtimeSpacePrecond)
+      call stat_addTimers (rsolverNode%rtimeSpaceDefectAssembly,rtimeSpaceDefectAssembly)
+      call stat_addTimers (rsolverNode%rtimeSpaceMatrixAssembly,rtimeSpaceMatrixAssembly)
       niteLinSolveSpace = niteLinSolveSpace + rsolverNode%niteLinSolveSpace
       call sptivec_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
       
@@ -7743,7 +7826,9 @@ contains
     
     ! Return needed time and iterations of spatial solver
     ! again via the structure.
-    rsolverNode%rtimeSpacePrecond = stat_rcloneTimer (rtimer)
+    rsolverNode%rtimeSpacePrecond = stat_rcloneTimer (rtimeSpacePrecond)
+    rsolverNode%rtimeSpaceDefectAssembly = stat_rcloneTimer (rtimeSpaceDefectAssembly)
+    rsolverNode%rtimeSpaceMatrixAssembly = stat_rcloneTimer (rtimeSpaceMatrixAssembly)
     rsolverNode%niteLinSolveSpace = niteLinSolveSpace
 
     ! Probably print the final residuum
@@ -7821,12 +7906,18 @@ contains
     call stat_clearTimer (p_rsubnode%rtimeCoarseGridSolver)
     call stat_clearTimer (p_rsubnode%rtimeLinearAlgebra)
     call stat_clearTimer (p_rsubnode%rtimeProlRest)
+    call stat_clearTimer (p_rsubnode%rtimeSpaceDefectAssemblyCoarse)
+    call stat_clearTimer (p_rsubnode%rtimeSpaceMatrixAssemblyCoarse)
+    call stat_clearTimer (p_rsubnode%rtimeSpaceDefectAssemblyFine)
+    call stat_clearTimer (p_rsubnode%rtimeSpaceMatrixAssemblyFine)
     
     p_rsubnode%niteLinSolveSpaceCoarse = 0
     p_rsubnode%niteLinSolveSpaceSmooth = 0
     p_rsubnode%niteLinSolveSpaceSmoothFine = 0
     p_rsubnode%niteLinSolveCoarse = 0
     
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
     call stat_clearTimer (rsolverNode%rtimeTotal)
     call stat_clearTimer (rsolverNode%rtimeFiltering)
@@ -7886,6 +7977,14 @@ contains
       call stat_addTimers (&
           p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpacePrecond,&
           rsolverNode%rtimeSpacePrecond)
+      call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceDefectAssembly,&
+          rsolverNode%rtimeSpaceDefectAssembly)
+      call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceMatrixAssembly,&
+          rsolverNode%rtimeSpaceMatrixAssembly)
+      call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceDefectAssembly,&
+          p_rsubnode%rtimeSpaceDefectAssemblyCoarse)
+      call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceMatrixAssembly,&
+          p_rsubnode%rtimeSpaceMatrixAssemblyCoarse)
           
       ! Total time
       call stat_addTimers (&
@@ -8042,6 +8141,18 @@ contains
                 call stat_addTimers (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpacePrecond,&
                     rsolverNode%rtimeSpacePrecond)
+                call stat_addTimers (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceDefectAssembly,&
+                    rsolverNode%rtimeSpaceDefectAssembly)
+                call stat_addTimers (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly,&
+                    rsolverNode%rtimeSpaceMatrixAssembly)
+                call stat_addTimers (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceDefectAssembly,&
+                    p_rsubnode%rtimeSpaceDefectAssemblyFine)
+                call stat_addTimers (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly,&
+                    p_rsubnode%rtimeSpaceMatrixAssemblyFine)
 
               end if
             
@@ -8206,6 +8317,16 @@ contains
             call stat_addTimers (&
                 p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpacePrecond,&
                 rsolverNode%rtimeSpacePrecond)
+            call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceDefectAssembly,&
+                rsolverNode%rtimeSpaceDefectAssembly)
+            call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceMatrixAssembly,&
+                rsolverNode%rtimeSpaceMatrixAssembly)
+            call stat_addTimers (&
+                p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceDefectAssembly,&
+                p_rsubnode%rtimeSpaceDefectAssemblyCoarse)
+            call stat_addTimers (&
+                p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly,&
+                p_rsubnode%rtimeSpaceMatrixAssemblyCoarse)
             
             ! Now we have the solution vector on the lowest level - we have to go
             ! upwards now... but probably not to NLMAX! That depends on the cycle.
@@ -8316,6 +8437,7 @@ contains
                     p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                     p_rsubnode%p_Rlevels(ilev)%rprjVector)
                 call stat_stopTimer (p_rsubnode%rtimeSmoothing)
+
                 ! For the max. level, count the #smoothing steps separately.
                 if (ilev .lt. nlmax) then
                   p_rsubnode%niteLinSolveSpaceSmooth = p_rsubnode%niteLinSolveSpaceSmooth &
@@ -8328,6 +8450,18 @@ contains
                 call stat_addTimers (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpacePrecond,&
                     rsolverNode%rtimeSpacePrecond)
+                call stat_addTimers (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceDefectAssembly,&
+                    rsolverNode%rtimeSpaceDefectAssembly)
+                call stat_addTimers (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceMatrixAssembly,&
+                    rsolverNode%rtimeSpaceMatrixAssembly)
+                call stat_addTimers (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceDefectAssembly,&
+                    p_rsubnode%rtimeSpaceDefectAssemblyFine)
+                call stat_addTimers (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceMatrixAssembly,&
+                    p_rsubnode%rtimeSpaceMatrixAssemblyFine)
 
                 ! Extended output
                 if ((rsolverNode%ioutputLevel .ge. 3) .and. &
