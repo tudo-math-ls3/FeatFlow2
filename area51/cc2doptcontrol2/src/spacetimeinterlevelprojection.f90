@@ -821,6 +821,14 @@ contains
     ! #columns = #time dofs of the coarse level.
     ndofCoarse = tdiscr_igetNDofGlob(p_rtimeDiscrCoarse)
     ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
+
+    if (ndofCoarse .lt. 3) then
+      call output_line('For this projection, there must be at least 3 timesteps available' &
+          //' on the time coarse mesh!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptipr_getProlMatrixDual')
+      call sys_halt()
+    end if
+
     call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofFine,ndofCoarse)
         
     ! Now depending on the order, create the matrix.

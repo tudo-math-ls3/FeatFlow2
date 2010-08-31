@@ -8322,10 +8322,10 @@ contains
             call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceMatrixAssembly,&
                 rsolverNode%rtimeSpaceMatrixAssembly)
             call stat_addTimers (&
-                p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceDefectAssembly,&
+                p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceDefectAssembly,&
                 p_rsubnode%rtimeSpaceDefectAssemblyCoarse)
             call stat_addTimers (&
-                p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly,&
+                p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceMatrixAssembly,&
                 p_rsubnode%rtimeSpaceMatrixAssemblyCoarse)
             
             ! Now we have the solution vector on the lowest level - we have to go
