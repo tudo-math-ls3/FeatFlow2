@@ -2426,11 +2426,8 @@ contains
       
       ! Initialise data of the solver. This in fact performs a numeric
       ! factorisation of the matrices in UMFPACK-like solvers.
-      print *,"InitStruc"
       call linsol_initStructure (rpreconditioner%p_rsolverNode,ierror)
-      print *,"InitData"
       call linsol_initData (p_rsolverNode, ierror)
-      print *,"Ok"
       if (ierror .ne. LINSOL_ERR_NOERROR) then
         print *,'linsol_initData failed!'
         call sys_halt()
