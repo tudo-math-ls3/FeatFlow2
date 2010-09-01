@@ -533,6 +533,9 @@ contains
           
           call stlsinit_getSingleGridSmoother (rsettings,ilev,&
               rsmootherSettings,rprecSmootherSettings,p_rpresmoother)
+              
+          call sptils_convertToSmoother (p_rpresmoother,rsmootherSettings%nsmpre)
+              
           p_rpostsmoother => p_rpresmoother
           
         else 
