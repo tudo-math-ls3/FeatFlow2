@@ -90,6 +90,13 @@ sub expand_paramlist ($$) {
     # Get the trimmed argument and save it.
     $par = trim($par);
 
+    # Check if the string is empty. If yes, we are done.
+    if ($par eq "") {
+      push (@elements,$par);
+      ++$paramcount;
+      next;
+    }
+
     # Detect if there are quotation marks or non-number characters
     # in the string. If yes, this is a list of strings, so we are done.
     if ( $par !~ m/^[\d:\s\.,]*$/ ) {
@@ -97,7 +104,7 @@ sub expand_paramlist ($$) {
       ++$paramcount;
       next;
     }
-
+    
     # Check all arguments. If they match the form "xx.xx:yy.yy:zz.zz", we have
     # a sequence which must be evaluated to single numbers.  
     #if ( $par =~ m/\s*([\d\.]*)?\s*:?\s*([\d\.]*)?\s*:?\s*([\d\.]*)?\s*/ ) {
