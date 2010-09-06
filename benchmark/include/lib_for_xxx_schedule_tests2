@@ -11,7 +11,7 @@
 # ==================================================
 # FUNCTION: reinterpret wallclock time to seconds
 #
-# Call:  fb_choosequeue hh:mm:ss
+# Call:  fb_getwallclockseconds hh:mm:ss
 #
 # Return: Sets the variable "wcseconds" to the number of
 #   seconds corresponding to the given time.
@@ -33,6 +33,8 @@ fb_getwallclockseconds()
 #   "queuewallclock"   = max. allowed wallclock time in sec.
 #   "queuecores"       = cores per node in that queue
 #   "queuetype"        = type id of the queue.
+#   "queuestdmem"      = std. amount of memory to allocate.
+#   "queuemaxmem"      = max. amount of memory to allocate.
 # If [index] = -1, the current queue is deselected;
 # all variables are filled with "".
 # ==================================================
@@ -46,12 +48,16 @@ fb_setqueue_index()
       queuewallclock=0
       queuecores=0
       queuetype=-1
+      queuestdmem=0
+      queuemaxmem=0
     else
       queueid=${allqueues[$1]}
       queuename=`eval echo \\${$queueid[0]}`
       queuewallclock=`eval echo \\${$queueid[1]} | awk -F: '{print $1*3600+$2*60+$3}'`
       queuecores=`eval echo \\${$queueid[2]}`
       queuetype=`eval echo \\${$queueid[3]}`
+      queuestdmem=`eval echo \\${$queueid[4]}`
+      queuemaxmem=`eval echo \\${$queueid[5]}`
     fi
 }
 
@@ -88,11 +94,12 @@ fb_getCoresPerNode()
 #
 # Switches to a queue that matches the parameters.
 #
-# Call:  fb_choosequeue [wallclock] [type] [id]
+# Call:  fb_choosequeue [wallclock] [memory] [type] [id]
 #
 # The parameters are defined as follows:
 #
 #   [wallclock]   = wallclock time, the queues must provide
+#   [memory]      = amount of memory, the queue must provide
 #   [type]        = type specifier of the queue or =-1 if an
 #                   arbitrary queue may be chosen.
 #   [id]          = id of the queue. If "" is specified here,
@@ -113,10 +120,10 @@ fb_choosequeue()
       # Switch to that queue
       fb_setqueue_index $qindex0
       
-      if test "$3" != ""
+      if test "$4" != ""
         then
           # The queue name nust match.
-          if test "$3" != "${allqueues[$qindex0]}"
+          if test "$4" != "${allqueues[$qindex0]}"
             then
               # not yet found
               continue
@@ -127,9 +134,9 @@ fb_choosequeue()
         else
           # Ensure that the ID matches.
           # If not, skip that queue.
-          if test "$2" != "-1"
+          if test "$3" != "-1"
             then
-              if test "$2" != "$queuetype"
+              if test "$3" != "$queuetype"
                 then
                   continue
                 fi
@@ -140,6 +147,13 @@ fb_choosequeue()
             then
               continue
             fi
+            
+          # There must be enough memory in the queue
+          if test "$2" -gt $queuemaxmem
+            then
+              continue
+            fi
+            
         fi
         
       # Now we found an appropriate queue. Exit immediately.
@@ -322,6 +336,9 @@ submits the job file to the scheduler.
       Scheduled jobs are initially marked with a 'hold' status that prevents
       the jobs from being started. The user has to manually release
       the hold status from the jobs to be executed.
+  --altmake <method>
+      Method how to create scripts. method=0: invoke GNUMAKE, =1: direct 
+      creation via make_scripts.pl (faster).
   TEST ID
       a valid identifier for a FEAST benchmark test, defined in one of
       the *.fbdef files stored in directory benchmark/tests.
@@ -427,6 +444,13 @@ fb_readargs() {
       --vmem|-v)  # virtual memory
           VMEM="$2"
           echo "$0: Using limit for virtual memory $VMEM"
+          shift
+          shift
+          ;;
+
+      --altmake)  # alternative script generation
+          ALTMAKE="$2"
+          echo "$0: Using alternative script generation method $ALTMAKE."
           shift
           shift
           ;;
@@ -731,44 +755,77 @@ fb_createRuntestsScript() {
     #    tmpfile="tempfile.for.schedulingsystem.fbconf"
 
 
-    # Check whether GNUmakefile is available (i.e. whether configure has been run)
-    if [ ! -s GNUmakefile ]; then
-    cat <<EOF 1>&2
+    if test "$ALTMAKE" -ne "1"
+    then
+      # Check whether GNUmakefile is available (i.e. whether configure has been run)
+      if [ ! -s GNUmakefile ]
+      then
+        cat <<EOF 1>&2
 $0: Error: File 'GNUmakefile' not found. Please run './configure' first.
 EOF
-    exit 1007
-    fi
+        exit 1007
+      fi
 
-    # Create a 'runtests' script which serves as base for the jobfile.
-    # It's save to call 'make' as we checked for being in benchmark folder
-    echo "$benchmarktest" > $tmpfile
-    if [ $? -ne 0 ]; then
-    cat <<EOF 1>&2
+      # Create a 'runtests' script which serves as base for the jobfile.
+      # It's save to call 'make' as we checked for being in benchmark folder
+      echo "$benchmarktest" > $tmpfile
+      if [ $? -ne 0 ]
+      then
+        cat <<EOF 1>&2
 $0: Error: Creating temporary file failed. Script cancelled.
 EOF
-    exit 1008
-    fi
+        exit 1008
+      fi
 
-    $GNUMAKE SCRIPT=$scriptname `echo $tmpfile | sed 's/.fbconf$//'`
+      $GNUMAKE SCRIPT=$scriptname `echo $tmpfile | sed 's/.fbconf$//'`
     
-    # Purposely do not check for errors!
-    # Typically, an error is reported if the test ID is unknown or the
-    # according test is configured not to be run on the current host. COPROC
-    # tests e.g. are part of 'dailytests.fbconf' and 'alltests.fbconf', but
-    # should only be run on a supported host. LiDO does not support everything.
-    # Checking error codes here would means that this script is aborted
-    # as soon as the loop over the test IDs in e.g. 'dailytests.fbconf'
-    # reaches the first unsupported test ID. That's not intended.
-    # We set a return code, though, to prevent that incomplete or empty
-    # jobfiles are submitted to the PBS scheduler.
-    if [ $? -ne 0 ]; then
-    returncode=1
+      # Purposely do not check for errors!
+      # Typically, an error is reported if the test ID is unknown or the
+      # according test is configured not to be run on the current host. COPROC
+      # tests e.g. are part of 'dailytests.fbconf' and 'alltests.fbconf', but
+      # should only be run on a supported host. LiDO does not support everything.
+      # Checking error codes here would means that this script is aborted
+      # as soon as the loop over the test IDs in e.g. 'dailytests.fbconf'
+      # reaches the first unsupported test ID. That's not intended.
+      # We set a return code, though, to prevent that incomplete or empty
+      # jobfiles are submitted to the PBS scheduler.
+      if [ $? -ne 0 ]; then
+      returncode=1
+      else
+      returncode=0
+      fi
+      rm $tmpfile
+      trap - 2 3 9;
+      return $returncode;
+    
     else
-    returncode=0
+    
+      # Alternative script generation: Call include/make_test.pl.
+      # The script is invoked just like make...
+    
+      # Create a 'runtests' script which serves as base for the jobfile.
+      # It's save to call 'make' as we checked for being in benchmark folder
+      echo "$benchmarktest" > $tmpfile
+      if [ $? -ne 0 ]
+      then
+        cat <<EOF 1>&2
+$0: Error: Creating temporary file failed. Script cancelled.
+EOF
+        exit 1008
+      fi
+
+      ./include/make_test.pl SCRIPT=$scriptname `echo $tmpfile | sed 's/.fbconf$//'`
+
+      if [ $? -ne 0 ]; then
+      returncode=1
+      else
+      returncode=0
+      fi
+      rm $tmpfile
+      trap - 2 3 9;
+      return $returncode;
+    
     fi
-    rm $tmpfile
-    trap - 2 3 9;
-    return $returncode;
 }
 
 
@@ -841,9 +898,14 @@ fb_createPBSHeader()
       echo "#PBS -l nodes=$NODES:ppn=${CORES}"
     fi
 
-  if test "$VMEM" != ""
+  if test "$VMEM" != "0"
     then
       echo "#PBS -l vmem=${VMEM}mb"
+    else
+      if test "$queuestdmem" != "0"
+      then
+        echo "#PBS -l vmem=${queuestdmem}mb"
+      fi
     fi
   
   if test "$AFTERJOB" != ""

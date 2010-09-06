@@ -69,8 +69,8 @@ QTYPE=-1
 QNAME=
 
 # Virtual memory to be allocated (in MB).
-# ="": Automatic
-VMEM=
+# =0: Automatic
+VMEM=0
 
 # Whether or not to start the scripts consecutively.
 CONSEC=0
@@ -85,6 +85,11 @@ JOBHOLD=0
 GNUMAKE=
 
 MODULESLOADED=
+
+# Use alternative script creation method
+# =0: standard make.
+# =1: direct creation via make_script.sh. Faster.
+ALTMAKE=0
 
 # Prefix for script filename
 BENCHMARKRUNSCRIPT=runtests
@@ -158,8 +163,12 @@ CONSECJOB=
 # [queuetype]      = type of the queue.
 #                    =0: ethernet
 #                    =1: infiniband
+# [stdmem]         = standard amount of memory to allocate per node, in MB.
+#                    =0: system default.
+# [maxmem]         = maximum amount of memory per node, in MB.
+#                    =0: system default.
 
-declare -a queue001=( route      640:30:00 4 0)
+declare -a queue001=( route      640:30:00 4 0 0 0)
 
 # List of all queues in the system
 
@@ -222,6 +231,8 @@ if test "$queuename" = "none"
     echo $0": Error. No valid queue found for the job(s)!"
     exit 1100
   fi
+  
+echo $0": Using target queue: $queuename"
 
 # Create all jobfiles according to $ALLTESTS
 
