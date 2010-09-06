@@ -6,13 +6,13 @@
 #
 # Call:
 #
-#     generate_tests.pl filename [list] [output.fbdef]
+#     generate_tests.pl filename [list] [output.fbdef/.fbconf]
 #
 # In:
 #
 #     filename = name of a .fbgen file
 #     list     = optional command to generate a list of configurations.
-#     output.fbdef = optional, name of an output file. If not specified, the
+#     output   = optional, name of an output file. If not specified, the
 #                    output is printed to stdout.
 # 
 # The utility parses the .fbgen file 'filename' and creates a
@@ -731,11 +731,11 @@ sub generate_tests($$) {
 if ($#ARGV < 0) {
   die "\ngenerate_tests.pl: Command line script to generate .FBDEF files.\n\n" .
       "Call:\n\n" .
-      "    generate_tests.pl filename [list] [output.fbdef]\n\n" .
+      "    generate_tests.pl filename [list] [output.fbdef/.fbconf]\n\n" .
       "In:\n\n" .
       "    filename = name of a .fbgen file\n" .
       "    list     = optional command to generate a list of configurations.\n" .
-      "    output.fbdef = optional, name of an output file. If not specified, the\n" .
+      "    output   = optional, name of an output file. If not specified, the\n" .
       "               output is printed to stdout.\n" .
       "\n" .
       "The utility parses the .fbgen file 'filename' and creates a\n" .
@@ -757,6 +757,13 @@ foreach (@ARGV) {
   }
   
   if ($command =~ m/.*\.fbdef$/) {
+    # This is the filename of the destination output.
+    # Redirect stdout to that file.
+    open STDOUT, ">$command" 
+    or die "Can't redirect STDOUT: $!";
+  }
+
+  if ($command =~ m/.*\.fbconf$/) {
     # This is the filename of the destination output.
     # Redirect stdout to that file.
     open STDOUT, ">$command" 
