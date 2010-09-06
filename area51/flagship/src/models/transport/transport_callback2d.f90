@@ -1354,7 +1354,7 @@ contains
 
     use basicgeometry
     use boundary
-    use boundaryfilter
+    use boundarycondaux
     use collection
     use domainintegration
     use feevaluation
@@ -1464,9 +1464,9 @@ contains
     isegment = rcollection%IquickAccess(2)
 
     ! What type of boundary conditions are we?
-    select case(ibdrtype)
+    select case(iand(ibdrtype, BDRC_TYPEMASK))
 
-    case (BDRC_HOMNEUMANN_WEAK)
+    case (BDRC_HOMNEUMANN)
       !-------------------------------------------------------------------------
       ! Homogeneous Neumann boundary conditions:
       ! Do nothing since the boundary term vanishes
@@ -1478,7 +1478,7 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrConvP2d_sim')
 
 
-    case (BDRC_INHOMNEUMANN_WEAK)
+    case (BDRC_INHOMNEUMANN)
       !-------------------------------------------------------------------------
       ! Inhomogeneous Neumann boundary conditions:
       ! Evaluate coefficient for the linear form
@@ -1510,7 +1510,7 @@ contains
       end do
       
       
-    case (BDRC_DIRICHLET_WEAK, BDRC_ROBIN_WEAK)
+    case (BDRC_DIRICHLET, BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Dirichlet or Robin boundary conditions:
       ! Evaluate coefficient for the linear form
@@ -1607,7 +1607,7 @@ contains
       deallocate(Daux)
 
       
-    case(BDRC_FLUX_WEAK)
+    case(BDRC_FLUX)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s prescribed at the inlet)
       ! Evaluate coefficient for the linear form
@@ -1728,7 +1728,7 @@ contains
 
     use basicgeometry
     use boundary
-    use boundaryfilter
+    use boundarycondaux
     use collection
     use domainintegration
     use feevaluation
@@ -1838,9 +1838,9 @@ contains
     isegment = rcollection%IquickAccess(2)
 
     ! What type of boundary conditions are we?
-    select case(ibdrtype)
+    select case(iand(ibdrtype, BDRC_TYPEMASK))
 
-    case (BDRC_HOMNEUMANN_WEAK)
+    case (BDRC_HOMNEUMANN)
       !-------------------------------------------------------------------------
       ! Homogeneous Neumann boundary conditions:
       ! Do nothing since the boundary term vanishes
@@ -1852,7 +1852,7 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrConvD2d_sim')
 
 
-    case (BDRC_INHOMNEUMANN_WEAK)
+    case (BDRC_INHOMNEUMANN)
       !-------------------------------------------------------------------------
       ! Inhomogeneous Neumann boundary conditions
       ! Evaluate coefficient for the linear form
@@ -1884,7 +1884,7 @@ contains
       end do
       
       
-    case (BDRC_DIRICHLET_WEAK, BDRC_ROBIN_WEAK)
+    case (BDRC_DIRICHLET, BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Dirichlet or Robin boundary conditions
       ! Evaluate coefficient for the linear form
@@ -1981,7 +1981,7 @@ contains
       deallocate(Daux)
 
       
-    case(BDRC_FLUX_WEAK)
+    case(BDRC_FLUX)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s prescribed at the inlet)
       ! Evaluate coefficient for the linear form
@@ -2101,7 +2101,7 @@ contains
 
     use basicgeometry
     use boundary
-    use boundaryfilter
+    use boundarycondaux
     use collection
     use domainintegration
     use feevaluation
@@ -2207,9 +2207,9 @@ contains
     isegment = rcollection%IquickAccess(2)
 
     ! What type of boundary conditions are we?
-    select case(ibdrtype)
+    select case(iand(ibdrtype, BDRC_TYPEMASK))
 
-    case (BDRC_HOMNEUMANN_WEAK, BDRC_INHOMNEUMANN_WEAK)
+    case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN)
       !-------------------------------------------------------------------------
       ! (In-)Homogeneous Neumann boundary conditions:
       ! Assemble the boundary integral for the convective term      
@@ -2282,7 +2282,7 @@ contains
       deallocate(Daux)
 
       
-    case (BDRC_DIRICHLET_WEAK, BDRC_ROBIN_WEAK)
+    case (BDRC_DIRICHLET, BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Dirichlet or Robin boundary conditions:
       ! Do nothing since the boundary values are build into the linear form      
@@ -2294,7 +2294,7 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrConvP2d_sim')
 
       
-    case(BDRC_FLUX_WEAK)
+    case(BDRC_FLUX)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s at the outlet)
 
@@ -2390,7 +2390,7 @@ contains
 
     use basicgeometry
     use boundary
-    use boundaryfilter
+    use boundarycondaux
     use collection
     use domainintegration
     use feevaluation
@@ -2497,9 +2497,9 @@ contains
     isegment = rcollection%IquickAccess(2)
 
     ! What type of boundary conditions are we?
-    select case(ibdrtype)
+    select case(iand(ibdrtype, BDRC_TYPEMASK))
 
-    case (BDRC_HOMNEUMANN_WEAK, BDRC_INHOMNEUMANN_WEAK)
+    case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN)
       !-------------------------------------------------------------------------
       ! (In-)Homogeneous Neumann boundary conditions:
       ! Assemble the boundary integral for the convective term      
@@ -2572,7 +2572,7 @@ contains
       deallocate(Daux)
 
 
-    case (BDRC_DIRICHLET_WEAK, BDRC_ROBIN_WEAK)
+    case (BDRC_DIRICHLET, BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Dirichlet or Robin boundary conditions:
       ! Do nothing since the boundary values are build into the linear form.
@@ -2584,7 +2584,7 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrConvD2d_sim')
       
 
-    case(BDRC_FLUX_WEAK)
+    case(BDRC_FLUX)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s at the outlet)
 
@@ -2988,7 +2988,7 @@ contains
 
     use basicgeometry
     use boundary
-    use boundaryfilter
+    use boundarycondaux
     use collection
     use domainintegration
     use feevaluation
@@ -3408,7 +3408,7 @@ contains
 
     use basicgeometry
     use boundary
-    use boundaryfilter
+    use boundarycondaux
     use collection
     use domainintegration
     use feevaluation
@@ -3804,7 +3804,7 @@ contains
 
     use basicgeometry
     use boundary
-    use boundaryfilter
+    use boundarycondaux
     use collection
     use domainintegration
     use feevaluation

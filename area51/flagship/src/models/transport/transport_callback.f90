@@ -3450,8 +3450,8 @@ contains
     integer :: ivelocitytype, velocityfield
     integer :: ibct, isegment
 
-    ! Evaluate bilinear form for boundary integral and return if
-    ! there are no weak boundary conditions available
+    ! Evaluate bilinear form for boundary integral and 
+    ! return if there are no weak boundary conditions
     p_rboundaryCondition => rsolver%rboundaryCondition
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
 
@@ -3497,6 +3497,10 @@ contains
         do isegment = p_IbdrCondCpIdx(ibct),&
                       p_IbdrCondCpIdx(ibct+1)-1
 
+          ! Check if this segment has weak boundary conditions
+          if (iand(p_IbdrCondType(isegment),&
+                   BDRC_WEAK) .ne. BDRC_WEAK) cycle
+
           ! Prepare quick access array of temporal collection structure
           rcollectionTmp%DquickAccess(1) = dtime
           rcollectionTmp%DquickAccess(2) = dscale
@@ -3504,14 +3508,13 @@ contains
           rcollectionTmp%IquickAccess(2) = isegment
 
           ! What type of boundary conditions are we?
-          select case(p_IbdrCondType(isegment))
+          select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
 
-          case (BDRC_INHOMNEUMANN_WEAK)
-            print *, "Not implemented yet"
+          case (BDRC_INHOMNEUMANN)
+            print *, "Inhomogeneous Neumann boundary conditions are not implemented yet"
             stop
 
-
-          case (BDRC_HOMNEUMANN_WEAK, BDRC_FLUX_WEAK)
+          case (BDRC_HOMNEUMANN, BDRC_FLUX)
 
             ! Initialize the bilinear form
             rform%itermCount = 1
@@ -3531,6 +3534,11 @@ contains
             call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D,&
                 .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
                 rboundaryRegion, rcollectionTmp, cconstrType)
+
+          case default
+            call output_line('Unsupported type of boundary conditions!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBoundaryConditions')
+            call sys_halt()
             
           end select
 
@@ -3872,6 +3880,10 @@ contains
         do isegment = p_IbdrCondCpIdx(ibct),&
                       p_IbdrCondCpIdx(ibct+1)-1
 
+          ! Check if this segment has weak boundary conditions
+          if (iand(p_IbdrCondType(isegment),&
+                   BDRC_WEAK) .ne. BDRC_WEAK) cycle
+
           ! Prepare quick access array of temporal collection structure
           rcollectionTmp%DquickAccess(1) = dtime
           rcollectionTmp%DquickAccess(2) = dscale
@@ -3879,12 +3891,12 @@ contains
           rcollectionTmp%IquickAccess(2) = isegment
 
           ! What type of boundary conditions are we?
-          select case(p_IbdrCondType(isegment))
-          case (BDRC_HOMNEUMANN_WEAK)
-            ! Do nothing
+          select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
+            
+          case (BDRC_HOMNEUMANN)
+            ! Do nothing for homogeneous Neumann boundary conditions
 
-          case(BDRC_INHOMNEUMANN_WEAK, BDRC_DIRICHLET_WEAK,&
-               BDRC_ROBIN_WEAK, BDRC_FLUX_WEAK)
+          case(BDRC_INHOMNEUMANN, BDRC_DIRICHLET, BDRC_ROBIN, BDRC_FLUX)
             
             ! Initialize the linear form
             rform%itermCount = 1
@@ -3899,6 +3911,11 @@ contains
                 .false., rvector, fcoeff_buildVectorScBdr2D_sim,&
                 rboundaryRegion, rcollectionTmp)
             
+          case default
+            call output_line('Unsupported type of boundary copnditions !',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBoundaryConditions')
+            call sys_halt()
+
           end select
 
         end do ! isegment
@@ -4782,47 +4799,49 @@ contains
     ! Determine type of boundary condition in numeral form
     select case (sys_upcase(cbdrCondType))
 
-    case ('HOMNEUMANN')
+    case ('HOMNEUMANN_STRONG')
       ibdrCondType = BDRC_HOMNEUMANN
+      ! No strong boundary conditions are prescribed
 
     case ('HOMNEUMANN_WEAK')
-      ibdrCondType = BDRC_HOMNEUMANN_WEAK
+      ibdrCondType = BDRC_HOMNEUMANN + BDRC_WEAK
       
-    case ('INHOMNEUMANN')
+    case ('INHOMNEUMANN_STRONG')
       ibdrCondType = BDRC_INHOMNEUMANN
+      ! No strong boundary conditions are prescribed
 
     case ('INHOMNEUMANN_WEAK')
-      ibdrCondType = BDRC_INHOMNEUMANN_WEAK
+      ibdrCondType = BDRC_INHOMNEUMANN + BDRC_WEAK
       
-    case ('DIRICHLET')
-      ibdrCondType = BDRC_DIRICHLET
+    case ('DIRICHLET_STRONG')
+      ibdrCondType = BDRC_DIRICHLET + BDRC_STRONG
 
     case ('DIRICHLET_WEAK')
-      ibdrCondType = BDRC_DIRICHLET_WEAK
+      ibdrCondType = BDRC_DIRICHLET + BDRC_WEAK
 
-    case ('ROBIN')
-      ibdrCondType = BDRC_ROBIN
+    case ('ROBIN_STRONG')
+      ibdrCondType = BDRC_ROBIN + BDRC_STRONG
 
     case ('ROBIN_WEAK')
-      ibdrCondType = BDRC_ROBIN_WEAK
+      ibdrCondType = BDRC_ROBIN + BDRC_WEAK
 
-    case ('FLUX')
-      ibdrCondType = BDRC_FLUX
+    case ('FLUX_STRONG')
+      ibdrCondType = BDRC_FLUX + BDRC_STRONG
 
     case ('FLUX_WEAK')
-      ibdrCondType = BDRC_FLUX_WEAK
+      ibdrCondType = BDRC_FLUX + BDRC_WEAK
 
-    case ('PERIODIC')
-      ibdrCondType = BDRC_PERIODIC
+    case ('PERIODIC_STRONG')
+      ibdrCondType = BDRC_PERIODIC + BDRC_STRONG
 
     case ('PERIODIC_WEAK')
-      ibdrCondType = BDRC_PERIODIC_WEAK
+      ibdrCondType = BDRC_PERIODIC + BDRC_WEAK
 
-    case ('ANTIPERIODIC')
-      ibdrCondType = BDRC_ANTIPERIODIC
+    case ('ANTIPERIODIC_STRONG')
+      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_STRONG
 
     case ('ANTIPERIODIC_WEAK')
-      ibdrCondType = BDRC_ANTIPERIODIC_WEAK
+      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK
 
     case default
       read(cbdrCondType, '(I3)') ibdrCondType
@@ -4830,19 +4849,15 @@ contains
 
     
     ! Determine number of mathematical expressions
-    select case (ibdrCondType)
+    select case (iand(ibdrCondType, BDRC_TYPEMASK))
 
-    case (BDRC_HOMNEUMANN, BDRC_HOMNEUMANN_WEAK)
+    case (BDRC_HOMNEUMANN)
       nexpressions = 0
       
-    case (BDRC_INHOMNEUMANN, BDRC_INHOMNEUMANN_WEAK,&
-          BDRC_DIRICHLET, BDRC_DIRICHLET_WEAK,&
-          BDRC_ROBIN, BDRC_ROBIN_WEAK,&
-          BDRC_FLUX, BDRC_FLUX_WEAK)
+    case (BDRC_INHOMNEUMANN, BDRC_DIRICHLET, BDRC_ROBIN, BDRC_FLUX)
       nexpressions = 1
 
-    case (BDRC_PERIODIC, BDRC_PERIODIC_WEAK,&
-          BDRC_ANTIPERIODIC, BDRC_ANTIPERIODIC_WEAK)
+    case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       nexpressions = -1
 
     case default

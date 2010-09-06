@@ -160,7 +160,7 @@
 
 module euler_callback1d
 
-  use boundaryfilter
+  use boundarycondaux
   use collection
   use euler_basic
   use flagship_callback
@@ -3113,9 +3113,8 @@ contains
     integer:: ite
 
     ! What type of boundary condition is given?
-    select case(ibdrCondType)
-    case(BDR_EULERWALL,&
-         BDR_RLXEULERWALL)
+    select case(iand(ibdrCondType, BDRC_TYPEMASK))
+    case(BDRC_EULERWALL, BDRC_RLXEULERWALL)
       !-------------------------------------------------------------------------
 
       ! The wall boundary conditions follow algorithm II from the paper
@@ -3272,7 +3271,7 @@ contains
       Du(2) = rho*DpointNormal(1)*vn
       Du(3) = pstar/G1+0.5_DP*rho*(vn*vn)
 
-    case(BDR_VISCOUSWALL)
+    case(BDRC_VISCOUSWALL)
       !-------------------------------------------------------------------------
 
       ! Compute primitive variables
@@ -3285,7 +3284,7 @@ contains
       Du(2) = 0.0_DP
       Du(3) = p/G1
 
-    case(BDR_SUPERINLET)
+    case(BDRC_SUPERINLET)
       !-------------------------------------------------------------------------
 
       ! The free stream primitive variables are Deval=[rho,v1,p]
@@ -3311,7 +3310,7 @@ contains
       Du(3) = p/G1+0.5_DP*rho*(vn*vn)
 
 
-    case(BDR_FREESTREAM)
+    case(BDRC_FREESTREAM)
       !-------------------------------------------------------------------------
 
       ! The free stream primitive variables are Deval=[rho,v1,p]
@@ -3356,7 +3355,7 @@ contains
       Du(3) = p/G1+0.5_DP*rho*(vn*vn)
 
 
-    case(BDR_SUBINLET)
+    case(BDRC_SUBINLET)
       !-------------------------------------------------------------------------
 
       ! Compute primitive variables
@@ -3389,7 +3388,7 @@ contains
       Du(3) = p/G1+0.5_DP*rho*(vn*vn)
 
 
-    case(BDR_SUBOUTLET)
+    case(BDRC_SUBOUTLET)
       !-------------------------------------------------------------------------
 
       ! The subsonic outlet conditions follow the thesis

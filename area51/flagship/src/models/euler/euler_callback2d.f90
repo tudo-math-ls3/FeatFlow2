@@ -176,7 +176,7 @@
 
 module euler_callback2d
 
-  use boundaryfilter
+  use boundarycondaux
   use collection
   use derivatives
   use euler_basic
@@ -4231,9 +4231,8 @@ contains
     integer:: ite
 
     ! What type of boundary condition is given?
-    select case(ibdrCondType)
-    case(BDRC_EULERWALL,&
-         BDRC_RLXEULERWALL)
+    select case(iand(ibdrCondType, BDRC_TYPEMASK))
+    case(BDRC_EULERWALL, BDRC_RLXEULERWALL)
       !-------------------------------------------------------------------------
 
       ! The wall boundary conditions follow algorithm II from the paper
@@ -4647,7 +4646,7 @@ contains
 
     use basicgeometry
     use boundary
-    use boundaryfilter
+    use boundarycondaux
     use collection
     use domainintegration
     use feevaluation
@@ -4788,9 +4787,9 @@ contains
           Dpoints, rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
       ! What type of boundary conditions are we?
-      select case(ibdrtype)
+      select case(iand(ibdrtype, BDRC_TYPEMASK))
         
-      case (BDRC_FREESTREAM_WEAK)
+      case (BDRC_FREESTREAM)
         !-----------------------------------------------------------------------
         ! Free-stream boundary conditions:
         !
@@ -4809,7 +4808,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
 
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
             
@@ -4896,7 +4895,7 @@ contains
         end do
 
         
-      case (BDRC_EULERWALL_WEAK)
+      case (BDRC_EULERWALL)
         !-----------------------------------------------------------------------
         ! Euler wall boundary condition:
         !
@@ -4906,7 +4905,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
             
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
             
@@ -4940,7 +4939,7 @@ contains
         end do
 
 
-      case (BDRC_SUPERINLET_WEAK)
+      case (BDRC_SUPERINLET)
         !-----------------------------------------------------------------------
         ! Supersonic inlet boundary conditions:
         !
@@ -4956,7 +4955,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
 
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
@@ -4985,7 +4984,7 @@ contains
         end do
 
         
-      case (BDRC_SUPEROUTLET_WEAK)
+      case (BDRC_SUPEROUTLET)
         !-----------------------------------------------------------------------
         ! Supersonic outlet boundary conditions:
         !
@@ -4994,7 +4993,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
 
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
         
@@ -5013,7 +5012,7 @@ contains
         end do
 
         
-      case (BDRC_SUBINLET_WEAK)
+      case (BDRC_SUBINLET)
         !-----------------------------------------------------------------------
         ! Subsonic pressure-density inlet boundary conditions:
         !
@@ -5029,7 +5028,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
 
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
@@ -5086,7 +5085,7 @@ contains
         end do
 
 
-      case (BDRC_SUBOUTLET_WEAK)
+      case (BDRC_SUBOUTLET)
         !-----------------------------------------------------------------------
         ! Subsonic pressure outlet boundary condition:
         !
@@ -5102,7 +5101,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
 
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
@@ -5196,7 +5195,7 @@ contains
       ! What type of boundary conditions are we?
       select case(ibdrtype)
         
-      case (BDRC_FREESTREAM_WEAK)
+      case (BDRC_FREESTREAM)
         !-----------------------------------------------------------------------
         ! Free-stream boundary conditions:
         !
@@ -5215,7 +5214,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
 
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
             
@@ -5299,7 +5298,7 @@ contains
         end do
 
 
-      case (BDRC_EULERWALL_WEAK)
+      case (BDRC_EULERWALL)
        
         !-----------------------------------------------------------------------
         ! Euler wall boundary condition:
@@ -5342,7 +5341,7 @@ contains
         end do
 
 
-        case (BDRC_SUPERINLET_WEAK)
+        case (BDRC_SUPERINLET)
         !-----------------------------------------------------------------------
         ! Supersonic inlet boundary conditions:
         !
@@ -5358,7 +5357,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
 
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
@@ -5387,7 +5386,7 @@ contains
         end do
 
 
-      case (BDRC_SUPEROUTLET_WEAK)
+      case (BDRC_SUPEROUTLET)
         !-----------------------------------------------------------------------
         ! Supersonic outlet boundary conditions:
         !
@@ -5396,7 +5395,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
 
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
         
@@ -5415,7 +5414,7 @@ contains
         end do
 
 
-      case (BDRC_SUBINLET_WEAK)
+      case (BDRC_SUBINLET)
         !-----------------------------------------------------------------------
         ! Subsonic pressure-density inlet boundary conditions:
         !
@@ -5431,7 +5430,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
 
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
@@ -5487,7 +5486,7 @@ contains
         end do
 
 
-      case (BDRC_SUBOUTLET_WEAK)
+      case (BDRC_SUBOUTLET)
         !-----------------------------------------------------------------------
         ! Subsonic pressure outlet boundary condition:
         !
@@ -5503,7 +5502,7 @@ contains
         do iel = 1, size(rdomainIntSubset%p_Ielements)
           do ipoint = 1, ubound(Dpoints,2)
 
-            ! Get the normal vector in the point from the boundary.
+            ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 

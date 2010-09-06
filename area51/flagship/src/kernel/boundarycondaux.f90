@@ -18,7 +18,7 @@
 !# 2.) bdrc_release
 !#     -> Releases a set of boundary conditions
 !#
-!# 3.) bdrc_calcMatrixPeriodic
+!# 3.) bdrc_calcMatrixPeriodic = bdrc_calcMatrixScalarPeriodic
 !#     -> Calculates the matrix for periodic boundary conditions
 !#
 !# 4.) bdrc_infoBoundaryCondition
@@ -72,12 +72,34 @@ module boundarycondaux
   ! *****************************************************************************
 
 !<constants>
+!<constantblock description="Flags for boundary condition specification bitfield">
+
+  ! Impose boundary condition in weak sense
+  integer(I32), parameter, public :: BDRC_WEAK     = 2**10
+
+  ! Impose boundary condition in strong sense by filtering
+  integer(I32), parameter, public :: BDRC_STRONG   = 2**11
+
+  ! Bitmask for boundary condition (bits 0..9)
+  integer(I32), parameter, public :: BDRC_TYPEMASK = 255
+!</constantblock>
+
+!<constantblock description="Types of special boundary conditions">
+
+  ! Periodic boundary condition (symmetric)
+  ! This condition couples two boundary segments periodically
+  integer, parameter, public :: BDRC_PERIODIC      = 101
+
+  ! Periodic boundary condition (anti-symmetric)
+  ! This condition couples two boundary segments periodically
+  integer, parameter, public :: BDRC_ANTIPERIODIC  = 102
+!</constantblock>
 
 !<constantblock description="Symbolic variables for boundary description">
 
   ! List of variables which are evaluated by the bytecode interpreter in 3D
   character (LEN=*), dimension(NDIM3D+1), parameter ::&
-      BDR_SYMBOLICVARS = (/ (/'x'/),(/'y'/),(/'z'/),(/'t'/) /)
+      BDRC_SYMBOLICVARS = (/ (/'x'/),(/'y'/),(/'z'/),(/'t'/) /)
 !</constantblock>
 !</constants>
 
@@ -358,12 +380,13 @@ contains
       call fcb_parseBoundaryCondition(keyword, ndimension,&
           p_IbdrCondType(icomp), nexpr)
 
-      ! Set indicator for weak/strong boundary conditions
-      if (p_IbdrCondType(icomp) .lt. 0) then
-        rboundaryCondition%bStrongBdrCond = .true.
-      elseif (p_IbdrCondType(icomp) .gt. 0) then
-        rboundaryCondition%bWeakBdrCond = .true.
-      end if
+      ! Set indicator for strong boundary conditions
+      if (iand(p_IbdrCondType(icomp), BDRC_STRONG) .eq. BDRC_STRONG)&
+          rboundaryCondition%bStrongBdrCond = .true.
+      
+      ! Set indicator for weak boundary conditions
+      if (iand(p_IbdrCondType(icomp), BDRC_WEAK) .eq. BDRC_WEAK)&
+          rboundaryCondition%bWeakBdrCond = .true.
 
       ! How many mathematical expressions are required for
       ! this type of boundary conditions?
@@ -388,7 +411,7 @@ contains
       do iexpr = 1, nexpr
         call fparser_parseFunction(rboundaryCondition%rfparser,&
             rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
-            trim(adjustl(cMathExpression(iexpr))), BDR_SYMBOLICVARS)
+            trim(adjustl(cMathExpression(iexpr))), BDRC_SYMBOLICVARS)
       end do
 
     end do ! icomp
@@ -574,9 +597,12 @@ contains
 
       case (NDIM2D)
         ! Set pointers for triangulation
-        call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue, p_DvertexParameterValue)
-        call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
-        call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
+        call storage_getbase_double(&
+            p_rtriangulation%h_DvertexParameterValue, p_DvertexParameterValue)
+        call storage_getbase_int(&
+            p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
+        call storage_getbase_int(&
+            p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
 
         ! Set pointers for boundary
         call storage_getbase_double (rboundaryCondition%h_DmaxPar, p_DmaxPar)
@@ -659,18 +685,21 @@ contains
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
 
-!!$        ! Are we periodic boundary conditions?
-!!$        if ((IbdrCondType(isegment) .eq. BDR_PERIODIC) .or.&
-!!$            (IbdrCondType(isegment) .eq. BDR_ANTIPERIODIC)) then
-!!$          ! Compute vertex parameter value at periodic boundary
-!!$          ibctPeriodic = IbdrCompPeriodic(isegment)
-!!$          ivbdPeriodic = IboundaryCpIdx(ibctPeriodic)
-!!$
-!!$          ! Append pair of periodic vertices
-!!$          nrows = nrows+1
-!!$          Irows(1, nrows) = IverticesAtBoundary(ivbd)
-!!$          Irows(2, nrows) = IverticesAtBoundary(ivbdPeriodic)
-!!$        end if
+        ! Are we strongly imposed periodic boundary conditions?
+        if (iand(IbdrCondType(isegment), BDRC_STRONG)   .eq. BDRC_STRONG .and.&
+           (iand(IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_PERIODIC .or.&
+            iand(IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
+
+          ! Compute vertex parameter value at periodic boundary
+          ibctPeriodic = IbdrCompPeriodic(isegment)
+          ivbdPeriodic = IboundaryCpIdx(ibctPeriodic)
+          
+          ! Append pair of periodic vertices
+          nrows = nrows+1
+          Irows(1, nrows) = IverticesAtBoundary(ivbd)
+          Irows(2, nrows) = IverticesAtBoundary(ivbdPeriodic)
+        end if
+
       end do
     end subroutine calcPeriodic_1D
 
@@ -736,10 +765,10 @@ contains
 
         ! Set pointer to first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct+1)-1
-        dminValue = min(0._DP, DmaxParam(isegment)&
-            -DvertexParameterValue(ivbdLast))
-        dmaxValue = max(0._DP, DvertexParameterValue(ivbdLast)&
-            -DmaxParam(isegment))
+        dminValue = min(0._DP,&
+            DmaxParam(isegment)-DvertexParameterValue(ivbdLast))
+        dmaxValue = max(0._DP,&
+            DvertexParameterValue(ivbdLast)-DmaxParam(isegment))
 
         ! Adjust endpoint parameter of segment
         if (.not.BisSegClosed(isegment)) dmaxValue =&
@@ -767,59 +796,62 @@ contains
                 nearest(dmaxValue, -1._DP)
           end do
 
-!!$          ! Are we periodic boundary conditions?
-!!$          if (IbdrCondType(isegment) .eq. BDR_PERIODIC) then
-!!$
-!!$            ! Compute vertex parameter value at periodic boundary
-!!$            ibctPeriodic     = IbdrCompPeriodic(isegment)
-!!$            isegmentPeriodic = IbdrCondPeriodic(isegment)
-!!$
-!!$            if (isegmentPeriodic .eq. IbdrCondCpIdx(ibctPeriodic)) then
-!!$              dVertexParameterPeriodic = DmaxParam(isegment)&
-!!$                  -DvertexParameterValue(ivbd)
-!!$            else
-!!$              dVertexParameterPeriodic = DmaxParam(isegmentPeriodic-1)+&
-!!$                  DmaxParam(isegment)-DvertexParameterValue(ivbd)
-!!$            end if
-!!$
-!!$            if (dVertexParameterPeriodic .eq.&
-!!$                DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
-!!$                dVertexParameterPeriodic = 0._DP
-!!$
-!!$            ! Compute vertex number of nearest neighbor at boundary
-!!$            call bdrc_getNearestNeighbor2d(DvertexParameterValue,&
-!!$                dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
-!!$                ivbdPeriodic)
-!!$
-!!$            ! Append pair of periodic vertices
-!!$            nrows = nrows+1
-!!$            Irows(1, nrows) = IverticesAtBoundary(ivbd)
-!!$            Irows(2, nrows) = IverticesAtBoundary(ivbdPeriodic)
-!!$
-!!$          elseif (p_IbdrCondType(isegment) .eq. BDR_ANTIPERIODIC) then
-!!$
-!!$            ! Compute vertex parameter value at periodic boundary
-!!$            ibctPeriodic     = IbdrCompPeriodic(isegment)
-!!$            isegmentPeriodic = IbdrCondPeriodic(isegment)
-!!$
-!!$            dVertexParameterPeriodic = DmaxParam(isegmentPeriodic)-&
-!!$                (DmaxParam(isegment)-DvertexParameterValue(ivbd))
-!!$
-!!$            if (dVertexParameterPeriodic .eq.&
-!!$                DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
-!!$                dVertexParameterPeriodic = 0._DP
-!!$
-!!$            ! Compute vertex number of nearest neighbor at boundary
-!!$            call bdrc_getNearestNeighbor2d(DvertexParameterValue,&
-!!$                dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
-!!$                ivbdPeriodic)
-!!$
-!!$            ! Append pair of periodic vertices
-!!$            nrows = nrows+1
-!!$            Irows(1, nrows) = IverticesAtBoundary(ivbd)
-!!$            Irows(2, nrows) = IverticesAtBoundary(ivbdPeriodic)
-!!$
-!!$          end if
+          ! Are we strongly imposed periodic boundary conditions?
+          if (iand(IbdrCondType(isegment), BDRC_STRONG)   .eq. BDRC_STRONG .and.&
+              iand(IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+
+            ! Compute vertex parameter value at periodic boundary
+            ibctPeriodic     = IbdrCompPeriodic(isegment)
+            isegmentPeriodic = IbdrCondPeriodic(isegment)
+
+            if (isegmentPeriodic .eq. IbdrCondCpIdx(ibctPeriodic)) then
+              dVertexParameterPeriodic = DmaxParam(isegment)-&
+                  DvertexParameterValue(ivbd)
+            else
+              dVertexParameterPeriodic = DmaxParam(isegmentPeriodic-1)+&
+                  DmaxParam(isegment)-DvertexParameterValue(ivbd)
+            end if
+
+            if (dVertexParameterPeriodic .eq.&
+                DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
+                dVertexParameterPeriodic = 0._DP
+
+            ! Compute vertex number of nearest neighbor at boundary
+            call bdrc_getNearestNeighbor2d(DvertexParameterValue,&
+                dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
+                ivbdPeriodic)
+
+            ! Append pair of periodic vertices
+            nrows = nrows+1
+            Irows(1, nrows) = IverticesAtBoundary(ivbd)
+            Irows(2, nrows) = IverticesAtBoundary(ivbdPeriodic)
+
+          elseif (iand(IbdrCondType(isegment), BDRC_STRONG)   .eq. BDRC_STRONG .and.&
+                  iand(IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC) then
+
+            ! Compute vertex parameter value at periodic boundary
+            ibctPeriodic     = IbdrCompPeriodic(isegment)
+            isegmentPeriodic = IbdrCondPeriodic(isegment)
+
+            dVertexParameterPeriodic = DmaxParam(isegmentPeriodic)-&
+                (DmaxParam(isegment)-DvertexParameterValue(ivbd))
+
+            if (dVertexParameterPeriodic .eq.&
+                DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
+                dVertexParameterPeriodic = 0._DP
+
+            ! Compute vertex number of nearest neighbor at boundary
+            call bdrc_getNearestNeighbor2d(DvertexParameterValue,&
+                dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
+                ivbdPeriodic)
+
+            ! Append pair of periodic vertices
+            nrows = nrows+1
+            Irows(1, nrows) = IverticesAtBoundary(ivbd)
+            Irows(2, nrows) = IverticesAtBoundary(ivbdPeriodic)
+
+          end if
+
         end do
       end do
     end subroutine calcPeriodic_2D

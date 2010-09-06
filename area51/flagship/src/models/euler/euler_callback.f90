@@ -3845,77 +3845,78 @@ contains
     ! Determine type of boundary condition in numeral form
     select case (sys_upcase(cbdrCondType))
 
-    case ('EULERWALL')
-      ibdrCondType = BDRC_EULERWALL
+    case ('EULERWALL_STRONG')
+      ibdrCondType = BDRC_EULERWALL + BDRC_STRONG
 
     case ('EULERWALL_WEAK')
-      ibdrCondType = BDRC_EULERWALL_WEAK
+      ibdrCondType = BDRC_EULERWALL + BDRC_WEAK
 
-    case ('RLXEULERWALL')
-      ibdrCondType = BDRC_RLXEULERWALL
+    case ('RLXEULERWALL_STRONG')
+      ibdrCondType = BDRC_RLXEULERWALL + BDRC_STRONG
 
     case ('RLXEULERWALL_WEAK')
-      ibdrCondType = BDRC_RLXEULERWALL_WEAK
+      ibdrCondType = BDRC_RLXEULERWALL + BDRC_WEAK
 
-    case ('VISCOUSWALL')
-      ibdrCondType = BDRC_VISCOUSWALL
+    case ('VISCOUSWALL_STRONG')
+      ibdrCondType = BDRC_VISCOUSWALL + BDRC_STRONG
 
     case ('VISCOUSWALL_WEAK')
-      ibdrCondType = BDRC_VISCOUSWALL_WEAK
+      ibdrCondType = BDRC_VISCOUSWALL + BDRC_WEAK
 
-    case ('SUPEROUTLET')
+    case ('SUPEROUTLET_STRONG')
       ibdrCondType = BDRC_SUPEROUTLET
+      ! No strong boundary conditions are prescribed
 
     case ('SUPEROUTLET_WEAK')
-      ibdrCondType = BDRC_SUPEROUTLET_WEAK
+      ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK
 
-    case ('SUBOUTLET')
-      ibdrCondType = BDRC_SUBOUTLET
+    case ('SUBOUTLET_STRONG')
+      ibdrCondType = BDRC_SUBOUTLET + BDRC_STRONG
 
     case ('SUBOUTLET_WEAK')
-      ibdrCondType = BDRC_SUBOUTLET_WEAK
+      ibdrCondType = BDRC_SUBOUTLET + BDRC_WEAK
 
-    case ('MASSOUTLET')
-      ibdrCondType = BDRC_MASSOUTLET
+    case ('MASSOUTLET_STRONG')
+      ibdrCondType = BDRC_MASSOUTLET + BDRC_STRONG
 
     case ('MASSOUTLET_WEAK')
-      ibdrCondType = BDRC_MASSOUTLET_WEAK
+      ibdrCondType = BDRC_MASSOUTLET + BDRC_WEAK
       
-    case ('FREESTREAM')
-      ibdrCondType = BDRC_FREESTREAM
+    case ('FREESTREAM_STRONG')
+      ibdrCondType = BDRC_FREESTREAM + BDRC_STRONG
       
     case ('FREESTREAM_WEAK')
-      ibdrCondType = BDRC_FREESTREAM_WEAK
+      ibdrCondType = BDRC_FREESTREAM + BDRC_WEAK
 
-    case ('SUPERINLET')
-      ibdrCondType = BDRC_SUPERINLET
+    case ('SUPERINLET_STRONG')
+      ibdrCondType = BDRC_SUPERINLET + BDRC_STRONG
 
     case ('SUPERINLET_WEAK')
-      ibdrCondType = BDRC_SUPERINLET_WEAK
+      ibdrCondType = BDRC_SUPERINLET + BDRC_WEAK
 
-    case ('SUBINLET')
-      ibdrCondType = BDRC_SUBINLET
+    case ('SUBINLET_STRONG')
+      ibdrCondType = BDRC_SUBINLET + BDRC_STRONG
 
     case ('SUBINLET_WEAK')
-      ibdrCondType = BDRC_SUBINLET_WEAK
+      ibdrCondType = BDRC_SUBINLET + BDRC_WEAK
 
-    case ('MASSINLET')
-      ibdrCondType = BDRC_MASSINLET
+    case ('MASSINLET_STRONG')
+      ibdrCondType = BDRC_MASSINLET + BDRC_STRONG
 
     case ('MASSINLET_WEAK')
-      ibdrCondType = BDRC_MASSINLET_WEAK
+      ibdrCondType = BDRC_MASSINLET + BDRC_WEAK
 
-    case ('PERIODIC')
-      ibdrCondType = BDRC_PERIODIC
+    case ('PERIODIC_STRONG')
+      ibdrCondType = BDRC_PERIODIC + BDRC_STRONG
       
     case ('PERIODIC_WEAK')
-      ibdrCondType = BDRC_PERIODIC_WEAK
+      ibdrCondType = BDRC_PERIODIC + BDRC_WEAK
       
-    case ('ANTIPERIODIC')
-      ibdrCondType = BDRC_ANTIPERIODIC
+    case ('ANTIPERIODIC_STRONG')
+      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_STRONG
       
     case ('ANTIPERIODIC_WEAK')
-      ibdrCondType = BDRC_ANTIPERIODIC_WEAK
+      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK
 
     case default
       read(cbdrCondType, '(I3)') ibdrCondType
@@ -3923,30 +3924,24 @@ contains
 
     
     ! Determine number of mathematical expressions
-    select case (ibdrCondType)
+    select case (iand(ibdrCondType, BDRC_TYPEMASK))
       
-    case (BDRC_EULERWALL, BDRC_EULERWALL_WEAK,&
-          BDRC_VISCOUSWALL, BDRC_VISCOUSWALL_WEAK,&
-          BDRC_SUPEROUTLET, BDRC_SUPEROUTLET_WEAK)
+    case (BDRC_EULERWALL, BDRC_VISCOUSWALL, BDRC_SUPEROUTLET)
       nexpressions = 0
 
-    case (BDRC_SUBOUTLET, BDRC_SUBOUTLET_WEAK,&
-          BDRC_MASSOUTLET, BDRC_MASSOUTLET_WEAK,&
-          BDRC_RLXEULERWALL, BDRC_RLXEULERWALL_WEAK)
+    case (BDRC_SUBOUTLET, BDRC_MASSOUTLET, BDRC_RLXEULERWALL)
       nexpressions = 1
      
-    case (BDRC_MASSINLET, BDRC_MASSINLET_WEAK)
+    case (BDRC_MASSINLET)
       nexpressions = 2
 
-    case (BDRC_SUBINLET, BDRC_SUBINLET_WEAK)
+    case (BDRC_SUBINLET)
       nexpressions = 3
 
-    case (BDRC_FREESTREAM, BDRC_FREESTREAM_WEAK,&
-          BDRC_SUPERINLET, BDRC_SUPERINLET_WEAK)
+    case (BDRC_FREESTREAM, BDRC_SUPERINLET)
       nexpressions = ndimension+2
       
-    case (BDRC_PERIODIC, BDRC_PERIODIC_WEAK,&
-          BDRC_ANTIPERIODIC, BDRC_ANTIPERIODIC_WEAK)
+    case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       nexpressions = -1
 
     case default
@@ -4002,6 +3997,10 @@ contains
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
+
+    ! At the moment, nothing is done in this subroutine and it should
+    ! not be called. It may be necessary to assemble some bilinear
+    ! forms at the boundary in future.
 
   end subroutine euler_calcBilfBoundaryConditions
 
@@ -4090,8 +4089,9 @@ contains
         do isegment = p_IbdrCondCpIdx(ibct),&
                       p_IbdrCondCpIdx(ibct+1)-1
 
-	  ! Process only weak boundary conditions
-	  if (p_IbdrCondType(isegment) .lt. 0) cycle
+          ! Check if this segment has weak boundary conditions
+          if (iand(p_IbdrCondType(isegment),&
+                   BDRC_WEAK) .ne. BDRC_WEAK) cycle
 
           ! Prepare quick access array of temporal collection structure
           rcollectionTmp%DquickAccess(1) = dtime

@@ -158,22 +158,22 @@ module transport_basic
 !<constantblock description="Global type of recovery-based error estimation">
 
   ! L2-projection
-  integer, parameter, public :: ERREST_L2PROJECTION  = 1
+  integer, parameter, public :: ERREST_L2PROJECTION = 1
 
   ! Superconvergent patch recovery (vertex-based)
-  integer, parameter, public :: ERREST_SPR_VERTEX    = 2
+  integer, parameter, public :: ERREST_SPR_VERTEX   = 2
 
   ! Superconvergent patch recovery (element-based)
-  integer, parameter, public :: ERREST_SPR_ELEMENT   = 3
+  integer, parameter, public :: ERREST_SPR_ELEMENT  = 3
 
   ! Superconvergent patch recovery (face-based)
-  integer, parameter, public :: ERREST_SPR_FACE      = 4
+  integer, parameter, public :: ERREST_SPR_FACE     = 4
 
   ! Limited averaging gradient recovery
-  integer, parameter, public :: ERREST_LIMAVR        = 5
+  integer, parameter, public :: ERREST_LIMAVR       = 5
 
   ! Second-difference indicator (by Loehner)
-  integer, parameter, public :: ERREST_SECONDDIFF    = 6
+  integer, parameter, public :: ERREST_SECONDDIFF   = 6
 
 !</constantblock>
 
@@ -181,16 +181,16 @@ module transport_basic
 !<constantblock description="Global constants for error redistribution">
 
   ! Use error 'as is'
-  integer, parameter, public :: ERREST_ASIS          = 0
+  integer, parameter, public :: ERREST_ASIS        = 0
 
   ! Equidistribution of error
-  integer, parameter, public :: ERREST_EQUIDIST      = 1
+  integer, parameter, public :: ERREST_EQUIDIST    = 1
 
   ! Logarithmic equidistribution of error
-  integer, parameter, public :: ERREST_LOGEQUIDIST   = 2
+  integer, parameter, public :: ERREST_LOGEQUIDIST = 2
 
   ! Automatic treshold based on RMS
-  integer, parameter, public :: ERREST_AUTORMS       = 3
+  integer, parameter, public :: ERREST_AUTORMS     = 3
 
 !</constantblock>
 
@@ -209,35 +209,19 @@ module transport_basic
 !<constantblock description="Types of boundary conditions">
 
   ! Homogeneous Neumann boundary conditions
-  integer, parameter, public :: BDRC_HOMNEUMANN_WEAK = 1
-  integer, parameter, public :: BDRC_HOMNEUMANN      = -BDRC_HOMNEUMANN_WEAK
+  integer, parameter, public :: BDRC_HOMNEUMANN   = 1
 
   ! Inhomogeneous Neumann boundary conditions
-  integer, parameter, public :: BDRC_INHOMNEUMANN_WEAK = 2
-  integer, parameter, public :: BDRC_INHOMNEUMANN      = -BDRC_INHOMNEUMANN_WEAK
+  integer, parameter, public :: BDRC_INHOMNEUMANN = 2
 
   ! Dirichlet boundary conditions
-  integer, parameter, public :: BDRC_DIRICHLET_WEAK = 3
-  integer, parameter, public :: BDRC_DIRICHLET      = -BDRC_DIRICHLET_WEAK
+  integer, parameter, public :: BDRC_DIRICHLET    = 3
 
   ! Robin boundary conditions
-  integer, parameter, public :: BDRC_ROBIN_WEAK = 4
-  integer, parameter, public :: BDRC_ROBIN      = -BDRC_ROBIN_WEAK
+  integer, parameter, public :: BDRC_ROBIN        = 4
 
   ! Flux boundary condition
-  integer, parameter, public :: BDRC_FLUX_WEAK = 5
-  integer, parameter, public :: BDRC_FLUX      = -BDRC_FLUX_WEAK
-
-  ! Periodic boundary condition (symmetric)
-  ! This condition couples two boundary segments periodically
-  integer, parameter, public :: BDRC_PERIODIC_WEAK = 101
-  integer, parameter, public :: BDRC_PERIODIC      = -BDRC_PERIODIC_WEAK
-
-  ! Periodic boundary condition (anti-symmetric)
-  ! This condition couples two boundary segments periodically
-  integer, parameter, public :: BDRC_ANTIPERIODIC_WEAK = 102
-  integer, parameter, public :: BDRC_ANTIPERIODIC      = -BDRC_ANTIPERIODIC_WEAK
-
+  integer, parameter, public :: BDRC_FLUX         = 5
 !</constantblock>
 
 !</constants>

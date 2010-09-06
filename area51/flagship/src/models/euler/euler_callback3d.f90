@@ -170,7 +170,6 @@
 
 module euler_callback3d
 
-  use boundaryfilter
   use collection
   use euler_basic
   use flagship_callback

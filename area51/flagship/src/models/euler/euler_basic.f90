@@ -35,6 +35,7 @@
 
 module euler_basic
 
+  use boundarycondaux
   use fparser
   use fsystem
   use genoutput
@@ -106,22 +107,22 @@ module euler_basic
 !<constantblock description="Global type of dissipation">
 
   ! Zero dissipation
-  integer, parameter, public :: DISSIPATION_ZERO = 0
+  integer, parameter, public :: DISSIPATION_ZERO           = 0
 
   ! Scalar dissipation
-  integer, parameter, public :: DISSIPATION_SCALAR = 1
+  integer, parameter, public :: DISSIPATION_SCALAR         = 1
 
   ! Tensorial dissipation
-  integer, parameter, public :: DISSIPATION_TENSOR = 2
+  integer, parameter, public :: DISSIPATION_TENSOR         = 2
 
   ! Rusanov flux
-  integer, parameter, public :: DISSIPATION_RUSANOV = 3
+  integer, parameter, public :: DISSIPATION_RUSANOV        = 3
 
   ! Scalar dissipation adopting dimensional splitting
-  integer, parameter, public :: DISSIPATION_SCALAR_DSPLIT = -DISSIPATION_SCALAR
+  integer, parameter, public :: DISSIPATION_SCALAR_DSPLIT  = -DISSIPATION_SCALAR
 
   ! Tensorial dissipation adopting dimensional splitting
-  integer, parameter, public :: DISSIPATION_TENSOR_DSPLIT = -DISSIPATION_TENSOR
+  integer, parameter, public :: DISSIPATION_TENSOR_DSPLIT  = -DISSIPATION_TENSOR
 
   ! Rusanov flux adopting dimensional splitting
   integer, parameter, public :: DISSIPATION_RUSANOV_DSPLIT = -DISSIPATION_RUSANOV
@@ -131,22 +132,22 @@ module euler_basic
 !<constantblock description="Global type of recovery-based error estimation">
 
   ! L2-projection
-  integer, parameter, public :: ERREST_L2PROJECTION  = 1
+  integer, parameter, public :: ERREST_L2PROJECTION = 1
 
   ! Superconvergent patch recovery (vertex-based)
-  integer, parameter, public :: ERREST_SPR_VERTEX    = 2
+  integer, parameter, public :: ERREST_SPR_VERTEX   = 2
 
   ! Superconvergent patch recovery (element-based)
-  integer, parameter, public :: ERREST_SPR_ELEMENT   = 3
+  integer, parameter, public :: ERREST_SPR_ELEMENT  = 3
 
   ! Superconvergent patch recovery (face-based)
-  integer, parameter, public :: ERREST_SPR_FACE      = 4
+  integer, parameter, public :: ERREST_SPR_FACE     = 4
 
   ! Limited averaging gradient recovery
-  integer, parameter, public :: ERREST_LIMAVR        = 5
+  integer, parameter, public :: ERREST_LIMAVR       = 5
 
   ! Second-difference indicator (by Loehner)
-  integer, parameter, public :: ERREST_SECONDDIFF    = 6
+  integer, parameter, public :: ERREST_SECONDDIFF   = 6
 
 !</constantblock>
 
@@ -212,24 +213,21 @@ module euler_basic
   !
   ! V*n = 0
 
-  integer, parameter, public :: BDRC_EULERWALL_WEAK = 1
-  integer, parameter, public :: BDRC_EULERWALL      = -BDRC_EULERWALL_WEAK
+  integer, parameter, public :: BDRC_EULERWALL    = 1
 
   ! Relaxed Euler wall and symmetry plane boundary condition
   ! The normal component of the velocity vector is "approching" zero
   !
   ! (V-c*Vold)*n = 0, where   0 < c <= 1
 
-  integer, parameter, public :: BDRC_RLXEULERWALL_WEAK = 2
-  integer, parameter, public :: BDRC_RLXEULERWALL      = -BDRC_RLXEULERWALL_WEAK
+  integer, parameter, public :: BDRC_RLXEULERWALL = 2
 
   ! Viscous wall boundary condition
   ! The velocity vector is set to zero
   !
   ! V = 0
 
-  integer, parameter, public :: BDRC_VISCOUSWALL_WEAK = 3
-  integer, parameter, public :: BDRC_VISCOUSWALL      = -BDRC_VISCOUSWALL_WEAK
+  integer, parameter, public :: BDRC_VISCOUSWALL  = 3
 
   ! Free stream boundary condition using characteristics
   ! These boundary conditions can be used for both subsonic and
@@ -237,22 +235,19 @@ module euler_basic
   ! set from free stream quantities for ingoing characteristics or
   ! adopted from the interior values for outgoing characteristics.
 
-  integer, parameter, public :: BDRC_FREESTREAM_WEAK = 4
-  integer, parameter, public :: BDRC_FREESTREAM      = -BDRC_FREESTREAM_WEAK
+  integer, parameter, public :: BDRC_FREESTREAM   = 4
 
   ! Subsonic inlet boundary condition
   ! At a subsonic inlet, the recommended boundary condition is to specify
   ! the total temperature and total pressure as well as the flow angle.
 
-  integer, parameter, public :: BDRC_SUBINLET_WEAK = 5
-  integer, parameter, public :: BDRC_SUBINLET      = -BDRC_SUBINLET_WEAK
+  integer, parameter, public :: BDRC_SUBINLET     = 5
 
   ! Subsonic outlet boundary condition
   ! At a subsonic outlet the recommended boundary condition is to specify
   ! the static pressure.
 
-  integer, parameter, public :: BDRC_SUBOUTLET_WEAK = 6
-  integer, parameter, public :: BDRC_SUBOUTLET      = -BDRC_SUBOUTLET_WEAK
+  integer, parameter, public :: BDRC_SUBOUTLET    = 6
 
   ! Massflow inlet boundary condition
   ! This boundary condition can be prescribed at a subsonic inflow boundary
@@ -271,8 +266,7 @@ module euler_basic
   !
   ! (3) p0 = p*(1-(gamma-1)/(gamma+1)Laval^2)^(-gamma)/(gamma-1)
 
-  integer, parameter, public :: BDRC_MASSINLET_WEAK = 7
-  integer, parameter, public :: BDRC_MASSINLET      = -BDRC_MASSINLET_WEAK
+  integer, parameter, public :: BDRC_MASSINLET    = 7
 
   ! Massflow outlet boundary condition
   ! This boundary condition can be prescribed at a subsonic outflow boundary
@@ -295,8 +289,7 @@ module euler_basic
   !
   ! (3) p = p0*(1-(gamma-1)/(gamma+1)*Laval^2)^gamma/(gamma-1)
 
-  integer, parameter, public :: BDRC_MASSOUTLET_WEAK = 8
-  integer, parameter, public :: BDRC_MASSOUTLET      = -BDRC_MASSOUTLET_WEAK
+  integer, parameter, public :: BDRC_MASSOUTLET   = 8
 
   ! Mach outflow boundary condition
   ! This condition is similar to the mass flow outflow boundary condition. It is
@@ -306,30 +299,17 @@ module euler_basic
   !
   ! p = p0*(1+(gamma-1)/2*M^2)^(-gamma/(gamma-1))
 
-  integer, parameter, public :: BDRC_MACHOUTLET_WEAK = 9
-  integer, parameter, public :: BDRC_MACHOUTLET      = -BDRC_MACHOUTLET_WEAK
+  integer, parameter, public :: BDRC_MACHOUTLET   = 9
 
   ! Supersonic inlet boundary condition
   ! All boundary conditions are prescribed by the free stream quantities
 
-  integer, parameter, public :: BDRC_SUPERINLET_WEAK = 10
-  integer, parameter, public :: BDRC_SUPERINLET      = -BDRC_SUPERINLET_WEAK
+  integer, parameter, public :: BDRC_SUPERINLET   = 10
 
   ! Supersonic outlet boundary condition
   ! No boundary conditions are prescribed at all
 
-  integer, parameter, public :: BDRC_SUPEROUTLET_WEAK = 11
-  integer, parameter, public :: BDRC_SUPEROUTLET      = -BDRC_SUPEROUTLET_WEAK
-
-  ! Periodic boundary condition (symmetric)
-  ! This condition couples two boundary segments periodically
-  integer, parameter, public :: BDRC_PERIODIC_WEAK = 101
-  integer, parameter, public :: BDRC_PERIODIC      = -BDRC_PERIODIC_WEAK
-
-  ! Periodic boundary condition (anti-symmetric)
-  ! This condition couples two boundary segments periodically
-  integer, parameter, public :: BDRC_ANTIPERIODIC_WEAK = 102
-  integer, parameter, public :: BDRC_ANTIPERIODIC      = -BDRC_ANTIPERIODIC_WEAK
+  integer, parameter, public :: BDRC_SUPEROUTLET  = 11
 
 !</constantblock>
 
