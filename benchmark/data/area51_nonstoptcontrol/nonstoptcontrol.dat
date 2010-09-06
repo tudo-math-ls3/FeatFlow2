@@ -137,6 +137,8 @@ ntimestepsCoarse = $SPACETIMEDISCRETISATION_NTIMESTEPSCOARSE
 [SPACETIME-LINEARSOLVER]
 ########################
 
+ioutputLevel = 2
+
 # Type of the solver.
 # =-1: automatic
 # =0: Defect correction with Block-JAC preconditioning.
