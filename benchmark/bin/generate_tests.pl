@@ -6,12 +6,14 @@
 #
 # Call:
 #
-#     generate_tests.pl filename [list]
+#     generate_tests.pl filename [list] [output.fbdef]
 #
 # In:
 #
 #     filename = name of a .fbgen file
 #     list     = optional command to generate a list of configurations.
+#     output.fbdef = optional, name of an output file. If not specified, the
+#                    output is printed to stdout.
 # 
 # The utility parses the .fbgen file 'filename' and creates a
 # .fbdef compatible configuration set from it which is printed to the
@@ -729,10 +731,12 @@ sub generate_tests($$) {
 if ($#ARGV < 0) {
   die "\ngenerate_tests.pl: Command line script to generate .FBDEF files.\n\n" .
       "Call:\n\n" .
-      "    generate_tests.pl filename [list]\n\n" .
+      "    generate_tests.pl filename [list] [output.fbdef]\n\n" .
       "In:\n\n" .
       "    filename = name of a .fbgen file\n" .
       "    list     = optional command to generate a list of configurations.\n" .
+      "    output.fbdef = optional, name of an output file. If not specified, the\n" .
+      "               output is printed to stdout.\n" .
       "\n" .
       "The utility parses the .fbgen file 'filename' and creates a\n" .
       ".fbdef compatible configuration set from it which is printed to the\n" .
@@ -740,14 +744,37 @@ if ($#ARGV < 0) {
       "configuration id's in the .fbgen file is printed to the terminal.\n\n";
 }
 
-my %configuration = readfbgenfile($ARGV[0]);
-expand_values(\%configuration);
+my %configuration;
 
-# Get the 2nd parameter.
-my $command = "";
-if ($#ARGV >= 1) {
-  $command = $ARGV[1];
+# Get the parameters.
+my $genlist = 0;
+foreach (@ARGV) {
+  my $command = $_;
+  
+  if ($command eq "list") {
+    # Generate only list of ID's.
+    $genlist = 1;
+  }
+  
+  if ($command =~ m/.*\.fbdef$/) {
+    # This is the filename of the destination output.
+    # Redirect stdout to that file.
+    open STDOUT, ">$command" 
+    or die "Can't redirect STDOUT: $!";
+  }
+
+  if ($command =~ m/.*\.fbgen$/) {
+    # This is the test case. Evaluate the file.
+    %configuration = readfbgenfile($ARGV[0]);
+    expand_values(\%configuration);    
+  }
+}
+
+# Stop if no ID's were read.
+my $keycount = keys(%configuration);
+if ($keycount == 0) {
+  die "Test set empty! No configurations generated!\n";
 }
 
 # Generate the tests.
-generate_tests($command eq "list",\%configuration);
+generate_tests($genlist,\%configuration);
