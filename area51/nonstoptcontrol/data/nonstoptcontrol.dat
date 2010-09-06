@@ -141,6 +141,8 @@ ntimestepsCoarse = 5
 [SPACETIME-LINEARSOLVER]
 ########################
 
+ioutputlevel = 2
+
 # Type of the solver.
 # =-1: automatic
 # =0: Defect correction with Block-JAC preconditioning.

@@ -321,13 +321,15 @@ contains
         "csolverType", csolverType)
     
     if (csolverType .eq. -1) then
-      if (nlevels .eq. 1) then
-        csolverType = 0
-      else
+      !if (nlevels .eq. 1) then
+      !  csolverType = 0
+      !else
         csolverType = 1
-      end if
+      !end if
     end if
     
+    call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
+        "ioutputLevel", ioutputLevel)
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
         "nsmoothingSteps", nsmoothingSteps)
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
@@ -344,6 +346,8 @@ contains
         "ddampingCoarseGridCorrection", ddampingCoarseGridCorrection)
     call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
         "depsrel", depsrel)
+    call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
+        "depsabs", depsabs)
     call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
         "ddamping", ddamping)
     call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
@@ -407,6 +411,10 @@ contains
       
       rsolver%rpreconditioner%domega = ddamping
       rsolver%rsolver%nmaxIterations = nmaxiterations
+      
+      rsolver%rsolver%ioutputLevel = ioutputlevel
+      rsolver%rsolver%depsrel = depsrel
+      rsolver%rsolver%depsabs = depsabs
           
     case (2)
       ! Defect correction with Block FBSIM preconditioning
@@ -419,6 +427,10 @@ contains
           
       rsolver%rpreconditioner%domega = ddamping
       rsolver%rsolver%nmaxIterations = nmaxiterations
+
+      rsolver%rsolver%ioutputLevel = ioutputlevel
+      rsolver%rsolver%depsrel = depsrel
+      rsolver%rsolver%depsabs = depsabs
           
     case (1)
       ! MG-Solver with block Jacobi preconditioning.
