@@ -97,7 +97,7 @@ sub get_environment () {
     # Does $key exist in the current environment?`
     if (exists($ENV{$key})) {
       # Overwrite the default value
-      %ENVIRONMENT{$key} = $ENV{$key};
+      $ENVIRONMENT{$key} = $ENV{$key};
     }
   }
 }
@@ -131,6 +131,34 @@ sub find_file ($) {
   return "";
 }
 
+# Checks if an ID refers to a file.
+#
+# Call:
+#    $filename = check_id_fbconf($testid)
+#
+# with:
+#    $testid    = a test id to check
+#    $filename  = returns the filename of a .fbconf file identified
+#                 by $testid or "" if $testid is not a file.
+sub check_id_fbconf ($) {
+  my ($filename) = @_;
+  
+  # Is there a file named $filename
+  my $fname = find_file($filename);
+  
+  if ($fname eq "") {
+    # No, is there a file .fbconf?
+    $fname = find_file($filename . ".fbconf");
+  }
+
+  if ($fname eq "") {
+    # No, is there a file .fbconf2?
+    $fname = find_file($filename . ".fbconf2");
+  }
+  
+  return $fname;
+}
+
 # Reads and evaluates an .fbconf file. Each line contains either a test id
 # or the name of another .fbconf file; in the latter case, the .fbconf files
 # have to be recursively evaluated.
@@ -144,9 +172,10 @@ sub find_file ($) {
 # Returns
 #    @template = List of test ids from the file and its subfiles (if necessary).
 sub read_and_eval_fbconf ($) {
+  my ($filename) = @_;
+
   my @idlist;
   
-  my $filename = find_file($filename);
   if ($filename ne "") {
     # Open and read the file -- quick and dirty.
     local(*FHANDLE);
@@ -167,10 +196,7 @@ sub read_and_eval_fbconf ($) {
       }
       else {
         # Check if this refers to a file.
-        my $newfilename = find_file ($_.".fbconf");
-        if ($newfilename eq "") {
-          $newfilename = find_file ($_.".fbconf2");
-        }
+        my $newfilename = check_id_fbconf ($_);
         if ($newfilename ne "") {
           # Read recursively.
           @newids = read_and_eval_fbconf ($newfilename);
@@ -384,7 +410,7 @@ if ($#ARGV < 0) {
 }
 
 # Get the default environment variables.
-get_environment ()
+get_environment ();
 
 # Classify the command line options.
 my @testids;
@@ -405,10 +431,7 @@ foreach (@ARGV) {
     # That is (hopefully) a test id.
     # Check if there is a file named "filename.fbconf". If yes, it's another
     # test suite.
-    my $filename = find_file ($_.".fbconf");
-    if ($filename eq "") {
-      $filename = find_file ($_.".fbconf2");
-    }
+    my $filename = check_id_fbconf ($_);
     if ($filename ne "") {
       # That's a file.
       my @newids = read_and_eval_fbconf($filename);
