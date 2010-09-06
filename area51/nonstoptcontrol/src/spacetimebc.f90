@@ -375,6 +375,24 @@ contains
               iequation = 2)
         end if
         
+      case (8)
+        ! 8.)
+        if (icomponent .eq. 1) then
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
+              fct_heatY8 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY8 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              iequation = 1)
+        else
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
+              fct_heatLambda8 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda8 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              iequation = 2)
+        end if
+        
       case default
         call output_line ("Problem not supported in 1D.")
         call sys_halt()

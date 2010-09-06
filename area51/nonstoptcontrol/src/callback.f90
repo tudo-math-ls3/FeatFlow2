@@ -288,6 +288,47 @@ contains
   end function
 
   ! ***************************************************************************
+  ! Heat equation, function set 8.
+  !   w = sin(Pi*x1)*sin(Pi*x2)
+  !
+  !   y = sin(PI*t/2) * w
+  !   l = (sin(PI*t/2)-1) * w
+  !
+  !   f = (1/2)*w*(cos((1/2)*Pi*t)*Pi*alpha+4*alpha*Pi^2*sin((1/2)*Pi*t)+2*sin((1/2)*Pi*t)-2)/alpha
+  !   z = -(1/2)*w*(-cos((1/2)*Pi*t)*Pi+4*Pi^2*sin((1/2)*Pi*t)-4*Pi^2-2*sin((1/2)*Pi*t))
+  ! ***************************************************************************
+
+  elemental real(DP) function fct_eig8 (dx,dy,dtime,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dalpha
+    fct_eig8 = sin(SYS_PI*dx) * sin(SYS_PI*dy)
+  end function
+
+  elemental real(DP) function fct_heatY8 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_heatY8 = sin(0.5_DP*SYS_PI*dtime) * fct_eig8 (dx,dy,dtime,dalpha)
+  end function
+
+  elemental real(DP) function fct_heatLambda8 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_heatLambda8 = fct_eig8 (dx,dy,dtime,dalpha) * (sin(0.5_DP*SYS_PI*dtime) - 1.0_DP)
+  end function
+    
+  elemental real(DP) function fct_heatF8 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_heatF8 = 0.5_DP/dalpha * fct_eig8 (dx,dy,dtime,dalpha) * &
+      ( SYS_PI*dalpha*cos(0.5_DP*SYS_PI*dtime) + &
+        4.0_DP*dalpha*SYS_PI**2*sin(0.5_DP*SYS_PI*dtime) + &
+        2.0_DP*sin(0.5_DP*SYS_PI*dtime) - 2.0_DP )
+  end function
+  
+  elemental real(DP) function fct_heatZ8 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_heatZ8 = -0.5_DP * fct_eig8 (dx,dy,dtime,dalpha) * &
+      ( -SYS_PI*cos(0.5_DP*SYS_PI*dtime) + 4.0_DP*SYS_PI**2*sin(0.5_DP*SYS_PI*dtime) & 
+        - 4.0_DP*SYS_PI**2 - 2.0_DP*sin(0.5_DP*SYS_PI*dtime) )
+  end function
+
+  ! ***************************************************************************
   ! Reference functions, Stokes equation
   ! ***************************************************************************
   ! ***************************************************************************
@@ -474,9 +515,8 @@ contains
   elemental real(DP) function fct_stokesLambda4_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesLambda4_y = 2 * dalpha * dy * dtime * (-1 + dtime) * &
-              (dy ** 2 * dtime - dy ** 2 * dtime ** 2 + 3 * dx ** 2 * dtime &
-               - 3 * dx ** 2 * dtime ** 2 - dx ** 2 * dy ** 2 &
-               + 2 * dx ** 2 * dy ** 2 * dtime)
+              (dy ** 2 * dtime - dy ** 2 * dtime ** 2 + 3.0_DP * dx ** 2 * dtime &
+              - 3.0_DP * dx ** 2 * dtime ** 2 - dx ** 2 * dy ** 2 + 2 * dx ** 2 * dy ** 2 * dtime)
   end function
 
   elemental real(DP) function fct_stokesXi4 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
@@ -486,37 +526,16 @@ contains
 
   elemental real(DP) function fct_stokesZ4_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
-    fct_stokesZ4_x = 6 * dx * dy ** 2 * dtime ** 2 &
-        - 0.12D2 * dx * dy ** 2 * dtime ** 3 &
-        + 6 * dx * dy ** 2 * dtime ** 4 + 2 * dx ** 3 * dtime ** 2 &
-        - 4 * dx ** 3 * dtime ** 3 + 2 * dx ** 3 * dtime ** 4 &
-        + dx ** 3 * dy ** 2 * dtime ** 2 - 2 * dx ** 3 * dy ** 2 * dtime ** 3 &
-        + dx ** 3 * dy ** 2 * dtime ** 4 + 0.12D2 * dalpha * dx * dy ** 2 * dtime &
-        - 0.36D2 * dalpha * dx * dy ** 2 * dtime ** 2 &
-        + 0.24D2 * dalpha * dx * dy ** 2 * dtime ** 3 &
-        + 4 * dalpha * dx ** 3 * dtime &
-        - 0.12D2 * dalpha * dx ** 3 * dtime ** 2 &
-        + 8 * dalpha * dx ** 3 * dtime ** 3 &
-        - 2 * dalpha * dx ** 3 * dy ** 2 &
-        + 0.12D2 * dalpha * dx ** 3 * dy ** 2 * dtime &
-        - 0.12D2 * dalpha * dx ** 3 * dy ** 2 * dtime ** 2
+    fct_stokesZ4_x = &
+        -2*dalpha*dx**3*dy**2+12*dalpha*dx**3*dy**2*dtime-12*dalpha*dx**3*dy**2*dtime**2+dx**3*dy**2*dtime**2 &
+        -2*dx**3*dy**2*dtime**3+dx**3*dy**2*dtime**4+24*dalpha*dx*dtime**2-48*dalpha*dx*dtime**3+24*dalpha*dx*dtime**4
   end function
 
   elemental real(DP) function fct_stokesZ4_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
-    fct_stokesZ4_y = -2 * dy ** 3 * dtime ** 2 + 4 * dy ** 3 * dtime ** 3 &
-        - 2 * dy ** 3 * dtime ** 4 - 6 * dx ** 2 * dy * dtime ** 2 &
-        + 0.12D2 * dx ** 2 * dy * dtime ** 3 - 6 * dx ** 2 * dy * dtime ** 4 &
-        - dx ** 2 * dy ** 3 * dtime ** 2 + 2 * dx ** 2 * dy ** 3 * dtime ** 3 &
-        - dx ** 2 * dy ** 3 * dtime ** 4 - 4 * dalpha * dy ** 3 * dtime &
-        + 0.12D2 * dalpha * dy ** 3 * dtime ** 2 &
-        - 8 * dalpha * dy ** 3 * dtime ** 3 &
-        - 0.12D2 * dalpha * dx ** 2 * dy * dtime &
-        + 0.36D2 * dalpha * dx ** 2 * dy * dtime ** 2 &
-        - 0.24D2 * dalpha * dx ** 2 * dy * dtime ** 3 &
-        + 2 * dalpha * dx ** 2 * dy ** 3 &
-        - 0.12D2 * dalpha * dx ** 2 * dy ** 3 * dtime &
-        + 0.12D2 * dalpha * dx ** 2 * dy ** 3 * dtime ** 2
+    fct_stokesZ4_y = &
+        2*dalpha*dy**3*dx**2-12*dalpha*dy**3*dx**2*dtime+12*dalpha*dy**3*dx**2*dtime**2-dx**2*dy**3*dtime**2 &
+        +2*dx**2*dy**3*dtime**3-dx**2*dy**3*dtime**4-24*dalpha*dy*dtime**2+48*dalpha*dy*dtime**3-24*dalpha*dy*dtime**4
   end function
   
   ! ***************************************************************************
@@ -844,6 +863,14 @@ contains
               Dvalues(:,:) = fct_heatY7 (dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
 
+          case (8)
+            ! 8.) -> BC in spacetimebc.f90 beachten!
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY8 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY8 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+            end if
+
           case default
             call output_line ("Problem not supported.")
             call sys_halt()
@@ -912,6 +939,14 @@ contains
               Dvalues(:,:) = fct_heatLambda7 (dpar,Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
               Dvalues(:,:) = fct_heatLambda7 (dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+            end if
+            
+          case (8)
+            ! 8.) 
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda8 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda8 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
             
           case default
@@ -1286,6 +1321,17 @@ contains
               + fct_heatF7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
           end if
 
+        case (8)
+          ! 8.)
+          if (ubound(Dpoints,1) .eq. NDIM1D) then
+            Dcoefficients(1,:,:) = fct_heatF8(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) 
+          else
+            Dcoefficients(1,:,:) = &
+              -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
+                (fct_heatLambda8(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
+              + fct_heatF8(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
+          end if
+
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
@@ -1381,6 +1427,18 @@ contains
             (1.0_DP-dcouplePrimalToDual) * &
                 (fct_heatY7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_heatZ7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+        end if
+
+      case (8)
+        ! 8.)
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = &
+            - (fct_heatZ8(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) )
+        else
+          Dcoefficients(1,:,:) = &
+            (1.0_DP-dcouplePrimalToDual) * &
+                (fct_heatY8(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
+            - (fct_heatZ8(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
         end if
 
       case default
@@ -1712,6 +1770,10 @@ contains
           ! 6.) -> BC in spacetimebc.f90 beachten!
           Dvalues(1) = fct_heatY7 (dpar,dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
+        case (8)
+          ! 8.) -> BC in spacetimebc.f90 beachten!
+          Dvalues(1) = fct_heatY8 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
@@ -1752,6 +1814,10 @@ contains
         case (7)
           ! 6.) 
           Dvalues(1) = fct_heatLambda7 (dpar,dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+          
+        case (8)
+          ! 8.) 
+          Dvalues(1) = fct_heatLambda8 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
           
         case default
           call output_line ("Problem not supported.")

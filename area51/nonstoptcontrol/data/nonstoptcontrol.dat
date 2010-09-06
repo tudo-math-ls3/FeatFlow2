@@ -52,6 +52,11 @@ cequation = 0
 #      y = -1(2+dpar) PI^2 wa(t,x1,x2)
 #      l = wa(t,x1,x2) - wa(1.0,x1,x2)
 #
+#   creferenceproblem = 8:
+#      w = sin(Pi*x1)*sin(Pi*x2)
+#      y = sin(PI*t/2) * w
+#      l = (sin(PI*t/2)-1) * w
+#
 # cequation = 1: (2D Stokes equation)
 #
 #   creferenceproblem = 1:
@@ -75,7 +80,7 @@ cequation = 0
 #      y = t ( x2(1-x2) , 0 , 0 )
 #      lambda = (1-t) ( x2(1-x2) , 0 , 0 )
 
-creferenceProblem = 4
+creferenceProblem = 8
 
 dviscosity = 1.0
 doptControlAlpha = 1.0
@@ -232,7 +237,7 @@ ioutputlevel = 2
 depsrel = 1E-10
 depsabs = 1E-17
 
-ddamping = 0.9
+ddamping = 0.5
 drelax = 1.0
 
 # Use full (forward+backward) coupling in FBGS.
@@ -247,7 +252,7 @@ ifullcouplingFBGS = 1
 
 ioutputlevel = 2
 
-ddamping = 0.9
+ddamping = 0.5
 drelax = 1.0
 
 # Use full (forward+backward) coupling in FBGS.
