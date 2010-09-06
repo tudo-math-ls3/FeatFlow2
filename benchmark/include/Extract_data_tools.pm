@@ -43,7 +43,8 @@ our @EXPORT = qw(grep_datablocks
                  delete_column
                  delete_empty_columns
                  column_to_table
-                 print_table);
+                 print_table
+                 list_to_LATEX);
 
 # Directorya of the logfiles.
 my $defaultlogdir = "./logs";
@@ -1049,7 +1050,7 @@ sub getline_CSV(\@) {
 # Convert result-list to CSV data.
 #
 # Call:
-#    list_to_CSV (\@table)
+#    @output = list_to_CSV (\@table)
 #
 # Converts a data list to CSV output. @table is a list of value-lists
 # that contains columns of data. The routine generates a list of strings in CSV
@@ -1126,10 +1127,10 @@ sub getline_GNUPLOT_comment(\@) {
   return $line;
 }
 
-# Convert result-list to GNUPLOT data.
+# Convert result-table to GNUPLOT data.
 #
 # Call:
-#    list_to_GNUPLOT (\@table)
+#    @output = list_to_GNUPLOT (\@table)
 #
 # Converts a data list to GNUPLOT output. @table is a list of value-lists
 # that contains columns of data. The routine generates a list of strings in GNUPLOT
@@ -1187,6 +1188,70 @@ sub print_table (\@) {
     print "$_\n";
   }
 }
+
+# Convert result-table to LaTEX table.
+#
+# Call:
+#    @output = list_to_LATEX (\@table)
+#
+# Converts a data list to a LATEX table. @table is a list of value-lists
+# that contains columns of data. The routine generates a list of strings 
+# that represent a LATEX table.
+sub list_to_LATEX(\@) {
+  my ($datatable) = @_;
+  
+  my @lines = ();
+  
+  # Add the headlines.
+  my $line = "";
+  my $colcount = @$datatable;
+  if ($colcount <= 0) {
+    # Table empty.
+    print "list_to_LATEX: Warning. Table empty.\n";
+    return @lines;
+  }  
+  
+  # Determine number of rows from the first column.
+  my $col = $datatable->[0];
+  my $rowcount = @$col;
+  
+  # Loop through the rows.
+  for (my $irow=0; $irow < $rowcount; ++$irow) {
+    # New line.
+    $line = "";
+
+    # Loop through the columns.
+    for (my $icol=0; $icol < @$datatable; ++$icol) {
+      # Create the line.
+      my $col = $datatable->[$icol];
+      my $data = $col->[$irow];
+      if ($icol == 0) {
+        $line .= "  " . $data;
+      }
+      else {
+        $line .= " & " . $data;
+      }
+    }
+    
+    # Save the line.
+    $lines[@lines] = $line . " \\\\";
+    
+    print "LATEX: $line\n"
+    if (DEBUG==1);
+  }
+  
+  # We need a header and a footer.
+  #
+  # Header: get the number of rows and add centered columns.
+  my $head = "\\begin{tabular}{" . "c"x@$datatable . "}";
+  unshift (@lines,$head);
+  
+  # Footer
+  push (@lines,"\\end{tabular}");
+  
+  return @lines;
+}
+
 
 # default module initialisation; return TRUE to mark the module as
 # successfully initialised.
