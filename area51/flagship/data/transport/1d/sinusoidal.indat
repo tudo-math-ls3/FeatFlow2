@@ -31,14 +31,7 @@ deffunc: @targetFuncAnalytic = 0 ; x,y,z,t
 
 
 # Specify the boundary conditions for the primal problem
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
-[boundary_conditions_primal]
+[bdrcond_strong_primal]
 NBCT
 2
 NEXPR
@@ -52,5 +45,5 @@ IBCT
 NCOMP
 1
 PARAMETERS
-0.0  T  1  sin(2*_pi*(x-t))
-0.0  T  0
+0.0  T  'DIRICHLET_STRONG'  sin(2*_pi*(x-t))
+0.0  T  'HOMNEUMANN_STRONG'

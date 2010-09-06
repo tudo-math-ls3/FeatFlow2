@@ -28,7 +28,7 @@ deffunc: @velocity_y = SIN(_ang*_pi/180) ; x,y,z,t
 deffunc: @diffusion = 1e-8 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
-[boundary_conditions_primal]
+[bdrcond_strong_priml]
 NBCT
 1
 NEXPR
@@ -38,12 +38,12 @@ IBCT
 NCOMP
 3
 PARAMETERS
-0.3  T  1   1.0
-3.0  T  1   0.0
-4.0  T  1   1.0
+0.3  T  'DIRICHLET_STRONG'  1.0
+3.0  T  'DIRICHLET_STRONG'  0.0
+4.0  T  'DIRICHLET_STRONG'  1.0
 
-# Specify the boundary conditions for the primal problem
-[boundary_conditions_dual]
+# Specify the boundary conditions for the dual problem
+[bdrcond_strong_dual]
 NBCT
 1
 NEXPR
@@ -53,4 +53,4 @@ IBCT
 NCOMP
 1
 PARAMETERS
-4.0  T  1   0.0
+4.0  T  'DIRICHLET_STRONG'  0.0

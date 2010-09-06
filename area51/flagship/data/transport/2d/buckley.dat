@@ -18,13 +18,13 @@ application = transport
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/transport/2d/buckley1_NW.indat
+indatfile = data/transport/2d/buckley.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_strong_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = 
 
 # number of spatial dimensions
 ndimension = 2

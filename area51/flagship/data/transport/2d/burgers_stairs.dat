@@ -22,10 +22,10 @@ application = transport
 indatfile = data/transport/2d/burgers_stairs.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_strong_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = 
 
 # number of spatial dimensions
 ndimension = 2
@@ -234,7 +234,7 @@ sucderror = out/burgers_error
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 99
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -428,7 +428,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 99
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm

@@ -33,7 +33,7 @@ deffunc: @velocity_y = if(x<1, (1-x)/@abs1, (x-1)/@abs2) ; x,y,z,t
 deffunc: @targetFuncInt = if(x>=1.9, if(y>0.25 & y<1, exp(1/(3/8)^2-1/((y-5/8)^2-3/8)^2),0),0) ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
-[boundary_conditions_primal]
+[bdrcond_strong_primal]
 NBCT
 1
 NEXPR
@@ -43,14 +43,14 @@ IBCT
 NCOMP
 5
 PARAMETERS
-0.0625  T  1   0.0
-0.375   F  1   1.0
-1.0     T  1   0.0
-3.0     F  0
-4.0     T  1   0.0
+0.0625  T  'DIRICHLET_STRONG'  0.0
+0.375   F  'DIRICHLET_STRONG'  1.0
+1.0     T  'DIRICHLET_STRONG'  0.0
+3.0     F  'HOMNEUMANN_STRONG'
+4.0     T  'DIRICHLET_STRONG'  0.0
 
 # Specify the boundary conditions for the dual problem
-[boundary_conditions_dual]
+[bdrcond_strong_dual]
 NBCT
 1
 NEXPR
@@ -60,6 +60,6 @@ IBCT
 NCOMP
 3
 PARAMETERS
-1.0  F  0
-3.0  T  1   0.0
-4.0  T  0
+1.0  F  'HOMNEUMANN_STRONG'
+3.0  T  'DIRICHLET_STRONG'  0.0
+4.0  T  'HOMNEUMANN_STRONG'

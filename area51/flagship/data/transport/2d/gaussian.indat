@@ -29,15 +29,8 @@ deffunc: @velocity_y =  x ; x,y,z,t
 # Sepcify the diffusion coefficient
 deffunc: @diffusion = _eps ; x,y,z,t
 
-# Specify the boundary conditions for the primal problem
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
-[boundary_conditions_primal]
+# Specify the flux boundary conditions for the primal problem
+[bdrcond_weak_primal]
 NBCT
 1
 NEXPR
@@ -47,4 +40,24 @@ IBCT
 NCOMP
 1
 PARAMETERS
-4.0  F  -5  0.0   # zero influx condition
+4.0  T  'FLUX_WEAK'  0.0
+
+# Specify the boundary conditions for the primal problem
+[bdrcond_strong_primal]
+NBCT
+1
+NEXPR
+1
+IBCT
+1
+NCOMP
+8
+PARAMETERS
+0.5  T  'HOMNEUMANN_STRONG'
+1.0  T  'DIRICHLET_STRONG'  0.0
+1.5  T  'HOMNEUMANN_STRONG'
+2.0  T  'DIRICHLET_STRONG'  0.0
+2.5  T  'HOMNEUMANN_STRONG'
+3.0  T  'DIRICHLET_STRONG'  0.0
+3.5  T  'HOMNEUMANN_STRONG'
+4.0  T  'DIRICHLET_STRONG'  0.0

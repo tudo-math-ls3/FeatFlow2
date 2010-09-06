@@ -23,10 +23,10 @@ application = transport
 indatfile = data/transport/1d/step.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_strong_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = 
 
 # number of spatial dimensions
 ndimension = 1
@@ -179,10 +179,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 13
+istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################

@@ -22,10 +22,10 @@ application = transport
 indatfile = data/transport/2d/gaussian.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = 
 
 # number of spatial dimensions
 ndimension = 2
@@ -261,7 +261,7 @@ multisteps = 2
 dinitialTime = 1.57079633
 
 # final time for the simulation.
-dfinalTime = 6.2831853
+dfinalTime = 1.6 #6.2831853
 
 # initial time step size
 dinitialStep = 0.001
@@ -311,10 +311,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 6
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 6
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce

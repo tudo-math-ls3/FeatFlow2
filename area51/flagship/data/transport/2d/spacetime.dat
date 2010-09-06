@@ -22,10 +22,10 @@ application = transport
 indatfile = data/transport/2d/spacetime.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_strong_primal1
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = bdrcond_strong_dual
 
 # number of spatial dimensions
 ndimension = 2
@@ -95,7 +95,7 @@ srhsname = @rhs
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = @initsol
+ssolutionname = @initsol1
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -104,7 +104,7 @@ ssolutionname = @initsol
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = @exactsol
+sexactsolutionname = @exactsol1
 
 # type of target functional
 # 0 = zero target functional
@@ -259,7 +259,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 1.0
@@ -428,7 +428,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 99
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -506,7 +506,7 @@ ssolvername = LinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 99
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm

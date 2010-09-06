@@ -45,13 +45,13 @@ application = transport
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/transport/2d/steady_NW.indat
+indatfile = data/transport/2d/steady1.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_strong_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = bdrcond_strong_dual
 
 # number of spatial dimensions
 ndimension = 2
@@ -475,7 +475,7 @@ nmaxIterations = 2000
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 3
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -718,7 +718,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 0
+nadapt = 3
 
 # time for grid adaptivity
 dtimeadapt = 0.0

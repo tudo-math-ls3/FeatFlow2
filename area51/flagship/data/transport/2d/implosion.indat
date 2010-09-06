@@ -18,8 +18,8 @@ deffunc: @initsol = if(@sqr1 < 1-1e-12 | @sqr1 > 1.05+1e-12, 0, 1) ; x,y,z,t
 deffunc: @velocity_x = -4*(t^3)*x/@r ; x,y,z,t
 deffunc: @velocity_y = -4*(t^3)*y/@r ; x,y,z,t
 
-# Specify the boundary conditions for the primal problem
-[boundary_conditions_primal]
+# Specify the flux boundary conditions for the primal problem
+[bdrcond_weak_primal]
 NBCT
 1
 NEXPR
@@ -29,4 +29,17 @@ IBCT
 NCOMP
 1
 PARAMETERS
-1.0  T  1 0.0
+4.0  T  'FLUX_WEAK'  0.0
+
+# Specify the boundary conditions for the primal problem
+[bdrcond_strong_primal]
+NBCT
+1
+NEXPR
+1
+IBCT
+1
+NCOMP
+1
+PARAMETERS
+4.0  T  'HOMNEUMANN_STRONG'

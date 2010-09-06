@@ -25,10 +25,10 @@ application = transport
 indatfile = data/transport/2d/step.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = 
 
 # number of spatial dimensions
 ndimension = 2
@@ -264,7 +264,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.5
+dfinalTime = 0.4
 
 # initial time step size
 dinitialStep = 0.001

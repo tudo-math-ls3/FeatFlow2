@@ -32,14 +32,7 @@ deffunc: @weightingFuncInt = if(@sqr1 <= _eps, 1/@area, 0) ; x,y,z,t
 deffunc: @exactTargetFunc = 1 ; t
 
 # Specify the boundary conditions for the primal problem
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
-[boundary_conditions_primal]
+[bdrcond_strong_primal]
 NBCT
 1
 NEXPR
@@ -49,14 +42,14 @@ IBCT
 NCOMP
 5
 PARAMETERS
-0.5  F  1   0.0
-0.5  T  1   1.0
-2.0  T  1   0.0
-3.0  F  0
-4.0  T  1   0.0
+0.5  F  'DIRICHLET_STRONG'  0.0
+0.5  T  'DIRICHLET_STRONG'  1.0
+2.0  T  'DIRICHLET_STRONG'  0.0
+3.0  F  'HOMNEUMANN_STRONG'
+4.0  T  'DIRICHLET_STRONG'  0.0
 
 # Specify the boundary conditions for the primal problem
-[boundary_conditions_dual]
+[bdrcond_strong_dual]
 NBCT
 1
 NEXPR
@@ -66,6 +59,6 @@ IBCT
 NCOMP
 3
 PARAMETERS
-2.0  F  0
-3.0  T -1   'if(y >= _y0-_eps & y <= _y0+_eps, 1/@area, 0)'
-4.0  F  0
+2.0  F  'HOMNEUMANN_STRONG'
+3.0  T  'DIRICHLET_STRONG'  'if(y >= _y0-_eps & y <= _y0+_eps, 1/@area, 0)'
+4.0  F  'HOMNEUMANN_STRONG'

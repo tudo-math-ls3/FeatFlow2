@@ -1,25 +1,34 @@
 # -*- mode: any-ini; -*-
 
-#
-# Input data for steady-state convection diffusion equation
-#
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                         Stationary convection-diffusion                      #
+#                                                                              #
+#  From:   D. Kuzmin, M. Möller, S. Turek. Algebraic Flux Correction I.        #
+#          Scalar Conservation Laws, in: D. Kuzmin, R. Löhner, S. Turek (eds.) #
+#          Flux-Corrected Transport, Principles, Algorithms, and Applications  #
+#          Springer, Germany (2005); pages 155-206.                            #
+#                                                                              #
+# Benchmark no.1 : velocity v = (cos 10deg, sin 10deg), diffusion d=1e-3       #
+#                                                                              #
+################################################################################
+
+# Definition of user-defined constants
+defconst: ang = 10
 
 # Specify the initial solution
-deffunc: @initsol = if(x>1/3 & x<2/3,1,0) ; x,y,z,t
+deffunc: @initsol = if(y>=0.5,1-x,0) ; x,y,z,t
 
 # Specify the velocity field
-deffunc: @velocity_x = -y ; x,y,z,t
-deffunc: @velocity_y =  x ; x,y,z,t
+deffunc: @velocity_x = COS(_ang*_pi/180) ; x,y,z,t
+deffunc: @velocity_y = SIN(_ang*_pi/180) ; x,y,z,t
+
+# Specify the diffusion tensor
+deffunc: @diffusion = 1e-3 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
-[boundary_conditions_primal]
+[bdrcond_strong_primal]
 NBCT
 1
 NEXPR
@@ -27,11 +36,21 @@ NEXPR
 IBCT
 1
 NCOMP
-5
+3
 PARAMETERS
-1.0           T  0
-1.3333333333  T  1   0.0
-1.6666666666  T  1   1.0
-3.0           T  1   0.0
-4.0           F  0
+0.5  T  'DIRICHLET_STRONG'   '1.0'
+3.0  T  'DIRICHLET_STRONG'   '0.0'
+4.0  F  'HOMNEUMANN_STRONG'
 
+# Specify the boundary conditions for the dual problem
+[bdrcond_strong_dual]
+NBCT
+1
+NEXPR
+1
+IBCT
+1
+NCOMP
+1
+PARAMETERS
+4.0  T  'DIRICHLET_STRONG'  0.0

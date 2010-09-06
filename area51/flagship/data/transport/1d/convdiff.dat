@@ -23,10 +23,10 @@ application = transport
 indatfile = data/transport/1d/convdiff.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_strong_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = 
 
 # number of spatial dimensions
 ndimension = 1
@@ -40,12 +40,12 @@ algorithm = stationary_primal
 # 0 = no mass matrix
 # 1 = consistent mass matrix
 # 2 = lumped mass matrix
-imasstype = 2
+imasstype = 0
 
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 1
+imassantidiffusiontype = 0
 
 # type of flow velocity
 # 0 = zero velocity v=0
@@ -98,9 +98,9 @@ ssolutionname = @initsol
 
 # type of exact solution profile
 # 0 = no exact solution available
-# 1 = analytical initial solution
+# 1 = analytical exact solution
 # 2 = PGM image
-iexactsolutiontype = 0
+iexactsolutiontype = 1
 
 # section name of exact solution
 sexactsolutionname = @exactsol
@@ -181,10 +181,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 20
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -304,10 +304,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 3
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 3
 
 # type of multigrid cycle
 # 0 = F-cylce

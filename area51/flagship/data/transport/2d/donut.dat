@@ -29,10 +29,10 @@ application = transport
 indatfile = data/transport/2d/donut.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_strong_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = bdrcond_weak_dual
 
 # number of spatial dimensions
 ndimension = 2
@@ -318,10 +318,10 @@ depsSteady = 1e-12
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -699,7 +699,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 3
+nadapt = 0
 
 # time for grid adaptivity
 dtimeadapt = 0.0

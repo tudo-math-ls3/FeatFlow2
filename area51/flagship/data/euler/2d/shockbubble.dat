@@ -415,7 +415,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 99
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm

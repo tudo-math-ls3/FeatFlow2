@@ -49,7 +49,7 @@ deffunc: @rhs = -( -32*@d11*y*(1-y)+ ...
 
 
 # Specify the boundary conditions for the primal problem
-[boundary_conditions_primal]
+[bdrcond_strong_primal]
 NBCT
 2
 NEXPR
@@ -63,5 +63,5 @@ IBCT
 NCOMP
 1
 PARAMETERS
-4.0  T  1  0.0
-4.0  T  1  2.0
+4.0  T  'DIRICHLET_STRONG'  '0.0'
+4.0  T  'DIRICHLET_STRONG'  '2.0'

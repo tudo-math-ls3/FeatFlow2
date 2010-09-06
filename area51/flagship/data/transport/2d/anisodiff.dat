@@ -27,10 +27,10 @@ application = transport
 indatfile = data/transport/2d/anisodiff.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_strong_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname =
 
 # number of spatial dimensions
 ndimension = 2
@@ -210,7 +210,7 @@ iprelimiting = 1
 #  0 = no stabilization (Galerkin)
 #  2 = maximum principle preservation
 # 30 = symmetric limiting
-istabilisation = 30
+istabilisation = 2
 
 
 ################################################################################
@@ -709,7 +709,7 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 7
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green

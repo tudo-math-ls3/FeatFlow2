@@ -23,10 +23,10 @@ application = transport
 indatfile = data/transport/2d/implosion.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = 
 
 # number of spatial dimensions
 ndimension = 2
@@ -122,10 +122,10 @@ stargetfuncname = @targetFuncInt
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = bin/dummy.prm
+prmfile = grids/2d/z-pinch_paper.prm
 
 # file which contains the triangulation
-trifile = bin/dummy.tri
+trifile = grids/2d/z-pinch_paper.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -187,7 +187,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 1
@@ -688,7 +688,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 2
+npreadapt = 0
 
 # number of adaptation steps
 nadapt = 0
@@ -697,10 +697,10 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 1e-3
+dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 2
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green
