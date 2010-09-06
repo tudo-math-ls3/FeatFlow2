@@ -64,7 +64,7 @@ fb_setqueue_index()
 # ==================================================
 # FUNCTION: Determines the number of cores to resetve per node.
 #
-# Call:  fb_setqueue [desiredcores]
+# Call:  fb_getCoresPerNode [desiredcores]
 #
 # where
 #
