@@ -1036,7 +1036,8 @@ contains
   real(DP) :: drho1,drho0,dresscale,dresunprec
   integer :: ite
   logical :: bstopOnRealResiduum
-  real(DP) :: dresInit, dresCurrent, drho, dresLast, dresFinal
+  real(DP) :: dresInit, dresCurrent, drho, dresFinal,dresMeanDev,dresMeanLast
+  real(DP), dimension(3) :: DresLast
 
   ! The system matrix
   type(t_spaceTimeMatrix), pointer :: p_rmatrix
@@ -1172,7 +1173,7 @@ contains
     ! Initialize starting residuum
       
     dresInit = dresCurrent
-    dresLast = 0.0_DP
+    dresLast(:) = 0.0_DP
     dresFinal = dresCurrent
 
     ! Check if out initial defect is zero. This may happen if the filtering
@@ -1356,7 +1357,7 @@ contains
           dresCurrent = sptivec_vectorNorm (p_DR,LINALG_NORML2)
         end if
      
-        dresLast = dresFinal
+        DresLast = EOSHIFT(DresLast,SHIFT=-1,BOUNDARY=dresFinal)
         dresFinal = dresCurrent
 
         if (ite .ge. rsolver%nminiterations+1) then
@@ -1373,8 +1374,13 @@ contains
               exit
             end if
           end select
-          if ( (abs(dresCurrent-dresLast) .lt. rsolver%depsRelDiff*dresLast) .or. &
-              (abs(dresCurrent-dresLast) .lt. rsolver%depsAbsDiff) ) then
+          
+          ! Calculate mean deviation in the last iterations.
+          dresMeanDev = sum(abs(dresCurrent-DresLast(:))) / min(ite,size(DresLast))
+          dresMeanLast = sum(DresLast(:)) / min(ite,size(DresLast))
+          
+          if ( (dresMeanDev .lt. rsolver%depsRelDiff*dresMeanLast) .or. &
+              (dresMeanDev .lt. rsolver%depsAbsDiff) ) then
             exit
           end if
         end if
