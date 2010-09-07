@@ -711,7 +711,41 @@ EOF
 
 
 # ==================================================
-# FUNCTION: Create script for one test.
+# FUNCTION: Determine the filename of a temporary
+# .fbconf file.
+#
+# Call:
+#    filename=`fb_createTempFBConf`
+#
+# Returns a unique filename for a temporary
+# .fbconf file including the suffix .fbconf.
+# ==================================================
+
+fb_createTempFBConf() {
+    benchmarktest="$1"
+    scriptname="$2"
+
+    # Create a unique temporary file
+    # (Unfortunately 'mktemp' does not support suffixes.
+    #  So, get a temporary name, append the suffix ".fbconf", check whether
+    #  such a file already exists. If so, remove the temporary file created
+    #  by mktemp (the one without the suffix), create a new one and repeat 
+    #  the test.)
+    tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
+    trap "rm -f ${tmpfile}; exit 1" 2 3 9
+    while test -e ${tmpfile}.fbconf
+      do
+        rm -f ${tmpfile}
+        tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
+      done
+    rm -f ${tmpfile}
+    
+    # Return the temp filename
+    echo "${tmpfile}.fbconf";
+}
+
+# ==================================================
+# FUNCTION: Create script for one test using GNU make.
 #
 # Creates the core instructions for a jobfile 
 # for a given test ID. If successful, this function
@@ -719,7 +753,7 @@ EOF
 # the execution commands for the job.
 #
 # Call:
-#    fb_createRuntestsScript [jobid] [scriptname]
+#    fb_createRuntestsScriptGNU [jobid] [scriptname]
 #
 # with
 #    [jobid]      = name of the job
@@ -732,7 +766,7 @@ EOF
 # Invokes GNU-make to create the script.
 # ==================================================
 
-fb_createRuntestsScript() {
+fb_createRuntestsScriptGNU() {
     benchmarktest="$1"
     scriptname="$2"
 
@@ -742,90 +776,51 @@ fb_createRuntestsScript() {
     #  such a file already exists. If so, remove the temporary file created
     #  by mktemp (the one without the suffix), create a new one and repeat 
     #  the test.)
-    tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
-    trap "rm -f ${tmpfile}; exit 1" 2 3 9
-    while test -e ${tmpfile}.fbconf; do
-    rm -f ${tmpfile}
-    tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
-    done
-    rm -f ${tmpfile}
-    tmpfile="${tmpfile}.fbconf";
+    tmpfile="`fb_createTempFBConf`";
 
     # Hardwired variant of temporary file
     #    tmpfile="tempfile.for.schedulingsystem.fbconf"
 
-
-    if test "$ALTMAKE" -ne "1"
+    # Check whether GNUmakefile is available (i.e. whether configure has been run)
+    if [ ! -s GNUmakefile ]
     then
-      # Check whether GNUmakefile is available (i.e. whether configure has been run)
-      if [ ! -s GNUmakefile ]
-      then
-        cat <<EOF 1>&2
+      cat <<EOF 1>&2
 $0: Error: File 'GNUmakefile' not found. Please run './configure' first.
 EOF
-        exit 1007
-      fi
-
-      # Create a 'runtests' script which serves as base for the jobfile.
-      # It's save to call 'make' as we checked for being in benchmark folder
-      echo "$benchmarktest" > $tmpfile
-      if [ $? -ne 0 ]
-      then
-        cat <<EOF 1>&2
-$0: Error: Creating temporary file failed. Script cancelled.
-EOF
-        exit 1008
-      fi
-
-      $GNUMAKE SCRIPT=$scriptname `echo $tmpfile | sed 's/.fbconf$//'`
-    
-      # Purposely do not check for errors!
-      # Typically, an error is reported if the test ID is unknown or the
-      # according test is configured not to be run on the current host. COPROC
-      # tests e.g. are part of 'dailytests.fbconf' and 'alltests.fbconf', but
-      # should only be run on a supported host. LiDO does not support everything.
-      # Checking error codes here would means that this script is aborted
-      # as soon as the loop over the test IDs in e.g. 'dailytests.fbconf'
-      # reaches the first unsupported test ID. That's not intended.
-      # We set a return code, though, to prevent that incomplete or empty
-      # jobfiles are submitted to the PBS scheduler.
-      if [ $? -ne 0 ]; then
-      returncode=1
-      else
-      returncode=0
-      fi
-      rm $tmpfile
-      trap - 2 3 9;
-      return $returncode;
-    
-    else
-    
-      # Alternative script generation: Call include/make_test.pl.
-      # The script is invoked just like make...
-    
-      # Create a 'runtests' script which serves as base for the jobfile.
-      # It's save to call 'make' as we checked for being in benchmark folder
-      echo "$benchmarktest" > $tmpfile
-      if [ $? -ne 0 ]
-      then
-        cat <<EOF 1>&2
-$0: Error: Creating temporary file failed. Script cancelled.
-EOF
-        exit 1008
-      fi
-
-      ./include/make_test.pl SCRIPT=$scriptname `echo $tmpfile | sed 's/.fbconf$//'`
-
-      if [ $? -ne 0 ]; then
-      returncode=1
-      else
-      returncode=0
-      fi
-      rm $tmpfile
-      trap - 2 3 9;
-      return $returncode;
-    
+      exit 1007
     fi
+
+    # Create a 'runtests' script which serves as base for the jobfile.
+    # It's save to call 'make' as we checked for being in benchmark folder
+    echo "$benchmarktest" > $tmpfile
+    if [ $? -ne 0 ]
+    then
+      cat <<EOF 1>&2
+$0: Error: Creating temporary file failed. Script cancelled.
+EOF
+      exit 1008
+    fi
+
+    $GNUMAKE SCRIPT=$scriptname `echo $tmpfile | sed 's/.fbconf$//'`
+  
+    # Purposely do not check for errors!
+    # Typically, an error is reported if the test ID is unknown or the
+    # according test is configured not to be run on the current host. COPROC
+    # tests e.g. are part of 'dailytests.fbconf' and 'alltests.fbconf', but
+    # should only be run on a supported host. LiDO does not support everything.
+    # Checking error codes here would means that this script is aborted
+    # as soon as the loop over the test IDs in e.g. 'dailytests.fbconf'
+    # reaches the first unsupported test ID. That's not intended.
+    # We set a return code, though, to prevent that incomplete or empty
+    # jobfiles are submitted to the PBS scheduler.
+    if [ $? -ne 0 ]; then
+    returncode=1
+    else
+    returncode=0
+    fi
+    rm $tmpfile
+    trap - 2 3 9;
+    return $returncode;
 }
 
 
@@ -915,10 +910,89 @@ fb_createPBSHeader()
 }
 
 # ==================================================
-# FUNCTION: Create a job-file based on the settings in the global variables.
+# FUNCTION: Converts a script to a benchmark job file with the
+# current PBS settings. GNUmake variant.
 #
 # Call:
-#    fb_createBenchmarkJobfile [testid] [filename]
+#    fb_scriptToBenchmarkJobfileGNU [source-filename] [dest-filename]
+#
+# where
+#
+#   [source-filename] = name of the script to be encapsuled with benchmark commands
+#   [dest-filename]   = destination filename
+#   [log-file]        = name of the log file where benchmark output is written to
+#
+# Needs:
+#   - A queue being selected
+#   - The GNU makefile system determined
+#   - The MPI and queueing system being defined
+#
+# Return:
+#   =0: job-file created
+#   =2: Number of tasks could not be determined.
+# ==================================================
+fb_scriptToBenchmarkJobfileGNU ()
+{
+  # Get source and destination file.
+  sourcefile="$1"
+  destfile="$2"
+  logfile="$3"
+  
+  # Step 1: Figure out how many tasks the current job executes
+  # in parallel. Set env. variable NTASKS appropriately.
+  # Figure out how to distribute the tasks to the nodes.
+
+  fb_getNTASKS
+  if test $? -ne 0
+    then
+      return 2
+    fi
+
+  fb_determineNodes $NTASKS
+    
+  # Step 2: Determine the PBS header and create the basic file.
+  
+  fb_createPBSHeader $logfile > $destfile
+  
+  # Write our own header that allows to determine job-specific parameters
+  # later on.
+  echo "#SCHEDULE_TESTS NTASKS $NTASKS" >> $destfile
+  
+  # Step 3: Add environment settings of the MPI envoronment etc.
+  
+  echo "$MPIENVSETTING" >> $destfile
+  echo >> $destfile
+  fb_addModuleInstructions >> $destfile
+  
+  # Write a command that switches to the current working directory.
+  echo >> $destfile
+  echo "cd `/bin/pwd`" >> $destfile
+
+  echo >> $destfile
+  
+  # Add the content of our runtests script to the jobfile, but
+  # * omit the first lines (i.e. the shebang, leading comments)
+  # * set execution mode to PBSQUEUED
+  # * set MPI environment to use
+  #         s|^LOGDIR=[ ]*\.|LOGDIR=$sedLogDir|i;
+  #         s|^EXECMODE=PARALLEL|EXECMODE=$sedExecMode|i; \
+  sed -e \
+"1,2d; \
+ s|^QUEUEINGSYSTEM=[ ]*$|QUEUEINGSYSTEM=$QUEUEINGSYSTEM|i; \
+ s|^MPIENV=[ ]*$|MPIENV=$MPIENVIRONMENT|i;" $sourcefile \
+>> $destfile
+
+  # Make jobfile executable
+  chmod 750 $destfile
+  
+}
+
+# ==================================================
+# FUNCTION: Create a job-file based on the settings in the global variables
+# using GNUmake.
+#
+# Call:
+#    fb_createBenchmarkJobfileGNU [testid] [filename]
 #
 # where
 #
@@ -936,7 +1010,7 @@ fb_createPBSHeader()
 #   =2: Number of tasks could not be determined.
 # ==================================================
 
-fb_createBenchmarkJobfile()
+fb_createBenchmarkJobfileGNU()
 {
     benchmarktest="$1"  # IN
     file="$2"           # IN
@@ -946,64 +1020,24 @@ fb_createBenchmarkJobfile()
     
     benchscriptname="$BENCHMARKRUNSCRIPT"_"$benchmarktest"_tmp
 
-    fb_createRuntestsScript "$benchmarktest" "$benchscriptname"
+    fb_createRuntestsScriptGNU "$benchmarktest" "$benchscriptname"
     if test $? -ne 0
       then
 	      return 1
       fi
     
-    # Step 2: Figure out how many tasks the current job executes
-    # in parallel. Set env. variable NTASKS appropriately.
-    # Figure out how to distribute the tasks to the nodes.
-
-    fb_getNTASKS
-    if test $? -ne 0
-      then
-	      return 2
-      fi
-
-    fb_determineNodes $NTASKS
-      
-    # Step 3: Determine the PBS header and create the basic file.
+    # Step 2: Determine the PBS header and create the basic file.
     
     LOG_BASE_DIRECTORY=`$GNUMAKE --no-print-directory print-base-log-dir`
     LOG_FILE=$PWD/$LOG_BASE_DIRECTORY/output.$benchmarktest
-    fb_createPBSHeader $LOG_FILE > $file
     
-    # Write our own header that allows to determine job-specific parameters
-    # later on.
-    echo "#SCHEDULE_TESTS NTASKS $NTASKS" >> $file
+    # Step 3: Convert the script to a benchmark script.
     
-    # Step 4: Add environment settings of the MPI envoronment etc.
+    fb_scriptToBenchmarkJobfileGNU "$benchscriptname" "$file" "$LOG_FILE"
     
-    echo "$MPIENVSETTING" >> $file
-    echo >> $file
-    fb_addModuleInstructions >> $file
+    # Step 4: Delete the old temp file.
+    rm -f "$benchscriptname"
     
-    # Write a command that switches to the current working directory.
-    echo >> $file
-    echo "cd `/bin/pwd`" >> $file
-
-    echo >> $file
-    
-    # Add the content of our runtests script to the jobfile, but
-    # * omit the first lines (i.e. the shebang, leading comments)
-    # * set execution mode to PBSQUEUED
-    # * set MPI environment to use
-    #         s|^LOGDIR=[ ]*\.|LOGDIR=$sedLogDir|i;
-    #         s|^EXECMODE=PARALLEL|EXECMODE=$sedExecMode|i; \
-    sed -e \
-	"1,2d; \
-	 s|^QUEUEINGSYSTEM=[ ]*$|QUEUEINGSYSTEM=$QUEUEINGSYSTEM|i; \
-	 s|^MPIENV=[ ]*$|MPIENV=$MPIENVIRONMENT|i;" $benchscriptname \
-	>> $file
-
-    # Make jobfile executable
-    chmod 750 $file
-    
-    # Remove temp script.
-    rm -f $benchscriptname
-
     echo $0": Jobfile <$file> created."
 }
 
@@ -1058,19 +1092,143 @@ fb_getJobfileName()
 #   - The MPI and queueing system being defined
 # ==================================================
 
-fb_createAndTestBenchmarkJobfile()
+fb_createAndTestBenchmarkJobfileGNU()
 {
   testid=$1
   jobfile=$2
   errfile=$3
   echo $0": Creating jobfile for <$testid>."
   fb_getJobfileName $testid 0
-  fb_createBenchmarkJobfile "$testid" "$jobfile"
+  fb_createBenchmarkJobfileGNU "$testid" "$jobfile"
   if test $? -ne 0
     then
       echo $testid >> $errfile
       echo $0": An error occurred creating the jobfile. Creation cancelled."
     fi
+}
+
+# ==================================================
+# FUNCTION: Converts a script to a benchmark job file with the
+# current PBS settings
+#
+# Call:
+#    fb_scriptToBenchmarkJobfile [source-filename] [dest-filename]
+#
+# where
+#
+#   [source-filename] = name of the script to be encapsuled with benchmark commands
+#   [dest-filename]   = destination filename
+#   [log-file]        = name of the log file where benchmark output is written to
+#
+# Needs:
+#   - A queue being selected
+#   - The GNU makefile system determined
+#   - The MPI and queueing system being defined
+#
+# Return:
+#   =0: job-file created
+#   =2: Number of tasks could not be determined.
+# ==================================================
+fb_scriptToBenchmarkJobfile ()
+{
+  # Get source and destination file.
+  sourcefile="$1"
+  destfile="$2"
+  logfile="$3"
+  
+  # Step 1: Figure out how many tasks the current job executes
+  # in parallel. Set env. variable NTASKS appropriately.
+  # Figure out how to distribute the tasks to the nodes.
+
+  fb_getNTASKS
+  if test $? -ne 0
+    then
+      return 2
+    fi
+
+  fb_determineNodes $NTASKS
+    
+  # Step 2: Determine the PBS header and create the basic file.
+  
+  fb_createPBSHeader $logfile > $destfile
+  
+  # Write our own header that allows to determine job-specific parameters
+  # later on.
+  echo "#SCHEDULE_TESTS NTASKS $NTASKS" >> $destfile
+  
+  # Step 3: Add environment settings of the MPI envoronment etc.
+  
+  echo "$MPIENVSETTING" >> $destfile
+  echo >> $destfile
+  fb_addModuleInstructions >> $destfile
+  
+  # Write a command that switches to the current working directory.
+  echo >> $destfile
+  echo "cd `/bin/pwd`" >> $destfile
+
+  echo >> $destfile
+  
+  # Append the source file.
+  cat $sourcefile >> $destfile
+
+  # Make jobfile executable
+  chmod 750 $destfile
+  
+}
+
+# ==================================================
+# FUNCTION: Creates benchmark jobfiles for
+# all test id's in $ALLTESTS invoking make_test.pl.
+#
+# Call:
+#    fb_createBenchmarkJobfileForAll 
+#
+# If the jobfile cannot be created, the test-id
+# is appended to [errfile].
+#
+# Needs:
+#   - A queue being selected
+#   - The GNU makefile system determined
+#   - The MPI and queueing system being defined
+# ==================================================
+
+fb_createBenchmarkJobfileForAll()
+{
+  # Invoke the make_test.pl script to generate all scripts
+  # simultaneously. But first, we have to set some
+  # environment variables.
+  #
+  # 1.) Get the build id
+  buildid="`$GNUMAKE --no-print-directory .idonly`"
+  
+  # 2.) Get the basic LOG directory
+  LOG_BASE_DIRECTORY=`$GNUMAKE --no-print-directory print-base-log-dir`
+  LOG_FILE=$PWD/$LOG_BASE_DIRECTORY/output.$benchmarktest
+  
+  # 3.) Get a temp filename for ID's.
+  tempidfile="`fb_createTempFBConf`"
+  
+  # Temporary filename for tests
+  tempfilename="feast.benchmark"
+  
+  # Invoke make_test.pl to create scripts.
+  # Generate multiple tests at once.
+  # This generates files "feast.benchmark.[testid]".
+  ./include/make_test.pl MULTIPLEFILES=1 TEMPIDFILE=$tempidfile BUILDID=$buildid SCRIPT=$tempfilename $ALLTESTS
+  
+  # Loop through all the id's and the generated files.
+  for testid in $ALLTESTS
+    do
+      # Convert to benchmark jobfiles.
+      sourcefile="$tempfilename.$testid"
+      fb_getJobfileName $testid 0
+      fb_scriptToBenchmarkJobfile "$sourcefile" "$JOBFILE" "$LOG_FILE"
+      
+      # Delete the old temporary file.
+      rm -f "$sourcefile"
+
+      echo $0": Jobfile <$JOBFILE> created."
+    done
 }
 
 # ==================================================
@@ -1098,31 +1256,43 @@ fb_createBenchmarkJobfiles()
   erridstmp="fb_createBenchmarkJobfiles_tmp"
   echo "" > $erridstmp
   
-  if test $PARMAKECOUNT -le 1
+  if test "$ALTMAKE" -ne "1"
     then
-      # Only one make at a time
-      for testid in $ALLTESTS
-        do
-          fb_getJobfileName $testid 0
-          fb_createAndTestBenchmarkJobfile "$testid" "$JOBFILE" "$erridstmp"
-        done
+    
+    # Standard script creation using GNU make.
+    if test $PARMAKECOUNT -le 1
+      then
+        # Only one make at a time
+        for testid in $ALLTESTS
+          do
+            fb_getJobfileName $testid 0
+            fb_createAndTestBenchmarkJobfileGNU "$testid" "$JOBFILE" "$erridstmp"
+          done
+      else
+        # Multiple concurrent make's.
+        imakecount=0
+        for testid in $ALLTESTS
+          do
+            fb_getJobfileName $testid 0
+            fb_createAndTestBenchmarkJobfileGNU "$testid" "$JOBFILE" "$erridstmp" &
+            imakecount=`expr $imakecount + 1`
+            if test $imakecount -ge $PARMAKECOUNT
+              then
+                # Wait for the jobs to be completed.
+                wait
+                imakecount=0
+              fi
+          done
+        # Wait for the jobs to be completed
+        wait     
+      fi
+    
     else
-      # Multiple concurrent make's.
-      imakecount=0
-      for testid in $ALLTESTS
-        do
-          fb_getJobfileName $testid 0
-          fb_createAndTestBenchmarkJobfile "$testid" "$JOBFILE" "$erridstmp" &
-          imakecount=`expr $imakecount + 1`
-          if test $imakecount -ge $PARMAKECOUNT
-            then
-              # Wait for the jobs to be completed.
-              wait
-              imakecount=0
-            fi
-        done
-      # Wait for the jobs to be completed
-      wait     
+    
+      # Alternative job creation, "direct" method. This is not done
+      # in parallel, the jobs are directly created all-at-once.
+      fb_createBenchmarkJobfileForAll
+    
     fi
     
   # Get the invalid test id's from the file.
@@ -1156,7 +1326,7 @@ fb_readLogPath()
 }
 
 # ==================================================
-# FUNCTION: Reads the task ooutput dir
+# FUNCTION: Reads the task output dir
 #
 # Parses the file [jobfile] to find the log directory
 # that is used for the job.

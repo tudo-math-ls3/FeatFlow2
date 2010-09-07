@@ -11,7 +11,7 @@
 # In:
 #
 #     test_id          = one or multiple test id's to generate
-#     test_list.fbconf = one or multiple .fbconf files with test is's.
+#     test_list.fbconf = one or multiple .fbconf files with test id's.
 #     OPTION           = one or multiple options to set in the tests.
 #                        The options are specified in the form "OPTION=value".
 
@@ -25,9 +25,18 @@ my %ENVIRONMENT = ( "DEBUGGER" => 0,
                     # Filename of the output file.
                     "SCRIPT" => "runtests",
                     
+                    # Build-ID
+                    "BUILDID" => "",
+                    
                     # Create one file for each test id.
                     # If set to 0, all tests are written ton one script.
+                    # If set to 1, one file is generated for each test id.
+                    # The filename has the form "$SCRIPT.testid".
                     "MULTIPLEFILES" => "0",
+
+                    # Activate MPI.
+                    # "YES" or "NO"
+                    "MPI" => "NO",
                     
                     # Temporary filename with test id's
                     "TEMPIDFILE" => "_tmp_.fbconf"
@@ -285,9 +294,15 @@ sub generate_tests (\@\@) {
   
   # Create one or multiple files?
   my $multiplefiles = $ENVIRONMENT{"MULTIPLEFILES"};
+
+  # Activate MPI?
+  my $mpi = $ENVIRONMENT{"MPI"};
   
-  # Filename that holds the ID's while caööing create_script.pl.
+  # Filename that holds the ID's while calling create_script.pl.
   my $tempfilename = $ENVIRONMENT{"TEMPIDFILE"};
+
+  # Build-ID
+  my $buildid = $ENVIRONMENT{"BUILDID"};
   
   # Create a shell-invoke command for calling the create_script.pl script.
   # This command sets up an environment with environment variables
@@ -299,20 +314,25 @@ sub generate_tests (\@\@) {
   }
   $screatescriptinvoke .= "./include/create_script.pl";
   
+  # Print all test id's to a temporary .fbconf file.
+  # Open a new file and write the header
+  open (FHANDLE,">$tempfilename");
+  foreach (@$testids) {
+    print FHANDLE "$_\n";
+  }
+  close (FHANDLE);
+  
   # Loop through the test id's.
   if ($multiplefiles == 0) {
-
     # Get a filename
     $filename = $basefilename;
     
     # Open a new file and write the header
     open (FHANDLE,">$filename");
-
-    # Write the header
     foreach (@$testheader) {
       print FHANDLE "$_\n";
     }
-    
+
     # Applications are named according the scheme:
     #   <APPL_BASENAME>-<application>
     # where <application> is both found 
@@ -320,23 +340,13 @@ sub generate_tests (\@\@) {
     # * as value of the keyword 'appl' in a *.fbdef file in subdirectory 'tests'.
     #
     # Define <APPL_BASENAME>
+    print FHANDLE "\nBUILDID=$buildid\n";
     print FHANDLE "\nAPPL_BASENAME=$APPBASE\n\n";
-
-    # Close the file 
-    close (FHANDLE);
-    
-    # Print all test id's to a temporary .fbconf file.
-    # Open a new file and write the header
-    open (FHANDLE,">$tempfilename");
-    foreach (@$testids) {
-      print FHANDLE "$_\n";
-    }
+  
     close (FHANDLE);
     
     # Invoke create_script.pl, write all configurations into that file.
     my $output=`$screatescriptinvoke $tempfilename >> $filename`;
-    
-    unlink ($tempfilename);
     
     # Write a footer.
     open (FHANDLE,">>$filename");
@@ -346,25 +356,21 @@ sub generate_tests (\@\@) {
     # Make the script executable
     chmod 0755,$filename;
     
-    print "# Script named <$filename> has been created.\n"
-   
+    print "$0: Script named <$filename> has been created.\n"
+    
   }
   else {
-    
-    # Loop through the test ids
-    foreach my $testid (@$testids) {
-      
-      # Get a unique filename
-      $filename = $basefilename . "." . $testid . ".sh";
-      
+
+    # Create output files, write headers
+    for my $testid (@$testids) {
+      my $filename = "$basefilename.$testid";
+
       # Open a new file and write the header
       open (FHANDLE,">$filename");
-  
-      # Write the header
       foreach (@$testheader) {
         print FHANDLE "$_\n";
       }
-      
+
       # Applications are named according the scheme:
       #   <APPL_BASENAME>-<application>
       # where <application> is both found 
@@ -372,21 +378,20 @@ sub generate_tests (\@\@) {
       # * as value of the keyword 'appl' in a *.fbdef file in subdirectory 'tests'.
       #
       # Define <APPL_BASENAME>
+      print FHANDLE "\nBUILDID=$buildid\n";
       print FHANDLE "\nAPPL_BASENAME=$APPBASE\n\n";
-  
-      # Close the file 
+    
       close (FHANDLE);
       
-      # Print the test id's to a temporary .fbconf file.
-      # Open a new file and write the header
-      open (FHANDLE,">$tempfilename");
-      print FHANDLE "$testid\n";
-      close (FHANDLE);
-      
-      # Invoke create_script.pl, write all configurations into that file.
-      my $output=`$screatescriptinvoke $tempfilename >> $filename`;
-      
-      unlink ($tempfilename);
+    }
+    
+    # Invoke create_script.pl, get one file per test id.
+    # The test instructions are appended to the existing files.
+    my $output=`$screatescriptinvoke $tempfilename --append-to-files $basefilename.`;
+    
+    # Append footers
+    for my $testid (@$testids) {
+      my $filename = "$basefilename.$testid";
       
       # Write a footer.
       open (FHANDLE,">>$filename");
@@ -396,9 +401,14 @@ sub generate_tests (\@\@) {
       # Make the script executable
       chmod 0755,$filename;
       
-      print "# Script named <$filename> has been created.\n"    
+      print "$0: Script named <$filename> has been created.\n"
+      
     }
   }
+  
+  # Remove old temp file with the ID's.
+  unlink ($tempfilename);
+  
 }
 
 ################################################################################
