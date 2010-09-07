@@ -896,7 +896,8 @@ contains
   
     ! local variables
     integer :: ite
-    real(DP) :: dresInit, dresCurrent, drho, dresLast
+    real(DP) :: dresInit, dresCurrent, drho, dresMeanDev, dresMeanLast
+    real(DP), dimension(3) :: DresLast
     
     ! One temp vector is used for the residuum, one for the solution.
     call sptivec_clearVector (rsolver%rspaceTimeTemp1)
@@ -906,7 +907,7 @@ contains
     call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%rspaceTimeTemp2)
     dresInit = sptivec_vectorNorm (rsolver%rspaceTimeTemp2,LINALG_NORML2)
     dresCurrent = dresInit
-    dresLast = 0.0_DP
+    DresLast(:) = 0.0_DP
     
     do ite = 1,rsolver%nmaxiterations+1
       if (rsolver%ioutputlevel .ge. 2) then
@@ -934,8 +935,13 @@ contains
             exit
           end if
         end select
-        if ( (abs(dresCurrent-dresLast) .lt. rsolver%depsRelDiff*dresLast) .or. &
-             (abs(dresCurrent-dresLast) .lt. rsolver%depsAbsDiff) ) then
+        
+        ! Calculate mean deviation in the last iterations.
+        dresMeanDev = sum(abs(dresCurrent-DresLast(:))) / min(ite,size(DresLast))
+        dresMeanLast = sum(DresLast(:)) / min(ite,size(DresLast))
+        
+        if ( (dresMeanDev .lt. rsolver%depsRelDiff*dresMeanLast) .or. &
+            (dresMeanDev .lt. rsolver%depsAbsDiff) ) then
           exit
         end if
       end if
@@ -963,7 +969,8 @@ contains
       call stmv_matvec (rsolver%p_rmatrix, &
           rsolver%rspaceTimeTemp1, rsolver%rspaceTimeTemp2, -1.0_DP, 1.0_DP)
       call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%rspaceTimeTemp2)
-      dresLast = dresCurrent;
+      
+      DresLast = eoshift(DresLast,shift=-1,boundary=dresCurrent)
       dresCurrent = sptivec_vectorNorm (rsolver%rspaceTimeTemp2,LINALG_NORML2)
       
     end do
@@ -1357,7 +1364,7 @@ contains
           dresCurrent = sptivec_vectorNorm (p_DR,LINALG_NORML2)
         end if
      
-        DresLast = EOSHIFT(DresLast,SHIFT=-1,BOUNDARY=dresFinal)
+        DresLast = eoshift(DresLast,shift=-1,boundary=dresFinal)
         dresFinal = dresCurrent
 
         if (ite .ge. rsolver%nminiterations+1) then
@@ -2272,8 +2279,9 @@ contains
     real(DP) :: dfactor
     integer :: ite,nite,ispacelevel,itimeLevel,ispacelevelcoarse
     integer :: nitecoarse
-    real(DP) :: dresInit, dresCurrent, drho, drhoAsymp, dresLast
+    real(DP) :: dresInit, dresCurrent, drho, drhoAsymp, dresMeanDev,dresMeanLast
     real(DP), dimension(3) :: DlastResiduals
+    real(DP), dimension(3) :: DresLast
   
     ! Are we on the level of the coarse grid solver?
     if (ilevel .eq. rsolver%p_rcoarsegridsolver%ilevel) then
@@ -2318,7 +2326,7 @@ contains
         nite = niteFixed
       end if
       
-      dresLast = 0.0_DP
+      DresLast(:) = 0.0_DP
       
       do ite = 1,nite
       
@@ -2352,10 +2360,15 @@ contains
               end if
             end select
 
-            if ( (abs(dresCurrent-dresLast) .lt. rsolver%depsRelDiff*dresLast) .or. &
-                 (abs(dresCurrent-dresLast) .lt. rsolver%depsAbsDiff) ) then
+            ! Calculate mean deviation in the last iterations.
+            dresMeanDev = sum(abs(dresCurrent-DresLast(:))) / min(ite,size(DresLast))
+            dresMeanLast = sum(DresLast(:)) / min(ite,size(DresLast))
+            
+            if ( (dresMeanDev .lt. rsolver%depsRelDiff*dresMeanLast) .or. &
+                (dresMeanDev .lt. rsolver%depsAbsDiff) ) then
               exit
             end if
+            
           end if
           
           if ((.not. (dresCurrent .lt. rsolver%ddivAbs)) .or. &
@@ -2544,12 +2557,11 @@ contains
 !          call output_line ("Defect after smoothing:")
 !          call stpp_printDefectSubnormsDirect (rsolver%p_Rvectors3(ilevel))
           
-          dresLast = dresCurrent
+          DresLast(:) = eoshift(DresLast(:),shift=-1,boundary=dresCurrent)
           dresCurrent = sptivec_vectorNorm (rsolver%p_Rvectors3(ilevel),LINALG_NORML2)
           
           ! Shift the residuals
-          DlastResiduals (1:size(DlastResiduals)-1) = DlastResiduals(2:)
-          DlastResiduals (size(DlastResiduals)) = dresCurrent
+          DlastResiduals = eoshift(DlastResiduals,shift=1,boundary=dresCurrent)
         end if
         
       end do
