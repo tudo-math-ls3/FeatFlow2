@@ -1442,12 +1442,13 @@ contains
     case (BDRC_HOMNEUMANN)
       !-------------------------------------------------------------------------
       ! Homogeneous Neumann boundary conditions:
-      ! Do nothing since the boundary term vanishes
+      ! The boundary term in the linear form vanishes and should be
+      ! included into the bilinear form. Hence, this routine should
+      ! not be called for homogeneous Neumann boundary conditions
+      ! since it corresponds to an expensive assemble of "zero".
       Dcoefficients = 0.0_DP
 
-      ! This routine should not be called at all for homogeneous Neumann boundary
-      ! conditions since it corresponds to an expensive assemble of "zero".
-       call output_line('Redundant assembly of vanishing boundary term!',&
+      call output_line('Redundant assembly of vanishing boundary term!',&
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrConvP2d_sim')
 
 
@@ -2058,7 +2059,7 @@ contains
     case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN)
       !-------------------------------------------------------------------------
       ! (In-)Homogeneous Neumann boundary conditions:
-      ! Assemble the boundary integral for the convective term      
+      ! Assemble the boundary integral only for the convective term
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
