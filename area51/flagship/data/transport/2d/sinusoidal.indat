@@ -44,6 +44,5 @@ IBCT
 NCOMP
 2
 PARAMETERS
-2.0  T  'FLUX_WEAK'   SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t))
-4.0  F  'HOMNEUMANN_WEAK'
-
+2.0  T  'FLUX_WEAK'  SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t))
+4.0  F  'FLUX_WEAK'  0.0

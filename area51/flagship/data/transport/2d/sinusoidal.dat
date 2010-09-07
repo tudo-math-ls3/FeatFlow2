@@ -56,7 +56,7 @@ imassantidiffusiontype = 1
 # 3 = Burgers equation in space-time
 # 4 = Buckley Leverett in space-time
 # 6 = Burgers' equation in 2D
-ivelocitytype = 2
+ivelocitytype = 1
 
 # section name of velocity field
 svelocityname(2) =
@@ -265,7 +265,7 @@ multisteps = 1
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.3
+dfinalTime = 0.5
 
 # initial time step size
 dinitialStep = 0.001
@@ -312,7 +312,7 @@ depsSteady = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 0
 
 # minimum multigrid level number
 nlmin = 7
@@ -353,7 +353,7 @@ ssolvername = NonlinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 0
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -512,7 +512,7 @@ ssolvername = LinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -623,7 +623,7 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
