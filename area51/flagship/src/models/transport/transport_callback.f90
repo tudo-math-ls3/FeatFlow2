@@ -897,7 +897,7 @@ contains
 
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
+          smode, ivelocitytype, rtimestep%dTime, -1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), rcollection,&
           fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim, BILF_MATC_LUMPED)
 
@@ -1050,7 +1050,7 @@ contains
 
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, -1.0_DP,&
+          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), rcollection,&
           fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim, BILF_MATC_LUMPED)
 
@@ -1489,7 +1489,7 @@ contains
 
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
+          smode, ivelocitytype, rtimestep%dTime, -1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), rcollection,&
           fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim, BILF_MATC_LUMPED)
 
@@ -1573,7 +1573,7 @@ contains
 
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, -1.0_DP,&
+          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), rcollection,&
           fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim, BILF_MATC_LUMPED)
 
