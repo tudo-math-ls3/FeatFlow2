@@ -4739,7 +4739,7 @@ contains
 
 
 #ifndef USE_EULER_INTEGRATEBYPARTS
-    call output_line('Application must be compiled with -DUSE_INTEGRATIONBYPARTS',&
+    call output_line('Application must be compiled with -DUSE_EULER_INTEGRATEBYPARTS',&
         OU_CLASS_ERROR,OU_MODE_STD,'euler_coeffVectorBdr2d_sim')
     call sys_halt()
 #endif

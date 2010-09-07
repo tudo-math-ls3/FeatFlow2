@@ -446,8 +446,8 @@ contains
     !
     ! The bilinear form for the diffusion operator consists of the
     ! volume integral (see above) only.
-    !
     ! Non-homogeneous Neumann boundary conditions
+    !
     !
     ! $$ q_N = {\bf n} \cdot \nabla u = h \qquad \mbox{on} \quad \Gamma_N $$
     !
@@ -550,7 +550,7 @@ contains
     !
     !     $$ \int_{\Gamma_{-}} w ({\bf v}u_{D}) \cdot {\bf n} {\rm d}{\bf s} $$
     !
-    !     imposed at the inlet $\Gamma_{-}=\{{\bf x}\in\Gamma : {\bf v}\cdot\{\bf n}>0\} $
+    !     imposed at the inlet $\Gamma_{-}=\{{\bf x}\in\Gamma : {\bf v}\cdot\{\bf n}<0\} $
     !
     !     At the outlet $\Gamma_{+}=\{{\bf x}\in\Gamma : {\bf v}\cdot\{\bf n}>0\} $
     !     the correcponding boundary integral is built into the transport operator
@@ -3506,7 +3506,7 @@ contains
           rcollectionTmp%DquickAccess(2) = dscale
           rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
           rcollectionTmp%IquickAccess(2) = isegment
-
+          
           ! What type of boundary conditions are we?
           select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
 
@@ -3889,7 +3889,7 @@ contains
           rcollectionTmp%DquickAccess(2) = dscale
           rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
           rcollectionTmp%IquickAccess(2) = isegment
-
+          
           ! What type of boundary conditions are we?
           select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
             
