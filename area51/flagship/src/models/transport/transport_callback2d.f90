@@ -468,7 +468,7 @@ contains
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:,:), pointer :: Dcoefficients
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dt,dminPar,dmaxPar,dnx,dny,dtime
+    real(DP) :: dnx,dny,dtime
     integer :: iel,ipoint,icomp1,icomp2,icomp,ndim
 
 
@@ -517,49 +517,16 @@ contains
             Dcoefficients(ipoint,iel,3))
       end do
     end do
-
-    ! Get the minimum and maximum parameter value. The point with the minimal
-    ! parameter value is the start point of the interval, the point with the
-    ! maximum parameter value the endpoint.
-    dminPar = DpointPar(1,1)
-    dmaxPar = DpointPar(1,1)
-    do iel = 1, size(Ielements)
-      do ipoint = 1, ubound(Dpoints,2)
-        dminPar = min(DpointPar(ipoint,iel), dminPar)
-        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-      end do
-    end do
-
+    
     ! Multiply the velocity vector with the normal in each point
     ! to get the normal velocity.
     do iel = 1, size(Ielements)
       do ipoint = 1, ubound(Dpoints,2)
 
-        dt = DpointPar(ipoint,iel)
-
-        ! Get the normal vector in the point from the boundary.
-        ! Note that the parameter value is in length parametrisation!
-        ! When we are at the left or right endpoint of the interval, we
-        ! calculate the normal vector based on the current edge.
-        ! Without that, the behaviour of the routine may lead to some
-        ! confusion if the endpoints of the interval coincide with
-        ! the endpoints of a boundary edge. In such a case, the routine
-        ! would normally compute the normal vector as a mean on the
-        ! normal vectors of the edges adjacent to such a point!
-        if (DpointPar(ipoint,iel) .eq. dminPar) then
-          ! Start point
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-          ! End point
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-        else
-          ! Inner point
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-        end if
-
+        ! Get the normal vector in the point from the boundary
+        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+            ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
+        
         ! Compute the expression from the data stored in Dcoefficients
         !
         !    u * (v x n)
@@ -739,9 +706,9 @@ contains
       end do
     end do
 
-    ! Get the minimum and maximum parameter value. The point with the minimal
-    ! parameter value is the start point of the interval, the point with the
-    ! maximum parameter value the endpoint.
+    ! Get the minimum and maximum parameter value. The point with the
+    ! minimal parameter value is the start point of the interval, the
+    ! point with the maximum parameter value the endpoint.
     dminPar = DpointPar(1,1)
     dmaxPar = DpointPar(1,1)
     do iel = 1, size(Ielements)
@@ -1441,8 +1408,14 @@ contains
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv,dtime,dscale
+    real(DP) :: dnx,dny,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ndim
+
+#ifndef USE_TRANSP_INTEGRATEBYPARTS
+    call output_line('Application must be compiled with -DUSE_TRANSP_INTEGRATEBYPARTS',&
+        OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrConvP2d_sim')
+    call sys_halt()
+#endif
 
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
@@ -1552,51 +1525,16 @@ contains
               Dvalue, Daux(ipoint,iel,3))
         end do
       end do
-
-      ! Get the minimum and maximum parameter value. The point with the minimal
-      ! parameter value is the start point of the interval, the point with the
-      ! maximum parameter value the endpoint.
-      dminPar = DpointPar(1,1)
-      dmaxPar = DpointPar(1,1)
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
-          dminPar = min(DpointPar(ipoint,iel), dminPar)
-          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-        end do
-      end do
-
+      
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
 
-          dt = DpointPar(ipoint,iel)
-
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length
-          ! parametrisation!  When we are at the left or right
-          ! endpoint of the interval, we calculate the normal vector
-          ! based on the current edge.  Without that, the behaviour of
-          ! the routine may lead to some confusion if the endpoints of
-          ! the interval coincide with the endpoints of a boundary
-          ! edge. In such a case, the routine would normally compute
-          ! the normal vector as a mean on the normal vectors of the
-          ! edges adjacent to such a point!
-          if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-
-          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-            ! End point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-          else
-            ! Inner point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
-
+          ! Get the normal vector in the point from the boundary
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
+          
           ! Compute the normal velocity and impose Dirichlet boundary condition
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
           Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
@@ -1649,55 +1587,20 @@ contains
         end do
       end do
 
-      ! Get the minimum and maximum parameter value. The point with the minimal
-      ! parameter value is the start point of the interval, the point with the
-      ! maximum parameter value the endpoint.
-      dminPar = DpointPar(1,1)
-      dmaxPar = DpointPar(1,1)
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
-          dminPar = min(DpointPar(ipoint,iel), dminPar)
-          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-        end do
-      end do
-
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
 
-          dt = DpointPar(ipoint,iel)
-
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length
-          ! parametrisation!  When we are at the left or right
-          ! endpoint of the interval, we calculate the normal vector
-          ! based on the current edge.  Without that, the behaviour of
-          ! the routine may lead to some confusion if the endpoints of
-          ! the interval coincide with the endpoints of a boundary
-          ! edge. In such a case, the routine would normally compute
-          ! the normal vector as a mean on the normal vectors of the
-          ! edges adjacent to such a point!
-          if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-
-          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-            ! End point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-          else
-            ! Inner point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
+          ! Get the normal vector in the point from the boundary
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
 
           ! Check if we are at the primal inflow boundary
-          if (dnv .lt. -SYS_EPSREAL) then
+          if (dnv .lt. 0.0_DP) then
             Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -1815,8 +1718,14 @@ contains
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv,dtime,dscale
+    real(DP) :: dnx,dny,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ndim
+
+#ifndef USE_TRANSP_INTEGRATEBYPARTS
+    call output_line('Application must be compiled with -DUSE_TRANSP_INTEGRATEBYPARTS',&
+        OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrConvD2d_sim')
+    call sys_halt()
+#endif
 
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
@@ -1927,49 +1836,14 @@ contains
         end do
       end do
 
-      ! Get the minimum and maximum parameter value. The point with the minimal
-      ! parameter value is the start point of the interval, the point with the
-      ! maximum parameter value the endpoint.
-      dminPar = DpointPar(1,1)
-      dmaxPar = DpointPar(1,1)
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
-          dminPar = min(DpointPar(ipoint,iel), dminPar)
-          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-        end do
-      end do
-
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
 
-          dt = DpointPar(ipoint,iel)
-
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length
-          ! parametrisation!  When we are at the left or right
-          ! endpoint of the interval, we calculate the normal vector
-          ! based on the current edge.  Without that, the behaviour of
-          ! the routine may lead to some confusion if the endpoints of
-          ! the interval coincide with the endpoints of a boundary
-          ! edge. In such a case, the routine would normally compute
-          ! the normal vector as a mean on the normal vectors of the
-          ! edges adjacent to such a point!
-          if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-
-          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-            ! End point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-          else
-            ! Inner point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
+          ! Get the normal vector in the point from the boundary
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
           ! Compute the normal velocity and impose Dirichlet boundary condition
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
@@ -2022,50 +1896,16 @@ contains
               Dvalue, Daux(ipoint,iel,3))
         end do
       end do
-
-      ! Get the minimum and maximum parameter value. The point with the minimal
-      ! parameter value is the start point of the interval, the point with the
-      ! maximum parameter value the endpoint.
-      dminPar = DpointPar(1,1)
-      dmaxPar = DpointPar(1,1)
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
-          dminPar = min(DpointPar(ipoint,iel), dminPar)
-          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-        end do
-      end do
-
+      
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
 
-          dt = DpointPar(ipoint,iel)
-
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length parametrisation!
-          ! When we are at the left or right endpoint of the interval, we
-          ! calculate the normal vector based on the current edge.
-          ! Without that, the behaviour of the routine may lead to some
-          ! confusion if the endpoints of the interval coincide with
-          ! the endpoints of a boundary edge. In such a case, the routine
-          ! would normally compute the normal vector as a mean on the
-          ! normal vectors of the edges adjacent to such a point!
-          if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-
-          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-            ! End point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-          else
-            ! Inner point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
-
+          ! Get the normal vector in the point from the boundary
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
+          
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
 
@@ -2190,8 +2030,14 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv,dtime,dscale
+    real(DP) :: dnx,dny,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ndim
+
+#ifndef USE_TRANSP_INTEGRATEBYPARTS
+    call output_line('Application must be compiled with -DUSE_TRANSP_INTEGRATEBYPARTS',&
+        OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrConvP2d_sim')
+    call sys_halt()
+#endif
 
     ! The first quick access vector points to the velocity vector
     p_rvelocity => rcollection%p_rvectorQuickAccess1
@@ -2227,48 +2073,14 @@ contains
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      ! Get the minimum and maximum parameter value. The point with the minimal
-      ! parameter value is the start point of the interval, the point with the
-      ! maximum parameter value the endpoint.
-      dminPar = DpointPar(1,1)
-      dmaxPar = DpointPar(1,1)
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
-          dminPar = min(DpointPar(ipoint,iel), dminPar)
-          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-        end do
-      end do
-
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
 
-          dt = DpointPar(ipoint,iel)
-
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length parametrisation!
-          ! When we are at the left or right endpoint of the interval, we
-          ! calculate the normal vector based on the current edge.
-          ! Without that, the behaviour of the routine may lead to some
-          ! confusion if the endpoints of the interval coincide with
-          ! the endpoints of a boundary edge. In such a case, the routine
-          ! would normally compute the normal vector as a mean on the
-          ! normal vectors of the edges adjacent to such a point!
-          if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-
-          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-            ! End point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-          else
-            ! Inner point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
+          ! Get the normal vector in the point from the boundary
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
@@ -2311,54 +2123,20 @@ contains
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      ! Get the minimum and maximum parameter value. The point with the minimal
-      ! parameter value is the start point of the interval, the point with the
-      ! maximum parameter value the endpoint.
-      dminPar = DpointPar(1,1)
-      dmaxPar = DpointPar(1,1)
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
-          dminPar = min(DpointPar(ipoint,iel), dminPar)
-          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-        end do
-      end do
-
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
 
-          dt = DpointPar(ipoint,iel)
-
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length parametrisation!
-          ! When we are at the left or right endpoint of the interval, we
-          ! calculate the normal vector based on the current edge.
-          ! Without that, the behaviour of the routine may lead to some
-          ! confusion if the endpoints of the interval coincide with
-          ! the endpoints of a boundary edge. In such a case, the routine
-          ! would normally compute the normal vector as a mean on the
-          ! normal vectors of the edges adjacent to such a point!
-          if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-
-          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-            ! End point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-          else
-            ! Inner point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
-
+          ! Get the normal vector in the point from the boundary
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
+          
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
 
           ! Check if we are at the primal outflow boundary
-          if (dnv .gt. SYS_EPSREAL) then
+          if (dnv .gt. 0.0_DP) then
             Dcoefficients(1,ipoint,iel) = dscale * dnv
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -2479,8 +2257,14 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv,dtime,dscale
+    real(DP) :: dnx,dny,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ndim
+
+#ifndef USE_TRANSP_INTEGRATEBYPARTS
+    call output_line('Application must be compiled with -DUSE_TRANSP_INTEGRATEBYPARTS',&
+        OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrConvD2d_sim')
+    call sys_halt()
+#endif
 
     ! This subroutine assumes that the first quick access vector
     ! points to the velocity vector
@@ -2517,48 +2301,14 @@ contains
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      ! Get the minimum and maximum parameter value. The point with the minimal
-      ! parameter value is the start point of the interval, the point with the
-      ! maximum parameter value the endpoint.
-      dminPar = DpointPar(1,1)
-      dmaxPar = DpointPar(1,1)
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
-          dminPar = min(DpointPar(ipoint,iel), dminPar)
-          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-        end do
-      end do
-
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
 
-          dt = DpointPar(ipoint,iel)
-
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length parametrisation!
-          ! When we are at the left or right endpoint of the interval, we
-          ! calculate the normal vector based on the current edge.
-          ! Without that, the behaviour of the routine may lead to some
-          ! confusion if the endpoints of the interval coincide with
-          ! the endpoints of a boundary edge. In such a case, the routine
-          ! would normally compute the normal vector as a mean on the
-          ! normal vectors of the edges adjacent to such a point!
-          if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-
-          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-            ! End point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-          else
-            ! Inner point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
+          ! Get the normal vector in the point from the boundary
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
@@ -2601,48 +2351,14 @@ contains
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      ! Get the minimum and maximum parameter value. The point with the minimal
-      ! parameter value is the start point of the interval, the point with the
-      ! maximum parameter value the endpoint.
-      dminPar = DpointPar(1,1)
-      dmaxPar = DpointPar(1,1)
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
-          dminPar = min(DpointPar(ipoint,iel), dminPar)
-          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-        end do
-      end do
-
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
 
-          dt = DpointPar(ipoint,iel)
-
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length parametrisation!
-          ! When we are at the left or right endpoint of the interval, we
-          ! calculate the normal vector based on the current edge.
-          ! Without that, the behaviour of the routine may lead to some
-          ! confusion if the endpoints of the interval coincide with
-          ! the endpoints of a boundary edge. In such a case, the routine
-          ! would normally compute the normal vector as a mean on the
-          ! normal vectors of the edges adjacent to such a point!
-          if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-
-          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-            ! End point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-          else
-            ! Inner point
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
+          ! Get the normal vector in the point from the boundary
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
@@ -2972,6 +2688,12 @@ contains
 
 !</subroutine>
 
+#ifndef USE_TRANSP_INTEGRATEBYPARTS
+    call output_line('Application must be compiled with -DUSE_TRANSP_INTEGRATEBYPARTS',&
+        OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrSTBurgersP2d_sim')
+    call sys_halt()
+#endif
+
     print *, "Weak boundary conditions are not available yet"
     stop
 
@@ -3073,6 +2795,12 @@ contains
 !</output>
 
 !</subroutine>
+
+#ifndef USE_TRANSP_INTEGRATEBYPARTS
+    call output_line('Application must be compiled with -DUSE_TRANSP_INTEGRATEBYPARTS',&
+        OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrSTBurgersP2d_sim')
+    call sys_halt()
+#endif
 
     print *, "Weak boundary conditions are not available yet"
     stop
@@ -3392,6 +3120,12 @@ contains
 
 !</subroutine>
 
+#ifndef USE_TRANSP_INTEGRATEBYPARTS
+    call output_line('Application must be compiled with -DUSE_TRANSP_INTEGRATEBYPARTS',&
+        OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrSTBuckLevP2d_sim')
+    call sys_halt()
+#endif
+
     print *, "Weak boundary conditions are not available yet"
     stop
 
@@ -3493,6 +3227,12 @@ contains
 !</output>
 
 !</subroutine>
+
+#ifndef USE_TRANSP_INTEGRATEBYPARTS
+    call output_line('Application must be compiled with -DUSE_TRANSP_INTEGRATEBYPARTS',&
+        OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrSTBuckLevP2d_sim')
+    call sys_halt()
+#endif
 
     print *, "Weak boundary conditions are not available yet"
     stop
@@ -3788,6 +3528,12 @@ contains
 
 !</subroutine>
 
+#ifndef USE_TRANSP_INTEGRATEBYPARTS
+    call output_line('Application must be compiled with -DUSE_TRANSP_INTEGRATEBYPARTS',&
+        OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrBurgersP2d_sim')
+    call sys_halt()
+#endif
+
     print *, "Weak boundary conditions are not available yet"
     stop
 
@@ -3889,6 +3635,12 @@ contains
 !</output>
 
 !</subroutine>
+
+#ifndef USE_TRANSP_INTEGRATEBYPARTS
+    call output_line('Application must be compiled with -DUSE_TRANSP_INTEGRATEBYPARTS',&
+        OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrBurgersP2d_sim')
+    call sys_halt()
+#endif
 
     print *, "Weak boundary conditions are not available yet"
     stop
