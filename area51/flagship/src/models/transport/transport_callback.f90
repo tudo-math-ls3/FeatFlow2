@@ -3510,11 +3510,11 @@ contains
           ! What type of boundary conditions are we?
           select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
 
-          case (BDRC_INHOMNEUMANN)
-            print *, "Inhomogeneous Neumann boundary conditions are not implemented yet"
-            stop
+          case (BDRC_ROBIN)
+            ! Do nothing since boundary conditions are build into the
+            ! linear form and the bilinear form has no boundary term
 
-          case (BDRC_HOMNEUMANN, BDRC_FLUX)
+          case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN, BDRC_FLUX)
 
             ! Initialize the bilinear form
             rform%itermCount = 1
@@ -3889,14 +3889,15 @@ contains
           rcollectionTmp%DquickAccess(2) = dscale
           rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
           rcollectionTmp%IquickAccess(2) = isegment
-          
+
           ! What type of boundary conditions are we?
           select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
             
           case (BDRC_HOMNEUMANN)
             ! Do nothing for homogeneous Neumann boundary conditions
+            ! since the boundary integral vanishes by construction
 
-          case(BDRC_INHOMNEUMANN, BDRC_DIRICHLET, BDRC_ROBIN, BDRC_FLUX)
+          case(BDRC_INHOMNEUMANN, BDRC_ROBIN, BDRC_FLUX)
             
             ! Initialize the linear form
             rform%itermCount = 1

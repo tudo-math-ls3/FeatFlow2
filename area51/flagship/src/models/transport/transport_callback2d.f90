@@ -1442,10 +1442,14 @@ contains
     case (BDRC_HOMNEUMANN)
       !-------------------------------------------------------------------------
       ! Homogeneous Neumann boundary conditions:
-      ! The boundary term in the linear form vanishes and should be
-      ! included into the bilinear form. Hence, this routine should
-      ! not be called for homogeneous Neumann boundary conditions
-      ! since it corresponds to an expensive assemble of "zero".
+      !
+      ! The diffusive part in the linear form vanishes since
+      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! The convective part is included into the bilinear form.
+      !
+      ! Hence, this routine should not be called for homogeneous
+      ! Neumann boundary conditions since it corresponds to an
+      ! expensive assemble of a "zero" boundary integral.
       Dcoefficients = 0.0_DP
 
       call output_line('Redundant assembly of vanishing boundary term!',&
@@ -1455,8 +1459,10 @@ contains
     case (BDRC_INHOMNEUMANN)
       !-------------------------------------------------------------------------
       ! Inhomogeneous Neumann boundary conditions:
-      ! Evaluate coefficient for the linear form
-      ! $$ \int_\Gamma wg {\rm d}s $$
+      !
+      ! Evaluate coefficient for the diffusive part of the linear form
+      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! The convective part is included into the bilinear form.
 
       ! Initialize values
       Dvalue = 0.0_DP
@@ -1483,14 +1489,20 @@ contains
         end do
       end do
       
-      
     case (BDRC_DIRICHLET, BDRC_ROBIN)
       !-------------------------------------------------------------------------
-      ! Dirichlet or Robin boundary conditions:
-      ! Evaluate coefficient for the linear form
-      ! $$ \int_\Gamma w ({\bf v}g)\cdot{\bf n} {\rm d}s $$
-      ! The difference between Dirichlet and Robin boundary conditions
-      ! is in the treatment of the bilinearform
+      ! Dirichlet boundary conditions:
+      !
+      ! Evaluate coefficient for the convective part of the linear form
+      ! $$ u=g \Rightarrow ({\bf v}u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
+      ! The diffusive part is included into the bilinear form.
+      !
+      ! Robin boundary conditions:
+      !
+      ! Evaluate coefficients for both the convective and the diffusive
+      ! part of the linear form 
+      ! $$ ({\bf v}u-d\nabla u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
+      ! and do not include any boundary integral into the bilinear form at all.
       
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
@@ -1512,7 +1524,7 @@ contains
       ! Set number of spatial dimensions
       ndim = size(Dpoints, 1)
 
-      ! Evaluate the function parser for the Dirichlet values in the
+      ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,3).
       do iel = 1, size(rdomainIntSubset%p_Ielements)
@@ -1548,10 +1560,13 @@ contains
       
     case(BDRC_FLUX)
       !-------------------------------------------------------------------------
-      ! Flux boundary conditions (Robin bc`s prescribed at the inlet)
-      ! Evaluate coefficient for the linear form
-      ! $$ \int_\Gamma w ({\bf v}g)\cdot{\bf n} {\rm d}s, $$
-      ! where $\Gamma$ denotes the inflow part of the boundary
+      ! Flux boundary conditions (Robin bc`s prescribed at the inlet):
+      !
+      ! Evaluate coefficient for both the convective and diffusive
+      ! part for the linear form at the inflow boundary part.
+      ! $$ ({\bf v}u-d\nabla u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
+      ! The boundary integral at the outflow boundary is included
+      ! into the bilinear form.
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
@@ -1573,7 +1588,7 @@ contains
       ! Set number of spatial dimensions
       ndim = size(Dpoints, 1)
 
-      ! Evaluate the function parser for the Dirichlet values in the
+      ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,3).
       do iel = 1, size(rdomainIntSubset%p_Ielements)
@@ -1753,20 +1768,27 @@ contains
     case (BDRC_HOMNEUMANN)
       !-------------------------------------------------------------------------
       ! Homogeneous Neumann boundary conditions:
-      ! Do nothing since the boundary term vanishes
+      !
+      ! The diffusive part in the linear form vanishes since
+      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! The convective part is included into the bilinear form.
+      !
+      ! Hence, this routine should not be called for homogeneous
+      ! Neumann boundary conditions since it corresponds to an
+      ! expensive assemble of a "zero" boundary integral.
       Dcoefficients = 0.0_DP
-
-      ! This routine should not be called at all for homogeneous Neumann boundary
-      ! conditions since it corresponds to an expensive assemble of "zero".
-       call output_line('Redundant assembly of vanishing boundary term!',&
+      
+      call output_line('Redundant assembly of vanishing boundary term!',&
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrConvD2d_sim')
 
 
     case (BDRC_INHOMNEUMANN)
       !-------------------------------------------------------------------------
-      ! Inhomogeneous Neumann boundary conditions
-      ! Evaluate coefficient for the linear form
-      ! $$ \int_\Gamma wg {\rm d}s $$
+      ! Inhomogeneous Neumann boundary conditions:
+      !
+      ! Evaluate coefficient for the diffusive part of the linear form
+      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! The convective part is included into the bilinear form.
 
       ! Initialize values
       Dvalue = 0.0_DP
@@ -1796,11 +1818,18 @@ contains
       
     case (BDRC_DIRICHLET, BDRC_ROBIN)
       !-------------------------------------------------------------------------
-      ! Dirichlet or Robin boundary conditions
-      ! Evaluate coefficient for the linear form
-      ! $$ \int_\Gamma w ({\bf v}g)\cdot{\bf n} {\rm d}s $$
-      ! The difference between Dirichlet and Robin boundary conditions
-      ! is in the treatment of the bilinearform
+      ! Dirichlet boundary conditions:
+      !
+      ! Evaluate coefficient for the convective part of the linear form
+      ! $$ u=g \Rightarrow ({\bf v}u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
+      ! The diffusive part is included into the bilinear form.
+      !
+      ! Robin boundary conditions:
+      !
+      ! Evaluate coefficients for both the convective and the diffusive
+      ! part of the linear form 
+      ! $$ ({\bf v}u-d\nabla u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
+      ! and do not include any boundary integral into the bilinear form at all.
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
@@ -1822,7 +1851,7 @@ contains
       ! Set number of spatial dimensions
       ndim = size(Dpoints, 1)
 
-      ! Evaluate the function parser for the Dirichlet values in the
+      ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,3).
       do iel = 1, size(rdomainIntSubset%p_Ielements)
@@ -1858,11 +1887,14 @@ contains
       
     case(BDRC_FLUX)
       !-------------------------------------------------------------------------
-      ! Flux boundary conditions (Robin bc`s prescribed at the inlet)
-      ! Evaluate coefficient for the linear form
-      ! $$ \int_\Gamma w ({\bf v}g)\cdot{\bf n} {\rm d}s, $$
-      ! where $\Gamma$ denotes the inflow part of the boundary
-      
+      ! Flux boundary conditions (Robin bc`s prescribed at the inlet):
+      !
+      ! Evaluate coefficient for both the convective and diffusive
+      ! part for the linear form at the inflow boundary part.
+      ! $$ ({\bf v}u-d\nabla u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
+      ! The boundary integral at the outflow boundary is included
+      ! into the bilinear form.
+            
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
 
@@ -1883,7 +1915,7 @@ contains
       ! Set number of spatial dimensions
       ndim = size(Dpoints, 1)
 
-      ! Evaluate the function parser for the Dirichlet values in the
+      ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,3).
       do iel = 1, size(rdomainIntSubset%p_Ielements)
@@ -2059,7 +2091,7 @@ contains
     case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN)
       !-------------------------------------------------------------------------
       ! (In-)Homogeneous Neumann boundary conditions:
-      ! Assemble the boundary integral only for the convective term
+      ! Assemble the convective part of the boundary integral
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
@@ -2095,7 +2127,7 @@ contains
       deallocate(Daux)
 
       
-    case (BDRC_DIRICHLET, BDRC_ROBIN)
+    case (BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Dirichlet or Robin boundary conditions:
       ! Do nothing since the boundary values are build into the linear form      
@@ -2110,6 +2142,7 @@ contains
     case(BDRC_FLUX)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s at the outlet)
+      ! Assemble the convective part of the boundary integral at the outflow
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
@@ -2147,7 +2180,7 @@ contains
 
       ! Free temporal memory
       deallocate(Daux)
-    
+      
     
     case default
       call output_line('Invalid type of boundary conditions!',&
