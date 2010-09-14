@@ -680,17 +680,18 @@ contains
       bbuildStabilisation, bclear, rconvMatrix, rcollection)
     
 !<description>
-    ! This subroutine assembles the discrete transport operator which results
-    ! from the group finite element formulation of the continuous problem
+    ! This subroutine assembles the discrete transport operator which
+    ! results from the group finite element formulation of the
+    ! continuous problem
     !
     !   <tex> $$ \nabla\cdot{\bf f}(u) $$ </tex>
     !
     ! where ${\bf f}(u)$ is a user-defined flux function for the
     ! scalar field $u$.
     !
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! Note that this routine serves as a wrapper for block vectors. If
+    ! there is only one block, then the corresponding scalar routine
+    ! is called.  Otherwise, an error is thrown.
 !</description>
 
 !<input>
@@ -757,8 +758,10 @@ contains
       bbuildStabilisation, bclear, rconvMatrix, rcollection)
 
 !<description>
-    ! This subroutine assembles the discrete transport operator which results
-    ! from the group finite element formulation of the continuous problem
+
+    ! This subroutine assembles the discrete transport operator which
+    ! results from the group finite element formulation of the
+    ! continuous problem
     !
     !   <tex> $$ \nabla\cdot{\bf f}(u) $$ </tex>
     !
@@ -767,27 +770,29 @@ contains
     !
     ! This routine can be used to apply the following discretisations:
     !
-    ! (1) the standard Galerkin finite element method
-    !     which will be referred to as high-order approximation
+    ! (1) the standard Galerkin finite element method which will be
+    !     referred to as high-order approximation
     !
-    ! (2) the discrete upwinding operator which results from the conservative
-    !     elimination of negative off-diagonal entries from the Galerkin
-    !     operator. This technique is for instance described in the reference:
+    ! (2) the discrete upwinding operator which results from the
+    !     conservative elimination of negative off-diagonal entries
+    !     from the Galerkin operator. This technique is for instance
+    !     described in the reference:
     !
-    !     D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
-    !     conservation laws, In: D. Kuzmin et al. (eds), Flux-Corrected
-    !     Transport: Principles,  Algorithms, and Applications,
-    !     Springer, 2005, 155-206.
+    !     D. Kuzmin and M. Moeller, Algebraic flux correction
+    !     I. Scalar conservation laws, In: D. Kuzmin et al. (eds),
+    !     Flux-Corrected Transport: Principles, Algorithms, and
+    !     Applications, Springer, 2005, 155-206.
     !
-    ! (3) In addition to (2), discrete upwinding is performed and auxiliary
-    !     data required for flux limiting is generated in the optional 
-    !     stabilisation structure rafcstab. For symmetric flux limiters,
-    !     the artificial diffusion coefficient d_ij and the entries of the
-    !     low-order operator l_ij=k_ij+d_ij are stored as well as the node
-    !     numbers i and j and the matrix positions ij/ji of the edge (i,j).
-    !     For upwind-biased flux limiters the same data are stored but the
-    !     following orientation convention is applied. Node i is located 
-    !     upwind and corresponds to the column number whose entry has been
+    ! (3) In addition to (2), discrete upwinding is performed and
+    !     auxiliary data required for flux limiting is generated in
+    !     the optional stabilisation structure rafcstab. For symmetric
+    !     flux limiters, the artificial diffusion coefficient d_ij and
+    !     the entries of the low-order operator l_ij=k_ij+d_ij are
+    !     stored as well as the node numbers i and j and the matrix
+    !     positions ij/ji of the edge (i,j).  For upwind-biased flux
+    !     limiters the same data are stored but the following
+    !     orientation convention is applied. Node i is located upwind
+    !     and corresponds to the column number whose entry has been
     !     eliminated.
 !</description>
 
@@ -2158,22 +2163,33 @@ contains
       dscale, bbuildStabilisation, bclear, rdiffMatrix)
 
 !<description>
-    ! This subroutine assembles the diffusive part of the discrete
-    ! transport operator which results from the discretisation of the
-    ! scalar convection-diffusion-reaction equation.  The matrix
-    ! rmatrixS holds the unmodified diffusion operator which is
-    ! possible modified by this routine. If the optional argument
-    ! rmatrixDest is given, then the content of rmatrixS is first
-    ! copied/added to the destination matrix prior to performing
-    ! further modifications.  If the parameter bclear is TRUE the
-    ! destination matrix is cleared, that is, the content of rmatrixS
-    ! is copied. Otherwise, the its content is combined linearly with
-    ! that of the destination matrix.  If the parameter bStabilse is
-    ! TRUE, then symmetric stabilisation is applied so that the
-    ! resulting diffusion operator is guaranted to ensure the discrete
-    ! maximum principle.  If the optional parameter rafcstab is given,
-    ! then the auxiliary data structures for of the stabilisation
-    ! structure are updated.
+
+    ! This subroutine assembles the discrete transport operator which
+    ! results from the group finite element formulation of the
+    ! continuous problem
+    !
+    !   <tex> $$ \nabla\cdot{\bf f}(\nabla u) $$ </tex>
+    !
+    ! where ${\bf f}(\nabla u)$ is a user-defined flux function for
+    ! depending on the gradient of the scalar field $u$.
+    !
+    ! This routine can be used to apply the following discretisations:
+    !
+    ! (1) the standard Galerkin finite element method which will be
+    !     referred to as high-order approximation
+    !
+    ! (2) the operator which preserves the discrete maximum principle.
+    !     This technique is for instance described in the reference:
+    !
+    !     D. Kuzmin, M.J. Shashkov, and D. Svyatski, A constrainted
+    !     finite element method satisfying the discrete maximum
+    !     principle for anisotropic diffuision problems. Journal of
+    !     Computational Physics, vol. 228, 2009, p.3448-3463.
+    !
+    ! (3) In addition to (2), an operator which preserves the discrete
+    !     maximum principle is constructed and the artificial
+    !     diffusion coefficient is stored so that flux limiters can be
+    !     applied.
 !</description>
 
 !<input>
@@ -2224,14 +2240,20 @@ contains
       call afcstab_generateVerticesAtEdge(rcoeffMatrix, rafcstab)
     end if
     
-    ! Should matrix be cleared?
-    if (bclear) call lsyssc_clearMatrix(rdiffMatrix)
+    ! Clear matrix?
+    if (bclear) then
+      call lsyssc_copyMatrix(rcoeffMatrix, rdiffMatrix)
+      call lsyssc_scaleMatrix(rdiffMatrix, dscale)
+      
+    else
+      call lsyssc_matrixLinearComb(rcoeffMatrix, dscale, rdiffMatrix, 1.0_DP,&
+          rdiffMatrix, .false., .false., .true., .true.)
+    end if
 
     ! Set pointers
      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call lsyssc_getbase_double(rcoeffMatrix, p_S)
     call lsyssc_getbase_double(rdiffMatrix, p_DiffOp)      
-
     
     ! What kind of matrix are we?
     select case(rdiffMatrix%cmatrixFormat)
@@ -2359,7 +2381,7 @@ contains
         s_ij = max(0.0_DP,  S(ij))
         
         ! AFC w/o edge orientation
-        DcoefficientsAtEdge(:,iedge) = (/d_ij, s_ij/)
+        DcoefficientsAtEdge(1:2,iedge) = (/d_ij, s_ij/)
         
         ! Apply scaling parameter
         d_ij = dscale * d_ij
