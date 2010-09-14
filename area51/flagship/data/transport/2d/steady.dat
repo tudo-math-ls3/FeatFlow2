@@ -48,10 +48,10 @@ application = transport
 indatfile = data/transport/2d/steady1.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_strong_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = bdrcond_strong_dual
+sdualbdrcondname = 
 
 # number of spatial dimensions
 ndimension = 2
@@ -107,10 +107,10 @@ sreactionname =
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 0
+irhstype = 1
 
 # section name of right-hand side vector
-srhsname = 
+srhsname = @load
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -214,7 +214,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 0
 
 # perform prelimiting
 iprelimiting = 1
@@ -469,7 +469,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 2000
+nmaxIterations = 20
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -718,7 +718,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 3
+nadapt = 0
 
 # time for grid adaptivity
 dtimeadapt = 0.0
