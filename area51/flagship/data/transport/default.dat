@@ -44,12 +44,20 @@ LumpedMassMatrix = 6
 # Position of the constant coefficient matrix S in the scalar matrix structure
 CoeffMatrix_S = 7
 
-# Position of the constant coefficient matrix S in the scalar matrix structure
+# Position of the constant coefficient matrix CX in the scalar matrix structure
 CoeffMatrix_CX = 8
 
-# Position of the constant coefficient matrix S in the scalar matrix structure
+# Position of the constant coefficient matrix CY in the scalar matrix structure
 CoeffMatrix_CY = 9
 
-# Position of the constant coefficient matrix S in the scalar matrix structure
+# Position of the constant coefficient matrix CZ in the scalar matrix structure
 CoeffMatrix_CZ = 10
 
+# Perform integration by parts in matrix CX
+CoeffMatrix_CX_integrateByParts = 1
+
+# Perform integration by parts in matrix CY
+CoeffMatrix_CY_integrateByParts = 1
+
+# Perform integration by parts in matrix CZ
+CoeffMatrix_CZ_integrateByParts = 1
