@@ -537,7 +537,7 @@ contains
     case (AFCSTAB_SYMMETRIC)
 
       ! Handle for IverticesAtEdge
-      Isize = (/2, rafcstab%NEDGE/)
+      Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
       call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
@@ -2155,7 +2155,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildDiffusionOperator(rcoeffMatrix, rafcstab,&
-      bbuildStabilisation, bclear, rdiffMatrix)
+      dscale, bbuildStabilisation, bclear, rdiffMatrix)
 
 !<description>
     ! This subroutine assembles the diffusive part of the discrete
@@ -2180,6 +2180,9 @@ contains
     ! (anisotropic) diffusion operator
     type(t_matrixScalar), intent(in) :: rcoeffMatrix
     
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
@@ -2252,8 +2255,8 @@ contains
             p_DcoefficientsAtEdge)
         
         call doOperatorAFCMat79(p_Kdiagonal, p_IverticesAtEdge,&
-            rafcstab%NEDGE, rdiffMatrix%NEQ, p_S, p_DiffOp,&
-            p_DcoefficientsAtEdge)
+            rafcstab%NEDGE, rdiffMatrix%NEQ, p_S, dscale,&
+            p_DiffOp, p_DcoefficientsAtEdge)
         
         ! Set state of stabilisation
         rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)
@@ -2261,7 +2264,7 @@ contains
       else
         
         call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdge,&
-            rafcstab%NEDGE, rdiffMatrix%NEQ, p_S, p_DiffOp)
+            rafcstab%NEDGE, rdiffMatrix%NEQ, p_S, dscale, p_DiffOp)
 
         ! Set state of stabilisation
         rafcstab%iSpec = iand(rafcstab%iSpec, not(AFCSTAB_HAS_EDGEVALUES))
@@ -2282,9 +2285,11 @@ contains
     ! Assemble low-order diffusion operator S.
     ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorMat79(Kdiagonal, IverticesAtEdge, NEDGE, NEQ, S, L)
+    subroutine doOperatorMat79(Kdiagonal, IverticesAtEdge,&
+        NEDGE, NEQ, S, dscale, L)
 
       real(DP), dimension(:), intent(in) :: S
+      real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
@@ -2308,7 +2313,7 @@ contains
         jj = Kdiagonal(j)
         
         ! Artificial diffusion coefficient
-        d_ij = max(0.0_DP, -S(ij)) 
+        d_ij = dscale * max(0.0_DP, -S(ij)) 
         
         ! Assemble the global operator
         L(ii) = L(ii)-d_ij; L(ij) = L(ij)+d_ij
@@ -2321,9 +2326,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorAFCMat79(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, S, L, DcoefficientsAtEdge)
+        NEDGE, NEQ, S, dscale, L, DcoefficientsAtEdge)
 
       real(DP), dimension(:), intent(in) :: S
+      real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
@@ -2352,12 +2358,15 @@ contains
         d_ij = max(0.0_DP, -S(ij))
         s_ij = max(0.0_DP,  S(ij))
         
+        ! AFC w/o edge orientation
+        DcoefficientsAtEdge(:,iedge) = (/d_ij, s_ij/)
+        
+        ! Apply scaling parameter
+        d_ij = dscale * d_ij
+
         ! Assemble the global operator
         L(ii) = L(ii)-d_ij; L(ij) = L(ij)+d_ij
         L(ji) = L(ji)+d_ij; L(jj) = L(jj)-d_ij
-        
-        ! AFC w/o edge orientation
-        DcoefficientsAtEdge(:,iedge) = (/d_ij, s_ij/)
       end do
 
     end subroutine doOperatorAFCMat79
