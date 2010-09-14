@@ -446,8 +446,8 @@ contains
     !
     ! The bilinear form for the diffusion operator consists of the
     ! volume integral (see above) only.
-    ! Non-homogeneous Neumann boundary conditions
     !
+    ! Non-homogeneous Neumann boundary conditions
     !
     ! $$ q_N = {\bf n} \cdot \nabla u = h \qquad \mbox{on} \quad \Gamma_N $$
     !
@@ -487,7 +487,8 @@ contains
           ! Satisfy discrete maximum principle
           call gfsc_buildDiffusionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_S),&
-              rproblemLevel%Rafcstab(diffusionAFC), .false., .true.,&
+              rproblemLevel%Rafcstab(diffusionAFC),&
+              1.0_DP, .false., .true.,&
               rproblemLevel%Rmatrix(transportMatrix))
 
         case (AFCSTAB_SYMMETRIC)
@@ -495,7 +496,8 @@ contains
           ! and assemble stabilisation structure
           call gfsc_buildDiffusionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_S),&
-              rproblemLevel%Rafcstab(diffusionAFC), .true., .true.,&
+              rproblemLevel%Rafcstab(diffusionAFC),&
+              1.0_DP, .true., .true.,&
               rproblemLevel%Rmatrix(transportMatrix))
 
         case default
@@ -537,25 +539,24 @@ contains
     ! Assemble convective operator:
     !
     ! (1) without integration by parts:
-    !     $$ \int_\Omega w \nabla \cdot ({\bf v} u) {\rm d}{\bf x} $$
+    !     $$ -\int_\Omega w \nabla \cdot {\bf f}(u) {\rm d}{\bf x} $$
     !
     !     then boundary conditions need to be imposed in strong sense
     !     by filtering the system matrix, the solution vector and/or
     !     the residual explicitly.
     !
     ! (2) with integration by parts:
-    !     $$ -\int_\Omega \nabla w \cdot ({\bf v} u) {\rm d}{\bf x} $$
+    !     $$ \int_\Omega \nabla w \cdot {\bf f}(u) {\rm d}{\bf x} $$
     !
-    !     with weakly imposed inflow boundary conditions 
+    !     with weakly imposed boundary conditions 
     !
-    !     $$ \int_{\Gamma_{-}} w ({\bf v}u_{D}) \cdot {\bf n} {\rm d}{\bf s} $$
+    !     $$ -\int_{\Gamma_-} w {\bf f}(u_0) \cdot {\bf n} {\rm d}{\bf s} $$
     !
-    !     imposed at the inlet $\Gamma_{-}=\{{\bf x}\in\Gamma : {\bf v}\cdot\{\bf n}<0\} $
+    !     imposed at some part of the boundary. At the remaining part
+    !     of the boundary nothing is prescribed and the corresponding
+    !     boundary integral is built into the bilinear form
     !
-    !     At the outlet $\Gamma_{+}=\{{\bf x}\in\Gamma : {\bf v}\cdot\{\bf n}>0\} $
-    !     the correcponding boundary integral is built into the transport operator
-    !
-    !     $$ \int_{\Gamma_+} w ({\bf v}u_) \cdot {\bf n} {\rm d}{\bf s} $$
+    !     $$ -\int_{\Gamma_+} w {\bf f}(u) \cdot {\bf n} {\rm d}{\bf s} $$
     !
     ! The convective operator is skew-symmetric so that we have to
     ! distinguish between the primal and the dual problem.
@@ -897,7 +898,7 @@ contains
 
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, -1.0_DP,&
+          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), rcollection,&
           fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim, BILF_MATC_LUMPED)
 
@@ -1489,7 +1490,7 @@ contains
 
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, -1.0_DP,&
+          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), rcollection,&
           fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim, BILF_MATC_LUMPED)
 
@@ -2905,7 +2906,7 @@ contains
       !-------------------------------------------------------------------------
       ! Compute the constant right-hand side
       !
-      !   $$ rhs = M*u^n+(1-theta)*dt*K(u^n)u^n - b.c.`s $$
+      !   $$ rhs = M*u^n + (1-theta)*dt*K(u^n)u^n + b.c.`s $$
       !-------------------------------------------------------------------------
 
       ! Do we have some explicit part?
@@ -2934,7 +2935,7 @@ contains
 
         ! --- explicit part ---
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-            smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep, -dscale,&
+            smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep, dscale,&
             rrhs%RvectorBlock(1), rcollection,&
             fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
 
@@ -2942,7 +2943,7 @@ contains
 
         ! --- implicit part ---
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-            smode, ivelocitytype, rtimestep%dTime, -dscale,&
+            smode, ivelocitytype, rtimestep%dTime, dscale,&
             rrhs%RvectorBlock(1), rcollection,&
             fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
 
@@ -2962,7 +2963,7 @@ contains
 
         ! --- implicit part ---
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-            smode, ivelocitytype, rtimestep%dTime, -dscale,&
+            smode, ivelocitytype, rtimestep%dTime, dscale,&
             rrhs%RvectorBlock(1), rcollection,&
             fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
 
@@ -2973,7 +2974,7 @@ contains
       !-------------------------------------------------------------------------
       ! Initialize the constant right-hand side by zeros
       !
-      !   $$ rhs = "0" - b.c.`s $$
+      !   $$ rhs = "0" + b.c.`s $$
       !-------------------------------------------------------------------------
 
       ! Clear right-hand side vector
@@ -2981,7 +2982,7 @@ contains
 
       ! Evaluate linear form for boundary integral (if any)
       call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, -1.0_DP,&
+          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rrhs%RvectorBlock(1), rcollection,&
           fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
 
@@ -3480,6 +3481,7 @@ contains
     else
       rcollectionTmp%p_rvectorQuickAccess1 => rsolution
     end if
+     rcollectionTmp%IquickAccess(3) = ivelocityType
 
     ! How many spatial dimensions are we?
     select case(rproblemLevel%rtriangulation%ndim)
@@ -3521,6 +3523,27 @@ contains
             rform%Idescriptors(1,1) = DER_FUNC
             rform%Idescriptors(2,1) = DER_FUNC
             
+            ! We have no constant coefficients
+            rform%ballCoeffConstant = .false.
+            rform%BconstantCoeff    = .false.
+
+            ! Create boundary region
+            call bdrc_createRegion(p_rboundaryCondition,&
+                ibct, isegment-p_IbdrCondCpIdx(ibct)+1,&
+                rboundaryRegion)
+
+            ! Assemble the bilinear form
+            call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D,&
+                .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
+                rboundaryRegion, rcollectionTmp, cconstrType)
+
+          case (BDRC_DIRICHLET)
+
+            ! Initialize the bilinear form (penalty method)
+            rform%itermCount = 1
+            rform%Idescriptors(1,1) = DER_FUNC
+            rform%Idescriptors(2,1) = DER_FUNC
+
             ! We have no constant coefficients
             rform%ballCoeffConstant = .false.
             rform%BconstantCoeff    = .false.
@@ -3636,11 +3659,7 @@ contains
 
         end if
 
-      case (VELOCITY_ZERO)
-        ! zero velocity, do nothing
-
-      case (VELOCITY_CONSTANT,&
-            VELOCITY_TIMEDEP)
+      case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
@@ -3712,11 +3731,7 @@ contains
 
         end if
 
-      case (VELOCITY_ZERO)
-        ! zero velocity, do nothing
-
-      case (VELOCITY_CONSTANT,&
-            VELOCITY_TIMEDEP)
+      case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
@@ -3897,7 +3912,7 @@ contains
             ! Do nothing for homogeneous Neumann boundary conditions
             ! since the boundary integral vanishes by construction
 
-          case(BDRC_INHOMNEUMANN, BDRC_ROBIN, BDRC_FLUX)
+          case (BDRC_INHOMNEUMANN, BDRC_ROBIN, BDRC_FLUX)
             
             ! Initialize the linear form
             rform%itermCount = 1
@@ -3907,6 +3922,21 @@ contains
             call bdrc_createRegion(p_rboundaryCondition, ibct,&
                 isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
 
+            ! Assemble the linear form
+            call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D,&
+                .false., rvector, fcoeff_buildVectorScBdr2D_sim,&
+                rboundaryRegion, rcollectionTmp)
+
+          case (BDRC_DIRICHLET)
+
+            ! Initialize the linear form (penalty method)
+            rform%itermCount = 1
+            rform%Idescriptors(1) = DER_FUNC
+            
+            ! Create boundary segment
+            call bdrc_createRegion(p_rboundaryCondition, ibct,&
+                isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
+            
             ! Assemble the linear form
             call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D,&
                 .false., rvector, fcoeff_buildVectorScBdr2D_sim,&
@@ -4008,15 +4038,24 @@ contains
 
         end if
 
-      case (VELOCITY_ZERO)
-        ! zero velocity, do nothing
-
-      case (VELOCITY_CONSTANT,&
-            VELOCITY_TIMEDEP)
-        ! linear velocity
-        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            rsolution, dtime, dscale, transp_coeffVecBdrConvP2d_sim,&
-            rvector, rcollection)
+      case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          ! linear velocity in 1D
+!!$          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$              rsolution, dtime, dscale, transp_coeffVecBdrConvP1d_sim,&
+!!$              rvector, rcollection)
+        case (NDIM2D)
+          ! linear velocity in 2D
+          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+              rsolution, dtime, dscale, transp_coeffVecBdrConvP2d_sim,&
+              rvector, rcollection)
+        case (NDIM3D)
+          ! linear velocity in 3D
+!!$          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$              rsolution, dtime, dscale, transp_coeffVecBdrConvP3d_sim,&
+!!$              rvector, rcollection)
+        end select
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
@@ -4071,15 +4110,25 @@ contains
 
         end if
 
-      case (VELOCITY_ZERO)
-        ! zero velocity, do nothing
+      case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          ! linear velocity in 1D
+!!$          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$            rsolution, dtime, dscale, transp_coeffVecBdrConvD1d_sim,&
+!!$            rvector, rcollection)
+        case (NDIM2D)
+          ! linear velocity in 2D
+          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+              rsolution, dtime, dscale, transp_coeffVecBdrConvD2d_sim,&
+              rvector, rcollection)
+        case (NDIM3D)
+          ! linear velocity in 3D
+!!$          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$              rsolution, dtime, dscale, transp_coeffVecBdrConvD3d_sim,&
+!!$              rvector, rcollection)
+        end select
 
-      case (VELOCITY_CONSTANT,&
-            VELOCITY_TIMEDEP)
-        ! linear velocity
-        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            rsolution, dtime, dscale, transp_coeffVecBdrConvD2d_sim,&
-            rvector, rcollection)
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time

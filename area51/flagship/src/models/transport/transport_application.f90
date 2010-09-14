@@ -806,9 +806,9 @@ contains
     integer :: transportMatrix
     integer :: consistentMassMatrix
     integer :: lumpedMassMatrix
-    integer :: coeffMatrix_CX
-    integer :: coeffMatrix_CY
-    integer :: coeffMatrix_CZ
+    integer :: coeffMatrix_CX,coeffMatrix_CX_integrateByParts
+    integer :: coeffMatrix_CY,coeffMatrix_CY_integrateByParts
+    integer :: coeffMatrix_CZ,coeffMatrix_CZ_integrateByParts
     integer :: coeffMatrix_S
     integer :: convectionAFC
     integer :: diffusionAFC
@@ -842,9 +842,18 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cx', coeffMatrix_CX)
     call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cx_integrateByParts',&
+        coeffMatrix_CX_integrateByParts)
+    call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cy', coeffMatrix_CY)
     call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cy_integrateByParts',&
+        coeffMatrix_CY_integrateByParts)
+    call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cz_integrateByParts',&
+        coeffMatrix_CZ_integrateByParts)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'convectionAFC', convectionAFC)
     call parlst_getvalue_int(rparlist,&
@@ -1178,9 +1187,15 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CX), DER_DERIV3D_X, DER_FUNC)
-
+      if (coeffMatrix_CX_integrateByParts .eq. 0) then
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX),&
+            DER_DERIV3D_X, DER_FUNC, -1.0_DP)
+      else
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX),&
+            DER_FUNC, DER_DERIV3D_X, 1.0_DP)
+      end if
     end if
 
 
@@ -1200,9 +1215,15 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CY), DER_DERIV3D_Y, DER_FUNC)
-
+      if (coeffMatrix_CY_integrateByParts .eq. 0) then
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CY),&
+            DER_DERIV3D_Y, DER_FUNC, -1.0_DP)
+      else
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CY),&
+            DER_FUNC, DER_DERIV3D_Y, 1.0_DP)
+      end if
     end if
 
 
@@ -1222,9 +1243,15 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CZ), DER_DERIV3D_Z, DER_FUNC)
-
+      if (coeffMatrix_CZ_integrateByParts .eq. 0) then
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+            DER_DERIV3D_Z, DER_FUNC, -1.0_DP)
+      else
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+            DER_FUNC, DER_DERIV3D_Z, 1.0_DP)
+      end if
     end if
 
 
@@ -1362,9 +1389,9 @@ contains
         end do
 
         ! We have constant coefficients
-        rform%ballCoeffConstant = .true.
-        rform%BconstantCoeff    = .true.
-        rform%Dcoefficients     = -1.0_DP
+        rform%ballCoeffConstant   = .true.
+        rform%BconstantCoeff(1:4) = .true.
+        rform%Dcoefficients(1:4)  = -rform%Dcoefficients(1:4)
 
         ! Initialize the bilinear form
         rform%itermCount = 4
@@ -1435,9 +1462,9 @@ contains
         end do
 
         ! We have constant coefficients
-        rform%ballCoeffConstant = .true.
-        rform%BconstantCoeff    = .true.
-        rform%Dcoefficients     = -1.0_DP
+        rform%ballCoeffConstant   = .true.
+        rform%BconstantCoeff(1:9) = .true.
+        rform%Dcoefficients(1:9)  = -rform%Dcoefficients(1:9)
 
         ! Initialize the bilinear form
         rform%itermCount = 9
