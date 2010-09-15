@@ -947,7 +947,7 @@ contains
       call strhs_assembleRHS (rparams%rphysics,rrhs)
       
       ! Create the solver.
-      call main_initLinearSolver (rparlist,rparams,ntimelevels,rlinearSolver)
+      call main_initLinearSolver (rparlist,rparams,rparams%rspacetimeHierarchy%nlevels,rlinearSolver)
       
       !!! DEBUG!!!
       !call test_Restriction (rparams%rphysics, rparams%rspaceTimeHierarchy, &
