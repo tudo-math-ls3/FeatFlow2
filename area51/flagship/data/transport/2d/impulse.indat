@@ -32,6 +32,21 @@ deffunc: @weightingFuncInt = if(@sqr1 <= _eps, 1/@area, 0) ; x,y,z,t
 deffunc: @exactTargetFunc = 1 ; t
 
 # Specify the boundary conditions for the primal problem
+[bdrcond_weak_primal]
+NBCT
+1
+NEXPR
+1
+IBCT
+1
+NCOMP
+2
+PARAMETERS
+1.0  T  'DIRICHLET_WEAK'  'if(abs(y-0.5) < 0.01, 1.0, 0.0)'
+4.0  F  'FLUX_WEAK'  '0.0'
+
+
+# Specify the boundary conditions for the primal problem
 [bdrcond_strong_primal]
 NBCT
 1
@@ -47,6 +62,7 @@ PARAMETERS
 2.0  T  'DIRICHLET_STRONG'  0.0
 3.0  F  'HOMNEUMANN_STRONG'
 4.0  T  'DIRICHLET_STRONG'  0.0
+
 
 # Specify the boundary conditions for the primal problem
 [bdrcond_strong_dual]

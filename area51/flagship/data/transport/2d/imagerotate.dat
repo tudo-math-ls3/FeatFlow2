@@ -95,7 +95,7 @@ srhsname =
 isolutiontype = 2
 
 # section name of initial solution
-ssolutionname = data/transport/2d/tux.pgm
+ssolutionname = data/transport/2d/playboy.pgm
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -135,7 +135,7 @@ trifile = grids/2d/square_01x01_quads.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = -1
+celement = 11
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -311,10 +311,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 6
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 6
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce

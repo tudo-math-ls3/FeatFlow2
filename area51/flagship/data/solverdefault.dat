@@ -63,3 +63,16 @@ ddefZero = 1e-30
 [LinearPrecond]
 ################################################################################
 
+
+################################################################################
+[Timestepping]
+################################################################################
+
+# proportional exponent for PID controller
+dproportionalexponent = 0.075
+
+# integrap exponent for PID controller
+dintegralexponent = 0.175
+
+# derivative exponent for PID controller
+dderivativeexponent = 0.01

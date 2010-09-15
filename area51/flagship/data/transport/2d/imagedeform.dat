@@ -95,7 +95,7 @@ srhsname =
 isolutiontype = 2
 
 # section name of initial solution
-ssolutionname = data/transport/2d/tux.pgm
+ssolutionname = data/transport/2d/playboy.pgm
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -104,7 +104,7 @@ ssolutionname = data/transport/2d/tux.pgm
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = @exactsol
+sexactsolutionname =
 
 # type of target functional
 # 0 = zero target functional
@@ -135,7 +135,7 @@ trifile = grids/2d/square_01x01_quads.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = -1
+celement = 11
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -217,7 +217,7 @@ istabilisation = 0
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.1
 
 # file for UCD output of solution
 sucdsolution = out/imagedeform
@@ -261,7 +261,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 2.5
+dfinalTime = 1.5
 
 # initial time step size
 dinitialStep = 0.001
@@ -273,7 +273,7 @@ dminStep = 0.001
 dmaxStep = 0.01
 
 # adaptive time stepping algorithm
-iadaptTimestep = 1
+iadaptTimestep = 0
 
 # initial time for adaptive time stepping
 dadaptTime = 0.0
@@ -293,6 +293,9 @@ depsRel = 0.0
 # absolute tolerance for relative changes
 depsAbs = 0.0
 
+# maximum tolerance for relative changes
+dmaxRel = 1e-1
+
 # tolerance for steady state convergence
 depsSteady = 0.0
 
@@ -311,10 +314,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 6
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 6
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce

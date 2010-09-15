@@ -195,7 +195,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 20
 
 # perform prelimiting
 iprelimiting = 0
@@ -318,10 +318,10 @@ depsSteady = 1e-12
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 4
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 4
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -450,7 +450,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 10
+nmaxIterations = 100
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -699,7 +699,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 0
+nadapt = 4
 
 # time for grid adaptivity
 dtimeadapt = 0.0
@@ -708,7 +708,7 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 3
+nsubdividemax = 4
 
 # adaptation strategy
 # 1 = red-green
@@ -718,7 +718,7 @@ iadaptationStrategy = 1
 drefinementTolerance = 1e-7
 
 # coarsening tolerance
-dcoarseningTolerance = 1e-5  #1e-8
+dcoarseningTolerance = 1e-3
 
 
 ################################################################################

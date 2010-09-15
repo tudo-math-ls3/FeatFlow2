@@ -37,7 +37,7 @@ IBCT
 NCOMP
 1
 PARAMETERS
-4.0  T  'HOMNEUMANN_WEAK'
+4.0  T  'FLUX_WEAK'  0.0
 
 # Specify the boundary conditions for the primal problem
 [bdrcond_strong_primal]
