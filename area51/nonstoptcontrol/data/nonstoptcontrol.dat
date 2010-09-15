@@ -137,11 +137,33 @@ ithetaschemetype = 1
 # Number of timesteps on the time coarse mesh
 ntimestepsCoarse = 5
 
+######################
+[SPACETIME-REFINEMENT]
+######################
+
+# Whether space levels are coupled to time levels.
+# =0: Refinement only in time: Space level NLMAX is used on all time levels.
+# =1: Refinement in time and space: Space level NLMAX-i = Time level TIMENLMAX-i
+# =2: Refinement only in space: Time level TIMENLMAX-i has the same number of time 
+#     steps as time level TIMENLMAX, but uses space level NLMAX-i.
+
+ispacelevelcoupledtotimelevel = 1
+
+# If space and time levels are coupled:
+# Factor that specifies the number of refinement levels in time before refining
+# in space.
+# Standard: 1.0 = each refinement in time results in a refinement in space.
+# Other values e.g.:
+#   2.0 = two refinements in time per refinement in space
+#   0.5 = two refinements in space per refinement in time
+
+dspacetimeRefFactor = 1.0
+
 ########################
 [SPACETIME-LINEARSOLVER]
 ########################
 
-ioutputlevel = 2
+ioutputlevel = 3
 
 # Type of the solver.
 # =-1: automatic
@@ -281,3 +303,16 @@ csolverType = 0
 # =1: BiCGStab(ILU-0). Only for the heat equation.
 # =2: BiCGStab(SSOR). Only for the heat equation.
 cpreconditioner = 0
+
+# Damping parameter for smoother.
+# =1.0 for ILU, =0.7 for JAC
+domegaSmoother = 0.7
+
+# Relative stopping criterion
+depsrel = 1E-8
+
+# Absolute stopping criterion
+depsabs = 1E-14
+
+# Max. number of iterations
+nmaxiterations = 100

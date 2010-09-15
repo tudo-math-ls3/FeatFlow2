@@ -33,8 +33,7 @@ module spacetimelinsol
   
   implicit none
 
-  ! Linear space-time solver tyes
-
+!<constantblock description="Linear space-time solver tyes">
   ! None
   integer, parameter :: STLS_TYPE_NONE       = 0
   
@@ -55,11 +54,74 @@ module spacetimelinsol
 
   ! Two-grid
   integer, parameter :: STLS_TYPE_MULTIGRID  = 6
+!</constantblock>
 
+!<constantblock description="Type of preconditioner in space">
+
+  ! No preconditioning; Used for UMFPACK solvers e.g. 
+  ! which do not use preconditioning.
+  integer, parameter, public :: STLS_PC_NONE = -1
+
+  ! Jacobi preconditioning
+  integer, parameter, public :: STLS_PC_JACOBI = 0
+
+  ! General VANKA preconditioner
+  integer, parameter, public :: STLS_PC_VANKA = 0
+  
+  ! ILU-0 preconditioner
+  integer, parameter, public :: STLS_PC_ILU0 = 1
+
+  ! SSOR preconditioner
+  integer, parameter, public :: STLS_PC_SSOR = 2
+  
+!</constantblock>
+  
   ! Matrix pointer
   type t_spacetimeMatrixPointer
     ! Pointer to a matrix
     type(t_spaceTimeMatrix), pointer :: p_rmatrix
+  end type
+  
+  ! Parameters for space-solver
+  type t_spaceSolverParams
+  
+    ! Type of the linear solver in space if used.
+    ! =LINSOL_ALG_UNDEFINED: not used.
+    ! =LINSOL_ALG_UMFPACK4 : UMFPACK
+    integer :: cspaceSolverType = LINSOL_ALG_UNDEFINED
+    
+    ! Relative stopping criterion solver
+    real(DP) :: depsrel = 1E-5
+
+    ! Absolute stopping criterion solver
+    real(DP) :: depsabs = 1E-14
+    
+    ! Max. number of iterations
+    integer :: nmaxiterations = 100
+
+    ! ONLY MG: Type of smoother.
+    ! =0: Defect correction with diag-VANKA.
+    integer :: csmoother = 0
+
+    ! ONLY MG: Number of (post-)smoothing steps
+    integer :: nsmpost = 4
+    
+    ! ONLY MG: Damping parameter for the smoother
+    real(DP) :: domegaSmoother = 1.0_DP
+
+    ! ONLY MG: Type identifier for all preconditioners in space.
+    ! A STLS_PC_xxxx constant.
+    integer :: cspacePreconditioner = STLS_PC_JACOBI
+    
+    ! ONLY MG: Relative stopping criterion solver, coarse grid solver
+    real(DP) :: depsrelCoarse = 1E-10
+
+    ! ONLY MG: Absolute stopping criterion solver, coarse grid solver
+    real(DP) :: depsabsCoarse = 1E-14
+    
+    ! ONLY MG: Max. number of iterations, coarse grid solver
+    integer :: nmaxiterationsCoarse = 1000
+
   end type
 
   ! Linear solver structure.
@@ -200,10 +262,8 @@ module spacetimelinsol
     ! Temporary vectors to use during the solution process
     type(t_spaceTimeVector), dimension(:), pointer :: p_RtempVectors => null()
     
-    ! type of the linear solver in space if used.
-    ! =LINSOL_ALG_UNDEFINED: not used.
-    ! =LINSOL_ALG_UMFPACK4 : UMFPACK
-    integer :: cspaceSolverType = LINSOL_ALG_UNDEFINED
+    ! Parameters defining the linear solver in space
+    type(t_spaceSolverParams) :: rspaceSolverParams
     
     ! Linear solver in space.
     type(t_linsolNode), pointer :: p_rspaceSolver => null()
@@ -219,26 +279,6 @@ module spacetimelinsol
     
   end type
   
-!<constantblock description="Type of preconditioner in space">
-
-  ! No preconditioning; Used for UMFPACK solvers e.g. 
-  ! which do not use preconditioning.
-  integer, parameter, public :: STLS_PC_NONE = -1
-
-  ! Jacobi preconditioning
-  integer, parameter, public :: STLS_PC_JACOBI = 0
-
-  ! General VANKA preconditioner
-  integer, parameter, public :: STLS_PC_VANKA = 0
-  
-  ! ILU-0 preconditioner
-  integer, parameter, public :: STLS_PC_ILU0 = 1
-
-  ! SSOR preconditioner
-  integer, parameter, public :: STLS_PC_SSOR = 2
-  
-!</constantblock>
-  
 
 contains
 
@@ -246,7 +286,7 @@ contains
 
   subroutine stls_init (rsolver,csolverType,rspaceTimeHierarchy,ilevel,&
       ballocTempMatrices,ballocTempVectors,rpreconditioner,&
-      cspaceSolverType,cspacePreconditioner,RmatVecTempl)
+      rspaceSolverParams,RmatVecTempl)
   
   ! Basic initialisation of a solver node.
   
@@ -273,13 +313,8 @@ contains
   ! OPTIONAL: Solver structure of a preconditioner
   type(t_spacetimelinsol), intent(in), target, optional :: rpreconditioner
   
-  ! OPTIONAL: Identifier for a linear solver in space that might be used
-  ! for preconditioning.
-  ! =LINSOL_ALG_UMFPACK4: UMFPACK-4
-  integer, intent(in), optional :: cspaceSolverType
-  
-  ! Type identifier for all preconditioners in space.
-  integer, intent(in), optional :: cspacePreconditioner
+  ! OPTIONAL: Structure defining the linear solver.
+  type(t_spaceSolverParams), intent(in), optional :: rspaceSolverParams
   
   ! OPTINAL: Spatial matrix templates. Necessary if a matrix-based
   ! preconditioner in space is used.
@@ -307,7 +342,7 @@ contains
       rsolver%p_RmatVecTempl => RmatVecTempl
     end if
     
-    if (present(cspaceSolverType) .or. ballocTempMatrices) then
+    if (present(rspaceSolverParams) .or. ballocTempMatrices) then
 
       ! Get the space level associated to the space-time level    
       call sth_getLevel (rspaceTimeHierarchy,ilevel,ispaceLevel=ispaceLevel)
@@ -316,14 +351,14 @@ contains
       allocate(rsolver%p_RspaceMatrices(ispaceLevel))
 
       ! Initialise the solver in space.
-      rsolver%cspaceSolverType = cspaceSolverType
-      select case (cspaceSolverType)
+      rsolver%rspaceSolverParams = rspaceSolverParams
+      select case (rspaceSolverParams%cspaceSolverType)
       case (LINSOL_ALG_UMFPACK4) 
         call linsol_initUMFPACK4 (rsolver%p_rspaceSolver)
         !rsolver%p_rspaceSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = 1
         
       case (LINSOL_ALG_MULTIGRID2)
-        select case (cspacePreconditioner)
+        select case (rspaceSolverParams%cspacePreconditioner)
         case (STLS_PC_JACOBI)
           ! Defect correction loops + Jacobi smoothing everywhere.
           call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
@@ -332,49 +367,73 @@ contains
             if (ilev .eq. 1) then
               call linsol_initJacobi (p_rpreconditioner)
               call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
-              p_rlevelInfo%p_rcoarseGridSolver%depsRel = 1E-10_DP
+              p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
+              p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
             else
               call linsol_initJacobi (p_rpreconditioner)
               call linsol_initDefCorr (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
-              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,4,0.7_DP)
+              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,&
+                  rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
             end if
           end do
 
         case (STLS_PC_ILU0)
           ! Defect correction loops + Jacobi smoothing everywhere.
           call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
-          do ilev =1,ispaceLevel
+          do ilev = 1,ispaceLevel
             call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
             if (ilev .eq. 1) then
               call linsol_initILU0 (p_rpreconditioner)
               call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
-              p_rlevelInfo%p_rcoarseGridSolver%depsRel = 1E-10_DP
-              p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = 1000
+              if (ispaceLevel .eq. 1) then
+                ! Only one level
+                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
+                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
+                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
+              else
+                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
+                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
+                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
+              end if
             else
               call linsol_initILU0 (p_rpreconditioner)
               call linsol_initBiCGStab (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
-              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,4,1.0_DP)
+              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,&
+                  rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
             end if
           end do
-          rsolver%p_rspaceSolver%depsRel = 1E-5_DP
+          rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
+          rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
+          rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
         
         case (STLS_PC_SSOR)
           ! Defect correction loops + Jacobi smoothing everywhere.
           call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
-          do ilev =1,ispaceLevel
+          do ilev = 1,ispaceLevel
             call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
             if (ilev .eq. 1) then
               call linsol_initSSOR (p_rpreconditioner)
               call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
-              p_rlevelInfo%p_rcoarseGridSolver%depsRel = 1E-10_DP
-              p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = 1000
+              if (ispaceLevel .eq. 1) then
+                ! Only one level
+                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
+                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
+                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
+              else
+                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
+                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
+                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
+              end if
             else
               call linsol_initSSOR (p_rpreconditioner)
               call linsol_initBiCGStab (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
-              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,4,1.0_DP)
+              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,&
+                  rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
             end if
           end do
-          rsolver%p_rspaceSolver%depsRel = 1E-5_DP
+          rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
+          rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
+          rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
         
         case default
           call output_line ("Unknown preconditioner in stls_init")
@@ -414,7 +473,7 @@ contains
   
     integer :: ilev
   
-    rsolver%cspaceSolverType = -1
+    rsolver%rspaceSolverParams%cspaceSolverType = LINSOL_ALG_UNDEFINED
     if (associated(rsolver%p_RdiscreteBC)) then
       ! Release boundary conditions
       do ilev = 1,size(rsolver%p_RdiscreteBC)
@@ -1552,7 +1611,7 @@ contains
   ! ***************************************************************************
 
   subroutine stls_initBlockJacobi (rsolver,rspaceTimeHierarchy,ilevel,domega,&
-      cspaceSolverType,cspacePreconditioner,RmatVecTempl)
+      rspaceSolverParams,RmatVecTempl)
   
   ! Initialise a block Jacobi correction solver.
   
@@ -1568,13 +1627,8 @@ contains
   ! Damping parameter
   real(DP), intent(in) :: domega
 
-  ! OPTIONAL: Identifier for a linear solver in space that might be used
-  ! for preconditioning.
-  ! =0: UMFPACK
-  integer, intent(in) :: cspaceSolverType
-
-  ! Type identifier for all preconditioners in space.
-  integer, intent(in) :: cspacePreconditioner
+  ! Structure defining the linear solver.
+  type(t_spaceSolverParams), intent(in) :: rspaceSolverParams
 
   ! OPTINAL: Spatial matrix templates. Necessary if a matrix-based
   ! preconditioner in space is used.
@@ -1582,8 +1636,7 @@ contains
 
     ! Basic initialisation
     call stls_init(rsolver,STLS_TYPE_JACOBI,rspaceTimeHierarchy,ilevel,&
-        .false.,.false.,cspaceSolverType=cspaceSolverType,&
-        cspacePreconditioner=cspacePreconditioner,RmatVecTempl=RmatVecTempl)
+        .false.,.false.,rspaceSolverParams=rspaceSolverParams,RmatVecTempl=RmatVecTempl)
         
     rsolver%domega = domega
   
@@ -1663,7 +1716,7 @@ contains
   ! ***************************************************************************
 
   subroutine stls_initBlockFBSIM (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
-      cspaceSolverType,cspacePreconditioner,RmatVecTempl)
+      rspaceSolverParams,RmatVecTempl)
   
   ! Initialise a block GS correction solver, working on the decoupled solution.
   
@@ -1679,13 +1732,8 @@ contains
   ! Relaxation parameter
   real(DP), intent(in) :: drelax
 
-  ! Identifier for a linear solver in space that might be used
-  ! for preconditioning.
-  ! =0: UMFPACK
-  integer, intent(in) :: cspaceSolverType
-
-  ! Type identifier for all preconditioners in space.
-  integer, intent(in) :: cspacePreconditioner
+  ! Structure defining the linear solver.
+  type(t_spaceSolverParams), intent(in) :: rspaceSolverParams
 
   ! OPTINAL: Spatial matrix templates. Necessary if a matrix-based
   ! preconditioner in space is used.
@@ -1693,8 +1741,7 @@ contains
 
     ! Basic initialisation
     call stls_init(rsolver,STLS_TYPE_FBSIM,rspaceTimeHierarchy,ilevel,&
-        .false.,.false.,cspaceSolverType=cspaceSolverType,&
-        cspacePreconditioner=cspacePreconditioner,RmatVecTempl=RmatVecTempl)
+        .false.,.false.,rspaceSolverParams=rspaceSolverParams,RmatVecTempl=RmatVecTempl)
         
     rsolver%drelax = drelax
   
@@ -1889,7 +1936,7 @@ contains
   ! ***************************************************************************
 
   subroutine stls_initBlockFBGS (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
-      cspaceSolverType,cspacePreconditioner,icoupling,RmatVecTempl)
+      rspaceSolverParams,icoupling,RmatVecTempl)
   
   ! Initialise a block GS correction solver, working on the coupled solution.
   
@@ -1905,14 +1952,9 @@ contains
   ! Relaxation parameter
   real(DP), intent(in) :: drelax
 
-  ! Identifier for a linear solver in space that might be used
-  ! for preconditioning.
-  ! =0: UMFPACK
-  integer, intent(in) :: cspaceSolverType
-  
-  ! Type identifier for all preconditioners in space.
-  integer, intent(in) :: cspacePreconditioner
-  
+  ! Structure defining the linear solver.
+  type(t_spaceSolverParams), intent(in) :: rspaceSolverParams
+
   ! Specifies the coupling in the algorithm.
   ! =0: standard GS coupling.
   ! =1: extended GS coupling, also using the lower diagonal in the backward sweep.
@@ -1924,8 +1966,7 @@ contains
 
     ! Basic initialisation
     call stls_init(rsolver,STLS_TYPE_FBGS,rspaceTimeHierarchy,ilevel,&
-        .false.,.false.,cspaceSolverType=cspaceSolverType,&
-        cspacePreconditioner=cspacePreconditioner,RmatVecTempl=RmatVecTempl)
+        .false.,.false.,rspaceSolverParams=rspaceSolverParams,RmatVecTempl=RmatVecTempl)
         
     rsolver%drelax = drelax
     
@@ -2285,6 +2326,10 @@ contains
   
     ! Are we on the level of the coarse grid solver?
     if (ilevel .eq. rsolver%p_rcoarsegridsolver%ilevel) then
+      if (rsolver%ioutputlevel .ge. 3) then
+        call output_line("Space-Time Multigrid: Level "//trim(sys_siL(ilevel,10)))
+      end if
+
       ! Call the coarse grid solver.
       call stls_precondDefect (rsolver%p_rcoarsegridsolver,rsolver%p_Rvectors2(ilevel))
       
@@ -2297,6 +2342,9 @@ contains
       ! p_Rvectors2 = rhs
       ! p_Rvectors3 = temp vector
       
+      if (rsolver%ioutputlevel .ge. 3) then
+        call output_line("Space-Time Multigrid: Level "//trim(sys_siL(ilevel,10)))
+      end if
       
       ! Get the space and time level corresponding to the space-etime level.
       call sth_getLevel(rsolver%p_rspaceTimeHierarchy,ilevel,&
@@ -2397,7 +2445,7 @@ contains
 !        call stpp_printDefectSubnormsDirect(rsolver%p_Rvectors3(ilevel))
 !        print *,"current defect"
 !        read (*,*)
-                
+
         ! Presmoothing
         if (associated(rsolver%p_Rpresmoothers)) then
           if (rsolver%p_Rpresmoothers(ilevel)%csolverType .ne. STLS_TYPE_NONE) then
@@ -2464,6 +2512,10 @@ contains
             
         end select
         call stls_precondMultigridInternal (rsolver, ilevel-1, niteCoarse)
+        
+        if (rsolver%ioutputlevel .ge. 3) then
+          call output_line("Space-Time Multigrid: Level "//trim(sys_siL(ilevel,10)))
+        end if
         
         ! Prolongation
         call sptipr_performProlongation (rsolver%p_rspaceTimeProjection,ilevel,&
