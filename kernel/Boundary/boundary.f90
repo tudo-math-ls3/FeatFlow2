@@ -2080,8 +2080,13 @@ contains
 
         ! And calculate the x/y components of the normal vector with sin/cos;
         ! the radius is to be found in element 5 of the double precision data block
-        dnx0 = -p_DsegInfo(istartidx+5)*cos(dphi)
-        dny0 = -p_DsegInfo(istartidx+5)*sin(dphi)
+        dnx0 = p_DsegInfo(istartidx+5)*cos(dphi)
+        dny0 = p_DsegInfo(istartidx+5)*sin(dphi)
+
+        if (p_DsegInfo(istartidx+7) .gt. p_DsegInfo(istartidx+8)) then
+          dnx0 = -dnx0
+          dny0 = -dny0
+        end if
 
       case DEFAULT
         call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
