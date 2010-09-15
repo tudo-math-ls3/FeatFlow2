@@ -495,279 +495,291 @@ contains
     ! #columns = #time dofs of the coarse level.
     ndofCoarse = tdiscr_igetNDofGlob(p_rtimeDiscrCoarse)
     ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
-    call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofFine,ndofCoarse)
-        
-    ! Now depending on the order, create the matrix.
-    select case (ctimeProjection)
     
-    case (0)
-      ! Constant prolongation. Just shift the value from
-      ! the coarse mesh to the fine mesh.
+    if (ndofCoarse .eq. ndofFine) then
+  
+      ! Coarse level = fine level.
+      ! Use the identity matrix!
+      call lsyssc_createDiagMatrixStruc (rprolMatrix,ndofCoarse,LSYSSC_MATRIX9)
+      call lsyssc_initialiseIdentityMatrix (rprolMatrix)
     
-      rprolMatrix%NA = ndofFine
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
-          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
-          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
-          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
+    else
 
-      call lsyssc_getbase_double (rprolMatrix,p_Da)
-      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
-      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
-      
-      ! Fill KLD.
-      do irow = 1,ndofFine+1
-        p_Kld(irow) = irow
-      end do
-      
-      ! Fill KCOL and DA
-      p_Da(1) = 1.0_DP
-      p_Kcol(1) = 1
-      
-      do icol = 1,ndofCoarse-1
-        p_Kcol(2+2*(icol-1)) = icol
-        p_Da(2+2*(icol-1)) = 1.0_DP
-
-        p_Kcol(3+2*(icol-1)) = icol+1
-        p_Da(3+2*(icol-1)) = 1.0_DP
-      end do
-
-    case (1,2,3,6)
-      ! Simplest case.
-      ! For simplicity, we take the lineaer interpolation, which is also
-      ! 2nd order. In contrast to case 2, this matrix has a reduced
-      ! matrix stencil and works only for implicit Euler!
-      ! 
-      ! Timestep:     1                     2        (coarse grid)
-      !               x                     x          ...
-      !                 --1/2--> + <--1/2--   --1/2--> ...
-      !               |          |          |
-      !               | 1        |          | 1
-      !               V          V          V
-      !
-      !               x          x          x        (fine grid)
-      !               1          2          3
-      !
-      ! The corresponding matrix looks like this:
-      !
-      !   1   
-      !   1/2 1/2 
-      !       1   
-      !       1/2 1/2
-      !           1   
-      !           1/2 1/2
-      !               1   
-      !   ...
-      !
-      ! and is organised in 2x2 blocks
-      
-      rprolMatrix%NA = 3*ndofCoarse-2
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
-          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
-          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
-          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
-
-      call lsyssc_getbase_double (rprolMatrix,p_Da)
-      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
-      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
-      
-      ! Fill KLD.
-      p_Kld(1) = 1
-      do irow = 2,ndofCoarse
-        p_Kld(2*irow-2) = 2+(irow-2)*3
-        p_Kld(2*irow-1) = 4+(irow-2)*3
-      end do
-      p_Kld(ndoffine+1) = rprolMatrix%NA+1
-      
-      ! Fill KCOL and DA
-      p_Da(1) = 1.0_DP
-      p_Kcol(1) = 1
-      
-      do icol = 1,ndofCoarse-1
-        p_Kcol(-1+3*icol+0) = icol
-        p_Kcol(-1+3*icol+1) = icol+1
-        p_Kcol(-1+3*icol+2) = icol+1
+      call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofFine,ndofCoarse)
         
-        p_Da(-1+3*icol+0) = 0.5_DP
-        p_Da(-1+3*icol+1) = 0.5_DP
-        p_Da(-1+3*icol+2) = 1.0_DP
-      end do
+      ! Now depending on the order, create the matrix.
+      select case (ctimeProjection)
+      
+      case (0)
+        ! Constant prolongation. Just shift the value from
+        ! the coarse mesh to the fine mesh.
+      
+        rprolMatrix%NA = ndofFine
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+            ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+            rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+            rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
-    case (4)
-      ! Piecewise quadratic interpolation at the beginning/end.
-      ! Piecewise cubic interpolation in the inner.
-
-      rprolMatrix%NA = 1 + 3 + max(0,ndofcoarse-3)*5 + 1 + 3 + 1
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
-          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
-          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
-          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
-
-      call lsyssc_getbase_double (rprolMatrix,p_Da)
-      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
-      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
-      
-      ! Fill KCOL and DA
-      p_Kld(1) = 1
-      p_Kcol(1) = 1
-      p_Da(1) = 1.0_DP
-      
-      p_Kld(2) = 2
-      p_Kcol(2) = 1
-      p_Kcol(3) = 2
-      p_Kcol(4) = 3
-      p_Da(2) = 3.0_DP/8.0_DP
-      p_Da(3) = 3.0_DP/4.0_DP
-      p_Da(4) = -1.0_DP/8.0_DP
-      
-      do icol = 2,ndofCoarse-2
-        p_Kld(3+(icol-2)*2) = 5+(icol-2)*5+0
-      
-        p_Kcol(5+(icol-2)*5+0) = icol
-        p_Da(5+(icol-2)*5+0) = 1.0_DP
+        call lsyssc_getbase_double (rprolMatrix,p_Da)
+        call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
         
-        p_Kld(3+(icol-2)*2+1) = 5+(icol-2)*5+1
-
-        p_Kcol(5+(icol-2)*5+1) = icol-1
-        p_Kcol(5+(icol-2)*5+2) = icol
-        p_Kcol(5+(icol-2)*5+3) = icol+1
-        p_Kcol(5+(icol-2)*5+4) = icol+2
+        ! Fill KLD.
+        do irow = 1,ndofFine+1
+          p_Kld(irow) = irow
+        end do
         
-        p_Da(5+(icol-2)*5+1) = -1.0_DP/16.0_DP
-        p_Da(5+(icol-2)*5+2) = 9.0_DP/16.0_DP
-        p_Da(5+(icol-2)*5+3) = 9.0_DP/16.0_DP
-        p_Da(5+(icol-2)*5+4) = -1.0_DP/16.0_DP
-      end do
-
-      p_Kld(ndoffine-2) = rprolMatrix%NA-4
-      p_Kcol(rprolMatrix%NA-4) = ndofcoarse-1
-      p_Da(rprolMatrix%NA-4) = 1.0
-      
-      p_Kld(ndoffine-1) = rprolMatrix%NA-3
-      p_Kcol(rprolMatrix%NA-3) = ndofcoarse-2
-      p_Kcol(rprolMatrix%NA-2) = ndofcoarse-1
-      p_Kcol(rprolMatrix%NA-1) = ndofcoarse
-      p_Da(rprolMatrix%NA-3) = -1.0_DP/8.0_DP
-      p_Da(rprolMatrix%NA-2) = 3.0_DP/4.0_DP
-      p_Da(rprolMatrix%NA-1) = 3.0_DP/8.0_DP
-
-      p_Kld(ndoffine) = rprolMatrix%NA
-      p_Kcol(rprolMatrix%NA) = ndofcoarse
-      p_Da(rprolMatrix%NA) = 1.0_DP
-
-      p_Kld(ndoffine+1) = rprolMatrix%NA+1
-      
-    case (5)
-      ! Piecewise linear with larger stencil and interpolation to the
-      ! points in time.
-      call lsyssc_createEmptyMatrix9 (rprolMatrix,ndofFine,(ndofFine-5)*3+1+2+3+2+2,ndofCoarse)
-      
-      Da(1) = 1.0_DP
-      Kcol(1) = 1
-      call lsyssc_setRowMatrix9 (rprolMatrix,1,1,Kcol,Da)
-      
-      Da(1:2) = (/0.5_DP,0.5_DP/)
-      Kcol(1:2) = (/1,2/)
-      call lsyssc_setRowMatrix9 (rprolMatrix,2,2,Kcol,Da)
-      
-      Da(1:3) = (/0.25_DP,0.375_DP,0.375_DP/)
-      Kcol(1:3) = (/1,2,3/)
-      call lsyssc_setRowMatrix9 (rprolMatrix,3,3,Kcol,Da)
-      
-      do irow = 3,ndofcoarse-1
-        Kcol(1:3) = (/irow-1,irow,irow+1/)
+        ! Fill KCOL and DA
+        p_Da(1) = 1.0_DP
+        p_Kcol(1) = 1
         
-        Da(1:3) = (/0.375_DP,0.5_DP,0.125_DP/)
-        call lsyssc_setRowMatrix9 (rprolMatrix,4+2*(irow-3),3,Kcol,Da)
+        do icol = 1,ndofCoarse-1
+          p_Kcol(2+2*(icol-1)) = icol
+          p_Da(2+2*(icol-1)) = 1.0_DP
+
+          p_Kcol(3+2*(icol-1)) = icol+1
+          p_Da(3+2*(icol-1)) = 1.0_DP
+        end do
+
+      case (1,2,3,6)
+        ! Simplest case.
+        ! For simplicity, we take the lineaer interpolation, which is also
+        ! 2nd order. In contrast to case 2, this matrix has a reduced
+        ! matrix stencil and works only for implicit Euler!
+        ! 
+        ! Timestep:     1                     2        (coarse grid)
+        !               x                     x          ...
+        !                 --1/2--> + <--1/2--   --1/2--> ...
+        !               |          |          |
+        !               | 1        |          | 1
+        !               V          V          V
+        !
+        !               x          x          x        (fine grid)
+        !               1          2          3
+        !
+        ! The corresponding matrix looks like this:
+        !
+        !   1   
+        !   1/2 1/2 
+        !       1   
+        !       1/2 1/2
+        !           1   
+        !           1/2 1/2
+        !               1   
+        !   ...
+        !
+        ! and is organised in 2x2 blocks
         
-        Da(1:3) = (/0.125_DP,0.5_DP,0.375_DP/)
-        call lsyssc_setRowMatrix9 (rprolMatrix,4+2*(irow-3)+1,3,Kcol,Da)
-      end do
+        rprolMatrix%NA = 3*ndofCoarse-2
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+            ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+            rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+            rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
-      Kcol(1:2) = (/ndofcoarse-1,ndofcoarse/)
+        call lsyssc_getbase_double (rprolMatrix,p_Da)
+        call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+        
+        ! Fill KLD.
+        p_Kld(1) = 1
+        do irow = 2,ndofCoarse
+          p_Kld(2*irow-2) = 2+(irow-2)*3
+          p_Kld(2*irow-1) = 4+(irow-2)*3
+        end do
+        p_Kld(ndoffine+1) = rprolMatrix%NA+1
+        
+        ! Fill KCOL and DA
+        p_Da(1) = 1.0_DP
+        p_Kcol(1) = 1
+        
+        do icol = 1,ndofCoarse-1
+          p_Kcol(-1+3*icol+0) = icol
+          p_Kcol(-1+3*icol+1) = icol+1
+          p_Kcol(-1+3*icol+2) = icol+1
+          
+          p_Da(-1+3*icol+0) = 0.5_DP
+          p_Da(-1+3*icol+1) = 0.5_DP
+          p_Da(-1+3*icol+2) = 1.0_DP
+        end do
+
+      case (4)
+        ! Piecewise quadratic interpolation at the beginning/end.
+        ! Piecewise cubic interpolation in the inner.
+
+        rprolMatrix%NA = 1 + 3 + max(0,ndofcoarse-3)*5 + 1 + 3 + 1
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+            ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+            rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+            rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
+
+        call lsyssc_getbase_double (rprolMatrix,p_Da)
+        call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+        
+        ! Fill KCOL and DA
+        p_Kld(1) = 1
+        p_Kcol(1) = 1
+        p_Da(1) = 1.0_DP
+        
+        p_Kld(2) = 2
+        p_Kcol(2) = 1
+        p_Kcol(3) = 2
+        p_Kcol(4) = 3
+        p_Da(2) = 3.0_DP/8.0_DP
+        p_Da(3) = 3.0_DP/4.0_DP
+        p_Da(4) = -1.0_DP/8.0_DP
+        
+        do icol = 2,ndofCoarse-2
+          p_Kld(3+(icol-2)*2) = 5+(icol-2)*5+0
+        
+          p_Kcol(5+(icol-2)*5+0) = icol
+          p_Da(5+(icol-2)*5+0) = 1.0_DP
+          
+          p_Kld(3+(icol-2)*2+1) = 5+(icol-2)*5+1
+
+          p_Kcol(5+(icol-2)*5+1) = icol-1
+          p_Kcol(5+(icol-2)*5+2) = icol
+          p_Kcol(5+(icol-2)*5+3) = icol+1
+          p_Kcol(5+(icol-2)*5+4) = icol+2
+          
+          p_Da(5+(icol-2)*5+1) = -1.0_DP/16.0_DP
+          p_Da(5+(icol-2)*5+2) = 9.0_DP/16.0_DP
+          p_Da(5+(icol-2)*5+3) = 9.0_DP/16.0_DP
+          p_Da(5+(icol-2)*5+4) = -1.0_DP/16.0_DP
+        end do
+
+        p_Kld(ndoffine-2) = rprolMatrix%NA-4
+        p_Kcol(rprolMatrix%NA-4) = ndofcoarse-1
+        p_Da(rprolMatrix%NA-4) = 1.0
+        
+        p_Kld(ndoffine-1) = rprolMatrix%NA-3
+        p_Kcol(rprolMatrix%NA-3) = ndofcoarse-2
+        p_Kcol(rprolMatrix%NA-2) = ndofcoarse-1
+        p_Kcol(rprolMatrix%NA-1) = ndofcoarse
+        p_Da(rprolMatrix%NA-3) = -1.0_DP/8.0_DP
+        p_Da(rprolMatrix%NA-2) = 3.0_DP/4.0_DP
+        p_Da(rprolMatrix%NA-1) = 3.0_DP/8.0_DP
+
+        p_Kld(ndoffine) = rprolMatrix%NA
+        p_Kcol(rprolMatrix%NA) = ndofcoarse
+        p_Da(rprolMatrix%NA) = 1.0_DP
+
+        p_Kld(ndoffine+1) = rprolMatrix%NA+1
+        
+      case (5)
+        ! Piecewise linear with larger stencil and interpolation to the
+        ! points in time.
+        call lsyssc_createEmptyMatrix9 (rprolMatrix,ndofFine,(ndofFine-5)*3+1+2+3+2+2,ndofCoarse)
+        
+        Da(1) = 1.0_DP
+        Kcol(1) = 1
+        call lsyssc_setRowMatrix9 (rprolMatrix,1,1,Kcol,Da)
+        
+        Da(1:2) = (/0.5_DP,0.5_DP/)
+        Kcol(1:2) = (/1,2/)
+        call lsyssc_setRowMatrix9 (rprolMatrix,2,2,Kcol,Da)
+        
+        Da(1:3) = (/0.25_DP,0.375_DP,0.375_DP/)
+        Kcol(1:3) = (/1,2,3/)
+        call lsyssc_setRowMatrix9 (rprolMatrix,3,3,Kcol,Da)
+        
+        do irow = 3,ndofcoarse-1
+          Kcol(1:3) = (/irow-1,irow,irow+1/)
+          
+          Da(1:3) = (/0.375_DP,0.5_DP,0.125_DP/)
+          call lsyssc_setRowMatrix9 (rprolMatrix,4+2*(irow-3),3,Kcol,Da)
+          
+          Da(1:3) = (/0.125_DP,0.5_DP,0.375_DP/)
+          call lsyssc_setRowMatrix9 (rprolMatrix,4+2*(irow-3)+1,3,Kcol,Da)
+        end do
+
+        Kcol(1:2) = (/ndofcoarse-1,ndofcoarse/)
+        
+        Da(1:2) = (/0.25_DP,0.75_DP/)
+        call lsyssc_setRowMatrix9 (rprolMatrix,ndofFine-1,2,Kcol,Da)
+
+        Da(1:2) = (/-0.25_DP,1.25_DP/)
+        call lsyssc_setRowMatrix9 (rprolMatrix,ndofFine,2,Kcol,Da)
+
+  !    case (2)
+  !      ! Slightly harder case.
+  !      ! Take linear interpolation but enlarge the blocks a bit
+  !      ! such that the block size is aligned with that of the dual
+  !      ! prolongation.
+  !      !
+  !      ! The matrix looks like this:
+  !      !
+  !      !   1
+  !      !   1/2 1/2 0
+  !      !       1   0
+  !      !       1/2 1/2  
+  !      !           1   0
+  !      !           1/2 1/2  
+  !      !               1   0
+  !      !   ...
+  !      !               1   0
+  !      !               1/2 1/2
+  !      !               0   1  
+  !      !
+  !      ! and is organised in 2x2 blocks with a special case at the 
+  !      ! beginning and at the end.
+  !      
+  !      rprolMatrix%NA = 4+(ndofFine-2)*2
+  !      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+  !          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+  !      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+  !          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+  !      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+  !          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
+  !
+  !      call lsyssc_getbase_double (rprolMatrix,p_Da)
+  !      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+  !      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+  !      
+  !      ! Fill KLD.
+  !      p_Kld(1) = 1
+  !      p_Kld(2) = 2
+  !      do irow = 3,ndofFine+1
+  !        p_Kld(irow) = 5+(irow-3)*2
+  !      end do
+  !      
+  !      ! Set up the first two rows.
+  !      p_Da(1) = 1.0_DP
+  !      p_Da(2) = 0.5_DP
+  !      p_Da(3) = 0.5_DP
+  !      
+  !      p_Kcol(1) = 1
+  !      p_Kcol(2) = 1
+  !      p_Kcol(3) = 2
+  !      p_Kcol(4) = 3
+  !      
+  !      ! Then the remaining rows except for the end.
+  !      do icol = 2,ndofCoarse-1
+  !        p_Kcol(5+4*(icol-2)+0) = icol
+  !        p_Kcol(5+4*(icol-2)+1) = icol+1
+  !        p_Kcol(5+4*(icol-2)+2) = icol
+  !        p_Kcol(5+4*(icol-2)+3) = icol+1
+  !
+  !        p_Da(5+4*(icol-2)+0) = 1.0_DP
+  !        p_Da(5+4*(icol-2)+2) = 0.5_DP
+  !        p_Da(5+4*(icol-2)+3) = 0.5_DP
+  !      end do
+  !
+  !      ! The last row.
+  !      p_Kcol(5+4*(ndofCoarse-2)+0) = ndofCoarse-1
+  !      p_Kcol(5+4*(ndofCoarse-2)+1) = ndofCoarse
+  !
+  !      p_Da(5+4*(ndofCoarse-2)+1) = 1.0_DP
+        
+      end select
       
-      Da(1:2) = (/0.25_DP,0.75_DP/)
-      call lsyssc_setRowMatrix9 (rprolMatrix,ndofFine-1,2,Kcol,Da)
-
-      Da(1:2) = (/-0.25_DP,1.25_DP/)
-      call lsyssc_setRowMatrix9 (rprolMatrix,ndofFine,2,Kcol,Da)
-
-!    case (2)
-!      ! Slightly harder case.
-!      ! Take linear interpolation but enlarge the blocks a bit
-!      ! such that the block size is aligned with that of the dual
-!      ! prolongation.
-!      !
-!      ! The matrix looks like this:
-!      !
-!      !   1
-!      !   1/2 1/2 0
-!      !       1   0
-!      !       1/2 1/2  
-!      !           1   0
-!      !           1/2 1/2  
-!      !               1   0
-!      !   ...
-!      !               1   0
-!      !               1/2 1/2
-!      !               0   1  
-!      !
-!      ! and is organised in 2x2 blocks with a special case at the 
-!      ! beginning and at the end.
-!      
-!      rprolMatrix%NA = 4+(ndofFine-2)*2
-!      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
-!          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-!      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
-!          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-!      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
-!          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
-!
-!      call lsyssc_getbase_double (rprolMatrix,p_Da)
-!      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
-!      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
-!      
-!      ! Fill KLD.
-!      p_Kld(1) = 1
-!      p_Kld(2) = 2
-!      do irow = 3,ndofFine+1
-!        p_Kld(irow) = 5+(irow-3)*2
-!      end do
-!      
-!      ! Set up the first two rows.
-!      p_Da(1) = 1.0_DP
-!      p_Da(2) = 0.5_DP
-!      p_Da(3) = 0.5_DP
-!      
-!      p_Kcol(1) = 1
-!      p_Kcol(2) = 1
-!      p_Kcol(3) = 2
-!      p_Kcol(4) = 3
-!      
-!      ! Then the remaining rows except for the end.
-!      do icol = 2,ndofCoarse-1
-!        p_Kcol(5+4*(icol-2)+0) = icol
-!        p_Kcol(5+4*(icol-2)+1) = icol+1
-!        p_Kcol(5+4*(icol-2)+2) = icol
-!        p_Kcol(5+4*(icol-2)+3) = icol+1
-!
-!        p_Da(5+4*(icol-2)+0) = 1.0_DP
-!        p_Da(5+4*(icol-2)+2) = 0.5_DP
-!        p_Da(5+4*(icol-2)+3) = 0.5_DP
-!      end do
-!
-!      ! The last row.
-!      p_Kcol(5+4*(ndofCoarse-2)+0) = ndofCoarse-1
-!      p_Kcol(5+4*(ndofCoarse-2)+1) = ndofCoarse
-!
-!      p_Da(5+4*(ndofCoarse-2)+1) = 1.0_DP
-      
-    end select
+    end if
             
   end subroutine
 
@@ -821,141 +833,153 @@ contains
     ! #columns = #time dofs of the coarse level.
     ndofCoarse = tdiscr_igetNDofGlob(p_rtimeDiscrCoarse)
     ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
-    call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofFine,ndofCoarse)
+
+    if (ndofCoarse .eq. ndofFine) then
+  
+      ! Coarse level = fine level.
+      ! Use the identity matrix!
+      call lsyssc_createDiagMatrixStruc (rprolMatrix,ndofCoarse,LSYSSC_MATRIX9)
+      call lsyssc_initialiseIdentityMatrix (rprolMatrix)
+    
+    else
+
+      call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofFine,ndofCoarse)
+          
+      ! Now depending on the order, create the matrix.
+      select case (ctimeProjection)
+
+      case (2,3,6)
+        ! Slightly harder case.
+        ! Because the dual solution is aligned between the primal,
+        ! the prolongation stencil looks different.
+        ! There is still a linear interpolation involved,
+        ! but it has to be evaluated at different points.
+        !
+        ! The restriction is the adjoint of the prolongation.
+        ! For Crank-Nicolson, we have:
+        !
+        !     [1]         [-----2-----]           [-----3-----] |         [-----4-----]
+        !     X-----------o-----------X-----------o-----------X-----------o-----------X
+        !     y0                      y1                      y2                      y3
+        !     xi0                     xi1                     xi2                     xi3
+        !     l0          l1                      l2                      l3
+        !     p0          p1                      p2                      p3          
+        !
+        ! The prolongation will be the weighted mean for y and xi:
+        !
+        !     y0                      y1                      y2                      y3
+        !     xi0                     xi1                     xi2                     xi3
+        !     X  --1/2--> + <--1/2--- X ---1/2--> + <--1/2--- X ---1/2--> + <--1/2--- X
+        !     |           |           |           |           |           |           |
+        !     V           V           V           V           V           V           V
+
+        !     X-----------X-----------X-----------X-----------X-----------X-----------X
+        !     y0         y1           y2          y3          y4          y5          y6
+        !     xi0        xi1          xi2         xi3         xi4         xi5         xi6
+        !
+        ! The situation is more complicated for the primal pressure and dual velocity.
+        ! We use linear interpolation in the intervals and linear extrapolation at the
+        ! endpoints of the interval.
+        !
+        !
+        !
+        !     l0          l1                      l2                      l3
+        !     p0          p1                      p2                      p3          
+        !     X-----------o-----------X-----------o-----------X-----------o-----------X
+        !                  -3/4> <---- 1/4 ------- -3/4> <----- 1/4 ------ 
+        !
+        !                  ----- 1/4 ------> <3/4- ----- 1/4 ------> <3/4-
+        !            <5/4--                                               --5/4> 
+        !            <--------- -1/4 ------------- ---- -1/4 ------------------> 
+        !
+        !     X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X
+        !     l0    l1          l2          l3          l4          l5          l6
+        !     p0    p1          p2          p3          p4          p5          p6
+        !     [1]   [--2--]     [--3--]     [--4--]     [--5--]     [--6--]     [--7--]
+        !
+        ! So at the end, we have:
+        !
+        !     [1]   [--2--]     [--3--]     [--4--]     [--5--]     [--6--]     [--7--]
+        !     X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X
+        !     y0          y1          y2          y3          y4          y5          y6
+        !     xi0         xi1         xi2         xi3         xi4         xi5         xi6
+        !     l0    l1          l2          l3          l4          l5          l6
+        !     p0    p1          p2          p3          p4          p5          p6
+        !
+        ! The matrix therefore looks like this (for Crank-Nicolson):
+        !
+        !   1
+        !   0   5/4 -1/4
+        !       3/4 1/4
+        !       1/4 3/4  
+        !           3/4 1/4
+        !           1/4 -3/4 
+        !               3/4 1/4
+        !   ...
+        !               1/4 3/4
+        !              -1/4 5/4
         
-    ! Now depending on the order, create the matrix.
-    select case (ctimeProjection)
+        dtheta = rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)%dtheta
+        
+        rprolMatrix%NA = 4+(ndofFine-2)*2
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+            ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+            rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+            rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
-    case (2,3,6)
-      ! Slightly harder case.
-      ! Because the dual solution is aligned between the primal,
-      ! the prolongation stencil looks different.
-      ! There is still a linear interpolation involved,
-      ! but it has to be evaluated at different points.
-      !
-      ! The restriction is the adjoint of the prolongation.
-      ! For Crank-Nicolson, we have:
-      !
-      !     [1]         [-----2-----]           [-----3-----] |         [-----4-----]
-      !     X-----------o-----------X-----------o-----------X-----------o-----------X
-      !     y0                      y1                      y2                      y3
-      !     xi0                     xi1                     xi2                     xi3
-      !     l0          l1                      l2                      l3
-      !     p0          p1                      p2                      p3          
-      !
-      ! The prolongation will be the weighted mean for y and xi:
-      !
-      !     y0                      y1                      y2                      y3
-      !     xi0                     xi1                     xi2                     xi3
-      !     X  --1/2--> + <--1/2--- X ---1/2--> + <--1/2--- X ---1/2--> + <--1/2--- X
-      !     |           |           |           |           |           |           |
-      !     V           V           V           V           V           V           V
+        call lsyssc_getbase_double (rprolMatrix,p_Da)
+        call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+        
+        ! Fill KLD.
+        p_Kld(1) = 1
+        p_Kld(2) = 2
+        do irow = 3,ndofFine+1
+          p_Kld(irow) = 5+(irow-3)*2
+        end do
+        
+        ! Set up the first two rows.
+        p_Da(1) = 1.0_DP
+        p_Da(2) = 0.0_DP
+        p_Da(3) = 1.0_DP+0.5_DP*dtheta  ! 1.25_DP
+        p_Da(4) = -0.5_DP*dtheta        ! -0.25_DP
 
-      !     X-----------X-----------X-----------X-----------X-----------X-----------X
-      !     y0         y1           y2          y3          y4          y5          y6
-      !     xi0        xi1          xi2         xi3         xi4         xi5         xi6
-      !
-      ! The situation is more complicated for the primal pressure and dual velocity.
-      ! We use linear interpolation in the intervals and linear extrapolation at the
-      ! endpoints of the interval.
-      !
-      !
-      !
-      !     l0          l1                      l2                      l3
-      !     p0          p1                      p2                      p3          
-      !     X-----------o-----------X-----------o-----------X-----------o-----------X
-      !                  -3/4> <---- 1/4 ------- -3/4> <----- 1/4 ------ 
-      !
-      !                  ----- 1/4 ------> <3/4- ----- 1/4 ------> <3/4-
-      !            <5/4--                                               --5/4> 
-      !            <--------- -1/4 ------------- ---- -1/4 ------------------> 
-      !
-      !     X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X
-      !     l0    l1          l2          l3          l4          l5          l6
-      !     p0    p1          p2          p3          p4          p5          p6
-      !     [1]   [--2--]     [--3--]     [--4--]     [--5--]     [--6--]     [--7--]
-      !
-      ! So at the end, we have:
-      !
-      !     [1]   [--2--]     [--3--]     [--4--]     [--5--]     [--6--]     [--7--]
-      !     X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X
-      !     y0          y1          y2          y3          y4          y5          y6
-      !     xi0         xi1         xi2         xi3         xi4         xi5         xi6
-      !     l0    l1          l2          l3          l4          l5          l6
-      !     p0    p1          p2          p3          p4          p5          p6
-      !
-      ! The matrix therefore looks like this (for Crank-Nicolson):
-      !
-      !   1
-      !   0   5/4 -1/4
-      !       3/4 1/4
-      !       1/4 3/4  
-      !           3/4 1/4
-      !           1/4 -3/4 
-      !               3/4 1/4
-      !   ...
-      !               1/4 3/4
-      !              -1/4 5/4
+        p_Kcol(1) = 1
+        p_Kcol(2) = 1
+        p_Kcol(3) = 2
+        p_Kcol(4) = 3
+        
+        ! Then the remaining rows except for the end.
+        do icol = 2,ndofCoarse-1
+          p_Kcol(5+4*(icol-2)+0) = icol
+          p_Kcol(5+4*(icol-2)+1) = icol+1
+          p_Kcol(5+4*(icol-2)+2) = icol
+          p_Kcol(5+4*(icol-2)+3) = icol+1
+
+          p_Da(5+4*(icol-2)+0) = 0.5_DP + 0.5_DP*dtheta ! 0.75_DP
+          p_Da(5+4*(icol-2)+1) = 0.5_DP - 0.5_DP*dtheta ! 0.25_DP
+          p_Da(5+4*(icol-2)+2) = 0.5_DP*dtheta          ! 0.25_DP
+          p_Da(5+4*(icol-2)+3) = 1.0_DP - 0.5_DP*dtheta ! 0.75_DP
+        end do
+
+        ! The last row.
+        p_Kcol(5+4*(ndofCoarse-2)+0) = ndofCoarse-1
+        p_Kcol(5+4*(ndofCoarse-2)+1) = ndofCoarse
+
+        p_Da(5+4*(ndofCoarse-2)) = -0.5_DP+0.5_DP*dtheta  ! -0.25_DP
+        p_Da(5+4*(ndofCoarse-2)+1) = 1.5_DP-0.5_DP*dtheta ! 1.25_DP
+        
+      case (5)
+        call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,5,rprolMatrix)
+
+      case default
+        call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
+
+      end select
       
-      dtheta = rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)%dtheta
-      
-      rprolMatrix%NA = 4+(ndofFine-2)*2
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
-          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
-          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
-          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
-
-      call lsyssc_getbase_double (rprolMatrix,p_Da)
-      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
-      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
-      
-      ! Fill KLD.
-      p_Kld(1) = 1
-      p_Kld(2) = 2
-      do irow = 3,ndofFine+1
-        p_Kld(irow) = 5+(irow-3)*2
-      end do
-      
-      ! Set up the first two rows.
-      p_Da(1) = 1.0_DP
-      p_Da(2) = 0.0_DP
-      p_Da(3) = 1.0_DP+0.5_DP*dtheta  ! 1.25_DP
-      p_Da(4) = -0.5_DP*dtheta        ! -0.25_DP
-
-      p_Kcol(1) = 1
-      p_Kcol(2) = 1
-      p_Kcol(3) = 2
-      p_Kcol(4) = 3
-      
-      ! Then the remaining rows except for the end.
-      do icol = 2,ndofCoarse-1
-        p_Kcol(5+4*(icol-2)+0) = icol
-        p_Kcol(5+4*(icol-2)+1) = icol+1
-        p_Kcol(5+4*(icol-2)+2) = icol
-        p_Kcol(5+4*(icol-2)+3) = icol+1
-
-        p_Da(5+4*(icol-2)+0) = 0.5_DP + 0.5_DP*dtheta ! 0.75_DP
-        p_Da(5+4*(icol-2)+1) = 0.5_DP - 0.5_DP*dtheta ! 0.25_DP
-        p_Da(5+4*(icol-2)+2) = 0.5_DP*dtheta          ! 0.25_DP
-        p_Da(5+4*(icol-2)+3) = 1.0_DP - 0.5_DP*dtheta ! 0.75_DP
-      end do
-
-      ! The last row.
-      p_Kcol(5+4*(ndofCoarse-2)+0) = ndofCoarse-1
-      p_Kcol(5+4*(ndofCoarse-2)+1) = ndofCoarse
-
-      p_Da(5+4*(ndofCoarse-2)) = -0.5_DP+0.5_DP*dtheta  ! -0.25_DP
-      p_Da(5+4*(ndofCoarse-2)+1) = 1.5_DP-0.5_DP*dtheta ! 1.25_DP
-      
-    case (5)
-      call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,5,rprolMatrix)
-
-    case default
-      call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
-
-    end select
+    end if
             
   end subroutine
 
@@ -1009,59 +1033,70 @@ contains
     ! #columns = #time dofs of the coarse level.
     ndofCoarse = tdiscr_igetNDofGlob(p_rtimeDiscrCoarse)
     ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
-    call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofCoarse,ndofFine)
+
+    if (ndofCoarse .eq. ndofFine) then
+  
+      ! Coarse level = fine level.
+      ! Use the identity matrix!
+      call lsyssc_createDiagMatrixStruc (rprolMatrix,ndofCoarse,LSYSSC_MATRIX9)
+      call lsyssc_initialiseIdentityMatrix (rprolMatrix)
+    
+    else
+      call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofCoarse,ndofFine)
+          
+      ! Now depending on the order, create the matrix.
+      select case (ctimeProjection)
+      case (0,1,2,3,4,6)
+        ! The interpolation is just taking the values in the points in time.
+        !
+        ! Timestep: 
+        !               1          2          3      
+        !               x          x          x        (fine grid)
+        !
+        !               |                     |
+        !               | 1                   | 1
+        !               V                     V
+        !
+        !               x                     x          ...
+        !               1                     2        (coarse grid)
+        !
+        !
+        ! The matrix looks like this:
+        !
+        !   1   
+        !   .   .   1
+        !           .   .   1
+        !   ...
+        !
+        ! 
         
-    ! Now depending on the order, create the matrix.
-    select case (ctimeProjection)
-    case (0,1,2,3,4,6)
-      ! The interpolation is just taking the values in the points in time.
-      !
-      ! Timestep: 
-      !               1          2          3      
-      !               x          x          x        (fine grid)
-      !
-      !               |                     |
-      !               | 1                   | 1
-      !               V                     V
-      !
-      !               x                     x          ...
-      !               1                     2        (coarse grid)
-      !
-      !
-      ! The matrix looks like this:
-      !
-      !   1   
-      !   .   .   1
-      !           .   .   1
-      !   ...
-      !
-      ! 
-      
-      rprolMatrix%NA = ndofCoarse
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
-          ndofCoarse+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
-          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
-          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
+        rprolMatrix%NA = ndofCoarse
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+            ndofCoarse+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+            rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+            rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
-      call lsyssc_getbase_double (rprolMatrix,p_Da)
-      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
-      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
-      
-      ! Fill KLD.
-      p_Kld(1) = 1
-      do irow = 1,ndofCoarse+1
-        p_Kld(irow) = irow
-      end do
-      
-      ! Fill KCOL and DA
-      do icol = 1,ndofCoarse
-        p_Kcol(icol) = 1+2*(icol-1)
-        p_Da(icol) = 1.0_DP
-      end do
+        call lsyssc_getbase_double (rprolMatrix,p_Da)
+        call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+        
+        ! Fill KLD.
+        p_Kld(1) = 1
+        do irow = 1,ndofCoarse+1
+          p_Kld(irow) = irow
+        end do
+        
+        ! Fill KCOL and DA
+        do icol = 1,ndofCoarse
+          p_Kcol(icol) = 1+2*(icol-1)
+          p_Da(icol) = 1.0_DP
+        end do
 
-    end select
+      end select
+    
+    end if
             
   end subroutine
 
@@ -1115,109 +1150,120 @@ contains
     ! #columns = #time dofs of the coarse level.
     ndofCoarse = tdiscr_igetNDofGlob(p_rtimeDiscrCoarse)
     ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
-    call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofCoarse,ndofFine)
+
+    if (ndofCoarse .eq. ndofFine) then
+  
+      ! Coarse level = fine level.
+      ! Use the identity matrix!
+      call lsyssc_createDiagMatrixStruc (rprolMatrix,ndofCoarse,LSYSSC_MATRIX9)
+      call lsyssc_initialiseIdentityMatrix (rprolMatrix)
+    
+    else
+      call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofCoarse,ndofFine)
+          
+      ! Now depending on the order, create the matrix.
+      select case (ctimeProjection)
+
+      case (2,3,6)
+        ! Slightly harder case.
+        ! Because the dual solution is aligned between the primal,
+        ! the interpolation stencil looks different.
+        !
+        ! For Crank-Nicolson, we have:
+        !
+        !     [1]   [--2--]     [--3--]     [--4--]     [--5--]     [--6--]     [--7--]
+        !     X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X
+        !     y0          y1          y2          y3          y4          y5          y6
+        !     xi0         xi1         xi2         xi3         xi4         xi5         xi6
+        !     l0    l1          l2          l3          l4          l5          l6
+        !     p0    p1          p2          p3          p4          p5          p6
+        !
+        ! The primal solution for y and xi uses the standard interpolation:
+        !
+        !     X-----------X-----------X-----------X-----------X-----------X-----------X
+        !     y0         y1           y2          y3          y4          y5          y6
+        !     xi0        xi1          xi2         xi3         xi4         xi5         xi6
+        !     |                       |                       |                       |
+        !     V                       V                       V                       V
+        !     X-----------------------X-----------------------X-----------------------X
+        !     y0                      y1                      y2                      y3
+        !     xi0                     xi1                     xi2                     xi3
+        !
+        ! The situation is more complicated for the primal pressure and dual velocity.
+        ! Here, we average the solution of two neighboring points in time to get a value
+        ! in the middle:
+        !
+        !     [1]   [--2--]     [--3--]     [--4--]     [--5--]     [--6--]     [--7--]
+        !     l0    l1          l2          l3          l4          l5          l6
+        !     p0    p1          p2          p3          p4          p5          p6
+        !     X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X
+        !           |-1/2> <1/2-|           |-1/2> <1/2-|           |-1/2> <1/2-|
+        !                 |                       |                       |
+        !                 V                       V                       V
+        !     X-----------o-----------X-----------o-----------X-----------o-----------X
+        !     l0          l1                      l2                      l3
+        !     p0          p1                      p2                      p3          
+        !
+        ! So at the end, we have:
+        !
+        !     [1]         [-----2-----]           [-----3-----] |         [-----4-----]
+        !     X-----------o-----------X-----------o-----------X-----------o-----------X
+        !     y0                      y1                      y2                      y3
+        !     xi0                     xi1                     xi2                     xi3
+        !     l0          l1                      l2                      l3
+        !     p0          p1                      p2                      p3          
+        !
+        !
+        ! The matrix looks like this (for Crank-Nicolson):
+        !
+        !   1
+        !       1/2 1/2
+        !               1/2 1/2
+        !   ...
+        ! The idea is that we take a linear interpolation between
+        ! the time nodes to get the value in the time midpoint.
         
-    ! Now depending on the order, create the matrix.
-    select case (ctimeProjection)
+        dtheta = rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)%dtheta
+        
+        rprolMatrix%NA = ndofFine
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+            ndofCoarse+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+            rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+            rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
-    case (2,3,6)
-      ! Slightly harder case.
-      ! Because the dual solution is aligned between the primal,
-      ! the interpolation stencil looks different.
-      !
-      ! For Crank-Nicolson, we have:
-      !
-      !     [1]   [--2--]     [--3--]     [--4--]     [--5--]     [--6--]     [--7--]
-      !     X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X
-      !     y0          y1          y2          y3          y4          y5          y6
-      !     xi0         xi1         xi2         xi3         xi4         xi5         xi6
-      !     l0    l1          l2          l3          l4          l5          l6
-      !     p0    p1          p2          p3          p4          p5          p6
-      !
-      ! The primal solution for y and xi uses the standard interpolation:
-      !
-      !     X-----------X-----------X-----------X-----------X-----------X-----------X
-      !     y0         y1           y2          y3          y4          y5          y6
-      !     xi0        xi1          xi2         xi3         xi4         xi5         xi6
-      !     |                       |                       |                       |
-      !     V                       V                       V                       V
-      !     X-----------------------X-----------------------X-----------------------X
-      !     y0                      y1                      y2                      y3
-      !     xi0                     xi1                     xi2                     xi3
-      !
-      ! The situation is more complicated for the primal pressure and dual velocity.
-      ! Here, we average the solution of two neighboring points in time to get a value
-      ! in the middle:
-      !
-      !     [1]   [--2--]     [--3--]     [--4--]     [--5--]     [--6--]     [--7--]
-      !     l0    l1          l2          l3          l4          l5          l6
-      !     p0    p1          p2          p3          p4          p5          p6
-      !     X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X
-      !           |-1/2> <1/2-|           |-1/2> <1/2-|           |-1/2> <1/2-|
-      !                 |                       |                       |
-      !                 V                       V                       V
-      !     X-----------o-----------X-----------o-----------X-----------o-----------X
-      !     l0          l1                      l2                      l3
-      !     p0          p1                      p2                      p3          
-      !
-      ! So at the end, we have:
-      !
-      !     [1]         [-----2-----]           [-----3-----] |         [-----4-----]
-      !     X-----------o-----------X-----------o-----------X-----------o-----------X
-      !     y0                      y1                      y2                      y3
-      !     xi0                     xi1                     xi2                     xi3
-      !     l0          l1                      l2                      l3
-      !     p0          p1                      p2                      p3          
-      !
-      !
-      ! The matrix looks like this (for Crank-Nicolson):
-      !
-      !   1
-      !       1/2 1/2
-      !               1/2 1/2
-      !   ...
-      ! The idea is that we take a linear interpolation between
-      ! the time nodes to get the value in the time midpoint.
-      
-      dtheta = rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)%dtheta
-      
-      rprolMatrix%NA = ndofFine
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
-          ndofCoarse+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
-          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
-          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
+        call lsyssc_getbase_double (rprolMatrix,p_Da)
+        call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+        
+        ! Fill KLD.
+        p_Kld(1) = 1
+        do irow = 2,ndofCoarse+1
+          p_Kld(irow) = 2+(irow-2)*2
+        end do
+        
+        ! Set up the first row.
+        p_Da(1) = 1.0_DP
+        p_Kcol(1) = 1
+        
+        ! Then the remaining rows.
+        do icol = 2,ndofCoarse
+          p_Kcol(2+2*(icol-2)) = 2+2*(icol-2)
+          p_Da(2+2*(icol-2)) = dtheta
 
-      call lsyssc_getbase_double (rprolMatrix,p_Da)
-      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
-      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
-      
-      ! Fill KLD.
-      p_Kld(1) = 1
-      do irow = 2,ndofCoarse+1
-        p_Kld(irow) = 2+(irow-2)*2
-      end do
-      
-      ! Set up the first row.
-      p_Da(1) = 1.0_DP
-      p_Kcol(1) = 1
-      
-      ! Then the remaining rows.
-      do icol = 2,ndofCoarse
-        p_Kcol(2+2*(icol-2)) = 2+2*(icol-2)
-        p_Da(2+2*(icol-2)) = dtheta
+          p_Kcol(2+2*(icol-2)+1) = 2+2*(icol-2)+1
+          p_Da(2+2*(icol-2)+1) = 1.0_DP-dtheta
+        end do
 
-        p_Kcol(2+2*(icol-2)+1) = 2+2*(icol-2)+1
-        p_Da(2+2*(icol-2)+1) = 1.0_DP-dtheta
-      end do
+      case default
+        ! Default case, standard handling. Take the matrix from the primal.
+        call sptipr_getInterpMatrixPrimal (rspaceTimeHierarchy,ilevel,&
+            ctimeProjection,rprolMatrix)
 
-    case default
-      ! Default case, standard handling. Take the matrix from the primal.
-      call sptipr_getInterpMatrixPrimal (rspaceTimeHierarchy,ilevel,&
-          ctimeProjection,rprolMatrix)
-
-    end select
+      end select
+      
+    end if
             
   end subroutine
 
@@ -1260,8 +1306,9 @@ contains
     type(t_timeDiscretisation), pointer :: p_rtimeDiscrFine
     integer :: ndofFine
     integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal
-    real(DP), dimension(:), pointer :: p_Da
-    integer :: irow,icol
+    !real(DP), dimension(:), pointer :: p_Da
+    !integer :: irow
+    integer :: icol
     real(DP) :: dtheta
     
     integer, dimension(3) :: Kcol
@@ -1399,7 +1446,8 @@ contains
     type(t_timeDiscretisation), pointer :: p_rtimeDiscrFine
     integer :: ndofFine
     integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal
-    integer :: irow,icol
+    !integer :: irow
+    integer :: icol
     real(DP) :: dtheta
     
     integer, dimension(3) :: Kcol
