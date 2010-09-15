@@ -107,10 +107,10 @@ sreactionname =
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 1
+irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @load
+srhsname = 
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -214,7 +214,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 0
+istabilisation = 20
 
 # perform prelimiting
 iprelimiting = 1

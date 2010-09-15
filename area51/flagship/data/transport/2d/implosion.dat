@@ -190,7 +190,7 @@ errorestimator = ErrorEstimator
 istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################

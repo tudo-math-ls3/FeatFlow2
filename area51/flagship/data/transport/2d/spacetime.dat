@@ -22,10 +22,10 @@ application = transport
 indatfile = data/transport/2d/spacetime.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_strong_primal1
+sprimalbdrcondname = bdrcond_weak_primal1
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = bdrcond_strong_dual
+sdualbdrcondname = bdrcond_weak_dual
 
 # number of spatial dimensions
 ndimension = 2
