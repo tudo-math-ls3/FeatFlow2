@@ -1,0 +1,193 @@
+#!/bin/sh
+
+FILE1=`mktemp`
+FILE2=`mktemp`
+
+HELP=0
+CONTINUOUS=0
+USERNAME=$USER
+WAITSEC=3
+QUEUE=
+REPLY=
+ALL=0
+ANSI=1
+
+while test "$1" != ""
+  do
+    if test "$1" == "--help"
+      then
+        HELP=1
+      fi
+    if test "$1" == "--continuous"
+      then
+        CONTINUOUS=1
+      fi
+    if test "$1" == "--tillempty"
+      then
+        CONTINUOUS=2
+      fi
+    if test "$1" == "--all"
+      then
+        ALL=1
+      fi
+    if test "$1" == "--user"
+      then
+        shift
+        USERNAME=$1
+      fi
+    if test "$1" == "--wait"
+      then
+        shift
+        WAITSEC=$1
+      fi
+    if test "$1" == "--noansi"
+      then
+        ANSI="0"
+      fi
+    if test "$1" == "--queue"
+      then
+        shift
+        QUEUE=$1
+        QUEUESHORT=${QUEUE:0:8}
+      fi
+      
+    shift
+  done
+
+if test "$HELP" == "1"
+  then
+  
+    echo "Usage:"
+    echo "      monitortasks [--tillempty|--continuous] [--user username] [--wait sec] [--queue name] [--all] [--noansi]"
+    echo
+    echo "  --tillempty   : Repeats task monitoring until all tasks are done."
+    echo "  --continuous  : Repeats task monitoring forever."
+    echo "  --user        : Monitors for user 'username'."
+    echo "  --wait        : Waits for 'sec' seconds after each status update."
+    echo "  --queue       : Monitors for queue 'name'."
+    echo "  --all         : Monitors also not-running tasks."
+    echo "  --noansi      : Disables ANSI sequences for output."
+    echo
+    echo "Monitors a cluster queue via qstat."
+    echo "Pressing the key 'q' stops monitoring."
+    echo "Pressing the keys 'a' and 'r' switches between monitoring all and only running tasks."
+    
+  else
+
+    clear
+    TCOUNT=-1
+    while test $TCOUNT -ne "0"
+      do
+        if test "$TCOUNT" -ne "-1"
+          then
+            # sleep $WAITSEC
+            read -n 1 -t $WAITSEC -s
+            if test "$REPLY" == "q"
+              then
+                break
+              fi
+            if test "$REPLY" == "a"
+              then
+                ALL=1
+              fi
+            if test "$REPLY" == "r"
+              then
+                ALL=0
+              fi
+          fi
+    
+        qstat -u $USERNAME > $FILE1
+        
+        if test "$QUEUE" == ""
+          then
+            TCOUNT=`grep $USERNAME $FILE1 | wc -l`
+            RCOUNT=`grep " R " $FILE1 | wc -l`
+            HCOUNT=`grep " H " $FILE1 | wc -l`
+          else
+            TCOUNT=`grep $USERNAME $FILE1 | grep $QUEUESHORT | wc -l`
+            RCOUNT=`grep " R " $FILE1 | grep $QUEUESHORT | wc -l`
+            HCOUNT=`grep " H " $FILE1 | grep $QUEUESHORT | wc -l`
+          fi
+        QCOUNT=`expr $TCOUNT - $RCOUNT - $HCOUNT`
+        
+        echo Task statistics: > $FILE2
+        echo ---------------- >> $FILE2
+        date >> $FILE2
+        echo >> $FILE2
+        if test "$QUEUE" != ""
+          then
+            echo "Queue:         $QUEUE" >> $FILE2
+            echo >> $FILE2
+          fi        
+        echo "Running tasks: $RCOUNT" >> $FILE2
+        echo "Waiting tasks: $QCOUNT" >> $FILE2
+        echo "Holded tasks:  $HCOUNT" >> $FILE2
+        echo "Total tasks:   $TCOUNT" >> $FILE2
+        echo >> $FILE2
+        echo Running tasks: >> $FILE2
+        #echo -------------- >> $FILE2
+        echo >> $FILE2
+        grep $USERNAME -v $FILE1 | tail -n +4 >> $FILE2
+        
+        if test "$QUEUE" == ""
+          then
+            grep " R " $FILE1 >> $FILE2
+          else
+            grep " R " $FILE1 | grep $QUEUESHORT >> $FILE2
+          fi
+
+        if test "$ALL" -eq "1"
+          then          
+            if test "$QUEUE" == ""
+              then
+                grep " Q " $FILE1 >> $FILE2
+                grep " H " $FILE1 >> $FILE2
+              else
+                grep " R " $FILE1 | grep $QUEUESHORT >> $FILE2
+                grep " Q " $FILE1 | grep $QUEUESHORT >> $FILE2
+                grep " H " $FILE1 | grep $QUEUESHORT >> $FILE2
+              fi
+          fi
+    
+        if test "$TCOUNT" -eq "0"
+          then
+            echo >> $FILE2
+            echo "Queue empty." >> $FILE2
+          fi
+        
+        if test "$ANSI" -eq "1"
+          then
+            case "$TERM" in
+                xterm*)
+                    echo -e "\033[0;0H\033[K"
+                    echo -en "\033[J"
+                    echo -en "\033[0;0H"
+                    cat $FILE2
+                    ;;
+                *)
+                    clear
+                    cat $FILE2
+                    ;;
+            esac
+          else
+            clear
+            cat $FILE2
+          fi
+
+        rm -rf $FILE1 $FILE2
+        
+        if test "$CONTINUOUS" == "0"
+          then
+            TCOUNT=0
+          fi
+    
+        if test "$CONTINUOUS" == "1"
+          then
+            TCOUNT=1
+          fi
+          
+      done
+
+    fi
+
+echo
