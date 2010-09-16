@@ -83,6 +83,8 @@ if test "$HELP" == "1"
     
   else
 
+    USERNAMESHORT=${USERNAME:0:8}
+
     clear
     TCOUNT=-1
     while test $TCOUNT -ne "0"
@@ -117,15 +119,15 @@ if test "$HELP" == "1"
     
         if test "$PAUSE" -ne 1
           then
-            qstat -u $USERNAME > $FILE1
+            qstat -u $USERNAMESHORT > $FILE1
             
             if test "$QUEUE" == ""
               then
-                TCOUNT=`grep $USERNAME $FILE1 | wc -l`
+                TCOUNT=`grep $USERNAMESHORT $FILE1 | wc -l`
                 RCOUNT=`grep " R " $FILE1 | wc -l`
                 HCOUNT=`grep " H " $FILE1 | wc -l`
               else
-                TCOUNT=`grep $USERNAME $FILE1 | grep $QUEUESHORT | wc -l`
+                TCOUNT=`grep $USERNAMESHORT $FILE1 | grep $QUEUESHORT | wc -l`
                 RCOUNT=`grep " R " $FILE1 | grep $QUEUESHORT | wc -l`
                 HCOUNT=`grep " H " $FILE1 | grep $QUEUESHORT | wc -l`
               fi
@@ -151,7 +153,7 @@ if test "$HELP" == "1"
                 echo Running tasks: >> $FILE2
                 #echo -------------- >> $FILE2
                 echo >> $FILE2
-                grep $USERNAME -v $FILE1 | tail -n +4 >> $FILE2
+                grep $USERNAMESHORT -v $FILE1 | tail -n +4 >> $FILE2
                 
                 if test "$QUEUE" == ""
                   then
