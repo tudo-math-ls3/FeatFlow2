@@ -184,7 +184,7 @@ contains
 
           call strhs_assembleSpaceRHS (rphysics,.true.,dtimedual,dtstep,&
               ithetaschemetype,dtheta,2,rrhsSpace%RvectorBlock(2))
-              
+
           if (ithetaschemetype .eq. 1) then
             if (istep .eq. 1) then
               ! Scale the RHS according to the timestep scheme.
@@ -242,10 +242,16 @@ contains
               ithetaschemetype,dtheta,2,rrhsSpace%RvectorBlock(2))
 
           call strhs_assembleSpaceRHS (rphysics,.true.,dtimedual,dtstep,&
+              ithetaschemetype,dtheta,3,rrhsSpace%RvectorBlock(3))
+
+          call strhs_assembleSpaceRHS (rphysics,.true.,dtimedual,dtstep,&
               ithetaschemetype,dtheta,4,rrhsSpace%RvectorBlock(4))
 
           call strhs_assembleSpaceRHS (rphysics,.true.,dtimedual,dtstep,&
               ithetaschemetype,dtheta,5,rrhsSpace%RvectorBlock(5))
+
+          call strhs_assembleSpaceRHS (rphysics,.true.,dtimeprimal,dtstep,&
+              ithetaschemetype,dtheta,6,rrhsSpace%RvectorBlock(6))
 
           if (ithetaschemetype .eq. 1) then
             if (istep .eq. 1) then

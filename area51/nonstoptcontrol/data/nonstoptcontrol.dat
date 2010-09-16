@@ -79,6 +79,15 @@ cequation = 0
 #   creferenceproblem = 6:
 #      y = t ( x2(1-x2) , 0 , 0 )
 #      lambda = (1-t) ( x2(1-x2) , 0 , 0 )
+#
+#   creferenceproblem = 7:
+#      y = t^2 ( x2(1-x2) , 0 , 0 )
+#      lambda = (1-t)^2 ( x2(1-x2) , 0 , 0 )
+#
+#   creferenceproblem = 8:
+#      w = sin(Pi/2*x1)*sin(Pi*x2)
+#      y = sin(PI*t/2) * w
+#      l = (sin(PI*t/2)-1) * w
 
 creferenceProblem = 8
 
