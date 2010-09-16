@@ -2124,7 +2124,7 @@ contains
             dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
             
             ! Scale normal velocity by scaling parameter
-            Dcoefficients(1,ipoint,iel) = dscale * dnv
+            Dcoefficients(1,ipoint,iel) = -dscale * dnv
           end do
         end do
         
