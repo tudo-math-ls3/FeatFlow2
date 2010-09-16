@@ -22,10 +22,10 @@ application = euler
 indatfile = data/euler/1d/blastwave.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = boundary_conditions_primal
+sprimalbdrcondname = bdrcond_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = boundary_conditions_dual
+sdualbdrcondname = bdrcond_dual
 
 # number of spatial dimensions
 ndimension = 1
