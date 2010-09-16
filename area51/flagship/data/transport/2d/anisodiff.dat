@@ -27,7 +27,7 @@ application = transport
 indatfile = data/transport/2d/anisodiff.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond2_weak_primal
+sprimalbdrcondname = bdrcond5_strong_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname =
@@ -75,10 +75,10 @@ idiffusiontype = 2
 
 # section name of diffusion tensor
 sdiffusionname(4) =
-  @diffusion2_11
-  @diffusion2_12
-  @diffusion2_21
-  @diffusion2_22
+  @diffusion5_11
+  @diffusion5_12
+  @diffusion5_21
+  @diffusion5_22
 
 # type of flow reaction
 # 0 = zero reactive term
@@ -91,10 +91,10 @@ sreactionname =
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 0
+irhstype = 1
 
 # section name of right-hand side vector
-srhsname =
+srhsname = @rhs5
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -131,10 +131,10 @@ stargetfuncname = @targetFuncInt
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/square_01x01_2holes_quads.prm
+prmfile = grids/2d/square_01x01_quads.prm
 
 # file which contains the triangulation
-trifile = grids/2d/square_01x01_2holes_quads.tri
+trifile = grids/2d/square_01x01_quads.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -319,10 +319,10 @@ depsSteady = 0.0
 ioutputlevel = 3
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 6
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 6
 
 # type of multigrid cycle
 # 0 = F-cylce
