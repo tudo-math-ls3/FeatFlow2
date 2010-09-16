@@ -3437,7 +3437,7 @@ contains
     type(t_matrixScalar), intent(inout) :: rmatrix
 
     ! collection
-    type(t_collection), intent(inout) :: rcollection
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -3481,7 +3481,10 @@ contains
     else
       rcollectionTmp%p_rvectorQuickAccess1 => rsolution
     end if
-     rcollectionTmp%IquickAccess(3) = ivelocityType
+    rcollectionTmp%IquickAccess(3) = ivelocityType
+
+    ! Attach collection structure to temporal collection structute
+    rcollectionTmp%p_rnextCollection => rcollection
 
     ! How many spatial dimensions are we?
     select case(rproblemLevel%rtriangulation%ndim)
@@ -3834,7 +3837,7 @@ contains
     type(t_vectorScalar), intent(inout) :: rvector
 
     ! collection
-    type(t_collection), intent(inout) :: rcollection
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -3878,6 +3881,10 @@ contains
     else
       rcollectionTmp%p_rvectorQuickAccess1 => rsolution
     end if
+    rcollectionTmp%IquickAccess(3) = ivelocityType
+
+    ! Attach collection structure to temporal collection structute
+    rcollectionTmp%p_rnextCollection => rcollection
 
     ! How many spatial dimensions are we?
     select case(rproblemLevel%rtriangulation%ndim)
@@ -3912,7 +3919,8 @@ contains
             ! Do nothing for homogeneous Neumann boundary conditions
             ! since the boundary integral vanishes by construction
 
-          case (BDRC_INHOMNEUMANN, BDRC_ROBIN, BDRC_FLUX)
+          case (BDRC_INHOMNEUMANN, BDRC_ROBIN,&
+                BDRC_FLUX, BDRC_DIRICHLET)
             
             ! Initialize the linear form
             rform%itermCount = 1
@@ -3922,21 +3930,6 @@ contains
             call bdrc_createRegion(p_rboundaryCondition, ibct,&
                 isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
 
-            ! Assemble the linear form
-            call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D,&
-                .false., rvector, fcoeff_buildVectorScBdr2D_sim,&
-                rboundaryRegion, rcollectionTmp)
-
-          case (BDRC_DIRICHLET)
-
-            ! Initialize the linear form (penalty method)
-            rform%itermCount = 1
-            rform%Idescriptors(1) = DER_FUNC
-            
-            ! Create boundary segment
-            call bdrc_createRegion(p_rboundaryCondition, ibct,&
-                isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
-            
             ! Assemble the linear form
             call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D,&
                 .false., rvector, fcoeff_buildVectorScBdr2D_sim,&
