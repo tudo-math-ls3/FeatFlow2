@@ -313,6 +313,9 @@ csolverType = 0
 # =2: BiCGStab(SSOR). Only for the heat equation.
 cpreconditioner = 0
 
+# Otput level
+ioutputlevel = 0
+
 # Damping parameter for smoother.
 # =1.0 for ILU, =0.7 for JAC
 domegaSmoother = 0.7

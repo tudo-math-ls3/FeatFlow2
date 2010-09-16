@@ -98,6 +98,9 @@ module spacetimelinsol
     
     ! Max. number of iterations
     integer :: nmaxiterations = 100
+    
+    ! Output level
+    integer :: ioutputLevel = 0
 
     ! ONLY MG: Type of smoother.
     ! =0: Defect correction with diag-VANKA.
@@ -367,8 +370,18 @@ contains
             if (ilev .eq. 1) then
               call linsol_initJacobi (p_rpreconditioner)
               call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
-              p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
-              p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
+              p_rlevelInfo%p_rcoarseGridSolver%istoppingCriterion = LINSOL_STOP_ONEOF
+              if (ispaceLevel .eq. 1) then
+                ! Only one level
+                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
+                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
+                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
+                p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
+              else
+                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
+                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
+                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
+              end if
             else
               call linsol_initJacobi (p_rpreconditioner)
               call linsol_initDefCorr (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
@@ -376,6 +389,11 @@ contains
                   rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
             end if
           end do
+          rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
+          rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
+          rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
+          rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
+          rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
 
         case (STLS_PC_ILU0)
           ! Defect correction loops + Jacobi smoothing everywhere.
@@ -385,11 +403,13 @@ contains
             if (ilev .eq. 1) then
               call linsol_initILU0 (p_rpreconditioner)
               call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
+              p_rlevelInfo%p_rcoarseGridSolver%istoppingCriterion = LINSOL_STOP_ONEOF
               if (ispaceLevel .eq. 1) then
                 ! Only one level
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
                 p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
+                p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
               else
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
@@ -405,6 +425,8 @@ contains
           rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
           rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
           rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
+          rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
+          rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
         
         case (STLS_PC_SSOR)
           ! Defect correction loops + Jacobi smoothing everywhere.
@@ -414,11 +436,13 @@ contains
             if (ilev .eq. 1) then
               call linsol_initSSOR (p_rpreconditioner)
               call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
+              p_rlevelInfo%p_rcoarseGridSolver%istoppingCriterion = LINSOL_STOP_ONEOF
               if (ispaceLevel .eq. 1) then
                 ! Only one level
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
                 p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
+                p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
               else
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
@@ -434,6 +458,9 @@ contains
           rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
           rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
           rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
+          rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
+          rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
+          
         
         case default
           call output_line ("Unknown preconditioner in stls_init")
@@ -913,7 +940,10 @@ contains
     call stls_precondDefect(rsolver,rd)
     
     ! Add to the new solution, that's it.
-    call sptivec_vectorLinearComb (rd,rx,1.0_DP,1.0_DP)
+    if (rsolver%csolverStatus .ne. 2) then
+      call sptivec_vectorLinearComb (rd,rx,1.0_DP,1.0_DP)
+    end if
+    ! else: Divergence.
 
   end subroutine
 
@@ -1018,6 +1048,12 @@ contains
       ! Defect preconditioning
       if (associated (rsolver%p_rpreconditioner)) then
         call stls_precondDefect(rsolver%p_rpreconditioner,rsolver%rspaceTimeTemp2)
+        
+        if (rsolver%p_rpreconditioner%csolverStatus .eq. 2) then
+          ! Divergence. Stop immediately.
+          rsolver%csolverStatus = 2
+          exit
+        end if
       end if
       
       ! Add to the new solution.
@@ -1203,6 +1239,12 @@ contains
       ! solver structure.
       call stls_precondDefect (p_rpreconditioner,p_DR)
       
+      if (p_rpreconditioner%csolverStatus .eq. 2) then
+        ! Divergence. Stop immediately.
+        rsolver%csolverStatus = 2
+        return
+      end if
+      
       if (.not. bstopOnRealResiduum) then
         ! We scale the absolute stopping criterion by the difference
         ! between the preconditioned and unpreconditioned defect --
@@ -1309,6 +1351,13 @@ contains
               ! Perform preconditioning with the assigned preconditioning
               ! solver structure.
               call stls_precondDefect (p_rpreconditioner,p_DR)
+              
+              if (p_rpreconditioner%csolverStatus .eq. 2) then
+                ! Divergence. Stop immediately.
+                rsolver%csolverStatus = 2
+                exit
+              end if
+              
             end if
             
             call sptivec_copyVector(p_DR,p_DR0)
@@ -1357,6 +1406,13 @@ contains
           ! Perform preconditioning with the assigned preconditioning
           ! solver structure.
           call stls_precondDefect (p_rpreconditioner,p_DPA)
+          
+          if (p_rpreconditioner%csolverStatus .eq. 2) then
+            ! Divergence. Stop immediately.
+            rsolver%csolverStatus = 2
+            exit
+          end if
+          
         end if
 
         dalpha = sptivec_scalarProduct (p_DR0,p_DPA)
@@ -1385,6 +1441,13 @@ contains
           ! Perform preconditioning with the assigned preconditioning
           ! solver structure.
           call stls_precondDefect (p_rpreconditioner,p_DSA)
+          
+          if (p_rpreconditioner%csolverStatus .eq. 2) then
+            ! Divergence. Stop immediately.
+            rsolver%csolverStatus = 2
+            exit
+          end if
+          
         end if
         
         domega1 = sptivec_scalarProduct (p_DSA,p_DR)
@@ -2333,8 +2396,15 @@ contains
       ! Call the coarse grid solver.
       call stls_precondDefect (rsolver%p_rcoarsegridsolver,rsolver%p_Rvectors2(ilevel))
       
+      if (rsolver%p_rcoarsegridsolver%csolverStatus .eq. 2) then
+        ! Coarse grid solver diverged. Stop here!
+        rsolver%csolverStatus = 2
+        return
+      end if 
+      
       ! Put the result to the solution.
       call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors1(ilevel))
+      
     else
       ! Do the iteration.
       
@@ -2451,6 +2521,12 @@ contains
           if (rsolver%p_Rpresmoothers(ilevel)%csolverType .ne. STLS_TYPE_NONE) then
             call stls_solveAdaptively (rsolver%p_rpresmoothers(ilevel), &
                 rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
+
+            if (rsolver%p_rpresmoothers(ilevel)%csolverStatus .eq. 2) then
+              ! Smoother diverged. Stop here!
+              rsolver%csolverStatus = 2
+              exit
+            end if
           end if
         end if
 
@@ -2515,6 +2591,11 @@ contains
         
         if (rsolver%ioutputlevel .ge. 3) then
           call output_line("Space-Time Multigrid: Level "//trim(sys_siL(ilevel,10)))
+        end if
+        
+        if (rsolver%csolverStatus .eq. 2) then
+          ! Coarse grid solver diverged. Stop here!
+          exit
         end if
         
         ! Prolongation
@@ -2593,6 +2674,12 @@ contains
           if (rsolver%p_Rpostsmoothers(ilevel)%csolverType .ne. STLS_TYPE_NONE) then
             call stls_solveAdaptively (rsolver%p_rpostsmoothers(ilevel), &
                 rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
+
+            if (rsolver%p_rpostsmoothers(ilevel)%csolverStatus .eq. 2) then
+              ! Smoother diverged. Stop here!
+              rsolver%csolverStatus = 2
+              exit
+            end if
           end if
         end if
         

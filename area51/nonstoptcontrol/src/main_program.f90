@@ -373,6 +373,8 @@ contains
         "domegaSmoother", rspaceSolverParams%domegaSmoother)
     call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
         "nmaxiterations", rspaceSolverParams%nmaxIterations)
+    call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
+        "ioutputlevel", rspaceSolverParams%ioutputlevel)
     
     rsolver%csolverType = csolverType
     
