@@ -768,7 +768,8 @@ contains
   elemental real(DP) function fct_stokesZ8_p (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
     fct_stokesZ8_p = -0.5_DP*SYS_PI*(sin(0.5_DP*SYS_PI*dtime)*cos(0.5_DP*SYS_PI*dx)*sin(SYS_PI*dy)+&
-        2.0_DP*sin(0.5_DP*SYS_PI*dtime)*sin(0.5_DP*SYS_PI*dx)*cos(SYS_PI*dy)-cos(0.5_DP*SYS_PI*dx)*sin(SYS_PI*dy)-2*sin(0.5_DP*SYS_PI*dx)*cos(SYS_PI*dy))
+        2.0_DP*sin(0.5_DP*SYS_PI*dtime)*sin(0.5_DP*SYS_PI*dx)*cos(SYS_PI*dy)-&
+        cos(0.5_DP*SYS_PI*dx)*sin(SYS_PI*dy)-2*sin(0.5_DP*SYS_PI*dx)*cos(SYS_PI*dy))
   end function
 
   elemental real(DP) function fct_stokesF8_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
