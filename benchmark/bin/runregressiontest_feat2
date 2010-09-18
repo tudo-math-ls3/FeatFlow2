@@ -380,9 +380,9 @@ fb_customise() {
 		pc64-penryn-linux-pgi-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules pgi/10.8-0"
+		    modules="$modules pgi/10.9-0"
 		    LIDOJOBNAMEPREFIX=fb-pgi
-		    COMPILERNAME="PGI 10.8"
+		    COMPILERNAME="PGI 10.9"
 		    ;;
 
 		# Sun Studio compiler suite
