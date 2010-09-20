@@ -3519,34 +3519,14 @@ contains
             ! Do nothing since boundary conditions are build into the
             ! linear form and the bilinear form has no boundary term
 
-          case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN, BDRC_FLUX)
+          case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN,&
+                BDRC_FLUX, BDRC_DIRICHLET)
 
             ! Initialize the bilinear form
             rform%itermCount = 1
             rform%Idescriptors(1,1) = DER_FUNC
             rform%Idescriptors(2,1) = DER_FUNC
             
-            ! We have no constant coefficients
-            rform%ballCoeffConstant = .false.
-            rform%BconstantCoeff    = .false.
-
-            ! Create boundary region
-            call bdrc_createRegion(p_rboundaryCondition,&
-                ibct, isegment-p_IbdrCondCpIdx(ibct)+1,&
-                rboundaryRegion)
-
-            ! Assemble the bilinear form
-            call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D,&
-                .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
-                rboundaryRegion, rcollectionTmp, cconstrType)
-
-          case (BDRC_DIRICHLET)
-
-            ! Initialize the bilinear form (penalty method)
-            rform%itermCount = 1
-            rform%Idescriptors(1,1) = DER_FUNC
-            rform%Idescriptors(2,1) = DER_FUNC
-
             ! We have no constant coefficients
             rform%ballCoeffConstant = .false.
             rform%BconstantCoeff    = .false.
