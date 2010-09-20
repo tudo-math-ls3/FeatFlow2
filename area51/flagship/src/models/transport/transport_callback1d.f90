@@ -666,9 +666,9 @@ contains
     integer :: inode
 
     do inode = 1, size(DcoefficientsAtNode,2)
-      ! Compute convective coefficients  $k_{ii} = u_i*C_{ii}$
+      ! Compute convective coefficients  $k_{ii} = 0.5*u_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)
+          0.5*DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)
     end do
     
   end subroutine transp_calcMatDiagBurgersP1d_sim
@@ -715,13 +715,14 @@ contains
     integer :: iedge
 
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $k_{ij} = (u_i+u_j)/2*C_{ij}$
-      DcoefficientsAtEdge(2,iedge) = dscale*DmatrixCoeffsAtEdge(1,1,iedge)*&
-          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
-      ! Compute convective coefficient  $k_{ji} = (u_i+u_j)/2*C_{ji}$
-      DcoefficientsAtEdge(3,iedge) = dscale*DmatrixCoeffsAtEdge(1,2,iedge)*&
-          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
-
+      ! Compute convective coefficient  $k_{ij} = 0.5*u_j*C_{ij}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          0.5_DP*DdataAtEdge(2,iedge)*DmatrixCoeffsAtEdge(1,1,iedge)
+          
+      ! Compute convective coefficient  $k_{ji} = 0.5*u_i*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          0.5_DP*DdataAtEdge(1,iedge)*DmatrixCoeffsAtEdge(1,2,iedge)
+      
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
     end do
@@ -771,16 +772,17 @@ contains
     integer :: iedge
 
     do iedge  = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $k_{ij} = (u_i+u_j)/2*C_{ij}$
-      DcoefficientsAtEdge(2,iedge) = dscale*DmatrixCoeffsAtEdge(1,1,iedge)*&
-          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
-      ! Compute convective coefficient  $k_{ji} = (u_i+u_j)/2*C_{ji}$
-      DcoefficientsAtEdge(3,iedge) = dscale*DmatrixCoeffsAtEdge(1,2,iedge)*&
-          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
-
-      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
+      ! Compute convective coefficient  $k_{ij} = 0.5*u_j*C_{ij}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          0.5_DP*DdataAtEdge(2,iedge)*DmatrixCoeffsAtEdge(1,1,iedge)
+          
+      ! Compute convective coefficient  $k_{ji} = 0.5*u_i*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          0.5_DP*DdataAtEdge(1,iedge)*DmatrixCoeffsAtEdge(1,2,iedge)
+      
+      ! Compute artificial diffusion coefficient $d_{ij} = \max\{abs(k_{ij}),abs(k_{ji})\}$
       DcoefficientsAtEdge(1,iedge) =&
-          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
+          max(abs(DcoefficientsAtEdge(2,iedge)), abs(DcoefficientsAtEdge(3,iedge)))
     end do
 
   end subroutine transp_calcMatUpwBurgersP1d_sim
@@ -798,9 +800,6 @@ contains
     ! $k_{ij}$ for the primal Buckley-Leverett equation
     ! $du/dt+df(u)/dx=0$ in 1D, whereby the flux function is given by
     ! $f(u)=u^2/(u^2+0.5*(1-u)^2)$
-    !
-    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given by
-    ! $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
 !</description>
 
 !<input>
@@ -838,7 +837,7 @@ contains
 
       ! Compute convective coefficient  $k_{ii} = a_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtNode(1,inode)
+          ui/(ui**2+0.5*(1-ui)**2)*DmatrixCoeffsAtNode(1,inode)
     end do
     
   end subroutine transp_calcMatDiagBuckLevP1d_sim
@@ -856,9 +855,6 @@ contains
     ! $k_{ij}$ and $k_{ji}$ for the primal Buckley-Leverett equation
     ! $du/dt+df(u)/dx=0$ in 1D, whereby the flux function is given by
     ! $f(u)=u^2/(u^2+0.5*(1-u)^2)$
-    !
-    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given by
-    ! $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
 !</description>
 
 !<input>
@@ -896,10 +892,11 @@ contains
 
       ! Compute convective coefficient  $k_{ij} = a_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
+          uj/(uj**2+0.5*(1-uj)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
+
       ! Compute convective coefficient  $k_{ji} = a_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
+          ui/(ui**2+0.5*(1-ui)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
 
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
@@ -919,11 +916,9 @@ contains
     ! This subroutine computes the convective matrix coefficients
     ! $k_{ij}$ and $k_{ji}$ for the primal Buckley-Leverett equation
     ! $du/dt+df(u)/dx=0$ in 1D, whereby the flux function is given by
-    ! $f(u)=u^2/(u^2+0.5*(1-u)^2)$. Moreover, scalar artificial
-    ! diffusion is applied.
+    ! $f(u)=u^2/(u^2+0.5*(1-u)^2)$. 
     !
-    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given by
-    ! $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
+    ! Moreover, scalar artificial diffusion is applied.
 !</description>
 
 !<input>
@@ -961,14 +956,15 @@ contains
 
       ! Compute convective coefficient  $k_{ij} = a_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
+          uj/(uj**2+0.5*(1-uj)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
+
       ! Compute convective coefficient  $k_{ji} = a_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
+          ui/(ui**2+0.5*(1-ui)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
 
-      ! Compute artificial diffusion coefficient
+      ! Compute artificial diffusion coefficient $d_{ij} = \max\{abs(k_{ij}),abs(k_{ji})\}$
       DcoefficientsAtEdge(1,iedge) =&
-          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP,-DcoefficientsAtEdge(3,iedge))
+          max(abs(DcoefficientsAtEdge(2,iedge)), abs(DcoefficientsAtEdge(3,iedge)))
     end do
     
   end subroutine transp_calcMatUpwBuckLevP1d_sim
