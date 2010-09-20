@@ -483,7 +483,7 @@ nmaxBacktrackingSteps = 5
 iupdateFrequency = 0
 
 # nonlinear relaxation parameter
-domega = 0.8
+domega = 0.6
 
 # absolute tolerance for residual
 depsAbs = 1e-10
