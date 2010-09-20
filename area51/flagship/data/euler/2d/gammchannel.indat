@@ -35,7 +35,7 @@ deffunc: @initsol_vel_y = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot  = 1.59119116656413/0.4+0.5 ; x,y,z,t
 
 # Specify the boundary conditions
-[boundary_conditions_primal]
+[bdrcond_strong_primal]
 NBCT
 1
 NEXPR
@@ -51,7 +51,7 @@ PARAMETERS
 6.0  T  'FREESTREAM_WEAK'  1.0  1.0  0.0  1.59119116656413
 
 # Specify the boundary conditions
-[boundary_conditions_primal_dummy]
+[bdrcond_strong_primal_dummy]
 NBCT
 1
 NEXPR

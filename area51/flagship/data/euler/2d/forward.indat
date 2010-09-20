@@ -30,7 +30,7 @@ NCOMP
 # 3. The third item defines the boundary type: 
 #    Neumann boundary condition   ibctyp = 0
 #    Dirichlet boundary condition ibctyp = 1
-[boundary_conditions]
+[bdrcond]
 NBCT
 1
 NEXPR

@@ -42,7 +42,7 @@ deffunc: @initsol_vel_y = if(x >= _x0+y/SQRT(3.0), 0.0, -66.0*SIN(_pi/6)) ; x,y,
 deffunc: @initsol_Etot  = if(x >= _x0+y/SQRT(3.0), 2.5, 563.5) ; x,y,z,t
 
 # Specify the boundary conditions
-[boundary_conditions_primal]
+[bdrcond_strong_primal]
 NBCT
 1
 NEXPR

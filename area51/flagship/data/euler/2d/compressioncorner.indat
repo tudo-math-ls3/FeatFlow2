@@ -26,7 +26,7 @@ deffunc: @initsol_vel_y = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = 4.91071428571 ; x,y,z,t
 
 # Specify the boundary conditions
-[boundary_conditions_primal]
+[bdrcond_strong_primal]
 NBCT
 1
 NEXPR

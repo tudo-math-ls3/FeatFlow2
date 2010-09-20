@@ -1,18 +1,13 @@
 # -*- mode: any-ini; -*-
-
+#
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                           Inviscid Burger's equation                         #
+#                          Buckley-Leverett in space-time                      #
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = if( x>0 & x<0.4, 1.0, if( x>0 & x<=0.8, 0.5, 0.0)) ; x,y,z,t
-
-# Specify the initial solution
-deffunc: @exactsol = if (y = 0,if( x>0 & x<0.4, 1.0, if( x>0 & x<=0.8, 0.5, 0.0)), ...
-                      if (2*x <= y, 2*x/y, if ((x-0.4)/y > 0.375, ...
-                      if ((x-0.8)/y > 0.125, 0.0, 0.5), 1.0))) ; x,y,z,t
+deffunc: @initsol = if( x<=0.5, 1.0, 0.0) ; x,y,z,t
 
 # Specify the velocity field
 deffunc: @velocity_x = 1.0 ; x,y,z,t
@@ -27,11 +22,9 @@ NEXPR
 IBCT
 1
 NCOMP
-5
+4
 PARAMETERS
-1.0  T  'DIRICHLET_STRONG'   0.0
-1.4  F  'DIRICHLET_STRONG'   1.0
-1.8  T  'DIRICHLET_STRONG'   0.5
-2.0  T  'DIRICHLET_STRONG'   0.0
-4.0  F  'HOMNEUMANN_STRONG'
-
+0.25 T  'DIRICHLET_STRONG'  1.0
+1.0  T  'DIRICHLET_STRONG'  0.0
+3.0  F  'HOMNEUMANN_STRONG'
+4.0  T  'DIRICHLET_STRONG'  1.0

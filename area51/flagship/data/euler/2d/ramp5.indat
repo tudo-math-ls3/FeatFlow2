@@ -35,7 +35,7 @@ deffunc: @initsol_Etot  = 3.78571428571429 ; x,y,z,t
 
 # Specify the boundary conditions:
 # Supersonic inflow with constant angle of attach
-[bdrcond_primal_constant]
+[bdrcond_strong_primal_constant]
 NBCT
 1
 NEXPR
@@ -52,7 +52,7 @@ PARAMETERS
 
 # Specify the boundary conditions
 # Supersonic inflow with periodically changing angle of attack
-[bdrcond_primal_periodic]
+[bdrcond_strong_primal_periodic]
 NBCT
 1
 NEXPR

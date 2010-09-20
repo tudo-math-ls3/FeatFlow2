@@ -51,8 +51,11 @@ imassantidiffusiontype = 1
 # 1 = linear constant velocity v=v(x)
 # 2 = linear time-dependent velocity v=v(x,t)
 # 3 = Burgers equation in space-time
-# 4 = Buckley Leverett in space-time
+# 4 = Buckley Leverett equation in space-time
+# 5 = Burgers' equation in 1D
 # 6 = Burgers' equation in 2D
+# 7 = Burgers' equation in 3D
+# 8 = Buckley Leverett equation in 1D
 ivelocitytype = 6
 
 # section name of velocity field
@@ -186,7 +189,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 20
 
 # perform prelimiting
 iprelimiting = 0
@@ -215,7 +218,7 @@ istabilisation = 0
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.1
 
 # file for UCD output of solution
 sucdsolution = out/burgers2d
@@ -234,7 +237,7 @@ sucderror = out/burgers2d_error
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -259,7 +262,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.1
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 0.001
@@ -639,7 +642,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 8
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25

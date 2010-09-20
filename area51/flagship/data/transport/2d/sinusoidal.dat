@@ -54,8 +54,11 @@ imassantidiffusiontype = 1
 # 1 = linear constant velocity v=v(x)
 # 2 = linear time-dependent velocity v=v(x,t)
 # 3 = Burgers equation in space-time
-# 4 = Buckley Leverett in space-time
+# 4 = Buckley Leverett equation in space-time
+# 5 = Burgers' equation in 1D
 # 6 = Burgers' equation in 2D
+# 7 = Burgers' equation in 3D
+# 8 = Buckley Leverett equation in 1D
 ivelocitytype = 1
 
 # section name of velocity field

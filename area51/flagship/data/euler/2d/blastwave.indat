@@ -22,7 +22,7 @@ deffunc: @initsol_vel  = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = if(x < 0.1, 1000.0, if(x > 0.9, 100.0, 0.01)) ; x,y,z,t
 
 # Specify the boundary conditions
-[boundary_conditions_primal]
+[bdrcond_strong_primal]
 NBCT
 1
 NEXPR

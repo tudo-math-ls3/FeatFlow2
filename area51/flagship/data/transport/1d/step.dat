@@ -52,8 +52,11 @@ imassantidiffusiontype = 1
 # 1 = linear constant velocity v=v(x)
 # 2 = linear time-dependent velocity v=v(x,t)
 # 3 = Burgers equation in space-time
-# 4 = Buckley Leverett in space-time
+# 4 = Buckley Leverett equation in space-time
+# 5 = Burgers' equation in 1D
 # 6 = Burgers' equation in 2D
+# 7 = Burgers' equation in 3D
+# 8 = Buckley Leverett equation in 1D
 ivelocitytype = 1
 
 # section name of velocity field
@@ -67,7 +70,7 @@ svelocityname = @velocity_x
 idiffusiontype = 0
 
 # section name of diffusion tensor
-sdiffusionname = @diffusion
+sdiffusionname =
 
 # type of flow reaction
 # 0 = zero reactive term
@@ -75,7 +78,7 @@ sdiffusionname = @diffusion
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = @reaction
+sreactionname =
 
 # type of right-hand side vector
 # 0 = zero right-hand side
@@ -83,7 +86,7 @@ sreactionname = @reaction
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @rhs
+srhsname =
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -94,7 +97,7 @@ srhsname = @rhs
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = @initsol3
+ssolutionname = @initsol1
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -252,7 +255,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.2
+dfinalTime = 0.4
 
 # initial time step size
 dinitialStep = 0.001

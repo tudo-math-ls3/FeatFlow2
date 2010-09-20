@@ -61,7 +61,7 @@ NCOMP
 #    ibctyp = 11: Supersonic outlet boundary condition
 #    ibctyp = 12: Periodic boundary condition (symmetric)
 #    ibctyp = 13: Periodic boundary condition (anti-symmetric)
-[boundary_conditions0]
+[bdrcond0]
 NBCT
 1
 NEXPR
@@ -77,7 +77,7 @@ PARAMETERS
 6.0  T  4   0.8041067980868  0.76459338691461  0.0  0.73695204315437
 
 
-[boundary_conditions]
+[bdrcond]
 NBCT
 1
 NEXPR

@@ -13,24 +13,15 @@ deffunc: @initsol = if(x >= 0.2 & x <= 0.7, 1.0, 0.0) ; x,y,z,t
 # Specify the exact solution
 deffunc: @exactsol = if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0) ; x,y,z,t
 
-# Specify the velocity field
-deffunc: @velocity_x = 0.0 ; x,y,z,t
-
 # Specify the diffusion coefficient
-deffunc: @diffusion = 0 ; x,y,z,t
-
-# Specify the reaction term
-deffunc: @reaction = 0 ; x,y,z,t
-
-# Specify the right-hand side
-deffunc: @rhs = 0 ; x,y,z,t
+deffunc: @diffusion = 1e-3 ; x,y,z,t
 
 # Specify the quantity of interest
 deffunc: @targetFuncInt = 0 ; x,y,z,t
 deffunc: @targetFuncAnalytic = 0 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
-[boundary_conditions_primal]
+[bdrcond_strong_primal]
 NBCT
 2
 NEXPR
@@ -45,4 +36,4 @@ NCOMP
 1
 PARAMETERS
 0.0  T  'DIRICHLET_STRONG'  0.0
-0.0  T  'DIRICHLET_STRONG'
+0.0  T  'HOMNEUMANN_STRONG'  

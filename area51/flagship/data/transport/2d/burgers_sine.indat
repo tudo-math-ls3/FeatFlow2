@@ -3,20 +3,18 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                           Inviscid Burger's equation                         #
+#                    Inviscid Burger's equation in space-time                  #
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = if( x>0 & x<0.4, 1.0, if( x>0 & x<=0.8, 0.5, 0.0)) ; x,y,z,t
-
-# Specify the exact solution
-deffunc: @exactsol = if (y = 0,if( x>0 & x<0.4, 1.0, if( x>0 & x<=0.8, 0.5, 0.0)), ...
-                     if (2*x <= y, 2*x/y, if ((x-0.4)/y > 0.375, ...
-                     if ((x-0.8)/y > 0.125, 0.0, 0.5), 1.0))) ; x,y,z,t
+deffunc: @initsol = SIN(_PI*x) ; x,y,z,t
 
 # Specify the velocity field
 deffunc: @velocity_x = 1.0 ; x,y,z,t
 deffunc: @velocity_y = 1.0 ; x,y,z,t
+
+# Specify the diffusion coefficient
+deffunc: @diffusion = 0.0 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 [bdrcond_strong_primal]
@@ -27,10 +25,9 @@ NEXPR
 IBCT
 1
 NCOMP
-5
+4
 PARAMETERS
-0.4  F  'DIRICHLET_STRONG'   1.0
-0.8  T  'DIRICHLET_STRONG'   0.5
-1.0  T  'DIRICHLET_STRONG'   0.0
-3.0  F  'HOMNEUMANN_STRONG'
-4.0  T  'DIRICHLET_STRONG'   0.0
+1.0  T  'PERIODIC_STRONG' 1 3
+2.0  F  'DIRICHLET_STRONG'  'SIN(_PI*x)'
+3.0  F  'PERIODIC_STRONG' 1 1
+4.0  T  'HOMNEUMANN_STRONG'

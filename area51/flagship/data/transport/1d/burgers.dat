@@ -52,19 +52,22 @@ imassantidiffusiontype = 1
 # 1 = linear constant velocity v=v(x)
 # 2 = linear time-dependent velocity v=v(x,t)
 # 3 = Burgers equation in space-time
-# 4 = Buckley Leverett in space-time
+# 4 = Buckley Leverett equation in space-time
+# 5 = Burgers' equation in 1D
 # 6 = Burgers' equation in 2D
-ivelocitytype = -5
+# 7 = Burgers' equation in 3D
+# 8 = Buckley Leverett equation in 1D
+ivelocitytype = 5
 
 # section name of velocity field
-svelocityname = @velocity_x
+svelocityname =
 
 # type of flow diffusion
 # 0 = zero diffusion
 # 1 = isotropic diffusion
 # 2 = anisotropic diffusion
 # 3 = variable diffusion
-idiffusiontype = 1
+idiffusiontype = 0
 
 # section name of diffusion tensor
 sdiffusionname = @diffusion
@@ -75,7 +78,7 @@ sdiffusionname = @diffusion
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = @reaction
+sreactionname =
 
 # type of right-hand side vector
 # 0 = zero right-hand side
@@ -83,7 +86,7 @@ sreactionname = @reaction
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @rhs
+srhsname =
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -120,7 +123,7 @@ stargetfuncname = @targetFuncInt
 #-------------------------------------------------------------------------------
 
 # file which contains the triangulation
-trifile = grids/1d/unit.tri
+trifile = grids/1d/unit50.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -179,10 +182,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 0
 
 # perform prelimiting
-iprelimiting = 0
+iprelimiting = 1
 
 
 ################################################################################
@@ -243,7 +246,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 0.5
+theta = 1.0
 
 # number of steps for multisteps scheme
 multisteps = 0
@@ -302,10 +305,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 7
+nlmin = 3
 
 # maximum multigrid level number
-nlmax = 7
+nlmax = 3
 
 # type of multigrid cycle
 # 0 = F-cylce
