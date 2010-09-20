@@ -41,25 +41,25 @@
 !#        by filtering the system matrix and the solution/residual
 !#        vector explicitly (i.e. strong boundary conditions)
 !#
-!# 7.) transp_calcBilfBoundaryConditions
+!# 7.) transp_calcBilfBoundaryConditions2d
 !#     -> Calculates the bilinear form arising from the weak
-!#        imposition of boundary conditions
+!#        imposition of boundary conditions in 2D
 !#
 !# 8.) transp_calcBilfBdrCondQuick (not public)
 !#      -> Wrapper routine the calculation of the bilinear form arising
 !#         from the weak imposition of boundary conditions; this
-!#         routine calls transp_calcBilfBoundaryConditions with
+!#         routine calls transp_calcBilfBoundaryConditionsXd with
 !#         the correct callback routines depending on the type of
 !#         velocity and the mode, i.e. primal or dual
 !#
-!# 9.) transp_calcLinfBoundaryConditions
+!# 9.) transp_calcLinfBoundaryConditions2d
 !#     -> Calculates the linear form arising from the weak
 !#        imposition of boundary conditions
 !#
 !# 10.) transp_calcLinfBdrCondQuick (not public)
 !#      -> Wrapper routine the calculation of the linear form arising
 !#         from the weak imposition of boundary conditions; this
-!#         routine calls transp_calcLinfBoundaryConditions with
+!#         routine calls transp_calcLinfBoundaryConditionsXd with
 !#         the correct callback routines depending on the type of
 !#         velocity and the mode, i.e. primal or dual
 !#
@@ -158,8 +158,8 @@ module transport_callback
   public :: transp_calcRhsThetaScheme
   public :: transp_calcRhsRungeKuttaScheme
   public :: transp_setBoundaryConditions
-  public :: transp_calcBilfBoundaryConditions
-  public :: transp_calcLinfBoundaryConditions
+  public :: transp_calcBilfBoundaryConditions2d
+  public :: transp_calcLinfBoundaryConditions2d
   public :: transp_calcVelocityField
   public :: transp_setVelocityField
   public :: transp_calcLinearisedFCT
@@ -255,8 +255,7 @@ contains
 
       ! Compute the right-hand side
       call transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rrhs, istep, rcollection,&
-          rsource)
+          rsolver, rsolution, rsolution0, rrhs, istep, rcollection, rsource)
 
       ! Remove specifier for the preconditioner (if any)
       iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
@@ -346,7 +345,9 @@ contains
       rtimestep, rsolver, rsolution, rcollection,&
       fcb_calcMatrixDiagonalPrimal_sim, fcb_calcMatrixPrimal_sim,&
       fcb_calcMatrixDiagonalDual_sim, fcb_calcMatrixDual_sim,&
-      fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim)
+      fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+      fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+      fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim)
 
 !<description>
     ! This subroutine calculates the nonlinear preconditioner for the
@@ -370,8 +371,12 @@ contains
 
     ! user-defined callback functions
     include 'intf_transpCoeffMatBdr.inc'
-    optional :: fcb_coeffMatBdrPrimal_sim
-    optional :: fcb_coeffMatBdrDual_sim
+    optional :: fcb_coeffMatBdrPrimal1d_sim
+    optional :: fcb_coeffMatBdrPrimal2d_sim
+    optional :: fcb_coeffMatBdrPrimal3d_sim
+    optional :: fcb_coeffMatBdrDual1d_sim
+    optional :: fcb_coeffMatBdrDual2d_sim
+    optional :: fcb_coeffMatBdrDual3d_sim
 !</input>
 
 !<inputoutput>
@@ -900,7 +905,10 @@ contains
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
           smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), rcollection,&
-          fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim, BILF_MATC_LUMPED)
+          fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+          fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+          fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+          BILF_MATC_LUMPED)
 
     elseif (trim(smode) .eq. 'dual') then
 
@@ -1053,7 +1061,10 @@ contains
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
           smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), rcollection,&
-          fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim, BILF_MATC_LUMPED)
+          fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+          fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+          fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+          BILF_MATC_LUMPED)
 
     else
       call output_line('Invalid mode!',&
@@ -1152,7 +1163,9 @@ contains
   subroutine transp_calcJacobianThetaScheme(rproblemLevel,&
       rtimestep, rsolver, rsolution, rsolution0, rcollection,&
       fcb_calcMatrixPrimal_sim, fcb_calcMatrixDual_sim,&
-      fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim)
+      fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+      fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+      fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim)
 
 !<description>
     ! This callback subroutine computes the Jacobian matrix.
@@ -1172,8 +1185,12 @@ contains
 
     ! user-defined callback functions
     include 'intf_transpCoeffMatBdr.inc'
-    optional :: fcb_coeffMatBdrPrimal_sim
-    optional :: fcb_coeffMatBdrDual_sim
+    optional :: fcb_coeffMatBdrPrimal1d_sim
+    optional :: fcb_coeffMatBdrPrimal2d_sim
+    optional :: fcb_coeffMatBdrPrimal3d_sim
+    optional :: fcb_coeffMatBdrDual1d_sim
+    optional :: fcb_coeffMatBdrDual2d_sim
+    optional :: fcb_coeffMatBdrDual3d_sim
 !</input>
 
 !<inputoutput>
@@ -1492,7 +1509,10 @@ contains
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
           smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), rcollection,&
-          fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim, BILF_MATC_LUMPED)
+          fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+          fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+          fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+          BILF_MATC_LUMPED)
 
 
     elseif (trim(smode) .eq. 'dual') then
@@ -1576,7 +1596,10 @@ contains
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
           smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), rcollection,&
-          fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim, BILF_MATC_LUMPED)
+          fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+          fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+          fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+          BILF_MATC_LUMPED)
 
     else
       call output_line('Invalid mode!',&
@@ -2604,8 +2627,10 @@ contains
 !<subroutine>
 
   subroutine transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rrhs, istep, rcollection,&
-      rsource, fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
+      rsolver, rsolution, rsolution0, rrhs, istep, rcollection, rsource,&
+      fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+      fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+      fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)    
 
 !<description>
     ! This subroutine computes the right-hand side vector
@@ -2630,8 +2655,12 @@ contains
 
     ! OPTIONAL: user-defined callback functions
     include 'intf_transpCoeffVecBdr.inc'
-    optional :: fcb_coeffVecBdrPrimal_sim
-    optional :: fcb_coeffVecBdrDual_sim
+    optional :: fcb_coeffVecBdrPrimal1d_sim
+    optional :: fcb_coeffVecBdrPrimal2d_sim
+    optional :: fcb_coeffVecBdrPrimal3d_sim
+    optional :: fcb_coeffVecBdrDual1d_sim
+    optional :: fcb_coeffVecBdrDual2d_sim
+    optional :: fcb_coeffVecBdrDual3d_sim
 !</input>
 
 !<inputoutput>
@@ -2794,7 +2823,9 @@ contains
 
   subroutine transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
       rsolver, rsolution, rrhs, rcollection, rsource,&
-      fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
+      fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+      fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+      fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
 !<description>
     ! This subroutine computes the constant right-hand side
@@ -2816,8 +2847,12 @@ contains
 
     ! OPTIONAL: user-defined callback functions
     include 'intf_transpCoeffVecBdr.inc'
-    optional :: fcb_coeffVecBdrPrimal_sim
-    optional :: fcb_coeffVecBdrDual_sim
+    optional :: fcb_coeffVecBdrPrimal1d_sim
+    optional :: fcb_coeffVecBdrPrimal2d_sim
+    optional :: fcb_coeffVecBdrPrimal3d_sim
+    optional :: fcb_coeffVecBdrDual1d_sim
+    optional :: fcb_coeffVecBdrDual2d_sim
+    optional :: fcb_coeffVecBdrDual3d_sim
 !</input>
 
 !<inputoutput>
@@ -2937,7 +2972,9 @@ contains
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
             smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep, dscale,&
             rrhs%RvectorBlock(1), rcollection,&
-            fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
+            fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+            fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+            fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
         dscale = rtimestep%theta*rtimestep%dStep
 
@@ -2945,7 +2982,9 @@ contains
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
             smode, ivelocitytype, rtimestep%dTime, dscale,&
             rrhs%RvectorBlock(1), rcollection,&
-            fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
+            fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+            fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+            fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
       else ! theta = 1
 
@@ -2965,7 +3004,9 @@ contains
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
             smode, ivelocitytype, rtimestep%dTime, dscale,&
             rrhs%RvectorBlock(1), rcollection,&
-            fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
+            fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+            fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+            fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
       end if ! theta
 
@@ -2984,7 +3025,9 @@ contains
       call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
           smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rrhs%RvectorBlock(1), rcollection,&
-          fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
+          fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+          fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+          fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
     end select
 
@@ -3388,12 +3431,12 @@ contains
         rsolution0, rtimestep%dTime)
 
   end subroutine transp_setBoundaryConditions
-
+ 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_calcBilfBoundaryConditions(rproblemLevel, rsolver, rsolution,&
+  subroutine transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver, rsolution,&
       dtime, dscale, fcoeff_buildMatrixScBdr2D_sim, rmatrix, rcollection, cconstrType)
 
 !<description>
@@ -3401,7 +3444,7 @@ contains
     ! imposition of boundary conditions. The following types of boundary
     ! conditions are supported for this application
     !
-    ! - Inhomogeneous Neumann boundary conditions
+    ! - (In-)homogeneous Neumann boundary conditions
     ! - Dirichlet boundary conditions
     ! - Robin boundary conditions
     ! - Flux boundary conditions
@@ -3486,95 +3529,87 @@ contains
     ! Attach collection structure to temporal collection structute
     rcollectionTmp%p_rnextCollection => rcollection
 
-    ! How many spatial dimensions are we?
-    select case(rproblemLevel%rtriangulation%ndim)
-    case (NDIM2D)
-      ! Set pointers
-      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
-          p_IbdrCondCpIdx)
-      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
-          p_IbdrCondType)
-
-      ! Loop over all boundary components
-      do ibct = 1, p_rboundaryCondition%iboundarycount
-
-        ! Loop over all boundary segments
-        do isegment = p_IbdrCondCpIdx(ibct),&
-                      p_IbdrCondCpIdx(ibct+1)-1
-
-          ! Check if this segment has weak boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
-                   BDRC_WEAK) .ne. BDRC_WEAK) cycle
-
-          ! Prepare quick access array of temporal collection structure
-          rcollectionTmp%DquickAccess(1) = dtime
-          rcollectionTmp%DquickAccess(2) = dscale
-          rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
-          rcollectionTmp%IquickAccess(2) = isegment
+    ! Set pointers
+    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
+        p_IbdrCondCpIdx)
+    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
+        p_IbdrCondType)
+    
+    ! Loop over all boundary components
+    do ibct = 1, p_rboundaryCondition%iboundarycount
+      
+      ! Loop over all boundary segments
+      do isegment = p_IbdrCondCpIdx(ibct),&
+                    p_IbdrCondCpIdx(ibct+1)-1
+        
+        ! Check if this segment has weak boundary conditions
+        if (iand(p_IbdrCondType(isegment),&
+                 BDRC_WEAK) .ne. BDRC_WEAK) cycle
+        
+        ! Prepare quick access array of temporal collection structure
+        rcollectionTmp%DquickAccess(1) = dtime
+        rcollectionTmp%DquickAccess(2) = dscale
+        rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
+        rcollectionTmp%IquickAccess(2) = isegment
+        
+        ! What type of boundary conditions are we?
+        select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
           
-          ! What type of boundary conditions are we?
-          select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
-
-          case (BDRC_ROBIN)
-            ! Do nothing since boundary conditions are build into the
-            ! linear form and the bilinear form has no boundary term
-
-          case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN,&
-                BDRC_FLUX, BDRC_DIRICHLET)
-
-            ! Initialize the bilinear form
-            rform%itermCount = 1
-            rform%Idescriptors(1,1) = DER_FUNC
-            rform%Idescriptors(2,1) = DER_FUNC
-            
-            ! We have no constant coefficients
-            rform%ballCoeffConstant = .false.
-            rform%BconstantCoeff    = .false.
-
-            ! Create boundary region
-            call bdrc_createRegion(p_rboundaryCondition,&
-                ibct, isegment-p_IbdrCondCpIdx(ibct)+1,&
-                rboundaryRegion)
-
-            ! Assemble the bilinear form
-            call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D,&
-                .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
-                rboundaryRegion, rcollectionTmp, cconstrType)
-
-          case default
-            call output_line('Unsupported type of boundary conditions!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBoundaryConditions')
-            call sys_halt()
-            
-          end select
-
-        end do ! isegment
-      end do ! ibct
-
-    case default
-      call output_line('Unsupported spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBoundaryConditions')
-      call sys_halt()
-    end select
-
+        case (BDRC_ROBIN)
+          ! Do nothing since boundary conditions are build into the
+          ! linear form and the bilinear form has no boundary term
+          
+        case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN,&
+              BDRC_FLUX, BDRC_DIRICHLET)
+          
+          ! Initialize the bilinear form
+          rform%itermCount = 1
+          rform%Idescriptors(1,1) = DER_FUNC
+          rform%Idescriptors(2,1) = DER_FUNC
+          
+          ! We have no constant coefficients
+          rform%ballCoeffConstant = .false.
+          rform%BconstantCoeff    = .false.
+          
+          ! Create boundary region
+          call bdrc_createRegion(p_rboundaryCondition,&
+              ibct, isegment-p_IbdrCondCpIdx(ibct)+1,&
+              rboundaryRegion)
+          
+          ! Assemble the bilinear form
+          call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D,&
+              .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
+              rboundaryRegion, rcollectionTmp, cconstrType)
+          
+        case default
+          call output_line('Unsupported type of boundary conditions!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBoundaryConditions2d')
+          call sys_halt()
+          
+        end select
+        
+      end do ! isegment
+    end do ! ibct
+    
     ! Release temporal collection structure
     call collct_done(rcollectionTmp)
 
-  end subroutine transp_calcBilfBoundaryConditions
+  end subroutine transp_calcBilfBoundaryConditions2d
 
   !*****************************************************************************
 
 !<subroutine>
 
   subroutine transp_calcBilfBdrCondQuick(rproblemLevel, rsolver,&
-      rsolution, smode, ivelocitytype, dtime, dscale, rmatrix,&
-      rcollection, fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim,&
-      cconstrType)
+      rsolution, smode, ivelocitytype, dtime, dscale, rmatrix, rcollection,&
+      fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+      fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+      fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim, cconstrType)
 
 !<description>
     ! This subroutine is a shortcut for building the bilinear form
     ! arising from the weak imposition of boundary conditions. It
-    ! calls the more general routine transp_calcBilfBoundaryConditions
+    ! calls the more general routine transp_calcBilfBoundaryConditionsXd
     ! using the corresponding callback routines.
 !</description>
 
@@ -3602,8 +3637,12 @@ contains
 
     ! user-defined callback functions
     include 'intf_transpCoeffMatBdr.inc'
-    optional :: fcb_coeffMatBdrPrimal_sim
-    optional :: fcb_coeffMatBdrDual_sim
+    optional :: fcb_coeffMatBdrPrimal1d_sim
+    optional :: fcb_coeffMatBdrPrimal2d_sim
+    optional :: fcb_coeffMatBdrPrimal3d_sim
+    optional :: fcb_coeffMatBdrDual1d_sim
+    optional :: fcb_coeffMatBdrDual2d_sim
+    optional :: fcb_coeffMatBdrDual3d_sim
 
     ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to
     ! specify the matrix construction method. If not specified,
@@ -3627,67 +3666,93 @@ contains
       select case(abs(ivelocitytype))
         
       case default
-        ! The user-defined callback function is used if present;
-        ! otherwise an error is throws
-        if (present(fcb_coeffMatBdrPrimal_sim)) then
-          call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
-              rsolution, dtime, dscale, fcb_coeffMatBdrPrimal_sim,&
-              rmatrix, rcollection, cconstrType)
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffMatBdrPrimal1d_sim)) then
+!!$            call transp_calcBilfBoundaryConditions1d(rproblemLevel, rsolver,&
+!!$                rsolution, dtime, dscale, fcb_coeffMatBdrPrimal1d_sim,&
+!!$                rmatrix, rcollection, cconstrType)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
+            call sys_halt()
+          end if
+        
+        case (NDIM2D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffMatBdrPrimal2d_sim)) then
+            call transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver,&
+                rsolution, dtime, dscale, fcb_coeffMatBdrPrimal2d_sim,&
+                rmatrix, rcollection, cconstrType)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
+            call sys_halt()
+          end if
 
-        else ! callback function not present
-
-          call output_line('Missing user-defined callback function!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
-          call sys_halt()
-
-        end if
+        case (NDIM3D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffMatBdrPrimal3d_sim)) then
+!!$            call transp_calcBilfBoundaryConditions3d(rproblemLevel, rsolver,&
+!!$                rsolution, dtime, dscale, fcb_coeffMatBdrPrimal3d_sim,&
+!!$                rmatrix, rcollection, cconstrType)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
+            call sys_halt()
+          end if
+        end select
 
       case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-!!$          call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$          call transp_calcBilfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffMatBdrConvP1d_sim,&
 !!$              rmatrix, rcollection, cconstrType)
         case (NDIM2D)
           ! linear velocity in 2D
-          call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+          call transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffMatBdrConvP2d_sim,&
               rmatrix, rcollection, cconstrType)
         case (NDIM3D)
           ! linear velocity in 3D
-!!$          call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$          call transp_calcBilfBoundaryConditions3d(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffMatBdrConvP3d_sim,&
 !!$              rmatrix, rcollection, cconstrType)
         end select
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
-        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+        call transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffMatBdrSTBurgersP2d_sim,&
             rmatrix, rcollection, cconstrType)
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
-        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+        call transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffMatBdrSTBuckLevP2d_sim,&
             rmatrix, rcollection, cconstrType)
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
-!!$        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBurgersP1d_sim,&
 !!$            rmatrix, rcollection, cconstrType)
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
-        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+        call transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffMatBdrBurgersP2d_sim,&
             rmatrix, rcollection, cconstrType)
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
-!!$        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBuckLevP1d_sim,&
 !!$            rmatrix, rcollection, cconstrType)
 
@@ -3698,37 +3763,64 @@ contains
 
       ! @FAQ2: What type of velocity are we?
       select case(abs(ivelocitytype))
-        case default
-        ! The user-defined callback function is used if present;
-        ! otherwise an error is throws
-        if (present(fcb_coeffMatBdrDual_sim)) then
-          call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
-              rsolution, dtime, dscale, fcb_coeffMatBdrDual_sim,&
-              rmatrix, rcollection, cconstrType)
+        
+      case default
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffMatBdrDual1d_sim)) then
+!!$            call transp_calcBilfBoundaryConditions1d(rproblemLevel, rsolver,&
+!!$                rsolution, dtime, dscale, fcb_coeffMatBdrDual1d_sim,&
+!!$                rmatrix, rcollection, cconstrType)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
+            call sys_halt()
+          end if
 
-        else ! callback function not present
+        case (NDIM2D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffMatBdrDual2d_sim)) then
+            call transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver,&
+                rsolution, dtime, dscale, fcb_coeffMatBdrDual2d_sim,&
+                rmatrix, rcollection, cconstrType)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
+            call sys_halt()
+          end if
 
-          call output_line('Missing user-defined callback function!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
-          call sys_halt()
-
-        end if
+        case (NDIM3D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffMatBdrDual3d_sim)) then
+!!$            call transp_calcBilfBoundaryConditions3d(rproblemLevel, rsolver,&
+!!$                rsolution, dtime, dscale, fcb_coeffMatBdrDual3d_sim,&
+!!$                rmatrix, rcollection, cconstrType)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
+            call sys_halt()
+          end if
+        end select
 
       case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-!!$          call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$          call transp_calcBilfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffMatBdrConvD1d_sim,&
 !!$              rmatrix, rcollection, cconstrType)
         case (NDIM2D)
           ! linear velocity in 2D
-          call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+          call transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffMatBdrConvD2d_sim,&
               rmatrix, rcollection, cconstrType)
         case (NDIM3D)
           ! linear velocity in 3D
-!!$          call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$          call transp_calcBilfBoundaryConditions3d(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffMatBdrConvD3d_sim,&
 !!$              rmatrix, rcollection, cconstrType)
         end select
@@ -3736,31 +3828,31 @@ contains
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
-!!$        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrSTBurgersD2d_sim,&
 !!$            rmatrix, rcollection, cconstrType)
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
-!!$        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrSTBuckLevD2d_sim,&
 !!$            rmatrix, rcollection, cconstrType)
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
-!!$        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBurgersD1d_sim,&
 !!$            rmatrix, rcollection, cconstrType)
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
-!!$        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBoundaryConditions2d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBurgersD2d_sim,&
 !!$            rmatrix, rcollection, cconstrType)
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
-!!$        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBuckLevD1d_sim,&
 !!$            rmatrix, rcollection, cconstrType)
 
@@ -3778,7 +3870,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcLinfBoundaryConditions(rproblemLevel, rsolver, rsolution,&
+  subroutine transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver, rsolution,&
       dtime, dscale, fcoeff_buildVectorScBdr2D_sim, rvector, rcollection)
 
 !<description>
@@ -3917,7 +4009,7 @@ contains
             
           case default
             call output_line('Unsupported type of boundary copnditions !',&
-                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBoundaryConditions')
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBoundaryConditions2d')
             call sys_halt()
 
           end select
@@ -3927,27 +4019,29 @@ contains
 
     case default
       call output_line('Unsupported spatial dimension !',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBoundaryConditions')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBoundaryConditions2d')
       call sys_halt()
     end select
 
     ! Release temporal collection structure
     call collct_done(rcollectionTmp)
 
-  end subroutine transp_calcLinfBoundaryConditions
+  end subroutine transp_calcLinfBoundaryConditions2d
 
   !*****************************************************************************
 
 !<subroutine>
 
   subroutine transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
-      rsolution, smode, ivelocitytype, dtime, dscale, rvector,&
-      rcollection, fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
+      rsolution, smode, ivelocitytype, dtime, dscale, rvector, rcollection,&
+      fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+      fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+      fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
 !<description>
     ! This subroutine is a shortcut for building the linear form
     ! arising from the weak imposition of boundary conditions. It
-    ! calls the more general routine transp_calcLinfBoundaryConditions
+    ! calls the more general routine transp_calcLinfBoundaryConditionsXd
     ! using the corresponding callback routines.
 !</description>
 
@@ -3975,8 +4069,12 @@ contains
 
     ! user-defined callback functions
     include 'intf_transpCoeffVecBdr.inc'
-    optional :: fcb_coeffVecBdrPrimal_sim
-    optional :: fcb_coeffVecBdrDual_sim
+    optional :: fcb_coeffVecBdrPrimal1d_sim
+    optional :: fcb_coeffVecBdrPrimal2d_sim
+    optional :: fcb_coeffVecBdrPrimal3d_sim
+    optional :: fcb_coeffVecBdrDual1d_sim
+    optional :: fcb_coeffVecBdrDual2d_sim
+    optional :: fcb_coeffVecBdrDual3d_sim
 !</intput>
 
 !<inputoutput>
@@ -3996,67 +4094,93 @@ contains
       select case(abs(ivelocitytype))
         
       case default
-        ! The user-defined callback function is used if present;
-        ! otherwise an error is throws
-        if (present(fcb_coeffVecBdrPrimal_sim)) then
-          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-              rsolution, dtime, dscale, fcb_coeffVecBdrPrimal_sim,&
-              rvector, rcollection)
-
-        else ! callback function not present
-
-          call output_line('Missing user-defined callback function!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
-          call sys_halt()
-
-        end if
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffVecBdrPrimal1d_sim)) then
+!!$            call transp_calcLinfBoundaryConditions1d(rproblemLevel, rsolver,&
+!!$                rsolution, dtime, dscale, fcb_coeffVecBdrPrimal1d_sim,&
+!!$                rvector, rcollection)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
+            call sys_halt()
+          end if
+          
+        case (NDIM2D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffVecBdrPrimal2d_sim)) then
+            call transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver,&
+                rsolution, dtime, dscale, fcb_coeffVecBdrPrimal2d_sim,&
+                rvector, rcollection)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
+            call sys_halt()
+          end if
+          
+        case (NDIM3D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffVecBdrPrimal3d_sim)) then
+!!$            call transp_calcLinfBoundaryConditions3d(rproblemLevel, rsolver,&
+!!$                rsolution, dtime, dscale, fcb_coeffVecBdrPrimal3d_sim,&
+!!$                rvector, rcollection)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
+            call sys_halt()
+          end if
+        end select
 
       case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-!!$          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$          call transp_calcLinfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffVecBdrConvP1d_sim,&
 !!$              rvector, rcollection)
         case (NDIM2D)
           ! linear velocity in 2D
-          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+          call transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffVecBdrConvP2d_sim,&
               rvector, rcollection)
         case (NDIM3D)
           ! linear velocity in 3D
-!!$          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$          call transp_calcLinfBoundaryConditions3d(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffVecBdrConvP3d_sim,&
 !!$              rvector, rcollection)
         end select
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
-        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+        call transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffVecBdrSTBurgersP2d_sim,&
             rvector, rcollection)
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
-        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+        call transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffVecBdrSTBuckLevP2d_sim,&
             rvector, rcollection)
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
-!!$        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBurgersP1d_sim,&
 !!$            rvector, rcollection)
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
-        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+        call transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffVecBdrBurgersP2d_sim,&
             rvector, rcollection)
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
-!!$        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBuckLevP1d_sim,&
 !!$            rvector, rcollection)
 
@@ -4067,37 +4191,64 @@ contains
 
       ! @FAQ2: What type of velocity are we?
       select case(abs(ivelocitytype))
-        case default
-        ! The user-defined callback function is used if present;
-        ! otherwise an error is throws
-        if (present(fcb_coeffVecBdrDual_sim)) then
-          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-              rsolution, dtime, dscale, fcb_coeffVecBdrDual_sim,&
-              rvector, rcollection)
+        
+      case default
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffVecBdrDual1d_sim)) then
+!!$            call transp_calcLinfBoundaryConditions1d(rproblemLevel, rsolver,&
+!!$                rsolution, dtime, dscale, fcb_coeffVecBdrDual1d_sim,&
+!!$                rvector, rcollection)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
+            call sys_halt()
+          end if
+          
+        case (NDIM2D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffVecBdrDual2d_sim)) then
+            call transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver,&
+                rsolution, dtime, dscale, fcb_coeffVecBdrDual2d_sim,&
+                rvector, rcollection)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
+            call sys_halt()
+          end if
 
-        else ! callback function not present
-
-          call output_line('Missing user-defined callback function!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
-          call sys_halt()
-
-        end if
+        case (NDIM3D)
+          ! The user-defined callback function is used if present;
+          ! otherwise an error is throws
+          if (present(fcb_coeffVecBdrDual3d_sim)) then
+!!$            call transp_calcLinfBoundaryConditions3d(rproblemLevel, rsolver,&
+!!$                rsolution, dtime, dscale, fcb_coeffVecBdrDual3d_sim,&
+!!$                rvector, rcollection)
+          else ! callback function not present
+            call output_line('Missing user-defined callback function!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
+            call sys_halt()
+          end if
+        end select
 
       case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-!!$          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$          call transp_calcLinfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrConvD1d_sim,&
 !!$            rvector, rcollection)
         case (NDIM2D)
           ! linear velocity in 2D
-          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+          call transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffVecBdrConvD2d_sim,&
               rvector, rcollection)
         case (NDIM3D)
           ! linear velocity in 3D
-!!$          call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$          call transp_calcLinfBoundaryConditions3d(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffVecBdrConvD3d_sim,&
 !!$              rvector, rcollection)
         end select
@@ -4105,31 +4256,31 @@ contains
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
-!!$        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrSTBurgersD2d_sim,&
 !!$            rvector, rcollection)
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
-!!$        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrSTBuckLevD2d_sim,&
 !!$            rvector, rcollection)
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
-!!$        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBurgersD1d_sim,&
 !!$            rvector, rcollection)
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
-!!$        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBoundaryConditions2d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBurgersD2d_sim,&
 !!$            rvector, rcollection)
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
-!!$        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBoundaryConditions1d(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBuckLevD1d_sim,&
 !!$            rvector, rcollection)
 
@@ -4307,7 +4458,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_setVelocityField')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_setVelocityField')
       call sys_halt()
     end select
 
