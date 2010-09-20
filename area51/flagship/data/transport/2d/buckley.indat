@@ -28,3 +28,19 @@ PARAMETERS
 1.0  T  'DIRICHLET_STRONG'  0.0
 3.0  F  'HOMNEUMANN_STRONG'
 4.0  T  'DIRICHLET_STRONG'  1.0
+
+# Specify the boundary conditions for the primal problem
+[bdrcond_weak_primal]
+NBCT
+1
+NEXPR
+1
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+0.25 T  'FLUX_WEAK'  1.0
+1.0  T  'FLUX_WEAK'  0.0
+3.0  F  'FLUX_WEAK'  0.0
+4.0  T  'FLUX_WEAK'  1.0

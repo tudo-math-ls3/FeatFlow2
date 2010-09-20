@@ -2,11 +2,11 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                          Buckley-Leverett equation in space-time                      #
+#                   Buckley-Leverett equation in space and time                #
 ################################################################################
 
 simportdatafiles(2) =
-  'data/transport/default.dat'
+  'data/transport/2d/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
@@ -21,7 +21,7 @@ application = transport
 indatfile = data/transport/2d/buckley.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_strong_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -188,7 +188,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 0
@@ -641,7 +641,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 5
+isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -650,7 +650,7 @@ nkrylov = 25
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-14
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 0.0

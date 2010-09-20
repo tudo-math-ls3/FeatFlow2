@@ -8,7 +8,7 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = if(x >= 0.2 & x <= 0.7, 1.0, 0.0) ; x,y,z,t
+deffunc: @initsol = if(x > 0.2 & x < 0.7, 1.0, 0.0) ; x,y,z,t
 
 # Specify the exact solution
 deffunc: @exactsol = if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0) ; x,y,z,t

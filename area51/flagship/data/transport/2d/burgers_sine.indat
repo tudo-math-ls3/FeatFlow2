@@ -31,3 +31,20 @@ PARAMETERS
 2.0  F  'DIRICHLET_STRONG'  'SIN(_PI*x)'
 3.0  F  'PERIODIC_STRONG' 1 1
 4.0  T  'HOMNEUMANN_STRONG'
+
+
+# Specify the boundary conditions for the primal problem
+[bdrcond_strong_primal]
+NBCT
+1
+NEXPR
+1
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+1.0  T  'PERIODIC_WEAK' 1 3
+2.0  F  'DIRICHLET_WEAK'  'SIN(_PI*x)'
+3.0  F  'PERIODIC_WEAK' 1 1
+4.0  T  'HOMNEUMANN_WEAK'

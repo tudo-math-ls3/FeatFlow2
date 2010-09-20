@@ -3,11 +3,11 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                           Inviscid Burger's equation                         #
+#                  Inviscid Burger's equation in space and time                #
 ################################################################################
 
 simportdatafiles(2) =
-  'data/transport/default.dat'
+  'data/transport/2d/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
@@ -124,10 +124,10 @@ stargetfuncname = @targetFuncInt
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/rect_01x0.5_quads.prm
+prmfile = grids/2d/square_01x01_quads.prm
 
 # file which contains the triangulation
-trifile = grids/2d/rect_01x0.5_quads.tri
+trifile = grids/2d/square_01x01_quads.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -431,7 +431,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 4
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -444,7 +444,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 1000
+nmaxIterations = 200
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -483,7 +483,7 @@ nmaxBacktrackingSteps = 5
 iupdateFrequency = 0
 
 # nonlinear relaxation parameter
-domega = 1.0
+domega = 0.8
 
 # absolute tolerance for residual
 depsAbs = 1e-10
@@ -642,7 +642,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 10

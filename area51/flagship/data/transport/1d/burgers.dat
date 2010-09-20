@@ -8,7 +8,7 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/transport/default.dat'
+  'data/transport/1d/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
@@ -182,10 +182,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 0
+istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -246,7 +246,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 0
@@ -305,10 +305,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 3
+nlmin = 2
 
 # maximum multigrid level number
-nlmax = 3
+nlmax = 2
 
 # type of multigrid cycle
 # 0 = F-cylce

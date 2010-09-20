@@ -7,7 +7,7 @@
 ################################################################################
 
 simportdatafiles(3) =
-  'data/zpinch/default.dat'
+  'data/zpinch/2d/default.dat'
   'data/solverdefault.dat'
   'data/zpinch/solverdefault.dat'
 

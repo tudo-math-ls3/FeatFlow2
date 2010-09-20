@@ -3,11 +3,11 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                    Inviscid Burger's equation in space-time                  #
+#                  Inviscid Burger's equation in space and time                #
 ################################################################################
 
 simportdatafiles(2) =
-  'data/transport/default.dat'
+  'data/transport/2d/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
@@ -22,7 +22,7 @@ application = transport
 indatfile = data/transport/2d/burgers_sine.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_strong_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -31,7 +31,7 @@ sdualbdrcondname =
 ndimension = 2
 
 # solution algorithm
-algorithm = transient_primal
+algorithm = stationary_primal
 
 #-------------------------------------------------------------------------------
 
@@ -149,7 +149,7 @@ imatrixformat = 9
 # type of Jacobian matrix
 # 0 = standard sparsity pattern
 # 1 = extended sparsity pattern
-ijacobianformat = 1
+ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -192,7 +192,7 @@ errorestimator = ErrorEstimator
 istabilisation = 1
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
