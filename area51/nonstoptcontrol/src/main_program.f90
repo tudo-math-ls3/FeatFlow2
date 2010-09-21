@@ -392,21 +392,49 @@ contains
       case (0,2)
         ! Jacobi
         rspaceSolverParams%cspacePreconditioner = STLS_PC_JACOBI
+        rspaceSolverParams%cproblemtype = STLS_PR_STANDARD
       case (1)
         ! VANKA
         rspaceSolverParams%cspacePreconditioner = STLS_PC_VANKA
+        rspaceSolverParams%cproblemtype = STLS_PC_2DSADDLEPT2EQ
       end select
     case (1)
       ! ILU-0. Does only work for the heat equation.
       select case (rparams%rphysics%cequation)
       case (0,2)
-        ! Jacobi
+        ! ILU0
         rspaceSolverParams%cspacePreconditioner = STLS_PC_ILU0
       case (1)
         call output_line ("ILU not supported for Stokes equations",&
             OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
         call sys_halt()
       end select
+    case (2)
+      ! SSOR. Does only work for the heat equation.
+      select case (rparams%rphysics%cequation)
+      case (0,2)
+        ! ILU0
+        rspaceSolverParams%cspacePreconditioner = STLS_PC_SSOR
+      case (1)
+        call output_line ("SSOR not supported for Stokes equations",&
+            OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
+        call sys_halt()
+      end select
+    case (3)
+      select case (rparams%rphysics%cequation)
+      case (0,2)
+        ! Jacobi
+        rspaceSolverParams%cspacePreconditioner = STLS_PC_BICGSTABJACOBI
+        rspaceSolverParams%cproblemtype = STLS_PR_STANDARD
+      case (1)
+        ! VANKA
+        rspaceSolverParams%cspacePreconditioner = STLS_PC_BICGSTABVANKA
+        rspaceSolverParams%cproblemtype = STLS_PC_2DSADDLEPT2EQ
+      end select
+    case default
+      call output_line ("Unknown preconditioner.",&
+          OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
+      call sys_halt()
     end select
     
     select case (rsolver%csolverType)
