@@ -1,0 +1,57 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                                                                              #
+#                Default parameters for transport application in 1D            #
+#                                                                              #
+################################################################################
+
+
+################################################################################
+[Transport]
+################################################################################
+
+# Position of the discretisation in the array of discretisations
+Discretisation = 1
+
+# Position of the velocity field data in the block vector structure
+VelocityField = 1
+
+# Position of the stabilization for the convective term
+ConvectionAFC = 1
+
+# Position of the stabilization for the diffusive term
+DiffusionAFC = 2
+
+# Position of the template matrix in the scalar matrix structure
+TemplateMatrix = 1
+
+# Position of the system matrix in the scalar matrix structure
+SystemMatrix = 2
+
+# Position of the Jacobian matrix in the scalar matrix structure
+JacobianMatrix = 3
+
+# Position of the transport matrix in the scalar matrix structure
+TransportMatrix = 4
+
+# Position of the consistent mass matrix in the scalar matrix structure
+ConsistentMassMatrix = 5
+
+# Position of the lumped mass matrix in the scalar matrix structure
+LumpedMassMatrix = 6
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_S = 7
+
+# Position of the constant coefficient matrix CX in the scalar matrix structure
+CoeffMatrix_CX = 8
+
+# Position of the constant coefficient matrix CY in the scalar matrix structure
+CoeffMatrix_CY = 0
+
+# Position of the constant coefficient matrix CZ in the scalar matrix structure
+CoeffMatrix_CZ = 0
+
+# Perform integration by parts in C matrices
+CoeffMatrix_C_integrateByParts = 1

@@ -1,0 +1,144 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                                                                              #
+#             Default parameters for Z-pinch application                       #
+#                                                                              #
+################################################################################
+
+
+################################################################################
+[Euler]
+################################################################################
+
+# Position of the discretisation in the array of discretisations
+Discretisation = 1
+
+# Position of the stabilization for the inviscid term
+InviscidAFC = 1
+
+# Position of the system matrix for the compressible Euler model
+SystemMatrix = 1
+
+# Position of the Jacobian matrix for the compressible Euler model
+JacobianMatrix = 2
+
+# Position of the template matrix in the scalar matrix structure
+TemplateMatrix = 3
+
+# Position of the consistent mass matrix in the scalar matrix structure
+ConsistentMassMatrix = 7
+
+# Position of the lumped mass matrix in the scalar matrix structure
+LumpedMassMatrix = 8
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CX = 11
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CY = 12
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CZ = 13
+
+# Perform integration by parts in C matrices
+CoeffMatrix_C_integrateByParts = 1
+
+################################################################################
+[Transport]
+################################################################################
+
+# Position of the discretisation in the array of discretisations
+Discretisation = 2
+
+# Position of the velocity field data in the block vector structure
+VelocityField = 1
+
+# Position of the stabilization for the convective term
+ConvectionAFC = 2
+
+# Position of the stabilization for the diffusive term
+DiffusionAFC = 0
+
+# Position of the template matrix in the scalar matrix structure
+TemplateMatrix = 3
+
+# Position of the system matrix for the scalar transport model
+SystemMatrix = 4
+
+# Position of the Jacobian matrix in the scalar matrix structure
+JacobianMatrix = 5
+
+# Posiiton of the trnasport operator
+TransportMatrix = 6
+
+# Position of the consistent mass matrix in the scalar matrix structure
+ConsistentMassMatrix = 9
+
+# Position of the lumped mass matrix in the scalar matrix structure
+LumpedMassMatrix = 10
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CX = 11
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CY = 12
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CZ = 13
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_S = 0
+
+# Perform integration by parts in C matrices
+CoeffMatrix_C_integrateByParts = 1
+
+################################################################################
+[Timestepping]
+################################################################################
+
+# proportional exponent for PID controller
+dproportionalexponent = 0.075
+
+# integrap exponent for PID controller
+dintegralexponent = 0.175
+
+# derivative exponent for PID controller
+dderivativeexponent = 0.01
+
+################################################################################
+[Zpinch]
+################################################################################
+
+# Position of the discretisation in the array of discretisations
+Discretisation = 1
+
+# Position of the stabilization for the inviscid term
+InviscidAFC = 1
+
+# Position of the template matrix in the scalar matrix structure
+TemplateMatrix = 3
+
+# Position of the system matrix in the scalar matrix structure
+SystemMatrix = 1
+
+# Position of the Jacobian matrix in the scalar matrix structure
+JacobianMatrix = 2
+
+# Position of the consistent mass matrix in the scalar matrix structure
+ConsistentMassMatrix = 4
+
+# Position of the lumped mass matrix in the scalar matrix structure
+LumpedMassMatrix = 5
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CX = 6
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CY = 7
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CZ = 8
+
+# Perform integration by parts in C matrices
+CoeffMatrix_C_integrateByParts = 1

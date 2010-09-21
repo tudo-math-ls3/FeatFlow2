@@ -1,0 +1,29 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                         Buckley-Leverette equation in 1D                     #
+#                                                                              #
+################################################################################
+
+# Specify the initial solution
+deffunc: @initsol = if(x > 0.0, 0.0, 1.0) ; x,y,z,t
+
+# Specify the boundary conditions for the primal problem
+[bdrcond_strong_primal]
+NBCT
+2
+NEXPR
+1
+IBCT
+1
+NCOMP
+1
+IBCT
+2
+NCOMP
+1
+PARAMETERS
+0.0  T  'DIRICHLET_STRONG'  1.0
+0.0  T  'HOMNEUMANN_STRONG'  
