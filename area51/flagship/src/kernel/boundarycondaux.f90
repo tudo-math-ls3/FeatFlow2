@@ -390,28 +390,33 @@ contains
 
       ! How many mathematical expressions are required for
       ! this type of boundary conditions?
-      if (nexpr .eq. 0) then
-        ! Set mathematical expressions to zero
-        cMathExpression = '0'
-      elseif (nexpr .lt. 0) then
+      
+      if (nexpr .lt. 0) then
         ! Reread parameters from file and obtain 
         ! number of periodic boundary segment
         backspace iunit
         read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&
             p_BisSegClosed(icomp), keyword,&
             p_IbdrCompPeriodic(icomp), p_IbdrCondPeriodic(icomp)
-      else
+      elseif (nexpr .gt. 0) then
         ! Reread parameters from file to obtain mathematical expressions
         backspace iunit
         read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&
             p_BisSegClosed(icomp), keyword, cMathExpression
+        
+        ! Loop over all expressions and apply them to function parser
+        do iexpr = 1, nexpr
+          call fparser_parseFunction(rboundaryCondition%rfparser,&
+              rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
+              trim(adjustl(cMathExpression(iexpr))), BDRC_SYMBOLICVARS)
+        end do
       end if
-      
-      ! Loop over all expressions and apply them to function parser
-      do iexpr = 1, nexpr
+
+      ! Initialise empty expressions by zero
+      do iexpr = max(1,nexpr+1), rboundaryCondition%nmaxExpressions
         call fparser_parseFunction(rboundaryCondition%rfparser,&
             rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
-            trim(adjustl(cMathExpression(iexpr))), BDRC_SYMBOLICVARS)
+            '0', BDRC_SYMBOLICVARS)
       end do
 
     end do ! icomp
