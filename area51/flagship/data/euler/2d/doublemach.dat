@@ -27,10 +27,10 @@ application = euler
 indatfile = data/euler/2d/doublemach.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_primal
+sprimalbdrcondname = bdrcond_strong_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = bdrcond_dual
+sdualbdrcondname = 
 
 # number of spatial dimensions
 ndimension = 2
@@ -218,7 +218,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 1
 
 # perform prelimiting
 iprelimiting = 0

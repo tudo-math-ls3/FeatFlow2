@@ -25,10 +25,10 @@ application = euler
 indatfile = data/euler/2d/explosion.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_primal
+sprimalbdrcondname = bdrcond_strong_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = bdrcond_dual
+sdualbdrcondname = 
 
 # number of spatial dimensions
 ndimension = 2

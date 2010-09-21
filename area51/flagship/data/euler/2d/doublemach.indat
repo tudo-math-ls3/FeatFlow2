@@ -52,6 +52,23 @@ IBCT
 NCOMP
 5
 PARAMETERS
+0.0417  T  'SUPERINLET_STRONG'  '8.0'  '8.25*COS(_pi/6.0)'  '-8.25*SIN(_pi/6.0)'  '116.5'
+1.0     T  'EULERWALL_STRONG'
+2.0     T  'SUPEROUTLET_STRONG' '1.4'  '0.0'  '0.0'  '1.0'
+3.0     T  'SUPEROUTLET_STRONG' 'if(x >= _x0+(1+20*t)/SQRT(3.0), 1.4, 8.0)' 'if(x >= _x0+(1+20*t)/SQRT(3.0), 0.0, 8.25*COS(_pi/6.0))'  'if(x >= _x0+(1+20*t)/SQRT(3.0), 0.0, -8.25*SIN(_pi/6.0))'  'if(x >= _x0+(1+20*t)/SQRT(3.0), 1.0, 116.5)'
+4.0     F  'SUPEROUTLET_STRONG' 8.0  '8.25*COS(_pi/6.0)'  '-8.25*SIN(_pi/6.0)'  '116.5'
+
+# Specify the boundary conditions
+[bdrcond_weak_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+5
+PARAMETERS
 0.0417  T  'SUPERINLET_WEAK'  '8.0'  '8.25*COS(_pi/6.0)'  '-8.25*SIN(_pi/6.0)'  '116.5'
 1.0     T  'EULERWALL_WEAK'
 2.0     T  'SUPEROUTLET_WEAK' '1.4'  '0.0'  '0.0'  '1.0'
