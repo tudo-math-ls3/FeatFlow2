@@ -973,7 +973,7 @@ contains
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
     integer :: inviscidAFC, imasstype, idissipationtype
-    integer :: iblock
+    integer :: iblock, coeffMatrix_C_integrateByParts
 
 
     ! Start time measurement for residual/rhs evaluation
@@ -988,6 +988,8 @@ contains
         'coeffmatrix_cy', coeffMatrix_CY)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
         'coeffmatrix_cz', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'coeffmatrix_c_integrateByParts', coeffMatrix_C_integrateByParts)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
         'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
@@ -1022,22 +1024,43 @@ contains
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildDivVector(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                euler_calcFluxGal1d_sim, dscale, .true., rrhs)
+            if (coeffMatrix_C_integrateByParts .eq. 0) then
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFlux1Gal1d_sim, dscale, .true., rrhs)
+            else
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFlux2Gal1d_sim, dscale, .true., rrhs)
+            end if
 
           case (NDIM2D)
-            call gfsys_buildDivVector(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                euler_calcFluxGal2d_sim, dscale, .true., rrhs)
+            if (coeffMatrix_C_integrateByParts .eq. 0) then
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFlux1Gal2d_sim, dscale, .true., rrhs)
+            else
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFlux2Gal2d_sim, dscale, .true., rrhs)
+            end if
 
           case (NDIM3D)
-            call gfsys_buildDivVector(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                euler_calcFluxGal3d_sim, dscale, .true., rrhs)
+            if (coeffMatrix_C_integrateByParts .eq. 0) then
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFlux1Gal3d_sim, dscale, .true., rrhs)
+            else
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFlux2Gal3d_sim, dscale, .true., rrhs)
+            end if
           end select
 
         case (AFCSTAB_UPWIND,&
@@ -1061,22 +1084,43 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxGal1d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1Gal1d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2Gal1d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxGal2d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1Gal2d_sim, dscale, .true., rrhs)
+              else
+                 call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2Gal2d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxGal3d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1Gal3d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2Gal3d_sim, dscale, .true., rrhs)
+              end if
             end select
 
           case (DISSIPATION_SCALAR)
@@ -1085,22 +1129,43 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDiss1d_sim, dscale, .true. , rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1ScDiss1d_sim, dscale, .true. , rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2ScDiss1d_sim, dscale, .true. , rrhs)
+              end if
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDiss2d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1ScDiss2d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2ScDiss2d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDiss3d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1ScDiss3d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2ScDiss3d_sim, dscale, .true., rrhs)
+              end if
             end select
 
           case (DISSIPATION_SCALAR_DSPLIT)
@@ -1110,22 +1175,43 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDiss1d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1ScDiss1d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2ScDiss1d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDissDiSp2d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1ScDissDiSp2d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2ScDissDiSp2d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDissDiSp3d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1ScDissDiSp3d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2ScDissDiSp3d_sim, dscale, .true., rrhs)
+              end if
             end select
 
           case (DISSIPATION_TENSOR)
@@ -1134,22 +1220,43 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RoeDiss1d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RoeDiss1d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDiss2d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RoeDiss2d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RoeDiss2d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDiss3d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RoeDiss3d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RoeDiss3d_sim, dscale, .true., rrhs)
+              end if
             end select
 
           case (DISSIPATION_TENSOR_DSPLIT)
@@ -1159,22 +1266,43 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RoeDiss1d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RoeDiss1d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RoeDissDiSp2d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RoeDissDiSp2d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDissDiSp3d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RoeDissDiSp3d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RoeDissDiSp3d_sim, dscale, .true., rrhs)
+              end if
             end select
 
           case (DISSIPATION_RUSANOV)
@@ -1183,22 +1311,43 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RusDiss1d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RusDiss1d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDiss2d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RusDiss2d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RusDiss2d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDiss3d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RusDiss3d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RusDiss3d_sim, dscale, .true., rrhs)
+              end if
             end select
 
           case (DISSIPATION_RUSANOV_DSPLIT)
@@ -1208,22 +1357,43 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RusDiss1d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RusDiss1d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDissDiSp2d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RusDissDiSp2d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RusDissDiSp2d_sim, dscale, .true., rrhs)
+              end if
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDissDiSp3d_sim, dscale, .true., rrhs)
+              if (coeffMatrix_C_integrateByParts .eq. 0) then
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux1RusDissDiSp3d_sim, dscale, .true., rrhs)
+              else
+                call gfsys_buildDivVector(&
+                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                    euler_calcFlux2RusDissDiSp3d_sim, dscale, .true., rrhs)
+              end if
             end select
 
           case DEFAULT
@@ -1422,7 +1592,7 @@ contains
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
     integer :: inviscidAFC, imasstype, idissipationtype
-    integer :: iblock
+    integer :: iblock, coeffMatrix_C_integrateByParts
 
     ! Start time measurement for residual/rhs evaluation
     p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
@@ -1440,6 +1610,8 @@ contains
         'coeffmatrix_cy', coeffMatrix_CY)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
         'coeffmatrix_cz', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'coeffmatrix_c_integratebyparts', coeffMatrix_C_integrateByParts)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
         'inviscidAFC', inviscidAFC)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
@@ -1502,23 +1674,44 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal1d_sim, dscale, .false., rres)
+        if (coeffMatrix_C_integrateByParts .eq. 0) then
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux1Gal1d_sim, dscale, .false., rres)
+        else
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux2Gal1d_sim, dscale, .false., rres)
+        end if
 
       case (NDIM2D)
-        call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal2d_sim, dscale, .false., rres)
+        if (coeffMatrix_C_integrateByParts .eq. 0) then
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux1Gal2d_sim, dscale, .false., rres)
+        else
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux2Gal2d_sim, dscale, .false., rres)
+        end if
 
       case (NDIM3D)
-        call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal3d_sim, dscale, .false., rres)
-      end select
+        if (coeffMatrix_C_integrateByParts .eq. 0) then
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux1Gal3d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux2Gal3d_sim, dscale, .false., rres)
+          end if
+        end select
 
     case (AFCSTAB_UPWIND,&
           AFCSTAB_FEMFCT_CLASSICAL,&
@@ -1543,22 +1736,43 @@ contains
         ! Assemble divergence operator without dissipation
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal1d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1Gal1d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2Gal1d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal2d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1Gal2d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2Gal2d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal3d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1Gal3d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2Gal3d_sim, dscale, .false., rres)
+          end if
         end select
 
       case (DISSIPATION_SCALAR)
@@ -1567,22 +1781,43 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss1d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1ScDiss1d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2ScDiss1d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss2d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1ScDiss2d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2ScDiss2d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss3d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1ScDiss3d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2ScDiss3d_sim, dscale, .false., rres)
+          end if
         end select
 
       case (DISSIPATION_SCALAR_DSPLIT)
@@ -1592,22 +1827,43 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss1d_sim, dscale, .false., rres)
-
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1ScDiss1d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2ScDiss1d_sim, dscale, .false., rres)
+          end if
+            
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDissDiSp2d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1ScDissDiSp2d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2ScDissDiSp2d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDissDiSp3d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1ScDissDiSp3d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2ScDissDiSp3d_sim, dscale, .false., rres)
+          end if
         end select
 
       case (DISSIPATION_TENSOR)
@@ -1616,22 +1872,43 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss1d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RoeDiss1d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RoeDiss1d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss2d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RoeDiss2d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RoeDiss2d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss3d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RoeDiss3d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RoeDiss3d_sim, dscale, .false., rres)
+          end if
         end select
 
       case (DISSIPATION_TENSOR_DSPLIT)
@@ -1641,22 +1918,43 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss1d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RoeDiss1d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RoeDiss1d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDissDiSp2d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RoeDissDiSp2d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RoeDissDiSp2d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDissDiSp3d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RoeDissDiSp3d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RoeDissDiSp3d_sim, dscale, .false., rres)
+          end if
         end select
 
       case (DISSIPATION_RUSANOV)
@@ -1665,22 +1963,43 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss1d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RusDiss1d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RusDiss1d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss2d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RusDiss2d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RusDiss2d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss3d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RusDiss3d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RusDiss3d_sim, dscale, .false., rres)
+          end if
         end select
 
       case (DISSIPATION_RUSANOV_DSPLIT)
@@ -1690,22 +2009,43 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss1d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RusDiss1d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RusDiss1d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDissDiSp2d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RusDissDiSp2d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RusDissDiSp2d_sim, dscale, .false., rres)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDissDiSp3d_sim, dscale, .false., rres)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RusDissDiSp3d_sim, dscale, .false., rres)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RusDissDiSp3d_sim, dscale, .false., rres)
+          end if
         end select
 
       case DEFAULT
@@ -1890,7 +2230,7 @@ contains
     integer :: lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: imasstype, inviscidAFC, idissipationtype
-    integer :: iblock
+    integer :: iblock, coeffMatrix_C_integrateByParts
 
 
     print *, "WARNING: This subroutine has not been tested!"
@@ -1902,14 +2242,16 @@ contains
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'coeffMatrix_CZ', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'coeffMatrix_c-integratebyparts', coeffMatrix_C_integrateByParts)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'inviscidAFC', inviscidAFC)
 
     !---------------------------------------------------------------------------
     ! Initialize the right-hand side vector
@@ -1990,22 +2332,43 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal1d_sim, dscale, .false., rrhs)
+        if (coeffMatrix_C_integrateByParts .eq. 0) then
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux1Gal1d_sim, dscale, .false., rrhs)
+        else
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux2Gal1d_sim, dscale, .false., rrhs)
+        end if
 
       case (NDIM2D)
-        call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal2d_sim, dscale, .false., rrhs)
+        if (coeffMatrix_C_integrateByParts .eq. 0) then
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux1Gal2d_sim, dscale, .false., rrhs)
+        else
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux2Gal2d_sim, dscale, .false., rrhs)
+        end if
 
       case (NDIM3D)
-        call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal3d_sim, dscale, .false., rrhs)
+        if (coeffMatrix_C_integrateByParts .eq. 0) then
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux1Gal3d_sim, dscale, .false., rrhs)
+        else
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFlux2Gal3d_sim, dscale, .false., rrhs)
+        end if
       end select
 
     case (AFCSTAB_UPWIND,&
@@ -2029,22 +2392,43 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal1d_sim, dscale, .false., rrhs)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1Gal1d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2Gal1d_sim, dscale, .false., rrhs)
+          end if
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal2d_sim, dscale, .false., rrhs)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1Gal2d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2Gal2d_sim, dscale, .false., rrhs)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal3d_sim, dscale, .false., rrhs)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1Gal3d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2Gal3d_sim, dscale, .false., rrhs)
+          end if
         end select
 
       case (DISSIPATION_SCALAR)
@@ -2053,23 +2437,43 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss1d_sim, dscale, .false., rrhs)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1ScDiss1d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2ScDiss1d_sim, dscale, .false., rrhs)
+          end if
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss2d_sim, dscale, .false., rrhs)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1ScDiss2d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2ScDiss2d_sim, dscale, .false., rrhs)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss3d_sim, dscale, .false., rrhs)
-
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1ScDiss3d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2ScDiss3d_sim, dscale, .false., rrhs)
+          end if
         end select
 
       case (DISSIPATION_TENSOR)
@@ -2078,23 +2482,43 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss1d_sim, dscale, .false., rrhs)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RoeDiss1d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RoeDiss1d_sim, dscale, .false., rrhs)
+          end if
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss2d_sim, dscale, .false., rrhs)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RoeDiss2d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RoeDiss2d_sim, dscale, .false., rrhs)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss3d_sim, dscale, .false., rrhs)
-
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RoeDiss3d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RoeDiss3d_sim, dscale, .false., rrhs)
+          end if
         end select
 
       case (DISSIPATION_RUSANOV)
@@ -2103,23 +2527,43 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss1d_sim, dscale, .false., rrhs)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RusDiss1d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RusDiss1d_sim, dscale, .false., rrhs)
+          end if
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss2d_sim, dscale, .false., rrhs)
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RusDiss2d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RusDiss2d_sim, dscale, .false., rrhs)
+          end if
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss3d_sim, dscale, .false., rrhs)
-
+          if (coeffMatrix_C_integrateByParts .eq. 0) then
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux1RusDiss3d_sim, dscale, .false., rrhs)
+          else
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                euler_calcFlux2RusDiss3d_sim, dscale, .false., rrhs)
+          end if
         end select
 
       case DEFAULT

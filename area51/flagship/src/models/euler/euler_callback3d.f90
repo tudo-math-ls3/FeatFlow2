@@ -9,36 +9,36 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) euler_calcFluxGal3d_sim
+!# 1.) euler_calcFlux1Gal3d_sim / euler_calcFlux2Gal3d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#
 !# 2.) euler_calcFluxGalNoBdr3d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#        without assembling the symmetric boundary contribution
 !#
-!# 3.) euler_calcFluxScDiss3d_sim
+!# 3.) euler_calcFlux1ScDiss3d_sim / euler_calcFlux2ScDiss3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities
 !#
-!# 4.) euler_calcFluxScDissDiSp3d_sim
+!# 4.) euler_calcFlux1ScDissDiSp3d_sim / euler_calcFlux2ScDissDiSp3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities based on
 !#        dimensional splitting approach
 !#
-!# 5.) euler_calcFluRoeDiss3d_sim
+!# 5.) euler_calcFlux1RoeDiss3d_sim / euler_calcFlux2RoeDiss3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities
 !#
-!# 6.) euler_calcFluxRoeDissDiSp3d_sim
+!# 6.) euler_calcFlux1RoeDissDiSp3d_sim / euler_calcFlux2RoeDissDiSp3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities based on
 !#        dimensional splitting approach
 !#
-!# 7.) euler_calcFluxRusDiss3d_sim
+!# 7.) euler_calcFlux1RusDiss3d_sim / euler_calcFlux2RusDiss3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion
 !#
-!# 8.) euler_calcFluxRusDissDiSp3d_sim
+!# 8.) euler_calcFlux1RusDissDiSp3d_sim / euler_calcFlux2RusDissDiSp3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion
 !#
@@ -188,14 +188,21 @@ module euler_callback3d
   implicit none
 
   private
-  public :: euler_calcFluxGal3d_sim
+  public :: euler_calcFlux1Gal3d_sim
+  public :: euler_calcFlux2Gal3d_sim
   public :: euler_calcFluxGalNoBdr3d_sim
-  public :: euler_calcFluxScDiss3d_sim
-  public :: euler_calcFluxScDissDiSp3d_sim
-  public :: euler_calcFluxRoeDiss3d_sim
-  public :: euler_calcFluxRoeDissDiSp3d_sim
-  public :: euler_calcFluxRusDiss3d_sim
-  public :: euler_calcFluxRusDissDiSp3d_sim
+  public :: euler_calcFlux1ScDiss3d_sim
+  public :: euler_calcFlux2ScDiss3d_sim
+  public :: euler_calcFlux1ScDissDiSp3d_sim
+  public :: euler_calcFlux2ScDissDiSp3d_sim
+  public :: euler_calcFlux1RoeDiss3d_sim
+  public :: euler_calcFlux2RoeDiss3d_sim
+  public :: euler_calcFlux1RoeDissDiSp3d_sim
+  public :: euler_calcFlux2RoeDissDiSp3d_sim
+  public :: euler_calcFlux1RusDiss3d_sim
+  public :: euler_calcFlux2RusDiss3d_sim
+  public :: euler_calcFlux1RusDissDiSp3d_sim
+  public :: euler_calcFlux2RusDissDiSp3d_sim
   public :: euler_calcMatDiagMatD3d_sim
   public :: euler_calcMatDiag3d_sim
   public :: euler_calcMatGalMatD3d_sim
@@ -236,12 +243,13 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxGal3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux1Gal3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
     ! Galerkin discretisation in 3D.
+    ! This subroutine assumes that integration by parts is not performed.
 !</description>
 
 !<input>
@@ -277,7 +285,55 @@ contains
 
 !</subroutine>
 
-  end subroutine euler_calcFluxGal3d_sim
+  end subroutine euler_calcFlux1Gal3d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux2Gal3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the standard
+    ! Galerkin discretisation in 3D.
+    ! This subroutine assumes that integration by parts is performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+  end subroutine euler_calcFlux2Gal3d_sim
 
   !*****************************************************************************
 
@@ -333,12 +389,13 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxScDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux1ScDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 3D using scalar dissipation.
+    ! This subroutine assumes that integration by parts is not performed.
 !</description>
 
 !<input>
@@ -374,13 +431,61 @@ contains
 
 !</subroutine>
 
-  end subroutine euler_calcFluxScDiss3d_sim
+  end subroutine euler_calcFlux1ScDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxScDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux2ScDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+    
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 3D using scalar dissipation.
+    ! This subroutine assumes that integration by parts is performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+  end subroutine euler_calcFlux2ScDiss3d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux1ScDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 
@@ -388,6 +493,7 @@ contains
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 3D using scalar dissipation,
     ! whereby dimensional splitting is employed.
+    ! This subroutine assumes that integration by parts is not performed.
 !</description>
 
 !<input>
@@ -423,18 +529,69 @@ contains
 
 !</subroutine>
 
-  end subroutine euler_calcFluxScDissDiSp3d_sim
+  end subroutine euler_calcFlux1ScDissDiSp3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRoeDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux2ScDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+    
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 3D using scalar dissipation,
+    ! whereby dimensional splitting is employed.
+    ! This subroutine assumes that integration by parts is performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+  end subroutine euler_calcFlux2ScDissDiSp3d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux1RoeDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 3D using tensorial dissipation.
+    ! This subroutine assumes that integration by parts is not performed.
 !</description>
 
 !<input>
@@ -470,13 +627,61 @@ contains
 
 !</subroutine>
 
-  end subroutine euler_calcFluxRoeDiss3d_sim
+  end subroutine euler_calcFlux1RoeDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRoeDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux2RoeDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 3D using tensorial dissipation.
+    ! This subroutine assumes that integration by parts is performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+  end subroutine euler_calcFlux2RoeDiss3d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux1RoeDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 
@@ -484,6 +689,7 @@ contains
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 3D using tensorial dissipation,
     ! whereby dimensional splitting is employed.
+    ! This subroutine assumes that integration by parts is not performed.
 !</description>
 
 !<input>
@@ -519,18 +725,69 @@ contains
 
 !</subroutine>
 
-  end subroutine euler_calcFluxRoeDissDiSp3d_sim
+  end subroutine euler_calcFlux1RoeDissDiSp3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRusDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux2RoeDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+    
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 3D using tensorial dissipation,
+    ! whereby dimensional splitting is employed.
+    ! This subroutine assumes that integration by parts is performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+  end subroutine euler_calcFlux2RoeDissDiSp3d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux1RusDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 3D using the Rusanov dissipation.
+    ! This subroutine assumes that integration by parts is not performed.
 !</description>
 
 !<input>
@@ -566,19 +823,68 @@ contains
 
 !</subroutine>
 
-  end subroutine euler_calcFluxRusDiss3d_sim
+  end subroutine euler_calcFlux1RusDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRusDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux2RusDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+    
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 3D using the Rusanov dissipation.
+    ! This subroutine assumes that integration by parts is performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+  end subroutine euler_calcFlux2RusDiss3d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux1RusDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 3D using the Rusanov dissipation,
     ! whereby dimensional splitting is employed.
+    ! This subroutine assumes that integration by parts is not performed.
 !</description>
 
 !<input>
@@ -614,7 +920,56 @@ contains
 
 !</subroutine>
 
-  end subroutine euler_calcFluxRusDissDiSp3d_sim
+  end subroutine euler_calcFlux1RusDissDiSp3d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux2RusDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 3D using the Rusanov dissipation,
+    ! whereby dimensional splitting is employed.
+    ! This subroutine assumes that integration by parts is performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+  end subroutine euler_calcFlux2RusDissDiSp3d_sim
 
   !*****************************************************************************
 

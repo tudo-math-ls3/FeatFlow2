@@ -9,22 +9,22 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) euler_calcFluxGal1d_sim
+!# 1.) euler_calcFlux1Gal1d_sim / euler_calcFlux2Gal1d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#
 !# 2.) euler_calcFluxGalNoBdr1d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#        without assembling the symmetric boundary contribution
 !#
-!# 3.) euler_calcFluxScDiss1d_sim
+!# 3.) euler_calcFlux1ScDiss1d_sim / euler_calcFlux2ScDiss1d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities
 !#
-!# 4.) euler_calcFluxRoeDiss1d_sim
+!# 4.) euler_calcFlux1RoeDiss1d_sim / euler_calcFlux2RoeDiss1d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities
 !#
-!# 5.) euler_calcFluxRusDiss1d_sim
+!# 5.) euler_calcFlux1RusDiss1d_sim / euler_calcFlux2RusDiss1d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion
 !#
@@ -179,11 +179,15 @@ module euler_callback1d
   implicit none
 
   private
-  public :: euler_calcFluxGal1d_sim
+  public :: euler_calcFlux1Gal1d_sim
+  public :: euler_calcFlux2Gal1d_sim
   public :: euler_calcFluxGalNoBdr1d_sim
-  public :: euler_calcFluxScDiss1d_sim
-  public :: euler_calcFluxRoeDiss1d_sim
-  public :: euler_calcFluxRusDiss1d_sim
+  public :: euler_calcFlux1ScDiss1d_sim
+  public :: euler_calcFlux2ScDiss1d_sim
+  public :: euler_calcFlux1RoeDiss1d_sim
+  public :: euler_calcFlux2RoeDiss1d_sim
+  public :: euler_calcFlux1RusDiss1d_sim
+  public :: euler_calcFlux2RusDiss1d_sim
   public :: euler_calcMatDiagMatD1d_sim
   public :: euler_calcMatDiag1d_sim
   public :: euler_calcMatGalMatD1d_sim
@@ -224,12 +228,13 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxGal1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux1Gal1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
     ! Galerkin discretisation in 1D.
+    ! This subroutine assumes that integration by parts is not performed.
 !</description>
 
 !<input>
@@ -266,11 +271,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_INTEGRATEBYPARTS
-    real(DP), dimension(NVAR1D) :: dF_i, dF_j
-#else
     real(DP), dimension(NVAR1D) :: dF_ij
-#endif
     real(DP) :: ui,uj,ru2i,ru2j
     integer :: idx
 
@@ -311,21 +312,6 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
 
-#ifdef USE_EULER_INTEGRATEBYPARTS
-      ! Compute fluxes for x-direction
-      dF_i(1) = DdataAtEdge(2,1,idx)
-      dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
-      dF_i(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui
-      
-      dF_j(1) = DdataAtEdge(2,2,idx)
-      dF_j(2) = G1*DdataAtEdge(3,2,idx)-G14*ru2j
-      dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-      
-      ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*dF_i )
-      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
-#else
       ! Compute flux difference for x-direction
       dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
       dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
@@ -336,11 +322,114 @@ contains
       ! Assemble fluxes
       DfluxesAtEdge(:,1,idx) =  dscale * DmatrixCoeffsAtEdge(1,1,idx)*dF_ij
       DfluxesAtEdge(:,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)*dF_ij
-#endif
-
     end do
 
-  end subroutine euler_calcFluxGal1d_sim
+  end subroutine euler_calcFlux1Gal1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux2Gal1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the standard
+    ! Galerkin discretisation in 1D.
+    ! This subroutine assumes that integration by parts is performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVAR1D) :: dF_i, dF_j
+    real(DP) :: ui,uj,ru2i,ru2j
+    integer :: idx
+
+
+    do idx = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin flux
+      !
+      !     / rho*u       \
+      ! F = | rho*u*u + p |
+      !     \ rho*u*H     /
+      !
+      ! Here, we do not compute the pressure p and the enthalpy H but we
+      ! calculate the flux from the conservative variables as follows:
+      !
+      !     / U2                      \
+      ! F = | G1*U3-G14*ru2i          |
+      !     \ (gamma*U3-G2*ru2i)*ui /
+      !
+      ! where the auxiliary values for node i are defined as follows:
+      !
+      ! ru2i = U2*U2/U1 = ui*U2
+      ! ui = U2/U1
+      !
+      ! and the predefined constants are given by:
+      !
+      ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
+      !
+      ! The auxiliary values for node j are defined accordingly.
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      
+      ! Compute auxiliary variables
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+
+      ! Compute fluxes for x-direction
+      dF_i(1) = DdataAtEdge(2,1,idx)
+      dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
+      dF_i(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui
+      
+      dF_j(1) = DdataAtEdge(2,2,idx)
+      dF_j(2) = G1*DdataAtEdge(3,2,idx)-G14*ru2j
+      dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
+      
+      ! Assemble skew-symmetric fluxes
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
+                                         DmatrixCoeffsAtEdge(1,2,idx)*dF_i )
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+    end do
+
+  end subroutine euler_calcFlux2Gal1d_sim
 
   !*****************************************************************************
 
@@ -399,9 +488,29 @@ contains
     do idx = 1, size(DfluxesAtEdge,3)
 
       !-------------------------------------------------------------------------
-      ! Evaluate the Galerkin fluxes
-      ! For a detailed description of algorithm and the definition of auxiliary
-      ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+      ! Evaluate the Galerkin flux
+      !
+      !     / rho*u       \
+      ! F = | rho*u*u + p |
+      !     \ rho*u*H     /
+      !
+      ! Here, we do not compute the pressure p and the enthalpy H but we
+      ! calculate the flux from the conservative variables as follows:
+      !
+      !     / U2                      \
+      ! F = | G1*U3-G14*ru2i          |
+      !     \ (gamma*U3-G2*ru2i)*ui /
+      !
+      ! where the auxiliary values for node i are defined as follows:
+      !
+      ! ru2i = U2*U2/U1 = ui*U2
+      ! ui = U2/U1
+      !
+      ! and the predefined constants are given by:
+      !
+      ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
+      !
+      ! The auxiliary values for node j are defined accordingly.
       !-------------------------------------------------------------------------
       
       ! Compute velocities
@@ -432,12 +541,13 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxScDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux1ScDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 1D using scalar dissipation.
+    ! This subroutine assumes that integration by parts is not performed.
 !</description>
 
 !<input>
@@ -474,11 +584,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_INTEGRATEBYPARTS
-    real(DP), dimension(NVAR1D) :: dF_i, dF_j
-#else
     real(DP), dimension(NVAR1D) :: dF_ij
-#endif
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: ui,uj,ru2i,ru2j
@@ -487,10 +593,30 @@ contains
 
     do idx = 1, size(DfluxesAtEdge,3)
           
-      !-------------------------------------------------------------------------
-      ! Evaluate the Galerkin fluxes
-      ! For a detailed description of algorithm and the definition of auxiliary
-      ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+       !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin flux
+      !
+      !     / rho*u       \
+      ! F = | rho*u*u + p |
+      !     \ rho*u*H     /
+      !
+      ! Here, we do not compute the pressure p and the enthalpy H but we
+      ! calculate the flux from the conservative variables as follows:
+      !
+      !     / U2                      \
+      ! F = | G1*U3-G14*ru2i          |
+      !     \ (gamma*U3-G2*ru2i)*ui /
+      !
+      ! where the auxiliary values for node i are defined as follows:
+      !
+      ! ru2i = U2*U2/U1 = ui*U2
+      ! ui = U2/U1
+      !
+      ! and the predefined constants are given by:
+      !
+      ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
+      !
+      ! The auxiliary values for node j are defined accordingly.
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -501,7 +627,141 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
 
-#ifdef USE_EULER_INTEGRATEBYPARTS
+      ! Compute flux difference for x-direction
+      dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
+                 (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
+      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
+                 (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
+
+      !-------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation proportional to the spaectral radius
+      !-------------------------------------------------------------------------
+
+      ! Compute skew-symmetric coefficient
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                  DmatrixCoeffsAtEdge(1,2,idx))
+
+      ! Compute Roe mean values
+      aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
+      u_ij = (aux*ui+uj)/(aux+1.0_DP)
+      hi   = GAMMA*DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui)
+      hj   = GAMMA*DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj)
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+      
+      ! Compute auxiliary variables
+      aux  = abs(a(1)) ! = sqrt(a(1)*a(1))
+      vel  = u_ij*a(1)
+      q_ij = 0.5_DP*(u_ij*u_ij)
+      cs   = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
+      
+      ! Scalar dissipation
+      d_ij = abs(vel) + aux*cs
+      
+      ! Multiply the solution difference by the artificial diffusion factor
+      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+
+      !-------------------------------------------------------------------------
+      ! Build both contributions into the fluxes
+      !-------------------------------------------------------------------------
+      
+      ! Assemble fluxes
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij + Diff)
+    end do
+
+  end subroutine euler_calcFlux1ScDiss1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux2ScDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 1D using scalar dissipation.
+    ! This subroutine assumes that integration by parts is performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVAR1D) :: dF_i, dF_j
+    real(DP), dimension(NVAR1D) :: Diff
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: ui,uj,ru2i,ru2j
+    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,aux,vel,cs
+    integer :: idx
+
+    do idx = 1, size(DfluxesAtEdge,3)
+          
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin flux
+      !
+      !     / rho*u       \
+      ! F = | rho*u*u + p |
+      !     \ rho*u*H     /
+      !
+      ! Here, we do not compute the pressure p and the enthalpy H but we
+      ! calculate the flux from the conservative variables as follows:
+      !
+      !     / U2                      \
+      ! F = | G1*U3-G14*ru2i          |
+      !     \ (gamma*U3-G2*ru2i)*ui /
+      !
+      ! where the auxiliary values for node i are defined as follows:
+      !
+      ! ru2i = U2*U2/U1 = ui*U2
+      ! ui = U2/U1
+      !
+      ! and the predefined constants are given by:
+      !
+      ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
+      !
+      ! The auxiliary values for node j are defined accordingly.
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      
+      ! Compute auxiliary variables
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+
       ! Compute fluxes for x-direction
       dF_i(1) = DdataAtEdge(2,1,idx)
       dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
@@ -510,14 +770,6 @@ contains
       dF_j(1) = DdataAtEdge(2,2,idx)
       dF_j(2) = G1*DdataAtEdge(3,2,idx)-G14*ru2j
       dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-#else
-      ! Compute flux difference for x-direction
-      dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
-      dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
-                 (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
-      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
-                 (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-#endif
 
       !-------------------------------------------------------------------------
       ! Evaluate the scalar dissipation proportional to the spaectral radius
@@ -550,32 +802,25 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
+                                         DmatrixCoeffsAtEdge(1,2,idx)*dF_i + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
-
-#else
-      ! Assemble fluxes
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij + Diff)
-#endif
-
     end do
 
-  end subroutine euler_calcFluxScDiss1d_sim
+  end subroutine euler_calcFlux2ScDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRoeDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux1RoeDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 1D using tensorial dissipation.
+    ! This subroutine assumes that integration by parts is not performed.
 !</description>
 
 !<input>
@@ -612,11 +857,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_INTEGRATEBYPARTS
-    real(DP), dimension(NVAR1D) :: dF_i, dF_j
-#else
     real(DP), dimension(NVAR1D) :: dF_ij
-#endif
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: ui,uj,ru2i,ru2j,b1,b2
@@ -628,9 +869,29 @@ contains
     do idx = 1, size(DfluxesAtEdge,3)
           
       !-------------------------------------------------------------------------
-      ! Evaluate the Galerkin fluxes
-      ! For a detailed description of algorithm and the definition of auxiliary
-      ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+      ! Evaluate the Galerkin flux
+      !
+      !     / rho*u       \
+      ! F = | rho*u*u + p |
+      !     \ rho*u*H     /
+      !
+      ! Here, we do not compute the pressure p and the enthalpy H but we
+      ! calculate the flux from the conservative variables as follows:
+      !
+      !     / U2                      \
+      ! F = | G1*U3-G14*ru2i          |
+      !     \ (gamma*U3-G2*ru2i)*ui /
+      !
+      ! where the auxiliary values for node i are defined as follows:
+      !
+      ! ru2i = U2*U2/U1 = ui*U2
+      ! ui = U2/U1
+      !
+      ! and the predefined constants are given by:
+      !
+      ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
+      !
+      ! The auxiliary values for node j are defined accordingly.
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -641,23 +902,12 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
 
-#ifdef USE_EULER_INTEGRATEBYPARTS
-      ! Compute fluxes for x-direction
-      dF_i(1) = DdataAtEdge(2,1,idx)
-      dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
-      dF_i(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui
-      
-      dF_j(1) = DdataAtEdge(2,2,idx)
-      dF_j(2) = G1*DdataAtEdge(3,2,idx)-G14*ru2j
-      dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-#else
       ! Compute flux difference for x-direction
       dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
       dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
                  (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
       dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
                  (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-#endif
 
       !-------------------------------------------------------------------------
       ! Evaluate the dissipation tensor by Roe
@@ -715,49 +965,30 @@ contains
         ! Build both contributions into the fluxes
         !-------------------------------------------------------------------------
 
-#ifdef USE_EULER_INTEGRATEBYPARTS
-        ! Assemble skew-symmetric fluxes
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
-                                           DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
-        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
-        
-#else
         ! Assemble fluxes
         DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
         DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij + Diff)
-#endif
-
       else
 
-#ifdef USE_EULER_INTEGRATEBYPARTS
-        ! Assemble skew-symmetric fluxes
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
-                                           DmatrixCoeffsAtEdge(1,1,idx)*dF_i )
-        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
-        
-#else
         ! Assemble fluxes
         DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij)
         DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij)
-#endif
-
       end if
-
     end do
 
-  end subroutine euler_calcFluxRoeDiss1d_sim
+  end subroutine euler_calcFlux1RoeDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine euler_calcFlux2RoeDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
-
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
-    ! low-order scheme in 1D using the Rusanov dissipation.
+    ! low-order scheme in 1D using tensorial dissipation.
+    ! This subroutine assumes that integration by parts is performed.
 !</description>
 
 !<input>
@@ -794,11 +1025,180 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR1D) :: dF_i, dF_j
-#else
+    real(DP), dimension(NVAR1D) :: Diff
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: ui,uj,ru2i,ru2j,b1,b2
+    real(DP) :: aux,uPow2,hi,hj,H_ij,q_ij,u_ij
+    real(DP) :: anorm,l1,l2,l3,w1,w2,w3,cPow2,cs
+    integer :: idx
+    
+    
+    do idx = 1, size(DfluxesAtEdge,3)
+          
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin flux
+      !
+      !     / rho*u       \
+      ! F = | rho*u*u + p |
+      !     \ rho*u*H     /
+      !
+      ! Here, we do not compute the pressure p and the enthalpy H but we
+      ! calculate the flux from the conservative variables as follows:
+      !
+      !     / U2                      \
+      ! F = | G1*U3-G14*ru2i          |
+      !     \ (gamma*U3-G2*ru2i)*ui /
+      !
+      ! where the auxiliary values for node i are defined as follows:
+      !
+      ! ru2i = U2*U2/U1 = ui*U2
+      ! ui = U2/U1
+      !
+      ! and the predefined constants are given by:
+      !
+      ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
+      !
+      ! The auxiliary values for node j are defined accordingly.
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      
+      ! Compute auxiliary variables
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+
+      ! Compute fluxes for x-direction
+      dF_i(1) = DdataAtEdge(2,1,idx)
+      dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
+      dF_i(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui
+      
+      dF_j(1) = DdataAtEdge(2,2,idx)
+      dF_j(2) = G1*DdataAtEdge(3,2,idx)-G14*ru2j
+      dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
+
+      !-------------------------------------------------------------------------
+      ! Evaluate the dissipation tensor by Roe
+      !-------------------------------------------------------------------------
+      
+      ! Compute skew-symmetric coefficient
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                  DmatrixCoeffsAtEdge(1,2,idx))
+      anorm = abs(a(1))
+      
+      if (anorm .gt. SYS_EPSREAL) then
+        
+        ! Compute Roe mean values
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
+        u_ij = (aux*ui+uj)/(aux+1.0_DP)
+        hi   = GAMMA*DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui)
+        hj   = GAMMA*DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj)
+        H_ij = (aux*hi+hj)/(aux+1.0_DP)
+        
+        ! Compute auxiliary variables
+        uPow2 = u_ij*u_ij
+        q_ij  = 0.5_DP*uPow2
+        cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
+        cs    = sqrt(cPow2)
+        
+        ! Compute eigenvalues
+        l1 = abs(u_ij-cs)
+        l2 = abs(u_ij)
+        l3 = abs(u_ij+cs)
+        
+        ! Compute solution difference U_j-U_i
+        Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
+        
+        ! Compute auxiliary quantities for characteristic variables
+        b2 = G1/cPow2; b1 = b2*q_ij
+        
+        ! Compute characteristic variables multiplied by the
+        ! corresponding eigenvalue
+        w1 = l1 * 0.5_DP * (       (b1+u_ij/cs)*Diff(1) -&
+                            (b2*u_ij+1.0_DP/cs)*Diff(2) +&
+                                             b2*Diff(3) )
+        w2 = l2 *          (             (1-b1)*Diff(1) +&
+                                        b2*u_ij*Diff(2) -&
+                                             b2*Diff(3) )
+        w3 = l3 * 0.5_DP * (       (b1-u_ij/cs)*Diff(1) -&
+                            (b2*u_ij-1.0_DP/cs)*Diff(2) +&
+                                             b2*Diff(3) )
+        
+        ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+        Diff(1) = anorm * ( w1 + w2 + w3 )
+        Diff(2) = anorm * ( (u_ij-cs)*w1 + u_ij*w2 + (u_ij+cs)*w3 )
+        Diff(3) = anorm * ( (H_ij-u_ij*cs)*w1 + q_ij*w2 + (H_ij+u_ij*cs)*w3 )
+        
+        !-----------------------------------------------------------------------
+        ! Build both contributions into the fluxes
+        !-------------------------------------------------------------------------
+
+        ! Assemble skew-symmetric fluxes
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
+                                           DmatrixCoeffsAtEdge(1,2,idx)*dF_i + Diff)
+        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+      else
+
+        ! Assemble skew-symmetric fluxes
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
+                                           DmatrixCoeffsAtEdge(1,2,idx)*dF_i )
+        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+      end if
+    end do
+
+  end subroutine euler_calcFlux2RoeDiss1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux1RusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 1D using the Rusanov dissipation.
+    ! This subroutine assumes that integration by parts is not performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+    ! local variables
     real(DP), dimension(NVAR1D) :: dF_ij
-#endif
     real(DP), dimension(NVAR1D) :: Diff
     real(DP) :: ui,uj,ru2i,ru2j
     real(DP) :: d_ij,ci,cj,Ei,Ej
@@ -808,9 +1208,29 @@ contains
     do idx = 1, size(DfluxesAtEdge,3)
       
       !-------------------------------------------------------------------------
-      ! Evaluate the Galerkin fluxes
-      ! For a detailed description of algorithm and the definition of auxiliary
-      ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+      ! Evaluate the Galerkin flux
+      !
+      !     / rho*u       \
+      ! F = | rho*u*u + p |
+      !     \ rho*u*H     /
+      !
+      ! Here, we do not compute the pressure p and the enthalpy H but we
+      ! calculate the flux from the conservative variables as follows:
+      !
+      !     / U2                      \
+      ! F = | G1*U3-G14*ru2i          |
+      !     \ (gamma*U3-G2*ru2i)*ui /
+      !
+      ! where the auxiliary values for node i are defined as follows:
+      !
+      ! ru2i = U2*U2/U1 = ui*U2
+      ! ui = U2/U1
+      !
+      ! and the predefined constants are given by:
+      !
+      ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
+      !
+      ! The auxiliary values for node j are defined accordingly.
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -823,23 +1243,12 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
       
-#ifdef USE_EULER_INTEGRATEBYPARTS
-      ! Compute fluxes for x-direction
-      dF_i(1) = DdataAtEdge(2,1,idx)
-      dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
-      dF_i(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui
-      
-      dF_j(1) = DdataAtEdge(2,2,idx)
-      dF_j(2) = G1*DdataAtEdge(3,2,idx)-G14*ru2j
-      dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-#else
       ! Compute flux difference for x-direction
       dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
       dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
                  (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
       dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
                  (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-#endif
 
       !-------------------------------------------------------------------------
       ! Evaluate the scalar dissipation of Rusanov-type
@@ -862,21 +1271,143 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef USE_EULER_INTEGRATEBYPARTS
-      ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
-      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
-
-#else
       ! Assemble fluxes
       DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
       DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij + Diff)
-#endif
-
     end do
 
-  end subroutine euler_calcFluxRusDiss1d_sim
+  end subroutine euler_calcFlux1RusDiss1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFlux2RusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+
+
+!<description>
+    ! This subroutine computes the inviscid fluxes for the
+    ! low-order scheme in 1D using the Rusanov dissipation.
+    ! This subroutine assumes that integration by parts is performed.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVAR1D) :: dF_i, dF_j
+    real(DP), dimension(NVAR1D) :: Diff
+    real(DP) :: ui,uj,ru2i,ru2j
+    real(DP) :: d_ij,ci,cj,Ei,Ej
+    integer :: idx
+
+    
+    do idx = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin flux
+      !
+      !     / rho*u       \
+      ! F = | rho*u*u + p |
+      !     \ rho*u*H     /
+      !
+      ! Here, we do not compute the pressure p and the enthalpy H but we
+      ! calculate the flux from the conservative variables as follows:
+      !
+      !     / U2                      \
+      ! F = | G1*U3-G14*ru2i          |
+      !     \ (gamma*U3-G2*ru2i)*ui /
+      !
+      ! where the auxiliary values for node i are defined as follows:
+      !
+      ! ru2i = U2*U2/U1 = ui*U2
+      ! ui = U2/U1
+      !
+      ! and the predefined constants are given by:
+      !
+      ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
+      !
+      ! The auxiliary values for node j are defined accordingly.
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      Ei = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      Ej = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+
+      ! Compute auxiliary variables
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+      
+      ! Compute fluxes for x-direction
+      dF_i(1) = DdataAtEdge(2,1,idx)
+      dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
+      dF_i(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui
+      
+      dF_j(1) = DdataAtEdge(2,2,idx)
+      dF_j(2) = G1*DdataAtEdge(3,2,idx)-G14*ru2j
+      dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
+
+      !-------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation of Rusanov-type
+      !-------------------------------------------------------------------------
+      
+      ! Compute the speed of sound
+      ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
+      cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
+      
+      ! Scalar dissipation for the Rusanov flux
+      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
+                  abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
+                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
+                  abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )
+
+      ! Multiply the solution difference by the artificial diffusion factor
+      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+
+      !-------------------------------------------------------------------------
+      ! Build both contributions into the fluxes
+      !-------------------------------------------------------------------------
+
+      ! Assemble skew-symmetric fluxes
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
+                                         DmatrixCoeffsAtEdge(1,2,idx)*dF_i + Diff)
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+    end do
+
+  end subroutine euler_calcFlux2RusDiss1d_sim
 
   !*****************************************************************************
 
