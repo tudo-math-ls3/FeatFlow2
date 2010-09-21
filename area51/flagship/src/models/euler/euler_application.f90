@@ -609,11 +609,24 @@ contains
     type(t_triangulation) , pointer :: p_rtriangulation
     type(t_boundary) , pointer :: p_rboundary
     character(len=SYS_STRLEN) :: slimitingvariable
-    integer :: templateMatrix,systemMatrix,jacobianMatrix,consistentMassMatrix
-    integer :: lumpedMassMatrix,coeffMatrix_CX,coeffMatrix_CY, coeffMatrix_CZ
-    integer :: inviscidAFC,discretisation,celement,isystemFormat,isystemCoupling
-    integer :: imatrixFormat,ivar,jvar,ivariable,nvariable,nvartransformed
-    integer :: i,j,nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
+    integer :: templateMatrix
+    integer :: systemMatrix
+    integer :: jacobianMatrix
+    integer :: consistentMassMatrix
+    integer :: lumpedMassMatrix
+    integer :: coeffMatrix_CX
+    integer :: coeffMatrix_CY
+    integer :: coeffMatrix_CZ
+    integer :: coeffMatrix_C_integrateByParts
+    integer :: inviscidAFC
+    integer :: discretisation
+    integer :: celement
+    integer :: isystemFormat
+    integer :: isystemCoupling
+    integer :: imatrixFormat
+
+    integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed
+    integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
 
     ! Retrieve application specific parameters from the collection
     call parlst_getvalue_int(rparlist,&
@@ -632,6 +645,9 @@ contains
         ssectionName, 'coeffmatrix_cy', coeffMatrix_CY)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_c_integrateByParts',&
+        coeffMatrix_C_integrateByParts)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'inviscidAFC', inviscidAFC)
     call parlst_getvalue_int(rparlist,&
@@ -1026,7 +1042,8 @@ contains
     end if
 
 
-    ! Create coefficient matrix (phi, dphi/dx) duplicate of the template matrix
+    ! Create coefficient matrix (phi, dphi/dx) or
+    ! (dphi/dx, phi) as duplicate of the template matrix
     if (coeffMatrix_CX > 0) then
       if (lsyssc_isMatrixStructureShared(&
           rproblemLevel%Rmatrix(coeffMatrix_CX),&
@@ -1044,14 +1061,20 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CX),&
-          DER_DERIV3D_X, DER_FUNC)
-
+      if (coeffMatrix_C_integrateByParts .eq. 0) then
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX),&
+            DER_DERIV3D_X, DER_FUNC, -1.0_DP)
+      else
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX),&
+            DER_FUNC, DER_DERIV3D_X, 1.0_DP)
+      end if
     end if
 
-
-    ! Create coefficient matrix (phi, dphi/dy) duplicate of the template matrix
+    
+    ! Create coefficient matrix (phi, dphi/dy) or
+    ! (dphi/dy, phi) as duplicate of the template matrix
     if (coeffMatrix_CY > 0) then
       if (lsyssc_isMatrixStructureShared(&
           rproblemLevel%Rmatrix(coeffMatrix_CY),&
@@ -1069,14 +1092,20 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CY),&
-          DER_DERIV3D_Y, DER_FUNC)
-
+      if (coeffMatrix_C_integrateByParts .eq. 0) then
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CY),&
+            DER_DERIV3D_Y, DER_FUNC, -1.0_DP)
+      else
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CY),&
+            DER_FUNC, DER_DERIV3D_Y, 1.0_DP)
+      end if
     end if
 
 
-    ! Create coefficient matrix (phi, dphi/dz) duplicate of the template matrix
+    ! Create coefficient matrix (phi, dphi/dz) or
+    ! (dphi/dz, phi) as duplicate of the template matrix
     if (coeffMatrix_CZ > 0) then
       if (lsyssc_isMatrixStructureShared(&
           rproblemLevel%Rmatrix(coeffMatrix_CZ),&
@@ -1094,11 +1123,17 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-          DER_DERIV3D_Z, DER_FUNC)
-
+      if (coeffMatrix_C_integrateByParts .eq. 0) then
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+            DER_DERIV3D_Z, DER_FUNC, -1.0_DP)
+      else
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+            DER_FUNC, DER_DERIV3D_Z, 1.0_DP)
+      end if
     end if
+
 
     ! Resize stabilisation structures if necessary and remove the
     ! indicator for the subdiagonal edge structure. If they are
