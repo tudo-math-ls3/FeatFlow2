@@ -806,9 +806,10 @@ contains
     integer :: transportMatrix
     integer :: consistentMassMatrix
     integer :: lumpedMassMatrix
-    integer :: coeffMatrix_CX,coeffMatrix_CX_integrateByParts
-    integer :: coeffMatrix_CY,coeffMatrix_CY_integrateByParts
-    integer :: coeffMatrix_CZ,coeffMatrix_CZ_integrateByParts
+    integer :: coeffMatrix_CX
+    integer :: coeffMatrix_CY
+    integer :: coeffMatrix_CZ
+    integer :: coeffMatrix_C_integrateByParts
     integer :: coeffMatrix_S
     integer :: convectionAFC
     integer :: diffusionAFC
@@ -842,18 +843,12 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cx', coeffMatrix_CX)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cx_integrateByParts',&
-        coeffMatrix_CX_integrateByParts)
-    call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cy', coeffMatrix_CY)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cy_integrateByParts',&
-        coeffMatrix_CY_integrateByParts)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cz_integrateByParts',&
-        coeffMatrix_CZ_integrateByParts)
+        ssectionName, 'coeffmatrix_c_integrateByParts',&
+        coeffMatrix_C_integrateByParts)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'convectionAFC', convectionAFC)
     call parlst_getvalue_int(rparlist,&
@@ -1171,10 +1166,13 @@ contains
     end if
 
 
-    ! Create coefficient matrix (phi, dphi/dx) duplicate of the template matrix
+    ! Create coefficient matrix (phi, dphi/dx) or
+    ! (dphi/dx, phi) as duplicate of the template matrix
     if (coeffMatrix_CX > 0) then
-      if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CX),&
-                                         rproblemLevel%Rmatrix(templateMatrix))) then
+      if (lsyssc_isMatrixStructureShared(&
+          rproblemLevel%Rmatrix(coeffMatrix_CX),&
+          rproblemLevel%Rmatrix(templateMatrix))) then
+
         call lsyssc_resizeMatrix(&
             rproblemLevel%Rmatrix(coeffMatrix_CX),&
             rproblemLevel%Rmatrix(templateMatrix),&
@@ -1187,7 +1185,7 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      if (coeffMatrix_CX_integrateByParts .eq. 0) then
+      if (coeffMatrix_C_integrateByParts .eq. 0) then
         call stdop_assembleSimpleMatrix(&
             rproblemLevel%Rmatrix(coeffMatrix_CX),&
             DER_DERIV3D_X, DER_FUNC, -1.0_DP)
@@ -1199,10 +1197,13 @@ contains
     end if
 
 
-    ! Create coefficient matrix (phi, dphi/dy) duplicate of the template matrix
+    ! Create coefficient matrix (phi, dphi/dy) or
+    ! (dphi/dy, phi) as duplicate of the template matrix
     if (coeffMatrix_CY > 0) then
-      if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CY),&
-                                         rproblemLevel%Rmatrix(templateMatrix))) then
+      if (lsyssc_isMatrixStructureShared(&
+          rproblemLevel%Rmatrix(coeffMatrix_CY),&
+          rproblemLevel%Rmatrix(templateMatrix))) then
+        
         call lsyssc_resizeMatrix(&
             rproblemLevel%Rmatrix(coeffMatrix_CY),&
             rproblemLevel%Rmatrix(templateMatrix),&
@@ -1215,7 +1216,7 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      if (coeffMatrix_CY_integrateByParts .eq. 0) then
+      if (coeffMatrix_C_integrateByParts .eq. 0) then
         call stdop_assembleSimpleMatrix(&
             rproblemLevel%Rmatrix(coeffMatrix_CY),&
             DER_DERIV3D_Y, DER_FUNC, -1.0_DP)
@@ -1227,10 +1228,13 @@ contains
     end if
 
 
-    ! Create coefficient matrix (phi, dphi/dz) duplicate of the template matrix
+    ! Create coefficient matrix (phi, dphi/dz) or
+    ! (dphi/dz, phi) as duplicate of the template matrix
     if (coeffMatrix_CZ > 0) then
-      if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-                                         rproblemLevel%Rmatrix(templateMatrix))) then
+      if (lsyssc_isMatrixStructureShared(&
+          rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+          rproblemLevel%Rmatrix(templateMatrix))) then
+
         call lsyssc_resizeMatrix(&
             rproblemLevel%Rmatrix(coeffMatrix_CZ),&
             rproblemLevel%Rmatrix(templateMatrix),&
@@ -1243,7 +1247,7 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      if (coeffMatrix_CZ_integrateByParts .eq. 0) then
+      if (coeffMatrix_C_integrateByParts .eq. 0) then
         call stdop_assembleSimpleMatrix(&
             rproblemLevel%Rmatrix(coeffMatrix_CZ),&
             DER_DERIV3D_Z, DER_FUNC, -1.0_DP)
