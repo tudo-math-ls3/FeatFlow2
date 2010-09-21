@@ -3,7 +3,7 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                 Woodward and Colella's blast wave problem in 1D              #
+#                       Two-shock Riemann problem in 1D                        #
 ################################################################################
 
 simportdatafiles(2) =
@@ -19,7 +19,7 @@ application = euler
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/euler/1d/blastwave.indat
+indatfile = data/euler/1d/twoshock.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_strong_primal
@@ -63,7 +63,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 3
+isystemPrecond = 1
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -74,11 +74,7 @@ isystemPrecond = 3
 # (ii) for sequential/multiplicative flux correction list
 #      all variables one by one, e.g.
 #
-# slimitingvariable(3) =
-#      density
-#      pressure
-#      velocity
-slimitingvariable(3) = 
+slimitingvariable(3) =
   density
   pressure
   velocity
@@ -172,10 +168,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -190,13 +186,13 @@ iprelimiting = 1
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 1e-3
+dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/blastwave
+sucdsolution = out/twoshock
 
 # file for UCD output of error
-sucderror = out/blastwave_error
+sucderror = out/twoshock_error
 
 # variables for ucd output
 sucdvariable(5) =
@@ -241,16 +237,16 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.038
+dfinalTime = 0.035
 
 # initial time step size
-dinitialStep = 1e-6
+dinitialStep = 1e-5
 
 # lower bound for the admissible time step
-dminStep = 1e-6
+dminStep = 1e-5
 
 # upper bound for the admissible time step
-dmaxStep = 1e-6
+dmaxStep = 1e-10
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -291,10 +287,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 4
+nlmin = 2
 
 # maximum multigrid level number
-nlmax = 4
+nlmax = 2
 
 # type of multigrid cycle
 # 0 = F-cylce

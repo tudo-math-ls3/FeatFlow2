@@ -34,5 +34,23 @@ IBCT
 NCOMP
 1
 PARAMETERS
-0.0 T  2
-0.0 T  2
+0.0 T  'EULERWALL_STRONG'
+0.0 T  'EULERWALL_STRONG'
+
+# Specify the boundary conditions
+[bdrcond_weak_primal]
+NBCT
+2
+NEXPR
+3
+IBCT
+1
+NCOMP
+1
+IBCT
+2
+NCOMP
+1
+PARAMETERS
+0.0 T  'EULERWALL_WEAK'
+0.0 T  'EULERWALL_WEAK'

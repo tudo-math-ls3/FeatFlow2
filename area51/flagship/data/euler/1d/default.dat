@@ -42,4 +42,4 @@ CoeffMatrix_CY = 0
 CoeffMatrix_CZ = 0
 
 # Perform integration by parts in C matrices
-CoeffMatrix_C_integrateByParts = 1
+CoeffMatrix_C_integrateByParts = 0

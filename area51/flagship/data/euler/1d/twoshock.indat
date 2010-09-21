@@ -3,19 +3,20 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                        Sod's shocktube problem in 1D                         #
+#                       Two-shock Riemann problem in 1D                        #
 #                                                                              #
 # Initial conditions:                                                          #
-#  rho1 = 1.0;   p1 = 1.0                                                      #
-#  rho2 = 0.125; p2 = 0.1                                                      #
+#  rho1 =  5.99242;  rho2 =  5.99242                                           #
+#    u1 = 19.5975;     u2 = -6.19633                                           #
+#    p1 = 460.894;     p2 = 46.0950                                            #
 # and states 1 and 2 are separated at x=0.5                                    #
 #                                                                              #
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol_rho = if(x < 0.5, 1.0, 0.125) ; x,y,z,t
-deffunc: @initsol_vel = 0.0 ; x,y,z,t
-deffunc: @initsol_Etot = if(x < 0.5, 2.5, 0.25) ; x,y,z,t
+deffunc: @initsol_rho  = 5.99242 ; x,y,z,t
+deffunc: @initsol_vel  = if(x < 0.5, 117.4384107, -37.1316314516)  ; x,y,z,t
+deffunc: @initsol_Etot = if(x < 0.5, 2302.96542374631, 227.44528901254) ; x,y,z,t
 
 # Specify the boundary conditions
 [bdrcond_strong_primal]

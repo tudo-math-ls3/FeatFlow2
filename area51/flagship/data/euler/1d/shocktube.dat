@@ -77,7 +77,7 @@ isystemPrecond = 1
 slimitingvariable(3) =
   density
   pressure
-  velocity_x
+  velocity
 
 # number of failsafe steps
 nfailsafe = 4
