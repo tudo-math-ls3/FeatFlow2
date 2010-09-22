@@ -122,6 +122,10 @@ contains
         Dcoefficients(1,:,:) = Dpoints(1,:,:)
       case(2)
         Dcoefficients(1,:,:) = Dpoints(2,:,:)
+      case(3)
+        Dcoefficients(1,:,:) = 16.0_DP * &
+            Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
+            Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
       end select
                    
     case(202)
@@ -132,6 +136,10 @@ contains
                              * sin(SYS_PI*Dpoints(2,:,:))
       case(1,2)
         Dcoefficients(1,:,:) = 0.0_DP
+      case(3)
+        Dcoefficients(1,:,:) = 32.0_DP * (&
+            Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
+            Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)))
       end select
     
     case(203)
@@ -146,6 +154,14 @@ contains
         Dcoefficients(1,:,:) = dbeta1
       case(2)
         Dcoefficients(1,:,:) = dbeta2
+      case(3)
+        Dcoefficients(1,:,:) = 32.0_DP * dnu * (&
+            Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
+            Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))) + &
+            16.0_DP * dbeta1 * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:)) *&
+                (1.0_DP - 2.0_DP * Dpoints(1,:,:)) + &
+            16.0_DP * dbeta2 * Dpoints(1,:,:) * (1.0_DP - Dpoints(1,:,:)) *&
+                (1.0_DP - 2.0_DP * Dpoints(2,:,:))
       end select
           
     end select
@@ -255,6 +271,22 @@ contains
       case (DER_DERIV2D_Y)
         Dvalues(:,:) = 1.0_DP
       end select
+      
+    case(3)
+      select case (cderivative)
+      case (DER_FUNC2D)
+        Dvalues(:,:) = 16.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
+                                 Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
+      
+      case (DER_DERIV2D_X)
+        Dvalues(:,:) = 16.0_DP * ( &
+            Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
+            Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
+      case (DER_DERIV_Y)
+        Dvalues (:,:) = 16.0_DP * ( &
+            Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
+            Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
+      end select
     
     end select
     
@@ -354,6 +386,8 @@ contains
       Dvalues(1) = dx
     case(2)
       Dvalues(1) = dy
+    case(3)
+      Dvalues(1) = 0.0_DP
     end select
   
   end subroutine

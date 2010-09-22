@@ -211,6 +211,8 @@ contains
       call output_line('Solution...........: u(x,y) = x')
     case(2)
       call output_line('Solution...........: u(x,y) = y')
+    case(3)
+      call output_line('Solution...........: u(x,y) = 16*x*(1-x)*y*(1-y)')
     case default
       call output_line('Invalid ISOLUTION parameter', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
