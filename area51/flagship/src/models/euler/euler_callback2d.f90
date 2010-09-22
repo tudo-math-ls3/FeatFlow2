@@ -6126,11 +6126,17 @@ contains
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
             ! Compute boundary values from function parser given in
-            ! term of the conservative variables [rho,rho*v1,rho*v2,rho*E]
+            ! term of the primitive variables [rho,v1,v2,p]
             do iexpr = 1, 4
               call fparser_evalFunction(p_rfparser,&
                   nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
             end do
+
+            ! Compute convervative variables
+            DstateM(4) = DstateM(4)*G3&
+                       + DstateM(1)*0.5*(DstateM(2)**2+DstateM(3)**2)
+            DstateM(2) = DstateM(1)*DstateM(2)
+            DstateM(3) = DstateM(1)*DstateM(3)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
@@ -6327,8 +6333,7 @@ contains
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
-        
-        
+                
       case default
         call output_line('Invalid type of boundary conditions!',&
             OU_CLASS_ERROR,OU_MODE_STD,'euler_coeffVectorBdr2d_sim')
@@ -6356,7 +6361,7 @@ contains
       end do
 
       ! What type of boundary conditions are we?
-      select case(ibdrtype)
+      select case(iand(ibdrtype, BDRC_TYPEMASK))
         
       case (BDRC_FREESTREAM)
         !-----------------------------------------------------------------------
@@ -6528,18 +6533,24 @@ contains
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
             ! Compute boundary values from function parser given in
-            ! term of the conservative variables [rho,rho*v1,rho*v2,rho*E]
+            ! term of the primitive variables [rho,v1,v2,p]
             do iexpr = 1, 4
               call fparser_evalFunction(p_rfparser,&
                   nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
             end do
 
+            ! Compute convervative variables
+            DstateM(4) = DstateM(4)*G3&
+                       + DstateM(1)*0.5*(DstateM(2)**2+DstateM(3)**2)
+            DstateM(2) = DstateM(1)*DstateM(2)
+            DstateM(3) = DstateM(1)*DstateM(3)
+            
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
             DstateI(2) = Daux2(ipoint,iel,2)
             DstateI(3) = Daux2(ipoint,iel,3)
             DstateI(4) = Daux2(ipoint,iel,4)
-
+            
             ! Invoke Riemann solver
             call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
             
