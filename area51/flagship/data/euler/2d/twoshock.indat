@@ -1,0 +1,53 @@
+# -*- mode: any-ini; -*-
+#
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                       Two-shock Riemann problem in 2D                        #
+#                                                                              #
+# Initial conditions:                                                          #
+#  rho1 =  5.99924;  rho2 =  5.99242                                           #
+#    u1 = 19.5975;     u2 = -6.19633                                           #
+#    v1 =  0.0;        v2 =  0.0
+#    p1 = 460.894;     p2 = 46.095                                             #
+# and states 1 and 2 are separated at x=0.4                                    #
+#                                                                              #
+################################################################################
+
+# Specify the initial solution
+deffunc: @initsol_rho  = if(x < 1.0, 5.99924, 5.99242) ; x,y,z,t
+deffunc: @initsol_velx = if(x < 1.0, 117.5701059, -37.1310118186) ; x,y,z,t
+deffunc: @initsol_vely = 0.0 ; x,y,z,t
+deffunc: @initsol_Etot = if(x < 1.0, 2304.27507518763, 230.275501230973) ; x,y,z,t
+
+# Specify the boundary conditions
+[bdrcond_strong_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+1.0 T  'EULERWALL_STRONG'
+2.0 T  'FREESTREAM_STRONG' 5.99242  -6.19633 0.0  46.095
+3.0 T  'EULERWALL_STRONG'
+4.0 T  'FREESTREAM_STRONG' 5.99924  19.5975  0.0  460.894
+
+# Specify the boundary conditions
+[bdrcond_weak_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+1.0 T  'EULERWALL_WEAK'
+2.0 T  'SUPERINLET_WEAK' 5.99242  -6.19633 0.0  46.095
+3.0 T  'EULERWALL_WEAK'
+4.0 T  'SUPERINLET_WEAK' 5.99924  19.5975  0.0  460.894
