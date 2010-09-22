@@ -3,9 +3,7 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-# Blast wave problem by Woodward and Colella:                                  #
-# The numerical simulation of two-dimensional fluid flow with strong shocks,   #
-# Journal of Computational Physics 54 (1984), pp.115-173                       #
+#                 Woodward and Colella's blast wave problem in 2D              #
 ################################################################################
 
 simportdatafiles(2) =
@@ -24,7 +22,7 @@ application = euler
 indatfile = data/euler/2d/blastwave.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_strong_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -46,14 +44,14 @@ imasstype = 2
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 0
+imassantidiffusiontype = 1
 
 # type of dissipation
 # 0 = no dissipation
-# 1 = scalar dissipation (-1 = dimensional splitting)
-# 2 = tensorial dissipation (-2 = dimensional splitting)
-# 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+# 1 = scalar dissipation
+# 2 = tensorial dissipation
+# 3 = Rusanov type
+idissipationtype = 3
 
 # type of system coupling
 # 0 = segregated approach
@@ -65,7 +63,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 1
+isystemPrecond = 3
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -80,24 +78,23 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-slimitingvariable = density,energy,momentum
+slimitingvariable(2) = 
+  density
+  pressure
 
 # number of failsafe steps
-nfailsafe = 4
+nfailsafe = 0
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =
+  density
   pressure
   velocity_x
-  velocity_y
 
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution: pointwise values
-# 2 = PGM image
-# 3 = anayltical initial solution: consistent L2-projection
-# 4 = anayltical initial solution: lumped L2-projection
-isolutiontype = 3
+# 1 = analytical initial solution
+isolutiontype = 1
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -117,10 +114,10 @@ sexactsolutionname =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/rect_01x0.2_trias.prm
+prmfile = grids/2d/rect_01x0.01_quads.prm
 
 # file which contains the triangulation
-trifile = grids/2d/rect_01x0.2_trias.tri
+trifile = grids/2d/rect_01x0.01_quads.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -129,7 +126,7 @@ trifile = grids/2d/rect_01x0.2_trias.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = 1
+celement = 11
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -179,10 +176,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -197,7 +194,7 @@ iprelimiting = 1
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.0
+dstepUCD = 1e-3
 
 # file for UCD output of solution
 sucdsolution = out/blastwave
@@ -206,12 +203,12 @@ sucdsolution = out/blastwave
 sucderror = out/blastwave_error
 
 # variables for ucd output
-sucdvariable(4) =
+sucdvariable(5) =
  density
  velocity
  energy
  pressure
-
+ internal_energy
 
 ################################################################################
 [Timestepping]
@@ -242,7 +239,7 @@ isolNorm = 0
 theta = 0.5
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
@@ -251,13 +248,13 @@ dinitialTime = 0.0
 dfinalTime = 0.038
 
 # initial time step size
-dinitialStep = 1e-7
+dinitialStep = 1e-5
 
 # lower bound for the admissible time step
-dminStep = 1e-7
+dminStep = 1e-5
 
 # upper bound for the admissible time step
-dmaxStep = 1e-7
+dmaxStep = 1e-5
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -272,13 +269,13 @@ ddecreaseFactor = 0.1
 dincreaseFactor = 1.5
 
 # reduction factor by which time step is reduced if simulation fails
-dstepReductionFactor = 0.8
+dstepReductionFactor = 0.5
 
 # target tolerace for relative changes
 depsRel = 0.0
 
 # absolute tolerance for relative changes
-depsAbs = 1e-12
+depsAbs = 0.0
 
 # tolerance for steady state convergence
 depsSteady = 0.0
@@ -298,10 +295,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 3
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 3
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -356,7 +353,7 @@ nlmax = 1
 ilmin = 1
 
 # maximum number of linear mg steps
-ilmax = 1
+ilmax = 100
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -430,7 +427,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 20
+nmaxIterations = 100
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -472,7 +469,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-12
+depsAbs = 1e-10
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -577,7 +574,7 @@ depsStag = 0.0
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 50 = ILU
-isolver = 4
+isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 15
@@ -628,7 +625,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -640,7 +637,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 0.0
+depsRel = 1e-1
 
 # relative tolerance for stagnation
 depsStag = 0.0

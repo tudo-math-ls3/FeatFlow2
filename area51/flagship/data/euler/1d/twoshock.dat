@@ -168,7 +168,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 1
 
 # perform prelimiting
 iprelimiting = 0
@@ -240,10 +240,10 @@ dinitialTime = 0.0
 dfinalTime = 0.035
 
 # initial time step size
-dinitialStep = 1e-5
+dinitialStep = 1e-6
 
 # lower bound for the admissible time step
-dminStep = 1e-5
+dminStep = 1e-6
 
 # upper bound for the admissible time step
 dmaxStep = 1e-10
