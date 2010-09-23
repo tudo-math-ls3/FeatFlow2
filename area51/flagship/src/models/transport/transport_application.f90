@@ -1004,9 +1004,8 @@ contains
     ! assume that the template matrix has been generated externally.
     if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
       call parlst_getvalue_int(rparlist, ssectionName, 'imatrixFormat', imatrixFormat)
-      call bilf_createMatrixStructure(p_rdiscretisation&
-          %RspatialDiscr(1), imatrixFormat, rproblemLevel&
-          %Rmatrix(templateMatrix))
+      call bilf_createMatrixStructure(p_rdiscretisation%RspatialDiscr(1),&
+          imatrixFormat, rproblemLevel%Rmatrix(templateMatrix))
 
     end if
 
