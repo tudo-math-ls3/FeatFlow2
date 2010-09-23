@@ -8,7 +8,7 @@
 # Initial conditions:                                                          #
 #  rho1 =  5.99924;  rho2 =  5.99242                                           #
 #    u1 = 19.5975;     u2 = -6.19633                                           #
-#    v1 =  0.0;        v2 =  0.0
+#    v1 =  0.0;        v2 =  0.0                                               #
 #    p1 = 460.894;     p2 = 46.095                                             #
 # and states 1 and 2 are separated at x=0.4                                    #
 #                                                                              #
