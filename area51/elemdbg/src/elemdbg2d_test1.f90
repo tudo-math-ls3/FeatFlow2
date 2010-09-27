@@ -92,6 +92,8 @@ contains
   type(t_convStreamlineDiffusion) :: rconfigSD
   type(t_jumpStabilisation) :: rconfigEOJ
   type(t_collection) :: rcollect
+  integer, dimension(:), allocatable :: p_Iedges, p_Itemp
+  integer :: iedge,ibc,nedgecount
   
     h_Ipermute = ST_NOHANDLE
 
@@ -449,6 +451,34 @@ contains
           rconfigEOJ%dgammastar = dgamma
           rconfigEOJ%dnu = dnu
           call conv_JumpStabilisation2d (rconfigEOJ, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1))
+          
+          ! Subtract the boundary edges from the matrix.
+          rconfigEOJ%dtheta = -1.0_DP
+
+          allocate (p_Iedges(rtriangulation%NMT))
+          allocate (p_Itemp(rtriangulation%NMT))
+
+          ! Loop over the edges and boundary components
+          do ibc = 1,boundary_igetNBoundComp(rboundary)
+            do iedge = 1,boundary_igetNsegments(rboundary, ibc)
+
+              ! Get a region identifying that boundary edge
+              call boundary_createRegion(rboundary,ibc,iedge,rboundaryRegion)
+
+              ! Get triangulation edges on that boundary edge
+              call bcasm_getEdgesInBdRegion (rtriangulation,rboundaryRegion, &
+                  nedgecount, p_Iedges, p_Itemp)
+
+              ! Subtract the jump
+              call conv_JumpStabilisation2d(rconfigEOJ,CONV_MODMATRIX,rmatrix%RmatrixBlock(1,1), &
+                  InodeList=p_Iedges(1:nedgecount))
+
+            end do
+          end do
+
+          deallocate (p_Iedges,p_Itemp)
+
+          rconfigEOJ%dtheta = 1.0_DP 
           
         end select
       
