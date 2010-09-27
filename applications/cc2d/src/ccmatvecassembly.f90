@@ -1146,6 +1146,8 @@ contains
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvelocityvector,&
               ffunctionViscoModel,rcollection)
+           
+          
               
           ! That is it.
           call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
