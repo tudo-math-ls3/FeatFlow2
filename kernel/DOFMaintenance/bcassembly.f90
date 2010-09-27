@@ -2853,12 +2853,12 @@ contains
     do i=1,icount
       ! Get information about the edge and the adjacent element
       ielement = IelementsAtBoundary(i)
-      iedge = p_IedgesAtElement (IedgesAtBoundaryIdx(i),I)
+      iedge = p_IedgesAtElement (IedgesAtBoundaryIdx(i),ielement)
       
       ! Get the adjacent points in counterclockwise order. The local
       ! number of the edge and the vertex coincide...
-      ipoint1 = p_IverticesAtElement (IedgesAtBoundaryIdx(i),I)
-      ipoint2 = p_IverticesAtElement (mod(IedgesAtBoundaryIdx(i),TRIA_NVEQUAD2D)+1,I)
+      ipoint1 = p_IverticesAtElement (IedgesAtBoundaryIdx(i),ielement)
+      ipoint2 = p_IverticesAtElement (mod(IedgesAtBoundaryIdx(i),TRIA_NVEQUAD2D)+1,ielement)
     
       ! Get the coordinates of the endpoints to build the tangential
       ! vector of the edge:
