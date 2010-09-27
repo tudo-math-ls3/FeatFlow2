@@ -64,7 +64,7 @@ contains
     call sptivec_getTimestepData (rsolution, 1, rvector)
     
     ! Initialise the collection with information about our problem.
-    rcollection%DquickAccess (1) = 0.0_DP ! dtime
+    rcollection%DquickAccess (1) = rmatrix%p_rphysics%dtimemin ! dtime
     
     rcollection%IquickAccess (2) = rmatrix%p_rphysics%cequation
     rcollection%IquickAccess (3) = rmatrix%p_rphysics%creferenceProblem

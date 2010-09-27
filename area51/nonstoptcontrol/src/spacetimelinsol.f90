@@ -532,7 +532,6 @@ contains
           rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
           rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
           rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
-          
         
         case default
           call output_line ("Unknown preconditioner in stls_init")
