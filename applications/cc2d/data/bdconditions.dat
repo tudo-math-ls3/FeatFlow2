@@ -106,7 +106,7 @@ ineumannBoundary = -1
 #          = 2 : Pressure-drop / Normal-stress boundary condition.
 #                "..." specifies the name of the expression that is
 #                evaluated to give the normal stress.
-#                Example:  1.0  3  3  'PressValue1'
+#                Example:  1.0  3  2  'PressValue1'
 #          = 3 : Slip boundary conditions. Like Neumann BC's this
 #                does not use an expression.
 #
