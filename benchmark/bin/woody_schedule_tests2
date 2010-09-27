@@ -25,9 +25,17 @@ NOSCHEDULEONERR=0
 # Parameter --email or -m.
 EMAILADDRESS=
 
-# Whether to send an email or not. Is set to 1 id an email address is
-# specified as parameter.
-DOSENDMAIL=0
+# Whether to send an email or not. 
+# =-1: send mail upon begin, end or about if an email address is specified.
+# =0: do not send.
+# =1: send mail upon begin.
+# =2: send mail upon end.
+# =3: send mail upon begin or end.
+# =4: send mail upon abort.
+# =5: send mail upon begin or abort.
+# =6: send mail upon end or abort.
+# =7: send mail upon begin, end or abort.
+DOSENDMAIL=-1
 
 # Whether to allocate complete nodes or not.
 # Parameter --completenodes.

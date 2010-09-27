@@ -271,6 +271,13 @@ submits the job file to the scheduler.
       Optional parameter that allows to specify an email address where
       a notification email is sent after completition of the job.
       Default: $EMAILADDRESS
+  --sendmail <option>
+      Decides when mail is send. Option can be:
+      'none'  : No mail.
+      'abort' : if a job is aborted.
+      'begin' : if a job begins.
+      'end'   : if the job ends.
+      'always': if the job begins, ends or is aborted.
   --help, -h
       prints this usage statement
   --overwrite-log-directory, -o
@@ -380,8 +387,32 @@ fb_readargs() {
 
       --email|-m)  # email address
           EMAILADDRESS="$2"
-          DOSENDMAIL=1
           shift
+          shift
+          ;;
+
+      --sendmail)  # when to send mail
+          shift
+          if test "$1" == "none"
+            then
+              DOSENDMAIL=0
+            fi
+          if test "$1" == "always"
+            then
+              DOSENDMAIL=7
+            fi
+          if test "$1" == "begin"
+            then
+              DOSENDMAIL=1
+            fi
+          if test "$1" == "end"
+            then
+              DOSENDMAIL=2
+            fi
+          if test "$1" == "abort"
+            then
+              DOSENDMAIL=4
+            fi
           shift
           ;;
 
@@ -579,50 +610,60 @@ fb_setMailSender() {
     case "$USER" in
     cbecker|featflow|xambeck)
         EMAILADDRESS=christian.becker@math.tu-dortmund.de
-        DOSENDMAIL=0
+        if test "$DOSENDMAIL" -eq "-1"
+          then
+            DOSENDMAIL=0
+          fi
         ;;
 
     buijssen|xamsbuij)
         EMAILADDRESS=sven.buijssen@math.tu-dortmund.de
-        DOSENDMAIL=1
+        if test "$DOSENDMAIL" -eq "-1"
+          then
+            DOSENDMAIL=7
+          fi
         ;;
 
     goeddeke)
         EMAILADDRESS=goeddeke@math.tu-dortmund.de
-        DOSENDMAIL=1
+        if test "$DOSENDMAIL" -eq "-1"
+          then
+            DOSENDMAIL=7
+          fi
         ;;
 
     wobker)
         EMAILADDRESS=hilmar.wobker@math.tu-dortmund.de
-        DOSENDMAIL=1
+        if test "$DOSENDMAIL" -eq "-1"
+          then
+            DOSENDMAIL=4
+          fi
         ;;
 
     mkoester)
         EMAILADDRESS=michael.koester@mathematik.tu-dortmund.de
-        DOSENDMAIL=1
+        if test "$DOSENDMAIL" -eq "-1"
+          then
+            DOSENDMAIL=4
+          fi
         ;;
 
     *)
-        if test "$EMAILADDRESS" = ""
-        then
-          EMAILADDRESS=unknown.user@mathematik.tu-dortmund.de
-          DOSENDMAIL=0
-          cat <<EOF 1>&2
+        if test "$EMAILADDRESS" == ""
+          then
+            cat <<EOF 1>&2
 $0: Warning: Unknown user $USER.
 $0: Cannot determine the email address.
 $0: Please update function fb_setMailSender.
-$0: Using dummy email address: $EMAILADDRESS
 $0: No mail is send!
 EOF
-        else
-          cat <<EOF 1>&2
+          else
+            cat <<EOF 1>&2
 $0: Warning: Unknown user $USER.
 $0: Please update function fb_setMailSender.
-$0: Using email address: "$EMAILADDRESS"
 EOF
-          DOSENDMAIL=1
-        fi
-      ;;
+          fi
+        ;;
     esac
 }
 
@@ -876,13 +917,51 @@ fb_createPBSHeader()
   echo "#PBS -o $logfile"
   echo "#PBS -j oe"
   echo "#PBS -l walltime=$WALLCLOCKLIMIT"
-  echo "#PBS -M $EMAILADDRESS"
-  
-  # Optional arguments
-  if test "$DOSENDMAIL" = "1"
+  if test "$EMAILADDRESS" != ""
     then
-      echo "#PBS -m bae"
-    fi
+      echo "#PBS -M $EMAILADDRESS"
+      
+      # Optional arguments
+      if test "$DOSENDMAIL" = "0"
+        then
+          echo "#PBS -m n"
+        fi
+      if test "$DOSENDMAIL" = "1"
+        then
+          echo "#PBS -m b"
+        fi
+      if test "$DOSENDMAIL" = "2"
+        then
+          echo "#PBS -m e"
+        fi
+      if test "$DOSENDMAIL" = "3"
+        then
+          echo "#PBS -m be"
+        fi
+      if test "$DOSENDMAIL" = "4"
+        then
+          echo "#PBS -m a"
+        fi
+      if test "$DOSENDMAIL" = "5"
+        then
+          echo "#PBS -m ba"
+        fi
+      if test "$DOSENDMAIL" = "6"
+        then
+          echo "#PBS -m ea"
+        fi
+      if test "$DOSENDMAIL" = "7"
+        then
+          echo "#PBS -m bea"
+        fi
+      if test "$DOSENDMAIL" = "-1"
+        then
+          echo "#PBS -m bea"
+        fi
+     else
+       echo "#PBS -M unknown.user@cluster.com"
+       echo "#PBS -m n"
+     fi
   
   if test "$USEDCORES" = ""
     then
