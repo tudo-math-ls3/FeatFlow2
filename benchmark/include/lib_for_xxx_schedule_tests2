@@ -396,22 +396,27 @@ fb_readargs() {
           if test "$1" == "none"
             then
               DOSENDMAIL=0
+              echo "$0: Not sending mail."
             fi
           if test "$1" == "always"
             then
               DOSENDMAIL=7
+              echo "$0: Sending mail on job begin/end/abort."
             fi
           if test "$1" == "begin"
             then
               DOSENDMAIL=1
+              echo "$0: Sending mail on job begin."
             fi
           if test "$1" == "end"
             then
               DOSENDMAIL=2
+              echo "$0: Sending mail on job end."
             fi
           if test "$1" == "abort"
             then
               DOSENDMAIL=4
+              echo "$0: Sending mail on job abort."
             fi
           shift
           ;;
