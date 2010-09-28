@@ -500,32 +500,46 @@ contains
 
               if (sbdex1 .ne. '') then
               
-                ! IquickAccess(3) saves the type of the expression
-                iexptyp = collct_getvalue_int (rcoll, sbdex1)
-                rcoll%IquickAccess(3) = iexptyp
-
-                ! The first element in the sting quick access array is
-                ! the name of the expression to evaluate.
-                rcoll%SquickAccess(1) = sbdex1
+                ! PDrop BCs are a type of Neumann BCs since there is no Dirichlet value
+                ! prescribed for the velocity. Check if there are edges in the region.
+                ! If yes, create the BC and remember that we have Neumann BCs.
                 
-                ! Dquickaccess(4) / IquickAccess(4) saves information
-                ! about the expression.
-                select case (iexptyp)
-                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-                  ! Constant or parabolic profile
-                  rcoll%Dquickaccess(4) = &
-                      collct_getvalue_real (rcoll,sbdex1, 0, SEC_SBDEXPRESSIONS)
-                case (BDC_EXPRESSION)
-                  ! Expression. Write the identifier for the expression
-                  ! as itag into the boundary condition structure.
-                  rcoll%IquickAccess(4) = &
-                      collct_getvalue_int (rcoll,sbdex1, 0, SEC_SBDEXPRESSIONS)
-                end select
-              
-                IvelEqns = (/1,2/)
-                call bcasm_newPdropBConRealBd (&
-                    rdiscretisation,IvelEqns,rboundaryRegion,rdynamicLevelInfo%rdiscreteBC,&
-                    cc_getBDconditions,rcoll,casmComplexity)     
+                call bcasm_getEdgesInBCregion (p_rtriangulation,p_rboundary,&
+                                              rboundaryRegion, &
+                                              IminIndex,ImaxIndex,icount)
+                if (icount .gt. 0) then
+                
+                  bNeumann = .true.
+                  
+                  ! IquickAccess(3) saves the type of the expression
+                  iexptyp = collct_getvalue_int (rcoll, sbdex1)
+                  rcoll%IquickAccess(3) = iexptyp
+
+                  ! The first element in the sting quick access array is
+                  ! the name of the expression to evaluate.
+                  rcoll%SquickAccess(1) = sbdex1
+                  
+                  ! Dquickaccess(4) / IquickAccess(4) saves information
+                  ! about the expression.
+                  select case (iexptyp)
+                  case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                    ! Constant or parabolic profile
+                    rcoll%Dquickaccess(4) = &
+                        collct_getvalue_real (rcoll,sbdex1, 0, SEC_SBDEXPRESSIONS)
+                  case (BDC_EXPRESSION)
+                    ! Expression. Write the identifier for the expression
+                    ! as itag into the boundary condition structure.
+                    rcoll%IquickAccess(4) = &
+                        collct_getvalue_int (rcoll,sbdex1, 0, SEC_SBDEXPRESSIONS)
+                  end select
+                
+                  IvelEqns = (/1,2/)
+                  call bcasm_newPdropBConRealBd (&
+                      rdiscretisation,IvelEqns,rboundaryRegion,rdynamicLevelInfo%rdiscreteBC,&
+                      cc_getBDconditions,rcoll,casmComplexity)     
+                      
+                end if
+
               end if
               
               
