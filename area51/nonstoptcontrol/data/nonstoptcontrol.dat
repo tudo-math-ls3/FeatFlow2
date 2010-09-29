@@ -119,6 +119,9 @@ icalcerror = 1
 # Type of 1D cubature formula to use in time for error calc.
 scubTimeError = TRZ_1D
 
+# Name/path of the UCD output file
+sucdfilename = "./gmv/u.vtk"
+
 ##########################
 [SPACETIME-DISCRETISATION]
 ##########################

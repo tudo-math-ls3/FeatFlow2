@@ -784,7 +784,7 @@ contains
     type(t_spaceTimeMatrix), dimension(:), pointer :: p_Rmatrices
     type(t_triangulation) :: rtria1D
     integer :: iwriteUCD, cfespace, icalcError
-    character(LEN=SYS_STRLEN) :: smesh, sboundary
+    character(LEN=SYS_STRLEN) :: smesh, sboundary, sucdfilename
     integer :: ithetaschemetype,ntimestepsCoarse
     character(len=SYS_STRLEN) :: scubTimeError
     integer :: ispacelevelcoupledtotimelevel
@@ -816,6 +816,8 @@ contains
 
     call parlst_getvalue_int (rparlist, "POSTPROC", &
         "iwriteUCD", iwriteUCD)
+    call parlst_getvalue_string (rparlist, "POSTPROC", &
+        "sucdfilename", sucdfilename,bdequote=.true.)    
 
     call parlst_getvalue_int (rparlist, "POSTPROC", &
         "icalcError", icalcError)
@@ -1032,7 +1034,7 @@ contains
       !    trim(sys_siL(nminleveltime,2))//"-"//&
       !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
       call stpp_postproc (rparams%rphysics,rsolution,iwriteUCD .ne. 0,&
-          icalcError .ne. 0,cub_igetID(scubTimeError))
+          icalcError .ne. 0,cub_igetID(scubTimeError),sucdfilename)
       call output_line ("CPU time for complete solver:               "//&
           trim(sys_sdL(rlinearSolver%rsolver%rtotalTime%delapsedCPU, 2)))
       call output_line ("Wallclock time for complete solver:         "//&

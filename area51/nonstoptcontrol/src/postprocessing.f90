@@ -24,6 +24,7 @@ module postprocessing
   use pprocerror
   use mprimitives
   use cubature
+  use spdiscprojection
   
   use ucd
  
@@ -37,7 +38,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine stpp_postproc (rphysics,rvector,bwriteUCD,bcalcError,ccubTimeError)
+  subroutine stpp_postproc (rphysics,rvector,bwriteUCD,bcalcError,ccubTimeError,sucdfilename)
 
     ! Postprocessing of a space-time vector.
     
@@ -55,12 +56,15 @@ contains
     
     ! Cubature formula to use for the time error.
     integer(I32), intent(in) :: ccubTimeError
+
+    ! Name/Path of the UCD output file(s)
+    character(len=*), intent(in) :: sucdfilename
   
     ! local variables
     integer :: istep
     type(t_vectorBlock) :: rspaceVec
     type(t_ucdExport) :: rexport
-    real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2
+    real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
     type(t_triangulation), pointer :: p_rtria
     real(DP), dimension(6) :: Derrors
     real(DP), dimension(6) :: DerrorTotal
@@ -101,13 +105,17 @@ contains
           
           call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
               rvector%p_rspaceDiscr%p_rtriangulation,&
-              "./gmv/u.vtk."//trim(sys_si0L(istep-1,5)))
+              trim(sucdfilename)//"."//trim(sys_si0L(istep-1,5)))
               
-          call lsyssc_getbase_double (rspaceVec%RvectorBlock(1),p_Ddata1)
+          allocate (p_Ddata1(rvector%p_rspaceDiscr%p_rtriangulation%NVT))
+              
+          call spdp_projectToVertices (rspaceVec%RvectorBlock(1),p_Ddata1)
           call ucd_addVariableVertexBased(rexport,"y",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NVT))
 
-          call lsyssc_getbase_double (rspaceVec%RvectorBlock(2),p_Ddata1)
+          call spdp_projectToVertices (rspaceVec%RvectorBlock(2),p_Ddata1)
           call ucd_addVariableVertexBased(rexport,"lambda",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NVT))
+          
+          deallocate (p_Ddata1)
           
           call ucd_write(rexport)
           call ucd_release (rexport)
@@ -165,22 +173,30 @@ contains
           
           call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
               rvector%p_rspaceDiscr%p_rtriangulation,&
-              "./gmv/u.vtk."//trim(sys_si0L(istep-1,5)))
+              trim(sucdfilename)//"."//trim(sys_si0L(istep-1,5)))
               
-          call lsyssc_getbase_double (rspaceVec%RvectorBlock(1),p_Ddata1)
-          call lsyssc_getbase_double (rspaceVec%RvectorBlock(2),p_Ddata2)
+          allocate (p_Ddata1(rvector%p_rspaceDiscr%p_rtriangulation%NVT))
+          allocate (p_Ddata2(rvector%p_rspaceDiscr%p_rtriangulation%NVT))
+          allocate (p_Ddata3(rvector%p_rspaceDiscr%p_rtriangulation%NEL))
+          
+          call spdp_projectToVertices (rspaceVec%RvectorBlock(1),p_Ddata1)
+          call spdp_projectToVertices (rspaceVec%RvectorBlock(2),p_Ddata2)
 
           call ucd_addVarVertBasedVec(rexport,"y",p_Ddata1(1:p_rtria%NVT),p_Ddata2(1:p_rtria%NVT))
 
-          call lsyssc_getbase_double (rspaceVec%RvectorBlock(3),p_Ddata1)
-          call ucd_addVariableElementBased(rexport,"p",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NEL))
+          call spdp_projectToCells (rspaceVec%RvectorBlock(3),p_Ddata3)
+          call ucd_addVariableElementBased(rexport,"p",UCD_VAR_STANDARD,p_Ddata3(1:p_rtria%NEL))
 
-          call lsyssc_getbase_double (rspaceVec%RvectorBlock(4),p_Ddata1)
-          call lsyssc_getbase_double (rspaceVec%RvectorBlock(5),p_Ddata2)
+          call spdp_projectToVertices (rspaceVec%RvectorBlock(4),p_Ddata1)
+          call spdp_projectToVertices (rspaceVec%RvectorBlock(5),p_Ddata2)
           call ucd_addVarVertBasedVec(rexport,"lambda",p_Ddata1(1:p_rtria%NVT),p_Ddata2(1:p_rtria%NVT))
           
-          call lsyssc_getbase_double (rspaceVec%RvectorBlock(6),p_Ddata1)
-          call ucd_addVariableElementBased(rexport,"xi",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NEL))
+          call spdp_projectToCells (rspaceVec%RvectorBlock(6),p_Ddata3)
+          call ucd_addVariableElementBased(rexport,"xi",UCD_VAR_STANDARD,p_Ddata3(1:p_rtria%NEL))
+          
+          deallocate (p_Ddata3)
+          deallocate (p_Ddata2)
+          deallocate (p_Ddata1)
           
           call ucd_write(rexport)
           call ucd_release (rexport)
