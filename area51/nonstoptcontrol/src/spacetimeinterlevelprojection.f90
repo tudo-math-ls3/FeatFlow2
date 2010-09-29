@@ -184,6 +184,8 @@ contains
   !     space to synchronise in time with the dual space. Simple
   !     restriction approach, i.e. R_p=P_p^T and R_d=P_d^T without
   !     respecting that the matrices must be exchanged.
+  ! =7: linear prolongation/constant restriction. primal+dual solutions 
+  !     located at the endpoints of the time interval.
   integer, intent(in), optional :: ctimeProjection
   
 !</input>
@@ -292,6 +294,29 @@ contains
             call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
                 rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
           end if          
+        end if
+
+      case (7)
+      
+        if (i .lt. rspaceTimeHierarchy%nlevels) then
+        
+          ! Get constant restriction matrices.
+          ! This is the interpolation matrix divided by 2.
+          call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,0,&
+              rprojHier%p_RrestrictionMatPrimal(i))
+          rprojHier%p_RrestrictionMatPrimal(i)%dscaleFactor = 2.0_DP
+              
+          call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,0,&
+              rprojHier%p_RrestrictionMatDual(i))
+          rprojHier%p_RrestrictionMatDual(i)%dscaleFactor = 2.0_DP
+
+          ! Get linear prolongation matrices.
+          call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,1,&
+              rprojHier%p_RprolongationMatPrimal(i))
+              
+          call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,1,&
+              rprojHier%p_RprolongationMatDual(i))
+
         end if
 
       case (3)
@@ -1046,7 +1071,7 @@ contains
           
       ! Now depending on the order, create the matrix.
       select case (ctimeProjection)
-      case (0,1,2,3,4,6)
+      case (0,1,2,3,4,6,7)
         ! The interpolation is just taking the values in the points in time.
         !
         ! Timestep: 
