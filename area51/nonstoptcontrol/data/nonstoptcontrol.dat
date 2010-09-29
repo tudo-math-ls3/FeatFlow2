@@ -231,6 +231,8 @@ icoarsegridsolver = 0
 #     space to synchronise in time with the dual space. Simple
 #     restriction approach, i.e. R_p=P_p^T and R_d=P_d^T without
 #     respecting that the matrices must be exchanged.
+# =7: linear prolongation/constant restriction. primal+dual solutions 
+#     located at the endpoints of the time interval.
 
 itypeProjection = -1
 
