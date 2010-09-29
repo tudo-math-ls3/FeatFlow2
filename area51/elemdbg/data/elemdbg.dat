@@ -45,7 +45,7 @@ SCUBATURE = G3_2D
 #   0 -> u(x,y) = sin(pi*x) * sin(pi*y)
 #   1 -> u(x,y) = x
 #   2 -> u(x,y) = y
-#   3 -> u(x,y) = x * (1-x) * y * (1-y)
+#   3 -> u(x,y) = 16 * x * (1-x) * y * (1-y)
 # 3D:
 #   0 -> u(x,y,z) = sin(pi*x) * sin(pi*y) * sin(pi*z)
 #   1 -> u(x,y,z) = x
