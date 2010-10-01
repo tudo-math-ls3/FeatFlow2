@@ -25,8 +25,8 @@
 #    S = parameter value on the boundary, length parametrisation,
 #        relative to the segment (i.e. starts with 0.0 and ends
 #        with the segment length)
-#    x = x-coordinate of the point on the boundary
-#    y = y-coordinate of the point on the boundary
+#    X = x-coordinate of the point on the boundary
+#    Y = y-coordinate of the point on the boundary
 #    TIME = time in a nonstationary simulation
 #    MFVELX = x-velocity of the moving frame (if imovingFrame=1)
 #    MFVELY = y-velocity of the moving frame (if imovingFrame=1)
