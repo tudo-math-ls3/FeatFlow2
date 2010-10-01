@@ -272,11 +272,21 @@ ifullcouplingFBGS = 1
 ############################
 
 ioutputlevel = 2
+
+# Relative stopping criterion
 depsrel = 1E-10
+
+# Absolute stopping criterion
 depsabs = 1E-17
 
+# Damping
 ddamping = 0.5
+
+# Relaxation
 drelax = 1.0
+
+# Maximum number of iterations
+nmaxiterations = 1000
 
 # Use full (forward+backward) coupling in FBGS.
 # =0: Use only one-way coupling to previous or next timestep

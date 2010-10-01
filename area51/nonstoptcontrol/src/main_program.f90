@@ -311,7 +311,7 @@ contains
     integer :: csolverType
     integer :: iadcgcorr,niteReinit, icycle
     real(DP) :: dadcgcorrMin,dadcgcorrMax
-    integer :: ilev,nsmoothingSteps,itypeProjection,nmaxiterations
+    integer :: ilev,nsmoothingSteps,itypeProjection,nmaxiterations,nmaxitercoarse
     integer :: ismoother,icoarsegridsolver,ifullcouplingFBGS,ioutputLevel,ioutputLevelTemp
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     real(DP) ::  ddampingCoarseGridCorrection,ddamping,drelax,depsrel,depsabs
@@ -487,6 +487,8 @@ contains
           "ifullcouplingFBGS", ifullcouplingFBGS)
       call parlst_getvalue_int (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
           "ioutputlevel", ioutputlevelTemp)
+      call parlst_getvalue_int (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
+          "nmaxiterations", nmaxitercoarse, 1000)
       
       if (icoarsegridsolver .eq. 0) then
 
@@ -555,6 +557,7 @@ contains
       rsolver%rcoarseGridSolver%domega = ddampingCoarseGridCorrection
       rsolver%rcoarseGridSolver%depsrel = depsrel
       rsolver%rcoarseGridSolver%depsabs = depsabs
+      rsolver%rcoarseGridSolver%nmaxiterations = nmaxitercoarse
       
       if (rsolver%rcoarseGridSolver%domega .eq. 0.0_DP) then
         rsolver%rcoarseGridSolver%nmaxIterations = 0
@@ -673,6 +676,8 @@ contains
       call sptipr_initProjection (rsolver%rprojection,rparams%rspacetimeHierarchy,&
           rsolver%rprojHierarchySpace,rparams%rphysics,itypeProjection)
       
+      call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
+          "depsrel", depsrel)
       call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
           "depsrel", depsrel)
 
