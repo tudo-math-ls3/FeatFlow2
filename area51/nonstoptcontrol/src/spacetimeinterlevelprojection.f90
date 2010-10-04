@@ -91,6 +91,10 @@ module spacetimeinterlevelprojection
     !     space to synchronise in time with the dual space. Simple
     !     restriction approach, i.e. R_p=P_p^T and R_d=P_d^T without
     !     respecting that the matrices must be exchanged.
+    ! =7: linear prolongation/constant restriction. primal+dual solutions 
+    !     located at the endpoints of the time interval.
+    ! =8: linear prolongation/constant restriction. primal+dual solutions 
+    !     located according to the timestep scheme.
     integer :: ctimeProjection = -1
     
     ! Underlying physics
@@ -186,6 +190,8 @@ contains
   !     respecting that the matrices must be exchanged.
   ! =7: linear prolongation/constant restriction. primal+dual solutions 
   !     located at the endpoints of the time interval.
+  ! =8: linear prolongation/constant restriction. primal+dual solutions 
+  !     located according to the timestep scheme.
   integer, intent(in), optional :: ctimeProjection
   
 !</input>
@@ -319,6 +325,29 @@ contains
 
         end if
 
+      case (8)
+      
+        if (i .lt. rspaceTimeHierarchy%nlevels) then
+        
+          ! Get constant restriction matrices.
+          ! This is the interpolation matrix divided by 2.
+          call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,0,&
+              rprojHier%p_RrestrictionMatPrimal(i))
+          rprojHier%p_RrestrictionMatPrimal(i)%dscaleFactor = 2.0_DP
+              
+          call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,0,&
+              rprojHier%p_RrestrictionMatDual(i))
+          rprojHier%p_RrestrictionMatDual(i)%dscaleFactor = 2.0_DP
+
+          ! Get linear prolongation matrices.
+          call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,2,&
+              rprojHier%p_RprolongationMatPrimal(i))
+              
+          call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,2,&
+              rprojHier%p_RprolongationMatDual(i))
+
+        end if
+
       case (3)
         ! Same as in the other case, but this needs additional embedding matrices.
         
@@ -340,6 +369,7 @@ contains
               
           call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
               rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
+
         end if
             
         ! Get an additional embedding matrix
@@ -351,7 +381,7 @@ contains
 
         call lsyssc_transposeMatrixInSitu(rprojHier%p_RembedMatPrimalInDualT(i))
         call lsyssc_transposeMatrixInSitu(rprojHier%p_RembedMatDualInPrimalT(i))
-            
+
         ! The reverse is its transpose.
 !        call lsyssc_transposeMatrix (rprojHier%p_RembedMatPrimalInDualT(i),&
 !            rprojHier%p_RembedMatDualInPrimalT(i),LSYSSC_TR_ALL)
@@ -366,7 +396,6 @@ contains
               
           call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,3,&
               rprojHier%p_RprolongationMatDual(i))
-
 
           call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,2,&
               rprojHier%p_RrestrictionMatDual(i))
@@ -439,6 +468,9 @@ contains
       call lsyssc_releaseMatrix(rprojHier%p_RrestrictionMatDual(i))
       call lsyssc_releaseMatrix(rprojHier%p_RinterpolationMatPrimal(i))
       call lsyssc_releaseMatrix(rprojHier%p_RinterpolationMatDual(i))
+    end do
+
+    do i=1,rprojHier%p_rspaceTimeHierarchy%nlevels
       if (associated(rprojHier%p_RembedMatDualInPrimalT)) then
         call lsyssc_releaseMatrix(rprojHier%p_RembedMatDualInPrimalT(i))
       end if
@@ -568,7 +600,7 @@ contains
           p_Da(3+2*(icol-1)) = 1.0_DP
         end do
 
-      case (1,2,3,6)
+      case (1,2,3,6,7,8)
         ! Simplest case.
         ! For simplicity, we take the lineaer interpolation, which is also
         ! 2nd order. In contrast to case 2, this matrix has a reduced
@@ -873,7 +905,7 @@ contains
       ! Now depending on the order, create the matrix.
       select case (ctimeProjection)
 
-      case (2,3,6)
+      case (2,3,6,7)
         ! Slightly harder case.
         ! Because the dual solution is aligned between the primal,
         ! the prolongation stencil looks different.
@@ -1071,7 +1103,7 @@ contains
           
       ! Now depending on the order, create the matrix.
       select case (ctimeProjection)
-      case (0,1,2,3,4,6,7)
+      case (0,1,2,3,4,6,7,8)
         ! The interpolation is just taking the values in the points in time.
         !
         ! Timestep: 
@@ -1392,8 +1424,6 @@ contains
         ! Calculate Kdiagonal
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
         call lsyssc_getbase_Kld (rmatrix,p_Kld)
-        call storage_new ('sptipr_getProlMatrixPrimal', 'KDiag', &
-            ndofFine, ST_INT, rmatrix%h_Kdiagonal,ST_NEWBLOCK_ZERO)
         call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
         call lsyssc_rebuildKdiagonal (p_Kcol, p_Kld, p_Kdiagonal, ndofFine)
         
@@ -1418,8 +1448,6 @@ contains
         ! Calculate Kdiagonal
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
         call lsyssc_getbase_Kld (rmatrix,p_Kld)
-        call storage_new ('sptipr_getProlMatrixPrimal', 'KDiag', &
-            ndofFine, ST_INT, rmatrix%h_Kdiagonal,ST_NEWBLOCK_ZERO)
         call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
         call lsyssc_rebuildKdiagonal (p_Kcol, p_Kld, p_Kdiagonal, ndofFine)
                     
@@ -1517,8 +1545,6 @@ contains
         ! Calculate Kdiagonal
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
         call lsyssc_getbase_Kld (rmatrix,p_Kld)
-        call storage_new ('sptipr_getEmbedMatDualToPrimal', 'KDiag', &
-            ndofFine, ST_INT, rmatrix%h_Kdiagonal,ST_NEWBLOCK_ZERO)
         call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
         call lsyssc_rebuildKdiagonal (p_Kcol, p_Kld, p_Kdiagonal, ndofFine)
         
@@ -1657,7 +1683,7 @@ contains
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,3)
     case (1)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,3)
-    case (2,3,6)
+    case (2,3,6,7,8)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,3)
     case (4)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,4)
@@ -2440,7 +2466,7 @@ contains
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
     case (1)
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
-    case (2,3,6)
+    case (2,3,6,7,8)
       call sptivec_createAccessPool (rfineVector,raccessPool,7)
     case (4)
       call sptivec_createAccessPool (rfineVector,raccessPool,10)
@@ -2714,7 +2740,7 @@ contains
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
     case (1)
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
-    case (2,3,6)
+    case (2,3,6,7,8)
       call sptivec_createAccessPool (rfineVector,raccessPool,7)
     case (4)
       call sptivec_createAccessPool (rfineVector,raccessPool,10)

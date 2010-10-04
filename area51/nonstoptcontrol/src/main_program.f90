@@ -838,6 +838,10 @@ contains
 
     ! Get parameters
     call cb_getPhysics(rparlist,rparams%rphysics)
+    
+    if (nmaxminleveltime .le. 0) then
+      nmaxminleveltime = nminminleveltime + nmaxminleveltime
+    end if
       
     do nminleveltime = nminminleveltime,nmaxminleveltime
 

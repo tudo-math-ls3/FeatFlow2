@@ -133,11 +133,25 @@ sucdfilename = "./gmv/u.vtk"
 
 cfespace = -1
 
+# Number of levels in space
 nspacelevels = 3
+
+# Number of levels in time.
 ntimelevels = 2
+
+# Space coarse grid level
 nminlevelspace = 2
+
+# Minimum coarse grid level
 nminminleveltime = 1
-nmaxminleveltime = 7
+
+# Maximum coarse grid level.
+# <=0: nminminleveltime+nmaxminleveltime.
+nmaxminleveltime = 0
+
+# Theta scheme.
+# =1: Implicit Euler
+# =0.5: Crank-Nicolson
 dtheta = 1.0
 
 # Type of the theta scheme.
@@ -233,6 +247,8 @@ icoarsegridsolver = 0
 #     respecting that the matrices must be exchanged.
 # =7: linear prolongation/constant restriction. primal+dual solutions 
 #     located at the endpoints of the time interval.
+# =8: linear prolongation/constant restriction. primal+dual solutions 
+#     located according to the timestep scheme.
 
 itypeProjection = -1
 
