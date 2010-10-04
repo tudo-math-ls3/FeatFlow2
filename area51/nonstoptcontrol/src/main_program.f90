@@ -591,6 +591,13 @@ contains
               rsolver%p_RsmootherPrecond(ilev))
           call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
 
+          ! On coarse grid levels, damp the result by the CGCorr factor.
+          if (ilev .lt. nlevels) then
+            rsolver%p_Rsmoothers(ilev)%domega = ddampingCoarseGridCorrection
+          else
+            rsolver%p_Rsmoothers(ilev)%domega = 1.0_DP
+          end if
+
         else if (ismoother .eq. 1) then
         
           call stls_initBlockFBSIM (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
@@ -604,6 +611,13 @@ contains
               rsolver%p_RsmootherPrecond(ilev))
           call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
 
+          ! On coarse grid levels, damp the result by the CGCorr factor.
+          if (ilev .lt. nlevels) then
+            rsolver%p_Rsmoothers(ilev)%domega = ddampingCoarseGridCorrection
+          else
+            rsolver%p_Rsmoothers(ilev)%domega = 1.0_DP
+          end if
+
         else if (ismoother .eq. 2) then
         
           call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
@@ -616,18 +630,31 @@ contains
               rsolver%p_RsmootherPrecond(ilev))
           call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
 
+          ! On coarse grid levels, damp the result by the CGCorr factor.
+          if (ilev .lt. nlevels) then
+            rsolver%p_Rsmoothers(ilev)%domega = ddampingCoarseGridCorrection
+          else
+            rsolver%p_Rsmoothers(ilev)%domega = 1.0_DP
+          end if
+
         else if (ismoother .eq. 3) then
         
           call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,1.0_DP,rspaceSolverParams,rparams%p_RmatvecTempl)
         
-          rsolver%p_RsmootherPrecond(ilev)%domega = drelax
-          
+          rsolver%p_RsmootherPrecond(ilev)%domega = drelax*ddamping
+
           call stls_initBiCGStab (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
               rsolver%p_RsmootherPrecond(ilev))
           call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
           rsolver%p_Rsmoothers(ilev)%niteReinit = niteReinit
-          rsolver%p_Rsmoothers(ilev)%domega = ddamping
+          
+          ! On coarse grid levels, damp the result by the CGCorr factor.
+          if (ilev .lt. nlevels) then
+            rsolver%p_Rsmoothers(ilev)%domega = ddampingCoarseGridCorrection
+          else
+            rsolver%p_Rsmoothers(ilev)%domega = 1.0_DP
+          end if
 
         else if (ismoother .eq. 4) then
         
@@ -639,7 +666,15 @@ contains
           call stls_initBiCGStab (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
               rsolver%p_RsmootherPrecond(ilev))
           call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
+          rsolver%p_Rsmoothers(ilev)%niteReinit = niteReinit
 
+          ! On coarse grid levels, damp the result by the CGCorr factor.
+          if (ilev .lt. nlevels) then
+            rsolver%p_Rsmoothers(ilev)%domega = ddampingCoarseGridCorrection
+          else
+            rsolver%p_Rsmoothers(ilev)%domega = 1.0_DP
+          end if
+ 
         else if (ismoother .eq. 5) then
         
           call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
@@ -650,7 +685,15 @@ contains
           call stls_initBiCGStab (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
               rsolver%p_RsmootherPrecond(ilev))
           call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
+          rsolver%p_Rsmoothers(ilev)%niteReinit = niteReinit
 
+          ! On coarse grid levels, damp the result by the CGCorr factor.
+          if (ilev .lt. nlevels) then
+            rsolver%p_Rsmoothers(ilev)%domega = ddampingCoarseGridCorrection
+          else
+            rsolver%p_Rsmoothers(ilev)%domega = 1.0_DP
+          end if
+ 
         end if
 
         rsolver%p_Rsmoothers(ilev)%ioutputlevel = ioutputlevelTemp
