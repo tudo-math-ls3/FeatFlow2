@@ -466,6 +466,7 @@ contains
     integer :: iunit
     integer :: cflag
     logical :: bfileExists
+    real(DP) :: dtimebackup
     
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'IERRORANALYSISL2', icalcL2, 0)
@@ -498,6 +499,14 @@ contains
     read(stemp,*) sfilenameKineticEnergy
     if (sfilenameKineticEnergy .eq. '') &
       iwriteKineticEnergy = 0
+      
+    ! The error analysis might take place at an arbitrary time.
+    ! Therefore, modify the 'current' time to the time where we want to
+    ! do the analysis. Save the 'current' time and restore afterwards.
+    ! This is necessary, as the user callback routines take the time
+    ! for evaluation from here.
+    dtimebackup = rproblem%rtimedependence%dtime
+    rproblem%rtimedependence%dtime = dtime
     
     if ((icalcL2 .ne. 0) .or. (icalcH1 .ne. 0) .or. (icalcEnergy .ne. 0)) then
       call output_lbrk()
@@ -647,6 +656,9 @@ contains
       end if
 
     end if
+    
+    ! Restore the 'current' time.
+    rproblem%rtimedependence%dtime = dtimebackup
 
   end subroutine
 
