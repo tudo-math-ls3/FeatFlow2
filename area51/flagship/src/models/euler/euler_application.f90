@@ -617,7 +617,6 @@ contains
     integer :: coeffMatrix_CX
     integer :: coeffMatrix_CY
     integer :: coeffMatrix_CZ
-    integer :: coeffMatrix_C_integrateByParts
     integer :: inviscidAFC
     integer :: discretisation
     integer :: celement
@@ -645,9 +644,6 @@ contains
         ssectionName, 'coeffmatrix_cy', coeffMatrix_CY)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_c_integrateByParts',&
-        coeffMatrix_C_integrateByParts)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'inviscidAFC', inviscidAFC)
     call parlst_getvalue_int(rparlist,&
@@ -1061,15 +1057,16 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      if (coeffMatrix_C_integrateByParts .eq. 0) then
-        call stdop_assembleSimpleMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX),&
-            DER_DERIV3D_X, DER_FUNC, -1.0_DP)
-      else
-        call stdop_assembleSimpleMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX),&
-            DER_FUNC, DER_DERIV3D_X, 1.0_DP)
-      end if
+#ifndef EULER_USE_IBP
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CX),&
+          DER_DERIV3D_X, DER_FUNC, -1.0_DP)
+#else
+      ! Perform integration by parts in divergence term
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CX),&
+          DER_FUNC, DER_DERIV3D_X, 1.0_DP)
+#endif
     end if
 
     
@@ -1092,15 +1089,16 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      if (coeffMatrix_C_integrateByParts .eq. 0) then
-        call stdop_assembleSimpleMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CY),&
-            DER_DERIV3D_Y, DER_FUNC, -1.0_DP)
-      else
-        call stdop_assembleSimpleMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CY),&
-            DER_FUNC, DER_DERIV3D_Y, 1.0_DP)
-      end if
+#ifndef EULER_USE_IBP
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CY),&
+          DER_DERIV3D_Y, DER_FUNC, -1.0_DP)
+#else
+      ! Perform integration by parts in divergence term
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CY),&
+          DER_FUNC, DER_DERIV3D_Y, 1.0_DP)
+#endif
     end if
 
 
@@ -1123,15 +1121,16 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-      if (coeffMatrix_C_integrateByParts .eq. 0) then
-        call stdop_assembleSimpleMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-            DER_DERIV3D_Z, DER_FUNC, -1.0_DP)
-      else
-        call stdop_assembleSimpleMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-            DER_FUNC, DER_DERIV3D_Z, 1.0_DP)
-      end if
+#ifndef EULER_USE_IBP
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+          DER_DERIV3D_Z, DER_FUNC, -1.0_DP)
+#else
+      ! Perform integration by parts in divergence term
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+          DER_FUNC, DER_DERIV3D_Z, 1.0_DP)
+#endif
     end if
 
 

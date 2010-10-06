@@ -41,9 +41,6 @@ CoeffMatrix_CY = 0
 # Position of the constant coefficient matrix S in the scalar matrix structure
 CoeffMatrix_CZ = 0
 
-# Perform integration by parts in C matrices
-CoeffMatrix_C_integrateByParts = 1
-
 
 ################################################################################
 [Transport]
@@ -91,9 +88,6 @@ CoeffMatrix_CZ = 0
 # Position of the constant coefficient matrix S in the scalar matrix structure
 CoeffMatrix_S = 0
 
-# Perform integration by parts in C matrices
-CoeffMatrix_C_integrateByParts = 1
-
 ################################################################################
 [Timestepping]
 ################################################################################
@@ -140,6 +134,3 @@ CoeffMatrix_CY = 0
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
 CoeffMatrix_CZ = 0
-
-# Perform integration by parts in C matrices
-CoeffMatrix_C_integrateByParts = 1

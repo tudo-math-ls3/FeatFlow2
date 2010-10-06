@@ -1349,6 +1349,14 @@ contains
     real(DP) :: dnx,dny,dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint,ndim
 
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrConvP2d_sim')
+    call sys_halt()
+#endif
+
+
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
@@ -1704,6 +1712,13 @@ contains
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnx,dny,dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint,ndim
+
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrConvD2d_sim')
+    call sys_halt()
+#endif
 
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
@@ -2063,6 +2078,13 @@ contains
     real(DP) :: dnx,dny,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ndim,ivelocityType
 
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrConvP2d_sim')
+    call sys_halt()
+#endif
+
     ! This subroutine assumes that the first quick access vector
     ! points to the velocity vector (if any)
     p_rvelocity => rcollection%p_rvectorQuickAccess1
@@ -2314,6 +2336,13 @@ contains
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP) :: dnx,dny,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ndim,ivelocityType
+
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrConvD2d_sim')
+    call sys_halt()
+#endif
 
     ! This subroutine assumes that the first quick access vector
     ! points to the velocity vector (if any)
@@ -2737,6 +2766,13 @@ contains
     real(DP) :: dnx,dny,dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint,ndim
 
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrSTBurgersP2d_sim')
+    call sys_halt()
+#endif
+
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
@@ -3083,6 +3119,13 @@ contains
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP) :: dnx,dny,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ndim
+
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrSTBurgersP2d_sim')
+    call sys_halt()
+#endif
 
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
@@ -3497,6 +3540,13 @@ contains
     real(DP) :: dnx,dny,dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint,ndim
 
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrSTBuckLevP2d_sim')
+    call sys_halt()
+#endif
+
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
@@ -3845,6 +3895,13 @@ contains
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP) :: dnx,dny,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ndim
+
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrSTBuckLevP2d_sim')
+    call sys_halt()
+#endif
 
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
@@ -4230,6 +4287,13 @@ contains
 
 !</subroutine>
 
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrBurgersP2d_sim')
+    call sys_halt()
+#endif
+
     print *, "Weak boundary conditions are not available yet"
     stop
 
@@ -4331,6 +4395,13 @@ contains
 !</output>
 
 !</subroutine>
+
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrBurgersP2d_sim')
+    call sys_halt()
+#endif
 
     print *, "Weak boundary conditions are not available yet"
     stop

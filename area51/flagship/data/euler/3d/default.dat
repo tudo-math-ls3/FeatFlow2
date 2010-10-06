@@ -40,6 +40,3 @@ CoeffMatrix_CY = 7
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
 CoeffMatrix_CZ = 8
-
-# Perform integration by parts in C matrices
-CoeffMatrix_C_integrateByParts = 1
