@@ -77,7 +77,7 @@ ineumannBoundary = -1
 # Definition of boundary segments always start at parameter value 0.0.
 # Each specified sub-segment allows to specify the end parameter
 # value of the segment:
-# "    0  4.0  3  [bdcid] ..."
+# "    4.0  3  [bdcid] ..."
 #   Creates a boundary condition segment starting from the 'current' 
 #   parameter value, ending at parameter value '4.0'. '3' specifies 
 #   that both, starting and ending point should belong to the segment.
@@ -87,7 +87,7 @@ ineumannBoundary = -1
 #   value will result in a 'wrap around', of the boundary condition
 #   segment, letting it start at the beginning of the boundary component
 #   again.
-# The last values in the list "x y a [bdcid] ..." have the following 
+# The last values in the list "x a [bdcid] ..." have the following 
 # meaning:
 #  a = 0: Start- and endpoint don't belong to the interval
 #    = 1: Include startpoint of the interval
