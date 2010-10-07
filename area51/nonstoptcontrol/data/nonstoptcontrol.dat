@@ -86,8 +86,17 @@ cequation = 0
 #
 #   creferenceproblem = 8:
 #      w = sin(Pi/2*x1)*sin(Pi*x2)
-#      y = sin(PI*t/2) * w
-#      l = (sin(PI*t/2)-1) * w
+#      y = sin(PI*t/2) * ( w , w )
+#      l = (sin(PI*t/2)-1) * ( w , w )
+#      p = 0
+#     xi = 0
+#
+#   creferenceproblem = 9:
+#      w = sin(Pi/2*x1)*sin(Pi*x2)
+#      y = sin(PI*t/2) * ( w , w )
+#      l = (sin(PI*t/2)-1) * ( w , w )
+#      p = sin(PI*t/2) * w
+#     xi = sin(PI*t/2) * w
 
 creferenceProblem = 8
 
@@ -117,7 +126,7 @@ iwriteUCD = 1
 icalcerror = 1
 
 # Type of 1D cubature formula to use in time for error calc.
-scubTimeError = TRZ_1D
+scubTimeError = G3_1D
 
 # Name/path of the UCD output file
 sucdfilename = "./gmv/u.vtk"

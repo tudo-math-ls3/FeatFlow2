@@ -625,7 +625,7 @@ contains
             if (irow .gt. 1) then
               if (ithetaschemetype .eq. 2) then
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(0.5_DP/dalpha),&
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(dtheta/dalpha),&
                     rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
               else
