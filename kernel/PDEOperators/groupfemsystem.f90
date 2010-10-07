@@ -7154,14 +7154,24 @@ contains
       ! Loop over all vertices
       !$omp parallel do default(shared)
       do ieq = 1, NEQ
-        Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+SYS_EPSREAL)
+!!$        Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+AFCSTAB_EPSABS)
+        where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
+          Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq))
+        elsewhere
+          Drp(:,ieq) = 1.0_DP
+        end where
       end do
       !$omp end parallel do
 
       ! Loop over all vertices
       !$omp parallel do default(shared)
       do ieq = 1, NEQ
-        Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL)
+!!$        Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-AFCSTAB_EPSABS)
+        where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
+          Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq))
+        elsewhere
+          Drm(:,ieq) = 1.0_DP
+        end where
       end do
       !$omp end parallel do
 
@@ -7189,16 +7199,26 @@ contains
       ! Loop over all vertices
       !$omp parallel do default shared
       do ieq = 1, NEQ
-        Drp(:,ieq) = min(1.0_DP,&
-            ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+SYS_EPSREAL))
+!!$        Drp(:,ieq) = min(1.0_DP,&
+!!$            ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+AFCSTAB_EPSABS))
+        where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
+          Drp(:,ieq) = min(1.0_DP, ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)))
+        elsewhere
+          Drp(:,ieq) = 1.0_DP
+        end where
       end do
       !$omp end parallel do
 
       ! Loop over all vertices
       !$omp parallel do default shared
       do ieq = 1, NEQ
-        Drm(:,ieq) = min(1.0_DP,&
-            ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL))
+!!$        Drm(:,ieq) = min(1.0_DP,&
+!!$            ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-AFCSTAB_EPSABS))
+        where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
+          Drm(:,ieq) = min(1.0_DP, ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)))
+        elsewhere
+          Drm(:,ieq) = 1.0_DP
+        end where
       end do
       !$omp end parallel do
 
@@ -7236,10 +7256,12 @@ contains
         F_ij = Dflux(:,iedge)
 
         ! Compute nodal correction factors
-        where (F_ij .ge. 0.0_DP)
+        where (F_ij .gt. AFCSTAB_EPSABS)
           R_ij = min(Drp(:,i),Drm(:,j))
-        elsewhere
+        elsewhere (F_ij .lt. -AFCSTAB_EPSABS)
           R_ij = min(Drp(:,j),Drm(:,i))
+        elsewhere
+          R_ij = 1.0_DP
         end where
 
         ! Compute multiplicative correction factor
@@ -7321,10 +7343,26 @@ contains
           j = IverticesAtEdge(2,iedge)
 
           ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i),&
-                       DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j),&
-                       DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+!!$          R_ij = merge(Drp(:,i), Drm(:,i),&
+!!$                       DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+!!$          R_ji = merge(Drp(:,j), Drm(:,j),&
+!!$                       DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+
+          where (DtransformedFluxesAtEdge(:,1,idx) .gt. AFCSTAB_EPSABS)
+            R_ij = Drp(:,i)
+          elsewhere (DtransformedFluxesAtEdge(:,1,idx) .lt. -AFCSTAB_EPSABS)
+            R_ij = Drm(:,i)
+          elsewhere
+            R_ij = 1.0_DP
+          end where
+
+          where (DtransformedFluxesAtEdge(:,2,idx) .gt. AFCSTAB_EPSABS)
+            R_ji = Drp(:,j)
+          elsewhere (DtransformedFluxesAtEdge(:,2,idx) .lt. -AFCSTAB_EPSABS)
+            R_ji = Drm(:,j)
+          elsewhere
+            R_ij = 1.0_DP
+          end where
 
           ! Compute multiplicative correction factor
           Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
@@ -8529,14 +8567,24 @@ contains
       ! Loop over all vertices
       !$omp parallel do default(shared)
       do ieq = 1, NEQ
-        Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+SYS_EPSREAL)
+!!$        Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+AFCSTAB_EPSABS)
+        where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
+          Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq))
+        elsewhere
+          Drp(:,ieq) = 1.0_DP
+        end where
       end do
       !$omp end parallel do
 
       ! Loop over all vertices
       !$omp parallel do default(shared)
       do ieq = 1, NEQ
-        Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL)
+!!$        Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-AFCSTAB_EPSABS)
+        where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
+          Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq))
+        elsewhere
+          Drm(:,ieq) = 1.0_DP
+        end where
       end do
       !$omp end parallel do
 
@@ -8564,16 +8612,26 @@ contains
       ! Loop over all vertices
       !$omp parallel do default shared
       do ieq = 1, NEQ
-        Drp(:,ieq) = min(1.0_DP,&
-            ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+SYS_EPSREAL))
+!!$        Drp(:,ieq) = min(1.0_DP,&
+!!$            ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+AFCSTAB_EPSABS))
+        where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
+          Drp(:,ieq) = min(1.0_DP, ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)))
+        elsewhere
+          Drp(:,ieq) = 1.0_DP
+        end where
       end do
       !$omp end parallel do
 
       ! Loop over all vertices
       !$omp parallel do default shared
       do ieq = 1, NEQ
-        Drm(:,ieq) = min(1.0_DP,&
-            ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL))
+!!$        Drm(:,ieq) = min(1.0_DP,&
+!!$            ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-AFCSTAB_EPSABS))
+        where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
+          Drm(:,ieq) = min(1.0_DP, ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)))
+        elsewhere
+          Drm(:,ieq) = 1.0_DP
+        end where
       end do
       !$omp end parallel do
 
@@ -8611,10 +8669,12 @@ contains
         F_ij = Dflux(:,iedge)
 
         ! Compute nodal correction factors
-        where (F_ij .ge. 0.0_DP)
+        where (F_ij .gt. AFCSTAB_EPSABS)
           R_ij = min(Drp(:,i),Drm(:,j))
-        elsewhere
+        elsewhere (F_ij .lt. -AFCSTAB_EPSABS)
           R_ij = min(Drp(:,j),Drm(:,i))
+        elsewhere
+          R_ij = 1.0_DP
         end where
 
         ! Compute multiplicative correction factor
@@ -8696,10 +8756,26 @@ contains
           j = IverticesAtEdge(2,iedge)
 
           ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i),&
-                       DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j),&
-                       DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+!!$          R_ij = merge(Drp(:,i), Drm(:,i),&
+!!$                       DtransformedFluxesAtEdge(:,1,idx) .gt. AFCSTAB_EPSABS)
+!!$          R_ji = merge(Drp(:,j), Drm(:,j),&
+!!$                       DtransformedFluxesAtEdge(:,2,idx) .ge. AFCSTAB_EPSABS)
+
+          where (DtransformedFluxesAtEdge(:,1,idx) .gt. AFCSTAB_EPSABS)
+            R_ij = Drp(:,i)
+          elsewhere (DtransformedFluxesAtEdge(:,1,idx) .lt. -AFCSTAB_EPSABS)
+            R_ij = Drm(:,i)
+          elsewhere
+            R_ij = 1.0_DP
+          end where
+
+          where (DtransformedFluxesAtEdge(:,2,idx) .gt. AFCSTAB_EPSABS)
+            R_ji = Drp(:,j)
+          elsewhere (DtransformedFluxesAtEdge(:,2,idx) .lt. -AFCSTAB_EPSABS)
+            R_ji = Drm(:,j)
+          elsewhere
+            R_ij = 1.0_DP
+          end where
 
           ! Compute multiplicative correction factor
           Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
@@ -9135,7 +9211,7 @@ contains
               call doFluxesMat79ConsMass_1D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_MC, p_DcoeffX, p_Dx1, p_Dx2,&
-                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
+                  -dscale/tstep, (1.0_DP-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_1D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_DcoeffX, p_Dx2, dscale, p_Dflux)
@@ -9152,7 +9228,7 @@ contains
               call doFluxesMat79ConsMass_2D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_MC, p_DcoeffX, p_DcoeffY, p_Dx1, p_Dx2,&
-                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
+                  -dscale/tstep, (1.0_DP-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_2D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_DcoeffX, p_DcoeffY, p_Dx2, dscale, p_Dflux)
@@ -9169,7 +9245,7 @@ contains
               call doFluxesMat79ConsMass_3D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_MC, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx1, p_Dx2,&
-                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
+                  -dscale/tstep, (1.0_DP-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_3D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx2, dscale, p_Dflux)
@@ -9228,9 +9304,9 @@ contains
         ! Combine explicit and implicit fluxes
         if (binit) then
           call lalg_copyVector(p_Dflux, p_Dflux0)
-        elseif (1-theta .gt. SYS_EPSREAL) then
+        elseif (1.0_DP-theta .gt. SYS_EPSREAL) then
           call lalg_vectorLinearComb(&
-              p_Dflux0, p_Dflux, 1-theta, theta)
+              p_Dflux0, p_Dflux, 1.0_DP-theta, theta)
         elseif (theta .gt. SYS_EPSREAL) then
           call lalg_scaleVector(p_Dflux, theta)
         else
@@ -9896,7 +9972,7 @@ contains
               call doFluxesMat79ConsMass_1D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_MC, p_DcoeffX, p_Dx1, p_Dx2,&
-                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
+                  -dscale/tstep, (1.0_DP-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_1D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_DcoeffX, p_Dx2, dscale, p_Dflux)
@@ -9913,7 +9989,7 @@ contains
               call doFluxesMat79ConsMass_2D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_MC, p_DcoeffX, p_DcoeffY, p_Dx1, p_Dx2,&
-                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
+                  -dscale/tstep, (1.0_DP-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_2D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_DcoeffX, p_DcoeffY, p_Dx2, dscale, p_Dflux)
@@ -9930,7 +10006,7 @@ contains
               call doFluxesMat79ConsMass_3D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_MC, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx1, p_Dx2,&
-                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
+                  -dscale/tstep, (1.0_DP-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_3D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                   p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx2, dscale, p_Dflux)
@@ -9989,9 +10065,9 @@ contains
         ! Combine explicit and implicit fluxes
         if (binit) then
           call lalg_copyVector(p_Dflux, p_Dflux0)
-        elseif (1-theta .gt. SYS_EPSREAL) then
+        elseif (1.0_DP-theta .gt. SYS_EPSREAL) then
           call lalg_vectorLinearComb(&
-              p_Dflux0, p_Dflux, 1-theta, theta)
+              p_Dflux0, p_Dflux, 1.0_DP-theta, theta)
         elseif (theta .gt. SYS_EPSREAL) then
           call lalg_scaleVector(p_Dflux, theta)
         else

@@ -2965,14 +2965,24 @@ contains
       ! Loop over all vertices
       !$omp parallel do
       do ieq = 1, NEQ
-        Drp(ieq) = ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)+SYS_EPSREAL)
+!!$        Drp(ieq) = ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)+AFCSTAB_EPSABS)
+        if (dscale*Dpp(ieq) .gt. AFCSTAB_EPSABS) then
+          Drp(ieq) = ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq))
+        else
+          Drp(ieq) = 1.0_DP
+        end if
       end do
       !$omp end parallel do
 
       ! Loop over all vertices
       !$omp parallel do
       do ieq = 1, NEQ
-        Drm(ieq) = ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)-SYS_EPSREAL)
+!!$        Drm(ieq) = ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)-AFCSTAB_EPSABS)
+        if (dscale*Dpm(ieq) .lt. -AFCSTAB_EPSABS) then
+          Drm(ieq) = ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq))
+        else
+          Drm(ieq) = 1.0_DP
+        end if
       end do
       !$omp end parallel do
     end subroutine doLimitNodal
@@ -2996,14 +3006,24 @@ contains
       ! Loop over all vertices
       !$omp parallel do
       do ieq = 1, NEQ
-        Drp(ieq) = min(1.0_DP, ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)+SYS_EPSREAL))
+!!$        Drp(ieq) = min(1.0_DP, ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)+AFCSTAB_EPSABS))
+        if (dscale*Dpp(ieq) .gt. AFCSTAB_EPSABS) then
+          Drp(ieq) = min(1.0_DP, ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)))
+        else
+          Drp(ieq) = 1.0_DP
+        end if
       end do
       !$omp end parallel do
 
       ! Loop over all vertices
       !$omp parallel do
       do ieq = 1, NEQ
-        Drm(ieq) = min(1.0_DP, ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)-SYS_EPSREAL))
+!!$        Drm(ieq) = min(1.0_DP, ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)-AFCSTAB_EPSABS))
+        if (dscale*Dpm(ieq) .lt. -AFCSTAB_EPSABS) then
+          Drm(ieq) = min(1.0_DP, ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)))
+        else
+          Drm(ieq) = 1.0_DP
+        end if
       end do
       !$omp end parallel do
     end subroutine doLimitNodalConstrained    
@@ -3038,10 +3058,12 @@ contains
         f_ij = Dflux(iedge)
  
         ! Compute nodal correction factors
-        if (f_ij .ge. 0.0_DP) then
+        if (f_ij .gt. AFCSTAB_EPSABS) then
           r_ij = min(Drp(i),Drm(j))
-        else
+        elseif (f_ij .lt. -AFCSTAB_EPSABS) then
           r_ij = min(Drp(j),Drm(i))
+        else
+          r_ij = 1.0_DP
         end if
 
         ! Compute multiplicative correction factor
@@ -3586,7 +3608,7 @@ contains
         diff  = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
         
         ! Compute antidiffusive flux f_ij=min(0,p_ij)*(Dx_j-Dx_i)
-        if (abs(diff) < SYS_EPSREAL) then
+        if (abs(diff) < AFCSTAB_EPSABS) then
           p_ij = 0
           f_ij = 0
         else
@@ -7112,10 +7134,10 @@ contains
       diff0 = Dx0(i)-Dx0(j)
 
       ! Determine total solution difference
-      diff = tstep*(theta*diff1+(1-theta)*diff0)
+      diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
 
       ! Compute antidiffusive flux 
-      if (abs(diff) < SYS_EPSREAL) then
+      if (abs(diff) < AFCSTAB_EPSABS) then
         p_ij = 0.0_DP
         f_ij = 0.0_DP
       else
@@ -7162,10 +7184,10 @@ contains
           diff1 = Dx(i)-Dx(j)+dsign*hstep
           
           ! Update total solution difference
-          diff = tstep*(theta*diff1+(1-theta)*diff0)
+          diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
           
           ! Compute antidiffusive flux
-          if (abs(diff) < SYS_EPSREAL) then
+          if (abs(diff) < AFCSTAB_EPSABS) then
             p_ij = 0.0_DP
             f_ij = 0.0_DP
           else
@@ -7214,10 +7236,10 @@ contains
           diff1 = Dx(i)-Dx(j)-dsign*hstep
           
           ! Update total solution difference
-          diff = tstep*(theta*diff1+(1-theta)*diff0)
+          diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
           
           ! Compute antidiffusive flux
-          if (abs(diff) < SYS_EPSREAL) then
+          if (abs(diff) < AFCSTAB_EPSABS) then
             p_ij = 0.0_DP
             f_ij = 0.0_DP
           else
@@ -10546,10 +10568,10 @@ contains
       diff0 = Dx0(i)-Dx0(j)
 
       ! Determine total solution difference
-      diff = tstep*(theta*diff1+(1-theta)*diff0)
+      diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
 
       ! Compute antidiffusive flux 
-      if (abs(diff) < SYS_EPSREAL) then
+      if (abs(diff) < AFCSTAB_EPSABS) then
         p_ij = 0
         f_ij = 0
       else
@@ -10628,10 +10650,10 @@ contains
           diff1 = Dx(i)-Dx(j)+dsign*(hstep_ik-hstep_jk)
 
           ! Update total solution difference
-          diff = tstep*(theta*diff1+(1-theta)*diff0)
+          diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
 
           ! Compute antidiffusive flux
-          if (abs(diff) < SYS_EPSREAL) then
+          if (abs(diff) < AFCSTAB_EPSABS) then
             p_ij = 0
             f_ij = 0
           else
@@ -10689,7 +10711,7 @@ contains
           diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
 
           ! Compute antidiffusive flux
-          if (abs(diff) < SYS_EPSREAL) then
+          if (abs(diff) < AFCSTAB_EPSABS) then
             p_ij = 0
             f_ij = 0
           else
@@ -11813,7 +11835,7 @@ contains
         if (binit) then
           call doFluxesConsMass(p_IverticesAtEdge,&
               p_DcoefficientsAtEdge, rafcstab%NEDGE, p_MC, p_Dx1, p_Dx2,&
-              -dscale/tstep, (1-theta)*dscale, p_Dflux0)
+              -dscale/tstep, (1.0_DP-theta)*dscale, p_Dflux0)
           call doFluxesNoMass(p_IverticesAtEdge,&
               p_DcoefficientsAtEdge,rafcstab%NEDGE, p_Dx2, dscale, p_Dflux)
           
@@ -11836,10 +11858,10 @@ contains
         ! Combine explicit and implicit fluxes
         if (binit) then
           call lalg_copyVector(p_Dflux, p_Dflux0)
-        elseif (1-theta .gt. SYS_EPSREAL) then
+        elseif (1.0_DP-theta .gt. AFCSTAB_EPSABS) then
           call lalg_vectorLinearComb(&
-              p_Dflux0, p_Dflux, 1-theta, theta)
-        elseif (theta .gt. SYS_EPSREAL) then
+              p_Dflux0, p_Dflux, 1.0_DP-theta, theta)
+        elseif (theta .gt. AFCSTAB_EPSABS) then
           call lalg_scaleVector(p_Dflux, theta)
         else
           call lalg_clearVector(p_Dflux)
