@@ -371,8 +371,15 @@ contains
         "depsabs", rspaceSolverParams%depsabs)
     call parlst_getvalue_double (rparlist, "SPACE-LINEARSOLVER", &
         "domegaSmoother", rspaceSolverParams%domegaSmoother)
+        
+    call parlst_getvalue_double (rparlist, "SPACE-LINEARSOLVER", &
+        "depsdiff", rspaceSolverParams%depsdiff,0.0_DP)
+    rspaceSolverParams%depsdiffCoarse = rspaceSolverParams%depsdiff
+        
     call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
         "nmaxiterations", rspaceSolverParams%nmaxIterations)
+    call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
+        "nmaxiterationsCoarse", rspaceSolverParams%nmaxIterationsCoarse,1000)
     call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
         "ioutputlevel", rspaceSolverParams%ioutputlevel)
     

@@ -367,5 +367,11 @@ depsrel = 1E-8
 # Absolute stopping criterion
 depsabs = 1E-14
 
+# Minimum difference in the solutions (fine+coarse grid)
+depsdiff = 1E-6
+
 # Max. number of iterations
 nmaxiterations = 100
+
+# Max. number of iterations on the coarse mesh
+nmaxiterationsCoarse = 1000

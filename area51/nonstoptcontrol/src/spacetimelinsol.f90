@@ -143,6 +143,14 @@ module spacetimelinsol
     
     ! ONLY MG: Max. number of iterations, coarse grid solver
     integer :: nmaxiterationsCoarse = 1000
+    
+    ! Minimum difference in the solutions before the solution is treated as
+    ! converged.
+    real(DP) :: depsdiff = 1E-6_DP
+
+    ! Minimum difference in the solutions before the solution is treated as
+    ! converged. Coarse grid.
+    real(DP) :: depsdiffCoarse = 1E-6_DP
 
   end type
 
@@ -384,26 +392,35 @@ contains
         case (STLS_PC_JACOBI)
           ! Defect correction loops + Jacobi smoothing everywhere.
           call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
+          
           do ilev =1,ispaceLevel
+          
             call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
             if (ilev .eq. 1) then
+              
               select case (rspaceSolverParams%cproblemtype)
               case (STLS_PR_STANDARD)
                 call linsol_initJacobi (p_rpreconditioner)
+                
               case (STLS_PC_2DSADDLEPT2EQ)
                 call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
+                
               end select
+              
               call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
               p_rlevelInfo%p_rcoarseGridSolver%istoppingCriterion = LINSOL_STOP_ONEOF
+              
               if (ispaceLevel .eq. 1) then
                 ! Only one level
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
+                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiff
                 p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
                 p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
               else
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
+                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiffCoarse
                 p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
               end if
             else
@@ -417,9 +434,12 @@ contains
               call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,&
                   rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
             end if
+            
           end do
+          
           rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
           rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
+          rsolver%p_rspaceSolver%depsdiff = rspaceSolverParams%depsdiff
           rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
           rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
           rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
@@ -427,6 +447,7 @@ contains
         case (STLS_PC_BICGSTABJACOBI)
           ! Defect correction loops + Jacobi smoothing everywhere.
           call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
+          
           do ilev =1,ispaceLevel
             call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
             if (ilev .eq. 1) then
@@ -442,11 +463,13 @@ contains
                 ! Only one level
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
+                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiff
                 p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
                 p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
               else
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
+                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiffCoarse
                 p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
               end if
             else
@@ -461,8 +484,10 @@ contains
                   rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
             end if
           end do
+          
           rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
           rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
+          rsolver%p_rspaceSolver%depsdiff = rspaceSolverParams%depsdiff
           rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
           rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
           rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
@@ -480,11 +505,13 @@ contains
                 ! Only one level
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
+                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiff
                 p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
                 p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
               else
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
+                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiffCoarse
                 p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
               end if
             else
@@ -496,6 +523,7 @@ contains
           end do
           rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
           rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
+          rsolver%p_rspaceSolver%depsdiff = rspaceSolverParams%depsdiff
           rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
           rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
           rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
@@ -513,11 +541,13 @@ contains
                 ! Only one level
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
+                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiff
                 p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
                 p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
               else
                 p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
                 p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
+                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiffCoarse
                 p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
               end if
             else
@@ -529,6 +559,7 @@ contains
           end do
           rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
           rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
+          rsolver%p_rspaceSolver%depsdiff = rspaceSolverParams%depsdiff
           rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
           rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
           rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
