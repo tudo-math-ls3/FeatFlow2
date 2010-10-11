@@ -5662,7 +5662,7 @@ contains
       else if (skey .eq. "nodes") then
         
         !----------------------------------------------------
-        ! Read triangulation (or ignore it if alread given in rtriangulation)
+        ! Read triangulation (or ignore it if already given in rtriangulation)
         call read_triangulation (mfile,sline,rtriangulation)
         
         ! NEL/NVT has changed
@@ -6157,8 +6157,16 @@ contains
       read(mfile,*) Dy(:)
       read(mfile,*) Dz(:)
       
-      ! 2D or 3D mesh? It is 3D as soon as one Z-coordinate is <> 0
-      rtriangulation%ndim = NDIM2D
+      ! 1D or 2D mesh? It is 2D as soon as one Y-coordinate is <> 0
+      rtriangulation%ndim = NDIM1D
+      do i=1,n
+        if (Dy(i) .ne. 0.0_DP) then
+          rtriangulation%ndim = NDIM2D
+          exit
+        end if
+      end do
+
+      ! 1D/2D or 3D mesh? It is 3D as soon as one Z-coordinate is <> 0
       do i=1,n
         if (Dz(i) .ne. 0.0_DP) then
           rtriangulation%ndim = NDIM3D
@@ -6168,7 +6176,7 @@ contains
       
       ! Allocate memory for the coordinates with the storage-system
       Isize = (/rtriangulation%ndim,rtriangulation%NVT/)
-      call storage_new ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
+      call storage_new ('read_triangulation', 'DCORVG', Isize, ST_DOUBLE, &
           rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
       
       ! Get the pointers to the coordinate array
@@ -6245,7 +6253,7 @@ contains
       ! All elements read in. Create the actual IverticesAtElement.
 
       Isize = (/nmaxnve,rtriangulation%NEL/)
-      call storage_new ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
+      call storage_new ('read_triangulation', 'KVERT', Isize, ST_INT, &
           rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
           
       ! Get the pointer to the IverticesAtElement array and read the array
@@ -6261,6 +6269,18 @@ contains
       deallocate(IverticesAtElement)
 
       select case (rtriangulation%ndim)
+      case (NDIM1D)
+        ! Create some standard mesh information
+        call tria_genElementsAtVertex1D2D  (rtriangulation)
+        call tria_genNeighboursAtElement1D (rtriangulation)
+
+        ! Reconstruct InodalProperty
+        call reconstruct_InodalProperty_1D (rtriangulation)
+
+        ! Now generate a standard mesh from the raw mesh.
+        ! Generate all missing information.
+        call tria_initStandardMeshFromRaw(rtriangulation)
+
       case (NDIM2D)
         ! Create some standard mesh information
         call tria_genElementsAtVertex1D2D  (rtriangulation)
@@ -6285,6 +6305,118 @@ contains
 
     end subroutine
     
+    subroutine reconstruct_InodalProperty_1D (rtriangulation)
+
+      ! Reconstructs the InodalProperty, IboundaryCpIdx and 
+      ! IverticesAtBoundary arrays. Sets NBCT!
+
+      ! Triangulation structure. InodalProperty and NBCT are initialised here.
+      ! InodalProperty must be allocated and initialised with 0.
+      type(t_triangulation), intent(inout) :: rtriangulation
+
+      ! local variables
+      integer, dimension(:), pointer :: p_InodalProperty
+      integer, dimension(:,:), pointer :: p_IverticesAtElement
+      integer, dimension(:,:), pointer :: p_IneighboursAtElement
+      integer, dimension(:), pointer :: p_IverticesAtBoundary
+      integer, dimension(:), allocatable :: IverticesAtBoundary
+      integer, dimension(:), pointer :: p_IboundaryCpIdx
+      integer :: ivt,iel,ive,nbct,nvbd,ivbd,ibctidx,icurrentbc
+
+      ! Allocate memory for the arrays 
+      call storage_new ('reconstruct_InodalProperty_1D', 'KNPR', &
+          rtriangulation%NVT, ST_INT, &
+          rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+
+      ! Get the pointer to some arrays
+      call storage_getbase_int(&
+          rtriangulation%h_InodalProperty,p_InodalProperty)
+      call storage_getbase_int2d(&
+          rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+      call storage_getbase_int2d(&
+          rtriangulation%h_IneighboursAtElement,p_IneighboursAtElement)
+
+      ! In a first loop find the nodes with no neighbour element. These are
+      ! boundary edges.
+      ! Count the number of boundary vertices.
+      nvbd = 0
+      do iel=1,rtriangulation%NEL
+        do ive=1,ubound(p_IverticesAtElement,1)
+          if (p_IneighboursAtElement (ive,iel) .eq. 0) then
+            if (p_InodalProperty(p_IverticesAtElement(ive,iel)) .ne. -1) then
+              p_InodalProperty(p_IverticesAtElement(ive,iel))     = -1
+              nvbd = nvbd+1
+            end if
+          end if
+        end do
+      end do
+
+      ! There must be two boundary components 
+      ! - the interval start and end point
+      if (nvbd .ne. 2) then
+        call output_line ('Triangulation structure is invalid: NVBD does not match 2!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'reconstruct_InodalProperty_1D')
+        call sys_halt()
+      else
+        rtriangulation%NVBD = nvbd
+      end if
+
+      ! Allocate memory for IverticesAtBoundary.
+      call storage_new ('reconstruct_InodalProperty_1D', &
+          'KVBD', rtriangulation%NVBD, &
+          ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+
+      call storage_getbase_int(&
+          rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+
+      ! Now loop through all vertices. Whenever we find a vertex with InodalProperty=-1,
+      ! we start going from vertex to vertex until we found all vertices of
+      ! that boundary component.
+      ! We save all boundary vertices in IverticesAtBoundary.
+      nbct = 0
+      ivbd = 0
+      do ivt = 1,rtriangulation%NVT
+        if (p_InodalProperty(ivt) .eq. -1) then
+          ! New boundary component found
+          nbct = nbct+1
+
+          ! Save the boundary component.
+          p_InodalProperty(ivt) = nbct
+
+          ! Save the vertex.
+          ivbd = ivbd+1
+          p_IverticesAtBoundary(ivbd) = ivt
+        end if
+      end do
+
+      ! nbct is the number of boundary components we found.
+      rtriangulation%NBCT = nbct
+
+      ! Allocate memory for the boundary component index vector.
+      ! Initialise that with zero!
+      call storage_new ('reconstruct_InodalProperty_1D', &
+          'KBCT', rtriangulation%NBCT+1, &
+          ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
+    
+      call storage_getbase_int (&
+          rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+
+      ! Figure out the IboundaryCpIdx array but once checking the BC
+      ! number of all vertices on the boundary
+      ibctidx = 0
+      icurrentbc = 0
+      do ivbd = 1,nvbd
+        if (p_InodalProperty(p_IverticesAtBoundary(ivbd)) .ne. icurrentbc) then
+          ibctidx = ibctidx+1
+          p_IboundaryCpIdx(ibctidx) = ivbd
+          icurrentbc = p_InodalProperty(p_IverticesAtBoundary(ivbd))
+        end if
+      end do
+      
+      ! InodalProperty is completely classified -- that is it.
+
+    end subroutine
+
     subroutine reconstruct_InodalProperty_2D (rtriangulation)
     
       ! Reconstructs the InodalProperty, IboundaryCpIdx and 
@@ -6311,7 +6443,7 @@ contains
       real(DP), dimension(:), pointer :: p_DvertexParameterValue
       
       ! Allocate memory for the arrays 
-      call storage_new ('tria_read_tri2D', 'KNPR', &
+      call storage_new ('reconstruct_InodalProperty_2D', 'KNPR', &
           rtriangulation%NVT, ST_INT, &
           rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
       
@@ -6357,7 +6489,7 @@ contains
       rtriangulation%NVBD = nvbd
       
       ! Allocate memory for IverticesAtBoundary.
-      call storage_new ('tria_generateBasicBoundary', &
+      call storage_new ('reconstruct_InodalProperty_2D', &
           'KVBD', rtriangulation%NVBD, &
           ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
 
@@ -6447,7 +6579,7 @@ contains
     
       ! Allocate memory for the boundary component index vector.
       ! Initialise that with zero!
-      call storage_new ('tria_generateBasicBoundary', &
+      call storage_new ('reconstruct_InodalProperty_2D', &
           'KBCT', rtriangulation%NBCT+1, &
           ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
@@ -6469,7 +6601,7 @@ contains
       p_IboundaryCpIdx(nbct+1) = nvbd+1
       
       ! Allocate memory for  and DvertexParameterValue
-      call storage_new ('tria_generateBasicBoundary', &
+      call storage_new ('reconstruct_InodalProperty_2D', &
           'DVBDP', rtriangulation%NVBD, &
           ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
       
