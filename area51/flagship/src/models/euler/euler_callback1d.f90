@@ -266,10 +266,10 @@ contains
 !</subroutine>
 
     ! local variables
-#ifndef EULER_USE_IBP
-    real(DP), dimension(NVAR1D) :: dF_ij
-#else
+#ifdef EULER_USE_IBP
     real(DP), dimension(NVAR1D) :: dF_i, dF_j
+#else
+    real(DP), dimension(NVAR1D) :: dF_ij
 #endif
     real(DP) :: ui,uj,ru2i,ru2j
     integer :: idx
@@ -311,18 +311,7 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
 
-#ifndef EULER_USE_IBP
-      ! Compute flux difference for x-direction
-      dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
-      dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
-                 (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
-      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
-                 (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-
-      ! Assemble fluxes
-      DfluxesAtEdge(:,1,idx) =  dscale * DmatrixCoeffsAtEdge(1,1,idx)*dF_ij
-      DfluxesAtEdge(:,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)*dF_ij
-#else
+#ifdef EULER_USE_IBP
       ! Compute fluxes for x-direction
       dF_i(1) = DdataAtEdge(2,1,idx)
       dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
@@ -336,6 +325,17 @@ contains
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
                                          DmatrixCoeffsAtEdge(1,2,idx)*dF_i )
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+      ! Compute flux difference for x-direction
+      dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
+                 (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
+      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
+                 (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
+
+      ! Assemble fluxes
+      DfluxesAtEdge(:,1,idx) =  dscale * DmatrixCoeffsAtEdge(1,1,idx)*dF_ij
+      DfluxesAtEdge(:,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)*dF_ij      
 #endif
     end do
 
@@ -493,10 +493,10 @@ contains
 !</subroutine>
 
     ! local variables
-#ifndef EULER_USE_IBP
-    real(DP), dimension(NVAR1D) :: dF_ij
-#else
+#ifdef EULER_USE_IBP
     real(DP), dimension(NVAR1D) :: dF_i, dF_j
+#else
+    real(DP), dimension(NVAR1D) :: dF_ij
 #endif
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
@@ -540,14 +540,7 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
 
-#ifndef EULER_USE_IBP
-      ! Compute flux difference for x-direction
-      dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
-      dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
-                 (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
-      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
-                 (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-#else
+#ifdef EULER_USE_IBP
       ! Compute fluxes for x-direction
       dF_i(1) = DdataAtEdge(2,1,idx)
       dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
@@ -556,6 +549,13 @@ contains
       dF_j(1) = DdataAtEdge(2,2,idx)
       dF_j(2) = G1*DdataAtEdge(3,2,idx)-G14*ru2j
       dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
+#else
+      ! Compute flux difference for x-direction
+      dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
+                 (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
+      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
+                 (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj    
 #endif
 
       !-------------------------------------------------------------------------
@@ -589,13 +589,13 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
       
-#ifndef EULER_USE_IBP
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij + Diff)
-#else
+#ifdef EULER_USE_IBP
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
                                          DmatrixCoeffsAtEdge(1,2,idx)*dF_i + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij + Diff)     
 #endif
     end do
 
@@ -647,10 +647,10 @@ contains
 !</subroutine>
 
     ! local variables
-#ifndef EULER_USE_IBP
-    real(DP), dimension(NVAR1D) :: dF_ij
-#else
+#ifdef EULER_USE_IBP
     real(DP), dimension(NVAR1D) :: dF_i, dF_j
+#else
+    real(DP), dimension(NVAR1D) :: dF_ij
 #endif
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
@@ -696,14 +696,7 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
 
-#ifndef EULER_USE_IBP
-      ! Compute flux difference for x-direction
-      dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
-      dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
-                 (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
-      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
-                 (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-#else
+#ifdef EULER_USE_IBP
       ! Compute fluxes for x-direction
       dF_i(1) = DdataAtEdge(2,1,idx)
       dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
@@ -712,6 +705,13 @@ contains
       dF_j(1) = DdataAtEdge(2,2,idx)
       dF_j(2) = G1*DdataAtEdge(3,2,idx)-G14*ru2j
       dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
+#else
+      ! Compute flux difference for x-direction
+      dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
+                 (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
+      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
+                 (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj     
 #endif
 
       !-------------------------------------------------------------------------
@@ -770,23 +770,23 @@ contains
         ! Build both contributions into the fluxes
         !-------------------------------------------------------------------------
 
-#ifndef EULER_USE_IBP
-        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
-        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij + Diff)
-#else
+#ifdef EULER_USE_IBP
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
                                            DmatrixCoeffsAtEdge(1,2,idx)*dF_i + Diff)
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else        
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij + Diff)       
 #endif
       else
 
-#ifndef EULER_USE_IBP
-        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij)
-        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij)
-#else
+#ifdef EULER_USE_IBP
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
                                            DmatrixCoeffsAtEdge(1,2,idx)*dF_i )
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij)       
 #endif
       end if
     end do
@@ -840,10 +840,10 @@ contains
 !</subroutine>
 
     ! local variables
-#ifndef EULER_USE_IBP
-    real(DP), dimension(NVAR1D) :: dF_ij
-#else
+#ifdef EULER_USE_IBP
     real(DP), dimension(NVAR1D) :: dF_i, dF_j
+#else
+    real(DP), dimension(NVAR1D) :: dF_ij
 #endif
     real(DP), dimension(NVAR1D) :: Diff
     real(DP) :: ui,uj,ru2i,ru2j
@@ -889,14 +889,7 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
       
-#ifndef EULER_USE_IBP
-      ! Compute flux difference for x-direction
-      dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
-      dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
-                 (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
-      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
-                 (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
-#else
+#ifdef EULER_USE_IBP
       ! Compute fluxes for x-direction
       dF_i(1) = DdataAtEdge(2,1,idx)
       dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
@@ -905,6 +898,13 @@ contains
       dF_j(1) = DdataAtEdge(2,2,idx)
       dF_j(2) = G1*DdataAtEdge(3,2,idx)-G14*ru2j
       dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
+#else
+      ! Compute flux difference for x-direction
+      dF_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF_ij(2) = (G1*DdataAtEdge(3,1,idx)-G14*ru2i)-&
+                 (G1*DdataAtEdge(3,2,idx)-G14*ru2j)
+      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,idx)-G2*ru2i)*ui-&
+                 (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
 #endif
 
       !-------------------------------------------------------------------------
@@ -928,13 +928,13 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifndef EULER_USE_IBP
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij + Diff)
-#else
+#ifdef EULER_USE_IBP
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
                                          DmatrixCoeffsAtEdge(1,2,idx)*dF_i + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_ij + Diff)     
 #endif
     end do
 
