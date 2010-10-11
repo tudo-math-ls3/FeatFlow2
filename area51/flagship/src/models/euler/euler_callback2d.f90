@@ -4913,6 +4913,12 @@ contains
     real(DP) :: dnx,dny,dtime,dscale,pI,cI,rM,pM,cM,dvnI,dvtI,dvnM,dvtM,w1,w4
     integer :: ibdrtype,isegment,iel,ipoint,ndim,ivar,nvar,iexpr,nmaxExpr
 
+#ifndef EULER_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DEULER_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'euler_coeffVectorBdr2d_sim')
+    call sys_halt()
+#endif
 
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
