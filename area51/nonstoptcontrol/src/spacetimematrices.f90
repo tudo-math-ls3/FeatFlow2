@@ -614,10 +614,17 @@ contains
               rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 
           ! Coupling of the primal to the dual
-          !call lsyssc_matrixLinearComb (&
-          !    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
-          !    rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
-          !    rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
+          if (ithetaschemetype .eq. 0) then
+            call lsyssc_matrixLinearComb (&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
+                rsubMatrix%RmatrixBlock(1,4),1.0_DP,&
+                rsubMatrix%RmatrixBlock(1,4),.false.,.false.,.true.,.true.)
+
+            call lsyssc_matrixLinearComb (&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
+                rsubMatrix%RmatrixBlock(2,5),1.0_DP,&
+                rsubMatrix%RmatrixBlock(2,5),.false.,.false.,.true.,.true.)
+          end if
         end if
         
         if (irow .eq. icol) then
@@ -651,15 +658,31 @@ contains
           ! No coupling in the first timestep.
           
           if (irow .gt. 1) then
-            call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
-                rsubMatrix%RmatrixBlock(1,4),1.0_DP,&
-                rsubMatrix%RmatrixBlock(1,4),.false.,.false.,.true.,.true.)
+            if (ithetaschemetype .eq. 0) then
+            
+              call lsyssc_matrixLinearComb (&
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(dtheta/dalpha),&
+                  rsubMatrix%RmatrixBlock(1,4),1.0_DP,&
+                  rsubMatrix%RmatrixBlock(1,4),.false.,.false.,.true.,.true.)
 
-            call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
-                rsubMatrix%RmatrixBlock(2,5),1.0_DP,&
-                rsubMatrix%RmatrixBlock(2,5),.false.,.false.,.true.,.true.)
+              call lsyssc_matrixLinearComb (&
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(dtheta/dalpha),&
+                  rsubMatrix%RmatrixBlock(2,5),1.0_DP,&
+                  rsubMatrix%RmatrixBlock(2,5),.false.,.false.,.true.,.true.)
+
+            else
+            
+              call lsyssc_matrixLinearComb (&
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
+                  rsubMatrix%RmatrixBlock(1,4),1.0_DP,&
+                  rsubMatrix%RmatrixBlock(1,4),.false.,.false.,.true.,.true.)
+
+              call lsyssc_matrixLinearComb (&
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
+                  rsubMatrix%RmatrixBlock(2,5),1.0_DP,&
+                  rsubMatrix%RmatrixBlock(2,5),.false.,.false.,.true.,.true.)
+            
+            end if
           end if
 
           ! B/D
@@ -785,12 +808,12 @@ contains
             else             
             
               call lsyssc_matrixLinearComb (&
-                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual,&
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*dtheta,&
                   rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
                   rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 
               call lsyssc_matrixLinearComb (&
-                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual,&
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*dtheta,&
                   rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                   rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
                   
@@ -848,10 +871,17 @@ contains
               rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
 
           ! Coupling of the primal to the dual
-          !call lsyssc_matrixLinearComb (&
-          !    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*(1.0_DP-dtheta),&
-          !    rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
-          !    rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
+          if (ithetaschemetype .eq. 0) then
+            call lsyssc_matrixLinearComb (&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*(1.0_DP-dtheta),&
+                rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
+                rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
+
+            call lsyssc_matrixLinearComb (&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*(1.0_DP-dtheta),&
+                rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
+                rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
+          end if
         end if
 
 !      end if

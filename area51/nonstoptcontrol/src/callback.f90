@@ -2002,102 +2002,46 @@ contains
       ! Primal: f1
       select case (creferenceProblem)
       case (6)
-        ! No RHS in initial condition since the solution should
-        ! be =0 there.
-        if (dtime .gt. 0.0_DP) then
-          Dcoefficients(1,:,:) =  &
-              -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
-                (fct_StokesLambda6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
-              + fct_stokesF6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
-        end if
+        Dcoefficients(1,:,:) =  &
+            fct_stokesF6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
       case (7)
-        ! No RHS in initial condition since the solution should
-        ! be =0 there.
-        if (dtime .gt. 0.0_DP) then
-          Dcoefficients(1,:,:) =  &
-              -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
-                (fct_StokesLambda7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
-              + fct_stokesF7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
-        end if
+        Dcoefficients(1,:,:) =  &
+            fct_stokesF7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
       case (8)
-        ! No RHS in initial condition since the solution should
-        ! be =0 there.
-        if (dtime .gt. 0.0_DP) then
-          Dcoefficients(1,:,:) =  &
-              -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
-                (fct_StokesLambda8_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
-              + fct_stokesF8_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
-        end if
+        Dcoefficients(1,:,:) =  &
+            fct_stokesF8_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
       case (9)
-        ! No RHS in initial condition since the solution should
-        ! be =0 there.
-        if (dtime .gt. 0.0_DP) then
-          Dcoefficients(1,:,:) =  &
-              -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
-                (fct_stokesLambda9_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
-              + fct_stokesF9_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
-        end if
+        Dcoefficients(1,:,:) =  &
+            fct_stokesF9_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
       end select
 
     case (2)
       ! Primal: f2
       select case (creferenceProblem)
       case (6)
-        ! No RHS in initial condition since the solution should
-        ! be =0 there.
-        if (dtime .gt. 0.0_DP) then
-          Dcoefficients(1,:,:) =  &
-              -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
-                (fct_StokesLambda6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
-              + fct_stokesF6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
-        end if
+        Dcoefficients(1,:,:) =  &
+            fct_stokesF6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
       case (7)
-        ! No RHS in initial condition since the solution should
-        ! be =0 there.
-        if (dtime .gt. 0.0_DP) then
-          Dcoefficients(1,:,:) =  &
-              -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
-                (fct_StokesLambda7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
-              + fct_stokesF7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
-        end if
+        Dcoefficients(1,:,:) =  &
+            fct_stokesF7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
       case (8)
-        ! No RHS in initial condition since the solution should
-        ! be =0 there.
-        if (dtime .gt. 0.0_DP) then
-          Dcoefficients(1,:,:) =  &
-              -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
-                (fct_StokesLambda8_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
-              + fct_stokesF8_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
-        end if
+        Dcoefficients(1,:,:) =  &
+            fct_stokesF8_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
       case (9)
-        ! No RHS in initial condition since the solution should
-        ! be =0 there.
-        if (dtime .gt. 0.0_DP) then
-          Dcoefficients(1,:,:) =  &
-              -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
-                (fct_stokesLambda9_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
-              + fct_stokesF9_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
-        end if
+        Dcoefficients(1,:,:) =  &
+            fct_stokesF9_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
       end select
 
     case (3)
       ! Primal: f_p
       select case (creferenceProblem)
       case (8)
-        ! No RHS in initial condition since the solution should
-        ! be =0 there.
-        if (dtime .gt. 0.0_DP) then
-          Dcoefficients(1,:,:) =  &
-              fct_stokesF8_p(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
-        end if
+        Dcoefficients(1,:,:) =  &
+            fct_stokesF8_p(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
         
       case (9)
-        ! No RHS in initial condition since the solution should
-        ! be =0 there.
-        if (dtime .gt. 0.0_DP) then
-          Dcoefficients(1,:,:) =  &
-              fct_stokesF9_p(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
-        end if
+        Dcoefficients(1,:,:) =  &
+            fct_stokesF9_p(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
         
       case default
         Dcoefficients(1,:,:) = 0.0_DP
@@ -2111,62 +2055,44 @@ contains
       case (1)
         ! 1.)
         Dcoefficients(1,:,:) =  &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY1_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ1_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (2)
         ! 2.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY2_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ2_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (3)
         ! 3.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY3_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ3_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       
       case (4)
         ! 4.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
 
       case (5)
         ! 5.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY5_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ5_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       
       case (6)
         ! 6.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       
       case (7)
         ! 7.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       
       case (8)
         ! 8.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY8_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ8_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
 
       case (9)
         ! 9.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY9_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ9_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
 
       case default
@@ -2204,58 +2130,40 @@ contains
       case (1)
         ! 1.)
         Dcoefficients(1,:,:) =  &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY1_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ1_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (2)
         ! 2.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY2_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ2_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (3)
         ! 3.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY3_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ3_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (4)
         ! 4.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (5)
         ! 5.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY5_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ5_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (6)
         ! 6.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
       case (7)
         ! 7.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
 
       case (8)
         ! 8.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY8_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ8_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
 
       case (9)
         ! 9.)
         Dcoefficients(1,:,:) = &
-            (1.0_DP-dcouplePrimalToDual) * &
-                (fct_stokesY9_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)) &
             - (fct_stokesZ9_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
 
       case default
@@ -2307,9 +2215,282 @@ contains
       call sys_halt()
     end select      
 
-
   end subroutine
   
+  ! ***************************************************************************
+
+  subroutine sol_stokesEquation (rdiscretisation, rform, &
+                nelements, npointsPerElement, Dpoints, &
+                IdofsTest, rdomainIntSubset, &
+                Dcoefficients, rcollection)
+  
+  ! Coefficient function for the RHS of the heat equation
+  
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  type(t_linearForm), intent(in) :: rform
+  integer, intent(in) :: nelements
+  integer, intent(in) :: npointsPerElement
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  integer, dimension(:,:), intent(in) :: IdofsTest
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset    
+  type(t_collection), intent(inout), optional :: rcollection
+  real(DP) :: dcouplePrimalToDual,dcoupleDualToPrimal
+
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  
+    integer :: icomponent,creferenceProblem,ithetaschemetype
+    real(DP) :: dtime,dalpha,dtstep,dtheta,dgamma,dtimeMin,dtimeMax
+    
+    icomponent = rcollection%IquickAccess(1)
+    creferenceProblem = rcollection%IquickAccess(2)
+    ithetaschemetype = rcollection%IquickAccess(3)
+    dtime = rcollection%DquickAccess(1)
+    dtstep = rcollection%DquickAccess(2)
+    dalpha = rcollection%DquickAccess(3)
+    dgamma = rcollection%DquickAccess(4)
+    dtheta = rcollection%DquickAccess(5)
+    dcouplePrimalToDual = rcollection%DquickAccess(7)
+    dcoupleDualToPrimal = rcollection%DquickAccess(8)
+    dtimeMin = rcollection%DquickAccess(9)
+    dtimeMax = rcollection%DquickAccess(10)
+    
+    Dcoefficients(1,:,:) = 0.0_DP
+    
+    ! Primal or dual?
+    select case (icomponent)
+    case (1)
+      ! Primal: f1
+      select case (creferenceProblem)
+      case (6)
+        ! No RHS in initial condition since the solution should
+        ! be =0 there.
+        if (dtime .gt. 0.0_DP) then
+          Dcoefficients(1,:,:) =  &
+              fct_StokesY6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+        end if
+      case (7)
+        ! No RHS in initial condition since the solution should
+        ! be =0 there.
+        if (dtime .gt. 0.0_DP) then
+          Dcoefficients(1,:,:) =  &
+              fct_StokesY7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+        end if
+      case (8)
+        ! No RHS in initial condition since the solution should
+        ! be =0 there.
+        if (dtime .gt. 0.0_DP) then
+          Dcoefficients(1,:,:) =  &
+              fct_StokesY8_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+        end if
+      case (9)
+        ! No RHS in initial condition since the solution should
+        ! be =0 there.
+        if (dtime .gt. 0.0_DP) then
+          Dcoefficients(1,:,:) =  &
+              fct_StokesY9_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+        end if
+      end select
+
+    case (2)
+      ! Primal: f2
+      select case (creferenceProblem)
+      case (6)
+        ! No RHS in initial condition since the solution should
+        ! be =0 there.
+        if (dtime .gt. 0.0_DP) then
+          Dcoefficients(1,:,:) =  &
+              fct_stokesY6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+        end if
+      case (7)
+        ! No RHS in initial condition since the solution should
+        ! be =0 there.
+        if (dtime .gt. 0.0_DP) then
+          Dcoefficients(1,:,:) =  &
+              fct_stokesY7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+        end if
+      case (8)
+        ! No RHS in initial condition since the solution should
+        ! be =0 there.
+        if (dtime .gt. 0.0_DP) then
+          Dcoefficients(1,:,:) =  &
+              fct_stokesY8_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+        end if
+      case (9)
+        ! No RHS in initial condition since the solution should
+        ! be =0 there.
+        if (dtime .gt. 0.0_DP) then
+          Dcoefficients(1,:,:) =  &
+              fct_stokesY9_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+        end if
+      end select
+
+    case (3)
+      ! Primal: p
+      select case (creferenceProblem)
+      case default
+        Dcoefficients(1,:,:) = 0.0_DP
+      end select
+      
+    case (4)
+      ! Dual: -z1
+      
+      select case (creferenceProblem)
+      case (0)
+      case (1)
+        ! 1.)
+        Dcoefficients(1,:,:) =  &
+            (fct_StokesLambda1_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      case (2)
+        ! 2.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda2_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      case (3)
+        ! 3.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda3_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      
+      case (4)
+        ! 4.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+
+      case (5)
+        ! 5.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda5_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      
+      case (6)
+        ! 6.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      
+      case (7)
+        ! 7.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      
+      case (8)
+        ! 8.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda8_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+
+      case (9)
+        ! 9.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda9_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+
+      case default
+        call output_line ("Problem not supported.")
+        call sys_halt()
+      end select
+
+!      if (ithetaschemetype .eq. 1) then
+!        if (dtime .eq. 1.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dtheta*dgamma/dtstep)
+!        end if
+!
+!        if (dtime .eq. 0.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP-dtheta)
+!        end if
+!      else
+!        if (dtime .eq. 1.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + 1.0_DP*dgamma/dtstep)
+!        end if
+!
+!        if (dtime .eq. 0.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = 0.0_DP
+!        end if
+!      end if
+
+    case (5)
+      ! Dual: -z2
+      
+      select case (creferenceProblem)
+      case (0)
+      case (1)
+        ! 1.)
+        Dcoefficients(1,:,:) =  &
+            (fct_StokesLambda1_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      case (2)
+        ! 2.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda2_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      case (3)
+        ! 3.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda3_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      case (4)
+        ! 4.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      case (5)
+        ! 5.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda5_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      case (6)
+        ! 6.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda6_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+      case (7)
+        ! 7.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+
+      case (8)
+        ! 8.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda8_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+
+      case (9)
+        ! 9.)
+        Dcoefficients(1,:,:) = &
+            (fct_StokesLambda9_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+
+      case default
+        call output_line ("Problem not supported.")
+        call sys_halt()
+      end select
+
+!      if (ithetaschemetype .eq. 1) then
+!        if (dtime .eq. 1.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dtheta*dgamma/dtstep)
+!        end if
+!
+!        if (dtime .eq. 0.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP-dtheta)
+!        end if
+!      else
+!        if (dtime .eq. 1.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + dgamma/dtstep)
+!        end if
+!
+!        if (dtime .eq. 0.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = 0.0_DP
+!        end if
+!      end if
+
+    case (6)
+      ! Dual: xi
+      select case (creferenceProblem)
+      case default
+        Dcoefficients(1,:,:) = 0.0_DP
+      end select
+
+    case default
+      ! Should not happen
+      call sys_halt()
+    end select      
+
+  end subroutine
+
   ! ***************************************************************************
   
   subroutine cb_getBoundaryValuesOptC (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
