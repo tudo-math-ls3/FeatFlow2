@@ -545,9 +545,8 @@ contains
 
 
       case DEFAULT
-        call output_line('Invalid type of dissipation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
-        call sys_halt()
+        ! Clear system matrix and apply (lumped) mass matrix only
+        call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
       end select
 
 
@@ -700,9 +699,8 @@ contains
 
 
     case DEFAULT
-      call output_line('Invalid type of flow coupling!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
-      call sys_halt()
+      ! Clear system matrix and apply (lumped) mass matrix only
+      call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
     end select
 
 
