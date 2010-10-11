@@ -7154,7 +7154,6 @@ contains
       ! Loop over all vertices
       !$omp parallel do default(shared)
       do ieq = 1, NEQ
-!!$        Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+AFCSTAB_EPSABS)
         where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
           Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq))
         elsewhere
@@ -7166,7 +7165,6 @@ contains
       ! Loop over all vertices
       !$omp parallel do default(shared)
       do ieq = 1, NEQ
-!!$        Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-AFCSTAB_EPSABS)
         where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
           Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq))
         elsewhere
@@ -7199,8 +7197,6 @@ contains
       ! Loop over all vertices
       !$omp parallel do default shared
       do ieq = 1, NEQ
-!!$        Drp(:,ieq) = min(1.0_DP,&
-!!$            ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+AFCSTAB_EPSABS))
         where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
           Drp(:,ieq) = min(1.0_DP, ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)))
         elsewhere
@@ -7212,8 +7208,6 @@ contains
       ! Loop over all vertices
       !$omp parallel do default shared
       do ieq = 1, NEQ
-!!$        Drm(:,ieq) = min(1.0_DP,&
-!!$            ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-AFCSTAB_EPSABS))
         where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
           Drm(:,ieq) = min(1.0_DP, ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)))
         elsewhere
@@ -7256,13 +7250,22 @@ contains
         F_ij = Dflux(:,iedge)
 
         ! Compute nodal correction factors
-        where (F_ij .gt. AFCSTAB_EPSABS)
+        where (F_ij .ge. 0.0_DP)
           R_ij = min(Drp(:,i),Drm(:,j))
-        elsewhere (F_ij .lt. -AFCSTAB_EPSABS)
-          R_ij = min(Drp(:,j),Drm(:,i))
         elsewhere
-          R_ij = 1.0_DP
+          R_ij = min(Drp(:,j),Drm(:,i))
         end where
+
+!!$       REMARK: Numerical test demonstrate that this modification has no
+!!$               significant influence on the order-of-accuracy
+!!$
+!!$        where (F_ij .gt. AFCSTAB_EPSABS)
+!!$          R_ij = min(Drp(:,i),Drm(:,j))
+!!$        elsewhere (F_ij .lt. -AFCSTAB_EPSABS)
+!!$          R_ij = min(Drp(:,j),Drm(:,i))
+!!$        elsewhere
+!!$          R_ij = 1.0_DP
+!!$        end where
 
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
@@ -7343,26 +7346,29 @@ contains
           j = IverticesAtEdge(2,iedge)
 
           ! Compute nodal correction factors
-!!$          R_ij = merge(Drp(:,i), Drm(:,i),&
-!!$                       DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
-!!$          R_ji = merge(Drp(:,j), Drm(:,j),&
-!!$                       DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+          R_ij = merge(Drp(:,i), Drm(:,i),&
+                       DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+          R_ji = merge(Drp(:,j), Drm(:,j),&
+                       DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
 
-          where (DtransformedFluxesAtEdge(:,1,idx) .gt. AFCSTAB_EPSABS)
-            R_ij = Drp(:,i)
-          elsewhere (DtransformedFluxesAtEdge(:,1,idx) .lt. -AFCSTAB_EPSABS)
-            R_ij = Drm(:,i)
-          elsewhere
-            R_ij = 1.0_DP
-          end where
-
-          where (DtransformedFluxesAtEdge(:,2,idx) .gt. AFCSTAB_EPSABS)
-            R_ji = Drp(:,j)
-          elsewhere (DtransformedFluxesAtEdge(:,2,idx) .lt. -AFCSTAB_EPSABS)
-            R_ji = Drm(:,j)
-          elsewhere
-            R_ij = 1.0_DP
-          end where
+!!$       REMARK: Numerical test demonstrate that this modification has no
+!!$               significant influence on the order-of-accuracy
+!!$
+!!$          where (DtransformedFluxesAtEdge(:,1,idx) .gt. AFCSTAB_EPSABS)
+!!$            R_ij = Drp(:,i)
+!!$          elsewhere (DtransformedFluxesAtEdge(:,1,idx) .lt. -AFCSTAB_EPSABS)
+!!$            R_ij = Drm(:,i)
+!!$          elsewhere
+!!$            R_ij = 1.0_DP
+!!$          end where
+!!$
+!!$          where (DtransformedFluxesAtEdge(:,2,idx) .gt. AFCSTAB_EPSABS)
+!!$            R_ji = Drp(:,j)
+!!$          elsewhere (DtransformedFluxesAtEdge(:,2,idx) .lt. -AFCSTAB_EPSABS)
+!!$            R_ji = Drm(:,j)
+!!$          elsewhere
+!!$            R_ij = 1.0_DP
+!!$          end where
 
           ! Compute multiplicative correction factor
           Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
@@ -8567,7 +8573,6 @@ contains
       ! Loop over all vertices
       !$omp parallel do default(shared)
       do ieq = 1, NEQ
-!!$        Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+AFCSTAB_EPSABS)
         where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
           Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq))
         elsewhere
@@ -8579,7 +8584,6 @@ contains
       ! Loop over all vertices
       !$omp parallel do default(shared)
       do ieq = 1, NEQ
-!!$        Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-AFCSTAB_EPSABS)
         where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
           Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq))
         elsewhere
@@ -8612,8 +8616,6 @@ contains
       ! Loop over all vertices
       !$omp parallel do default shared
       do ieq = 1, NEQ
-!!$        Drp(:,ieq) = min(1.0_DP,&
-!!$            ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+AFCSTAB_EPSABS))
         where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
           Drp(:,ieq) = min(1.0_DP, ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)))
         elsewhere
@@ -8625,8 +8627,6 @@ contains
       ! Loop over all vertices
       !$omp parallel do default shared
       do ieq = 1, NEQ
-!!$        Drm(:,ieq) = min(1.0_DP,&
-!!$            ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-AFCSTAB_EPSABS))
         where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
           Drm(:,ieq) = min(1.0_DP, ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)))
         elsewhere
@@ -8669,13 +8669,22 @@ contains
         F_ij = Dflux(:,iedge)
 
         ! Compute nodal correction factors
-        where (F_ij .gt. AFCSTAB_EPSABS)
+        where (F_ij .ge. 0.0_DP)
           R_ij = min(Drp(:,i),Drm(:,j))
-        elsewhere (F_ij .lt. -AFCSTAB_EPSABS)
-          R_ij = min(Drp(:,j),Drm(:,i))
         elsewhere
-          R_ij = 1.0_DP
+          R_ij = min(Drp(:,j),Drm(:,i))
         end where
+
+!!$       REMARK: Numerical test demonstrate that this modification has no
+!!$               significant influence on the order-of-accuracy
+!!$
+!!$        where (F_ij .gt. AFCSTAB_EPSABS)
+!!$          R_ij = min(Drp(:,i),Drm(:,j))
+!!$        elsewhere (F_ij .lt. -AFCSTAB_EPSABS)
+!!$          R_ij = min(Drp(:,j),Drm(:,i))
+!!$        elsewhere
+!!$          R_ij = 1.0_DP
+!!$        end where
 
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
@@ -8756,26 +8765,29 @@ contains
           j = IverticesAtEdge(2,iedge)
 
           ! Compute nodal correction factors
-!!$          R_ij = merge(Drp(:,i), Drm(:,i),&
-!!$                       DtransformedFluxesAtEdge(:,1,idx) .gt. AFCSTAB_EPSABS)
-!!$          R_ji = merge(Drp(:,j), Drm(:,j),&
-!!$                       DtransformedFluxesAtEdge(:,2,idx) .ge. AFCSTAB_EPSABS)
+          R_ij = merge(Drp(:,i), Drm(:,i),&
+                       DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+          R_ji = merge(Drp(:,j), Drm(:,j),&
+                       DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
 
-          where (DtransformedFluxesAtEdge(:,1,idx) .gt. AFCSTAB_EPSABS)
-            R_ij = Drp(:,i)
-          elsewhere (DtransformedFluxesAtEdge(:,1,idx) .lt. -AFCSTAB_EPSABS)
-            R_ij = Drm(:,i)
-          elsewhere
-            R_ij = 1.0_DP
-          end where
-
-          where (DtransformedFluxesAtEdge(:,2,idx) .gt. AFCSTAB_EPSABS)
-            R_ji = Drp(:,j)
-          elsewhere (DtransformedFluxesAtEdge(:,2,idx) .lt. -AFCSTAB_EPSABS)
-            R_ji = Drm(:,j)
-          elsewhere
-            R_ij = 1.0_DP
-          end where
+!!$       REMARK: Numerical test demonstrate that this modification has no
+!!$               significant influence on the order-of-accuracy
+!!$
+!!$          where (DtransformedFluxesAtEdge(:,1,idx) .gt. AFCSTAB_EPSABS)
+!!$            R_ij = Drp(:,i)
+!!$          elsewhere (DtransformedFluxesAtEdge(:,1,idx) .lt. -AFCSTAB_EPSABS)
+!!$            R_ij = Drm(:,i)
+!!$          elsewhere
+!!$            R_ij = 1.0_DP
+!!$          end where
+!!$
+!!$          where (DtransformedFluxesAtEdge(:,2,idx) .gt. AFCSTAB_EPSABS)
+!!$            R_ji = Drp(:,j)
+!!$          elsewhere (DtransformedFluxesAtEdge(:,2,idx) .lt. -AFCSTAB_EPSABS)
+!!$            R_ji = Drm(:,j)
+!!$          elsewhere
+!!$            R_ij = 1.0_DP
+!!$          end where
 
           ! Compute multiplicative correction factor
           Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))

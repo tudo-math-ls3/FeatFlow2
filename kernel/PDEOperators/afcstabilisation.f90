@@ -253,12 +253,12 @@ module afcstabilisation
 
 !<constantblock description="Default tolerances for stabilisation">
   
-  ! Tolerance for stabilisation
+  ! Absolute tolerance for stabilisation
 #ifdef __AFCSTAB_EPSABS
   real(DP), parameter, public :: AFCSTAB_EPSABS = __AFCSTAB_EPSABS
 #else
   real(DP), parameter, public :: AFCSTAB_EPSABS = 1e-12
-#endif
+#endif 
 
 !</constantblock>
 
@@ -1464,9 +1464,10 @@ contains
 
 !<description>
     ! This subroutine performs failsafe flux limiting as described in
-    ! the paper by Kuzmin, Möller, Shadid, and Shashkov: "Failsafe
-    ! flux limiting and constrained data projection for systems of
-    ! conservation laws" submitted to JCP 2010.
+    ! the paper by Kuzmin, Moeller, Shadid, and Shashkov: "Failsafe
+    ! flux limiting and constrained data projection for equations of
+    ! gas dynamics" Journal of Computational Physics, vol. 229,
+    ! Nov. 2010, p. 8766-8779.
 !</description>
 
 !<input>
@@ -1609,9 +1610,10 @@ contains
 
 !<description>
     ! This subroutine performs failsafe flux limiting as described in
-    ! the paper by Kuzmin, Möller, Shadid, and Shashkov: "Failsafe
-    ! flux limiting and constrained data projection for systems of
-    ! conservation laws" submitted to JCP 2010.
+    ! the paper by Kuzmin, Moeller, Shadid, and Shashkov: "Failsafe
+    ! flux limiting and constrained data projection for equations of
+    ! gas dynamics" Journal of Computational Physics, vol. 229,
+    ! Nov. 2010, p. 8766-8779.
     !
     ! This subroutine works for arrays of block vectors, that is, is
     ! handles coupled problems consisting of individual subproblems
