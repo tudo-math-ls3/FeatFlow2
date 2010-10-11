@@ -532,11 +532,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)        
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           call output_line('Unable to handle periodic boundary ' // &
@@ -642,11 +642,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
           case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
             call output_line('Unable to handle periodic boundary' // &
@@ -724,11 +724,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
@@ -906,11 +906,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
             
           case (BDRC_PERIODIC)
             ! Compute vertex parameter value at periodic boundary
@@ -1137,11 +1137,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
           
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
@@ -1325,11 +1325,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
           case (BDRC_PERIODIC)
             ! Compute vertex parameter value at periodic boundary
@@ -1558,11 +1558,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
@@ -1753,11 +1753,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
             
           case (BDRC_PERIODIC)
             ! Compute vertex parameter value at periodic boundary
@@ -2150,11 +2150,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           ! Do nothing
@@ -2256,11 +2256,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
             
           case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
             ! Do nothing
@@ -2508,11 +2508,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           ! Do nothing
@@ -2613,11 +2613,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
           case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
             ! Do nothing
@@ -2905,11 +2905,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           ! Do nothing
@@ -3072,11 +3072,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
           case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
             ! Do nothing
@@ -3438,11 +3438,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
         
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           ! Do nothing
@@ -3597,11 +3597,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
           case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
             ! Do nothing
@@ -4175,11 +4175,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
@@ -4392,11 +4392,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
           case (BDRC_PERIODIC)
             ! Compute vertex parameter value at periodic boundary
@@ -5213,11 +5213,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           call output_line('Unable to handle periodic boundary ' // &
@@ -5391,11 +5391,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
           
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
             
           case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
             call output_line('Unable to handle periodic boundary ' // &
@@ -5605,11 +5605,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
@@ -5803,11 +5803,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
           
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
           case (BDRC_PERIODIC)
             ! Compute vertex parameter value at periodic boundary
@@ -6070,11 +6070,11 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
-        if (iand(p_IbdrCondType(isegment),&
+        if (iand(int(p_IbdrCondType(isegment),I32),&
                  BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
         ! What kind of boundary condition are we?
-        select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+        select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
 
         case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
@@ -6272,11 +6272,11 @@ contains
           end do
 
           ! Check if this segment has strong boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
+          if (iand(int(p_IbdrCondType(isegment),I32),&
                    BDRC_STRONG) .ne. BDRC_STRONG) cycle
 
           ! What kind of boundary condition are we?
-          select case(iand(IbdrCondType(isegment), BDRC_TYPEMASK))
+          select case(iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK))
             
           case (BDRC_PERIODIC)
             ! Compute vertex parameter value at periodic boundary

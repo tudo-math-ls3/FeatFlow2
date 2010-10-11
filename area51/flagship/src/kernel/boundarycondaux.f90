@@ -381,11 +381,11 @@ contains
           p_IbdrCondType(icomp), nexpr)
 
       ! Set indicator for strong boundary conditions
-      if (iand(p_IbdrCondType(icomp), BDRC_STRONG) .eq. BDRC_STRONG)&
+      if (iand(int(p_IbdrCondType(icomp),I32), BDRC_STRONG) .eq. BDRC_STRONG)&
           rboundaryCondition%bStrongBdrCond = .true.
       
       ! Set indicator for weak boundary conditions
-      if (iand(p_IbdrCondType(icomp), BDRC_WEAK) .eq. BDRC_WEAK)&
+      if (iand(int(p_IbdrCondType(icomp),I32), BDRC_WEAK) .eq. BDRC_WEAK)&
           rboundaryCondition%bWeakBdrCond = .true.
 
       ! How many mathematical expressions are required for
@@ -691,9 +691,9 @@ contains
         isegment  = IbdrCondCpIdx(ibct)
 
         ! Are we strongly imposed periodic boundary conditions?
-        if (iand(IbdrCondType(isegment), BDRC_STRONG)   .eq. BDRC_STRONG .and.&
-           (iand(IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_PERIODIC .or.&
-            iand(IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
+        if (iand(int(IbdrCondType(isegment),I32), BDRC_STRONG)   .eq. BDRC_STRONG .and.&
+           (iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK) .eq. BDRC_PERIODIC .or.&
+            iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
 
           ! Compute vertex parameter value at periodic boundary
           ibctPeriodic = IbdrCompPeriodic(isegment)
@@ -802,8 +802,8 @@ contains
           end do
 
           ! Are we strongly imposed periodic boundary conditions?
-          if (iand(IbdrCondType(isegment), BDRC_STRONG)   .eq. BDRC_STRONG .and.&
-              iand(IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+          if (iand(int(IbdrCondType(isegment),I32), BDRC_STRONG)   .eq. BDRC_STRONG .and.&
+              iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
 
             ! Compute vertex parameter value at periodic boundary
             ibctPeriodic     = IbdrCompPeriodic(isegment)
@@ -831,8 +831,8 @@ contains
             Irows(1, nrows) = IverticesAtBoundary(ivbd)
             Irows(2, nrows) = IverticesAtBoundary(ivbdPeriodic)
 
-          elseif (iand(IbdrCondType(isegment), BDRC_STRONG)   .eq. BDRC_STRONG .and.&
-                  iand(IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC) then
+          elseif (iand(int(IbdrCondType(isegment),I32), BDRC_STRONG)   .eq. BDRC_STRONG .and.&
+                  iand(int(IbdrCondType(isegment),I32), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC) then
 
             ! Compute vertex parameter value at periodic boundary
             ibctPeriodic     = IbdrCompPeriodic(isegment)
