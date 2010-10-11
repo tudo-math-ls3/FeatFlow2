@@ -1180,15 +1180,16 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-#ifndef TRANSP_USE_IBP
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CX),&
-          DER_DERIV3D_X, DER_FUNC, -1.0_DP)
-#else
+#ifdef TRANSP_USE_IBP
       ! Perform integration by parts in divergence terms
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(coeffMatrix_CX),&
           DER_FUNC, DER_DERIV3D_X, 1.0_DP)
+#else
+      ! Do not perform integration by parts
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CX),&
+          DER_DERIV3D_X, DER_FUNC, -1.0_DP)
 #endif
     end if
 
@@ -1212,15 +1213,16 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-#ifndef TRANSP_USE_IBP
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CY),&
-          DER_DERIV3D_Y, DER_FUNC, -1.0_DP)
-#else
+#ifdef TRANSP_USE_IBP
       ! Perform integration by parts in divergence term
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(coeffMatrix_CY),&
           DER_FUNC, DER_DERIV3D_Y, 1.0_DP)
+#else
+      ! Do not perform integration by parts
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CY),&
+          DER_DERIV3D_Y, DER_FUNC, -1.0_DP)
 #endif
     end if
 
@@ -1244,15 +1246,16 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-#ifndef TRANSP_USE_IBP
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-          DER_DERIV3D_Z, DER_FUNC, -1.0_DP)
-#else
+#ifdef TRANSP_USE_IBP
       ! Perform integration by parts in divergence term
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(coeffMatrix_CZ),&
           DER_FUNC, DER_DERIV3D_Z, 1.0_DP)
+#else
+      ! Do not perform integration by parts
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+          DER_DERIV3D_Z, DER_FUNC, -1.0_DP)
 #endif
     end if
 
