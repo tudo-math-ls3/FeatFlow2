@@ -1356,7 +1356,6 @@ contains
     call sys_halt()
 #endif
 
-
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
