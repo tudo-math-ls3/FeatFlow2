@@ -37,9 +37,8 @@
 # Schedule, except "final" scripts:
 
 # ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference.fbconf    
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference.fbconf    
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference.fbconf    
 # ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference_lv2.fbconf
 # ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference_lv3.fbconf
 # ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference_lv4.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference_lv5.fbconf
 # ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference_lv5.fbconf
