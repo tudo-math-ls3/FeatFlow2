@@ -1,6 +1,6 @@
 # Base name of the test-set. Shall be unique.
 
-testname = cc2d_bench1_reference_q2_step4
+testname = cc2d_bench1_reference_q2_step4-lv3
 
 # Test-id for the tests.
 # ="": Determine test-id automatically (default)
