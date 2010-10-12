@@ -322,8 +322,8 @@ contains
       dF_j(3) = (GAMMA*DdataAtEdge(3,2,idx)-G2*ru2j)*uj
       
       ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
-                                         DmatrixCoeffsAtEdge(1,2,idx)*dF_i )
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*dF_i )
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       ! Compute flux difference for x-direction
@@ -590,8 +590,8 @@ contains
       !-------------------------------------------------------------------------
       
 #ifdef EULER_USE_IBP
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
-                                         DmatrixCoeffsAtEdge(1,2,idx)*dF_i + Diff)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
@@ -771,8 +771,8 @@ contains
         !-------------------------------------------------------------------------
 
 #ifdef EULER_USE_IBP
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
-                                           DmatrixCoeffsAtEdge(1,2,idx)*dF_i + Diff)
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else        
         DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
@@ -781,8 +781,8 @@ contains
       else
 
 #ifdef EULER_USE_IBP
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
-                                           DmatrixCoeffsAtEdge(1,2,idx)*dF_i )
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF_i )
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
         DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij)
@@ -929,8 +929,8 @@ contains
       !-------------------------------------------------------------------------
 
 #ifdef EULER_USE_IBP
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_j-&
-                                         DmatrixCoeffsAtEdge(1,2,idx)*dF_i + Diff)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF_ij + Diff)
@@ -985,11 +985,18 @@ contains
       
       ! Compute auxiliary variables
       ui = DdataAtNode(2,inode)/DdataAtNode(1,inode)
-      
-      ! Compute Galerkin coefficient K_ii
+
+#ifdef EULER_USE_IBP      
+      ! Compute Galerkin coefficient $K_ii = diag(A_i)*C_{ii}$
       DcoefficientsAtNode(1,1,inode) = 0.0_DP
       DcoefficientsAtNode(2,1,inode) = dscale * G13*ui*DmatrixCoeffsAtNode(1,inode)
       DcoefficientsAtNode(3,1,inode) = dscale * GAMMA*ui*DmatrixCoeffsAtNode(1,inode)
+#else
+      ! Compute Galerkin coefficient $K_ii = -diag(A_i)*C_{ii}$
+      DcoefficientsAtNode(1,1,inode) = 0.0_DP
+      DcoefficientsAtNode(2,1,inode) = -dscale * G13*ui*DmatrixCoeffsAtNode(1,inode)
+      DcoefficientsAtNode(3,1,inode) = -dscale * GAMMA*ui*DmatrixCoeffsAtNode(1,inode)
+#endif
     end do
 
   end subroutine euler_calcMatDiagMatD1d_sim
@@ -1042,8 +1049,9 @@ contains
       ui = DdataAtNode(2,inode)/DdataAtNode(1,inode)
       Ei = DdataAtNode(3,inode)/DdataAtNode(1,inode)
       uPow2i = ui*ui
-      
-      ! Compute Galerkin coefficient K_ii
+
+#ifdef EULER_USE_IBP      
+      ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       DcoefficientsAtNode(1,1,inode) = 0.0_DP
       DcoefficientsAtNode(2,1,inode) = dscale * G14*uPow2i*DmatrixCoeffsAtNode(1,inode)
       DcoefficientsAtNode(3,1,inode) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtNode(1,inode)
@@ -1055,6 +1063,20 @@ contains
       DcoefficientsAtNode(7,1,inode) = 0.0_DP
       DcoefficientsAtNode(8,1,inode) = dscale * G1*DmatrixCoeffsAtNode(1,inode)
       DcoefficientsAtNode(9,1,inode) = dscale * GAMMA*ui*DmatrixCoeffsAtNode(1,inode)
+#else
+      ! Compute Galerkin coefficient $K_ii = -A_i*C_{ii}$
+      DcoefficientsAtNode(1,1,inode) = 0.0_DP
+      DcoefficientsAtNode(2,1,inode) = -dscale * G14*uPow2i*DmatrixCoeffsAtNode(1,inode)
+      DcoefficientsAtNode(3,1,inode) = -dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtNode(1,inode)
+      
+      DcoefficientsAtNode(4,1,inode) = -dscale * DmatrixCoeffsAtNode(1,inode)
+      DcoefficientsAtNode(5,1,inode) = -dscale * G13*ui*DmatrixCoeffsAtNode(1,inode)
+      DcoefficientsAtNode(6,1,inode) = -dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtNode(1,inode)
+      
+      DcoefficientsAtNode(7,1,inode) = 0.0_DP
+      DcoefficientsAtNode(8,1,inode) = -dscale * G1*DmatrixCoeffsAtNode(1,inode)
+      DcoefficientsAtNode(9,1,inode) = -dscale * GAMMA*ui*DmatrixCoeffsAtNode(1,inode)
+#endif
     end do
     
   end subroutine euler_calcMatDiag1d_sim
@@ -1109,15 +1131,27 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
-      ! Compute Galerkin coefficient K_ij
+#ifdef EULER_USE_IBP
+      ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(2,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      ! Compute Galerkin coefficient K_ji
+      ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
       DcoefficientsAtEdge(1,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(2,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+#else
+      ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = -dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = -dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+#endif
     end do
 
   end subroutine euler_calcMatGalMatD1d_sim
@@ -1177,31 +1211,59 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
-      ! Compute Galerkin coefficient K_ij
+#ifdef EULER_USE_IBP
+      ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,2,idx) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(2,2,idx) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,2,idx) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(5,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)
       
       DcoefficientsAtEdge(7,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(8,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(8,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      ! Compute Galerkin coefficient K_ji
+      ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
       DcoefficientsAtEdge(1,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,3,idx) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(2,3,idx) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,3,idx) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,1,idx)
       
-      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(5,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)
       
       DcoefficientsAtEdge(7,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(8,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(8,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+#else
+      ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = -dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,2,idx) = -dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      DcoefficientsAtEdge(4,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(5,2,idx) = -dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(6,2,idx) = -dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      DcoefficientsAtEdge(7,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(8,2,idx) = -dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(9,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = -dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,3,idx) = -dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      
+      DcoefficientsAtEdge(4,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(5,3,idx) = -dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(6,3,idx) = -dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
+      
+      DcoefficientsAtEdge(7,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(8,3,idx) = -dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(9,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+#endif
     end do
 
   end subroutine euler_calcMatGal1d_sim
@@ -1255,23 +1317,35 @@ contains
       ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
       uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
 
-      ! Compute Galerkin coefficient K_ij
+#ifdef EULER_USE_IBP
+      ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(2,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      ! Compute Galerkin coefficient K_ji
+      ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
       DcoefficientsAtEdge(1,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(2,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+#else
+      ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = -dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = -dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+#endif
       
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
       !---------------------------------------------------------------------------
       
-      ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
-                  DmatrixCoeffsAtEdge(1,1,idx))
+      ! Compute skew-symmetric coefficient $0.5*(C_{ji}-C_{ij})$ and its norm
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                  DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1))
       
       if (anorm .gt. SYS_EPSREAL) then
@@ -1287,7 +1361,7 @@ contains
         q_ij = 0.5_DP*u_ij*u_ij
         
         ! Compute scalar dissipation
-        DcoefficientsAtEdge(:,1,idx) = -dscale * (abs(a(1)*u_ij) +&
+        DcoefficientsAtEdge(:,1,idx) = dscale * (abs(a(1)*u_ij) +&
             anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
       else
         
@@ -1351,40 +1425,68 @@ contains
       uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
       Ej = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
       uPow2j = uj*uj
-      
-      ! Compute Galerkin coefficient K_ij
+
+#ifdef EULER_USE_IBP      
+      ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,2,idx) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(2,2,idx) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,2,idx) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(5,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)
       
       DcoefficientsAtEdge(7,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(8,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(8,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      ! Compute Galerkin coefficient K_ji
+      ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
       DcoefficientsAtEdge(1,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,3,idx) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(2,3,idx) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,3,idx) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,1,idx)
       
-      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(5,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)
       
       DcoefficientsAtEdge(7,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(8,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(8,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+#else
+      ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = -dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,2,idx) = -dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      DcoefficientsAtEdge(4,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(5,2,idx) = -dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(6,2,idx) = -dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      DcoefficientsAtEdge(7,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(8,2,idx) = -dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(9,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = -dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,3,idx) = -dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      
+      DcoefficientsAtEdge(4,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(5,3,idx) = -dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(6,3,idx) = -dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
+      
+      DcoefficientsAtEdge(7,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(8,3,idx) = -dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(9,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+#endif
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
       !---------------------------------------------------------------------------
       
-      ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
-                  DmatrixCoeffsAtEdge(1,1,idx))
+      ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                  DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1))
       
       ! Nullify dissipation tensor
@@ -1403,7 +1505,7 @@ contains
         q_ij = 0.5_DP*u_ij*u_ij
         
         ! Compute scalar dissipation
-        aux = -dscale * (abs(a(1)*u_ij) +&
+        aux = dscale * (abs(a(1)*u_ij) +&
             anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
         
         DcoefficientsAtEdge(1,1,idx) = aux
@@ -1465,23 +1567,35 @@ contains
       ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
       uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
 
-      ! Compute Galerkin coefficient K_ij
+#ifdef EULER_USE_IBP
+      ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(2,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      ! Compute Galerkin coefficient K_ji
+      ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
       DcoefficientsAtEdge(1,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(2,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+#else
+      ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = -dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = -dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+#endif
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
       !---------------------------------------------------------------------------
       
-      ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
-                  DmatrixCoeffsAtEdge(1,1,idx))
+      ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                  DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1))
       
       if (anorm .gt. SYS_EPSREAL) then
@@ -1533,7 +1647,7 @@ contains
         L_ij(3,3) = 0.5_DP*b2
 
         ! Include scaling parameter
-        anorm = -dscale*anorm
+        anorm = dscale*anorm
 
         ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
         DcoefficientsAtEdge(1,1,idx) = anorm*( R_ij(1,1)*L_ij(1,1)+&
@@ -1606,40 +1720,68 @@ contains
       uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
       Ej = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
       uPow2j = uj*uj
-      
-      ! Compute Galerkin coefficient K_ij
+
+#ifdef EULER_USE_IBP      
+      ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,2,idx) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(2,2,idx) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,2,idx) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(5,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)
       
       DcoefficientsAtEdge(7,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(8,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(8,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      ! Compute Galerkin coefficient K_ji
+      ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
       DcoefficientsAtEdge(1,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,3,idx) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(2,3,idx) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,3,idx) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,1,idx)
       
-      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(5,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)
       
       DcoefficientsAtEdge(7,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(8,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(8,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+#else
+      ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = -dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,2,idx) = -dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      DcoefficientsAtEdge(4,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(5,2,idx) = -dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(6,2,idx) = -dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      DcoefficientsAtEdge(7,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(8,2,idx) = -dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(9,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = -dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,3,idx) = -dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      
+      DcoefficientsAtEdge(4,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(5,3,idx) = -dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(6,3,idx) = -dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
+      
+      DcoefficientsAtEdge(7,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(8,3,idx) = -dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(9,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+#endif
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
       !---------------------------------------------------------------------------
       
-      ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
-                  DmatrixCoeffsAtEdge(1,1,idx))
+      ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                  DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1))      
 
       if (anorm .gt. SYS_EPSREAL) then
@@ -1690,7 +1832,7 @@ contains
         L_ij(3,3) = 0.5_DP*b2
         
         ! Include scaling parameter
-        anorm = -dscale*anorm
+        anorm = dscale*anorm
 
         ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
         do i = 1, NVAR1D
@@ -1762,16 +1904,28 @@ contains
       Ei = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)      
       uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
       Ej = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
-      
-      ! Compute Galerkin coefficient K_ij
+
+#ifdef EULER_USE_IBP      
+      ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(2,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      ! Compute Galerkin coefficient K_ji
+      ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
       DcoefficientsAtEdge(1,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(2,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+#else
+      ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = -dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = -dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+#endif
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
@@ -1782,7 +1936,7 @@ contains
       cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
       
       ! Compute dissipation tensor D_ij
-      DcoefficientsAtEdge(:,1,idx) = -dscale *&
+      DcoefficientsAtEdge(:,1,idx) = dscale *&
           max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
                abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
                abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
@@ -1842,32 +1996,60 @@ contains
       uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
       Ej = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
       uPow2j = uj*uj
-      
-      ! Compute Galerkin coefficient K_ij
+
+#ifdef EULER_USE_IBP      
+      ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,2,idx) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(2,2,idx) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,2,idx) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(5,2,idx) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)
       
       DcoefficientsAtEdge(7,2,idx) = 0.0_DP
-      DcoefficientsAtEdge(8,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(8,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
       
-      ! Compute Galerkin coefficient K_ji
+      ! Compute Galerkin coefficient $K_ji = A_i*C_{ji}$
       DcoefficientsAtEdge(1,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(2,3,idx) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(2,3,idx) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,3,idx) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,1,idx)
       
-      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(5,3,idx) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)
       
       DcoefficientsAtEdge(7,3,idx) = 0.0_DP
-      DcoefficientsAtEdge(8,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(8,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+#else
+      ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = -dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(3,2,idx) = -dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      DcoefficientsAtEdge(4,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(5,2,idx) = -dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(6,2,idx) = -dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      DcoefficientsAtEdge(7,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(8,2,idx) = -dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(9,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      
+      ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = -dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(3,3,idx) = -dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      
+      DcoefficientsAtEdge(4,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(5,3,idx) = -dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(6,3,idx) = -dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
+      
+      DcoefficientsAtEdge(7,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(8,3,idx) = -dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(9,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+#endif
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
@@ -1878,10 +2060,10 @@ contains
       cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
 
       ! Compute dissipation tensor D_ij
-      aux = -dscale * max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
-                           abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
-                           abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
-                           abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )
+      aux = dscale * max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
+                          abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
+                          abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
+                          abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )
 
       DcoefficientsAtEdge(:,1,idx) = 0.0_DP
       DcoefficientsAtEdge(1,1,idx) = aux

@@ -1161,8 +1161,8 @@ contains
     end if
 
 
-    ! Create coefficient matrix (phi, dphi/dx) or
-    ! (dphi/dx, phi) as duplicate of the template matrix
+    ! Create coefficient matrix (phi, dphi/dx) as duplicate of the
+    ! template matrix
     if (coeffMatrix_CX > 0) then
       if (lsyssc_isMatrixStructureShared(&
           rproblemLevel%Rmatrix(coeffMatrix_CX),&
@@ -1180,22 +1180,14 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-#ifdef TRANSP_USE_IBP
-      ! Perform integration by parts in divergence terms
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(coeffMatrix_CX),&
-          DER_FUNC, DER_DERIV3D_X, 1.0_DP)
-#else
-      ! Do not perform integration by parts
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CX),&
-          DER_DERIV3D_X, DER_FUNC, -1.0_DP)
-#endif
+          DER_DERIV3D_X, DER_FUNC)
     end if
 
 
-    ! Create coefficient matrix (phi, dphi/dy) or
-    ! (dphi/dy, phi) as duplicate of the template matrix
+    ! Create coefficient matrix (phi, dphi/dy) as duplicate of the
+    ! template matrix
     if (coeffMatrix_CY > 0) then
       if (lsyssc_isMatrixStructureShared(&
           rproblemLevel%Rmatrix(coeffMatrix_CY),&
@@ -1213,22 +1205,14 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-#ifdef TRANSP_USE_IBP
-      ! Perform integration by parts in divergence term
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(coeffMatrix_CY),&
-          DER_FUNC, DER_DERIV3D_Y, 1.0_DP)
-#else
-      ! Do not perform integration by parts
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CY),&
-          DER_DERIV3D_Y, DER_FUNC, -1.0_DP)
-#endif
+          DER_DERIV3D_Y, DER_FUNC)
     end if
 
 
-    ! Create coefficient matrix (phi, dphi/dz) or
-    ! (dphi/dz, phi) as duplicate of the template matrix
+    ! Create coefficient matrix (phi, dphi/dz) as duplicate of the
+    ! template matrix
     if (coeffMatrix_CZ > 0) then
       if (lsyssc_isMatrixStructureShared(&
           rproblemLevel%Rmatrix(coeffMatrix_CZ),&
@@ -1246,17 +1230,9 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
       end if
-#ifdef TRANSP_USE_IBP
-      ! Perform integration by parts in divergence term
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-          DER_FUNC, DER_DERIV3D_Z, 1.0_DP)
-#else
-      ! Do not perform integration by parts
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-          DER_DERIV3D_Z, DER_FUNC, -1.0_DP)
-#endif
+          DER_DERIV3D_Z, DER_FUNC)
     end if
 
 

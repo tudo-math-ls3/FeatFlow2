@@ -388,7 +388,33 @@ contains
     end if
 
     !---------------------------------------------------------------------------
-    ! Assemble divergence operator:  $ -\nabla\cdot\mathbf{F}(U) $
+    ! Assemble divergence operator (for the left-hand side):
+    !
+    ! (1) without integration by parts:
+    !     $$ \int_\Omega w \nabla \cdot {\bf f}(u) {\rm d}{\bf x} $$
+    !
+    !     then boundary conditions need to be imposed in strong sense
+    !     by filtering the system matrix, the solution vector and/or
+    !     the residual explicitly.
+    !
+    ! (2) with integration by parts:
+    !     $$ -\int_\Omega \nabla w \cdot {\bf f}(u) {\rm d}{\bf x} $$
+    !
+    !     with weakly imposed boundary conditions 
+    !
+    !     $$ \int_{\Gamma_-} w {\bf f}(u_0) \cdot {\bf n} {\rm d}{\bf s} $$
+    !
+    !     imposed at some part of the boundary. At the remaining part
+    !     of the boundary nothing is prescribed and the corresponding
+    !     boundary integral is built into the bilinear form
+    !
+    !     $$ \int_{\Gamma_+} w {\bf f}(u) \cdot {\bf n} {\rm d}{\bf s} $$
+    !
+    !
+    ! Remark: By convention, call-back routines assume that the
+    !         divergence operator is used on the right-hand
+    !         side. Therefore, we habe to multiply it by -1.
+    !
     !
     ! Remark: In future versions this routine will assemble both the primal
     !         and the dual preconditioner depending on the variables
@@ -422,21 +448,21 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD1d_sim, euler_calcMatGalMatD1d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD2d_sim, euler_calcMatGalMatD2d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD3d_sim, euler_calcMatGalMatD3d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -455,21 +481,21 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD1d_sim, euler_calcMatScDissMatD1d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD2d_sim, euler_calcMatScDissMatD2d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD3d_sim, euler_calcMatScDissMatD3d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -488,21 +514,21 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD1d_sim, euler_calcMatRoeDissMatD1d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD2d_sim, euler_calcMatRoeDissMatD2d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD3d_sim, euler_calcMatRoeDissMatD3d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -521,21 +547,21 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD1d_sim, euler_calcMatRusDissMatD1d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD2d_sim, euler_calcMatRusDissMatD2d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiagMatD3d_sim, euler_calcMatRusDissMatD3d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -569,21 +595,21 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag1d_sim, euler_calcMatGal1d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag2d_sim, euler_calcMatGal2d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag3d_sim, euler_calcMatGal3d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -602,21 +628,21 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag1d_sim, euler_calcMatScDiss1d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag2d_sim, euler_calcMatScDiss2d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag3d_sim, euler_calcMatScDiss3d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -635,21 +661,21 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag1d_sim, euler_calcMatRoeDiss1d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag2d_sim, euler_calcMatRoeDiss2d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag3d_sim, euler_calcMatRoeDiss3d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -668,21 +694,21 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag1d_sim, euler_calcMatRusDiss1d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag2d_sim, euler_calcMatRusDiss2d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatDiag3d_sim, euler_calcMatRusDiss3d_sim,&
-              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -692,15 +718,15 @@ contains
 
 
       case DEFAULT
-        call output_line('Invalid type of dissipation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
-        call sys_halt()
+        ! Clear system matrix and apply (lumped) mass matrix only
+        call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
       end select
 
 
     case DEFAULT
-      ! Clear system matrix and apply (lumped) mass matrix only
-      call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
+      call output_line('Invalid type of flow coupling!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+      call sys_halt()
     end select
 
 
@@ -728,6 +754,9 @@ contains
         ! Compute the global operator for transient flows
         !
         !   $ A = blockdiag(M_L)-theta*dt*L $
+        !
+        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
+        ! and add it to the lumped mass matrix.
         !-----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
@@ -746,6 +775,9 @@ contains
         ! Compute the global operator for transient flows
         !
         !   $ A = blockdiag(M_C)-theta*dt*L $
+        !
+        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
+        ! and add it to the consistent mass matrix.
         !-----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
@@ -764,6 +796,8 @@ contains
         ! Use the global operator for steady-state flow
         !
         !   $ A = -L $
+        !
+        ! Since we have assembled "-L" nothing needs to be done.
         !-----------------------------------------------------------------------
 
       end select
@@ -782,6 +816,9 @@ contains
         ! Compute the global operator for transient flows
         !
         !   $ A = blockdiag(M_L)-theta*dt*L $
+        !
+        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
+        ! and add it to the lumped mass matrix.
         !-----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
@@ -817,6 +854,9 @@ contains
         ! Compute the global operator for transient flows
         !
         !   $ A = blockdiag(M_C)-theta*dt*L $
+        !
+        ! Since we have assembled "-L" it suffices to multiply it by "theta*dt"
+        ! and add it to the consistent mass matrix.
         !-----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
@@ -852,6 +892,8 @@ contains
         ! Use the global operator for steady-state flow
         !
         !   $ A = -L $
+        !
+        ! Since we have assembled "-L" nothing needs to be done.
         !-----------------------------------------------------------------------
 
       end select
@@ -864,9 +906,9 @@ contains
     end select
 
 
-    ! Impose boundary conditions
+    ! Impose boundary conditions in strong sence (if any)
     call bdrf_filterMatrix(rsolver%rboundaryCondition, &
-        rproblemLevel%RmatrixBlock(systemMatrix), 1.0_DP)
+        rproblemLevel%RmatrixBlock(systemMatrix))
 
     ! Ok, we updated the (nonlinear) system operator successfully. Now we still
     ! have to link it to the solver hierarchy. This is done recursively.
@@ -1084,9 +1126,9 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildDivVector(&
-                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                    euler_calcFluxScDiss1d_sim, dscale, .true. , rrhs)
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFluxScDiss1d_sim, dscale, .true. , rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
@@ -1158,15 +1200,15 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildDivVector(&
-                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                    euler_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
-
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
+              
             case (NDIM2D)
               call gfsys_buildDivVector(&
-                    rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                    rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                    euler_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs)
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
@@ -1516,7 +1558,7 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGal3d_sim, dscale, .false., rres)
-        end select
+      end select
 
     case (AFCSTAB_UPWIND,&
           AFCSTAB_FEMFCT_CLASSICAL,&
@@ -1594,7 +1636,7 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScDiss1d_sim, dscale, .false., rres)
-            
+
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&

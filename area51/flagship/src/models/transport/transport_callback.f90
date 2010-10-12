@@ -439,7 +439,9 @@ contains
         'Coeffmatrix_s', coeffMatrix_S)
 
     !---------------------------------------------------------------------------
-    ! Assemble diffusion operator (after integration by parts):
+    ! Assemble diffusion operator (for the right-hand side):
+    !
+    ! After integration by parts it is given by
     !
     ! $$ Su = -\int_\Omega \nabla w \cdot (D \nabla u) {\rm d}{\bf x} $$
     !
@@ -541,7 +543,7 @@ contains
 
 
     !---------------------------------------------------------------------------
-    ! Assemble convective operator:
+    ! Assemble convective operator (for the right-hand side):
     !
     ! (1) without integration by parts:
     !     $$ -\int_\Omega w \nabla \cdot {\bf f}(u) {\rm d}{\bf x} $$
