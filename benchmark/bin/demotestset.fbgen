@@ -52,12 +52,20 @@ testinclude = "testdefaults.fbdef"
 # previous line, so it proceeds a step if the previous parameter proceeds
 # to the next step. In this case, if the list is shorter than the
 # previous parameter, counting starts from the beginning if the end
-# is reached.
+# is reached. If the parent parameter is reset, counting starts always
+# at the beginning.
 # Example:
 #    NLMAX = 3,4,5,6
 #    NLMIN* = 2,3
-# This generates
+# This generates:
 #    (NLMAX,NLMIN) = (3,2) , (4,3) , (5,2) , (6,3)
+# Example:
+#    IELEMENT = 11,13
+#    NLMAX = 3,4,5
+#    NLMIN* = 2,3
+# This generates:
+#    (IELEMENT,NLMAX,NLMIN) = (11,3,2) , (11,4,3) , (11,5,2) ,
+#                             (13,3,2) , (13,4,3) , (13,5,2)
 #
 # If a parameter name ends with a ".", it is dependent on the previous parameter
 # (like "*"), but it is not included in the test-id of the test.
@@ -67,10 +75,10 @@ testinclude = "testdefaults.fbdef"
 # but it is not included in the test-id.
 #
 # If a parameter name ends with a "~", it is dependent on the previous parameter
-# (like "*"), it is not included in the default test-id of the test (like ".")
-# and it is not included in the test setting at all. "~" parameters can be
-# called "comment" parameters that allow to specify e.g. text strings that
-# quantify a parmeter for ither dependent parameters. 
+# (like "*"), but it is not included in the default test-id of the test (like 
+# ".") and it is not included in the test settings output at all. "~" parameters
+# can be called "comment" parameters that allow to specify e.g. text strings 
+# that quantify a parmeter for ither dependent parameters. 
 # Example:
 #    descr = Element: $(ELNAME)
 #    IELEMENT = 11,13
@@ -78,6 +86,31 @@ testinclude = "testdefaults.fbdef"
 # In this case, the description will contain the name of the element
 # (either Q1 or Q2), but the parameter ELNAME is not included
 # in the parameter output that specifies the test.
+#
+# A parameter modifier "!" proceeds the parameter until the end of the
+# list is reached and stops there. The parameter is not reset until its parent
+# is reset. "!" may appear in combination with "*", "~" and "."; if no
+# other modifier is present, "!" works as "*" but stops at the end of the list.
+# Example:
+#    IELEMENT = 11, 13
+#    ITIMESTEP = 0.7, 0.6, 0.5, 0.4, 0.3
+#    SCOMMENT1!~ = "large", "large", "small"
+#    SCOMMENT2~  = "odd", "even"
+# This generates:
+#    ( IELEMENT, ITIMESTEP, SCOMMENT1, SCOMMENT2)
+#
+#  = ( 11, 0.7, "large", "odd"  ),
+#    ( 11, 0.6, "large", "even" ),
+#    ( 11, 0.5, "small", "odd"  ),
+#    ( 11, 0.4, "small", "even" ),
+#    ( 11, 0.3, "small", "odd"  ),
+#
+#    ( 13, 0.7, "large", "odd"  ),
+#    ( 13, 0.6, "large", "even" ),
+#    ( 13, 0.5, "small", "odd"  ),
+#    ( 13, 0.4, "small", "even" ),
+#    ( 13, 0.3, "small", "odd"  )
+# 
 #
 # The variable names which are not marked with a "." are included in
 # the name of the test id with an index specifying the corresponding setting.

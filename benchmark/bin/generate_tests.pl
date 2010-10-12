@@ -57,10 +57,10 @@ sub rtrim($)
 
 # Expands a parameter list.
 # Call:
-#      expand_paramlist(params)
+#      expand_paramlist(count,params)
 #
 # In:
-#   count  = expectzed length of the list or =0 if list can have arbitrary length.
+#   count  = expected length of the list or =0 if list can have arbitrary length.
 #   params = List of parameters to be parsed.
 #                
 # Returns:
@@ -374,20 +374,20 @@ sub readfbgenfile ($) {
     }
     
     # Append variable names.
-    if ($currentline =~ m/^\s*(\w+)([\*\.\~]?)\s*:?\s*(\w*)\s*=\s*(.+)\s*$/) {
+    if ($currentline =~ m/^\s*(\w+)([!]?)([\*\.\~]?)\s*:?\s*(\w*)\s*=\s*(.+)\s*$/) {
       
       # Get the variable name and a possible modifier.
       my $varname = $1;
-      my $varmod = $2;
+      my $varmod = $2 . $3;
       
       # Get the alias if defined. If not, the name is the alias.
-      my $alias = $3;
+      my $alias = $4;
       if ($alias eq "") {
         # The alias is the name itself -- without a possibly trailing "*".
         $alias = $varname;
       }
       
-      my $varvalue = $4;
+      my $varvalue = $5;
 
       print STDERR "Variable found: $varname$varmod:$alias: '$varvalue'\n"
         if (DEBUG==1);
@@ -502,7 +502,7 @@ sub expand_value ($$$) {
   # Check if there is the term "$(...)" in the value.
   # If yes, try to replace it with the current value of
   # the corresponding varible.
-  while ( $value =~ m/\$\((\%?)([^\)]+)[\*\.\~]?\)/ ) {
+  while ( $value =~ m/\$\((\%?)([^\)]+)[!]?[\*\.\~]?\)/ ) {
     # Try to get the referring value.
     my $varname2 = $2;
     my $idx2 = $varindex->{$varname2};
@@ -684,7 +684,7 @@ sub generate_tests($$) {
       my $varname = $$varnames[$idx];
       
       # Corresponding modifiers...
-      my $varmod = $varmod->{$varname};
+      my $varmodifier = $varmod->{$varname};
       
       # Get the corresponding parameter list of parameter $idx.
       my $parlist = $varvalues->{$varname};
@@ -698,13 +698,54 @@ sub generate_tests($$) {
       # If the variable modifier contains a '.', the variable
       # is not increased.
       #
+      # If a variable modifier contains a '!', the variable is
+      # increased with its parent until it reaches its maximum. Then it stays
+      # unchanged for all values of the parent parameter.
+      # If the parent parameter is reset to the beginning,
+      # the parameter is also reset to the beginning.
+      #
       # RULE DISABLED: The "." below is more general.
       # if ( $varmod =~ m/\./ ) {
       #   next;
       # }
       
       if (++($varindex{$varname}) >= @$parlist) {
-        $varindex{$varname} = 0;
+        # Is there a '!' modifier involved? If no, reset to the beginning,
+        # otherwise leave as it is.
+        if ( $varmodifier =~ m/!/ ) {
+          --($varindex{$varname});
+        }
+        else {
+          $varindex{$varname} = 0;
+        }
+        
+        # If this is a master parameter, reset all child parameters that
+        # are marked with '!'.
+        if ( $varmodifier !~ m/.+/ ) {
+          
+          print STDERR "Master resetted: $varname\n"
+            if (DEBUG==1);
+          
+          for (my $idx2 = $idx+1; $idx2 < @$varnames-1; ++$idx2) {
+            # Corresponding variable name...
+            my $varname2 = $$varnames[$idx2];
+            
+            # Corresponding modifiers...
+            my $varmodifier2 = $varmod->{$varname2};
+            
+            # Parent parameter? If yes, stop the loop.
+            if ( $varmodifier2 !~ m/.+/ ) {
+              last;
+            }
+
+            # Reset the counter of the depending parameter.
+            $varindex{$varname2} = 0;
+
+            print STDERR "Resetting $varname2\n"
+              if (DEBUG==1);
+           
+          }
+        }
       }
       else {
         # We had no overflow.
@@ -712,7 +753,7 @@ sub generate_tests($$) {
         # parameters do not change.
         # If this is a 'child' parameter, also increase the previous
         # parameter until we increased the 'master' of the group.
-        if ( $varmod !~ m/[\*\.\~]/ ) {
+        if ( $varmodifier !~ m/[\*\.\~]/ ) {
           next LOOP;
         }
       }
