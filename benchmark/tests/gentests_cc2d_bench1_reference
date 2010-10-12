@@ -1,0 +1,45 @@
+# Script to generate the reference tests for the bench1 test.
+#
+# The script generates a FBDEF file and a couple of FBCONF files with all test 
+# IDs. The tests are created in such a way, that every test calculates
+# a small amount of the time scale and saves the final solution. A consecutive
+# test can then conntinue based on the previously calculated solution.
+# Therefore, all tests in one FBCONF file have to be consecutively executed!
+# Afterwards, the drag/lift values have to be cut together (except the first
+# two lines which contain old data).
+#
+# Execute this script in the benchmark directory!
+
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step1.fbgen >  ./tests/cc2d_bench1_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step2.fbgen >> ./tests/cc2d_bench1_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step3.fbgen >> ./tests/cc2d_bench1_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv2.fbgen >> ./tests/cc2d_bench1_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv3.fbgen >> ./tests/cc2d_bench1_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv4.fbgen >> ./tests/cc2d_bench1_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv5.fbgen >> ./tests/cc2d_bench1_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv6.fbgen >> ./tests/cc2d_bench1_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step5.fbgen >> ./tests/cc2d_bench1_reference.fbdef
+
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step1.fbgen list     >  ./tests/cc2d_bench1_reference.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step2.fbgen list     >> ./tests/cc2d_bench1_reference.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step3.fbgen list     >> ./tests/cc2d_bench1_reference.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv2.fbgen list >> ./tests/cc2d_bench1_reference_lv2.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv3.fbgen list >> ./tests/cc2d_bench1_reference_lv3.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv4.fbgen list >> ./tests/cc2d_bench1_reference_lv4.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv5.fbgen list >> ./tests/cc2d_bench1_reference_lv5.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv6.fbgen list >> ./tests/cc2d_bench1_reference_lv6.fbconf
+
+# Warning! The "final" tests must not be started before the sequence on the
+# corresponding level is finished! Use appropriate --afterjob modifiers
+# in the scheduling!
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step5.fbgen list     >> ./tests/cc2d_bench1_reference_final.fbconf
+
+# Schedule, except "final" scripts:
+
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference.fbconf    
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference.fbconf    
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference.fbconf    
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference_lv2.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference_lv3.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference_lv4.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench1_reference_lv5.fbconf
