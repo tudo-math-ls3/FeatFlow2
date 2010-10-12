@@ -5,7 +5,7 @@ testname = cc2d_bench1_reference_q2_step4-lv6
 # Test-id for the tests.
 # ="": Determine test-id automatically (default)
 
-testid = cc2d_bench3_reference_q2_step4-lv$(LV)-DTMIN$(%DTMIN)
+testid = cc2d_bench1_reference_q2_step4-lv$(LV)-DTMIN$(%DTMIN)
 
 # A comment for the test which may take several lines. Each line must end
 # with a double-backslash if the comment continues in the next line.
