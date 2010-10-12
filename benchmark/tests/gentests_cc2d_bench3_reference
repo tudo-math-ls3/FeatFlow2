@@ -1,0 +1,34 @@
+# Script to generate the reference tests for the bench3 test.
+#
+# The script generates a FBDEF file and a couple of FBCONF files with all test 
+# IDs. The tests are created in such a way, that every test calculates
+# a small amount of the time scale and saves the final solution. A consecutive
+# test can then conntinue based on the previously calculated solution.
+# Therefore, all tests in one FBCONF file have to be consecutively executed!
+# Afterwards, the drag/lift values have to be cut together (except the first
+# two lines which contain old data).
+#
+# Execute this script in the benchmark directory!
+
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv1.fbgen >  ./tests/cc2d_bench3_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv2.fbgen >> ./tests/cc2d_bench3_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv3.fbgen >> ./tests/cc2d_bench3_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv4.fbgen >> ./tests/cc2d_bench3_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv5.fbgen >> ./tests/cc2d_bench3_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv6.fbgen >> ./tests/cc2d_bench3_reference.fbdef
+
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv1.fbgen list > ./tests/cc2d_bench3_reference_lv1.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv2.fbgen list > ./tests/cc2d_bench3_reference_lv2.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv3.fbgen list > ./tests/cc2d_bench3_reference_lv3.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv4.fbgen list > ./tests/cc2d_bench3_reference_lv4.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv5.fbgen list > ./tests/cc2d_bench3_reference_lv5.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench3_reference_q2_lv6.fbgen list > ./tests/cc2d_bench3_reference_lv6.fbconf
+
+# Schedule:
+
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench3_reference_lv1.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench3_reference_lv2.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench3_reference_lv3.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench3_reference_lv4.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench3_reference_lv5.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench3_reference_lv6.fbconf
