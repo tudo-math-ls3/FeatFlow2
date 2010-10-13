@@ -345,17 +345,28 @@ niteReinit = 0
 # Type of the solver in space.
 # =0: UMFPACK
 # =1: Multigrid
-csolverType = 0
+csolverType = 1
 
-# Type of smoother/coarse grid solver.
+# Type of smoother.
 # =0: Defect correction + Jacobi/VANKA preconditioning
 # =1: BiCGStab(ILU-0). Only for the heat equation.
 # =2: BiCGStab(SSOR). Only for the heat equation.
 # =3: BiCGStab(Jacobi/VANKA).
-cpreconditioner = 0
+csmoother = 0
 
-# Otput level
+# Type of coarse grid solver.
+# =0: Defect correction + Jacobi/VANKA preconditioning
+# =1: BiCGStab(ILU-0). Only for the heat equation.
+# =2: BiCGStab(SSOR). Only for the heat equation.
+# =3: BiCGStab(Jacobi/VANKA).
+# =4: UMFPACK
+ccoarsegridsolver = 4
+
+# Output level
 ioutputlevel = 0
+
+# Output level coarse grid solver
+ioutputlevelcoarse = 0
 
 # Damping parameter for smoother.
 # =1.0 for ILU, =0.7 for JAC

@@ -79,6 +79,9 @@ module spacetimelinsol
 
   ! General VANKA preconditioner + BiCGStab
   integer, parameter, public :: STLS_PC_BICGSTABVANKA = 3
+
+  ! UMFPACK
+  integer, parameter, public :: STLS_PC_UMFPACK = 4
   
 !</constantblock>
 
@@ -131,9 +134,16 @@ module spacetimelinsol
     ! ONLY MG: Damping parameter for the smoother
     real(DP) :: domegaSmoother = 1.0_DP
 
-    ! ONLY MG: Type identifier for all preconditioners in space.
+    ! ONLY MG: Type identifier for the space smoother.
     ! A STLS_PC_xxxx constant.
-    integer :: cspacePreconditioner = STLS_PC_JACOBI
+    integer :: cspacesmoother = STLS_PC_JACOBI
+
+    ! ONLY MG: Type identifier for the space coarse grid solver.
+    ! A STLS_PC_xxxx constant.
+    integer :: cspacecoarsegridsolver = STLS_PC_JACOBI
+
+    ! ONLY MG: Output level on the coarse grid
+    integer :: ioutputLevelCoarse = 0
     
     ! ONLY MG: Relative stopping criterion solver, coarse grid solver
     real(DP) :: depsrelCoarse = 1E-10
@@ -314,6 +324,109 @@ contains
 
   ! ***************************************************************************
 
+  subroutine stls_initspacesolver (p_rsolver, cproblemtype, csolvertype, &
+      depsrel, depsabs, depsdiff, nmaxiterations, ioutputlevel)
+  
+  ! Initialises a space solver.
+  
+  ! Type of the problem
+  integer, intent(in) :: cproblemtype
+  
+  ! Type of the solver
+  integer, intent(in) :: csolvertype
+  
+  ! Stopping criteria
+  real(DP), intent(in), optional :: depsrel
+  real(DP), intent(in), optional :: depsabs
+  real(DP), intent(in), optional :: depsdiff
+  integer, intent(in), optional :: nmaxiterations
+  
+  ! Output level
+  integer, intent(in), optional :: ioutputlevel
+  
+  ! OUTPUT: Pointer to the solver
+  type(t_linsolNode), pointer :: p_rsolver
+  
+    ! local variables
+    type(t_linsolNode), pointer :: p_rpreconditioner
+  
+    ! Create the solver depending on the problem
+    select case (cproblemtype)
+    case (STLS_PR_STANDARD)
+    
+      select case (csolvertype)
+      case (STLS_PC_JACOBI)  
+        call linsol_initJacobi (p_rpreconditioner)
+        call linsol_initDefCorr (p_rsolver,p_rpreconditioner)
+        
+      case (STLS_PC_BICGSTABJACOBI)
+        call linsol_initJacobi (p_rpreconditioner)
+        call linsol_initBiCGStab (p_rsolver,p_rpreconditioner)
+        
+      case (STLS_PC_ILU0)
+        call linsol_initILU0 (p_rpreconditioner)
+        
+      case (STLS_PC_SSOR)
+        call linsol_initSSOR (p_rpreconditioner)
+
+      case (STLS_PC_UMFPACK)
+        call linsol_initUMFPACK4 (p_rpreconditioner)
+      end select
+      
+      p_rsolver%istoppingCriterion = LINSOL_STOP_ONEOF
+      
+      if (present(depsRel)) &
+        p_rsolver%depsRel = depsRel
+      if (present(depsAbs)) &
+        p_rsolver%depsAbs = depsAbs
+      if (present(depsdiff)) &
+        p_rsolver%depsdiff = depsdiff
+      if (present(nmaxIterations)) &
+        p_rsolver%nmaxIterations = nmaxIterations
+      if (present(ioutputlevel)) &
+        p_rsolver%ioutputlevel = ioutputlevel
+      
+    case (STLS_PC_2DSADDLEPT2EQ)
+
+      select case (csolvertype)
+      case (STLS_PC_JACOBI)  
+        call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
+        call linsol_initDefCorr (p_rsolver,p_rpreconditioner)
+        
+      case (STLS_PC_BICGSTABJACOBI)
+        call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
+        call linsol_initBiCGStab (p_rsolver,p_rpreconditioner)
+        
+      case (STLS_PC_ILU0)
+        call output_line ("Invalid solver.")
+        call sys_halt()
+        
+      case (STLS_PC_SSOR)
+        call output_line ("Invalid solver.")
+        call sys_halt()
+
+      case (STLS_PC_UMFPACK)
+        call linsol_initUMFPACK4 (p_rsolver)
+      end select
+
+      p_rsolver%istoppingCriterion = LINSOL_STOP_ONEOF
+      if (present(depsRel)) &
+        p_rsolver%depsRel = depsRel
+      if (present(depsAbs)) &
+        p_rsolver%depsAbs = depsAbs
+      if (present(depsdiff)) &
+        p_rsolver%depsdiff = depsdiff
+      if (present(nmaxIterations)) &
+        p_rsolver%nmaxIterations = nmaxIterations
+      if (present(ioutputlevel)) &
+        p_rsolver%ioutputlevel = ioutputlevel
+      
+    end select
+  
+  end subroutine
+
+  ! ***************************************************************************
+
   subroutine stls_init (rsolver,csolverType,rspaceTimeHierarchy,ilevel,&
       ballocTempMatrices,ballocTempVectors,rpreconditioner,&
       rspaceSolverParams,RmatVecTempl)
@@ -353,7 +466,6 @@ contains
     ! local variables
     integer :: ispacelevel,ilev
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
-    type(t_linsolNode), pointer :: p_rpreconditioner
   
     rsolver%csolverType = csolverType
     rsolver%ilevel = ilevel
@@ -388,187 +500,49 @@ contains
         !rsolver%p_rspaceSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = 1
         
       case (LINSOL_ALG_MULTIGRID2)
-        select case (rspaceSolverParams%cspacePreconditioner)
-        case (STLS_PC_JACOBI)
-          ! Defect correction loops + Jacobi smoothing everywhere.
-          call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
-          
-          do ilev =1,ispaceLevel
-          
-            call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
-            if (ilev .eq. 1) then
-              
-              select case (rspaceSolverParams%cproblemtype)
-              case (STLS_PR_STANDARD)
-                call linsol_initJacobi (p_rpreconditioner)
-                
-              case (STLS_PC_2DSADDLEPT2EQ)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
-                
-              end select
-              
-              call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
-              p_rlevelInfo%p_rcoarseGridSolver%istoppingCriterion = LINSOL_STOP_ONEOF
-              
-              if (ispaceLevel .eq. 1) then
-                ! Only one level
-                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
-                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
-                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiff
-                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
-                p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
-              else
-                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiffCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
-              end if
-            else
-              select case (rspaceSolverParams%cproblemtype)
-              case (STLS_PR_STANDARD)
-                call linsol_initJacobi (p_rpreconditioner)
-              case (STLS_PC_2DSADDLEPT2EQ)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
-              end select
-              call linsol_initDefCorr (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
-              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,&
-                  rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
+      
+        ! Initialise the MG solver
+        call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
+        
+        ! Initialise the levels
+        do ilev = 1,ispaceLevel
+        
+          call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
+          if (ilev .eq. 1) then
+            ! Coarse grid solver
+            if (ispaceLevel .eq. 1) then
+              ! Only one level
+              call stls_initspacesolver (p_rlevelInfo%p_rcoarseGridSolver, &
+                  rspaceSolverParams%cproblemtype, rspaceSolverParams%cspacecoarsegridsolver, &
+                  rspaceSolverParams%depsRel, rspaceSolverParams%depsAbs, &
+                  rspaceSolverParams%depsdiff,&
+                  rspaceSolverParams%nmaxIterations, rspaceSolverParams%ioutputLevel)
+            else            
+              call stls_initspacesolver (p_rlevelInfo%p_rcoarseGridSolver, &
+                  rspaceSolverParams%cproblemtype, rspaceSolverParams%cspacecoarsegridsolver, &
+                  rspaceSolverParams%depsRelCoarse, rspaceSolverParams%depsAbsCoarse, &
+                  rspaceSolverParams%depsdiffCoarse,&
+                  rspaceSolverParams%nmaxIterationsCoarse, rspaceSolverParams%ioutputLevelCoarse)
             end if
-            
-          end do
-          
-          rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
-          rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
-          rsolver%p_rspaceSolver%depsdiff = rspaceSolverParams%depsdiff
-          rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
-          rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
-          rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
+          else
+            ! Smoother
+            call stls_initspacesolver (p_rlevelInfo%p_rpostsmoother, &
+                rspaceSolverParams%cproblemtype, rspaceSolverParams%cspacesmoother)            
 
-        case (STLS_PC_BICGSTABJACOBI)
-          ! Defect correction loops + Jacobi smoothing everywhere.
-          call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
-          
-          do ilev =1,ispaceLevel
-            call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
-            if (ilev .eq. 1) then
-              select case (rspaceSolverParams%cproblemtype)
-              case (STLS_PR_STANDARD)
-                call linsol_initJacobi (p_rpreconditioner)
-              case (STLS_PC_2DSADDLEPT2EQ)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
-              end select
-              call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
-              p_rlevelInfo%p_rcoarseGridSolver%istoppingCriterion = LINSOL_STOP_ONEOF
-              if (ispaceLevel .eq. 1) then
-                ! Only one level
-                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
-                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
-                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiff
-                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
-                p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
-              else
-                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiffCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
-              end if
-            else
-              select case (rspaceSolverParams%cproblemtype)
-              case (STLS_PR_STANDARD)
-                call linsol_initJacobi (p_rpreconditioner)
-              case (STLS_PC_2DSADDLEPT2EQ)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
-              end select
-              call linsol_initBiCGStab (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
-              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,&
-                  rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
-            end if
-          end do
-          
+            call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,&
+                rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
+          end if
+      
+          ! Stopping criteria
           rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
           rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
           rsolver%p_rspaceSolver%depsdiff = rspaceSolverParams%depsdiff
           rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
           rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
           rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
-
-        case (STLS_PC_ILU0)
-          ! Defect correction loops + Jacobi smoothing everywhere.
-          call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
-          do ilev = 1,ispaceLevel
-            call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
-            if (ilev .eq. 1) then
-              call linsol_initILU0 (p_rpreconditioner)
-              call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
-              p_rlevelInfo%p_rcoarseGridSolver%istoppingCriterion = LINSOL_STOP_ONEOF
-              if (ispaceLevel .eq. 1) then
-                ! Only one level
-                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
-                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
-                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiff
-                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
-                p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
-              else
-                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiffCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
-              end if
-            else
-              call linsol_initILU0 (p_rpreconditioner)
-              call linsol_initBiCGStab (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
-              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,&
-                  rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
-            end if
-          end do
-          rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
-          rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
-          rsolver%p_rspaceSolver%depsdiff = rspaceSolverParams%depsdiff
-          rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
-          rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
-          rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
-        
-        case (STLS_PC_SSOR)
-          ! Defect correction loops + Jacobi smoothing everywhere.
-          call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
-          do ilev = 1,ispaceLevel
-            call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
-            if (ilev .eq. 1) then
-              call linsol_initSSOR (p_rpreconditioner)
-              call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
-              p_rlevelInfo%p_rcoarseGridSolver%istoppingCriterion = LINSOL_STOP_ONEOF
-              if (ispaceLevel .eq. 1) then
-                ! Only one level
-                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRel
-                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbs
-                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiff
-                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
-                p_rlevelInfo%p_rcoarseGridSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
-              else
-                p_rlevelInfo%p_rcoarseGridSolver%depsRel = rspaceSolverParams%depsRelCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%depsAbs = rspaceSolverParams%depsAbsCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%depsdiff = rspaceSolverParams%depsdiffCoarse
-                p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = rspaceSolverParams%nmaxIterationsCoarse
-              end if
-            else
-              call linsol_initSSOR (p_rpreconditioner)
-              call linsol_initBiCGStab (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
-              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,&
-                  rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
-            end if
-          end do
-          rsolver%p_rspaceSolver%depsRel = rspaceSolverParams%depsRel
-          rsolver%p_rspaceSolver%depsAbs = rspaceSolverParams%depsAbs
-          rsolver%p_rspaceSolver%depsdiff = rspaceSolverParams%depsdiff
-          rsolver%p_rspaceSolver%nmaxIterations = rspaceSolverParams%nmaxIterations
-          rsolver%p_rspaceSolver%ioutputlevel = rspaceSolverParams%ioutputlevel
-          rsolver%p_rspaceSolver%istoppingCriterion = LINSOL_STOP_ONEOF
-        
-        case default
-          call output_line ("Unknown preconditioner in stls_init")
-          call sys_halt()
-        end select
-        
+      
+        end do
+      
       end select
         
       ! Prepare boundary conditions

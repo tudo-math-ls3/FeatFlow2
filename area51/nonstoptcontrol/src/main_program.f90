@@ -364,7 +364,11 @@ contains
     call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
         "csolverType", rspaceSolverParams%cspaceSolverType)
     call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
-        "cpreconditioner", rspaceSolverParams%cspacePreconditioner)
+        "csmoother", rspaceSolverParams%cspacesmoother)
+    call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
+        "ccoarsegridsolver", rspaceSolverParams%cspacecoarsegridsolver)
+    call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
+        "ioutputlevelcoarse", rspaceSolverParams%ioutputlevelcoarse)
     call parlst_getvalue_double (rparlist, "SPACE-LINEARSOLVER", &
         "depsrel", rspaceSolverParams%depsRel)
     call parlst_getvalue_double (rparlist, "SPACE-LINEARSOLVER", &
@@ -392,56 +396,100 @@ contains
     case (1)
       rspaceSolverParams%cspaceSolverType = LINSOL_ALG_MULTIGRID2
     end select
-
-    select case (rspaceSolverParams%cspacePreconditioner)
-    case (0)
-      select case (rparams%rphysics%cequation)
-      case (0,2)
+    
+    select case (rparams%rphysics%cequation)
+    case (0,2)
+      ! Heat equation
+      rspaceSolverParams%cproblemtype = STLS_PR_STANDARD
+      
+      select case (rspaceSolverParams%cspaceSmoother)
+      case (0)
         ! Jacobi
-        rspaceSolverParams%cspacePreconditioner = STLS_PC_JACOBI
-        rspaceSolverParams%cproblemtype = STLS_PR_STANDARD
+        rspaceSolverParams%cspaceSmoother = STLS_PC_JACOBI
       case (1)
-        ! VANKA
-        rspaceSolverParams%cspacePreconditioner = STLS_PC_VANKA
-        rspaceSolverParams%cproblemtype = STLS_PC_2DSADDLEPT2EQ
+        ! ILU-0. Does only work for the heat equation.
+          rspaceSolverParams%cspaceSmoother = STLS_PC_ILU0
+      case (2)
+        ! SSOR. Does only work for the heat equation.
+        rspaceSolverParams%cspaceSmoother = STLS_PC_SSOR
+      case (3)
+        ! Jacobi
+        rspaceSolverParams%cspaceSmoother = STLS_PC_BICGSTABJACOBI
+      case (4)
+        ! UMFPACK
+        rspaceSolverParams%cspaceSmoother = STLS_PC_UMFPACK
+      case default
+        call output_line ("Unknown preconditioner.",&
+            OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
+        call sys_halt()
       end select
+      
+      select case (rspaceSolverParams%cspacecoarsegridsolver)
+      case (0)
+        ! Jacobi
+        rspaceSolverParams%cspacecoarsegridsolver = STLS_PC_JACOBI
+      case (1)
+        ! ILU-0. Does only work for the heat equation.
+          rspaceSolverParams%cspacecoarsegridsolver = STLS_PC_ILU0
+      case (2)
+        ! SSOR. Does only work for the heat equation.
+        rspaceSolverParams%cspacecoarsegridsolver = STLS_PC_SSOR
+      case (3)
+        ! Jacobi
+        rspaceSolverParams%cspacecoarsegridsolver = STLS_PC_BICGSTABJACOBI
+      case (4)
+        ! UMFPACK
+        rspaceSolverParams%cspacecoarsegridsolver = STLS_PC_UMFPACK
+      case default
+        call output_line ("Unknown preconditioner.",&
+            OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
+        call sys_halt()
+      end select
+      
     case (1)
-      ! ILU-0. Does only work for the heat equation.
-      select case (rparams%rphysics%cequation)
-      case (0,2)
-        ! ILU0
-        rspaceSolverParams%cspacePreconditioner = STLS_PC_ILU0
-      case (1)
-        call output_line ("ILU not supported for Stokes equations",&
-            OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
-        call sys_halt()
-      end select
-    case (2)
-      ! SSOR. Does only work for the heat equation.
-      select case (rparams%rphysics%cequation)
-      case (0,2)
-        ! ILU0
-        rspaceSolverParams%cspacePreconditioner = STLS_PC_SSOR
-      case (1)
-        call output_line ("SSOR not supported for Stokes equations",&
-            OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
-        call sys_halt()
-      end select
-    case (3)
-      select case (rparams%rphysics%cequation)
-      case (0,2)
+      ! Saddle point problem
+      rspaceSolverParams%cproblemtype = STLS_PC_2DSADDLEPT2EQ
+      
+      select case (rspaceSolverParams%cspaceSmoother)
+      case (0)
         ! Jacobi
-        rspaceSolverParams%cspacePreconditioner = STLS_PC_BICGSTABJACOBI
-        rspaceSolverParams%cproblemtype = STLS_PR_STANDARD
-      case (1)
-        ! VANKA
-        rspaceSolverParams%cspacePreconditioner = STLS_PC_BICGSTABVANKA
-        rspaceSolverParams%cproblemtype = STLS_PC_2DSADDLEPT2EQ
+        rspaceSolverParams%cspaceSmoother = STLS_PC_VANKA
+      case (1,2)
+        call output_line ("Solver not supported for Stokes equations",&
+            OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
+        call sys_halt()
+      case (3)
+        ! Jacobi
+        rspaceSolverParams%cspaceSmoother = STLS_PC_BICGSTABVANKA
+      case (4)
+        ! UMFPACK
+        rspaceSolverParams%cspaceSmoother = STLS_PC_UMFPACK
+      case default
+        call output_line ("Unknown preconditioner.",&
+            OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
+        call sys_halt()
       end select
-    case default
-      call output_line ("Unknown preconditioner.",&
-          OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
-      call sys_halt()
+      
+      select case (rspaceSolverParams%cspacecoarsegridsolver)
+      case (0)
+        ! Jacobi
+        rspaceSolverParams%cspacecoarsegridsolver = STLS_PC_VANKA
+      case (1,2)
+        call output_line ("Solver not supported for Stokes equations",&
+            OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
+        call sys_halt()
+      case (3)
+        ! Jacobi
+        rspaceSolverParams%cspacecoarsegridsolver = STLS_PC_BICGSTABVANKA
+      case (4)
+        ! UMFPACK
+        rspaceSolverParams%cspacecoarsegridsolver = STLS_PC_UMFPACK
+      case default
+        call output_line ("Unknown preconditioner.",&
+            OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
+        call sys_halt()
+      end select
+      
     end select
     
     select case (rsolver%csolverType)
