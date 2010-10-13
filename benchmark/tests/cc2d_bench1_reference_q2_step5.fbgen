@@ -26,7 +26,7 @@ class = DEFAULT
 # An optional description of the test set.
 # May optionally contain references to the variables below.
 
-descr = cc2d_bench3_reference, Q2, Level $(LV), Step 1, Substep $(%DTMIN)
+descr = cc2d_bench1_reference, Q2, Level $(LV), Step 1, Substep $(%DTMIN)
 
 # Data file that is used by the application to provide parameters.
 # May optionally contain references to the variables below.
@@ -77,6 +77,6 @@ TIMEDISCRETISATION_DTIMEMAX. = 0.05:15.0:0.05
 # Read the previous solution if it exists
 #
 PREVIOUSINDEX~ = `expr $(%DTMIN) - 1`
-PREVIOUSDIR!~ = "cc2d_bench3_reference_q2_step4-lv$(LV)-DTMIN$(LASTMAXINDEX)", \
-                "cc2d_bench3_reference_q2_step5-lv$(LV)-DTMIN$(PREVIOUSINDEX)"
+PREVIOUSDIR!~ = "cc2d_bench1_reference_q2_step4-lv$(LV)-DTMIN$(LASTMAXINDEX)", \
+                "cc2d_bench1_reference_q2_step5-lv$(LV)-DTMIN$(PREVIOUSINDEX)"
 DISCRETISATION_SINITIALSOLUTIONFILENAME. = "./logs/$(PREVIOUSDIR)/solution"
