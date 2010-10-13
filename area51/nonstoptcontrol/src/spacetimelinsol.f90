@@ -364,13 +364,13 @@ contains
         call linsol_initBiCGStab (p_rsolver,p_rpreconditioner)
         
       case (STLS_PC_ILU0)
-        call linsol_initILU0 (p_rpreconditioner)
+        call linsol_initILU0 (p_rsolver)
         
       case (STLS_PC_SSOR)
-        call linsol_initSSOR (p_rpreconditioner)
+        call linsol_initSSOR (p_rsolver)
 
       case (STLS_PC_UMFPACK)
-        call linsol_initUMFPACK4 (p_rpreconditioner)
+        call linsol_initUMFPACK4 (p_rsolver)
       end select
       
       p_rsolver%istoppingCriterion = LINSOL_STOP_ONEOF
