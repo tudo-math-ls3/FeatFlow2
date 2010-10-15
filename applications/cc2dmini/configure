@@ -6,4 +6,6 @@
 
 ../../bin/configure \
 	--appname=cc2dmini \
+	--programfile=src/cc2dmini.f90 \
+        --srclist_app="`ls src/*.f90`" \
 	$@
