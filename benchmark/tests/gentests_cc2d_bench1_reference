@@ -10,29 +10,29 @@
 #
 # Execute this script in the benchmark directory!
 
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step1.fbgen >  ./tests/cc2d_bench1_reference.fbdef
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step2.fbgen >> ./tests/cc2d_bench1_reference.fbdef
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step3.fbgen >> ./tests/cc2d_bench1_reference.fbdef
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv2.fbgen >> ./tests/cc2d_bench1_reference.fbdef
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv3.fbgen >> ./tests/cc2d_bench1_reference.fbdef
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv4.fbgen >> ./tests/cc2d_bench1_reference.fbdef
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv5.fbgen >> ./tests/cc2d_bench1_reference.fbdef
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv6.fbgen >> ./tests/cc2d_bench1_reference.fbdef
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step5.fbgen >> ./tests/cc2d_bench1_reference.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step1.fbgen >  ./tests/cc2d_bench1_reference123.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step2.fbgen >> ./tests/cc2d_bench1_reference123.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step3.fbgen >> ./tests/cc2d_bench1_reference123.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv2.fbgen >> ./tests/cc2d_bench1_reference4.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv3.fbgen >> ./tests/cc2d_bench1_reference4.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv4.fbgen >> ./tests/cc2d_bench1_reference4.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv5.fbgen >> ./tests/cc2d_bench1_reference4.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv6.fbgen >> ./tests/cc2d_bench1_reference4.fbdef
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step5.fbgen >> ./tests/cc2d_bench1_reference5.fbdef
 
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step1.fbgen list     >  ./tests/cc2d_bench1_reference.fbconf
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step2.fbgen list     >> ./tests/cc2d_bench1_reference.fbconf
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step3.fbgen list     >> ./tests/cc2d_bench1_reference.fbconf
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv2.fbgen list >> ./tests/cc2d_bench1_reference_lv2.fbconf
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv3.fbgen list >> ./tests/cc2d_bench1_reference_lv3.fbconf
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv4.fbgen list >> ./tests/cc2d_bench1_reference_lv4.fbconf
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv5.fbgen list >> ./tests/cc2d_bench1_reference_lv5.fbconf
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv6.fbgen list >> ./tests/cc2d_bench1_reference_lv6.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step1.fbgen list     >  ./tests/cc2d_bench1_reference123.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step2.fbgen list     >> ./tests/cc2d_bench1_reference123.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step3.fbgen list     >> ./tests/cc2d_bench1_reference123.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv2.fbgen list > ./tests/cc2d_bench1_reference4_lv2.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv3.fbgen list > ./tests/cc2d_bench1_reference4_lv3.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv4.fbgen list > ./tests/cc2d_bench1_reference4_lv4.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv5.fbgen list > ./tests/cc2d_bench1_reference4_lv5.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step4_lv6.fbgen list > ./tests/cc2d_bench1_reference4_lv6.fbconf
 
 # Warning! The "final" tests must not be started before the sequence on the
 # corresponding level is finished! Use appropriate --afterjob modifiers
 # in the scheduling!
-./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step5.fbgen list     >> ./tests/cc2d_bench1_reference_final.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench1_reference_q2_step5.fbgen list     > ./tests/cc2d_bench1_reference_final.fbconf
 
 # Schedule, except "final" scripts:
 
