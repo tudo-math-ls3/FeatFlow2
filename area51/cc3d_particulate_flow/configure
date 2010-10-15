@@ -5,7 +5,7 @@
 #
 
 ../../bin/configure \
-	--appname=cc2doptcontrol \
-	--programfile=src/cc2doptc.f90 \
+	--appname=cc3d \
+	--programfile=src/cc3d.f90 \
 	--srclist_app="`ls src/*.f90`" \
 	$@

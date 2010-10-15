@@ -6,4 +6,6 @@
 
 ../../bin/configure \
 	--appname=bio_app \
+	--programfile=src/chemotaxis.f90 \
+        --srclist_app="`ls src/*.f90`" \
 	$@

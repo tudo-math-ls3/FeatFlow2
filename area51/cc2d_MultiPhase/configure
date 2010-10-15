@@ -6,4 +6,6 @@
 
 ../../bin/configure \
 	--appname=cc2d_Multiphase \
+	--programfile=src/cc2d.f90 \
+	--srclist_app="`ls src/*.f90`" \
 	$@

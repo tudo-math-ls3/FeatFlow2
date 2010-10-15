@@ -5,7 +5,7 @@
 #
 
 ../../bin/configure \
-	--appname=bouss2dmini \
-	--programfile=src/bouss2dmini.f90 \
+        --appname=cc2d_ParticleContact \
+        --programfile=src/cc2d_pf.f90 \
         --srclist_app="`ls src/*.f90`" \
-	$@
+        

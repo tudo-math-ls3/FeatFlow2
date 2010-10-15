@@ -5,7 +5,7 @@
 #
 
 ../../bin/configure \
-	--appname=cc2doptcontrol \
-	--programfile=src/cc2doptc.f90 \
-	--srclist_app="`ls src/*.f90`" \
-	$@
+    --appname=prolrest \
+    --programfile=src/prolrest.f90 \
+    --srclist_app="`ls src/*.f90`" \
+    $@

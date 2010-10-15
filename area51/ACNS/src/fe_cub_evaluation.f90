@@ -75,7 +75,7 @@ contains
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
-  include 'intf_refFunctionSc.inc'
+  include 'intf_refFuncSc.inc'
   optional :: ffunctionReference
 !</input>
 

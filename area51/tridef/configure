@@ -5,5 +5,7 @@
 #
 
 ../../bin/configure \
-	--appname=poisson \
+	--appname=tridef \
+	--programfile=src/tridef.f90 \
+	--srclist_app="`ls src/*.f90`" \
 	$@

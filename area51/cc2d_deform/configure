@@ -5,6 +5,7 @@
 #
 
 ../../bin/configure \
-    --appname=cc2d \
-    --no-opt
-    $@
+	--appname=cc2d \
+	--programfile=src/cc2d.f90 \
+        --srclist_app="`ls src/*.f90`" \
+	$@
