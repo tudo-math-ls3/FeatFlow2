@@ -4406,6 +4406,7 @@ sub make_dep_list {
     my $objstring  = "";
     my $aux        = "";
     my @deps       = ();
+    my $appstring  = "";
 
     # Strip off any path information
     $aux = get_filename($fileToParse);
@@ -4434,98 +4435,112 @@ sub make_dep_list {
     foreach $aux (@deps) {
         # Module?
         if ($aux =~ m/^module:(.+)$/) {
-            $depstring .= "$objectdir/$1.$moduleFiles_extension ";
+	    $appstring = "$objectdir/$1.$moduleFiles_extension ";
+	    # Append only if not already in list
+	    if ($depstring !~ m/\Q$appstring\E/) {
+		$depstring .= $appstring;
+	    }
         }
         # Include file
         elsif ($aux =~ m/^include:(.+)$/) {
 	    my $match = $1;
-            $depstring .= "$objectdir/" . &basename($match) . " ";
+	    $appstring = "$objectdir/" . &basename($match) . " ";
+	    # Append only if not already in list
+	    if ($depstring !~ m/\Q$appstring\E/) {
+		$depstring .= $appstring;
 
-            # Add included file (adding relevant path info) to global list
-            # of included files (in order to have them evaluated by cpp
-            # on make invocation and then stored into object directory).
-	    # The approach differs depending on whether we have absolute
-	    # or relative base paths.
-	    # Absolute path case?
-	    if ($FEAT2BASEDIR =~ m/^\//) {
-		$aux = &abs_path(&concat_filename(&dirname($fileToParse), $match));
-	    } else {
-		$aux = &concat_filename(&dirname($fileToParse), $match);
-                # Cut off leading './', if any
-		$aux =~ s/^\.\///;
-	    }
-
-            # Add to the list if not already on the list or in 'forbidden' lists
-	    unless ((DO_NOT_INCLUDE          =~ m/\Q$aux\E/) or
-                    ($HEADER_FILES_TO_COPY   =~ m/\Q$aux\E/)) {
-		# Strategy:
-		# * No file with this name seen yet. Store URI, inode and md5 sum of
-		#   file content
-		# * File with same URI already present:
-		#   skip file
-		# * File with different URI already present: compare inode and - if
-		#   inode is different - md5 sum of its content with stored
-		#   values. If both differ throw an error. Because even header files
-		#   are copied or preprocessed and stored into a single object
-		#   directory. So, having different files with the same name is not
-		#   feasible.
-		my $auxBasename = &basename($aux);
-		if (defined($headerfiles{$auxBasename})) {
-		    # Already seen a file with this name.
-		    # Compare URI. If identical, no need to throw an error. Skip file.
-		    if ($aux ne $headerfiles{$auxBasename}->{'URI'}) {
-			# URIs differ. Possibly because of "../" in URI.
-			# Compare inodes.
-			my $auxInode = stat($aux)->ino;
-			if ($auxInode ne $headerfiles{$auxBasename}->{'inode'}) {
-			    # URIs and inodes differ. Possibly, the second file
-			    # has identical content in which case it is still feasible
-			    # to specify it. Maybet the second file is a symbolic link
-			    # or lies on a different file system for strange reasons.
-			    #
-			    # Compute sum of current file content
-			    open(HEADERFILE, "<", $aux) or
-				die "\n$progname: ERROR:\n".
-				    "Cannot open header file <$aux> for reading: $!\n";
-			    my $auxData = do { local $/; <HEADERFILE> };
-			    close(HEADERFILE);
-			    my $auxMD5 = md5($auxData);
-			    if ($auxMD5 ne $headerfiles{$auxBasename}->{'md5'}) {
-				die "\n\n$progname: ERROR:\n".
-				    "File <$fileToParse> contains a reference to\n" .
-				    "<$aux>, but source file\n" .
-				    "<" . $headerfiles{$auxBasename}->{'referer'} . "> parsed earlier\n" .
-				    "already contained a reference to a file with the same name,\n" .
-				    "but a different URI: <" . $headerfiles{$auxBasename}->{'URI'} . ">.\n" .
-				    "Additionally, the inode and md5sum of these files differ.\n" .
-				    "Given that all header files are copied to the same object directory\n" .
-				    "this file name collision is not feasible. Please rename either file.\n";
-			    } # different md5sum
-			} # different idnoe
-		    } # different URI
+		# Add included file (adding relevant path info) to global list
+		# of included files (in order to have them evaluated by cpp
+		# on make invocation and then stored into object directory).
+		# The approach differs depending on whether we have absolute
+		# or relative base paths.
+		# Absolute path case?
+		if ($FEAT2BASEDIR =~ m/^\//) {
+		    $aux = &abs_path(&concat_filename(&dirname($fileToParse), $match));
 		} else {
-		    # Store URI
-		    $headerfiles{$auxBasename}->{'URI'}   = $aux;
-		    # Store inode
-		    $headerfiles{$auxBasename}->{'inode'} = stat($aux)->ino;
-		    # Compute and md5 sum of file content
-		    open(HEADERFILE, "<", $aux) or
-			die "\n$progname: ERROR:\n".
-		            "Cannot open header file <$aux> for reading: $!\n";
-		    my $auxData = do { local $/; <HEADERFILE> };
-		    close(HEADERFILE);
-		    my $auxMD5 = md5($auxData);
-		    $headerfiles{$auxBasename}->{'md5'} = $auxMD5;
-		    # Store first file that references this header file
-		    $headerfiles{$auxBasename}->{'referer'} = $fileToParse;
-		} # file seen before
-#                push @headerfiles, $aux;
-            } # not on exclude nor copy list
+		    $aux = &concat_filename(&dirname($fileToParse), $match);
+		    # Cut off leading './', if any
+		    $aux =~ s/^\.\///;
+		}
 
+		# Add to the list if not already on the list or in 'forbidden' lists
+		unless ((DO_NOT_INCLUDE          =~ m/\Q$aux\E/) or
+			($HEADER_FILES_TO_COPY   =~ m/\Q$aux\E/)) {
+		    # Strategy:
+		    # * No file with this name seen yet. Store URI, inode and md5 sum of
+		    #   file content
+		    # * File with same URI already present:
+		    #   skip file
+		    # * File with different URI already present: compare inode and - if
+		    #   inode is different - md5 sum of its content with stored
+		    #   values. If both differ throw an error. Because even header files
+		    #   are copied or preprocessed and stored into a single object
+		    #   directory. So, having different files with the same name is not
+		    #   feasible.
+		    my $auxBasename = &basename($aux);
+		    if (defined($headerfiles{$auxBasename})) {
+			# Already seen a file with this name.
+			# Compare URI. If identical, no need to throw an error. Skip file.
+			if ($aux ne $headerfiles{$auxBasename}->{'URI'}) {
+			    # URIs differ. Possibly because of "../" in URI.
+			    # Compare inodes.
+			    my $auxInode = stat($aux)->ino;
+			    if ($auxInode ne $headerfiles{$auxBasename}->{'inode'}) {
+				# URIs and inodes differ. Possibly, the second file
+				# has identical content in which case it is still feasible
+				# to specify it. Maybet the second file is a symbolic link
+				# or lies on a different file system for strange reasons.
+				#
+				# Compute sum of current file content
+				open(HEADERFILE, "<", $aux) or
+				    die "\n$progname: ERROR:\n".
+				    "Cannot open header file <$aux> for reading: $!\n";
+				my $auxData = do { local $/; <HEADERFILE> };
+				close(HEADERFILE);
+				my $auxMD5 = md5($auxData);
+				if ($auxMD5 ne $headerfiles{$auxBasename}->{'md5'}) {
+				    die "\n\n$progname: ERROR:\n".
+					"File <$fileToParse> contains a reference to\n" .
+					"<$aux>, but source file\n" .
+					"<" . $headerfiles{$auxBasename}->{'referer'} . "> parsed earlier\n" .
+					"already contained a reference to a file with the same name,\n" .
+					"but a different URI: <" . $headerfiles{$auxBasename}->{'URI'} . ">.\n" .
+					"Additionally, the inode and md5sum of these files differ.\n" .
+					"Given that all header files are copied to the same object directory\n" .
+					"this file name collision is not feasible. Please rename either file.\n";
+				} # different md5sum
+			    } # different idnoe
+			} # different URI
+		    } else {
+			# Parse this file for dependencies
+			push @deps, &get_dependency($aux);
+
+			# Store URI
+			$headerfiles{$auxBasename}->{'URI'}   = $aux;
+			# Store inode
+			$headerfiles{$auxBasename}->{'inode'} = stat($aux)->ino;
+			# Compute and md5 sum of file content
+			open(HEADERFILE, "<", $aux) or
+			    die "\n$progname: ERROR:\n".
+			    "Cannot open header file <$aux> for reading: $!\n";
+			my $auxData = do { local $/; <HEADERFILE> };
+			close(HEADERFILE);
+			my $auxMD5 = md5($auxData);
+			$headerfiles{$auxBasename}->{'md5'} = $auxMD5;
+			# Store first file that references this header file
+			$headerfiles{$auxBasename}->{'referer'} = $fileToParse;
+		    } # file seen before
+#                push @headerfiles, $aux;
+		} # not on exclude nor copy list
+	    }
         }
         # Files that must be included
         elsif ($aux =~ m/^mustinclude:(.+)$/) {
-            $depstring .= "$1 ";
+	    $appstring = "$1 ";
+	    # Append only if not already in list
+	    if ($depstring !~ m/\Q$appstring\E/) {
+		$depstring .= $appstring;
+	    }
         }
     }
 
