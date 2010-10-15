@@ -4512,23 +4512,29 @@ sub make_dep_list {
 			    } # different idnoe
 			} # different URI
 		    } else {
-			# Parse this file for dependencies
-			push @deps, &get_dependency($aux);
+			if (! -e $aux) {
+			    die "\n\n$progname: ERROR:\n".
+				"File <$fileToParse> contains a reference to\n" .
+				"<$aux>, but that file does not exist.\n";
+			} else {
+			    # Parse this file for dependencies
+			    push @deps, &get_dependency($aux);
 
-			# Store URI
-			$headerfiles{$auxBasename}->{'URI'}   = $aux;
-			# Store inode
-			$headerfiles{$auxBasename}->{'inode'} = stat($aux)->ino;
-			# Compute and md5 sum of file content
-			open(HEADERFILE, "<", $aux) or
-			    die "\n$progname: ERROR:\n".
-			    "Cannot open header file <$aux> for reading: $!\n";
-			my $auxData = do { local $/; <HEADERFILE> };
-			close(HEADERFILE);
-			my $auxMD5 = md5($auxData);
-			$headerfiles{$auxBasename}->{'md5'} = $auxMD5;
-			# Store first file that references this header file
-			$headerfiles{$auxBasename}->{'referer'} = $fileToParse;
+			    # Store URI
+			    $headerfiles{$auxBasename}->{'URI'}   = $aux;
+			    # Store inode
+			    $headerfiles{$auxBasename}->{'inode'} = stat($aux)->ino;
+			    # Compute and md5 sum of file content
+			    open(HEADERFILE, "<", $aux) or
+				die "\n$progname: ERROR:\n".
+				"Cannot open header file <$aux> for reading: $!\n";
+			    my $auxData = do { local $/; <HEADERFILE> };
+			    close(HEADERFILE);
+			    my $auxMD5 = md5($auxData);
+			    $headerfiles{$auxBasename}->{'md5'} = $auxMD5;
+			    # Store first file that references this header file
+			    $headerfiles{$auxBasename}->{'referer'} = $fileToParse;
+			}
 		    } # file seen before
 #                push @headerfiles, $aux;
 		} # not on exclude nor copy list
