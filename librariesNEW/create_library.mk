@@ -24,6 +24,7 @@ CREATE_LIB=sleep `echo $${PPID} | sed -e 's/^.*\(.\)$$/\1/'`; \
 		loop=`expr $${loop} + 1`; \
 	    done; \
 	fi; \
+	errorcode=0; \
 	if test -f $(LOCKFILE); then \
 	    echo; \
 	    echo "\#"; \
@@ -40,9 +41,10 @@ CREATE_LIB=sleep `echo $${PPID} | sed -e 's/^.*\(.\)$$/\1/'`; \
 	    trap "rm -f $(LOCKFILE)" 2 3 9; \
 	    touch $(LOCKFILE); \
 	    echo $(ARCH) $@ $^; \
-	    $(ARCH) $@ $^ && \
-	    echo $(RANLIB) $@; \
-	    $(RANLIB) $@; \
+	    ( $(ARCH) $@ $^ && \
+	      echo $(RANLIB) $@ && \
+	      $(RANLIB) $@ ) || errorcode=1; \
 	    rm -f $(LOCKFILE); \
 	fi; \
-	trap - 2 3 9;
+	trap - 2 3 9; \
+	exit $${errorcode};
