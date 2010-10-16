@@ -2230,7 +2230,7 @@ sub create_feastAppMakefile {
         "\$(OBJHEADEREVAL): TMPFILE=\$(OBJDIR)/\$(notdir \$<).tmp\n" .
         "\$(OBJHEADEREVAL):\n" .
         "\t\@echo \"# Preprocessing \$<\"\n" .
-        "\t\$(CPP) -I\$(OBJDIR) \\\n" .
+        "\t\$(CPP) \$(CPPFLAGS) -I\$(OBJDIR) \\\n" .
         "\t      \$< \\\n" .
         "\t    > \$(TMPFILE)\n" .
         "\t\@echo \"# Compensating for line number changes in preprocessed \$<\"\n" .
