@@ -104,6 +104,8 @@ CDPATH =
 
 # C preprocessor
 CPP           = cpp
+# C preprocessor flags
+CPPFLAGS      = $(shell echo $(APPONLYFLAGS) $(CFLAGSF90) | tr ' ' '\n' | sed -e '/^-[DU]/!d')
 
 # FEAT2's preprocessor
 F90CPP        = $(FEAT2BASEDIR)/bin/f90cpp
