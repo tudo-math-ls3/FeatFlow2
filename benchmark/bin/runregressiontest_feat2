@@ -1155,19 +1155,30 @@ fb_runBenchmarkOnLiDO() {
     # how many cycles to wait till for all jobs to finish
     maxwaitcycles=512
     iteration=1
+    attemptpbsserverquery=0
+    maxattemptpbsserverquery=3
     pbserrors=`mktemp`
     while test $iteration -le $maxwaitcycles; do
+	attemptpbsserverquery=`expr $attemptpbsserverquery + 1`;
 	runningsjobs=`qstat -u $USER 2>${pbserrors} | grep $LIDOJOBNAMEPREFIX | wc -l`
 	# PBS reported an error
 	if [ -s "${pbserrors}" ]; then
-	    (echo "$0: Error: Querying PBS seems not to work. We got the following error message:"; \
-	     cat ${pbserrors}; \
-	     echo "$0: Error: As it is unlikely that PBS miraculously recovers in time," ; \
-	     echo "$0: Error: giving up waiting for remaining jobs to finish."; ) > $AUXILIARYLOG
-	    MAILSUBJECT="$MAILPREFIX Querying PBS failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
-	    cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
-	    break
+	    if [ $attemptpbsserverquery -lt $maxattemptpbsserverquery ]; then
+		(echo "$0: Error: Querying PBS seems not to work. We got the following error message:"; \
+		 cat ${pbserrors}; \
+		 echo "$0: Error: Trying "`expr $maxattemptpbsserverquery - $attemptpbsserverquery`" more times to connect to PBS server"; \
+	         echo "$0: Error: because the server might simply get restarted currently."; ) > $AUXILIARYLOG
+	    else
+		(echo "$0: Error: Querying PBS seems not to work. We got the following error message:"; \
+		 cat ${pbserrors}; \
+		 echo "$0: Error: As it is unlikely that PBS miraculously recovers in time," ; \
+		 echo "$0: Error: giving up waiting for remaining jobs to finish."; ) > $AUXILIARYLOG
+		MAILSUBJECT="$MAILPREFIX Querying PBS failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE${MAILSUBJECT}))"
+		cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+		break
+	    fi
 	fi
+	attemptpbsserverquery=0;
 	test $runningsjobs -eq 0 && break;
 	iteration=`expr $iteration + 1`
 	echo "Waiting for running jobs, iteration "$iteration" ..." 1>>$AUXILIARYLOG 2>&1
