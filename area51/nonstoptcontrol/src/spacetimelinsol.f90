@@ -401,7 +401,7 @@ contains
         call linsol_initBiCGStab (p_rsolver,p_rpreconditioner)
 
       case (STLS_PC_BICGSTABFULLVANKA)
-        call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
+        call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
         call linsol_initBiCGStab (p_rsolver,p_rpreconditioner)
         
       case (STLS_PC_ILU0)
