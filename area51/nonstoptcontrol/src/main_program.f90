@@ -464,6 +464,9 @@ contains
       case (4)
         ! UMFPACK
         rspaceSolverParams%cspaceSmoother = STLS_PC_UMFPACK
+      case (5)
+        ! GS
+        rspaceSolverParams%cspaceSmoother = STLS_PC_BICGSTABFULLVANKA
       case default
         call output_line ("Unknown preconditioner.",&
             OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')
@@ -484,6 +487,9 @@ contains
       case (4)
         ! UMFPACK
         rspaceSolverParams%cspacecoarsegridsolver = STLS_PC_UMFPACK
+      case (5)
+        ! GS
+        rspaceSolverParams%cspacecoarsegridsolver = STLS_PC_BICGSTABFULLVANKA
       case default
         call output_line ("Unknown preconditioner.",&
             OU_CLASS_ERROR,OU_MODE_STD,'main_initLinearSolver')

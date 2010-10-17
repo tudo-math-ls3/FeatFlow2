@@ -65,7 +65,7 @@ module spacetimelinsol
   ! Jacobi preconditioning
   integer, parameter, public :: STLS_PC_JACOBI = 0
 
-  ! General VANKA preconditioner
+  ! Diagonal VANKA preconditioner
   integer, parameter, public :: STLS_PC_VANKA = 0
   
   ! ILU-0 preconditioner
@@ -82,6 +82,9 @@ module spacetimelinsol
 
   ! UMFPACK
   integer, parameter, public :: STLS_PC_UMFPACK = 4
+
+  ! Full VANKA preconditioner + BiCGStab
+  integer, parameter, public :: STLS_PC_BICGSTABFULLVANKA = 5
   
 !</constantblock>
 
@@ -389,12 +392,16 @@ contains
     case (STLS_PC_2DSADDLEPT2EQ)
 
       select case (csolvertype)
-      case (STLS_PC_JACOBI)  
+      case (STLS_PC_VANKA)  
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
         call linsol_initDefCorr (p_rsolver,p_rpreconditioner)
         
-      case (STLS_PC_BICGSTABJACOBI)
+      case (STLS_PC_BICGSTABVANKA)
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
+        call linsol_initBiCGStab (p_rsolver,p_rpreconditioner)
+
+      case (STLS_PC_BICGSTABFULLVANKA)
+        call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
         call linsol_initBiCGStab (p_rsolver,p_rpreconditioner)
         
       case (STLS_PC_ILU0)

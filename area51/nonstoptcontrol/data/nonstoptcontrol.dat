@@ -352,6 +352,7 @@ csolverType = 1
 # =1: BiCGStab(ILU-0). Only for the heat equation.
 # =2: BiCGStab(SSOR). Only for the heat equation.
 # =3: BiCGStab(Jacobi/VANKA).
+# =5: BiCGStab(full VANKA), only Stokes equations
 csmoother = 0
 
 # Type of coarse grid solver.
@@ -360,6 +361,7 @@ csmoother = 0
 # =2: BiCGStab(SSOR). Only for the heat equation.
 # =3: BiCGStab(Jacobi/VANKA).
 # =4: UMFPACK
+# =5: BiCGStab(full VANKA), only Stokes equations
 ccoarsegridsolver = 4
 
 # Output level
