@@ -34,6 +34,9 @@ cppcmd="cpp " # previously: "cpp -CC "
 # filter out the Fortran90 source file.
 while : true
 do
+  # Exit loop if all command line arguments have been parsed
+  if test -z "$1"; then break; fi;
+
   case "$1" in
     # We reached the Fortran90 source file
     # in the command line arguments given to
@@ -136,8 +139,6 @@ do
   esac
   # Step to next string in command line
   shift
-  # Exit loop if all command line arguments have been parsed
-  if test -z "$1"; then break; fi;
 done
 
 if test -z "${preprocessedfile}"; then
