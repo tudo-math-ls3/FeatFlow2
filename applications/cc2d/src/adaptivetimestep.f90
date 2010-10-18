@@ -443,7 +443,7 @@ contains
       real(dp), intent(inout) :: dtstep ! Timestep to use
       real(dp), intent(in) :: dtimeInit ! Initial time
       real(dp), intent(in) :: dtime     ! Current simulation time
-      integer, intent(in) :: isolverStatus ! Status of the solver, see above
+      integer(I32), intent(in) :: isolverStatus ! Status of the solver, see above
       type(t_collection), intent(in), optional :: rcollection
     end subroutine
   end interface

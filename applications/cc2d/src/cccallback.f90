@@ -1732,7 +1732,7 @@ contains
   !                               the predictor step
   !  TADTS_SST_NLPREDINCOMPLETE = nonlinear solver in the predictor step did 
   !                               not converge completely
-  integer, intent(in) :: isolverStatus 
+  integer(I32), intent(in) :: isolverStatus 
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
