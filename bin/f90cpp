@@ -219,11 +219,11 @@ sedscript="${sedscript} s|\([# ]include [<"\""']\).*/\([^/]*[>"\""']\)|\1\2|;"
 
 # Sed command (4) to hide all LaTeX forced line breaks (\\) and ASCII art
 # ending in a backslash from the C preprocessor. Especially from
-# version >= 4.5.0.
-#
-# Whenever changing the token \=%/~~, please do not forget to update all
-# occurences in kernel/feastcppmacros.h!
-sedscript="${sedscript} s|\\\\[ 	]*$|\\\\=%/~~|g;"
+# version >= 4.5.0. But ensure that preprocessor directives that
+# comprise a trailing backslash (think of multiline #define's) are not
+# hidden from the C preprocessor.
+sedscript="${sedscript} /^#.*\\\\[ 	]*$/ { :x; N; s/\\\\\n//; /\\\\[ 	]*$/tx; };"
+sedscript="${sedscript} s|^\([^#].*\)\\\\[ 	]*$|\1\\\\=%/~~|g;"
 
 # Replaces calls of error_print() with a version that automatically
 # inserts file name and line number of calling position.
