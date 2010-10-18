@@ -30,6 +30,20 @@ addcppflags=""
 STORAGEGETBASE_CALLS_TO_MACRO=0
 cppcmd="cpp " # previously: "cpp -CC "
 
+AWK_SCRIPT="`dirname $0`/postprocess_cppoutput.awk"
+if test ! -f ${AWK_SCRIPT}; then
+    if test -n "${FEAT2BASEDIR}"; then
+	AWK_SCRIPT=${FEAT2BASEDIR}/bin/postprocess_cppoutput.awk
+    fi
+    if test ! -f ${AWK_SCRIPT}; then
+	echo $0": The environment variable FEAT2BASEDIR is not set. It is one way of"
+	echo $0": locating \${FEAT2BASEDIR}/bin/postprocess_cppoutput.awk, a script"
+	echo $0": needed by this script. The default locate mechanism did not work"
+	echo $0": either. Aborting compilation..."
+	exit 1
+    fi
+fi
+
 # Loop through command line arguments and 
 # filter out the Fortran90 source file.
 while : true
@@ -286,8 +300,8 @@ fi
 # (particularly remove the absolute path to the source file as it likely
 #  blows the 132 character limit the Fortran 90/95 standard imposes)
 perl -pe "s/MYNEWLINE/\n/g; s%${objdir}/%%g; s|\. TRUE \.|.TRUE.|g; s|\. FALSE \.|.FALSE.|g; s|\/=%\/~|//|g; s|\/=%\*~|/*|g; s|\\\\=%/~~$|\\\\|; s/= >/=>/g;" < ${preprocessedfile}".$$" | \
-    awk -f ../../bin/postprocess_cppoutput.awk | \
-    sed 's/^\#/!\#/g;' > ${preprocessedfile}
+    awk -f ${AWK_SCRIPT} | \
+    sed 's/^\#/\!\#/g;' > ${preprocessedfile}
 
 # remove temporary files
 \rm ${preprocessedfile}".$$"
