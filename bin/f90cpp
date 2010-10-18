@@ -197,10 +197,10 @@ if test ${STORAGEGETBASE_CALLS_TO_MACRO} -eq 1; then
   sedscript="${sedscript} s/call storage_getbase_double/STORAGE_GETBASE_DOUBLE/g;";
 fi
 
-# Sed command (2) to hide all Fortran 90 string concatenation 
-# operators ('//') and any C comment ('/*'/ from the C preprocessor. 
-# Otherwise it would interpret them as C++ comment start operator and 
-# remove everything behind it - which is definitely not what we want to 
+# Sed command (2) to hide all Fortran 90 string concatenation
+# operators ('//') and any C comment ('/*') from the C preprocessor.
+# Otherwise it would interpret them as C++ comment start operator and
+# remove everything behind it - which is definitely not what we want to
 # present the Fortran 90 compiler afterwards.
 #
 # Whenever changing the token /=%/~, please do not forget to update all
