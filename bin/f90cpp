@@ -120,7 +120,11 @@ do
         # script, not for cpp. Deal with them right here.
         addcppflags="${addcppflags} $1"
 
-        if test "$1" = '-DENABLE_CPPMACRO_FOR_STORAGEGETBASE'; then
+        if test "$1" = '-DENABLE_FORTRAN_ALLOCATE'; then
+          STORAGEGETBASE_CALLS_TO_MACRO=2
+        fi
+
+        if test ${STORAGEGETBASE_CALLS_TO_MACRO} -eq 0 -a "$1" = '-DENABLE_CPPMACRO_FOR_STORAGEGETBASE'; then
           STORAGEGETBASE_CALLS_TO_MACRO=1
         fi
 
