@@ -29,8 +29,8 @@ do
 done
 
 # Build level 5 from the subtests
-head --lines=+2 ./logs/cc2d_bench3_reference_q2-lv5-DTMIN$i/bdforces_lv5 > ./results_cc2d_bench3_reference/bdforces_lv5
-head --lines=+2 ./logs/cc2d_bench3_reference_q2-lv5-DTMIN$i/pointvalues > ./results_cc2d_bench3_reference/pointvalues_lv5
+head --lines=+2 ./logs/cc2d_bench3_reference_q2-lv5-DTMIN1/bdforces_lv5 > ./results_cc2d_bench3_reference/bdforces_lv5
+head --lines=+2 ./logs/cc2d_bench3_reference_q2-lv5-DTMIN1/pointvalues > ./results_cc2d_bench3_reference/pointvalues_lv5
 for ((  i = 1 ;  i <= 40;  i++  ))
 do
   tail --lines=+3 ./logs/cc2d_bench3_reference_q2-lv5-DTMIN$i/bdforces_lv5 >> ./results_cc2d_bench3_reference/bdforces_lv5
@@ -38,8 +38,8 @@ do
 done
 
 # Build level 6 from the subtests
-head --lines=+2 ./logs/cc2d_bench3_reference_q2-lv6-DTMIN$i/bdforces_lv6 > ./results_cc2d_bench3_reference/bdforces_lv6
-head --lines=+2 ./logs/cc2d_bench3_reference_q2-lv6-DTMIN$i/pointvalues > ./results_cc2d_bench3_reference/pointvalues_lv6
+head --lines=+2 ./logs/cc2d_bench3_reference_q2-lv6-DTMIN1/bdforces_lv6 > ./results_cc2d_bench3_reference/bdforces_lv6
+head --lines=+2 ./logs/cc2d_bench3_reference_q2-lv6-DTMIN1/pointvalues > ./results_cc2d_bench3_reference/pointvalues_lv6
 for ((  i = 1 ;  i <= 160;  i++  ))
 do
   tail --lines=+3 ./logs/cc2d_bench3_reference_q2-lv6-DTMIN$i/bdforces_lv6 >> ./results_cc2d_bench3_reference/bdforces_lv6
