@@ -2220,10 +2220,11 @@ sub create_feastAppMakefile {
     print MAKEFILE_HDL
         "##############################################################################\n" .
         "# Create, copy or evaluate header files to be included in Fortran 90 source files\n\n" .
-        "# Copy some header files to object directory\n" .
+        "# Copy some header files to object directory (but remove path information from\n" .
+	"# include statements)\n" .
         "\$(OBJHEADERCOPY): | \$(OBJDIR)\n" .
         "\$(OBJHEADERCOPY):\n" .
-        "\tcp -p \$< \$(OBJDIR)\n\n" .
+        "\tsed -e '/!/d; s|include \".*/\\([^/]*\\)\"|include \"\\1\"|' \$< > \$(OBJDIR)\n\n" .
 
         "# Others need to be evaluated with cpp first before being stored there.\n" .
         "\$(OBJHEADEREVAL): | \$(OBJDIR)\n" .
