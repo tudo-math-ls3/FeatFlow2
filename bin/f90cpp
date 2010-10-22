@@ -186,18 +186,19 @@ if test "`dirname ${sourcefile}`"  = "`dirname ${preprocessedfile}`" -a \
     exit 1;
 fi
 
-sedscript=""
+perlscript=""
 
-# Sed command (1) to turn all calls of FEAST kernel routine storagegetbase*
+# Perl command (1) to turn all calls of FEAST kernel routine storagegetbase*
 # on-the-fly into macros that are subsequently expanded by the C preprocessor
 # directly to the appropriate commands.
+# Note: These particular instructions are sed compatible.
 if test ${STORAGEGETBASE_CALLS_TO_MACRO} -eq 1; then
-  sedscript="${sedscript} s/call storage_getbase_int_umfpack/STORAGE_GETBASE_INTEGER_UMFPACK/g;";
-  sedscript="${sedscript} s/call storage_getbase_int/STORAGE_GETBASE_INTEGER/g;";
-  sedscript="${sedscript} s/call storage_getbase_double/STORAGE_GETBASE_DOUBLE/g;";
+  perlscript="${perlscript} s/call storage_getbase_int_umfpack/STORAGE_GETBASE_INTEGER_UMFPACK/g;";
+  perlscript="${perlscript} s/call storage_getbase_int/STORAGE_GETBASE_INTEGER/g;";
+  perlscript="${perlscript} s/call storage_getbase_double/STORAGE_GETBASE_DOUBLE/g;";
 fi
 
-# Sed command (2) to hide all Fortran 90 string concatenation
+# Perl command (2) to hide all Fortran 90 string concatenation
 # operators ('//') and any C comment ('/*') from the C preprocessor.
 # Otherwise it would interpret them as C++ comment start operator and
 # remove everything behind it - which is definitely not what we want to
@@ -205,31 +206,42 @@ fi
 #
 # Whenever changing the token /=%/~, please do not forget to update all
 # occurences in kernel/feastcppmacros.h!
-sedscript="${sedscript} s|//|/=%/~|g; s|/\*|/=%*~|g;"
+#
+# Note: These particular instructions are sed compatible.
+perlscript="${perlscript} s|//|/=%/~|g; s|/\*|/=%*~|g;"
 
-# Sed command (3) to strip path information from Fortran 90- and 
-# CPP-style include statements. The files to be included (either by cpp 
-# or Fortran compiler) will be found in $objdir. The Makefile should have 
+# Perl command (3) to strip path information from Fortran 90- and
+# CPP-style include statements. The files to be included (either by cpp
+# or Fortran compiler) will be found in $objdir. The Makefile should have
 # copied or evaluated and stored them there.
 # (For understanding the syntax of match double quotes when arguments
 # are given in double quotes, too, see question 4.32 of the SED FAQ
 # (http://sed.sourceforge.net/grabbag/tutorials/sedfaq.txt):
 # How do I handle Unix shell quoting in sed?)
-sedscript="${sedscript} s|\([# ]include [<"\""']\).*/\([^/]*[>"\""']\)|\1\2|;"
+#
+# Note: These particular instructions are sed compatible.
+perlscript="${perlscript} s|([# ]include [<"\""']).*/([^/]*[>"\""'])|\$1\$2|;"
 
 # Sed command (4) to hide all LaTeX forced line breaks (\\) and ASCII art
 # ending in a backslash from the C preprocessor. Especially from
 # version >= 4.5.0. But ensure that preprocessor directives that
 # comprise a trailing backslash (think of multiline #define's) are not
 # hidden from the C preprocessor.
-sedscript="${sedscript} /^#.*\\\\[ 	]*$/ { :x; N; s/\\\\\n//; /\\\\[ 	]*$/tx; };"
-sedscript="${sedscript} s|^\([^#].*\)\\\\[ 	]*$|\1\\\\=%/~~|g;"
+#
+# Note: These particular instructions could be accomplished with GNU
+#       sed, but would not be portable to NEC and Sun sed, because of
+#       their lacking support for matching \n in the s/// operator.
+perlscript="${perlscript} while (/^#.*\\\s*\$/) { \$_ .= <>; s/\\\s*\n//; }"
+perlscript="${perlscript} s|^([^#].*)\\\\[ \t]*\$|\1\\\\=%/~~|g;"
 
 # Replaces calls of error_print() with a version that automatically
 # inserts file name and line number of calling position.
 # Add that routine's name to a use,only section.
-sedscript="${sedscript} s|use[ ]*error[ ]*,[ ]*only: |use error, only: error_print_aux,|g;"
-sedscript="${sedscript} s|call error_print[ ]*(|call error_print_aux(__LINE__,__FILE__,|g;"
+#
+# Note: These particular instructions can be easily converted to
+#       portable sed syntax
+perlscript="${perlscript} s|use[ ]*error[ ]*,[ ]*only: |use error, only: error_print_aux,|g;"
+perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE__,__FILE__,|g;"
 
 
 # Now, it gets complex. Here, we hide all the magic that enables us
@@ -249,9 +261,9 @@ sedscript="${sedscript} s|call error_print[ ]*(|call error_print_aux(__LINE__,__
 #    wrapped around are marked with the (arbitrarily chosen) string 
 #    MYNEWLINE. The output of the C preprocessor is postprocessed and any 
 #    occurrence of MYNEWLINE is replaced by a carriage return.
-#    This has to be done in a separate perl command as the sed command on
-#    NEC cannot deal with carriage return. Hence, we cannot integrate
-#    this substitution with the remaining.
+#    This has to be done in a separate perl command as the sed command
+#    on SUN and NEC cannot deal with carriage return. Hence, we cannot
+#    integrate this substitution with the remaining.
 #    (The reason why it is done with perl instead of aggregating it with 
 #    the subsequently called sed script is the inability of some sed
 #    installations to insert a newline character. See question 4.1 of
@@ -276,7 +288,9 @@ sedscript="${sedscript} s|call error_print[ ]*(|call error_print_aux(__LINE__,__
 # 6) map '#' at beginning of a line to '!#':
 #    Hide the preprocessor directives for the C/C++ compiler (see previous
 #    point) from the Fortran compiler.
-sed -e "${sedscript}" ${sourcefile} > ${preprocessedfile}
+perl -pe \
+    "${perlscript}" \
+    ${sourcefile} > ${preprocessedfile}
 ${cppcmd} -I${objdir} ${addcppflags} ${preprocessedfile} > ${preprocessedfile}".$$"
 rc=$?
 # in order to catch all errors raised by the preprocessor one 
