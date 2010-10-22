@@ -474,12 +474,12 @@ contains
             if (j .eq. 0) exit
           enddo
 
-!This statement crashed for the sun compiler on linux
+!This statement crashed for the SunStudio compiler on Linux
 !          Iarray(j+2:i)=Iarray(j+1:i-1)
 !          Iarray(j+1)=t
           Iarray(j+1:i)=cshift(Iarray(j+1:i),-1)
 
-!This statement crashed for the sun compiler on linux
+!This statement crashed for the SunStudio compiler on Linux
 !          Imapping(j+2:i)=Imapping(j+1:i-1)
 !          Imapping(j+1)=t2
           Imapping(j+1:i)=cshift(Imapping(j+1:i),-1)
@@ -492,7 +492,7 @@ contains
             j=j-1
             if (j .eq. 0) exit
           enddo
-!This statement crashed for the sun compiler on linux
+!This statement crashed for the SunStudio compiler on Linux
 !          Iarray(j+2:i)=Iarray(j+1:i-1)
 !          Iarray(j+1)=t
           Iarray(j+1:i)=cshift(Iarray(j+1:i),-1)
