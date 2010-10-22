@@ -308,46 +308,47 @@ my %cl = ();
 
 # defaults for Makefile variables
 my %defaults = (
-    APPNAME             => "feat2app",
-    APPONLYFLAGS        => [],
-    AR                  => "",
-    BUILDLIB            => [],
-    CC                  => "",
-    CFLAGSC             => [],
-    CFLAGSCXX           => [],
-    CFLAGSF77           => [],
-    CFLAGSF90           => [],
-    COPROCLIST          => [],
-    CPP                 => "",
-    CXX                 => "",
-    F77                 => "",
-    F90                 => "",
-    FORCE_ID            => "NO",
-    ID                  => "",
-    INC                 => [],
-    INTSIZE             => "STD",
-    LD                  => "",
-    LDFLAGS             => [],
-    LIBDIR              => [],
-    LIBS                => [],
-    MPI                 => "NO",
-    MODE                => "NO",   # deprecated
-    MODEXTENSION        => "",
-    MONITOR_COMPILE_ENV => "YES",
-    MOVEMOD             => "",
-    MPIINC              => [],
-    MPILIBDIR           => [],
-    MPILIBS             => [],
-    MPIWRAPPERS         => "NO",
-    OBJDIR              => "",
-    OBJDIR_LIB          => "",
-    OPENMP              => "NO",
-    OPT                 => "YES",
-    PROGRAMFILE         => "DETERMINED_ON_DEMAND_IF_UNSET",
-    RANLIB              => "",
-    RELINK_ALWAYS       => "YES",
-    SRCEXTRA            => "",
-    SRCLIST_APP         => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
+    APPNAME              => "feat2app",
+    APPONLYFLAGS         => [],
+    AR                   => "",
+    BUILDLIB             => [],
+    CC                   => "",
+    CFLAGSC              => [],
+    CFLAGSCXX            => [],
+    CFLAGSF77            => [],
+    CFLAGSF90            => [],
+    COPROCLIST           => [],
+    CPP                  => "",
+    CXX                  => "",
+    F77                  => "",
+    F90                  => "",
+    FORCE_ID             => "NO",
+    HEADER_FILES_TO_COPY => [],
+    ID                   => "",
+    INC                  => [],
+    INTSIZE              => "STD",
+    LD                   => "",
+    LDFLAGS              => [],
+    LIBDIR               => [],
+    LIBS                 => [],
+    MPI                  => "NO",
+    MODE                 => "NO",   # deprecated
+    MODEXTENSION         => "",
+    MONITOR_COMPILE_ENV  => "YES",
+    MOVEMOD              => "",
+    MPIINC               => [],
+    MPILIBDIR            => [],
+    MPILIBS              => [],
+    MPIWRAPPERS          => "NO",
+    OBJDIR               => "",
+    OBJDIR_LIB           => "",
+    OPENMP               => "NO",
+    OPT                  => "YES",
+    PROGRAMFILE          => "DETERMINED_ON_DEMAND_IF_UNSET",
+    RANLIB               => "",
+    RELINK_ALWAYS        => "YES",
+    SRCEXTRA             => "",
+    SRCLIST_APP          => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
 );
 
 
@@ -397,6 +398,7 @@ GetOptions (
             "f90=s"                         => \$cl{'F90'},
             "force-id"                      => \$cl{'FORCE_ID'},
             "help"                          => \$cl{'help'},
+            "header-files-to-copy=s"        => \@{ $cl{'HEADER_FILES_TO_COPY'} },
             "int-size=s"                    => \$cl{'INTSIZE'},
             "id=s"                          => \$cl{'ID'},
             "inc=s"                         => \@{ $cl{'INC'} },
@@ -574,6 +576,7 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --f77=\""            . $cl{'F77'}                        . "\"" if (defined($cl{'F77'}) && $cl{'F77'});
     $options .= " --f90=\""            . $cl{'F90'}                        . "\"" if (defined($cl{'F90'}) && $cl{'F90'});
     $options .= " --force-id"                                                     if (defined($cl{'FORCE_ID'}) && $cl{'FORCE_ID'} eq "YES");
+    $options .= " --header-files-to-copy=\"" . join(',', @{$cl{'HEADER_FILES_TO_COPY'}}) . "\"" if ($#{$cl{'HEADER_FILES_TO_COPY'}} >= 0);
     $options .= " --id=\""             . $cl{'ID'}                         . "\"" if (defined($cl{'ID'}) && $cl{'ID'});
     $options .= " --inc=\""            . join(',', @{$cl{'INC'}})          . "\"" if ($#{$cl{'INC'}} >= 0);
     $options .= " --int-size=\""       . $cl{'INTSIZE'}                    . "\"" if (defined($cl{'INTSIZE'}) && $cl{'INTSIZE'});
@@ -831,7 +834,7 @@ sub check_options {
     # Normalise the values by converting strings to real arrays.
     foreach my $entry ('APPONLYFLAGS', 'BUILDLIB', 'CFLAGSC', 'CFLAGSCXX',
 		       'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
-		       'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
+		       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
 		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCLIST_APP') {
 	@{ $cl{$entry} } = split(/\s+/,
 				 join(' ',
@@ -1040,6 +1043,10 @@ sub create_feastAppMakefile {
     # all files for which make_dep_list / get_dependency has been called.
     my %dependencyLists = ();
 
+    # Hash for efficiently accessing entries in $cl{'HEADER_FILES_TO_COPY'}
+    my %headerFilesToCopy = ();
+    map { (my $entry = $_) =~ s|^.*/([^/]+)$|$1|; $headerFilesToCopy{$entry} = "" } @{ $cl{'HEADER_FILES_TO_COPY'}};
+
     &get_programsourcefile();
     print "creating dependency lists... ";
 
@@ -1054,7 +1061,7 @@ sub create_feastAppMakefile {
         $objectfiles_and_dependencies .=
             &make_dep_list(\%dependencyLists, $path{$entry},
                            "\$(SRCDIR_KERNEL)/" . $entry, 1, "o", "o",
-                           "\$(OBJDIR)") . "\n\n";
+                           "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
     }
 
     # Dependencies of each object file from architecture-specific
@@ -1064,7 +1071,7 @@ sub create_feastAppMakefile {
         $objectfiles_and_dependencies .=
             &make_dep_list(\%dependencyLists, $path{$entry},
                            "\$(SRCDIR_ARCH)/" . $entry, 1, ".o", "o",
-                           "\$(OBJDIR)") . "\n\n";
+                           "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
     }
 
     # Dependencies of each object file from application modules
@@ -1073,7 +1080,7 @@ sub create_feastAppMakefile {
         $objectfiles_and_dependencies .=
 	    &make_dep_list(\%dependencyLists, $path{$entry},
 			   "\$(SRCDIR_APP)/" . $entry, 1, "o", "o",
-			   "\$(OBJDIR)") . "\n\n";
+			   "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
     }
 
     # Dependencies of program file
@@ -1083,7 +1090,7 @@ sub create_feastAppMakefile {
         $objectfiles_and_dependencies .=
 	    &make_dep_list(\%dependencyLists, $path{$entry},
 			   $entry, 1, "o", "o",
-			   "\$(OBJDIR)") . "\n\n";
+			   "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
 
     # Dependencies of Fortran 90 files listed in Makefile variable $(SRCEXTRA)
     # can not be determined unfortunately at configure time. Because they may
@@ -1354,6 +1361,11 @@ sub create_feastAppMakefile {
     # Substitute absolute path information accordingly.
     my @tmparray = ();
     foreach $entry (split(/\s+/, $HEADER_FILES_TO_COPY)) {
+	my $file_PathUsingBasedir = $entry;
+	$file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
+	push @tmparray, $file_PathUsingBasedir;
+    }
+    foreach $entry (@{$cl{'HEADER_FILES_TO_COPY'}}) {
 	my $file_PathUsingBasedir = $entry;
 	$file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 	push @tmparray, $file_PathUsingBasedir;
@@ -1991,7 +2003,12 @@ sub create_feastAppMakefile {
         print MAKEFILE_HDL
             &make_dep_list(\%dependencyLists, $entry,
                            "\$(SRCDIR_KERNEL)/" . &basename($entry), 0, "", "o",
-                           "\$(OBJDIR)") . "\n\n" if ($entry);
+                           "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n" if ($entry);
+    }
+    foreach $entry (@{$cl{'HEADER_FILES_TO_COPY'}}) {
+        print MAKEFILE_HDL
+            &make_dep_list(\%dependencyLists, $entry, $entry, 0, "", "o",
+                           "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n" if ($entry);
     }
     foreach $entry (sort keys %headerfiles) {
         $entry = $headerfiles{$entry}->{'URI'};
@@ -2002,7 +2019,7 @@ sub create_feastAppMakefile {
             #     print MAKEFILE_HDL
             #         &make_dep_list(\%dependencyLists, $entry,
             #                        "\$(SRCDIR_KERNEL)/" . &basename($entry), 0, "", "o",
-            #                        "\$(OBJDIR)") . "\n\n";
+            #                        "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
             #     warn $progname.":\n" .
             #         "Obsolete branch 1 for <$entry>.\n" .
             #         "Inform the configure maintainer about this case.\n";
@@ -2010,7 +2027,7 @@ sub create_feastAppMakefile {
             #     print MAKEFILE_HDL
             #         &make_dep_list(\%dependencyLists, $entry,
             #                        "\$(SRCDIR_ARCH)/" . &basename($entry), 0, "", "o",
-            #                        "\$(OBJDIR)") . "\n\n";
+            #                        "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
             #     warn $progname.":\n" .
             #         "Obsolete branch 2 for <$entry>.\n" .
             #         "Inform the configure maintainer about this case.\n";
@@ -2023,10 +2040,11 @@ sub create_feastAppMakefile {
 	    print MAKEFILE_HDL
 		&make_dep_list(\%dependencyLists, $entry,
 			       $file_PathUsingBasedir, 0, "", "o",
-			       "\$(OBJDIR)") . "\n\n";
+			       "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
             # }
         }
     }
+    undef %headerFilesToCopy;
     print MAKEFILE_HDL "\n\n";
 
 
@@ -2224,7 +2242,7 @@ sub create_feastAppMakefile {
 	"# include statements)\n" .
         "\$(OBJHEADERCOPY): | \$(OBJDIR)\n" .
         "\$(OBJHEADERCOPY):\n" .
-        "\tsed -e '/!/d; s|include \".*/\\([^/]*\\)\"|include \"\\1\"|' \$< > \$(OBJDIR)\n\n" .
+        "\tsed -e '/!/d; s|include \".*/\\([^/]*\\)\"|include \"\\1\"|' \$< > \$@\n\n" .
 
         "# Others need to be evaluated with cpp first before being stored there.\n" .
         "\$(OBJHEADEREVAL): | \$(OBJDIR)\n" .
@@ -4402,7 +4420,7 @@ sub make_dep_list {
         $parsedFile_changeExtensionForMakeTarget,       # boolean variable
         $parsedFile_ExtensionForMakeTarget,             # if previous variable is true, this holds the new extension
         $moduleFiles_extension,                         # file extension of Fortran~90 module object files, typically: "o"
-        $objectdir) = (@_);
+        $objectdir, $headerFilesToCopyHashRef) = (@_);
     my $depstring  = "";
     my $objstring  = "";
     my $aux        = "";
@@ -4465,8 +4483,10 @@ sub make_dep_list {
 		}
 
 		# Add to the list if not already on the list or in 'forbidden' lists
+		my $auxBasename = &basename($aux);
 		unless ((DO_NOT_INCLUDE          =~ m/\Q$aux\E/) or
-			($HEADER_FILES_TO_COPY   =~ m/\Q$aux\E/)) {
+			($HEADER_FILES_TO_COPY   =~ m/\Q$aux\E/) or
+			defined(${ $headerFilesToCopyHashRef }{$auxBasename})) {
 		    # Strategy:
 		    # * No file with this name seen yet. Store URI, inode and md5 sum of
 		    #   file content
@@ -4478,7 +4498,6 @@ sub make_dep_list {
 		    #   are copied or preprocessed and stored into a single object
 		    #   directory. So, having different files with the same name is not
 		    #   feasible.
-		    my $auxBasename = &basename($aux);
 		    if (defined($headerfiles{$auxBasename})) {
 			# Already seen a file with this name.
 			# Compare URI. If identical, no need to throw an error. Skip file.
