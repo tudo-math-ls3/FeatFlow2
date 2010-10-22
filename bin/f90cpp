@@ -28,7 +28,12 @@ option=""
 objdir=""
 addcppflags=""
 STORAGEGETBASE_CALLS_TO_MACRO=0
-cppcmd="cpp " # previously: "cpp -CC "
+
+if test -n "${CPP}"; then
+    cppcmd="${CPP}"
+else
+    cppcmd="cpp " # previously: "cpp -CC "
+fi
 
 AWK_SCRIPT="`dirname $0`/postprocess_cppoutput.awk"
 if test ! -f ${AWK_SCRIPT}; then
