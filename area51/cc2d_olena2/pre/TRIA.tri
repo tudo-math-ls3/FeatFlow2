@@ -1,0 +1,15 @@
+Gitterbeschreibung fuer /home/cerberus8/mkoester/Diplom/Start_feat2dtest/TRIA
+Parametrisierung PARCX, PARCY, TMAXC
+2  4 0  3 1   NEL NVT NMT NVE NBCT
+DCORVG
+0.0 0.0
+1.0 0.0
+2.0 0.0
+3.0 0.0
+KVERT
+1 2 3
+1 3 4
+KNPR
+1 1 1 1 
+KMM
+1 4 
