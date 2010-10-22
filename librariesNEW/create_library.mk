@@ -5,7 +5,10 @@
 # (as we don't have another approach yet to catch two processes that
 #  execute these instructions exactly concurrently - which both set
 #  the lock file simultaneously.)
-CREATE_LIB=sleep `echo $${PPID} | sed -e 's/^.*\(.\)$$/\1/'`; \
+CREATE_LIB=timeout=`echo $$$$ | sed -e 's/^.*\(.\)$$/\1/'`; \
+	test -n "`echo $${MAKEFLAGS} | sed -e '/--jobserver-fds/!d'`" && \
+	    (echo "\# Random wait for $${timeout} seconds to prevent conflicts with parallel make..."; \
+	     sleep $${timeout}; ); \
 	if test -f $(LOCKFILE); then \
 	    loop=0; \
 	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
