@@ -1293,10 +1293,10 @@ sub create_feastAppMakefile {
         chomp($objdirprefix);
 
         # Try to remove path portion of $FEAT2BASEDIR.
-        $objdirprefix =~ s/\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
+        $objdirprefix =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 
         # Try to remove home directory portion of $FEAT2BASEDIR.
-        $objdirprefix =~ s/\Q$ENV{HOME}\E/\$(HOME)/;
+        $objdirprefix =~ s/^\Q$ENV{HOME}\E/\$(HOME)/;
 
 	# append default name for object directories
         $objdir = File::Spec->catdir($objdirprefix, OBJDIR);
@@ -1308,10 +1308,10 @@ sub create_feastAppMakefile {
         chomp($objdirlibprefix);
 
         # Try to remove path portion of $FEAT2BASEDIR.
-        $objdirlibprefix =~ s/\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
+        $objdirlibprefix =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 
         # Try to remove home directory portion of $FEAT2BASEDIR.
-        $objdirlibprefix =~ s/\Q$ENV{HOME}\E/\$(HOME)/;
+        $objdirlibprefix =~ s/^\Q$ENV{HOME}\E/\$(HOME)/;
 
 	# append default name for object directories
         $objdir_lib = File::Spec->catdir($objdirlibprefix, OBJDIR_LIB);
@@ -1355,7 +1355,7 @@ sub create_feastAppMakefile {
     my @tmparray = ();
     foreach $entry (split(/\s+/, $HEADER_FILES_TO_COPY)) {
 	my $file_PathUsingBasedir = $entry;
-	$file_PathUsingBasedir =~ s/\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
+	$file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 	push @tmparray, $file_PathUsingBasedir;
     }
     print MAKEFILE_HDL
@@ -1369,7 +1369,7 @@ sub create_feastAppMakefile {
     my %tmparray = ();
     foreach $entry (sort keys %headerfiles) {
         my $file_PathUsingBasedir = $headerfiles{$entry}->{'URI'};
-	$file_PathUsingBasedir =~ s/\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
+	$file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 	# Remove relative paths. This approach is feasible as we can assume
 	# that not many Feat2 users will do weird stuff with symbolic links
 	# in their checkout. If they do, strange things may happen during 'make',
@@ -2019,7 +2019,7 @@ sub create_feastAppMakefile {
 	    # The idea is to have only paths relative to FEAT2BASEDIR.
 	    # Substitute absolute path information accordingly.
 	    my $file_PathUsingBasedir = $entry;
-	    $file_PathUsingBasedir =~ s/\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
+	    $file_PathUsingBasedir =~ s/^\Q$FEAT2BASEDIR\E/\$(FEAT2BASEDIR)/;
 	    print MAKEFILE_HDL
 		&make_dep_list(\%dependencyLists, $entry,
 			       $file_PathUsingBasedir, 0, "", "o",
