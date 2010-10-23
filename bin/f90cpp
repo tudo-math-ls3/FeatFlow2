@@ -3,11 +3,11 @@
 # short description:
 #   script to be able to use the GNU C preprocessor even for Fortran90 source files
 #   on every platform we are developing FEAST on.
-#   The original source file is piped through the GNU C preprocessor, 
+#   The original source file is piped through the GNU C preprocessor,
 #   the resulting temporary file is stored to the directory of the first
-#   object file or program name found on the command line, the compile 
-#   statement is accordingly adjusted and finally invoked. 
-#   Special care is taken to ensure that line numbers of the preprocessed 
+#   object file or program name found on the command line, the compile
+#   statement is accordingly adjusted and finally invoked.
+#   Special care is taken to ensure that line numbers of the preprocessed
 #   code match those of the original source code.
 #
 # originally written by Christian Becker (christian.becker@math.tu-dortmund.de)
@@ -19,7 +19,7 @@
 
 # Do not let the script get confused by non-English messages
 # of system calls.
-# (LC_ALL overrides the value of the LANG environment variable 
+# (LC_ALL overrides the value of the LANG environment variable
 # and the values of any other LC_* environment variables.)
 LC_ALL=C
 
@@ -49,7 +49,7 @@ if test ! -f ${AWK_SCRIPT}; then
     fi
 fi
 
-# Loop through command line arguments and 
+# Loop through command line arguments and
 # filter out the Fortran90 source file.
 while : true
 do
@@ -92,7 +92,7 @@ do
 
     *.o)
 	# Determine where the object files are stored
-	# (because we want to store the preprocessed 
+	# (because we want to store the preprocessed
 	# (wrapped) source files there, too.)
         if test -z "${objdir}"; then
 	    objdir=`dirname $1`
@@ -102,14 +102,14 @@ do
 
     -o)
 	# When not using this script in FEAST context (e.g. to test
-	# some small debug program with preprocessor statements), 
+	# some small debug program with preprocessor statements),
 	# usually no separate object file needs to be created, the
 	# executable name is directly given on the command line.
 	# No *.o file means, the objdir variable is not set which
 	# may lead to problems.
         shift
 	# Determine where the object files are stored
-	# (because we want to store the preprocessed 
+	# (because we want to store the preprocessed
 	# (wrapped) source files there, too.)
         if test -z "${objdir}"; then
 	    objdir=`dirname $1`
@@ -169,7 +169,7 @@ if test -z "${preprocessedfile}"; then
     exit 1;
 fi
 
-# Adjust the path where the preprocessed (wrapped) source 
+# Adjust the path where the preprocessed (wrapped) source
 # files are stored. This is done only now because you can
 # not be sure that "-o objdir/foo.o" is given before
 # or behind "-c srcdir/foo.f90".
@@ -181,7 +181,7 @@ fi
 # Catch case where the file to preprocess and compile is stored
 # locally and no object directory has been given. In this case
 # the preprocessed file would overwrite the source file.
-# Catch also the following case:  
+# Catch also the following case:
 #  sourcefile=fileA,  preprocessedfile = ./fileA
 if test "`dirname ${sourcefile}`"  = "`dirname ${preprocessedfile}`" -a \
         "`basename ${sourcefile}`" = "`basename ${preprocessedfile}`"; then
@@ -224,10 +224,11 @@ perlscript="${perlscript} s|//|/=%/~|g; s|/\*|/=%*~|g;"
 # (http://sed.sourceforge.net/grabbag/tutorials/sedfaq.txt):
 # How do I handle Unix shell quoting in sed?)
 #
-# Note: These particular instructions are sed compatible.
+# Note: These particular instructions can easily be converted to
+#       portable sed syntax
 perlscript="${perlscript} s|([# ]include [<"\""']).*/([^/]*[>"\""'])|\$1\$2|;"
 
-# Sed command (4) to hide all LaTeX forced line breaks (\\) and ASCII art
+# Perl command (4) to hide all LaTeX forced line breaks (\\) and ASCII art
 # ending in a backslash from the C preprocessor. Especially from
 # version >= 4.5.0. But ensure that preprocessor directives that
 # comprise a trailing backslash (think of multiline #define's) are not
@@ -243,7 +244,7 @@ perlscript="${perlscript} s|^([^#].*)\\\\[ \t]*\$|\1\\\\=%/~~|g;"
 # inserts file name and line number of calling position.
 # Add that routine's name to a use,only section.
 #
-# Note: These particular instructions can be easily converted to
+# Note: These particular instructions can easily be converted to
 #       portable sed syntax
 perlscript="${perlscript} s|use[ ]*error[ ]*,[ ]*only: |use error, only: error_print_aux,|g;"
 perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE__,__FILE__,|g;"
@@ -252,24 +253,24 @@ perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE_
 # Now, it gets complex. Here, we hide all the magic that enables us
 # to use the C preprocessor from within Fortran source code.
 #
-# 1) First, call sed to do some on-the-fly conversions within the source 
+# 1) First, call sed to do some on-the-fly conversions within the source
 #    code as needed. See the comments above when seting up the sed commands.
-# 2) Then, call the C preprocessor. That's the main intention of this 
+# 2) Then, call the C preprocessor. That's the main intention of this
 #    script.
 # 3) map MYNEWLINE to '\n':
-#    Necessary because it is not possible to instruct the C preprocessor 
-#    to set explicit carriage returns at distinct places. In C, that's not 
+#    Necessary because it is not possible to instruct the C preprocessor
+#    to set explicit carriage returns at distinct places. In C, that's not
 #    necessary as lines may become arbitrarily long. But Fortran 90 accepts
 #    only 132 columns and some compilers really respect and enforce this
-#    restriction! So, for very long lines, as generated by preprocesor 
-#    constructs defined in feastdefs.h, the positions where they should be 
-#    wrapped around are marked with the (arbitrarily chosen) string 
-#    MYNEWLINE. The output of the C preprocessor is postprocessed and any 
+#    restriction! So, for very long lines, as generated by preprocesor
+#    constructs defined in feastdefs.h, the positions where they should be
+#    wrapped around are marked with the (arbitrarily chosen) string
+#    MYNEWLINE. The output of the C preprocessor is postprocessed and any
 #    occurrence of MYNEWLINE is replaced by a carriage return.
 #    This has to be done in a separate perl command as the sed command
-#    on SUN and NEC cannot deal with carriage return. Hence, we cannot
-#    integrate this substitution with the remaining.
-#    (The reason why it is done with perl instead of aggregating it with 
+#    on SUN and NEC do not support matching of carriage returns (\n). Hence,
+#    we cannot integrate this substitution with the remaining.
+#    (The reason why it is done with perl instead of aggregating it with
 #    the subsequently called sed script is the inability of some sed
 #    installations to insert a newline character. See question 4.1 of
 #    'The SED FAQ'.
@@ -281,8 +282,8 @@ perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE_
 #    call we replace it with the correct Fortran 90 string concatenator.
 #    The same holds for '/*' which may occur in ascii graphics.
 # 4b)map '= >' to '=>', '. TRUE .' to '.TRUE.', '. FALSE .' to '.FALSE.'
-#    NEC C preprocessor inserts blanks into the Fortran 90 pointer 
-#    assignment operator and the boolean constants. These have to be 
+#    NEC C preprocessor inserts blanks into the Fortran 90 pointer
+#    assignment operator and the boolean constants. These have to be
 #    removed again. Any Fortran 90 compiler would bail out.
 # 5) The awk constructs ensure that the line numbers of the C preprocessed
 #    source code match the line numbers of the original code. So, if
@@ -293,12 +294,10 @@ perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE_
 # 6) map '#' at beginning of a line to '!#':
 #    Hide the preprocessor directives for the C/C++ compiler (see previous
 #    point) from the Fortran compiler.
-perl -pe \
-    "${perlscript}" \
-    ${sourcefile} > ${preprocessedfile}
+perl -pe "${perlscript}" ${sourcefile} > ${preprocessedfile}
 ${cppcmd} -I${objdir} ${addcppflags} ${preprocessedfile} > ${preprocessedfile}".$$"
 rc=$?
-# in order to catch all errors raised by the preprocessor one 
+# in order to catch all errors raised by the preprocessor one
 # *must not* directly pipe its output to our postprocessing chain!
 
 # Do not start compilation if the preprocessor reported an error.
@@ -339,7 +338,7 @@ eval `echo "${option}" | sed "s/~/'/g"`
 # Get return code from compile command
 rc=$?
 
-# Remove preprocessed (cpp, sed, awk etc.) file 
+# Remove preprocessed (cpp, sed, awk etc.) file
 # - usually not a good idea as a debugger requires this file
 #/bin/rm $preprocessedfile
 
