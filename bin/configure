@@ -4670,111 +4670,44 @@ sub show_help {
         "                    party libraries can still be used across different\n" .
         "                    applications as they are compiled without flags in\n" .
         "                    <string>.\n" .
-        "--force-id          A build ID is accepted even if the system verify fails\n" .
-        "--id=<string>       Configure for build ID <string>.\n" .
-        "                    For a list of already set up configurations for current\n" .
-        "                    host invoke '$progname --list-ids'.\n" .
-        "                    For a complete list invoke '$progname --list-all-ids'\n" .
-        "--regression-benchmark\n" .
-        "                    Create Makefile for FEAT2 regression benchmark and\n" .
-        "                    fork configure calls for all benchmark applications,\n" .
-        "                    i.e. all directories starting with 'src_'\n" .
-        "--programfile=<file>\n" .
-	"                    Set application's program file to <file>\n" .
-	"                    (Reason: Parsing to build a minimal list of required \n" .
-	"                     source files needs a starting point. Being explicit\n" .
-	"                     avoids problems with less tidy users.)\n" .
-        "--srclist_app=<string>\n" .
-	"                    Set application's source files to <string>\n" .
-        "--[no-]opt,--opt=expensive\n" .
-        "                    Controls whether to use no (but including debugging\n" .
-        "                    symbols), good or expensive compiler optimisation\n" .
-        "                    (default: " . lc($defaults{'OPT'}) . ").\n" .
-        "--objdir-prefix=<dir>\n" .
-	"                    Prepend <dir> to paths of an application's object files.\n" .
-	"                    (default: none)\n" .
-        "--objdir-lib-prefix=<dir>\n" .
-	"                    Prepend <dir> to paths of libraries' object files.\n" .
-	"                    Typically all libraries can be shared among all FEAT2\n" .
-	"                    applications as they have no dependency on the FEAT2\n" .
-	"                    kernel or a FEAT2 application and have always identical\n" .
-	"                    compile settings. In particular when compiling the\n" .
-	"                    the regression benchmark it makes a big difference\n" .
-	"                    having to compile libraries only once (default: ../..).\n" .
-        "--mode=<string>     (deprecated, use MPI=YES/NO)\n" .
-        "                    where <string> is one of PARALLEL or SERAIL.\n" .
-        "                    Create Makefile for a parallel or serial application\n" .
-        "                    (default: " . lc($defaults{'MODE'}) . ").\n" .
-        "--[no-]mpi          Create Makefile for application with/without MPI support\n" .
-        "                    (default: " . lc($defaults{'MPI'}) . ").\n" .
-        "--[no-]mpiwrappers  Controls whether or not to use MPI wrappers for\n" .
-        "                    compiling and linking (default: " .
-	lc($defaults{'MPIWRAPPERS'}) . ").\n" .
-        "--[no-]openmp       Create Makefile for application with/without OpenMP support\n" .
-        "                    (default: " . lc($defaults{'OPENMP'}) . ").\n" .
-        "--[no-]monitor-compile-env\n" .
-        "                    Monitor modification dates of all compilers and\n" .
-        "                    compile settings for changes in subsequent\n" .
-        "                    compilations. In case of discrepancies, recompile\n" .
-        "                    application (default: " .
-	lc($defaults{'MONITOR_COMPILE_ENV'}) . ").\n" .
-        "--make=<file>       Set make program to <file>\n" .
-        "--makefile=<file>   Name of makefile to create\n" .
-        "--f77=<file>        Fortran 77 compiler\n" .
-        "--f90=<file>        Fortran 90 compiler\n" .
+        "--ar=<file>         Path and options for creating archives\n" .
+        "--buildlib=<string> Specify libraries to build\n" .
+        "                    (like: umfpack blas lapack splib)\n" .
         "--cc=<file>         C compiler\n" .
-        "--cxx=<file>        C++ compiler\n" .
-        "--cpp=<file>        C preprocessor\n" .
-        "--ld=<file>         Linker\n" .
+        "--cflagsc=<string>  Set C compiler flags to <string>\n" .
+        "--cflagscoproc=<string>\n" .
+	"                    Set C compiler flags for coproc library to <string>,\n" .
+	"                    requires --coproclist=<target>\n" .
+        "--cflagscxx=<string>\n" .
+	"                    Set C++ compiler flags to <string>\n" .
         "--cflagsf77=<string>\n" .
 	"                    Set Fortran 77 compiler flags to <string>\n" .
         "--cflagsf90=<string>\n" .
 	"                    Set Fortran 90 compiler flags to <string>\n" .
-        "--cflagsc=<string>  Set C compiler flags to <string>\n" .
-        "--cflagscxx=<string>\n" .
-	"                    Set C++ compiler flags to <string>\n" .
-        "--ldflags=<string>  Set linker flags to <string>\n" .
-        "--suppressflags=<string>\n" .
-        "                    Remove all (comma-separated) strings in <string> from C,\n" .
-        "                    Fortran 77/90 compiler and linker settings, i.e.\n" .
-        "                    from CFLAGSF77, CFLAGSF90, CFLAGSC, CFLAGSCXX and\n" .
-        "                    LDFLAGS.\n" .
-        "                    If your application does not compile or run properly\n" .
-        "                    because of a specific compiler option that ought not\n" .
-        "                    be removed globally, you can inhibit its usage for\n" .
-        "                    your application by adding the exact string to <string>.\n" .
-        "--modextension=<string>\n" .
-        "                    Specify <string> as extension used by the Fortran 90\n" .
-        "                    compiler for module information files\n" .
-        "--movemod=<string>  If the Fortran 90 compiler fails to store module\n" .
-        "                    information files in \$(OBJDIR) and fills up the\n" .
-        "                    working directory instead, use --movemod=YES to\n" .
-        "                    have the Makefile compensate for this annoyance.\n" .
-        "--inc=<dir>         F77/F90/C/C++ header files in <dir>\n" .
-        "--buildlib=<string> Specify libraries to build\n" .
-        "                    (like: umfpack blas lapack splib)\n" .
-        "--libdir=<dir>      Object code libraries in DIR\n" .
-        "--libs=ARG          Libraries to include in build\n" .
-        "--mpiinc=<string>   Include directive for MPI header files\n" .
-        "--mpilibdir=<string>\n" .
-	"                    Extension for the linker search path to find MPI\n" .
-	"                    libraries\n" .
-        "--mpilibs=<string>  Linker commands specifying MPI libraries to link against\n" .
-        "--ar=<file>         Path and options for creating archives\n" .
-        "--ranlib=<file>     Path and options to create index for archives\n" .
 	"--coproclist=<string>\n" .
 	"                    Identifier for coprocessor support.\n" .
-	"                    Valid IDs are: cpu, opengl, cuda10, cuda11, cuda13. \n" .
+	"                    Valid IDs are: cpu, opengl, cuda10, cuda11, cuda12, cuda13. \n" .
 	"                    Note that the cpu identifier must always be set if coprocessor\n" .
 	"                    support is requested.\n" .
-        "--[no-]relink-always\n" .
-        "                    Whether or not to relink the application every time\n" .
-        "                    make is invoked (default: " .
-	lc($defaults{'RELINK_ALWAYS'}) . ").\n" .
-        "                    Be careful with --no-relink-always:\n" .
-        "                    When developing on multiple platforms, your\n" .
-        "                    application might not be relinked if no source file\n" .
-        "                    has changed since you changed platform!\n" .
+        "--cpp=<file>        C preprocessor\n" .
+        "--cxx=<file>        C++ compiler\n" .
+        "--debug             Show settings stored into Makefile which will\n" .
+        "                    override defaults from Makefile.inc.\n" .
+        "                    This flag is *not* an alias for --no-opt nor does\n" .
+        "                    it result in a Makefile that creates code with\n" .
+        "                    debugging symbols!\n\n" .
+        "--f77=<file>        Fortran 77 compiler\n" .
+        "--f90=<file>        Fortran 90 compiler\n" .
+        "--force-id          A build ID is accepted even if the system verify fails\n" .
+        "--header-files-to-copy=<string>\n" .
+        "                    (Comma-separated) List of header files that should be\n" .
+        "                    copied to the object directory, not evaluated with cpp\n" .
+        "                    first" .
+        "--id=<string>       Configure for build ID <string>.\n" .
+        "                    For a list of already set up configurations for current\n" .
+        "                    host invoke '$progname --list-ids'.\n" .
+        "                    For a complete list invoke '$progname --list-all-ids'\n" .
+        "--inc=<dir>         F77/F90/C/C++ header files in <dir>\n" .
         "--int-size=<string>\n" .
         "                    Allows to set the default integer size to support large\n" .
         "                    arrays with > 4 GB size. <string> can be one of the following:\n" .
@@ -4783,25 +4716,99 @@ sub show_help {
         "                    --int-size=large : Large integers.\n" .
         "                                       Defaults to 64 bit integers.\n" .
         "                                       Allows arrays with > 4GB in size.\n" .
-        "--debug             Show settings stored into Makefile which will\n" .
-        "                    override defaults from Makefile.inc.\n" .
-        "                    This flag is *not* an alias for --no-opt nor does\n" .
-        "                    it result in a Makefile that creates code with\n" .
-        "                    debugging symbols!\n\n" .
+        "--ld=<file>         Linker\n" .
+        "--ldflags=<string>  Set linker flags to <string>\n" .
+        "--libdir=<dir>      Object code libraries in DIR\n" .
+        "--libs=ARG          Libraries to include in build\n" .
+        "--make=<file>       Set make program to <file>\n" .
+        "--makefile=<file>   Name of makefile to create\n" .
+        "--mode=<string>     (deprecated, use MPI=YES/NO)\n" .
+        "                    where <string> is one of PARALLEL or SERAIL.\n" .
+        "                    Create Makefile for a parallel or serial application\n" .
+        "                    (default: " . lc($defaults{'MODE'}) . ").\n" .
+        "--modextension=<string>\n" .
+        "                    Specify <string> as extension used by the Fortran 90\n" .
+        "                    compiler for module information files\n" .
+        "--[no-]monitor-compile-env\n" .
+        "                    Monitor modification dates of all compilers and\n" .
+        "                    compile settings for changes in subsequent\n" .
+        "                    compilations. In case of discrepancies, recompile\n" .
+        "                    application (default: " .
+	lc($defaults{'MONITOR_COMPILE_ENV'}) . ").\n" .
+        "--movemod=<string>  If the Fortran 90 compiler fails to store module\n" .
+        "                    information files in \$(OBJDIR) and fills up the\n" .
+        "                    working directory instead, use --movemod=YES to\n" .
+        "                    have the Makefile compensate for this annoyance.\n" .
+        "--[no-]mpi          Create Makefile for application with/without MPI support\n" .
+        "                    (default: " . lc($defaults{'MPI'}) . ").\n" .
+        "--mpiinc=<string>   Include directive for MPI header files\n" .
+        "--mpilibdir=<string>\n" .
+	"                    Extension for the linker search path to find MPI\n" .
+	"                    libraries\n" .
+        "--mpilibs=<string>  Linker commands specifying MPI libraries to link against\n" .
+        "--[no-]mpiwrappers  Controls whether or not to use MPI wrappers for\n" .
+        "                    compiling and linking (default: " .
+	lc($defaults{'MPIWRAPPERS'}) . ").\n" .
+        "--objdir-lib-prefix=<dir>\n" .
+	"                    Prepend <dir> to paths of libraries' object files.\n" .
+	"                    Typically all libraries can be shared among all FEAT2\n" .
+	"                    applications as they have no dependency on the FEAT2\n" .
+	"                    kernel or a FEAT2 application and have always identical\n" .
+	"                    compile settings. In particular when compiling the\n" .
+	"                    the regression benchmark it makes a big difference\n" .
+	"                    having to compile libraries only once (default: ../..).\n" .
+        "--objdir-prefix=<dir>\n" .
+	"                    Prepend <dir> to paths of an application's object files.\n" .
+	"                    (default: none)\n" .
+        "--[no-]openmp       Create Makefile for application with/without OpenMP support\n" .
+        "                    (default: " . lc($defaults{'OPENMP'}) . ").\n" .
+        "--[no-]opt,--opt=expensive\n" .
+        "                    Controls whether to use no (but including debugging\n" .
+        "                    symbols), good or expensive compiler optimisation\n" .
+        "                    (default: " . lc($defaults{'OPT'}) . ").\n" .
+        "--ranlib=<file>     Path and options to create index for archives\n" .
+        "--regression-benchmark\n" .
+        "                    Create Makefile for FEAT2 regression benchmark and\n" .
+        "                    fork configure calls for all benchmark applications,\n" .
+        "                    i.e. all directories starting with 'src_'\n" .
+        "--[no-]relink-always\n" .
+        "                    Whether or not to relink the application every time\n" .
+        "                    make is invoked (default: " .
+	lc($defaults{'RELINK_ALWAYS'}) . ").\n" .
+        "                    Be careful with --no-relink-always:\n" .
+        "                    When developing on multiple platforms, your\n" .
+        "                    application might not be relinked if no source file\n" .
+        "                    has changed since you changed platform!\n" .
+        "--programfile=<file>\n" .
+	"                    Set application's program file to <file>\n" .
+	"                    (Reason: Parsing to build a minimal list of required \n" .
+	"                     source files needs a starting point. Being explicit\n" .
+	"                     avoids problems with less tidy users.)\n" .
+        "--srclist_app=<string>\n" .
+	"                    Set application's source files to <string>\n" .
+        "--suppressflags=<string>\n" .
+        "                    Remove all (comma-separated) strings in <string> from C,\n" .
+        "                    Fortran 77/90 compiler and linker settings, i.e.\n" .
+        "                    from CFLAGSF77, CFLAGSF90, CFLAGSC, CFLAGSCOPROC, \n" .
+	"                    CFLAGSCXX and LDFLAGS.\n" .
+        "                    If your application does not compile or run properly\n" .
+        "                    because of a specific compiler option that ought not\n" .
+        "                    be removed globally, you can inhibit its usage for\n" .
+        "                    your application by adding the exact string to <string>.\n" .
 
         "Options which cause $progname to print only information without a\n" .
         "Makefile being created:\n" .
         "--help              Print this message\n" .
-        "--version           Show version information\n" .
+        "--list-app-modules  Print application's proprietary source files\n" .
+        "--list-all-ids      Print a list of all valid build IDs. Use any\n" .
+        "                    of them as ARCH argument for --id option\n" .
         "--list-ids          Print a list of valid build IDs for current\n" .
         "                    host. Use any of the items as ARCH argument for --id\n" .
         "                    option.\n" .
-        "--list-all-ids      Print a list of all valid build IDs. Use any\n" .
-        "                    of them as ARCH argument for --id option\n" .
         "--list-kernel-modules\n" .
         "                    Print all FEAT2 kernel files the application is\n" .
         "                    built from\n" .
-        "--list-app-modules  Print application's proprietary source files\n";
+        "--version           Show version information\n";
     exit 0;
 }
 
