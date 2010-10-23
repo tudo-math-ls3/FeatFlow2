@@ -3601,11 +3601,22 @@ sub create_feastBenchmarkMakefile {
         "\n" .
 
         "# Dynamic targets: all test IDs\n" .
+	"TEMPORARY_RUN_SCRIPT=_tmp_.fbconf\n" .
+	".PHONY: clear-temporary-run-script\n" .
+	"clear-temporary-run-script:\n" .
+	"\t\@-rm -f \$(TEMPORARY_RUN_SCRIPT)\n\n" .
+
 	".PHONY: \$(TESTIDS)\n" .
+	"\$(TESTIDS): | clear-temporary-run-script\n" .
         "\$(TESTIDS):\n" .
-        "\t\@echo \$\@ > _tmp_.fbconf\n" .
-        "\t\@\$(MAKE) TESTCASES=_tmp_.fbconf create-script\n" .
-        "\t\@-rm -f _tmp_.fbconf\n\n" .
+	"        # By means of the dependency-only target clear-temporary-run-script and\n" .
+	"        # the append operator '>>' it becomes feasible to specify multiple test\n" .
+	"        # IDs subsequently on the command line - just as is the case with the\n" .
+	"        # schedule scripts for queueing systems bin/lido_schedule_tests and\n" .
+	"        # bin/nec_schedule_tests. Example:\n" .
+	"        #  make AUTOPART0020 AUTOPART0021 BC0001 BC0003 NAVSTO-SOL11-0002 run\n" .
+        "\t\@echo \$\@ >> \$(TEMPORARY_RUN_SCRIPT)\n" .
+        "\t\@\$(MAKE) TESTCASES=\$(TEMPORARY_RUN_SCRIPT) create-script\n\n" .
 
         "# Create script which contains all the necessary information to run\n" .
         "# and validate all the test cases contained in a accordingly named\n" .
@@ -3672,6 +3683,7 @@ sub create_feastBenchmarkMakefile {
         "\n" .
         ".PHONY:\trun\n" .
         "run:\n" .
+	"\t\@-rm -f \$(TEMPORARY_RUN_SCRIPT)\n" .
         "\t\@./\$(SCRIPT)\n" .
         "\n" .
         "\n" .
