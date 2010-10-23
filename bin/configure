@@ -314,6 +314,7 @@ my %defaults = (
     BUILDLIB             => [],
     CC                   => "",
     CFLAGSC              => [],
+    CFLAGSCOPROC         => [],
     CFLAGSCXX            => [],
     CFLAGSF77            => [],
     CFLAGSF90            => [],
@@ -387,6 +388,7 @@ GetOptions (
             "cached-build-id=s"             => sub { $cachedtests{'build-id'} = $_[1]; },
             "cc=s"                          => \$cl{'CC'},
             "cflagsc=s"                     => \@{ $cl{'CFLAGSC'} },
+            "cflagscoproc=s"                => \@{ $cl{'CFLAGSCOPROC'} },
             "cflagscxx=s"                   => \@{ $cl{'CFLAGSCXX'} },
             "cflagsf77=s"                   => \@{ $cl{'CFLAGSF77'} },
             "cflagsf90=s"                   => \@{ $cl{'CFLAGSF90'} },
@@ -414,7 +416,14 @@ GetOptions (
             "listids"                       => \$cl{'listids'},
             "make=s"                        => \$cl{'make'},
             "makefile=s"                    => \$cl{'makefile'},
-            "mode=s"                        => \$cl{'MODE'},   # deprecated, use --mpi=
+            "mode=s"                        => sub { if ($_[1] =~ m/\bparallel\b/i) {
+							 $cl{'MPI'} = 1;
+						     } elsif ($_[1] =~ m/\bserial\b/i) {
+							 $cl{'MPI'} = 0;
+						     } else {
+							 $cl{'MODE'} = $_[1]; # in check_options() we'll throw an error
+						     }
+						   },  # deprecated, use --mpi=
             "modextension=s"                => \$cl{'MODEXTENSION'},
             "monitor-compile-env!"          => \$cl{'MONITOR_COMPILE_ENV'},
             "movemod=s"                     => \$cl{'MOVEMOD'},
@@ -566,6 +575,7 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --buildlib=\""       . join(',', @{$cl{'BUILDLIB'}})     . "\"" if ($#{$cl{'BUILDLIB'}} >= 0);
     $options .= " --cc=\""             . $cl{'CC'}                         . "\"" if (defined($cl{'CC'}) && $cl{'CC'});
     $options .= " --cflagsc=\""        . join(',', @{$cl{'CFLAGSC'}})      . "\"" if ($#{$cl{'CFLAGSC'}} >= 0);
+    $options .= " --cflagscoproc=\""   . join(',', @{$cl{'CFLAGSCOPROC'}}) . "\"" if ($#{$cl{'CFLAGSCOPROC'}} >= 0);
     $options .= " --cflagscxx=\""      . join(',', @{$cl{'CFLAGSCXX'}})    . "\"" if ($#{$cl{'CFLAGSCXX'}} >= 0);
     $options .= " --cflagsf77=\""      . join(',', @{$cl{'CFLAGSF77'}})    . "\"" if ($#{$cl{'CFLAGSF77'}} >= 0);
     $options .= " --cflagsf90=\""      . join(',', @{$cl{'CFLAGSF90'}})    . "\"" if ($#{$cl{'CFLAGSF90'}} >= 0);
@@ -832,7 +842,7 @@ sub check_options {
     # For options that can take multiple strings, whitespace and comma-separated
     # lists of values and multiple instances of the option are allowed.
     # Normalise the values by converting strings to real arrays.
-    foreach my $entry ('APPONLYFLAGS', 'BUILDLIB', 'CFLAGSC', 'CFLAGSCXX',
+    foreach my $entry ('APPONLYFLAGS', 'BUILDLIB', 'CFLAGSC', 'CFLAGSCOPROC', 'CFLAGSCXX',
 		       'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
 		       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
 		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCLIST_APP') {
@@ -960,7 +970,7 @@ sub check_options {
 
     # Valid keywords? (both for options that take exactly one string and those that can take multiple)
     my %validkeywords = (
-	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda13", "opengl" ],  # List of valid coprocessor backends
+	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "opengl" ],  # List of valid coprocessor backends
 	"FORCE_ID"            => [ "yes", "no" ],
         "INTSIZE"             => [ "std", "large" ],
         "MPI"                 => [ "yes", "no" ],
@@ -1020,7 +1030,8 @@ sub check_options {
     # Map deprecated MODE=PARALLEL/SERIAL to MPI=YES/NO
     if (defined($cl{'MODE'})) {
 	warn "\n$progname: WARNING:\n".
-	     "The use of --mode=<parallel,serial> is deprecated, use --mpi=<yes,no> instead.\n";
+	     "The use of --mode=<parallel,serial> is deprecated, use --[no-]mpi\n" .
+	     "or --mpi=<yes,no> instead.\n\n";
 	if ($cl{'MODE'} eq "PARALLEL") {
 	    $cl{'MPI'} = "YES";
 	} elsif ($cl{'MODE'} eq "SERIAL") {
@@ -1458,7 +1469,7 @@ sub create_feastAppMakefile {
     # (or default values from hash %default.)
     print MAKEFILE_HDL "# Settings from configure command line which override settings from Makefile.inc\n";
     my $overwritten = 0;
-    foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC',
+    foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
 		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX', 'F77',
 		       'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
 		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
@@ -1478,13 +1489,18 @@ sub create_feastAppMakefile {
 	    # entries. So, don't test with perl function defined(). Test whether
 	    # one or more entries. (Perl count from zero, like C does.)
 	    if ($#{$string} >= 0) {
-		print MAKEFILE_HDL $entry . " "x(13-length($entry)) . "= " . join(' ', @{$string}) . "\n";
+		# Exception for 'APPONLYFLAGS': for better readability put every preprocessor directive on a separate line
+		if ($entry eq "APPONLYFLAGS") {
+		    print MAKEFILE_HDL $entry . " "x(13-length($entry)) . "= " . join(" \\\n\t", @{$string}) . "\n";
+		} else {
+		    print MAKEFILE_HDL $entry . " "x(13-length($entry)) . "= " . join(' ', @{$string}) . "\n";
+		}
 		$overwritten++;
 	    }
 	}
     }
     if ($#{$cl{'suppressflags'}} >= 0) {
-        foreach $entry ("CFLAGSF77", "CFLAGSF90", "CFLAGSC", "CFLAGSCXX", "LDFLAGS") {
+        foreach $entry ("CFLAGSF77", "CFLAGSF90", "CFLAGSC", "CFLAGSCOPROC", "CFLAGSCXX", "LDFLAGS") {
             foreach (@{$cl{'suppressflags'}}) {
                 print MAKEFILE_HDL
                     $entry . " " x (12 - length($entry)) . ":= \$(filter-out $_, \$($entry))\n";
@@ -1561,6 +1577,24 @@ sub create_feastAppMakefile {
 		"\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
 		"else\n" .
 		"APPONLYFLAGS := -DHAS_CUDA11 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
+		"endif\n" .
+		"ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
+		"MESSAGE  := \$(MESSAGE) \\\n" .
+		"\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
+		"\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
+		"else\n" .
+		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
+		"endif\n";
+	}
+	if (defined($coprocs{'cuda12'})) {
+	    print MAKEFILE_HDL
+		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
+		"ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
+		"MESSAGE  := \$(MESSAGE) \\\n" .
+		"\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
+		"\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
+		"else\n" .
+		"APPONLYFLAGS := -DHAS_CUDA12 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
 		"endif\n" .
 		"ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
 		"MESSAGE  := \$(MESSAGE) \\\n" .
@@ -1778,7 +1812,6 @@ sub create_feastAppMakefile {
 	"LD  = \$(F77)\n" .
 	"endif\n\n" .
 
-
 	"# Makefile variable OPT must have exactly one out of three possible values:\n" .
 	"# NO, YES or EXPENSIVE. If that requirement is not met, unset all compiler\n" .
 	"# definitions in order to always raise an error when make is invoked.\n" .
@@ -1801,7 +1834,8 @@ sub create_feastAppMakefile {
 	"LD  = \$(F77)\n" .
 	"endif\n" .
 	"endif\n" .
-	"endif\n\n" .
+	"endif\n" .
+	"\n\n" .
 
         "# Makefile variable INTSIZE must have exactly one out of two possible values:\n" .
         "# STD or LARGE\n" .
@@ -1824,7 +1858,8 @@ sub create_feastAppMakefile {
         "CXX = \$(F77)\n" .
         "LD  = \$(F77)\n" .
         "endif\n" .
-        "endif\n\n" .
+	"endif\n" .
+	"\n\n" .
 
         "# Makefile variable MPI must have exactly one out of two possible values:\n" .
         "# YES or NO\n" .
@@ -1847,7 +1882,8 @@ sub create_feastAppMakefile {
         "CXX = \$(F77)\n" .
         "LD  = \$(F77)\n" .
         "endif\n" .
-        "endif\n\n" .
+        "endif\n" .
+        "\n\n" .
 
         "# Makefile variable OPENMP must have exactly one out of two possible values:\n" .
         "# YES or NO\n" .
@@ -1870,14 +1906,15 @@ sub create_feastAppMakefile {
         "CXX = \$(F77)\n" .
         "LD  = \$(F77)\n" .
         "endif\n" .
-        "endif\n\n" .
+        "endif\n" .
+        "\n\n" .
 
         "# If a parallel application should be built, but preprocessor switch\n" .
         "# -DENABLE_SERIAL_BUILD appears among compiler flags, unset all compiler definitions\n" .
         "# in order to always raise an error when make is invoked.\n" .
         "ifeq (\$(strip \$(MPI)), YES)\n" .
         "ifneq (,\$(findstring -DENABLE_SERIAL_BUILD ,\\\n" .
-        "\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCXX) ))\n" .
+        "\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCXX) ))\n" .
         "MESSAGE := \$(MESSAGE) \\\n" .
         "\t   echo; \\\n" .
         "\t   echo '*** Error: Build type MPI=YES cannot be used in combination'; \\\n" .
@@ -1893,7 +1930,25 @@ sub create_feastAppMakefile {
         "CXX = \$(F77)\n" .
         "LD  = \$(F77)\n" .
         "endif\n" .
-        "endif\n\n\n\n" .
+        "endif\n" .
+	"\n\n" .
+
+	"# Warn about deprecated Makefile variable MODE=PARALLEL|SERIAL\n" .
+	"ifneq (\$(strip \$(MODE)),)\n" .
+	"MESSAGE := \$(MESSAGE) \\\n" .
+	"\t   echo; \\\n" .
+	"\t   echo '*** Warning: Use of Makefile variable MODE=\$(MODE) is deprecated.'; \\\n" .
+	"\t   echo '***          Use MPI=<YES|NO> instead.'; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77 = \$(MESSAGE) echo\n" .
+        "F90 = \$(F77)\n" .
+        "CC  = \$(F77)\n" .
+        "CXX = \$(F77)\n" .
+        "LD  = \$(F77)\n" .
+	"endif\n" .
+	"\n\n" .
 
         "# Catch case that a build ID has been given for which\n" .
         "# compiler settings are not (fully) set up.\n" .
@@ -1914,14 +1969,16 @@ sub create_feastAppMakefile {
         "ifneq (\$(TOKEN5), 1)\n" .
         "DETAIL := \$(DETAIL) echo '***        5th token not matched against any rule in \$(MAKEFILE_CPU_INC).';\n" .
         "endif\n" .
-        "endif\n\n" .
+        "endif\n" .
+	"\n\n" .
 
         "# Test for 6th token in case of MPI=YES\n" .
         "ifeq (\$(strip \$(MPI)), YES)\n" .
         "ifneq (\$(TOKEN6), 1)\n" .
         "DETAIL := \$(DETAIL) echo '***        6th token not matched against any rule in \$(MAKEFILE_CPU_INC).';\n" .
         "endif\n" .
-        "endif\n\n" .
+        "endif\n" .
+	"\n\n" .
 
         "# Now, override any compiler settings in case any token is unset\n" .
         "ifneq (\$(DETAIL),)\n" .
@@ -1938,8 +1995,8 @@ sub create_feastAppMakefile {
         "CC  = \$(F77)\n" .
         "CXX = \$(F77)\n" .
         "LD  = \$(F77)\n" .
-        "endif\n\n\n\n" .
-
+        "endif\n" .
+	"\n\n" .
 
 	"# Catch case (coproc-bail-out) that coprocessor support is not available for all build IDs\n" .
 	"ifneq (,\$(findstring -DENABLE_COPROCESSOR_SUPPORT ,\\\n" .
@@ -2110,6 +2167,7 @@ sub create_feastAppMakefile {
         "\$(OBJF77):\n" .
         "\t\$(F77) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
 
+    # Create build rule for object files from Fortran 90 source
 #        "# Additional global dependencies for object files from Fortran 90 sources\n" .
 #        "\$(OBJF90):\n" .
 
@@ -2126,7 +2184,6 @@ sub create_feastAppMakefile {
 #        "endif\n" .
 #        "endif\n\n" .
 
-    # Create build rule for object files from Fortran 90 source
 	"# Create build rule for object files from Fortran 90 source\n" .
         "\$(OBJF90): | \$(OBJDIR)\n" .
         "\$(OBJF90):\n" .
@@ -2239,7 +2296,7 @@ sub create_feastAppMakefile {
         "##############################################################################\n" .
         "# Create, copy or evaluate header files to be included in Fortran 90 source files\n\n" .
         "# Copy some header files to object directory (but remove path information from\n" .
-	"# include statements)\n" .
+        "# include statements)\n" .
         "\$(OBJHEADERCOPY): | \$(OBJDIR)\n" .
         "\$(OBJHEADERCOPY):\n" .
         "\tsed -e '/!/d; s|include \".*/\\([^/]*\\)\"|include \"\\1\"|' \$< > \$@\n\n" .
@@ -2763,6 +2820,7 @@ sub create_feastAppMakefile {
         "        # CFLAGSF77     = [...]\n" .
         "        # CFLAGSF90     = [...]\n" .
         "        # CFLAGSC       = [...]\n" .
+        "        # CFLAGSCOPROC  = [...]\n" .
         "        # CFLAGSCXX     = [...]\n" .
         "        # APPONLYFLAGS  = [...]\n" .
         "        # INC           = [...]\n" .
@@ -2803,6 +2861,8 @@ sub create_feastAppMakefile {
         "\t\t\ts^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
         "\t\t\ts^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\"; \\\n" .
         "\t     echo 'CFLAGSC       =' \$(CFLAGSC) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "\t     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
@@ -2878,6 +2938,8 @@ sub create_feastAppMakefile {
         "\t\t\ts^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
         "\t\t\ts^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\"; \\\n" .
         "\t     echo 'CFLAGSC       =' \$(CFLAGSC) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "\t     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
@@ -3037,6 +3099,7 @@ sub create_feastAppMakefile {
         "# CFLAGSF77     = [...]\n" .
         "# CFLAGSF90     = [...]\n" .
         "# CFLAGSC       = [...]\n" .
+        "# CFLAGSCOPROC  = [...]\n" .
         "# CFLAGSCXX     = [...]\n" .
         "# APPONLYFLAGS  = [...]\n" .
         "# INC           = [...]\n" .
@@ -3118,6 +3181,8 @@ sub create_feastAppMakefile {
         "\t   s^\$(OBJDIR)^<path information intentionally removed by make>^g; \\\n" .
         "\t   s^\$(OBJDIR_LIB)^<path information intentionally removed by make>^g;\"; \\\n" .
         "     echo 'CFLAGSC       =' \$(CFLAGSC) | \\\n" .
+        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC) | \\\n" .
         "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
         "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
@@ -3290,6 +3355,8 @@ sub create_feastAppMakefile {
         "\t\@echo \"                 whether or not $make should check path and modification dates\"\n" .
         "\t\@echo \"                   of compilers and compiler settings across multiple\"\n" .
         "\t\@echo \"                   compilation attempts\"\n" .
+        "\t\@echo \"  MODE=<PARALLEL|SERIAL>\" (deprecated, use MPI=<YES|NO>)\n" .
+        "\t\@echo \"                 whether to build parallel or serial version of application\"\n" .
         "\t\@echo \"  MPI=<YES|NO>\"\n" .
         "\t\@echo \"                 whether to build a MPI or serial version of the application\"\n" .
         "\t\@echo \"  OPENMP=<YES|NO>\"\n" .
@@ -3855,7 +3922,7 @@ sub concat_filename {
 sub debug_command_line_options {
     my $string = "";
 
-    foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC',
+    foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
 		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90',
 		       'COPROCLIST', 'CPP', 'CXX', 'F77', 'F90', 'FORCE_ID', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
@@ -4234,6 +4301,7 @@ sub get_sourcefilelist {
 # Function: Build list of valid build IDs from MAKEFILE_INC
 sub get_validIDs {
     my $filename = &concat_filename($FEAT2BASEDIR, $MAKEFILE_CPU_INC);
+
     open(FILE, "<" , $filename) or
 	die "\n$progname: ERROR:\n".
             INITIAL_MESSAGE .
@@ -4599,6 +4667,10 @@ sub print_statistics_about_feastAppMakefile {
     # with something that works on the command line: ~ and build ID.
     $string =~ s/\$\(HOME\)/~/;
     $string =~ s/\$\(ID\)/$buildID/;
+    # In case of a serial build, remove any given 6th token
+    if (((defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'}) ne "YES") {
+	$string =~ s/^([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)(-[^-]+|)$/$1/;
+    }
     $string .= "-opt" . ((defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'});
     print "  Object files go to           : <$string>,\n";
     # Replace the symbolic names $(HOME) and $(ID), used in the Makefile,
