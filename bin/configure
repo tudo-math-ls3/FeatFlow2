@@ -2299,7 +2299,7 @@ sub create_feastAppMakefile {
         "# include statements)\n" .
         "\$(OBJHEADERCOPY): | \$(OBJDIR)\n" .
         "\$(OBJHEADERCOPY):\n" .
-        "\tsed -e '/!/d; s|include \".*/\\([^/]*\\)\"|include \"\\1\"|' \$< > \$@\n\n" .
+        "\tsed -e 's|include \".*/\\([^/]*\\)\"|include \"\\1\"|' \$< > \$@\n\n" .
 
         "# Others need to be evaluated with cpp first before being stored there.\n" .
         "\$(OBJHEADEREVAL): | \$(OBJDIR)\n" .
