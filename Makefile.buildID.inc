@@ -45,11 +45,30 @@ endif
 match=$(shell echo $(1) | sed -e 's/$(2)/yes/')
 
 
+
+##############################################################################
+# clean up environment
+#
+##############################################################################
+
+# Don't let the script get confused by non-english messages
+# from system information programs.
+# (LC_ALL overrides the value of the LANG environment variable
+# and the values of any other LC_* environment variables.)
+LC_ALL=C
+
+# Unset CDPATH to prevent problems when changing directories
+CDPATH=
+
+
+
+##############################################################################
 # Set default target platforms for compilation of serial applications.
 #
 # Refine the machine ID by specifying main fortran compiler and blas library
 # implementation to come up with default build IDs for every platform. 
 # List is to be extended for every new host FEAT is ported to.
+##############################################################################
 
 ifeq ($(call match,$(ID),pc-.*-cygwin_nt.*),yes)
 ID:=$(strip $(ID))-g95-blas
