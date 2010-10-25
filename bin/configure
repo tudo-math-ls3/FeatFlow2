@@ -286,6 +286,7 @@ my $oldEntry       = "";
 my $make           = "";
 my $makeversion    = "";
 my $makeInMakefile = "";
+my $defaultBuildID = "";
 my $buildID        = "";
 my $buildID_lib    = "";
 my $counter        = 0;
@@ -3223,7 +3224,7 @@ sub create_feastAppMakefile {
         ".PHONY: verify-id\n" .
         "verify-id:\n" .
         "ifneq (\$(strip \$(FORCE_ID)),YES)\n" .
-        "ifeq (,\$(findstring \$(REALID), \$(ID)))\n" .
+        "ifeq (,\$(findstring \$(REALID_SHORT), \$(ID)))\n" .
         "\t\@echo; \\\n" .
         "\t echo '*** Error: Build ID \$(ID)'; \\\n" .
         "\t echo '***        is *not* valid for current host!'; \\\n" .
@@ -3269,14 +3270,18 @@ sub create_feastAppMakefile {
         "listids:\tlist-ids\n" .
         "list.ids:\tlist-ids\n" .
         "list-ids:\n" .
-        "\t\@echo \"The following are valid build IDs for current host:\"\n" .
+        "\t\@echo \"The following are valid (possibly partial) build IDs for current host:\"\n" .
         "# It would be a lot nicer if we could distribute the following perl\n" .
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
 # orig  "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
-	"\t\@perl -ne '(my \$\$id_1st3tokens = \"\$(ID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(ID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
+	"\t\@perl -ne '(my \$\$id_1st3tokens = \"\$(REALID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(REALID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
-        "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
+        "\t\@echo;\n" .
+        "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
+	"ifneq (\$(ID), \$(REALID))\n" .
+        "\t\@echo \"Forced build ID for current host: \$(ID)\";\n" .
+	"endif\n\n" .
 
 
     # print a list of all valid build IDs
@@ -3285,13 +3290,17 @@ sub create_feastAppMakefile {
         "listallids:\tlist-all-ids\n" .
         "list.all.ids:\tlist-all-ids\n" .
         "list-all-ids:\n" .
-        "\t\@echo \"The following are all valid build IDs:\"\n" .
+        "\t\@echo \"The following are all valid (possibly partial) build IDs:\"\n" .
         "# It would be a lot nicer if we could distribute the following perl\n" .
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
         "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
-        "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
+        "\t\@echo;\n" .
+        "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
+	"ifneq (\$(ID), \$(REALID))\n" .
+        "\t\@echo \"Forced build ID for current host: \$(ID)\";\n" .
+	"endif\n\n" .
 
 
     # create tag file for emacs users
@@ -3824,9 +3833,14 @@ sub create_feastBenchmarkMakefile {
         "# It would be a lot nicer if we could distribute the following perl\n" .
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
-        "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
+# orig  "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
+	"\t\@perl -ne '(my \$\$id_1st3tokens = \"\$(ID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(ID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
-        "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
+        "\t\@echo;\n" .
+        "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
+	"ifneq (\$(ID), \$(REALID))\n" .
+        "\t\@echo \"Forced build ID for current host: \$(ID)\";\n" .
+	"endif\n\n" .
 
 
     # print a list of all valid build IDs
@@ -3840,8 +3854,12 @@ sub create_feastBenchmarkMakefile {
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
         "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
-        "\t    \$(MAKEFILE_CPU_INC) | sort;\n\n" .
-        "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
+        "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
+        "\t\@echo;\n" .
+        "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
+	"ifneq (\$(ID), \$(REALID))\n" .
+        "\t\@echo \"Forced build ID for current host: \$(ID)\";\n" .
+	"endif\n\n" .
 
 
     # Support a query for the log directory setting to have exactly one
@@ -4031,6 +4049,26 @@ sub get_buildID {
         $buildID = $cachedtests{'build-id'};
 
     } else {
+	# Otherwise take default build id from MAKEFILE_INC for guessed platform
+	print "retrieving default build ID... ";
+
+	# Pass along the desired execution mode of the application.
+	# If set to parallel mode, the build ID contains an additional 6th token
+	# naming the MPI library.
+	my $mpi = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
+
+	# Use '--no-print-directory' to ensure that when this configure script
+	# is run from a Makefile, make will not print lines like
+	# make[?]: Entering directory `<some dirs>/feast/feast/<some other dirs>'
+	# See section 5.6.4 of GNU Make Manual,
+	# http://www.gnu.org/software/make/manual/html_mono/make.html#IDX250
+	my $command = "cd \"" . &dirname(&concat_filename($FEAT2BASEDIR, $MAKEFILE_BUILDID_INC)) .
+                      "\" && $make --no-print-directory -f " . &basename($MAKEFILE_BUILDID_INC) .
+                      " MPI=$mpi FEAT2BASEDIR=. .idonly";
+	$buildID = `$command`;
+	chomp($buildID);
+	$defaultBuildID = $buildID;
+
         # Use build id string from command line if specified or environment
         if (defined($cl{'ID'}) && $cl{'ID'} !~ m/^\s*$/) {
             print "using given build ID... ";
@@ -4039,25 +4077,6 @@ sub get_buildID {
             print "using given build ID... ";
             $cl{'ID'} = $ENV{ID};
             $buildID  = $ENV{ID};
-        } else {
-            # Otherwise take default build id from MAKEFILE_INC for guessed platform
-            print "retrieving default build ID... ";
-
-	    # Pass along the desired execution mode of the application.
-	    # If set to parallel mode, the build ID contains an additional 6th token
-	    # naming the MPI library.
-            my $mpi = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
-
-            # Use '--no-print-directory' to ensure that when this configure script
-            # is run from a Makefile, make will not print lines like
-            # make[?]: Entering directory `<some dirs>/feast/feast/<some other dirs>'
-            # See section 5.6.4 of GNU Make Manual,
-            # http://www.gnu.org/software/make/manual/html_mono/make.html#IDX250
-            my $command = "cd \"" . &dirname(&concat_filename($FEAT2BASEDIR, $MAKEFILE_INC)) .
-                          "\" && $make --no-print-directory -f " . &basename($MAKEFILE_INC) .
-                          " MPI=$mpi FEAT2BASEDIR=. .idonly";
-            $buildID = `$command`;
-            chomp($buildID);
         }
 
         print $buildID . "\n";
@@ -4383,7 +4402,7 @@ sub list_all_ids {
     print "\n$progname v" . &get_version() . ":\n" .
           "Valid build IDs match against the following regular expressions:\n";
     foreach my $entry (sort @valid_id) {
-        if ($entry eq $buildID) {
+        if ($entry eq $defaultBuildID) {
             print "* $entry (default)\n";
         } else {
             print "* $entry\n";
@@ -4398,8 +4417,9 @@ sub list_all_ids {
 	print "\n" .
               "Use any of these build IDs as argument for the --id option.\n" .
               "The current build ID for " . &hostname() . " is:\n" .
-              " " x ((66 - length($buildID))/2) . $buildID . "\n" .
-              "\n";
+              " " x ((66 - length($buildID))/2) . $buildID;
+	print " (enforced)" if ($buildID ne $defaultBuildID);
+	print "\n\n";
     }
     exit 0;
 }
