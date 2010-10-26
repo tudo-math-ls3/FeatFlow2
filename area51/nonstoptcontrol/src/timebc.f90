@@ -176,4 +176,75 @@ contains
 
   end subroutine
 
+  ! ***************************************************************************
+
+  subroutine spop_smoothInitCondDef (rphysics,rsolution)
+
+  ! Smoothes the initial condition.
+
+  ! Underlying physics
+  type(t_physics), intent(in) :: rphysics
+  
+  ! Space-time vector.
+  type(t_spaceTimeVector), intent(inout) :: rsolution
+
+    ! local varibales
+    type(t_vectorBlock) :: rvector1,rvector2,rvector3,rvector4,rvector5
+
+    return
+    
+    ! The defect for the initial condition is just zero in the primal equation.
+    call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rvector1,.false.)
+    call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rvector2,.false.)
+    call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rvector3,.false.)
+    call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rvector4,.false.)
+    call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rvector5,.false.)
+    call sptivec_getTimestepData (rsolution, 1, rvector1)
+    call sptivec_getTimestepData (rsolution, 2, rvector2)
+    call sptivec_getTimestepData (rsolution, 3, rvector3)
+    call sptivec_getTimestepData (rsolution, 4, rvector4)
+    call sptivec_getTimestepData (rsolution, 5, rvector5)
+    
+    select case (rphysics%cequation)
+    case (0,2)
+      ! 1D/2D Heat equation
+      call lsyssc_vectorLinearComb(&
+          rvector1%RvectorBlock(1),rvector5%RvectorBlock(1),&
+          0.5_DP,0.5_DP,rvector3%RvectorBlock(1))
+
+      call lsyssc_vectorLinearComb(&
+          rvector1%RvectorBlock(1),rvector5%RvectorBlock(1),&
+          0.75_DP,0.25_DP,rvector2%RvectorBlock(1))
+
+      call lsyssc_vectorLinearComb(&
+          rvector1%RvectorBlock(1),rvector5%RvectorBlock(1),&
+          0.25_DP,0.75_DP,rvector4%RvectorBlock(1))
+
+!      call lsyssc_vectorLinearComb(&
+!          rvector1%RvectorBlock(2),rvector5%RvectorBlock(2),&
+!          0.5_DP,0.5_DP,rvector3%RvectorBlock(2))
+!
+!      call lsyssc_vectorLinearComb(&
+!          rvector1%RvectorBlock(2),rvector5%RvectorBlock(2),&
+!          0.75_DP,0.25_DP,rvector2%RvectorBlock(2))
+!
+!      call lsyssc_vectorLinearComb(&
+!          rvector1%RvectorBlock(2),rvector5%RvectorBlock(2),&
+!          0.25_DP,0.75_DP,rvector4%RvectorBlock(2))
+    case (1)
+      ! 2D Stokes equation
+    end select
+    
+    call sptivec_setTimestepData (rsolution, 2, rvector2)
+    call sptivec_setTimestepData (rsolution, 3, rvector3)
+    call sptivec_setTimestepData (rsolution, 4, rvector4)
+    
+    call lsysbl_releaseVector (rvector5)
+    call lsysbl_releaseVector (rvector4)
+    call lsysbl_releaseVector (rvector3)
+    call lsysbl_releaseVector (rvector2)
+    call lsysbl_releaseVector (rvector1)
+
+  end subroutine
+
 end module

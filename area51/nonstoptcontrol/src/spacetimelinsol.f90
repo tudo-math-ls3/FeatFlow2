@@ -30,6 +30,7 @@ module spacetimelinsol
   use postprocessing
   
   use statistics
+  use timebc
   
   implicit none
 
@@ -2649,7 +2650,7 @@ contains
         
         ! Boundary conditions.
         call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors2(ilevel))
-
+         
         ! Solve on the lower level.
         ! The number of coarse grid iterations depends on the cycle...
         select case (rsolver%icycle)
@@ -2681,6 +2682,10 @@ contains
           exit
         end if
         
+        ! DEBUG!!!
+        !call spop_smoothInitCondDef(rsolver%p_rmatrices(ilevel-1)%p_rmatrix%p_rphysics,&
+        !    rsolver%p_Rvectors1(ilevel-1))
+        
         ! Prolongation
         call sptipr_performProlongation (rsolver%p_rspaceTimeProjection,ilevel,&
             rsolver%p_Rvectors1(ilevel-1),rsolver%p_Rvectors3(ilevel),&
@@ -2690,7 +2695,8 @@ contains
         call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
         
 !        print *,"cgr sol."
-!        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
+!        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel),&
+!          .true.,.false.,0,"./gmv/ucgcor.vtk")
 !        read (*,*) 
         dfactor = 1.0_DP
 !        if (sstring .eq. "y") then
@@ -2730,8 +2736,12 @@ contains
         ! Coarse grid correction
         call sptivec_vectorLinearComb (rsolver%p_Rvectors3(ilevel),&
             rsolver%p_Rvectors1(ilevel),dfactor,1.0_DP)
-
-        !call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors1(ilevel))
+        
+!        print *,"new sol."
+!        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors1(ilevel),&
+!          .true.,.true.,CUB_G2_1D,"./gmv/unew.vtk")
+!        print *,"ok. press key."
+!        read (*,*) 
 
 !          call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
 !          call stmv_matvec (rsolver%p_Rmatrices(ilevel)%p_rmatrix, &

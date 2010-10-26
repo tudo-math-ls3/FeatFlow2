@@ -1865,7 +1865,7 @@ contains
     call sptivec_releaseAccessPool(raccessPool)
     
     call lsyssc_releaseVector (rtempVecFineScalar)
-
+    
   end subroutine
      
   ! ***************************************************************************

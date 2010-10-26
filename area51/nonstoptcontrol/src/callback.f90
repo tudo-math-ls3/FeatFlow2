@@ -329,6 +329,41 @@ contains
   end function
 
   ! ***************************************************************************
+  ! Heat equation, function set 9.
+  ! Irregular test set, real optimisation, no analytic reference function.
+  !
+  !   y = 0
+  !   l = 0
+  !
+  !   f = 0
+  !   z = sin(pi*x)*sin(pi*y)
+  ! ***************************************************************************
+
+  elemental real(DP) function fct_heatY9 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_heatY9 = fct_heatZ9 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+    if (dtime .eq. dtimeMin) fct_heatY9 = 0.0_DP
+  end function
+
+  elemental real(DP) function fct_heatLambda9 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_heatLambda9 = 0.0_DP
+  end function
+    
+  elemental real(DP) function fct_heatF9 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_heatF9 = 0.0_DP
+  end function
+  
+  elemental real(DP) function fct_heatZ9 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_heatZ9 = 0.0_DP !sin(SYS_PI*dx)*sin(SYS_PI*dy)
+    if ((abs(dx-0.5_DP) .le. 0.35_DP) .and. (abs(dy-0.5_DP) .le. 0.35_DP)) then
+      fct_heatZ9 = 1.0_DP
+    end if
+  end function
+
+  ! ***************************************************************************
   ! Reference functions, Stokes equation
   ! ***************************************************************************
   ! ***************************************************************************
@@ -1047,6 +1082,14 @@ contains
               Dvalues(:,:) = fct_heatY8 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
 
+          case (9)
+            ! 8.) -> BC in spacetimebc.f90 beachten!
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY9 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY9 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+            end if
+
           case default
             call output_line ("Problem not supported.")
             call sys_halt()
@@ -1123,6 +1166,14 @@ contains
               Dvalues(:,:) = fct_heatLambda8 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
             else
               Dvalues(:,:) = fct_heatLambda8 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
+            end if
+
+          case (9)
+            ! 9.) 
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda9 (Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda9 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha)
             end if
             
           case default
@@ -1552,6 +1603,15 @@ contains
             fct_heatF8(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
         end if
 
+      case (9)
+        ! 9.)
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = fct_heatF9(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) 
+        else
+          Dcoefficients(1,:,:) = &
+            fct_heatF9(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
+        end if
+
       case default
         call output_line ("Problem not supported.")
         call sys_halt()
@@ -1654,6 +1714,16 @@ contains
         else
           Dcoefficients(1,:,:) = &
             - (fct_heatZ8(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+        end if
+
+      case (9)
+        ! 9.)
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = &
+            - (fct_heatZ9(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) )
+        else
+          Dcoefficients(1,:,:) = &
+            - (fct_heatZ9(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
         end if
 
       case default
@@ -1817,6 +1887,15 @@ contains
             fct_heatY8(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
         end if
 
+      case (9)
+        ! 9.)
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = fct_heatY9(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) 
+        else
+          Dcoefficients(1,:,:) = &
+            fct_heatY9(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) 
+        end if
+
       case default
         call output_line ("Problem not supported.")
         call sys_halt()
@@ -1919,6 +1998,16 @@ contains
         else
           Dcoefficients(1,:,:) = &
             (fct_heatLambda8(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
+        end if
+
+      case (9)
+        ! 9.)
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = &
+            (fct_heatLambda9(Dpoints(1,:,:),0.0_DP,dtime,dtimeMin,dtimeMax,dalpha) )
+        else
+          Dcoefficients(1,:,:) = &
+            (fct_heatLambda9(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dtimeMin,dtimeMax,dalpha) )
         end if
 
       case default
@@ -2578,6 +2667,10 @@ contains
           ! 8.) -> BC in spacetimebc.f90 beachten!
           Dvalues(1) = fct_heatY8 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
 
+        case (9)
+          ! 9.) -> BC in spacetimebc.f90 beachten!
+          Dvalues(1) = fct_heatY9 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
@@ -2622,6 +2715,10 @@ contains
         case (8)
           ! 8.) 
           Dvalues(1) = fct_heatLambda8 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+          
+        case (9)
+          ! 9.) 
+          Dvalues(1) = fct_heatLambda9 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
           
         case default
           call output_line ("Problem not supported.")

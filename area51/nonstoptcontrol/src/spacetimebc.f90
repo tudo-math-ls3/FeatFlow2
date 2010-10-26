@@ -392,6 +392,24 @@ contains
                   rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
         end if
+
+      case (9)
+        ! 9.)
+        if (icomponent .eq. 1) then
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
+              fct_heatY9 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY9 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              iequation = 1)
+        else
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
+              fct_heatLambda9 (0.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda9 (1.0_DP,0.0_DP,dtime,&
+                  rbc%p_rphysics%dtimeMin,rbc%p_rphysics%dtimeMax,rbc%p_rphysics%doptControlAlpha), &
+              iequation = 2)
+        end if
         
       case default
         call output_line ("Problem not supported in 1D.")

@@ -641,6 +641,9 @@ contains
       allocate (rsolver%p_Rsmoothers(nlevels))
       allocate (rsolver%p_Rpreconditioners(nlevels))
       do ilev = 2,nlevels
+        ! DEBUG!!!
+        !if (ilev .eq. nlevels) nsmoothingSteps=0
+        ! DEBUG!!!
         if (ismoother .eq. 0) then
         
           call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
