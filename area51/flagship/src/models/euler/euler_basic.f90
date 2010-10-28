@@ -35,6 +35,9 @@
 
 module euler_basic
 
+#include "euler.h"
+
+  use basicgeometry
   use boundarycondaux
   use fparser
   use fsystem
@@ -159,35 +162,6 @@ module euler_basic
 
   ! Perturbation parameter is chosen as SQRT(machine precision)
   integer, parameter, public :: PERTURB_SQRTEPS = 2
-
-!</constantblock>
-
-
-!<constantblock description="Global constants from Gas Dynamic">
-
-  ! ratio of specific heats
-  real(DP), parameter, public :: GAMMA = GAMMA_AIR
-
-  ! universal gas constant
-  real(DP), parameter, public :: RGAS  = RGAS_AIR
-
-  ! auxiliary parameters related to gamma
-  real(DP), parameter, public :: G1  = GAMMA-1.0
-  real(DP), parameter, public :: G2  = (GAMMA-1.0)/2.0
-  real(DP), parameter, public :: G3  = 1.0/(GAMMA-1.0)
-  real(DP), parameter, public :: G4  = 1.0/GAMMA
-  real(DP), parameter, public :: G5  = GAMMA/(GAMMA-1.0)
-  real(DP), parameter, public :: G6  = GAMMA-2.0
-  real(DP), parameter, public :: G7  = (GAMMA-1.0)/(2.0*GAMMA)
-  real(DP), parameter, public :: G8  = (GAMMA+1.0)/(2.0*GAMMA)
-  real(DP), parameter, public :: G9  = 2.0/(GAMMA-1.0)
-  real(DP), parameter, public :: G10 = 2.0/(GAMMA+1.0)
-  real(DP), parameter, public :: G11 = 2.0*GAMMA/(GAMMA-1.0)
-  real(DP), parameter, public :: G12 = (GAMMA-1.0)/(GAMMA+1.0)
-  real(DP), parameter, public :: G13 = 3.0-GAMMA
-  real(DP), parameter, public :: G14 = (GAMMA-3.0)/2.0
-  real(DP), parameter, public :: G15 = (GAMMA-1.0)*GAMMA
-  real(DP), parameter, public :: G16 = 3.0*(GAMMA-1.0)/2.0
 
 !</constantblock>
 
@@ -513,14 +487,13 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: p
     integer :: ieq
 
 
     if (trim(cvariable) .eq. 'density') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(1, ieq)
+        Dvalue(ieq) = DENSITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
@@ -529,24 +502,19 @@ contains
       case (NVAR1D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = abs(Ddata(2, ieq))/Ddata(1, ieq)
+          Dvalue(ieq) = VELOCITY_MAGNITUDE_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR2D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = sqrt(Ddata(2, ieq)**2 +&
-                             Ddata(3, ieq)**2)/Ddata(1, ieq)
+          Dvalue(ieq) = VELOCITY_MAGNITUDE_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR3D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = sqrt(Ddata(2, ieq)**2 +&
-                             Ddata(3, ieq)**2 +&
-                             Ddata(4, ieq)**2)/Ddata(1, ieq)
+          Dvalue(ieq) = VELOCITY_MAGNITUDE_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
       end select
@@ -554,85 +522,100 @@ contains
     elseif (trim(cvariable) .eq. 'velocity_x') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(2, ieq)/Ddata(1, ieq)
+        Dvalue(ieq) = X_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'velocity_y') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(3, ieq)/Ddata(1, ieq)
+        Dvalue(ieq) = Y_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'velocity_z') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(4, ieq)/Ddata(1, ieq)
+        Dvalue(ieq) = Z_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'momentum_x') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(2, ieq)
+        Dvalue(ieq) = X_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'momentum_y') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(3, ieq)
+        Dvalue(ieq) = Y_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'momentum_z') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(4, ieq)
+        Dvalue(ieq) = Z_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'energy') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)
+        Dvalue(ieq) = TOTAL_ENERGY_1T_FROM_CONSVAR(Ddata, nvar, ieq)/&
+                      DENSITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
-
-    elseif (trim(cvariable) .eq. 'effective_energy') then
+      
+    elseif (trim(cvariable) .eq. 'total_energy') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(nvar, ieq)
+        Dvalue(ieq) = TOTAL_ENERGY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
-
+        
     elseif (trim(cvariable) .eq. 'internal_energy') then
       select case (nvar)
       case (NVAR1D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)&
-              -0.5_DP * (Ddata(2, ieq)/Ddata(1, ieq))**2
+          Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR2D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)&
-              -0.5_DP * ((Ddata(2, ieq)/Ddata(1, ieq))**2 +&
-                         (Ddata(3, ieq)/Ddata(1, ieq))**2)
+          Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR3D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)&
-              -0.5_DP * ((Ddata(2, ieq)/Ddata(1, ieq))**2 +&
-                         (Ddata(3, ieq)/Ddata(1, ieq))**2 +&
-                         (Ddata(4, ieq)/Ddata(1, ieq))**2)
+          Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+        end do
+        !$omp end parallel do
+      end select
+
+    elseif (trim(cvariable) .eq. 'kinetic_energy') then
+      select case (nvar)
+      case (NVAR1D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = KINETIC_ENERGY_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+        end do
+        !$omp end parallel do
+      case (NVAR2D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = KINETIC_ENERGY_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+        end do
+        !$omp end parallel do
+      case (NVAR3D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = KINETIC_ENERGY_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
       end select
@@ -642,30 +625,19 @@ contains
       case (NVAR1D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = thdyn_pressure(GAMMA,&
-              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq))
+          Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR2D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = thdyn_pressure(GAMMA,&
-              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq),&
-              Ddata(3, ieq)/Ddata(1, ieq))
+          Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR3D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = thdyn_pressure(GAMMA,&
-              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq),&
-              Ddata(3, ieq)/Ddata(1, ieq),&
-              Ddata(4, ieq)/Ddata(1, ieq))
+          Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
       end select
@@ -673,47 +645,21 @@ contains
     elseif (trim(cvariable) .eq. 'machnumber') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq))
-
-          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
-              p, Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq))
+          Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR2D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq),&
-              Ddata(3, ieq)/Ddata(1, ieq))
-
-          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
-              p, Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq),&
-              Ddata(3, ieq)/Ddata(1, ieq))
+          Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR3D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq),&
-              Ddata(3, ieq)/Ddata(1, ieq),&
-              Ddata(4, ieq)/Ddata(1, ieq))
-
-          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
-              p, Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq),&
-              Ddata(3, ieq)/Ddata(1, ieq),&
-              Ddata(4, ieq)/Ddata(1, ieq))
+          Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
       end select
@@ -721,38 +667,21 @@ contains
     elseif (trim(cvariable) .eq. 'speedofsound') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq))
-
-          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(1, ieq))
+          Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR2D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq),&
-              Ddata(3, ieq)/Ddata(1, ieq))
-
-          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(1, ieq))
+          Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
-        case (NVAR3D)
-        !$omp parallel do private(p)
+      case (NVAR3D)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
-              Ddata(2, ieq)/Ddata(1, ieq),&
-              Ddata(3, ieq)/Ddata(1, ieq),&
-              Ddata(4, ieq)/Ddata(1, ieq))
-
-          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(1, ieq))
+          Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
       end select
@@ -799,14 +728,13 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: p
     integer :: ieq
 
     
     if(trim(cvariable) .eq. 'density') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(ieq, 1)
+        Dvalue(ieq) = DENSITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
@@ -815,24 +743,21 @@ contains
       case (NVAR1D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = abs(Ddata(ieq, 2))/Ddata(ieq, 1)
+          Dvalue(ieq) = VELOCITY_MAGNITUDE_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
 
       case (NVAR2D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = sqrt(Ddata(ieq, 2)**2 +&
-                             Ddata(ieq, 3)**2)/Ddata(ieq, 1)
+          Dvalue(ieq) = VELOCITY_MAGNITUDE_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
 
       case (NVAR3D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = sqrt(Ddata(ieq, 2)**2 +&
-                             Ddata(ieq, 3)**2 +&
-                             Ddata(ieq, 4)**2)/Ddata(ieq, 1)
+          Dvalue(ieq) = VELOCITY_MAGNITUDE_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
       end select
@@ -840,56 +765,57 @@ contains
     elseif(trim(cvariable) .eq. 'velocity_x') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(ieq, 2)/Ddata(ieq, 1)
+        Dvalue(ieq) = X_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'velocity_y') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(ieq, 3)/Ddata(ieq, 1)
+        Dvalue(ieq) = Y_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'velocity_z') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(ieq, 4)/Ddata(ieq, 1)
+        Dvalue(ieq) = Z_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'momentum_x') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(ieq, 2)
+        Dvalue(ieq) = X_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'momentum_y') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(ieq, 3)
+        Dvalue(ieq) = Y_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'momentum_z') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(ieq, 4)
+        Dvalue(ieq) = Z_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'energy') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)
+        Dvalue(ieq) = TOTAL_ENERGY_1L_FROM_CONSVAR(Ddata, nvar, ieq)/&
+                      DENSITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
-
-    elseif(trim(cvariable) .eq. 'effective_energy') then
+      
+    elseif(trim(cvariable) .eq. 'total_energy') then
       !$omp parallel do
       do ieq = 1, neq
-        Dvalue(ieq) = Ddata(ieq, nvar)
+        Dvalue(ieq) = TOTAL_ENERGY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
       !$omp end parallel do
 
@@ -898,27 +824,41 @@ contains
       case (NVAR1D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)&
-              -0.5_DP * Ddata(ieq, 2)**2/Ddata(ieq,1)**2
+          Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR2D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)&
-              -0.5_DP *(Ddata(ieq, 2)**2+&
-                        Ddata(ieq, 3)**2)/Ddata(ieq, 1)**2
+          Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR3D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)&
-              -0.5_DP *(Ddata(ieq, 2)**2+&
-                        Ddata(ieq, 3)**2+&
-                        Ddata(ieq, 4)**2)/Ddata(ieq, 1)**2
+          Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+        end do
+        !$omp end parallel do
+      end select
+
+    elseif(trim(cvariable) .eq. 'kinetic_energy') then
+      select case (nvar)
+      case (NVAR1D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = KINETIC_ENERGY_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+        end do
+        !$omp end parallel do
+      case (NVAR2D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = KINETIC_ENERGY_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+        end do
+        !$omp end parallel do
+      case (NVAR3D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = KINETIC_ENERGY_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
       end select
@@ -928,30 +868,19 @@ contains
       case (NVAR1D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = thdyn_pressure(GAMMA,&
-              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1))
+          Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR2D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = thdyn_pressure(GAMMA,&
-              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1),&
-              Ddata(ieq, 3)/Ddata(ieq, 1))
+          Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR3D)
         !$omp parallel do
         do ieq = 1, neq
-          Dvalue(ieq) = thdyn_pressure(GAMMA,&
-              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1),&
-              Ddata(ieq, 3)/Ddata(ieq, 1),&
-              Ddata(ieq, 4)/Ddata(ieq, 1))
+          Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
       end select
@@ -959,47 +888,21 @@ contains
     elseif(trim(cvariable) .eq. 'machnumber') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1))
-
-          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
-              p, Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1))
+          Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR2D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1),&
-              Ddata(ieq, 3)/Ddata(ieq, 1))
-
-          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
-              p, Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1),&
-              Ddata(ieq, 3)/Ddata(ieq, 1))
+          Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR3D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1),&
-              Ddata(ieq, 3)/Ddata(ieq, 1),&
-              Ddata(ieq, 4)/Ddata(ieq, 1))
-
-          Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
-              p, Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1),&
-              Ddata(ieq, 3)/Ddata(ieq, 1),&
-              Ddata(ieq, 4)/Ddata(ieq, 1))
+          Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
       end select
@@ -1007,38 +910,21 @@ contains
     elseif(trim(cvariable) .eq. 'speedofsound') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1))
-
-          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(ieq, 1))
+          Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR2D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1),&
-              Ddata(ieq, 3)/Ddata(ieq, 1))
-
-          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(ieq, 1))
+          Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
-
       case (NVAR3D)
-        !$omp parallel do private(p)
+        !$omp parallel do
         do ieq = 1, neq
-          p = thdyn_pressure(GAMMA,&
-              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
-              Ddata(ieq, 2)/Ddata(ieq, 1),&
-              Ddata(ieq, 3)/Ddata(ieq, 1),&
-              Ddata(ieq, 4)/Ddata(ieq, 1))
-
-          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(ieq, 1))
+          Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
         !$omp end parallel do
       end select
@@ -1076,189 +962,138 @@ contains
 
     ! local variables
     real(DP), dimension(:), pointer :: p_Ddata, p_Ddensity
-    real(DP), dimension(:), pointer :: p_Dvelocity_x, p_Dvelocity_y
-    real(DP), dimension(:), pointer :: p_Denergy
-    integer :: neq, nvar, nlength
+    real(DP), dimension(:), pointer :: p_Dvelocity, p_Denergy
+    integer :: neq, nvar, nlength, idim, ieq
+    logical :: bisInterleaveFormat
 
     ! Check if we are in interleave of block format
     if (rvectorBlock%nblocks .eq. 1) then
-
       ! Set dimensions
       neq  = rvectorBlock%RvectorBlock(1)%NEQ
       nvar = rvectorBlock%RvectorBlock(1)%NVAR
-
-      ! Set pointer
-      call lsysbl_getbase_double(rvectorBlock, p_Ddata)
-
-      ! Get density values
-      call ucd_getVariable(rexport, 'density', nlength=nlength)
-      if (nlength .ne. neq) then
-        call output_line ('Invalid size of data', &
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
-        call sys_halt()
-      end if
-
-      ! Allocate temporal memory
-      allocate(p_Ddensity(neq))
-      call ucd_getVariable(rexport, 'density', p_Ddensity)
-
-      ! Set density variable
-      call setVarInterleaveFormat(neq, nvar, 1,&
-          p_Ddensity, p_Ddata)
-
-
-      ! Get velocity in x-direction
-      call ucd_getVariable(rexport, 'velocity_X', nlength=nlength)
-      if (nlength .ne. neq) then
-        call output_line ('Invalid size of data', &
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
-        call sys_halt()
-      end if
-
-      ! Allocate temporal memory
-      allocate(p_Dvelocity_x(neq))
-      call ucd_getVariable(rexport, 'velocity_X', p_Dvelocity_x)
-
-      ! Generate momentum in x-direction
-      p_Dvelocity_x = p_Dvelocity_x * p_Ddensity
-
-      ! Set momentum variable in x-direction
-      call setVarInterleaveFormat(neq, nvar, 2,&
-          p_Dvelocity_x, p_Ddata)
-
-
-      ! Get velocity in y-direction
-      call ucd_getVariable(rexport, 'velocity_Y', nlength=nlength)
-      if (nlength .ne. neq) then
-        call output_line ('Invalid size of data', &
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
-        call sys_halt()
-      end if
-
-      ! Allocate temporal memory
-      allocate(p_Dvelocity_y(neq))
-      call ucd_getVariable(rexport, 'velocity_y', p_Dvelocity_y)
-
-      ! Generate momentum in y-direction
-      p_Dvelocity_y = p_Dvelocity_y * p_Ddensity
-
-      ! Set momentum variable in y-direction
-      call setVarInterleaveFormat(neq, nvar, 3,&
-          p_Dvelocity_y, p_Ddata)
-
-
-      ! Get total energy
-      call ucd_getVariable(rexport, 'energy', nlength=nlength)
-      if (nlength .ne. neq) then
-        call output_line ('Invalid size of data', &
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
-        call sys_halt()
-      end if
-
-      ! Allocate temporal memory
-      allocate(p_Denergy(neq))
-      call ucd_getVariable(rexport, 'energy', p_Denergy)
-
-      ! Generate total energy
-      p_Denergy = p_Denergy * p_Ddensity
-
-      ! Set energy variable
-      call setVarInterleaveFormat(neq, nvar, 4,&
-          p_Denergy, p_Ddata)
-
-      ! Deallocate temporal memory
-      deallocate(p_Ddensity, p_Dvelocity_x, p_Dvelocity_y, p_Denergy)
-
+      bisInterleaveFormat = .true.
     else
-
       ! Set dimensions
       neq  = int(rvectorBlock%NEQ/rvectorBlock%nblocks)
       nvar = rvectorBlock%nblocks
-
-      ! Set pointer
-      call lsysbl_getbase_double(rvectorBlock, p_Ddata)
-
-      ! Get density values
-      call ucd_getVariable(rexport, 'density', nlength=nlength)
-      if (nlength .ne. neq) then
-        call output_line ('Invalid size of data', &
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
-        call sys_halt()
-      end if
-
-      ! Allocate temporal memory
-      allocate(p_Ddensity(neq))
-      call ucd_getVariable(rexport, 'density', p_Ddensity)
-
-      ! Set density variable
-      call setVarBlockFormat(neq, nvar, 1,&
-          p_Ddensity, p_Ddata)
-
-
-      ! Get velocity in x-direction
-      call ucd_getVariable(rexport, 'velocity_X', nlength=nlength)
-      if (nlength .ne. neq) then
-        call output_line ('Invalid size of data', &
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
-        call sys_halt()
-      end if
-
-      ! Allocate temporal memory
-      allocate(p_Dvelocity_x(neq))
-      call ucd_getVariable(rexport, 'velocity_X', p_Dvelocity_x)
-
-      ! Generate momentum in x-direction
-      p_Dvelocity_x = p_Dvelocity_x * p_Ddensity
-
-      ! Set momentum variable in x-direction
-      call setVarBlockFormat(neq, nvar, 2,&
-          p_Dvelocity_x, p_Ddata)
-
-
-      ! Get velocity in y-direction
-      call ucd_getVariable(rexport, 'velocity_Y', nlength=nlength)
-      if (nlength .ne. neq) then
-        call output_line ('Invalid size of data', &
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
-        call sys_halt()
-      end if
-
-      ! Allocate temporal memory
-      allocate(p_Dvelocity_y(neq))
-      call ucd_getVariable(rexport, 'velocity_y', p_Dvelocity_y)
-
-      ! Generate momentum in y-direction
-      p_Dvelocity_y = p_Dvelocity_y * p_Ddensity
-
-      ! Set momentum variable in y-direction
-      call setVarBlockFormat(neq, nvar, 3,&
-          p_Dvelocity_y, p_Ddata)
-
-
-      ! Get total energy
-      call ucd_getVariable(rexport, 'energy', nlength=nlength)
-      if (nlength .ne. neq) then
-        call output_line ('Invalid size of data', &
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
-        call sys_halt()
-      end if
-
-      ! Allocate temporal memory
-      allocate(p_Denergy(neq))
-      call ucd_getVariable(rexport, 'energy', p_Denergy)
-
-      ! Generate total energy
-      p_Denergy = p_Denergy * p_Ddensity
-
-      ! Set energy variable
-      call setVarBlockFormat(neq, nvar, 4,&
-          p_Denergy, p_Ddata)
-
-      ! Deallocate temporal memory
-      deallocate(p_Ddensity, p_Dvelocity_x, p_Dvelocity_y, p_Denergy)
-
+      bisInterleaveFormat = .false.
     end if
+    
+    ! Set pointer
+    call lsysbl_getbase_double(rvectorBlock, p_Ddata)
+    
+    ! Get density values
+    call ucd_getVariable(rexport, 'density', nlength=nlength)
 
+    if (nlength .ne. neq) then
+      call output_line ('Invalid size of data', &
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+      call sys_halt()
+    end if
+    
+    ! Allocate temporal memory
+    allocate(p_Ddensity(neq))
+    call ucd_getVariable(rexport, 'density', p_Ddensity)
+    
+    ! Set density variable
+    if (bisInterleaveFormat) then
+      call setVarInterleaveFormat(neq, nvar, 1, p_Ddensity, p_Ddata)
+    else
+      call setVarBlockFormat(neq, nvar, 1, p_Ddensity, p_Ddata)
+    end if
+    
+    ! Get velocity values
+    do idim = 1, nvar-2
+      select case(idim)
+      case (NDIM1D)
+        call ucd_getVariable(rexport, 'momentum_X', nlength=nlength)
+        if (nlength .eq. -1)&
+            call ucd_getVariable(rexport, 'velocity_X', nlength=nlength)
+      case (NDIM2D)
+        call ucd_getVariable(rexport, 'momentum_Y', nlength=nlength)
+        if (nlength .eq. -1)&
+            call ucd_getVariable(rexport, 'velocity_Y', nlength=nlength)
+      case (NDIM3D)
+        call ucd_getVariable(rexport, 'momentum_Z', nlength=nlength)
+        if (nlength .eq. -1)&
+            call ucd_getVariable(rexport, 'velocity_Z', nlength=nlength)
+      end select
+      
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+        call sys_halt()
+      end if
+      
+      ! Allocate temporal memory
+      allocate(p_Dvelocity(neq))
+      select case(idim)
+      case (NDIM1D)
+        call ucd_getVariable(rexport, 'momentum_X', p_Dvelocity, nlength)
+        if (nlength .eq. -1)&
+            call ucd_getVariable(rexport, 'velocity_X', p_Dvelocity)
+      case (NDIM2D)
+        call ucd_getVariable(rexport, 'momentum_Y', p_Dvelocity, nlength)
+        if (nlength .eq. -1)&
+            call ucd_getVariable(rexport, 'velocity_Y', p_Dvelocity)
+      case (NDIM3D)
+        call ucd_getVariable(rexport, 'momentum_Z', p_Dvelocity, nlength)
+        if (nlength .eq. -1)&
+            call ucd_getVariable(rexport, 'velocity_Z', p_Dvelocity)
+      end select
+      
+      ! Generate momentum (if required)
+      if (nlength .eq. -1) then
+        do ieq = 1, neq
+          p_Dvelocity(ieq) = p_Dvelocity(ieq) * p_Ddensity(ieq)
+        end do
+      end if
+      
+      ! Set momentum variable
+      if (bisInterleaveFormat) then
+        call setVarInterleaveFormat(neq, nvar, idim+1, p_Dvelocity, p_Ddata)
+      else
+        call setVarBlockFormat(neq, nvar, idim+1, p_Dvelocity, p_Ddata)
+      end if
+      
+      ! Deallocate temporal memory
+      deallocate(p_Dvelocity)
+    end do
+       
+    ! Get total energy
+    call ucd_getVariable(rexport, 'total_energy', nlength=nlength)
+    if (nlength .eq. -1)&
+        call ucd_getVariable(rexport, 'energy', nlength=nlength)
+
+    if (nlength .ne. neq) then
+      call output_line ('Invalid size of data', &
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+      call sys_halt()
+    end if
+    
+    ! Allocate temporal memory
+    allocate(p_Denergy(neq))
+    call ucd_getVariable(rexport, 'total_energy', p_Denergy, nlength)
+    if (nlength .eq. -1)&
+        call ucd_getVariable(rexport, 'energy', p_Denergy)
+    
+    ! Generate total energy
+    if (nlength .eq. 1) then
+      do ieq = 1, neq
+        p_Denergy(ieq) = p_Denergy(ieq) * p_Ddensity(ieq)
+      end do
+    end if
+    
+    ! Set energy variable
+    if (bisInterleaveFormat) then
+      call setVarInterleaveFormat(neq, nvar, nvar, p_Denergy, p_Ddata)
+    else
+      call setVarBlockFormat(neq, nvar, nvar, p_Denergy, p_Ddata)
+    end if
+      
+    ! Deallocate temporal memory
+    deallocate(p_Ddensity, p_Denergy)
+    
   contains
 
     ! Here, the working routine follow

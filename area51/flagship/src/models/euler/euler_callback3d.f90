@@ -170,6 +170,8 @@
 
 module euler_callback3d
 
+#include "euler.h"
+
   use collection
   use euler_basic
   use flagship_callback
@@ -183,7 +185,6 @@ module euler_callback3d
   use problem
   use solveraux
   use storage
-  use thermodynamics
 
   implicit none
 
@@ -277,6 +278,135 @@ contains
 
 !</subroutine>
 
+    ! local variables
+#ifdef EULER_USE_IBP
+    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+#else
+    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+#endif
+    real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj
+    integer :: idx
+
+    
+    do idx = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !
+      !      / rho*u         \        / rho*v         \         / rho*w         \
+      !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
+      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
+      !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+
+      ! Compute pressures
+      pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
+      pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
+
+#ifdef EULER_USE_IBP
+      ! Compute fluxes for x-direction
+      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+
+      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+
+      ! Compute fluxes for y-direction
+      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+
+      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+
+      ! Compute fluxes for z-direction
+      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+
+      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+
+      ! Assemble skew-symmetric fluxes
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                         DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
+                                         DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                         DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
+                                         DmatrixCoeffsAtEdge(3,1,idx)*dF3_i )
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+      ! Compute flux difference for x-direction
+      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+
+      ! Compute flux difference for y-direction
+      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+
+      ! Compute flux difference for z-direction
+      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+
+      ! Assemble fluxes
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                          DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
+                                          DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
+                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij)
+#endif
+    end do
+
   end subroutine euler_calcFluxGal3d_sim
 
   !*****************************************************************************
@@ -327,6 +457,80 @@ contains
 
 !</subroutine>
 
+  ! local variables
+  real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+  real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj
+  integer :: idx
+  
+    
+    do idx = 1, size(DfluxesAtEdge,3)
+
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !
+      !      / rho*u         \        / rho*v         \         / rho*w         \
+      !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
+      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
+      !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+
+      ! Compute pressures
+      pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
+      pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
+
+      ! Compute flux difference for x-direction
+      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+
+      ! Compute flux difference for y-direction
+      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+
+      ! Compute flux difference for z-direction
+      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+
+      ! Assemble fluxes
+      DfluxesAtEdge(:,1,idx) =  dscale *&
+          (0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))*dF1_ij+&
+           0.5*(DmatrixCoeffsAtEdge(2,1,idx)-DmatrixCoeffsAtEdge(2,2,idx))*dF2_ij+&
+           0.5*(DmatrixCoeffsAtEdge(3,1,idx)-DmatrixCoeffsAtEdge(3,2,idx))*dF3_ij)
+      DfluxesAtEdge(:,2,idx) = DfluxesAtEdge(:,1,idx)
+    end do
+
   end subroutine euler_calcFluxGalNoBdr3d_sim
 
   !*****************************************************************************
@@ -373,6 +577,179 @@ contains
 !</output>
 
 !</subroutine>
+
+    ! local variables
+#ifdef EULER_USE_IBP
+    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+#else
+    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+#endif
+    real(DP), dimension(NVAR3D) :: Diff
+    real(DP), dimension(NDIM3D) :: a
+    real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj,d_ij,H_ij,q_ij,u_ij,v_ij,w_ij,anorm,vel_ij,c_ij,aux
+    integer :: idx
+
+    
+    do idx = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !
+      !      / rho*u         \        / rho*v         \         / rho*w         \
+      !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
+      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
+      !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+
+      ! Compute pressures
+      pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
+      pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
+
+#ifdef EULER_USE_IBP
+      ! Compute fluxes for x-direction
+      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+
+      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+
+      ! Compute fluxes for y-direction
+      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+
+      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+
+      ! Compute fluxes for z-direction
+      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+
+      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+#else
+      ! Compute flux difference for x-direction
+      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+
+      ! Compute flux difference for y-direction
+      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+
+      ! Compute flux difference for z-direction
+      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+#endif
+
+      !-------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation proportional to the spectral radius
+      !-------------------------------------------------------------------------
+      
+      ! Compute skew-symmetric coefficient
+      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
+
+      ! Compute Roe mean values
+      aux  = ROE_MEAN_RATIO(MYNEWLINE
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),MYNEWLINE
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
+      u_ij = ROE_MEAN_VALUE(ui,uj,aux)
+      v_ij = ROE_MEAN_VALUE(vi,vj,aux)
+      w_ij = ROE_MEAN_VALUE(wi,wj,aux)
+      H_ij = ROE_MEAN_VALUE(MYNEWLINE
+             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)+pi)/MYNEWLINE
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),MYNEWLINE
+             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)+pj)/MYNEWLINE
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx), aux)
+
+      ! Compute auxiliary variables
+      vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
+      q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+
+      ! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+      c_ij   = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+#else
+#error "Speed of sound must be implemented!"
+#endif
+
+      ! Scalar dissipation
+      d_ij = abs(vel_ij) + anorm*c_ij
+
+      ! Multiply the solution difference by the artificial diffusion factor
+      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+
+      !-------------------------------------------------------------------------
+      ! Build both contributions into the fluxes
+      !-------------------------------------------------------------------------
+
+#ifdef EULER_USE_IBP
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                         DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
+                                         DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                         DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
+                                         DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff)
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                          DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
+                                          DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij+ Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
+                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij+ Diff)
+#endif
+    end do
 
   end subroutine euler_calcFluxScDiss3d_sim
 
@@ -423,6 +800,179 @@ contains
 
 !</subroutine>
 
+    ! local variables
+#ifdef EULER_USE_IBP
+    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+#else
+    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+#endif
+    real(DP), dimension(NVAR3D) :: Diff
+    real(DP), dimension(NDIM3D) :: a
+    real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj,d_ij,H_ij,q_ij,u_ij,v_ij,w_ij,aux,c_ij
+    integer :: idx
+
+    
+    do idx = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !
+      !      / rho*u         \        / rho*v         \         / rho*w         \
+      !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
+      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
+      !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+
+      ! Compute pressures
+      pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
+      pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
+
+#ifdef EULER_USE_IBP
+      ! Compute fluxes for x-direction
+      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+
+      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+
+      ! Compute fluxes for y-direction
+      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+
+      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+
+      ! Compute fluxes for z-direction
+      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+
+      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+#else
+      ! Compute flux difference for x-direction
+      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+
+      ! Compute flux difference for y-direction
+      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+
+      ! Compute flux difference for z-direction
+      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+#endif
+
+      !-------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation proportional to the spectral radius
+      !-------------------------------------------------------------------------
+
+      ! Compute skew-symmetric coefficient
+      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      
+      ! Compute Roe mean values
+      aux  = ROE_MEAN_RATIO(MYNEWLINE
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),MYNEWLINE
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
+      u_ij = ROE_MEAN_VALUE(ui,uj,aux)
+      v_ij = ROE_MEAN_VALUE(vi,vj,aux)
+      w_ij = ROE_MEAN_VALUE(vi,vj,aux)
+      H_ij = ROE_MEAN_VALUE(MYNEWLINE
+             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)+pi)/MYNEWLINE
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),MYNEWLINE
+             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)+pj)/MYNEWLINE
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx), aux)
+
+      ! Compute auxiliary variable
+      q_ij = 0.5*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+
+      ! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+#else
+#error "Speed of sound must be implemented!"
+#endif
+      
+      ! Scalar dissipation for x- and y-direction
+      d_ij = ( abs(a(1)*u_ij) + abs(a(1))*c_ij +&
+               abs(a(2)*v_ij) + abs(a(2))*c_ij +&
+               abs(a(3)*w_ij) + abs(a(3))*c_ij )
+
+      ! Multiply the solution difference by the artificial diffusion factor
+      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+
+      !-------------------------------------------------------------------------
+      ! Build both contributions into the fluxes
+      !-------------------------------------------------------------------------
+
+#ifdef EULER_USE_IBP
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                         DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
+                                         DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                         DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
+                                         DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff)
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                          DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
+                                          DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
+                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij + Diff)
+#endif
+    end do
+
   end subroutine euler_calcFluxScDissDiSp3d_sim
 
   !*****************************************************************************
@@ -469,6 +1019,272 @@ contains
 !</output>
 
 !</subroutine>
+
+    ! local variables
+#ifdef EULER_USE_IBP
+    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+#else
+    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+#endif
+    real(DP), dimension(NVAR3D) :: Diff
+    real(DP), dimension(NDIM3D) :: a
+    real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj,u_ij,v_ij,w_ij,H_ij,q_ij,c_ij,c2_ij,vel_ij
+    real(DP) :: aux,aux1,aux2,anorm
+    real(DP) :: l1,l2,l3,l4,l5,w1,w2,w3,w4,w5
+    integer :: idx
+
+    
+    do idx = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !
+      !      / rho*u         \        / rho*v         \         / rho*w         \
+      !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
+      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
+      !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+
+      ! Compute pressures
+      pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
+      pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
+
+#ifdef EULER_USE_IBP
+      ! Compute fluxes for x-direction
+      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+
+      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+
+      ! Compute fluxes for y-direction
+      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+
+      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+
+      ! Compute fluxes for z-direction
+      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+
+      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+#else
+      ! Compute flux difference for x-direction
+      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+
+      ! Compute flux difference for y-direction
+      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+
+      ! Compute flux difference for z-direction
+      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+#endif
+
+      !-------------------------------------------------------------------------
+      ! Evaluate the dissipation tensor by Roe
+      !-------------------------------------------------------------------------
+
+      ! Compute the skew-symmetric coefficient and its norm
+      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      anorm = sqrt(a(1)*a(1)+a(2)*a(2))
+
+      if (anorm .gt. SYS_EPSREAL) then
+        
+        ! Normalize the skew-symmetric coefficient
+        a = a/anorm
+        
+        ! Compute Roe mean values
+        aux  = ROE_MEAN_RATIO(MYNEWLINE
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),MYNEWLINE
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
+        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
+        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
+        w_ij = ROE_MEAN_VALUE(wi,wj,aux)
+        H_ij = ROE_MEAN_VALUE(MYNEWLINE
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)+pi)/MYNEWLINE
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),MYNEWLINE
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)+pj)/MYNEWLINE
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx), aux)
+
+        ! Compute auxiliary variables
+        vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
+        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+
+        ! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+        c2_ij  = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+#else
+#error "Speed of sound must be implemented!"
+#endif
+        c_ij   = sqrt(c2_ij)
+
+        ! Compute eigenvalues
+        l1 = abs(vel_ij-c_ij)
+        l2 = abs(vel_ij)
+        l3 = abs(vel_ij+c_ij)
+        l4 = abs(vel_ij)
+        l5 = abs(vel_ij)
+
+        ! Compute solution difference U_j-U_i
+        Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
+        
+        ! Compute auxiliary quantities for characteristic variables
+        aux1 = (GAMMA-1.0)/2.0/c2_ij*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)-w_ij*Diff(4)+Diff(5))
+        aux2 = 0.5*(vel_ij*Diff(1)-a(1)*Diff(2)-a(2)*Diff(3)-a(3)*Diff(4))/c_ij
+
+        ! Get the dimension with largest coefficient
+        select case(maxloc(a,1))
+        case(1)
+          ! Compute characteristic variables multiplied by the corresponding eigenvalue
+          w1 = l1 * (aux1 + aux2)
+          w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*Diff(1)+&
+                     (GAMMA-1.0)*(u_ij*Diff(2)+v_ij*Diff(3)+w_ij*Diff(4)-Diff(5))/c2_ij)
+          w3 = l3 * (aux1 - aux2)
+          w4 = l4 * ( (v_ij-vel_ij*a(2))*Diff(1)+a(1)*a(2)*Diff(2)+&
+                      (a(2)*a(2)-1.0)*Diff(3)+a(2)*a(3)*Diff(4) )/a(1)
+          w5 = l5 * ( (vel_ij*a(3)-w_ij)*Diff(1)-a(1)*a(3)*Diff(2)-&
+                      a(2)*a(3)*Diff(3)+(1.0-a(3)*a(3))*Diff(4) )/a(1)
+
+          ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+          Diff(1) = anorm * ( w1 + w2 + w3 + w4 )
+          Diff(2) = anorm * ( (u_ij-c_ij*a(1))*w1 + u_ij*w2 + (u_ij+c_ij*a(1))*w3 + a(2)*w4 - a(3)*w5 )
+          Diff(3) = anorm * ( (v_ij-c_ij*a(1))*w1 + v_ij*w2 + (v_ij+c_ij*a(1))*w3 - a(1)*w4 )
+          Diff(4) = anorm * ( (w_ij-c_ij*a(1))*w1 + w_ij*w2 + (w_ij+c_ij*a(1))*w3 + a(2)*w5)
+          Diff(5) = anorm * ( (H_ij-c_ij*vel_ij)*w1 + q_ij*w2 + (H_ij+c_ij*vel_ij)*w3&
+                              + (u_ij*a(2)-v_ij*a(1))*w4 + (w_ij*a(1)-u_ij*a(3))*w5 )
+        case(2)
+          ! Compute characteristic variables multiplied by the corresponding eigenvalue
+          w1 = l1 * (aux1 + aux2)
+          w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*Diff(1)+&
+                     (GAMMA-1.0)*(u_ij*Diff(2)+v_ij*Diff(3)+w_ij*Diff(4)-Diff(5))/c2_ij)
+          w3 = l3 * (aux1 - aux2)
+          w4 = l4 * ( (vel_ij*a(1)-u_ij)*Diff(1)+(1.0-a(1)*a(1))*Diff(2)-&
+                      a(1)*a(2)*Diff(3)-a(1)*a(3)*Diff(4) )/a(2)
+          w5 = l5 * ( (w_ij-vel_ij*a(3))*Diff(1)+a(1)*a(3)*Diff(2)+&
+                      a(2)*a(3)*Diff(3)+(a(3)*a(3)-1.0)*Diff(4) )/a(2)
+
+          ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+          Diff(1) = anorm * ( w1 + w2 + w3 + w4 )
+          Diff(2) = anorm * ( (u_ij-c_ij*a(1))*w1 + u_ij*w2 + (u_ij+c_ij*a(1))*w3 + a(2)*w4 )
+          Diff(3) = anorm * ( (v_ij-c_ij*a(1))*w1 + v_ij*w2 + (v_ij+c_ij*a(1))*w3 - a(1)*w4 + a(3)*w5 )
+          Diff(4) = anorm * ( (w_ij-c_ij*a(1))*w1 + w_ij*w2 + (w_ij+c_ij*a(1))*w3 - a(2)*w5)
+          Diff(5) = anorm * ( (H_ij-c_ij*vel_ij)*w1 + q_ij*w2 + (H_ij+c_ij*vel_ij)*w3&
+                              + (u_ij*a(2)-v_ij*a(1))*w4 + (v_ij*a(3)-w_ij*a(2))*w5 )
+        case(3)
+          ! Compute characteristic variables multiplied by the corresponding eigenvalue
+          w1 = l1 * (aux1 + aux2)
+          w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*Diff(1)+&
+                     (GAMMA-1.0)*(u_ij*Diff(2)+v_ij*Diff(3)+w_ij*Diff(4)-Diff(5))/c2_ij)
+          w3 = l3 * (aux1 - aux2)
+          w4 = l4 * ( (u_ij-vel_ij*a(1))*Diff(1)+(a(1)*a(1)-11.0)*Diff(2)+&
+                      a(1)*a(2)*Diff(3)+a(1)*a(3)*Diff(4) )/a(3)
+          w5 = l5 * ( (vel_ij*a(2)-v_ij)*Diff(1)-a(1)*a(2)*Diff(2)+&
+                      (1.0-a(2)*a(2))*Diff(3)-a(2)*a(3)*Diff(4) )/a(3)
+
+          ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+          Diff(1) = anorm * ( w1 + w2 + w3 + w4 )
+          Diff(2) = anorm * ( (u_ij-c_ij*a(1))*w1 + u_ij*w2 + (u_ij+c_ij*a(1))*w3 - a(3)*w4 )
+          Diff(3) = anorm * ( (v_ij-c_ij*a(1))*w1 + v_ij*w2 + (v_ij+c_ij*a(1))*w3 + a(3)*w5 )
+          Diff(4) = anorm * ( (w_ij-c_ij*a(1))*w1 + w_ij*w2 + (w_ij+c_ij*a(1))*w3 + a(1)*w4 - a(2)*w5)
+          Diff(5) = anorm * ( (H_ij-c_ij*vel_ij)*w1 + q_ij*w2 + (H_ij+c_ij*vel_ij)*w3&
+                              + (w_ij*a(1)-u_ij*a(3))*w4 + (v_ij*a(3)-w_ij*a(2))*w5 )
+        end select
+
+        !-----------------------------------------------------------------------
+        ! Build both contributions into the fluxes
+        !-----------------------------------------------------------------------
+
+#ifdef EULER_USE_IBP
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
+                                           DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
+                                           DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff)
+        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
+                                            DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij + Diff)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
+                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij + Diff)
+#endif
+      else
+        
+#ifdef EULER_USE_IBP
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
+                                           DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
+                                           DmatrixCoeffsAtEdge(3,1,idx)*dF3_i)
+        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
+                                            DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
+                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij)
+#endif
+      end if
+    end do
 
   end subroutine euler_calcFluxRoeDiss3d_sim
 
@@ -519,6 +1335,202 @@ contains
 
 !</subroutine>
 
+    ! local variables
+#ifdef EULER_USE_IBP
+    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+#else
+    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+#endif
+    real(DP), dimension(NVAR3D) :: Diff1,Diff2,Diff3
+    real(DP), dimension(NDIM3D) :: a
+    real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj,u_ij,v_ij,w_ij,H_ij,q_ij,c_ij,c2_ij,vel_ij
+    real(DP) :: aux,aux1,aux2,anorm
+    real(DP) :: l1,l2,l3,l4,l5,w1,w2,w3,w4,w5
+    integer :: idx
+    
+    do idx = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !
+      !      / rho*u         \        / rho*v         \         / rho*w         \
+      !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
+      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
+      !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+
+      ! Compute pressures
+      pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
+      pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
+
+#ifdef EULER_USE_IBP
+      ! Compute fluxes for x-direction
+      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+
+      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+
+      ! Compute fluxes for y-direction
+      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+
+      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+
+      ! Compute fluxes for z-direction
+      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+
+      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+#else
+      ! Compute flux difference for x-direction
+      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+
+      ! Compute flux difference for y-direction
+      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+
+      ! Compute flux difference for z-direction
+      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+#endif
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the dissipation tensor by Roe
+      !-------------------------------------------------------------------------
+
+      ! Compute the skew-symmetric coefficient and its norm
+      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      anorm = sqrt(a(1)*a(1)+a(2)*a(2))
+
+      if (anorm .gt. SYS_EPSREAL) then
+        
+        ! Normalize the skew-symmetric coefficient
+        a = abs(a)
+        
+        ! Compute Roe mean values
+        aux  = ROE_MEAN_RATIO(MYNEWLINE
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),MYNEWLINE
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
+        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
+        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
+        w_ij = ROE_MEAN_VALUE(wi,wj,aux)
+        H_ij = ROE_MEAN_VALUE(MYNEWLINE
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)+pi)/MYNEWLINE
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),MYNEWLINE
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)+pj)/MYNEWLINE
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx), aux)
+
+        ! Compute auxiliary variables
+        q_ij = 0.5*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+
+        ! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+        c2_ij  = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+#else
+#error "Speed of sound must be implemented!"
+#endif
+        c_ij   = sqrt(c2_ij)
+
+        ! ***      ***
+        ! *** TODO ***
+        ! ***      ***
+
+        !-----------------------------------------------------------------------
+        ! Build both contributions into the fluxes
+        !-----------------------------------------------------------------------
+
+#ifdef EULER_USE_IBP
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
+                                           DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
+                                           DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff1+Diff2+Diff3)
+        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
+                                            DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij + Diff1+Diff2+Diff3)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
+                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij + Diff1+Diff2+Diff3)
+#endif
+      else
+        
+#ifdef EULER_USE_IBP
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
+                                           DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
+                                           DmatrixCoeffsAtEdge(3,1,idx)*dF3_i)
+        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
+                                            DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
+                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij)
+#endif
+      end if
+    end do
+
   end subroutine euler_calcFluxRoeDissDiSp3d_sim
 
   !*****************************************************************************
@@ -565,6 +1577,169 @@ contains
 !</output>
 
 !</subroutine>
+
+    ! local variables
+#ifdef EULER_USE_IBP
+    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+#else
+    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+#endif
+    real(DP), dimension(NVAR3D) :: Diff
+    real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj,d_ij,ci,cj,Ei,Ej
+    integer :: idx
+
+    
+    do idx = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !
+      !      / rho*u         \        / rho*v         \         / rho*w         \
+      !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
+      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
+      !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+
+      ! Compute pressures
+      pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
+      pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
+
+#ifdef EULER_USE_IBP
+      ! Compute fluxes for x-direction
+      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+
+      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+
+      ! Compute fluxes for y-direction
+      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+
+      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+
+      ! Compute fluxes for z-direction
+      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+
+      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+#else
+      ! Compute flux difference for x-direction
+      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+
+      ! Compute flux difference for y-direction
+      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+
+      ! Compute flux difference for z-direction
+      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+#endif
+
+      !---------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation of Rusanov type
+      !---------------------------------------------------------------------------
+      
+      ! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL))
+#else
+#error "Speed of sound must be implemented!"
+#endif
+      
+      ! Scalar dissipation for the Rusanov flux
+      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
+                      DmatrixCoeffsAtEdge(2,1,idx)*vj+&
+                      DmatrixCoeffsAtEdge(3,1,idx)*wj)+&
+                 sqrt(DmatrixCoeffsAtEdge(1,1,idx)**2+&
+                      DmatrixCoeffsAtEdge(2,1,idx)**2+&
+                      DmatrixCoeffsAtEdge(3,1,idx)**2)*cj,&
+                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui+&
+                      DmatrixCoeffsAtEdge(2,2,idx)*vi+&
+                      DmatrixCoeffsAtEdge(3,2,idx)*wi)+&
+                 sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
+                      DmatrixCoeffsAtEdge(2,2,idx)**2+&
+                      DmatrixCoeffsAtEdge(3,2,idx)**2)*ci )
+
+      ! Multiply the solution difference by the artificial diffusion factor
+      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+
+      !-------------------------------------------------------------------------
+      ! Build both contributions into the fluxes
+      !-------------------------------------------------------------------------
+      
+#ifdef EULER_USE_IBP
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                         DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
+                                         DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                         DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
+                                         DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff)
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                          DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
+                                          DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
+                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij + Diff)
+#endif
+    end do
 
   end subroutine euler_calcFluxRusDiss3d_sim
 
@@ -613,6 +1788,169 @@ contains
 !</output>
 
 !</subroutine>
+
+    ! local variables
+#ifdef EULER_USE_IBP
+    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+#else
+    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+#endif
+    real(DP), dimension(NVAR3D) :: Diff
+    real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj,d_ij,ci,cj,Ei,Ej
+    integer :: idx
+
+    
+    do idx = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !
+      !      / rho*u         \        / rho*v         \         / rho*w         \
+      !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
+      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
+      !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
+      !-------------------------------------------------------------------------
+
+      ! Compute velocities
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+
+      ! Compute pressures
+      pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
+      pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
+
+#ifdef EULER_USE_IBP
+      ! Compute fluxes for x-direction
+      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+
+      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+
+      ! Compute fluxes for y-direction
+      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+
+      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+
+      ! Compute fluxes for z-direction
+      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+
+      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+#else
+      ! Compute flux difference for x-direction
+      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+
+      ! Compute flux difference for y-direction
+      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+
+      ! Compute flux difference for z-direction
+      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+#endif
+
+      !-------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation of Rusanov type
+      !-------------------------------------------------------------------------
+
+      ! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL))
+#else
+#error "Speed of sound must be implemented!"
+#endif
+      
+      ! Scalar dissipation
+      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
+                  abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
+                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
+                  abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )&
+           + max( abs(DmatrixCoeffsAtEdge(2,1,idx)*vj)+&
+                  abs(DmatrixCoeffsAtEdge(2,1,idx))*cj,&
+                  abs(DmatrixCoeffsAtEdge(2,2,idx)*vi)+&
+                  abs(DmatrixCoeffsAtEdge(2,2,idx))*ci )&
+           + max( abs(DmatrixCoeffsAtEdge(3,1,idx)*wj)+&
+                  abs(DmatrixCoeffsAtEdge(3,1,idx))*cj,&
+                  abs(DmatrixCoeffsAtEdge(3,2,idx)*wi)+&
+                  abs(DmatrixCoeffsAtEdge(3,2,idx))*ci )
+
+      ! Multiply the solution difference by the artificial diffusion factor
+      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+      
+      !-------------------------------------------------------------------------
+      ! Build both contributions into the fluxes
+      !-------------------------------------------------------------------------
+
+#ifdef EULER_USE_IBP
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                         DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
+                                         DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                         DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
+                                         DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff)
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+#else
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                          DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
+                                          DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
+                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij + Diff)
+#endif
+    end do
 
   end subroutine euler_calcFluxRusDissDiSp3d_sim
 
@@ -1213,8 +2551,10 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(1,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(1,idx)
+      DtransformedFluxesAtEdge(1,1,idx) =&
+          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =&
+         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
     end do
 
   end subroutine euler_trafoFluxDensity3d_sim
@@ -1257,7 +2597,9 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) = DdataAtEdge(1,2,idx)-DdataAtEdge(1,1,idx)
+      DtransformedDataAtEdge(1,idx) =&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
     end do
 
   end subroutine euler_trafoDiffDensity3d_sim
@@ -1305,8 +2647,10 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Transformed total energy fluxes
-      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(5,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(5,idx)
+      DtransformedFluxesAtEdge(1,1,idx) =&
+          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =&
+         -TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
     end do
 
   end subroutine euler_trafoFluxEnergy3d_sim
@@ -1349,7 +2693,9 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Transformed total density difference
-      DtransformedDataAtEdge(1,idx) = DdataAtEdge(5,2,idx)-DdataAtEdge(5,1,idx)
+      DtransformedDataAtEdge(1,idx) =&
+          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
     end do
 
   end subroutine euler_trafoDiffEnergy3d_sim
@@ -1398,22 +2744,30 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Compute velocities
-      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
-      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
-      wi = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
-      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
-      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
-      wj = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
       ! Transformed pressure fluxes
-      DtransformedFluxesAtEdge(1,1,idx) = G1*(0.5_DP*(ui*ui+vi*vi+wi*wi)*DfluxesAtEdge(1,idx)-&
-                                              ui*DfluxesAtEdge(2,idx)-&
-                                              vi*DfluxesAtEdge(3,idx)-&
-                                              wi*DfluxesAtEdge(4,idx)+DfluxesAtEdge(5,idx))
-      DtransformedFluxesAtEdge(1,2,idx) =-G1*(0.5_DP*(uj*uj+vj*vj+wj*wj)*DfluxesAtEdge(1,idx)-&
-                                              uj*DfluxesAtEdge(2,idx)-&
-                                              vj*DfluxesAtEdge(3,idx)-&
-                                              wj*DfluxesAtEdge(4,idx)+DfluxesAtEdge(5,idx))
+#ifdef PERFECT_GAS
+      DtransformedFluxesAtEdge(1,1,idx) = (GAMMA-1.0)*&
+          (0.5*(ui*ui+vi*vi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          wi*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)+&
+          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))
+      DtransformedFluxesAtEdge(1,2,idx) =-(GAMMA-1.0)*&
+          (0.5*(uj*uj+vj*vj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          wj*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)+&
+          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))
+#else
+#error "Pressure for nonperfect gas must be implemented!"
+#endif
     end do
 
   end subroutine euler_trafoFluxPressure3d_sim
@@ -1451,23 +2805,14 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: pi,pj
     integer :: idx
 
     do idx = 1, size(DdataAtEdge,3)
       
-      ! Compute pressures
-      pi = G1*(DdataAtEdge(5,1,idx)-0.5_DP*(&
-          DdataAtEdge(2,1,idx)*DdataAtEdge(2,1,idx)+&
-          DdataAtEdge(3,1,idx)*DdataAtEdge(3,1,idx)+&
-          DdataAtEdge(4,1,idx)*DdataAtEdge(4,1,idx))/DdataAtEdge(1,1,idx))
-      pj = G1*(DdataAtEdge(5,2,idx)-0.5_DP*(&
-          DdataAtEdge(2,2,idx)*DdataAtEdge(2,2,idx)+&
-          DdataAtEdge(3,2,idx)*DdataAtEdge(3,2,idx)+&
-          DdataAtEdge(4,2,idx)*DdataAtEdge(4,2,idx))/DdataAtEdge(1,2,idx))
-     
       ! Transformed pressure difference
-      DtransformedDataAtEdge(1,idx) = pj-pi
+      DtransformedDataAtEdge(1,idx) =&
+          PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)-&
+          PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
     end do
 
   end subroutine euler_trafoDiffPressure3d_sim
@@ -1516,30 +2861,43 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Compute velocities
-      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
-      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
-      wi = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
-      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
-      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
-      wj = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
+      
       ! Transformed velocity fluxes in x-direction
-      DtransformedFluxesAtEdge(1,1,idx) = (DfluxesAtEdge(2,idx)-&
-                                           ui*DfluxesAtEdge(1,idx))/DdataAtEdge(1,1,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =-(DfluxesAtEdge(2,idx)-&
-                                           uj*DfluxesAtEdge(1,idx))/DdataAtEdge(1,2,idx)
+      DtransformedFluxesAtEdge(1,1,idx) =&
+          (X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          ui*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =&
+         -(X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          uj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
       ! Transformed velocity fluxes in y-direction
-      DtransformedFluxesAtEdge(2,1,idx) = (DfluxesAtEdge(3,idx)-&
-                                           vi*DfluxesAtEdge(1,idx))/DdataAtEdge(1,1,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =-(DfluxesAtEdge(3,idx)-&
-                                           vj*DfluxesAtEdge(1,idx))/DdataAtEdge(1,2,idx)
+      DtransformedFluxesAtEdge(2,1,idx) =&
+          (Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          vi*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      DtransformedFluxesAtEdge(2,2,idx) =&
+         -(Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          vj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
       ! Transformed velocity fluxes in z-direction
-      DtransformedFluxesAtEdge(3,1,idx) = (DfluxesAtEdge(4,idx)-&
-                                           wi*DfluxesAtEdge(1,idx))/DdataAtEdge(1,1,idx)
-      DtransformedFluxesAtEdge(3,2,idx) =-(DfluxesAtEdge(4,idx)-&
-                                           wj*DfluxesAtEdge(1,idx))/DdataAtEdge(1,2,idx)
+      DtransformedFluxesAtEdge(3,1,idx) =&
+          (Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          wi*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      DtransformedFluxesAtEdge(3,2,idx) =&
+         -(Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          wj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
     end do
     
   end subroutine euler_trafoFluxVelocity3d_sim
@@ -1582,16 +2940,19 @@ contains
     do idx = 1, size(DdataAtEdge,3)
 
       ! Transformed velocity difference in x-direction
-      DtransformedDataAtEdge(1,idx) = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)-&
-                                      DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      DtransformedDataAtEdge(1,idx) =&
+          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       ! Transformed velocity difference in y-direction
-      DtransformedDataAtEdge(2,idx) = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)-&
-                                      DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      DtransformedDataAtEdge(2,idx) =&
+          Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       ! Transformed velocity difference in z-direction
-      DtransformedDataAtEdge(3,idx) = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-&
-                                      DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
+      DtransformedDataAtEdge(3,idx) =&
+          Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
     end do
     
   end subroutine euler_trafoDiffVelocity3d_sim
@@ -1639,16 +3000,22 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Transformed momentum fluxes in x-direction
-      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(2,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(2,idx)
+      DtransformedFluxesAtEdge(1,1,idx) =&
+          X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =&
+         -X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
 
       ! Transformed momentum fluxes in y-direction
-      DtransformedFluxesAtEdge(2,1,idx) = DfluxesAtEdge(3,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =-DfluxesAtEdge(3,idx)
+      DtransformedFluxesAtEdge(2,1,idx) =&
+          Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
+      DtransformedFluxesAtEdge(2,2,idx) =&
+         -Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
 
       ! Transformed momentum fluxes in z-direction
-      DtransformedFluxesAtEdge(3,1,idx) = DfluxesAtEdge(4,idx)
-      DtransformedFluxesAtEdge(3,2,idx) =-DfluxesAtEdge(4,idx)
+      DtransformedFluxesAtEdge(3,1,idx) =&
+          Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
+      DtransformedFluxesAtEdge(3,2,idx) =&
+         -Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
     end do
     
   end subroutine euler_trafoFluxMomentum3d_sim
@@ -1691,13 +3058,19 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Transformed momentum difference in x-direction
-      DtransformedDataAtEdge(1,idx) = DdataAtEdge(2,2,idx)-DdataAtEdge(2,1,idx)
+      DtransformedDataAtEdge(1,idx) =&
+          X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       ! Transformed momentum difference in y-direction
-      DtransformedDataAtEdge(2,idx) = DdataAtEdge(3,2,idx)-DdataAtEdge(3,1,idx)
+      DtransformedDataAtEdge(2,idx) =&
+          Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       ! Transformed momentum difference in z-direction
-      DtransformedDataAtEdge(3,idx) = DdataAtEdge(4,2,idx)-DdataAtEdge(4,1,idx)
+      DtransformedDataAtEdge(3,idx) =&
+          Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
     end do
     
   end subroutine euler_trafoDiffMomentum3d_sim
@@ -1745,12 +3118,16 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(1,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(1,idx)
+      DtransformedFluxesAtEdge(1,1,idx) =&
+          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =&
+         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
 
       ! Transformed total energy fluxes
-      DtransformedFluxesAtEdge(2,1,idx) = DfluxesAtEdge(5,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =-DfluxesAtEdge(5,idx)
+      DtransformedFluxesAtEdge(2,1,idx) =&
+          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
+      DtransformedFluxesAtEdge(2,2,idx) =&
+         -TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
     end do
 
   end subroutine euler_trafoFluxDenEng3d_sim
@@ -1793,10 +3170,14 @@ contains
     do idx = 1, size(DdataAtEdge,3)
 
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) = DdataAtEdge(1,2,idx)-DdataAtEdge(1,1,idx)
+      DtransformedDataAtEdge(1,idx) =&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       ! Transformed total energy difference
-      DtransformedDataAtEdge(2,idx) = DdataAtEdge(5,2,idx)-DdataAtEdge(5,1,idx)
+      DtransformedDataAtEdge(2,idx) =&
+          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
     end do
 
   end subroutine euler_trafoDiffDenEng3d_sim
@@ -1845,26 +3226,36 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Compute velocities
-      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
-      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
-      wi = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
-      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
-      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
-      wj = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(1,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(1,idx)
-
+      DtransformedFluxesAtEdge(1,1,idx) =&
+          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =&
+         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
+      
       ! Transformed pressure fluxes
-      DtransformedFluxesAtEdge(2,1,idx) = G1*(0.5_DP*(ui*ui+vi*vi+wi*wi)*DfluxesAtEdge(1,idx)-&
-                                          ui*DfluxesAtEdge(2,idx)-&
-                                          vi*DfluxesAtEdge(3,idx)-&
-                                          wi*DfluxesAtEdge(4,idx)+DfluxesAtEdge(5,idx))
-      DtransformedFluxesAtEdge(2,2,idx) =-G1*(0.5_DP*(uj*uj+vj*vj+wj*wj)*DfluxesAtEdge(1,idx)-&
-                                          uj*DfluxesAtEdge(2,idx)-&
-                                          vj*DfluxesAtEdge(3,idx)-&
-                                          wj*DfluxesAtEdge(4,idx)+DfluxesAtEdge(5,idx))
+#ifdef PERFECT_GAS
+      DtransformedFluxesAtEdge(2,1,idx) = (GAMMA-1.0)*&
+          (0.5*(ui*ui+vi*vi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          wi*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)+&
+          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))
+      DtransformedFluxesAtEdge(2,2,idx) =-(GAMMA-1.0)*&
+          (0.5*(uj*uj+vj*vj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          wj*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)+&
+          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))
+#else
+#error "Pressure for nonperfect gas must be implemented!"
+#endif
     end do
 
   end subroutine euler_trafoFluxDenPre3d_sim
@@ -1902,26 +3293,19 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: pi,pj
     integer :: idx
 
     do idx = 1, size(DdataAtEdge,3)
 
-      ! Compute pressures
-      pi = G1*(DdataAtEdge(5,1,idx)-0.5_DP*(&
-          DdataAtEdge(2,1,idx)*DdataAtEdge(2,1,idx)+&
-          DdataAtEdge(3,1,idx)*DdataAtEdge(3,1,idx)+&
-          DdataAtEdge(4,1,idx)*DdataAtEdge(4,1,idx))/DdataAtEdge(1,1,idx))
-      pj = G1*(DdataAtEdge(5,2,idx)-0.5_DP*(&
-          DdataAtEdge(2,2,idx)*DdataAtEdge(2,2,idx)+&
-          DdataAtEdge(3,2,idx)*DdataAtEdge(3,2,idx)+&
-          DdataAtEdge(4,2,idx)*DdataAtEdge(4,2,idx))/DdataAtEdge(1,2,idx))
-      
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) = DdataAtEdge(1,2,idx)-DdataAtEdge(1,1,idx)
+      DtransformedDataAtEdge(1,idx) =&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       
       ! Transformed pressure difference
-      DtransformedDataAtEdge(2,idx) = pj-pi
+      DtransformedDataAtEdge(2,idx) =&
+          PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)-&
+          PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
     end do
     
   end subroutine euler_trafoDiffDenPre3d_sim
@@ -1970,44 +3354,66 @@ contains
     do idx = 1, size(DdataAtEdge,3)
       
       ! Compute velocities
-      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
-      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
-      wi = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
-      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
-      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
-      wj = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(1,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(1,idx)
+      DtransformedFluxesAtEdge(1,1,idx) =&
+          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =&
+         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
 
       ! Transformed velocity fluxes in x-direction
-      DtransformedFluxesAtEdge(2,1,idx) = (DfluxesAtEdge(2,idx)-&
-                                           ui*DfluxesAtEdge(1,idx))/DdataAtEdge(1,1,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =-(DfluxesAtEdge(2,idx)-&
-                                           uj*DfluxesAtEdge(1,idx))/DdataAtEdge(1,2,idx)
+      DtransformedFluxesAtEdge(2,1,idx) =&
+          (X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          ui*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      DtransformedFluxesAtEdge(2,2,idx) =&
+         -(X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          uj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
       ! Transformed velocity fluxes in y-direction
-      DtransformedFluxesAtEdge(3,1,idx) = (DfluxesAtEdge(3,idx)-&
-                                           vi*DfluxesAtEdge(1,idx))/DdataAtEdge(1,1,idx)
-      DtransformedFluxesAtEdge(3,2,idx) =-(DfluxesAtEdge(3,idx)-&
-                                           vj*DfluxesAtEdge(1,idx))/DdataAtEdge(1,2,idx)
+      DtransformedFluxesAtEdge(3,1,idx) =&
+          (Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          vi*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      DtransformedFluxesAtEdge(3,2,idx) =&
+         -(Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          vj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
       ! Transformed velocity fluxes in z-direction
-      DtransformedFluxesAtEdge(4,1,idx) = (DfluxesAtEdge(4,idx)-&
-                                           wi*DfluxesAtEdge(1,idx))/DdataAtEdge(1,1,idx)
-      DtransformedFluxesAtEdge(4,2,idx) =-(DfluxesAtEdge(4,idx)-&
-                                           wj*DfluxesAtEdge(1,idx))/DdataAtEdge(1,2,idx)
+      DtransformedFluxesAtEdge(4,1,idx) =&
+          (Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          wi*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      DtransformedFluxesAtEdge(4,2,idx) =&
+         -(Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          wj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))/&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
       ! Transformed pressure fluxes
-      DtransformedFluxesAtEdge(5,1,idx) = G1*(0.5_DP*(ui*ui+vi*vi+wi*wi)*DfluxesAtEdge(1,idx)-&
-                                              ui*DfluxesAtEdge(2,idx)-&
-                                              vi*DfluxesAtEdge(3,idx)-&
-                                              wi*DfluxesAtEdge(4,idx)+DfluxesAtEdge(5,idx))
-      DtransformedFluxesAtEdge(5,2,idx) =-G1*(0.5_DP*(uj*uj+vj*vj+wj*wj)*DfluxesAtEdge(1,idx)-&
-                                              uj*DfluxesAtEdge(2,idx)-&
-                                              vj*DfluxesAtEdge(3,idx)-&
-                                              wj*DfluxesAtEdge(4,idx)+DfluxesAtEdge(5,idx))
+#ifdef PERFECT_GAS
+      DtransformedFluxesAtEdge(5,1,idx) =(GAMMA-1.0)*&
+          (0.5*(ui*ui+vi*vi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          wi*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)+&
+          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))
+      DtransformedFluxesAtEdge(5,2,idx) =-(GAMMA-1.0)*&
+          (0.5*(uj*uj+vj*vj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)-&
+          wj*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)+&
+          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx))
+#else
+#error "Pressure for nonperfect gas must be implemented!"
+#endif
     end do
 
   end subroutine euler_trafoFluxDenPreVel3d_sim
@@ -2045,38 +3451,34 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: pi,pj
     integer :: idx
 
     do idx = 1, size(DdataAtEdge,3)
-
-      ! Compute pressures
-      pi = G1*(DdataAtEdge(5,1,idx)-0.5_DP*(&
-          DdataAtEdge(2,1,idx)*DdataAtEdge(2,1,idx)+&
-          DdataAtEdge(3,1,idx)*DdataAtEdge(3,1,idx)+&
-          DdataAtEdge(4,1,idx)*DdataAtEdge(4,1,idx))/DdataAtEdge(1,1,idx))
-      pj = G1*(DdataAtEdge(5,2,idx)-0.5_DP*(&
-          DdataAtEdge(2,2,idx)*DdataAtEdge(2,2,idx)+&
-          DdataAtEdge(3,2,idx)*DdataAtEdge(3,2,idx)+&
-          DdataAtEdge(4,2,idx)*DdataAtEdge(4,2,idx))/DdataAtEdge(1,2,idx))
       
       ! Transformed density difference
-      DtransformedDataAtEdge(2,idx) = DdataAtEdge(1,2,idx)-DdataAtEdge(1,1,idx)
+      DtransformedDataAtEdge(2,idx) =&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       ! Transformed velocity difference in x-direction
-      DtransformedDataAtEdge(2,idx) = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)-&
-                                      DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      DtransformedDataAtEdge(2,idx) =&
+          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       
       ! Transformed velocity difference in y-direction
-      DtransformedDataAtEdge(3,idx) = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)-&
-                                      DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      DtransformedDataAtEdge(3,idx) =&
+          Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       ! Transformed velocity difference in z-direction
-      DtransformedDataAtEdge(4,idx) = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-&
-                                      DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
+      DtransformedDataAtEdge(4,idx) =&
+          Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)-&
+          Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       ! Transformed pressure difference
-      DtransformedDataAtEdge(5,idx) = pj-pi
+      DtransformedDataAtEdge(5,idx) =&
+          PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)-&
+          PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
     end do
 
   end subroutine euler_trafoDiffDenPreVel3d_sim

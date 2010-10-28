@@ -19,7 +19,7 @@
 !#              \rho{\bf v}\otimes{\bf v}+o{\mathcal I},
 !#              \rho H{\bf v}]^T$$
 !#
-!# in the two- or three-dimensional domain $\Omega$.
+!# in the one-, two- or three-dimensional domain $\Omega$.
 !#
 !# The spatial discretisation is perform by means of the algebraic
 !# flux correction (AFC) paradigm by Kuzmin, Moeller and Turek. In
@@ -2673,7 +2673,7 @@ contains
     call parlst_getvalue_string(rparlist,&
         trim(soutputName), 'sucdimport', sucdimport, '')
     
-    ! Do we have to read in a precomdputed solution?
+    ! Do we have to read in a pre-computed solution?
     if (trim(sucdimport) .ne. '') then
       call ucd_readGMV(sucdimport, rimport, p_rproblemLevel%rtriangulation)
       call ucd_getSimulationTime(rimport, rtimestep%dinitialTime)
