@@ -79,43 +79,60 @@ case ${id} in
 	    case "$family" in
 		4) 
 		    case "$model" in
-			0|1|3|7|8|9) core="DX";;
-			2|4|5) core="SX";;
+			0|1|3|7|8|9) core="DX";; # Intel 80486DX/DX2/DX4
+			2|4|5) core="SX";;       # Intel 80486SX/SL (no math coprocessor)
 		    esac
 		    cpu="i486";;
 		5) 
 		    case "$model" in
-			0|1|2|3|7) core="pentium";;
-			4|8) core="pentium-mmx";;
+			0|1|2|3) core="pentium";;   # Intel Pentium (P5/P54CS/Overdrive)
+			4|7|8) core="pentium-mmx";; # Intel Pentium MMX (P54C/P55C)
 		    esac
 		    cpu="pentium";;
 		6) 
 		    case "$model" in
-			0|1) cpu="pentiumpro" core="katmai";;
-			3|5|6) cpu="pentium2" core="katmai";;
-			7) cpu="pentium3" core="catmai";;
-			8|10|11) cpu="pentium3" core="coppermine";;
-			9|13) cpu="pentiumm" core="banias";;
-			14) cpu="coresolo" core="banias";;
-			15) cpu="coreduo" core="core2";;
-			23) cpu="penryn";;
-			26) cpu="nehalem";;
+			0|1) cpu="pentiumpro";;                # Intel Pentium Pro
+			3) cpu="pentium2" core="klamath";;     # Intel Pentium II (Klamath)
+			4|5) cpu="pentium2" core="deschutes";; # Intel Pentium II (Deschutes)
+			6) cpu="pentium2" core="mendocino";;   # Intel Pentium II (Mendocino)
+			7) cpu="pentium3" core="katmai";;      # Intel Pentium III / III Xeon (Katmai)
+			8) cpu="pentium3" core="coppermine";;  # Intel Pentium III / III Xeon / Celeron (Coppermine) and mobile versions
+			9) cpu="pentiumm" core="banias";;      # Intel Pentium M / Celeron M (Banias)
+			10) cpu="pentium3" core="cascades";;   # Intel Pentium III Xeon (Cascades)
+			11) cpu="pentium3" core="tualatin";;   # Intel Pentium III / Celeron (Tualatin)
+			13) cpu="pentiumm" core="dothan";;     # Intel Pentium M / Celeron M (Dothan)
+			14) cpu="coresolo" core="yonah";;      # Intel Core Solo / Core Duo (Yonah) and mobil versions
+			15|21|22) cpu="coreduo" core="core2";; # Intel Core Duo / Core 2 Duo (Conroe / Merom / Allendale) /
+                                                               #       Core 2 Extreme Dual-/Quad-Core (Conroe / Kentsfield / Clovertown)
+                                                               #       and Xeon (Kentsfield / Clovertown / Woodcrest / Tigerton)
+                                                               #       as well as mobile versions
+			23|29) cpu="penryn";;                  # Intel Core 2 Duo (Wolfdale / Penryn / Yorkfield) 
+                                                               #       and Xeon (Wolfdale / Yorkfield / Hapertown / Dunnington)
+                                                               #       as well as mobile versions
+			26|30|37|44|46) cpu="nehalem";;        # Intel Core (Bloomfield / Lynnfield / Clarkdale / Arrandale / Gulftown) 
+                                                               #       and Xeon (Bloomfield / Gainestown / Westmere-EP / Beckton /
+                                                               #       Jasper Forest / Clarkdale) as well as mobile versions
+			28) cpu="atom";;                       # Intel Atom
 		    esac
 		    ;;
-		7) 
-		    case "$model" in
-			0|1) cpu="itanium";;
-			2) cpu="itanium2";;
-		    esac
-		    ;;
+		7) cpu="itanium";; # Intel Itanium (Merced)
 		15) 
 		    case "$model" in
-			0|1|2) cpu="pentium4" core="northwood";;
-			3) cpu="pentium4" core="prescott";;
-			4) cpu="pentium4" core="nocona";;
+			0|1) cpu="pentium4" core="willamette";; # Intel Pentium 4 (Willamette)
+			2) cpu="pentium4" core="northwood";;    # Intel Pentium 4 (Northwood) / Xeon (MP) (Prestonia / Gallatin)
+			3|4|6) cpu="pentium4"                   # Intel Pentium 4 (Prescott / Cedar Mill) / Xeon (Nocona / Tulsa)
+			    case "$arch" in
+				pc)
+				    core="prescott";;           # Intel Pentium 4 (Prescott / Cedar Mill) and movile versions
+				pc64)
+				    core="nocona";;             # Intel Xeon (Nocona / Tulsa)
+			    esac
+			    ;;
 			*) cpu="itanium";;
 		    esac
 		    ;;
+		31) cpu="itanium2";; # Intel Itanium2 (McKinley / Madison / Deerfield / Hondo / Madison / Fanwood)
+		32) cpu="itanium2";; # Intel Itanium2 Dual-Core Processor 9x00 ( Montecito / Millington / Montvale / Tukwila)
 		*) cpu="i386";;
 	    esac
 	    ;;
@@ -124,38 +141,56 @@ case ${id} in
 	# AMD
 	AuthenticAMD)
 	    case "$family" in
-		4) cpu="amd486";;
+		4) cpu="amd486";; # AMD 80486
 		5) 
 		    case "$model" in
-			0|1|2|3) cpu="k5";;
-			6|7) cpu="k6";;
-			8) cpu="k6" core="k6-2";;
-			9) cpu="k6" core="k6-3";;
-			13) cpu="k6" core="k6-2";;
+			0|1|2|3) cpu="k5";;        # AMD 5k86
+			6|7) cpu="k6";;            # AMD K6
+			8) cpu="k6" core="k6-2";;  # AMD K6-2 (Chomper)
+			9) cpu="k6" core="k6-3";;  # AMD K6-III (Sharptooth)
+			13) cpu="k6" core="k6-2";; # AMD K6-2+, K6-III+
 		    esac
 		    ;;
 		6)
 		    case "$model" in
-			0|1|2|3) cpu="athlon";;
-			4) cpu="athlon" core="thunderbird";;
-			6) cpu="athlonxp" core="palamino";;
-			7) cpu="athlonxp" core="morgan";;
-			8) cpu="athlonxp" core="thoroughbred";;
-			10) cpu="athlonxp" core="barton";;
+			0|1|2|3) cpu="athlon";;                 # AMD Athlon / Duron
+			4) cpu="athlon" core="thunderbird";;    # AMD Athlon (Thunderbird)
+			6) cpu="athlonxp" core="palomino";;     # AMD Athlon (MP) (Palomino)
+			7) cpu="athlonxp" core="morgan";;       # AMD Duron (MP) (Morgan), all compiler treat it as Athlon XP
+			8) cpu="athlonxp" core="thoroughbred";; # AMD Athlon (XP,MP) / Sempron / Duron (MP) (Thoroughbred)
+			10) cpu="athlonxp" core="barton";;      # AMD Athlon (XP,MP) / Sempron (Barton)
 		    esac
 		    ;;
 		15)
 		    case "$model" in
-                        5|37) cpu="opteron";;
-                        33) cpu="opteron";;    # in fact it is a k8-64 revision e, but as far as we know only pgi has a special flag for this cpu: -tp k8-64e
-                        65) cpu="opteronx2";;
-                        72) cpu="turionx2";;
-                        *) cpu="athlon64";;
-        esac
-        ;;
+                        5|37) cpu="opteron" core="sledgehammer";;# AMD Opteron (SledgeHammer / Athens)
+			35|43|75|107) cpu="athlon64x2";;         # AMD Dual-Core Opteron (Denmark) / Athlon 64 X2/FX (Toledo / Manchester)
+                                                                 #     Athlon 64 X2 Dual-Core (Windsor / Brisbane)
+                        33) cpu="opteron";;                      # AMD Dual-Core Opteron; in fact it is a k8-64 revision e, but as far
+                                                                 # as we know only PGI has a special flag for this cpu: -tp k8-64e
+                        65|67) cpu="opteronx2";;                 # AMD Dual-Core Opteron (Santa Rosa) / Athlon 64 X2/FX Dual-Core (Windsor)
+                        72|104) cpu="turionx2";;                 # AMD Athlon 64 X2 Dual-Core (Windsor) / Turion 64 X2 (Taylor / Trinidad)
+                        *) cpu="athlon64";;                      # Family 15 is AMD Opteron / Athlon 64 and better
+		    esac
+		    ;;
 		16)                        
-				case "$model" in
-					4) cpu="phenomIIx4"
+		    case "$model" in
+			2) cpu="phenom" core="barcelona";;       # AMD Quad-Core Opteron (Barcelona) / Phenom Triple-Core (Toliman) /
+                                                                 #     Phenom Quad-Core (Agena) / Athlon Dual-Core (Kuma)
+			4) cpu="phenomII" core="shanghai";;      # AMD Quad-Core Opteron (Shanghai) / Athlon Dual-Core (Regor / Propus) /
+                                                                 #     Phenom II (Callisto / Heka / Deneb)
+			5) cpu="athlonII";;                      # AMD Athlon II X2 / X3 / X4 (Regor / Rana / Propus) /
+			                                         #     Phenom II Triple-Core (Heka) / Quad-Core (Deneb)
+			6) cpu="athlonII";;                      # AMD Athlon II (Sargas) / Athlon II X2 (Regor) / Sempron II (Sargas) /
+			                                         #     Sempron II X2 (Regor) / some mobile versions
+			8) cpu="opteron4100" core="istanbul";;   # AMD Opteron 4100 (Lisbon) / Six-Core Opteron (Istanbul)
+			9) cpu="opteron6100" core="magnycours";; # AMD Opteron 6100 (Magny-Cours)
+			10) cpu="phenomII";;                     # AMD Phenom II X4 / X6 (Zosma / Thuban)
+		    esac
+		    ;;
+		17)
+		    case "$model" in
+			3) cpu="athlon64x2";;                    # AMD Turion X2 (Lion) / Athlon X2 (Lion) / Sempron (Sable)
 		    esac
 		    ;;
 		*) cpu="i386";;
@@ -315,10 +350,10 @@ case ${id} in
         case "${cputype}" in
             7) cpu=x86
 		case "${cpufamily}" in
-		    1943433984) cpu="coresolo";;
-		    1114597871) cpu="coreduo";;
-		    2028621756) cpu="penryn" ;;
-		    1801080018) cpu="nehalem" ;;
+		    1943433984) cpu="coresolo";; # Intel Core Solo / Core Duo (32-bit Pentim-M with SSE3) (Yonah)
+		    1114597871) cpu="coreduo";;  # Intel Core Duo (Merom)
+		    2028621756) cpu="penryn" ;;  # Intel Penryn
+		    1801080018) cpu="nehalem" ;; # Intel Nehalem
 		    *)	
 			case "${cpusubt}" in
 			    3) cpu="i386" ;;
@@ -342,17 +377,17 @@ case ${id} in
             12) cpu=arm ;;
             14) cpu=sparc ;;
             16) cpu=alpha ;;
-            18) cpu=ppc 
+            18) cpu=ppc
                 case "${cpusubt}" in
-                    1)     cpu=ppc_601 ;;
-                    2)     cpu=ppc_602 ;;
+                    1) cpu=ppc_601 ;;
+                    2) cpu=ppc_602 ;;
                     3|4|5) cpu=ppc_603 ;;
-                    6|7)   cpu=ppc_604 ;;
-                    8)     cpu=ppc_620 ;;
-                    9)     cpu=ppc_750 ;;
-                    10)    cpu=ppc_7400 ;;
-                    11)    cpu=ppc_7450 ;;
-                    100)   cpu=ppc_970 ;;
+                    6|7) cpu=ppc_604 ;;
+                    8) cpu=ppc_620 ;;
+                    9) cpu=ppc_750 ;;
+                    10) cpu=ppc_7400 ;;
+                    11) cpu=ppc_7450 ;;
+                    100) cpu=ppc_970 ;;
                 esac
                 ;;            
             82) cpu=ppc64   # 64+18
