@@ -34,6 +34,16 @@
 !#     fixed (it was based on the fluxes but now it has to be based on the
 !#     edgewise correciton factors).
 !#
+!# 5.) Implement weak boundary conditions in 1D
+!#
+!# 6.) Implement Euler model in 3D
+!#
+!# 7.) Implement Navier-Stokes model
+!#
+!# 8.) Implement Z-pinch model in x-r coordinates
+!#
+!# 9.) Implement MHD model
+!#
 !# </purpose>
 !##############################################################################
 
