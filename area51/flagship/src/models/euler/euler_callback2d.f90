@@ -2476,7 +2476,7 @@ contains
 ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
         c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
-        #else
+#else
 #error "Speed of sound must be implemented!"
 #endif
 
@@ -3160,7 +3160,7 @@ contains
       Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
       uvj = uj*vj; qj = uj*uj+vj*vj; uPow2j = uj*uj; vPow2j = vj*vj
 
-      #ifdef EULER_USE_IBP
+#ifdef EULER_USE_IBP
       aux1 = uj*DmatrixCoeffsAtEdge(1,2,idx)+vj*DmatrixCoeffsAtEdge(2,2,idx)
       aux2 = ui*DmatrixCoeffsAtEdge(1,1,idx)+vi*DmatrixCoeffsAtEdge(2,1,idx)
 
