@@ -46,7 +46,6 @@ module euler_basic
   use linearsystemscalar
   use problem
   use statistics
-  use thermodynamics
   use triangulation
   use ucd
 

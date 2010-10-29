@@ -137,7 +137,6 @@ module euler_application
   use statistics
   use stdoperators
   use storage
-  use thermodynamics
   use timestep
   use timestepaux
   use ucd
