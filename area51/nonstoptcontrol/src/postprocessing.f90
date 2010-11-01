@@ -69,7 +69,7 @@ contains
     real(DP), dimension(6) :: Derrors
     real(DP), dimension(6) :: DerrorTotal
     type(t_collection) :: rcollection
-    real(DP) :: dtimePrimal,dtimeDual,dtstep
+    real(DP) :: dtstep,dtimeY,dtimeLambda,dtimeP,dtimeXI
     integer :: ithetaschemetype
 
     call lsysbl_createVectorblock (rvector%p_rspaceDiscr,rspaceVec)
@@ -84,15 +84,36 @@ contains
     do istep=1,rvector%NEQtime
       
       ! CN -> Dual is at different time!
-      call tdiscr_getTimestep(rvector%p_rtimeDiscr,istep-1,dtimePrimal,dtstep)
-      dtimeDual = dtimePrimal
+      call tdiscr_getTimestep(rvector%p_rtimeDiscr,istep-1,dtimeY,dtstep)
+      dtimeLambda = dtimeY
 
       ! Modified time scheme?
-      if (ithetaschemetype .eq. 1) then
+      select case (ithetaschemetype)
+      case (0)
+        ! Lambda at the same time as Y
+        !
+        ! Pressure p is half a  step before
+        dtimeP = dtimeY
         if (istep .ne. 1) then
-          dtimeDual = dtimePrimal - (1.0_DP-rvector%p_rtimeDiscr%dtheta)*dtstep
+          dtimeP = dtimeY - (1.0_DP-rvector%p_rtimeDiscr%dtheta)*dtstep
         end if
-      end if
+
+        ! Pressure xi is half a step behind
+        dtimeXI = dtimeY
+        if (istep .ne. 1) then
+          dtimeXI = dtimeY + (1.0_DP-rvector%p_rtimeDiscr%dtheta)*dtstep
+        end if
+        
+      case (1)
+        if (istep .ne. 1) then
+          ! Lambda inbetween the Y
+          dtimeLambda = dtimeY - (1.0_DP-rvector%p_rtimeDiscr%dtheta)*dtstep
+        end if
+        
+        ! If the pressure is involved:
+        dtimeP = dtimeLambda
+        dtimeXI = dtimeY
+      end select
       
       select case (rphysics%cequation)
       case (0,2)
@@ -129,13 +150,13 @@ contains
           rcollection%DquickAccess (4) = rphysics%dtimemin
           rcollection%DquickAccess (5) = rphysics%dtimemax
 
-          rcollection%DquickAccess (1) = dtimePrimal
+          rcollection%DquickAccess (1) = dtimeY
           rcollection%IquickAccess (1) = 1
           call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)),&
               rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
               rcollection)
 
-          rcollection%DquickAccess (1) = dtimeDual
+          rcollection%DquickAccess (1) = dtimeLambda
           rcollection%IquickAccess (1) = 2
           call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)),&
               rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
@@ -210,7 +231,7 @@ contains
           rcollection%DquickAccess (4) = rphysics%dtimemin
           rcollection%DquickAccess (5) = rphysics%dtimemax
 
-          rcollection%DquickAccess (1) = dtimePrimal
+          rcollection%DquickAccess (1) = dtimeY
           rcollection%IquickAccess (1) = 1
           call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
               rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
@@ -221,17 +242,13 @@ contains
               rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
               rcollection)
           
-          rcollection%IquickAccess (1) = 6
-          call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
-              rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
-              rcollection)
-
-          rcollection%DquickAccess (1) = dtimeDual
+          rcollection%DquickAccess (1) = dtimeP
           rcollection%IquickAccess (1) = 3
           call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
               rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
               rcollection)
 
+          rcollection%DquickAccess (1) = dtimeLambda
           rcollection%IquickAccess (1) = 4
           call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
               rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
@@ -242,6 +259,12 @@ contains
               rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
               rcollection)
           
+          rcollection%DquickAccess (1) = dtimeXi
+          rcollection%IquickAccess (1) = 6
+          call pperr_scalar (PPERR_L2ERROR, Derrors(rcollection%IquickAccess (1)), &
+              rspaceVec%RvectorBlock(rcollection%IquickAccess (1)),ferrFunction, &
+              rcollection)
+
           call output_line ("Error("//trim(sys_siL(istep,10))//") = "// &
               trim(sys_sdEL(Derrors(1),5))//" "// &
               trim(sys_sdEL(Derrors(2),5))//" "// &
