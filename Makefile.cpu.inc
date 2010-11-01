@@ -2299,6 +2299,16 @@ endif
 endif
 endif
 
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-open64-.*),yes)
+# invokes the Open64 Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/open64-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Warning: No auto-tuning for Open64 compiler available!';
+endif
+endif
+
 ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-pgi-.*),yes)
 # invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
