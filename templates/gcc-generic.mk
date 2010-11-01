@@ -41,30 +41,14 @@ CXXVERSION = $(CXX) --version | head -n 1
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 
-# WARNING WARNING WARNING
-# All integer variables in FEAT2 are explicitly typed to either 32 or 64 bits.
-# The only native integers are literals and code written in F77 (blas, lapack, 
-# sbblas) and C (metis, coproc backend). FEAT2 assumes that all these (native) 
-# integers are 32-bit!!!
-# So, to get things running with compilers that do not default native integers
-# to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS:. 
-# This also applies when changing the kind-values in kernel/fsystem.f90.
-
+# Set default type of integer variables explicitly
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -fdefault-integer-8
+CFLAGSF90     := $(CFLAGSF90) -fdefault-integer-8
+endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
 # pray that they default the 'int' type properly.
 
-# detect compiler version
-GFORTRANVERSION  := $(shell eval $(F90VERSION) )
-
-# command line options for gfortran 4.3.x
-ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
-CFLAGSF77LIBS := $(CFLAGSF77LIBS)
-endif
-
-# command line options for gfortran 4.4.x
-ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
-endif
 
 
 # Specify -fopenmp for all gcc compilers
@@ -78,10 +62,9 @@ LDFLAGS       := -DUSE_OPENMP -fopenmp $(LDFLAGS)
 endif
 
 
+
+# Set default compile flags
 ifeq ($(call optimise), YES)
-# ****************************************** #
-# First version of optimised compiler flags! #
-# ****************************************** #
 CFLAGSF77LIBS := -DUSE_COMPILER_GCC $(CFLAGSF77LIBS) -O3  \
 		 -ffast-math -foptimize-register-move -fprefetch-loop-arrays \
 		 -funroll-loops -static -fno-second-underscore
@@ -111,11 +94,75 @@ CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH -DHAS_INTRINSIC_IARGC \
 #   as it gives conflicts with LAM/MPI's mpif.h
 # * -Wimplicit-interface
 #   as it gives warnings for every MPI call, BLAS call etc.
-
 CFLAGSC       := -DUSE_COMPILER_GCC $(CFLAGSC) -g -fbounds-check #-pg
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) #-pg
 endif
+
+
+
+# Detect compiler version
+GFORTRANVERSION  := $(shell eval $(F90VERSION) )
+
+# Command line options for gfortran 4.3.x
+ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
+CFLAGSF77LIBS := $(CFLAGSF77LIBS)
+endif
+
+# Command line options for gfortran 4.4.x
+ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
+endif
+
+
+
+# Functions to detect minimal compiler version
+gfortranminversion_4_6=\
+	$(if $(findstring 4.6.,$(GFORTRANVERSION)),yes,no)
+gfortranminversion_4_5=\
+	$(if $(findstring yes,\
+	$(call gfortranminversion_4_6) \
+	$(if $(findstring 4.5.,$(GFORTRANVERSION)),yes,no)),yes,no)
+gfortranminversion_4_4=\
+	$(if $(findstring yes,\
+	$(call gfortranminversion_4_5) \
+	$(if $(findstring 4.4.,$(GFORTRANVERSION)),yes,no)),yes,no)
+gfortranminversion_4_3=\
+	$(if $(findstring yes,\
+	$(call gfortranminversion_4_4) \
+	$(if $(findstring 4.3.,$(GFORTRANVERSION)),yes,no)),yes,no)
+gfortranminversion_4_2=\
+	$(if $(findstring yes,\
+	$(call gfortranminversion_4_3) \
+	$(if $(findstring 4.2.,$(GFORTRANVERSION)),yes,no)),yes,no)
+gfortranminversion_4_1=\
+	$(if $(findstring yes,\
+	$(call gfortranminversion_4_2) \
+	$(if $(findstring 4.1.,$(GFORTRANVERSION)),yes,no)),yes,no)
+
+# Functions to detect maximal compiler version
+gfortranmaxversion_4_6=\
+	$(if $(findstring yes,\
+	$(call gfortranmaxversion_4_5) \
+	$(if $(findstring 4.6.,$(GFORTRANVERSION)),yes,no)),yes,no)
+gfortranmaxversion_4_5=\
+	$(if $(findstring yes,\
+	$(call gfortranmaxversion_4_4) \
+	$(if $(findstring 4.5.,$(GFORTRANVERSION)),yes,no)),yes,no)
+gfortranmaxversion_4_4=\
+	$(if $(findstring yes,\
+	$(call gfortranmaxversion_4_3) \
+	$(if $(findstring 4.4.,$(GFORTRANVERSION)),yes,no)),yes,no)
+gfortranmaxversion_4_3=\
+	$(if $(findstring yes,\
+	$(call gfortranmaxversion_4_2) \
+	$(if $(findstring 4.3.,$(GFORTRANVERSION)),yes,no)),yes,no)
+gfortranmaxversion_4_2=\
+	$(if $(findstring yes,\
+	$(call gfortranmaxversion_4_1) \
+	$(if $(findstring 4.2.,$(GFORTRANVERSION)),yes,no)),yes,no)
+gfortranmaxversion_4_1=\
+	$(if $(findstring 4.1.,$(GFORTRANVERSION)),yes,no)
+
 
 
 ##############################################################################

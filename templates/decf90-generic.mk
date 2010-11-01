@@ -41,19 +41,7 @@ CXXVERSION = $(CXX) --version | head -n 1
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 
-# WARNING WARNING WARNING
-# All integer variables in FEAT2 are explicitly typed to either 32 or 64 bits.
-# The only native integers are literals and code written in F77 (blas, lapack, 
-# sbblas) and C (metis, coproc backend). FEAT2 assumes that all these (native) 
-# integers are 32-bit!!!
-# So, to get things running with compilers that do not default native integers
-# to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS:. 
-# This also applies when changing the kind-values in kernel/fsystem.f90.
-
-# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
-# pray that they default the 'int' type properly.
-
+# Set default compile flags
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -DUSE_COMPILER_DEC $(CFLAGSF77LIBS) -fast -O5
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
@@ -74,6 +62,8 @@ endif
 # when using immediate mpi send/receive functions.
 # IDENTIFIED_BUG test if the switch below is still necessary [dom June 09 2008]
 #CFLAGSF90 := -DENABLE_BUFFERED_EDGE_COMM $(CFLAGSF90)
+
+
 
 ##############################################################################
 # Extension compiler uses for name of generated module information files

@@ -40,16 +40,16 @@ CXXVERSION = $(CXX) -V 2>&1 | head -n 1
 # compiler flags
 # (including non-architecture specific optimisation flags)
 ##############################################################################
-ifeq ($(strip $(OPT)), EXPENSIVE)
-# Specifying -ipo for all Intel compilers is only feasible
-# if all Intel compilers have the same build date!
-CFLAGSF77LIBS := -ipo $(CFLAGSF77LIBS)
-CFLAGSF77     := -ipo $(CFLAGSF77)
-CFLAGSF90     := -ipo $(CFLAGSF90)
-CFLAGSC       := -ipo $(CFLAGSC)
-CFLAGSCXX     := -ipo $(CFLAGSCXX)
-LDFLAGS       := -ipo $(LDFLAGS)
+
+# Set default type of integer variables explicitly
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -integer_size 64
+CFLAGSF90     := $(CFLAGSF90) -integer_size 64
 endif
+# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
+# pray that they default the 'int' type properly.
+
+
 
 # Specify -openmp for all Intel compilers
 ifeq ($(strip $(OPENMP)), YES)
@@ -62,20 +62,8 @@ LDFLAGS       := -DUSE_OPENMP -openmp $(LDFLAGS)
 endif
 
 
-# WARNING WARNING WARNING
-# All integer variables in FEAT2 are explicitly typed to either 32 or 64 bits.
-# The only native integers are literals and code written in F77 (blas, lapack, 
-# sbblas) and C (metis, coproc backend). FEAT2 assumes that all these (native) 
-# integers are 32-bit!!!
-# So, to get things running with compilers that do not default native integers
-# to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS:. 
-# This also applies when changing the kind-values in kernel/fsystem.f90.
 
-# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
-# pray that they default the 'int' type properly.
-
-
+# Set default compile flags
 ifeq ($(call optimise), YES)
 # Don't specify -ipo here. IPO optimisation is enabled by the flag opt=expensive.
 CFLAGSF77LIBS := -DUSE_COMPILER_INTEL $(CFLAGSF77LIBS) -O3 \
@@ -99,10 +87,24 @@ LDFLAGS       := $(LDFLAGS)
 endif
 
 
-# detect compiler version
+
+ifeq ($(strip $(OPT)), EXPENSIVE)
+# Specifying -ipo for all Intel compilers is only feasible
+# if all Intel compilers have the same build date!
+CFLAGSF77LIBS := -ipo $(CFLAGSF77LIBS)
+CFLAGSF77     := -ipo $(CFLAGSF77)
+CFLAGSF90     := -ipo $(CFLAGSF90)
+CFLAGSC       := -ipo $(CFLAGSC)
+CFLAGSCXX     := -ipo $(CFLAGSCXX)
+LDFLAGS       := -ipo $(LDFLAGS)
+endif
+
+
+
+# Detect compiler version
 INTELVERSION  := $(shell eval $(CXXVERSION) )
 
-# enable workarounds for Intel 10.1.0[0-1][0-9] compiler releases, 
+# Enable workarounds for Intel 10.1.0[0-1][0-9] compiler releases, 
 # (not necessary for Intel 10.1.021)
 ifneq (,$(findstring 10.1.00,$(INTELVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
@@ -110,6 +112,89 @@ endif
 ifneq (,$(findstring 10.1.01,$(INTELVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
 endif
+
+
+
+# Functions to detect minimal compiler version
+intelminversion_11_1=\
+	$(if $(findstring 11.1.,$(INTELVERSION)),yes,no)
+intelminversion_11_0=\
+	$(if $(findstring yes,\
+	$(call intelminversion_11_1) \
+	$(if $(findstring 11.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelminversion_10_1=\
+	$(if $(findstring yes,\
+	$(call intelminversion_11_0) \
+	$(if $(findstring 10.1.,$(INTELVERSION)),yes,no)),yes,no)
+intelminversion_10_0=\
+	$(if $(findstring yes,\
+	$(call intelminversion_10_1) \
+	$(if $(findstring 10.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelminversion_9_0=\
+	$(if $(findstring yes,\
+	$(call intelminversion_10_0) \
+	$(if $(findstring 9.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelminversion_8_1=\
+	$(if $(findstring yes,\
+	$(call intelminversion_9_0) \
+	$(if $(findstring 8.1.,$(INTELVERSION)),yes,no)),yes,no)
+intelminversion_8_0=\
+	$(if $(findstring yes,\
+	$(call intelminversion_8_1) \
+	$(if $(findstring 8.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelminversion_7_1=\
+	$(if $(findstring yes,\
+	$(call intelminversion_8_0) \
+	$(if $(findstring 7.1.,$(INTELVERSION)),yes,no)),yes,no)
+intelminversion_7_0=\
+	$(if $(findstring yes,\
+	$(call intelminversion_7_1) \
+	$(if $(findstring 7.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelminversion_6_0=\
+	$(if $(findstring yes,\
+	$(call intelminversion_7_0) \
+	$(if $(findstring 6.0.,$(INTELVERSION)),yes,no)),yes,no)
+
+# Functions to detect maximal compiler version
+intelmaxversion_11_1=\
+	$(if $(findstring yes,\
+	$(call intelmaxversion_11_0) \
+	$(if $(findstring 11.1.,$(INTELVERSION)),yes,no)),yes,no)
+intelmaxversion_11_0=\
+	$(if $(findstring yes,\
+	$(call intelmaxversion_10_1) \
+	$(if $(findstring 11.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelmaxversion_10_1=\
+	$(if $(findstring yes,\
+	$(call intelmaxversion_10_0) \
+	$(if $(findstring 10.1.,$(INTELVERSION)),yes,no)),yes,no)
+intelmaxversion_10_0=\
+	$(if $(findstring yes,\
+	$(call intelmaxversion_9_0) \
+	$(if $(findstring 10.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelmaxversion_9_0=\
+	$(if $(findstring yes,\
+	$(call intelmaxversion_8_1) \
+	$(if $(findstring 9.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelmaxversion_8_1=\
+	$(if $(findstring yes,\
+	$(call intelmaxversion_8_0) \
+	$(if $(findstring 8.1.,$(INTELVERSION)),yes,no)),yes,no)
+intelmaxversion_8_0=\
+	$(if $(findstring yes,\
+	$(call intelmaxversion_7_1) \
+	$(if $(findstring 8.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelmaxversion_7_1=\
+	$(if $(findstring yes,\
+	$(call intelmaxversion_7_0) \
+	$(if $(findstring 7.1.,$(INTELVERSION)),yes,no)),yes,no)
+intelmaxversion_7_0=\
+	$(if $(findstring yes,\
+	$(call intelmaxversion_6_0) \
+	$(if $(findstring 7.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelmaxversion_6_0=\
+	$(if $(findstring 6.0.,$(INTELVERSION)),yes,no)
+
 
 
 ##############################################################################

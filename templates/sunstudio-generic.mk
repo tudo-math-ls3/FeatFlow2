@@ -41,10 +41,15 @@ CXXVERSION = $(CXX) -V 2>&1 1>/dev/null | head -n 1
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 
-# Remark on CFLAGS* as stated in the manpages of Sun Studio compilers:
-# If you compile and link in separate steps, always link using the compiler 
-# and with same -xarch setting to ensure that the correct startup routine is 
-# linked.
+# Set default type of integer variables explicitly
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -xtypemap=integer:64
+CFLAGSF90     := $(CFLAGSF90) -xtypemap=integer:64
+endif
+# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
+# pray that they default the 'int' type properly.
+
+
 
 # Specify -xopenmp for all Sun compilers
 ifeq ($(strip $(OPENMP)), YES)
@@ -56,19 +61,9 @@ CFLAGSCXX     := -DUSE_OPENMP -xopenmp $(CFLAGSCXX)
 LDFLAGS       := -DUSE_OPENMP -xopenmp $(LDFLAGS)
 endif
 
-# WARNING WARNING WARNING
-# All integer variables in FEAT2 are explicitly typed to either 32 or 64 bits.
-# The only native integers are literals and code written in F77 (blas, lapack, 
-# sbblas) and C (metis, coproc backend). FEAT2 assumes that all these (native) 
-# integers are 32-bit!!!
-# So, to get things running with compilers that do not default native integers
-# to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS: -xtypemap=integer:32
-# This also applies when changing the kind-values in kernel/fsystem.f90.
 
-# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
-# pray that they default the 'int' type properly.
 
+# Set default compile flags
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77LIBS) -fast -xtypemap=integer:32 
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
@@ -88,10 +83,13 @@ CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 endif
 
+
+
 # SunStudio 10 Fortran compiler benefits when setting -DENABLE_USE_ONLY, 
 # SunStudio 11 and 12 Fortran compiler, however, crash with internal compiler 
 # errors with this setting, both for unoptimised and optimised builds.
 #CFLAGSF90 := -DENABLE_USE_ONLY $(CFLAGSF90)
+
 
 
 ##############################################################################

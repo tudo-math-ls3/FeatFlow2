@@ -62,6 +62,8 @@ CXXVERSION = sxc++ -V 2>&1 | head -n 3
 # compiler flags 
 # (including non-architecture specific optimisation flags)
 ##############################################################################
+
+# Set default compile flags
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -DUSE_COMPILER_NEC $(CFLAGSF77LIBS) -NE -C hopt -pi auto
 #CFLAGSF77LIBS = -C debug -e C
@@ -79,6 +81,7 @@ CFLAGSF90     := -DENABLE_CPPMACRO_FOR_STORAGEGETBASE -DDISABLE_ERRORCONTROL \
 CFLAGSC       := -DUSE_COMPILER_NEC $(CFLAGSC) -g -ftrace
 LDFLAGS       := $(LDFLAGS) -ftrace
 endif
+
 
 
 ##############################################################################

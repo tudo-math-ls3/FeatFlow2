@@ -41,26 +41,14 @@ CXXVERSION = $(CXX) -version 2>&1 | head -n 4
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 
-# WARNING WARNING WARNING
-# All integer variables in FEAT2 are explicitly typed to either 32 or 64 bits.
-# The only native integers are literals and code written in F77 (blas, lapack, 
-# sbblas) and C (metis, coproc backend). FEAT2 assumes that all these (native) 
-# integers are 32-bit!!!
-# So, to get things running with compilers that do not default native integers
-# to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS:. 
-# This also applies when changing the kind-values in kernel/fsystem.f90.
-
+# Set default type of integer variables explicitly
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -i8
+CFLAGSF90     := $(CFLAGSF90) -i8
+endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
 # pray that they default the 'int' type properly.
 
-# The option -Wuninitialized is highly recommended to let the compiler 
-# warn about variables that are accessed before being uninitialised. 
-# As the options doubles compilation time, it is not turned on by default.
-
-# Pathscale F90 Compiler (v. 2.4) needs the -g flag (even for -O0 
-# optimisation level), otherwise FEAT2 crashes as soon as it tries to 
-# start solving something. This is no longer an issue with v. 3.1.
 
 
 # Specify -fopenmp for all Pathscale compilers
@@ -74,15 +62,8 @@ LDFLAGS       := -DUSE_OPENMP -mp $(LDFLAGS)
 endif
 
 
-ifeq ($(strip $(OPT)), EXPENSIVE)
-# increases link time to 2 minutes per application, but is well worth it.
-CFLAGSF77     := -ipa $(CFLAGSF77)
-CFLAGSF90     := -ipa $(CFLAGSF90)
-CFLAGSC       := -ipa $(CFLAGSC)
-CFLAGSCXX     := -ipa $(CFLAGSCXX)
-LDFLAGS       := -ipa $(LDFLAGS)
-endif
 
+# Set default compile flags
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -DUSE_COMPILER_PATHSCALE $(CFLAGSF77LIBS) -O3 -OPT:Ofast \
 		 -fno-math-errno #-Wuninitialized
@@ -100,6 +81,25 @@ CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) \
 CFLAGSC       := -DUSE_COMPILER_PATHSCALE $(CFLAGSC) -g 
 LDFLAGS       := $(LDFLAGS)
 endif
+# The option -Wuninitialized is highly recommended to let the compiler 
+# warn about variables that are accessed before being uninitialised. 
+# As the options doubles compilation time, it is not turned on by default.
+
+# Pathscale F90 Compiler (v. 2.4) needs the -g flag (even for -O0 
+# optimisation level), otherwise FEAT2 crashes as soon as it tries to 
+# start solving something. This is no longer an issue with v. 3.1.
+
+
+
+ifeq ($(strip $(OPT)), EXPENSIVE)
+# increases link time to 2 minutes per application, but is well worth it.
+CFLAGSF77     := -ipa $(CFLAGSF77)
+CFLAGSF90     := -ipa $(CFLAGSF90)
+CFLAGSC       := -ipa $(CFLAGSC)
+CFLAGSCXX     := -ipa $(CFLAGSCXX)
+LDFLAGS       := -ipa $(LDFLAGS)
+endif
+
 
 
 ##############################################################################

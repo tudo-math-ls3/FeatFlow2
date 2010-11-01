@@ -41,19 +41,30 @@ CXXVERSION = $(CXX) --version | head -n 1
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 
-# WARNING WARNING WARNING
-# All integer variables in FEAT2 are explicitly typed to either 32 or 64 bits.
-# The only native integers are literals and code written in F77 (blas, lapack, 
-# sbblas) and C (metis, coproc backend). FEAT2 assumes that all these (native) 
-# integers are 32-bit!!!
-# So, to get things running with compilers that do not default native integers
-# to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS:. 
-# This also applies when changing the kind-values in kernel/fsystem.f90.
-
+# Set default type of integer variables explicitly
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -i8
+CFLAGSF90     := $(CFLAGSF90) -i8
+endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
 # pray that they default the 'int' type properly.
 
+
+
+# Fortran compiler does not support OpenMP
+ifeq ($(strip $(OPENMP)), YES)
+MESSAGE  := $(MESSAGE) \
+            echo; \
+            echo '*** Warning: OpenMP is not supported by G95 compiler'; \
+            echo;
+CFLAGSC       := -DUSE_OPENMP -fopenmp $(CFLAGSC)
+CFLAGSCXX     := -DUSE_OPENMP -fopenmp $(CFLAGSCXX)
+LDFLAGS       := -DUSE_OPENMP -fopenmp $(LDFLAGS)
+endif
+
+
+
+# Set default compile flags
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -DUSE_COMPILER_G95 $(CFLAGSF77LIBS) -O3 \
 		 -ffast-math -foptimize-register-move \
@@ -68,8 +79,7 @@ CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -O3 \
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77LIBS := -DUSE_COMPILER_G95 $(CFLAGSF77LIBS) -g -fno-second-underscore \
-		#-pg
+CFLAGSF77LIBS := -DUSE_COMPILER_G95 $(CFLAGSF77LIBS) -g -fno-second-underscore #-pg
 # Don't include "-fbounds-check" in CFLAGSF77 as the SBBLAS routines
 # are peppered with out-of-bounds accesses (i[0] and i[n]). That's 
 # Turek-style code and nobody volunteered so far to fix it.
@@ -81,6 +91,7 @@ CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -g -fbounds-check #-pg
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) #-pg
 endif
+
 
 
 # Workarounds for known problems:
@@ -97,6 +108,45 @@ ifneq ($(shell (nm `$(F90) -print-libgcc-file-name | sed 's|/libgcc.a|libf95.a|;
 CFLAGSF90     := -DHAS_INTRINSIC_ISATTY $(CFLAGSF90)
 endif
 endif
+
+
+# Detect compiler version
+G95VERSION  := $(shell eval $(F90VERSION) )
+
+
+
+# Functions to detect minimal compiler version
+g95minversion_0_93=\
+	$(if $(findstring 0.93.,$(G95VERSION)),yes,no)
+g95minversion_0_92=\
+	$(if $(findstring yes,\
+	$(call g95minversion_0_93) \
+	$(if $(findstring 0.92.,$(G95VERSION)),yes,no)),yes,no)
+g95minversion_0_91=\
+	$(if $(findstring yes,\
+	$(call g95minversion_0_92) \
+	$(if $(findstring 0.91.,$(G95VERSION)),yes,no)),yes,no)
+g95minversion_0_90=\
+	$(if $(findstring yes,\
+	$(call g95minversion_0_91) \
+	$(if $(findstring 0.90.,$(G95VERSION)),yes,no)),yes,no)
+
+# Functions to detect maximal compiler version
+g95maxversion_0_93=\
+	$(if $(findstring yes,\
+	$(call g95maxversion_0_92) \
+	$(if $(findstring 0.93.,$(G95VERSION)),yes,no)),yes,no)
+g95maxversion_0_92=\
+	$(if $(findstring yes,\
+	$(call g95maxversion_0_91) \
+	$(if $(findstring 0.92.,$(G95VERSION)),yes,no)),yes,no)
+g95maxversion_0_91=\
+	$(if $(findstring yes,\
+	$(call g95maxversion_0_90) \
+	$(if $(findstring 0.91.,$(G95VERSION)),yes,no)),yes,no)
+g95maxversion_0_90=\
+	$(if $(findstring 0.90.,$(G95VERSION)),yes,no)
+
 
 
 ##############################################################################

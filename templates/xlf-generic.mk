@@ -40,6 +40,8 @@ CXXVERSION = $(CXX) -qversion | head -n 1
 # compiler flags 
 # (including non-architecture specific optimisation flags)
 ##############################################################################
+
+# Set default compile flags
 ifeq ($(call optimise), YES)
 # !!! WARNING WARNING WARNING !!!
 # You must not pass any -D option to xlf compilers, because it is *not* 

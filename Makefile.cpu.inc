@@ -28,10 +28,10 @@
 # The function match is used to match ID agains wildcards.
 #
 # variant 1 (slower, especially on old machines, but possibly more portable)
-#match=$(shell echo $(1) | awk '/$(2)/ { print "yes"; }')
+match=$(shell echo $(1) | awk '/$(2)/ { print "yes"; }')
 #
-# variant 2 (fastest so far)
-match=$(shell echo $(1) | sed -e 's/$(2)/yes/')
+# variant 2 (fastest so far, but does not work for rules like (pc|pc64)-)
+#match=$(shell echo $(1) | sed -e 's/$(2)/yes/')
 
 # Ensure that a request for full optimisation is written in capital letters
 OPT := $(shell echo $(OPT) | tr '[a-z]' '[A-Z]')
@@ -56,6 +56,8 @@ COMPILER_SETTINGS = env_compiler_settings
 
 # Directory where Makefile template files are stored
 TEMPLATESDIR = $(FEAT2BASEDIR)/templates
+
+
 
 ##############################################################################
 # functions
@@ -254,8 +256,44 @@ TOKEN5 := 0
 TOKEN6 := 0
 
 
-################################### Alpha ####################################
-#if (m/^ifeq \(\$\(call match,\$\(ID\),(.*)\),yes\)\s*$/) {
+# # # # # # # # #      IMPORTANT NOTICE !!!     # # # # # # # # #
+#
+
+# Writing consistent buildIDs for all combinations of systems,
+# compilers and libraries is just not maintainable. Therefore, this
+# file provides generic rules which should work for most systems. If
+# thecompiler provides some auto-tune mechanism, then the generic
+# rules even try to optimise the code for the underlying machine.
+#
+# There are some situation in which you want to add explicit buildIDs
+#
+# 1) if you have an exotic computing environment (e.g., NEC SX) which
+#    need a detailed definition of compilers and libraries (e.g. with
+#    absolute paths) which cannot be covered by generic rules
+#
+# 2) if you want to overwrite the default rule for a particular buildID;
+#    keep in mind that some settings can be changed by using flags:
+#
+#    INTSIZE = [STD|LARGE] : forces the compiler to set the default
+#    size of integer variables to 32|64 bit
+#
+#    BINARY = [32|64] : forces the compiler to build 32|64 bit binary
+#    
+# 3) some compilers do not provide an automised optimisation feature
+#    (e.g., GCC 4.1.x and below, G95) so that you have to provide the
+#    optimisation flags by hand
+#
+# 4) if you want to cross-compile your code
+#
+# # # # # # # # #      IMPORTANT NOTICE !!!     # # # # # # # # #
+
+
+
+##############################################################################
+# Alpha
+#
+##############################################################################
+
 ifeq ($(call match,$(ID),alpha-ev6-osf1-cf90-.*),yes)
 # invokes the Compaq Fortran 77/90 (formerly DIGITAL Fortran 77/90)
 # compiler, local umfpack
@@ -265,43 +303,16 @@ include $(TEMPLATESDIR)/alpha-ev6-osf1-generic.mk
 include $(TEMPLATESDIR)/decf90-generic.mk
 endif
 
-
-ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-atlas.*),yes)
-# Use ATLAS BLAS
-include $(TEMPLATESDIR)/atlasblas-generic.mk
-endif
-
-
 ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-dxml.*),yes)
 # Use Digital BLAS
 TOKEN5 := 1
 LIBS      := $(LIBS) -ldxml
 endif
 
-
-ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
 ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-.*-dmpi),yes)
 # Use Digital MPI
 include $(TEMPLATESDIR)/dmpi-generic.mk
 endif
-
 
 ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-.*-lammpi),yes)
 # Use LAM/MPI
@@ -316,795 +327,316 @@ endif
 
 
 
-################################ IBM Regatta #################################
+##############################################################################
+# AMD Athlon
+#
+##############################################################################
 
-ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-xlf-.*-poempi),yes)
-# invokes the IBM XL Fortran compiler, uses POE MPI
-# local umfpack
-TOKEN6 := 1
-include $(TEMPLATESDIR)/xlf-generic.mk
-include $(TEMPLATESDIR)/ibm-powerpc_power4-aix-generic.mk
-# The system provides a METIS library, but we have problems using it.
-# Ensure that we use our own METIS library by hard-coding the path.
-LIBS      = $(OBJDIR_LIB)/libmetis.a -lumfpack -lamd
-#SBB_LIBS := $(SBB_LIBS)
-endif
-
-ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-.*-essl.*),yes)
-# Use ESSL BLAS and self-compiled LAPACK
-TOKEN5 := 1
-BUILDLIB := $(BUILDLIB) lapack
-LIBS     := $(LIBS) -llapack -lessl 
-SBB_BUILDLIB := $(SBB_BUILDLIB) lapack
-SBB_LIBS := $(SBB_LIBS) -llapack-lessl
-endif
-
-ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-.*-goto.*),yes)
-# Use Goto BLAS and self-compiled LAPACK
-TOKEN5 := 1
-BUILDLIB := $(BUILDLIB) lapack
-LIBS     := $(LIBS) -lblas_Goto -llapack
-SBB_BUILDLIB := $(SBB_BUILDLIB) lapack
-SBB_LIBS := $(SBB_LIBS) -lblas_Goto -llapack
-endif
-
-
-
-################################ Itanium 2 #################################
-
-ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-blas-mpi),yes)
-# invokes the intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/ia64-generic.mk
-include $(TEMPLATESDIR)/intel64-generic.mk
-include $(TEMPLATESDIR)/blas-generic.mk
-# Add preprocessor flag to enable 64bit UMFPACK support.
-# UMFPACK documentation states to also add -DLP64, but there is no
-# reference to it in the UMFPACK 5.2 sources.
-CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
-CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
-TOKEN6 := 1
-endif
-
-ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-mkl-mpi),yes)
-# invokes the intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/ia64-generic.mk
-include $(TEMPLATESDIR)/intel64-generic.mk
-# Add preprocessor flag to enable 64bit UMFPACK support.
-# UMFPACK documentation states to also add -DLP64, but there is no
-# reference to it in the UMFPACK 5.2 sources.
-CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
-CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
-LIBS     := $(LIBS) -L/opt/MathKeisan/MKL/lib/64 -lguide -lmkl_lapack64 -lmkl
-#LIBS     := $(LIBS) -L/nfs/home11/HLRS/xam/xamsbuij/intel/Compiler/11.0/074/mkl/lib/64 -lguide -lmkl_lapack -lmkl
-SBB_LIBS := $(SBB_LIBS) -L/opt/MathKeisan/MKL/lib/64 -lguide -lmkl_lapack64 -lmkl
-TOKEN5 := 1
-TOKEN6 := 1
-endif
-
-
-
-############################ Itanium 2 Dual Core #############################
-
-ifeq ($(call match,$(ID),ia64-itanium2x2-cygwin_nt.*-g95-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/ia64-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-#CFLAGSF77:=$(CFLAGSF77) -fno-underscoring
-#CFLAGSF90:=$(CFLAGSF90) -fno-underscoring
-endif
-
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux-g95-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/ia64-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-#CFLAGSF77:=$(CFLAGSF77) -fno-underscoring
-#CFLAGSF90:=$(CFLAGSF90) -fno-underscoring
-endif
-
-
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux-gcc-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/ia64-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -mtune=itanium2 $(CFLAGSF77LIBS)
-CFLAGSF77     := -mtune=itanium2 $(CFLAGSF77)
-CFLAGSF90     := -mtune=itanium2 $(CFLAGSF90)
-CFLAGSC       := -mtune=itanium2 $(CFLAGSC)
-CFLAGSCXX     := -mtune=itanium2 $(CFLAGSCXX)
-LDFLAGS       := -mtune=itanium2 $(LDFLAGS)
-endif
-#CFLAGSF77:=$(CFLAGSF77) -fno-underscoring
-#CFLAGSF90:=$(CFLAGSF90) -fno-underscoring
-endif
-
-
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/ia64-generic.mk
-include $(TEMPLATESDIR)/intel-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-mkl.*),yes)
-ifneq ($(strip $(INTEL_MKL_LIB)),)
-# Split up string if multiple directories are given
-# Note: Do not put whitespace between comma and the environment variable, because
-#       if you do, a string like "-L /path/to/mkl" is the result and that string
-#       won't make it into the command line.
-LIBDIR   := $(LIBDIR) -L$(subst :, -L,$(INTEL_MKL_LIB))
-endif
-LIBS     := $(LIBS) -lmkl_lapack -lmkl_intel_thread -lmkl_core -lmkl_intel_lp64 -lguide -lpthread
-SBB_LIBS := $(SBB_LIBS) -lmkl_lapack -lmkl_intel_thread -lmkl_core -lmkl_intel_lp64 -lguide -lpthread
-TOKEN5 := 1
-endif
-
-
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-.*-ompi),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/openmpi-generic.mk
-# Add preprocessor flag to enable 64bit UMFPACK support.
-# UMFPACK documentation states to also add -DLP64, but there is no
-# reference to it in the UMFPACK 5.2 sources.
-CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
-CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
-endif
-
-
-
-################################# Athlon 64 ##################################
-
-ifeq ($(call match,$(ID),pc-athlon64-cygwin_nt.*-g95-.*),yes)
+ifeq ($(call match,$(ID),pc-athlon-.*-g95-.*),yes)
 # invokes the G95 Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
-CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
-CFLAGSC       := -march=athlon64 $(CFLAGSC)
-CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
-LDFLAGS       := -march=athlon64 $(LDFLAGS)
+CFLAGSF77LIBS := -march=athlon $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon $(CFLAGSF77)
+CFLAGSF90     := -march=athlon $(CFLAGSF90)
+CFLAGSC       := -march=athlon $(CFLAGSC)
+CFLAGSCXX     := -march=athlon $(CFLAGSCXX)
+LDFLAGS       := -march=athlon $(LDFLAGS)
 endif
 endif
 
-ifeq ($(call match,$(ID),pc-athlon64-linux-g95-.*),yes)
-# invokes the G95 Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
-CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
-CFLAGSC       := -march=athlon64 $(CFLAGSC)
-CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
-LDFLAGS       := -march=athlon64 $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlon64-linux-gcc-.*),yes)
+ifeq ($(call match,$(ID),pc-athlon-.*-gcc-.*),yes)
 # invokes the gfortran Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
-CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
-CFLAGSC       := -march=athlon64 $(CFLAGSC)
-CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
-LDFLAGS       := -march=athlon64 $(LDFLAGS)
+CFLAGSF77LIBS := -march=athlon $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon $(CFLAGSF77)
+CFLAGSF90     := -march=athlon $(CFLAGSF90)
+CFLAGSC       := -march=athlon $(CFLAGSC)
+CFLAGSCXX     := -march=athlon $(CFLAGSCXX)
+LDFLAGS       := -march=athlon $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-athlon64-linux-intel-.*),yes)
+ifeq ($(call match,$(ID),pc-athlon-.*-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xW $(CFLAGSF77LIBS)
-CFLAGSF77     := -xW $(CFLAGSF77)
-CFLAGSF90     := -xW $(CFLAGSF90)
-CFLAGSC       := -xW $(CFLAGSC)
-CFLAGSCXX     := -xW $(CFLAGSCXX)
-LDFLAGS       := -xW $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlon64-linux-sunstudio-.*),yes)
-# invokes the Sunstudio Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/sunstudio-generic.mk
-# # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
-# Architecture-specific optimisation missing!
-# DOM: sunstudio seems to do this automatically.
-# # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xautopar  $(CFLAGSF77LIBS)
-CFLAGSF77     := -xautopar  $(CFLAGSF77)
-CFLAGSF90     := -xautopar  $(CFLAGSF90)
-CFLAGSC       := -xautopar  $(CFLAGSC)
-CFLAGSCXX     := -xautopar  $(CFLAGSCXX)
-LDFLAGS       := -xautopar  $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlon64-linux-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlon64-linux-.*-.*-mpich2),yes)
-# Use MPICH2
-include $(TEMPLATESDIR)/mpich2-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlon64-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlon64-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlon64-linux-.*-goto),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlon64-linux-.*-goto2),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-################################# Phenom II x4 ##################################
-ifeq ($(call match,$(ID),pc64-phenomIIx4-linux-gcc-.*),yes)
-# invokes the gfortran Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=amdfam10 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=amdfam10 $(CFLAGSF77)
-CFLAGSF90     := -march=amdfam10 $(CFLAGSF90)
-CFLAGSC       := -march=amdfam10 $(CFLAGSC)
-CFLAGSCXX     := -march=amdfam10 $(CFLAGSCXX)
-LDFLAGS       := -march=amdfam10 $(LDFLAGS)
-endif
-endif
-
-ifeq ($(call match,$(ID),pc64-phenomIIx4-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-################################# Turion X2 ##################################
-
-ifeq ($(call match,$(ID),pc-turionx2-cygwin_nt.*-g95-*),yes)
-# invokes the G95 Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-include $(TEMPLATESDIR)/openmpi-generic.mk
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
-CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
-CFLAGSC       := -march=athlon64 $(CFLAGSC)
-CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
-LDFLAGS       := -march=athlon64 $(LDFLAGS)
-endif
-endif
-
-ifeq ($(call match,$(ID),pc-turionx2-linux-g95-goto-ompi),yes)
-# invokes the G95 Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-include $(TEMPLATESDIR)/openmpi-generic.mk
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
-CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
-CFLAGSC       := -march=athlon64 $(CFLAGSC)
-CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
-LDFLAGS       := -march=athlon64 $(LDFLAGS)
-endif
-endif
-
-
-
-################################# Athlon XP ##################################
-
-ifeq ($(call match,$(ID),pc-athlonxp-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse are automatically set by -march=athlon-xp
-CFLAGSF77LIBS := -march=athlon-xp $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=athlon-xp $(CFLAGSF77)
-CFLAGSF90     := -march=athlon-xp $(CFLAGSF90)
-CFLAGSC       := -march=athlon-xp $(CFLAGSC)
-endif
-endif
-
-ifeq ($(call match,$(ID),pc-athlonxp-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse are automatically set by -march=athlon-xp
-CFLAGSF77LIBS := -march=athlon-xp $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=athlon-xp $(CFLAGSF77)
-CFLAGSF90     := -march=athlon-xp $(CFLAGSF90)
-CFLAGSC       := -march=athlon-xp $(CFLAGSC)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlonxp-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse are automatically set by -march=athlon-xp
-CFLAGSF77LIBS := -march=athlon-xp $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=athlon-xp $(CFLAGSF77)
-CFLAGSF90     := -march=athlon-xp $(CFLAGSF90)
-CFLAGSC       := -march=athlon-xp $(CFLAGSC)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlonxp-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/intel-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -axK $(CFLAGSF77LIBS) #-tpp6
-CFLAGSF77     := -axK $(CFLAGSF77)     #-tpp6
-CFLAGSF90     := -axK $(CFLAGSF90)     #-tpp6
-CFLAGSC       := -axK $(CFLAGSC)       #-tpp6
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE $(CFLAGSF77)
+CFLAGSF90     := -xSSE $(CFLAGSF90)
+CFLAGSC       := -xSSE $(CFLAGSC)
+CFLAGSCXX     := -xSSE $(CFLAGSCXX)
+LDFLAGS       := -xSSE $(LDFLAGS)
+else
+CFLAGSF77LIBS := -axK $(CFLAGSF77LIBS)
+CFLAGSF77     := -axK $(CFLAGSF77)
+CFLAGSF90     := -axK $(CFLAGSF90)
+CFLAGSC       := -axK $(CFLAGSC)
+CFLAGSCXX     := -axK $(CFLAGSCXX)
 LDFLAGS       := -axK $(LDFLAGS)
 endif
 endif
+endif
 
-
-ifeq ($(call match,$(ID),pc-athlonxp-linux-pgi-.*),yes)
+ifeq ($(call match,$(ID),pc-athlon-.*-pgi-.*),yes)
 # invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp=athlonxp $(CFLAGSF77LIBS)
-CFLAGSF77     := -tp=athlonxp $(CFLAGSF77)
-CFLAGSF90     := -tp=athlonxp $(CFLAGSF90)
-CFLAGSC       := -tp=athlonxp $(CFLAGSC)
+CFLAGSF77LIBS := -tp athlon $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp athlon $(CFLAGSF77)
+CFLAGSF90     := -tp athlon $(CFLAGSF90)
+CFLAGSC       := -tp athlon $(CFLAGSC)
+CFLAGSCXX     := -tp athlon $(CFLAGSCXX)
+LDFLAGS       := -tp athlon $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-athlon-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=athlon $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon $(CFLAGSF77)
+CFLAGSF90     := -march=athlon $(CFLAGSF90)
+CFLAGSC       := -march=athlon $(CFLAGSC)
+CFLAGSCXX     := -march=athlon $(CFLAGSCXX)
+LDFLAGS       := -march=athlon $(LDFLAGS)
 endif
 endif
 
 
-ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
-endif
 
+##############################################################################
+# AMD Athlon 64 (X2) / Turion 64 (X2)
+#
+##############################################################################
 
-ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-atlas.*),yes)
-# Use ATLAS BLAS
-include $(TEMPLATESDIR)/atlasblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-athlonxp-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-################################# CoreDuo 32bit ################################
-
-ifeq ($(call match,$(ID),pc-coreduo-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU Fortran 77/90 compiler, local umfpack
+ifeq ($(call match,$(ID),(pc|pc64)-(athlon64|athlon64x2|turion64|turion64x2)-.*-g95-.*),yes)
+# invokes the G95 Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77LIBS)
-CFLAGSF77     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77)
-CFLAGSF90     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF90)
-CFLAGSC       := -msse3 -pipe -fomit-frame-pointer $(CFLAGSC)
-CFLAGSCXX     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSCXX)
-LDFLAGS       := $(LDFLAGS)
+CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
+CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
+CFLAGSC       := -march=athlon64 $(CFLAGSC)
+CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
+LDFLAGS       := -march=athlon64 $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-coreduo-cygwin_nt.*-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-coreduo-linux-g95-.*),yes)
-# invokes the GNU Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77LIBS)
-CFLAGSF77     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77)
-CFLAGSF90     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF90)
-CFLAGSC       := -msse3 -pipe -fomit-frame-pointer $(CFLAGSC)
-CFLAGSCXX     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSCXX)
-LDFLAGS       := $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-coreduo-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack
+ifeq ($(call match,$(ID),(pc|pc64)-(athlon64|athlon64x2|turion64|turion64x2)-.*-gcc-.*),yes)
+# invokes the gfortran Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-# optimal flags taken from script CPUFlags v0.7.2
-#
-# According to http://archives.gentoo.org/gentoo-amd64/msg_14402.xml
-# H.J. Lu from Intel, very prominent on gcc 4.x bugzilla, advices
-# different settings:
-# * GCC 4.1:
-#   - use -march=prescott for Intel Core Solo/Duo
-#   - use -march=nocona (and an amd64 profile) for Core 2 Solo/Duo
-# * GCC 4.2:
-#   - use -march=prescott -mtune=generic for Intel Core Solo/Duo
-#   - use -march=nocona -mtune=generic for Intel Core 2 Solo/Duo
-CFLAGSF77LIBS := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77)
-CFLAGSF90     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF90)
-CFLAGSC       := -march=nocona -msse3 -mfpmath=sse $(CFLAGSC)
+CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
+CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
+CFLAGSC       := -march=athlon64 $(CFLAGSC)
+CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
+LDFLAGS       := -march=athlon64 $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-coreduo-linux-intel-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-athlon64-.*-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
-CFLAGSF77     := -xT $(CFLAGSF77)
-CFLAGSF90     := -xT $(CFLAGSF90)
-CFLAGSC       := -xT $(CFLAGSC)
-CFLAGSCXX     := -xT $(CFLAGSCXX)
-LDFLAGS       := -xT $(LDFLAGS)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE2 $(CFLAGSF77)
+CFLAGSF90     := -xSSE2 $(CFLAGSF90)
+CFLAGSC       := -xSSE2 $(CFLAGSC)
+CFLAGSCXX     := -xSSE2 $(CFLAGSCXX)
+LDFLAGS       := -xSSE2 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -axW $(CFLAGSF77LIBS)
+CFLAGSF77     := -axW $(CFLAGSF77)
+CFLAGSF90     := -axW $(CFLAGSF90)
+CFLAGSC       := -axW $(CFLAGSC)
+CFLAGSCXX     := -axW $(CFLAGSCXX)
+LDFLAGS       := -axW $(LDFLAGS)
 endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-coreduo-linux-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-coreduo-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-coreduo-linux-.*-atlas.*),yes)
-# Use ATLAS BLAS
-include $(TEMPLATESDIR)/atlasblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-coreduo-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-coreduo-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-coreduo-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-coreduo-linux-.*-mkl.*),yes)
-# Use MKL BLAS
-include $(TEMPLATESDIR)/mkl-generic.mk
-endif
-
-
-################################# CoreDuo 64bit ################################
-
-ifeq ($(call match,$(ID),pc64-coreduo-linux-g95-.*),yes)
-# invokes the GNU Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77LIBS)
-CFLAGSF77     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77)
-CFLAGSF90     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF90)
-CFLAGSC       := -msse3 -pipe -fomit-frame-pointer $(CFLAGSC)
-CFLAGSCXX     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSCXX)
-LDFLAGS       := $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc64-coreduo-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-ifeq ($(call optimise), YES)
-# optimal flags taken from script CPUFlags v0.7.2
-#
-# According to http://archives.gentoo.org/gentoo-amd64/msg_14402.xml
-# H.J. Lu from Intel, very prominent on gcc 4.x bugzilla, advices
-# different settings:
-# * GCC 4.1:
-#   - use -march=prescott for Intel Core Solo/Duo
-#   - use -march=nocona (and an amd64 profile) for Core 2 Solo/Duo
-# * GCC 4.2:
-#   - use -march=prescott -mtune=generic for Intel Core Solo/Duo
-#   - use -march=nocona -mtune=generic for Intel Core 2 Solo/Duo
-CFLAGSF77LIBS := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77)
-CFLAGSF90     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF90)
-CFLAGSC       := -march=nocona -msse3 -mfpmath=sse $(CFLAGSC)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-coreduo-linux-intel-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-(athlon64x2|turion64|turion64x2)-.*-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
-CFLAGSF77     := -xT $(CFLAGSF77)
-CFLAGSF90     := -xT $(CFLAGSF90)
-CFLAGSC       := -xT $(CFLAGSC)
-CFLAGSCXX     := -xT $(CFLAGSCXX)
-LDFLAGS       := -xT $(LDFLAGS)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE3 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE3 $(CFLAGSF77)
+CFLAGSF90     := -xSSE3 $(CFLAGSF90)
+CFLAGSC       := -xSSE3 $(CFLAGSC)
+CFLAGSCXX     := -xSSE3 $(CFLAGSCXX)
+LDFLAGS       := -xSSE3 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -axP $(CFLAGSF77LIBS)
+CFLAGSF77     := -axP $(CFLAGSF77)
+CFLAGSF90     := -axP $(CFLAGSF90)
+CFLAGSC       := -axP $(CFLAGSC)
+CFLAGSCXX     := -axP $(CFLAGSCXX)
+LDFLAGS       := -axP $(LDFLAGS)
+endif
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc64-coreduo-linux-pgi-.*),yes)
+ifeq ($(call match,$(ID),pc-(athlon64|athlon64x2|turion64|turion64x2)-.*-pgi-.*),yes)
 # invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-MESSAGE  := $(MESSAGE) \
-	    echo '*** Warning: Not yet sure whether optimisation flags are optimal!';
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -tp=core2-64
-CFLAGSF77     := $(CFLAGSF77) -tp=core2-64
-CFLAGSF90     := $(CFLAGSF90) -tp=core2-64
-CFLAGSC       := $(CFLAGSC) -tp=core2-64
-LDFLAGS       := $(LDFLAGS) -tp=core2-64
-endif
-# Probably activate 64 bit integer support
-ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -i8
-CFLAGSF90     := $(CFLAGSF90) -i8
+CFLAGSF77LIBS := -tp k8-32 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp k8-32 $(CFLAGSF77)
+CFLAGSF90     := -tp k8-32 $(CFLAGSF90)
+CFLAGSC       := -tp k8-32 $(CFLAGSC)
+CFLAGSCXX     := -tp k8-32 $(CFLAGSCXX)
+LDFLAGS       := -tp k8-32 $(LDFLAGS)
 endif
 endif
 
+ifeq ($(call match,$(ID),pc64-(athlon64|athlon64x2|turion64|turion64x2)-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp k8-64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp k8-64 $(CFLAGSF77)
+CFLAGSF90     := -tp k8-64 $(CFLAGSF90)
+CFLAGSC       := -tp k8-64 $(CFLAGSC)
+CFLAGSCXX     := -tp k8-64 $(CFLAGSCXX)
+LDFLAGS       := -tp k8-64 $(LDFLAGS)
+endif
+endif
 
-ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
+ifeq ($(call match,$(ID),(pc|pc64)-(athlon64|athlon64x2|turion64|turion64x2)-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
+CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
+CFLAGSC       := -march=athlon64 $(CFLAGSC)
+CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
+LDFLAGS       := -march=athlon64 $(LDFLAGS)
+endif
 endif
 
 
-ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
 
+##############################################################################
+# AMD Athlon XP/MP
+#
+##############################################################################
 
-ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-.*-mpich2),yes)
-# Use MPICH2
-include $(TEMPLATESDIR)/mpich2-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-acml.*),yes)
-# Use AMD Core Math Library
-include $(TEMPLATESDIR)/acml-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-mkl.*),yes)
-# Use MKL BLAS
-include $(TEMPLATESDIR)/mkl-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-woodymkl.*),yes)
-# Use special BKL blas on Woodcrest cluster of the RRZE Erlangen
-LIBS := $(LIBS) $(MKL_LIB)
-TOKEN5 := 1
-endif
-
-
-################################# CoreSolo 32 bit ###############################
-
-ifeq ($(call match,$(ID),pc-coresolo-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
+ifeq ($(call match,$(ID),pc-athlonxp-.*-g95-.*),yes)
+# invokes the G95 Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-# According to http://archives.gentoo.org/gentoo-amd64/msg_14402.xml
-# H.J. Lu from Intel, very prominent on gcc 4.x bugzilla, advices
-# different settings:
-# * GCC 4.1:
-#   - use -march=prescott for Intel Core Solo/Duo
-#   - use -march=nocona (and an amd64 profile) for Core 2 Solo/Duo
-# * GCC 4.2:
-#   - use -march=prescott -mtune=generic for Intel Core Solo/Duo
-#   - use -march=nocona -mtune=generic for Intel Core 2 Solo/Duo
-CFLAGSF77LIBS := -march=pentium-m -mtune=prescott -msse $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=pentium-m -mtune=prescott -msse $(CFLAGSF77)
-CFLAGSF90     := -march=pentium-m -mtune=prescott -msse $(CFLAGSF90)
-CFLAGSC       := -march=pentium-m -mtune=prescott -msse $(CFLAGSC)
-CFLAGSCXX     := -march=pentium-m -mtune=prescott -msse $(CFLAGSCXX)
+CFLAGSF77LIBS := -march=athlon-xp $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon-xp $(CFLAGSF77)
+CFLAGSF90     := -march=athlon-xp $(CFLAGSF90)
+CFLAGSC       := -march=athlon-xp $(CFLAGSC)
+CFLAGSCXX     := -march=athlon-xp $(CFLAGSCXX)
+LDFLAGS       := -march=athlon-xp $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-coresolo-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
+ifeq ($(call match,$(ID),pc-athlonxp-.*-gcc-.*),yes)
+# invokes the gfortran Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-# According to http://archives.gentoo.org/gentoo-amd64/msg_14402.xml
-# H.J. Lu from Intel, very prominent on gcc 4.x bugzilla, advices
-# different settings:
-# * GCC 4.1:
-#   - use -march=prescott for Intel Core Solo/Duo
-#   - use -march=nocona (and an amd64 profile) for Core 2 Solo/Duo
-# * GCC 4.2:
-#   - use -march=prescott -mtune=generic for Intel Core Solo/Duo
-#   - use -march=nocona -mtune=generic for Intel Core 2 Solo/Duo
-CFLAGSF77LIBS := -march=pentium-m -mtune=prescott -msse $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=pentium-m -mtune=prescott -msse $(CFLAGSF77)
-CFLAGSF90     := -march=pentium-m -mtune=prescott -msse $(CFLAGSF90)
-CFLAGSC       := -march=pentium-m -mtune=prescott -msse $(CFLAGSC)
-CFLAGSCXX     := -march=pentium-m -mtune=prescott -msse $(CFLAGSCXX)
+CFLAGSF77LIBS := -march=athlon-xp $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon-xp $(CFLAGSF77)
+CFLAGSF90     := -march=athlon-xp $(CFLAGSF90)
+CFLAGSC       := -march=athlon-xp $(CFLAGSC)
+CFLAGSCXX     := -march=athlon-xp $(CFLAGSCXX)
+LDFLAGS       := -march=athlon-xp $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-coresolo-linux-intel-.*),yes)
+ifeq ($(call match,$(ID),pc-athlonxp-.*-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xP $(CFLAGSF77LIBS)
-CFLAGSF77     := -xP $(CFLAGSF77)
-CFLAGSF90     := -xP $(CFLAGSF90)
-CFLAGSC       := -xP $(CFLAGSC)
-CFLAGSCXX     := -xP $(CFLAGSCXX)
-LDFLAGS       := -xP $(LDFLAGS)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE $(CFLAGSF77)
+CFLAGSF90     := -xSSE $(CFLAGSF90)
+CFLAGSC       := -xSSE $(CFLAGSC)
+CFLAGSCXX     := -xSSE $(CFLAGSCXX)
+LDFLAGS       := -xSSE $(LDFLAGS)
+else
+CFLAGSF77LIBS := -axK $(CFLAGSF77LIBS)
+CFLAGSF77     := -axK $(CFLAGSF77)
+CFLAGSF90     := -axK $(CFLAGSF90)
+CFLAGSC       := -axK $(CFLAGSC)
+CFLAGSCXX     := -axK $(CFLAGSCXX)
+LDFLAGS       := -axK $(LDFLAGS)
+endif
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-coresolo-linux-gcc-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
+ifeq ($(call match,$(ID),pc-athlonxp-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=prescott $(CFLAGSF77)
-CFLAGSF90     := -march=prescott $(CFLAGSF90)
-CFLAGSC       := -march=prescott $(CFLAGSC)
-CFLAGSCXX     := -march=prescott $(CFLAGSCXX)
-LDFLAGS       := -march=prescott $(LDFLAGS)
+CFLAGSF77LIBS := -tp athlonxp $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp athlonxp $(CFLAGSF77)
+CFLAGSF90     := -tp athlonxp $(CFLAGSF90)
+CFLAGSC       := -tp athlonxp $(CFLAGSC)
+CFLAGSCXX     := -tp athlonxp $(CFLAGSCXX)
+LDFLAGS       := -tp athlonxp $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-coresolo-linux-sunstudio-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
+ifeq ($(call match,$(ID),pc-athlonxp-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/sunstudio-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=athlon $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon $(CFLAGSF77)
+CFLAGSF90     := -march=athlon $(CFLAGSF90)
+CFLAGSC       := -march=athlon $(CFLAGSC)
+CFLAGSCXX     := -march=athlon $(CFLAGSCXX)
+LDFLAGS       := -march=athlon $(LDFLAGS)
+endif
 endif
 
 
-ifeq ($(call match,$(ID),pc-coresolo-linux-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
-endif
+
+##############################################################################
+# AMD Athlon II
+#
+##############################################################################
+
+# MM: Don't know yet what type of processor this is
 
 
-ifeq ($(call match,$(ID),pc-coresolo-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
 
+##############################################################################
+# AMD Opteron (X2)
+#
+##############################################################################
 
-ifeq ($(call match,$(ID),pc-coresolo-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-coresolo-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-coresolo-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-############################### Opteron 32bit ################################
-
-ifeq ($(call match,$(ID),pc-opteron-cygwin_nt.*-g95-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-(opteron|opteronx2)-.*-g95-.*),yes)
 # invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
@@ -1114,264 +646,94 @@ CFLAGSF77     := -march=opteron $(CFLAGSF77)
 CFLAGSF90     := -march=opteron $(CFLAGSF90)
 CFLAGSC       := -march=opteron $(CFLAGSC)
 CFLAGSCXX     := -march=opteron $(CFLAGSCXX)
+LDFLAGS       := -march=opteron $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-opteron-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
+ifeq ($(call match,$(ID),(pc|pc64)-(opteron|opteronx2)-.*-gcc-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=opteron $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=opteron $(CFLAGSF77)
 CFLAGSF90     := -march=opteron $(CFLAGSF90)
 CFLAGSC       := -march=opteron $(CFLAGSC)
 CFLAGSCXX     := -march=opteron $(CFLAGSCXX)
+LDFLAGS       := -march=opteron $(LDFLAGS)
 endif
 endif
 
 
-ifeq ($(call match,$(ID),pc-opteron-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=opteron $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=opteron $(CFLAGSF77)
-CFLAGSF90     := -march=opteron $(CFLAGSF90)
-CFLAGSC       := -march=opteron $(CFLAGSC)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-opteron-linux-intel-.*),yes)
+ifeq ($(call match,$(ID),(pc|pc64)-(opteron|opteronx2)-.*-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xW $(CFLAGSF77LIBS)
-CFLAGSF77     := -xW $(CFLAGSF77)
-CFLAGSF90     := -xW $(CFLAGSF90)
-CFLAGSC       := -xW $(CFLAGSC)
-CFLAGSCXX     := -xW $(CFLAGSCXX)
-LDFLAGS       := -xW $(LDFLAGS)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE2 $(CFLAGSF77)
+CFLAGSF90     := -xSSE2 $(CFLAGSF90)
+CFLAGSC       := -xSSE2 $(CFLAGSC)
+CFLAGSCXX     := -xSSE2 $(CFLAGSCXX)
+LDFLAGS       := -xSSE2 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -axW $(CFLAGSF77LIBS)
+CFLAGSF77     := -axW $(CFLAGSF77)
+CFLAGSF90     := -axW $(CFLAGSF90)
+CFLAGSC       := -axW $(CFLAGSC)
+CFLAGSCXX     := -axW $(CFLAGSCXX)
+LDFLAGS       := -axW $(LDFLAGS)
+endif
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-opteron-linux-sunstudio-.*),yes)
-# invokes the Sun Studio Compiler suite, local umfpack
+ifeq ($(call match,$(ID),pc-phenom(opteron|opteronx2)-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/sunstudio-generic.mk
-# # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
-# Architecture-specific optimisation missing!
-# DOM: sunstudio seems to do this automatically.
-# # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
-#ifeq ($(call optimise), YES)
-#CFLAGSF77LIBS := -xtarget=opteron -xarch=<DON'T KNOW> $(CFLAGSF77LIBS)
-#CFLAGSF77     := -xtarget=opteron -xarch=<DON'T KNOW> $(CFLAGSF77)
-#CFLAGSF90     := -xtarget=opteron -xarch=<DON'T KNOW> $(CFLAGSF90)
-#CFLAGSC       := -xtarget=opteron -xarch=<DON'T KNOW> -xc99 $(CFLAGSC)
-#endif
-#CFLAGSC       := -xc99 $(CFLAGSC)
-endif
-
-
-ifeq ($(call match,$(ID),pc-opteron-linux-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-opteron-linux-.*-.*-mpich2),yes)
-# Use MPICH2
-include $(TEMPLATESDIR)/mpich2-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-opteron-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-opteron-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-opteron-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-opteron-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-########################### Opteron 32bit DualCore ##########################
-
-ifeq ($(call match,$(ID),pc-opteronx2-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/intel-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xW #-tpp7
-CFLAGSF77     := $(CFLAGSF77) -xW #-tpp7
-CFLAGSF90     := $(CFLAGSF90) -xW #-tpp7
-CFLAGSC       := $(CFLAGSC) -xW #-tpp7
-LDFLAGS       := $(LDFLAGS) -xW #-tpp7
+CFLAGSF77LIBS := -tp k8-32 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp k8-32 $(CFLAGSF77)
+CFLAGSF90     := -tp k8-32 $(CFLAGSF90)
+CFLAGSC       := -tp k8-32 $(CFLAGSC)
+CFLAGSCXX     := -tp k8-32 $(CFLAGSCXX)
+LDFLAGS       := -tp k8-32 $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-opteronx2-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-opteronx2-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-opteronx2-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-opteronx2-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-########################### Opteron 64bit DualCore ##########################
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
+ifeq ($(call match,$(ID),pc64-(opteron|opteronx2)-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/intel-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xW #-tpp7
-CFLAGSF77     := $(CFLAGSF77) -xW #-tpp7
-CFLAGSF90     := $(CFLAGSF90) -xW #-tpp7
-CFLAGSC       := $(CFLAGSC) -xW #-tpp7
-LDFLAGS       := $(LDFLAGS) -xW #-tpp7
+CFLAGSF77LIBS := -tp k8-64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp k8-64 $(CFLAGSF77)
+CFLAGSF90     := -tp k8-64 $(CFLAGSF90)
+CFLAGSC       := -tp k8-64 $(CFLAGSC)
+CFLAGSCXX     := -tp k8-64 $(CFLAGSCXX)
+LDFLAGS       := -tp k8-64 $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc64-opteronx2-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-# invokes the GNU g95 compiler, local umfpack
+ifeq ($(call match,$(ID),(pc|pc64)-(opteron|opteronx2)-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
-CFLAGSF77     := $(CFLAGSF77) -m64
-CFLAGSF90     := $(CFLAGSF90) -m64
-CFLAGSC       := $(CFLAGSC) -m64
-LDFLAGS       := $(LDFLAGS) -m64
+include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -march=opteron
-CFLAGSF77     := $(CFLAGSF77) -march=opteron
-CFLAGSF90     := $(CFLAGSF90) -march=opteron
-CFLAGSC       := $(CFLAGSC) -march=opteron
+CFLAGSF77LIBS := -mtune=opteron -mcpu=opteron -march=opteron $(CFLAGSF77LIBS)
+CFLAGSF77     := -mtune=opteron -mcpu=opteron -march=opteron $(CFLAGSF77)
+CFLAGSF90     := -mtune=opteron -mcpu=opteron -march=opteron $(CFLAGSF90)
+CFLAGSC       := -mtune=opteron -mcpu=opteron -march=opteron $(CFLAGSC)
+CFLAGSCCC     := -mtune=opteron -mcpu=opteron -march=opteron $(CFLAGSCCC)
+LDFLAGS       := -mtune=opteron -mcpu=opteron -march=opteron $(LDFLAGS)
 endif
 endif
 
 
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
-CFLAGSF77     := $(CFLAGSF77) -m64
-CFLAGSF90     := $(CFLAGSF90) -m64
-CFLAGSC       := $(CFLAGSC) -m64
-LDFLAGS       := $(LDFLAGS) -m64
-ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -march=opteron
-CFLAGSF77     := $(CFLAGSF77) -march=opteron
-CFLAGSF90     := $(CFLAGSF90) -march=opteron
-CFLAGSC       := $(CFLAGSC) -march=opteron
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
-CFLAGSF77     := $(CFLAGSF77) -m64
-CFLAGSF90     := $(CFLAGSF90) -m64
-CFLAGSC       := $(CFLAGSC) -m64
-LDFLAGS       := $(LDFLAGS) -m64
-ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -march=opteron
-CFLAGSF77     := $(CFLAGSF77) -march=opteron
-CFLAGSF90     := $(CFLAGSF90) -march=opteron
-CFLAGSC       := $(CFLAGSC) -march=opteron
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-sunstudio-.*),yes)
-# invokes the Sun Studio Compiler suite, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/sunstudio-generic.mk
-# Sun Studio seems to optimise automatically for the detected CPU.
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-.*-lanlmpi),yes)
-# Use LANL MPI
-include $(TEMPLATESDIR)/lanlmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-.*-mpich2),yes)
-# Use MPICH2
-include $(TEMPLATESDIR)/mpich2-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-mkl.*),yes)
-# Use Intel Math Kernel Library
-include $(TEMPLATESDIR)/mkl-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-goto),yes)
-# Use GotoBLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
+###
+### SPECIAL RULES NOT CHECKED YET !!!
+###
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-goto2),yes)
 # Use GotoBLAS 2
@@ -1382,196 +744,6 @@ ifeq ($(call match,$(ID),pc64-opteronx2-linux-intel-goto2.*),yes)
 LIBS := $(LIBS) -lsvml
 endif
 endif
-
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-.*),yes)
-# Add preprocessor flag to enable 64bit UMFPACK support.
-# UMFPACK documentation states to also add -DLP64, but there is no
-# reference to it in the UMFPACK 5.2 sources.
-#CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
-#CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
-endif
-
-
-############################### Opteron 64bit ################################
-
-ifeq ($(call match,$(ID),pc64-opteron-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
-CFLAGSF77     := $(CFLAGSF77) -m64
-CFLAGSF90     := $(CFLAGSF90) -m64
-CFLAGSC       := $(CFLAGSC) -m64
-LDFLAGS       := $(LDFLAGS) -m64
-ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -march=opteron
-CFLAGSF77     := $(CFLAGSF77) -march=opteron
-CFLAGSF90     := $(CFLAGSF90) -march=opteron
-CFLAGSC       := $(CFLAGSC) -march=opteron
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
-CFLAGSF77     := $(CFLAGSF77) -m64
-CFLAGSF90     := $(CFLAGSF90) -m64
-CFLAGSC       := $(CFLAGSC) -m64
-LDFLAGS       := $(LDFLAGS) -m64
-ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -march=opteron
-CFLAGSF77     := $(CFLAGSF77) -march=opteron
-CFLAGSF90     := $(CFLAGSF90) -march=opteron
-CFLAGSC       := $(CFLAGSC) -march=opteron
-endif
-# Probably activate 64 bit integer support
-ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -i8
-CFLAGSF90     := $(CFLAGSF90) -i8
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
-CFLAGSF77     := $(CFLAGSF77) -m64
-CFLAGSF90     := $(CFLAGSF90) -m64
-CFLAGSC       := $(CFLAGSC) -m64
-LDFLAGS       := $(LDFLAGS) -m64
-ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -march=opteron
-CFLAGSF77     := $(CFLAGSF77) -march=opteron
-CFLAGSF90     := $(CFLAGSF90) -march=opteron
-CFLAGSC       := $(CFLAGSC) -march=opteron
-endif
-# Probably activate 64 bit integer support
-ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -fdefault-integer-8
-CFLAGSF90     := $(CFLAGSF90) -fdefault-integer-8
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/intel-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xW #-tpp7
-CFLAGSF77     := $(CFLAGSF77) -xW     #-tpp7
-CFLAGSF90     := $(CFLAGSF90) -xW     #-tpp7
-CFLAGSC       := $(CFLAGSC) -xW       #-tpp7
-LDFLAGS       := $(LDFLAGS) -xW       #-tpp7
-endif
-# Probably activate 64 bit integer support
-ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -integer_size 64 
-CFLAGSF90     := $(CFLAGSF90) -integer_size 64 
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-pgi-.*),yes)
-# invokes the Portland Group Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/pgi-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -tp=k8-64
-CFLAGSF77     := $(CFLAGSF77) -tp=k8-64
-CFLAGSF90     := $(CFLAGSF90) -tp=k8-64
-CFLAGSC       := $(CFLAGSC) -tp=k8-64
-LDFLAGS       := $(LDFLAGS) -tp=k8-64
-endif
-# Probably activate 64 bit integer support
-ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -i8
-CFLAGSF90     := $(CFLAGSF90) -i8
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-psc-.*),yes)
-# invokes the PathScale Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/pathscale-generic.mk
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
-CFLAGSF77     := $(CFLAGSF77) -m64
-CFLAGSF90     := $(CFLAGSF90) -m64
-CFLAGSC       := $(CFLAGSC) -m64
-LDFLAGS       := $(LDFLAGS) -m64
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -mtune=opteron -mcpu=opteron -march=opteron
-CFLAGSF77     := $(CFLAGSF77) -mtune=opteron -mcpu=opteron -march=opteron
-CFLAGSF90     := $(CFLAGSF90) -mtune=opteron -mcpu=opteron -march=opteron
-CFLAGSC       := $(CFLAGSC) -mtune=opteron -mcpu=opteron -march=opteron
-LDFLAGS       := $(LDFLAGS) -mtune=opteron -mcpu=opteron -march=opteron
-endif
-# Probably activate 64 bit integer support
-ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -i8
-CFLAGSF90     := $(CFLAGSF90) -i8
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-sunstudio-.*),yes)
-# invokes the Sun Studio Compiler suite, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/sunstudio-generic.mk
-# # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
-# Architecture-specific optimisation missing!
-# DOM: sunstudio seems to do this automatically.
-# # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
-#CFLAGSC       := $(CFLAGSC) -xc99
-CFLAGSF77     := $(CFLAGSF77) -m64 -xmodel=medium
-CFLAGSF90     := $(CFLAGSF90) -m64 -xmodel=medium
-CFLAGSC       := $(CFLAGSC) -m64 -xmodel=medium
-LDFLAGS       := $(LDFLAGS) -m64 -xmodel=medium
-# Probably activate 64 bit integer support
-ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -xtypemap=integer:64
-CFLAGSF90     := $(CFLAGSF90) -xtypemap=integer:64
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-mpich),yes)
-# Use MPICH
-include $(TEMPLATESDIR)/mpich-generic.mk
-endif
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-mpich2),yes)
-# Use MPICH2
-include $(TEMPLATESDIR)/mpich2-generic.mk
-endif
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-mvapich),yes)
-# Use MVAPICH
-include $(TEMPLATESDIR)/mvapich-generic.mk
-endif
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
-endif
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-optmpich),yes)
 # Use Allinea Opt MPI
@@ -1606,114 +778,364 @@ SRCEXTRA      := $(SRCEXTRA) mpir_iargc.f
 endif
 
 
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-acml.*),yes)
-# Use AMD Core Math Library
-include $(TEMPLATESDIR)/acml-generic.mk
-endif
 
+##############################################################################
+# AMD Phenom (Barcelona)
+#
+##############################################################################
 
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-atlas.*),yes)
-# Use ATLAS BLAS
-include $(TEMPLATESDIR)/atlasblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-mkl.*),yes)
-# Use Intel Math Kernel Library
-include $(TEMPLATESDIR)/mkl-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*),yes)
-# Add preprocessor flag to enable 64bit UMFPACK support. 
-# UMFPACK documentation states to also add -DLP64, but there is no 
-# reference to it in the UMFPACK 5.2 sources.
-ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
-CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
-endif
-endif
-
-
-###################### Opteron 64bit running 32bit app #######################
-
-ifeq ($(call match,$(ID),pc64-opteron_ia32-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
+ifeq ($(call match,$(ID),(pc|pc64)-phenom-.*-g95-.*),yes)
+# invokes the G95 Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
-CFLAGSF77LIBS := -m32 $(CFLAGSF77LIBS)
-CFLAGSF77     := -m32 $(CFLAGSF77)
-CFLAGSF90     := -m32 $(CFLAGSF90)
-CFLAGSC       := -m32 $(CFLAGSC)
-LDFLAGS       := -m32 $(LDFLAGS)
 ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
-CFLAGSF77LIBS := -march=opteron -mfpmath=sse -msse2 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=opteron -mfpmath=sse -msse2 $(CFLAGSF77)
-CFLAGSF90     := -march=opteron -mfpmath=sse -msse2 $(CFLAGSF90)
-CFLAGSC       := -march=opteron -mfpmath=sse -msse2 $(CFLAGSC)
+CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
+CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
+CFLAGSC       := -march=athlon64 $(CFLAGSC)
+CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
+LDFLAGS       := -march=athlon64 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-phenom-.*-gcc-.*),yes)
+# invokes the gfortran Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=amdfam10 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=amdfam10 $(CFLAGSF77)
+CFLAGSF90     := -march=amdfam10 $(CFLAGSF90)
+CFLAGSC       := -march=amdfam10 $(CFLAGSC)
+CFLAGSCXX     := -march=amdfam10 $(CFLAGSCXX)
+LDFLAGS       := -march=amdfam10 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-phenom-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE4.1 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE4.1 $(CFLAGSF77)
+CFLAGSF90     := -xSSE4.1 $(CFLAGSF90)
+CFLAGSC       := -xSSE4.1 $(CFLAGSC)
+CFLAGSCXX     := -xSSE4.1 $(CFLAGSCXX)
+LDFLAGS       := -xSSE4.1 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
+CFLAGSF77     := -xT $(CFLAGSF77)
+CFLAGSF90     := -xT $(CFLAGSF90)
+CFLAGSC       := -xT $(CFLAGSC)
+CFLAGSCXX     := -xT $(CFLAGSCXX)
+LDFLAGS       := -xT $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-phenom-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp barcelona-32 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp barcelona-32 $(CFLAGSF77)
+CFLAGSF90     := -tp barcelona-32 $(CFLAGSF90)
+CFLAGSC       := -tp barcelona-32 $(CFLAGSC)
+CFLAGSCXX     := -tp barcelona-32 $(CFLAGSCXX)
+LDFLAGS       := -tp barcelona-32 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-phenom-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp barcelona-64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp barcelona-64 $(CFLAGSF77)
+CFLAGSF90     := -tp barcelona-64 $(CFLAGSF90)
+CFLAGSC       := -tp barcelona-64 $(CFLAGSC)
+CFLAGSCXX     := -tp barcelona-64 $(CFLAGSCXX)
+LDFLAGS       := -tp barcelona-64 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-phenom-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=barcelona $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=barcelona $(CFLAGSF77)
+CFLAGSF90     := -march=barcelona $(CFLAGSF90)
+CFLAGSC       := -march=barcelona $(CFLAGSC)
+CFLAGSCXX     := -march=barcelona $(CFLAGSCXX)
+LDFLAGS       := -march=barcelona $(LDFLAGS)
 endif
 endif
 
 
-ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
+
+##############################################################################
+# AMD Phenom II (Shanghai)
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),(pc|pc64)-phenomII-.*-g95-.*),yes)
+# invokes the G95 Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
-CFLAGSF77LIBS := -m32 $(CFLAGSF77LIBS)
-CFLAGSF77     := -m32 $(CFLAGSF77)
-CFLAGSF90     := -m32 $(CFLAGSF90)
-CFLAGSC       := -m32 $(CFLAGSC)
-LDFLAGS       := -m32 $(LDFLAGS)
 ifeq ($(call optimise), YES)
-# -mmx -m3dnow -mfpmath=sse -msse -msse2 are automatically set by -march=opteron
-CFLAGSF77LIBS := -march=opteron -mfpmath=sse -msse2 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=opteron -mfpmath=sse -msse2 $(CFLAGSF77)
-CFLAGSF90     := -march=opteron -mfpmath=sse -msse2 $(CFLAGSF90)
-CFLAGSC       := -march=opteron -mfpmath=sse -msse2 $(CFLAGSC)
+CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
+CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
+CFLAGSC       := -march=athlon64 $(CFLAGSC)
+CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
+LDFLAGS       := -march=athlon64 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-phenomII-.*-gcc-.*),yes)
+# invokes the gfortran Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=amdfam10 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=amdfam10 $(CFLAGSF77)
+CFLAGSF90     := -march=amdfam10 $(CFLAGSF90)
+CFLAGSC       := -march=amdfam10 $(CFLAGSC)
+CFLAGSCXX     := -march=amdfam10 $(CFLAGSCXX)
+LDFLAGS       := -march=amdfam10 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-phenomII-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE4.1 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE4.1 $(CFLAGSF77)
+CFLAGSF90     := -xSSE4.1 $(CFLAGSF90)
+CFLAGSC       := -xSSE4.1 $(CFLAGSC)
+CFLAGSCXX     := -xSSE4.1 $(CFLAGSCXX)
+LDFLAGS       := -xSSE4.1 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
+CFLAGSF77     := -xT $(CFLAGSF77)
+CFLAGSF90     := -xT $(CFLAGSF90)
+CFLAGSC       := -xT $(CFLAGSC)
+CFLAGSCXX     := -xT $(CFLAGSCXX)
+LDFLAGS       := -xT $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-phenomII-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp shanghai-32 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp shanghai-32 $(CFLAGSF77)
+CFLAGSF90     := -tp shanghai-32 $(CFLAGSF90)
+CFLAGSC       := -tp shanghai-32 $(CFLAGSC)
+CFLAGSCXX     := -tp shanghai-32 $(CFLAGSCXX)
+LDFLAGS       := -tp shanghai-32 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-phenomII-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp shanghai-64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp shanghai-64 $(CFLAGSF77)
+CFLAGSF90     := -tp shanghai-64 $(CFLAGSF90)
+CFLAGSC       := -tp shanghai-64 $(CFLAGSC)
+CFLAGSCXX     := -tp shanghai-64 $(CFLAGSCXX)
+LDFLAGS       := -tp shanghai-64 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-phenomII-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=barcelona $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=barcelona $(CFLAGSF77)
+CFLAGSF90     := -march=barcelona $(CFLAGSF90)
+CFLAGSC       := -march=barcelona $(CFLAGSC)
+CFLAGSCXX     := -march=barcelona $(CFLAGSCXX)
+LDFLAGS       := -march=barcelona $(LDFLAGS)
 endif
 endif
 
 
-ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
+
+##############################################################################
+# AMD Opteron 4100 (Istanbul) / 6100 (Magny Cours)
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),(pc|pc64)-(opteron4100|opteron6100)-.*-g95-.*),yes)
+# invokes the G95 Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
+CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
+CFLAGSC       := -march=athlon64 $(CFLAGSC)
+CFLAGSCXX     := -march=athlon64 $(CFLAGSCXX)
+LDFLAGS       := -march=athlon64 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-(opteron4100|opteron6100)-.*-gcc-.*),yes)
+# invokes the gfortran Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=amdfam10 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=amdfam10 $(CFLAGSF77)
+CFLAGSF90     := -march=amdfam10 $(CFLAGSF90)
+CFLAGSC       := -march=amdfam10 $(CFLAGSC)
+CFLAGSCXX     := -march=amdfam10 $(CFLAGSCXX)
+LDFLAGS       := -march=amdfam10 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-(opteron4100|opteron6100)-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE4.1 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE4.1 $(CFLAGSF77)
+CFLAGSF90     := -xSSE4.1 $(CFLAGSF90)
+CFLAGSC       := -xSSE4.1 $(CFLAGSC)
+CFLAGSCXX     := -xSSE4.1 $(CFLAGSCXX)
+LDFLAGS       := -xSSE4.1 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
+CFLAGSF77     := -xT $(CFLAGSF77)
+CFLAGSF90     := -xT $(CFLAGSF90)
+CFLAGSC       := -xT $(CFLAGSC)
+CFLAGSCXX     := -xT $(CFLAGSCXX)
+LDFLAGS       := -xT $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-(opteron4100|opteron6100)-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp istanbul-32 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp istanbul-32 $(CFLAGSF77)
+CFLAGSF90     := -tp istanbul-32 $(CFLAGSF90)
+CFLAGSC       := -tp istanbul-32 $(CFLAGSC)
+CFLAGSCXX     := -tp istanbul-32 $(CFLAGSCXX)
+LDFLAGS       := -tp istanbul-32 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-(opteron4100|opteron6100)-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp istanbul-64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp istanbul-64 $(CFLAGSF77)
+CFLAGSF90     := -tp istanbul-64 $(CFLAGSF90)
+CFLAGSC       := -tp istanbul-64 $(CFLAGSC)
+CFLAGSCXX     := -tp istanbul-64 $(CFLAGSCXX)
+LDFLAGS       := -tp istanbul-64 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-phenomII-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=barcelona $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=barcelona $(CFLAGSF77)
+CFLAGSF90     := -march=barcelona $(CFLAGSF90)
+CFLAGSC       := -march=barcelona $(CFLAGSC)
+CFLAGSCXX     := -march=barcelona $(CFLAGSCXX)
+LDFLAGS       := -march=barcelona $(LDFLAGS)
+endif
 endif
 
 
-ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
+
+##############################################################################
+# IBM Regatta
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-xlf-.*-poempi),yes)
+# invokes the IBM XL Fortran compiler, uses POE MPI
+# local umfpack
+TOKEN6 := 1
+include $(TEMPLATESDIR)/xlf-generic.mk
+include $(TEMPLATESDIR)/ibm-powerpc_power4-aix-generic.mk
+# The system provides a METIS library, but we have problems using it.
+# Ensure that we use our own METIS library by hard-coding the path.
+LIBS      = $(OBJDIR_LIB)/libmetis.a -lumfpack -lamd
+#SBB_LIBS := $(SBB_LIBS)
+endif
+
+ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-.*-essl.*),yes)
+# Use ESSL BLAS and self-compiled LAPACK
+TOKEN5 := 1
+BUILDLIB := $(BUILDLIB) lapack
+LIBS     := $(LIBS) -llapack -lessl 
+SBB_BUILDLIB := $(SBB_BUILDLIB) lapack
+SBB_LIBS := $(SBB_LIBS) -llapack-lessl
+endif
+
+ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-.*-goto.*),yes)
+# Use Goto BLAS and self-compiled LAPACK
+TOKEN5 := 1
+BUILDLIB := $(BUILDLIB) lapack
+LIBS     := $(LIBS) -lblas_Goto -llapack
+SBB_BUILDLIB := $(SBB_BUILDLIB) lapack
+SBB_LIBS := $(SBB_LIBS) -lblas_Goto -llapack
 endif
 
 
-ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
+
+##############################################################################
+# Intel Pentium 3
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),pc-pentium3-.*-g95-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=pentium3 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=pentium3 $(CFLAGSF77)
+CFLAGSF90     := -march=pentium3 $(CFLAGSF90)
+CFLAGSC       := -march=pentium3 $(CFLAGSC)
+CFLAGSCXX     := -march=pentium3 $(CFLAGSCXX)
+LDFLAGS       := -march=pentium3 $(LDFLAGS)
+endif
 endif
 
-
-################################# Pentium 3 ##################################
-
-ifeq ($(call match,$(ID),pc-pentium3-linux-gcc-.*),yes)
+ifeq ($(call match,$(ID),pc-pentium3-.*-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
@@ -1722,86 +1144,70 @@ CFLAGSF77LIBS := -march=pentium3 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium3 $(CFLAGSF77)
 CFLAGSF90     := -march=pentium3 $(CFLAGSF90)
 CFLAGSC       := -march=pentium3 $(CFLAGSC)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium3-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium3 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=pentium3 $(CFLAGSF77)
-CFLAGSF90     := -march=pentium3 $(CFLAGSF90)
-CFLAGSC       := -march=pentium3 $(CFLAGSC)
+CFLAGSCXX     := -march=pentium3 $(CFLAGSCXX)
 LDFLAGS       := -march=pentium3 $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-pentium3-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium3 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=pentium3 $(CFLAGSF77)
-CFLAGSF90     := -march=pentium3 $(CFLAGSF90)
-CFLAGSC       := -march=pentium3 $(CFLAGSC)
-LDFLAGS       := -march=pentium3 $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium3-linux-intel-.*),yes)
+ifeq ($(call match,$(ID),pc-pentium3-.*-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xW $(CFLAGSF77LIBS)
-CFLAGSF77     := -xW $(CFLAGSF77)
-CFLAGSF90     := -xW $(CFLAGSF90)
-CFLAGSC       := -xW $(CFLAGSC)
-CFLAGSCXX     := -xW $(CFLAGSCXX)
-LDFLAGS       := -xW $(LDFLAGS)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE $(CFLAGSF77)
+CFLAGSF90     := -xSSE $(CFLAGSF90)
+CFLAGSC       := -xSSE $(CFLAGSC)
+CFLAGSCXX     := -xSSE $(CFLAGSCXX)
+LDFLAGS       := -xSSE $(LDFLAGS)
+else
+CFLAGSF77LIBS := -xK $(CFLAGSF77LIBS)
+CFLAGSF77     := -xK $(CFLAGSF77)
+CFLAGSF90     := -xK $(CFLAGSF90)
+CFLAGSC       := -xK $(CFLAGSC)
+CFLAGSCXX     := -xK $(CFLAGSCXX)
+LDFLAGS       := -xK $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-pentium3-.*-pgi-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp piii $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp piii $(CFLAGSF77)
+CFLAGSF90     := -tp piii $(CFLAGSF90)
+CFLAGSC       := -tp piii $(CFLAGSC)
+CFLAGSCXX     := -tp piii $(CFLAGSCXX)
+LDFLAGS       := -tp piii $(LDFLAGS)
 endif
 endif
 
 
-ifeq ($(call match,$(ID),pc-pentium3-linux-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
+
+##############################################################################
+# Intel Pentium M
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),pc-pentiumm-.*-g95-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=pentium-m $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=pentium-m $(CFLAGSF77)
+CFLAGSF90     := -march=pentium-m $(CFLAGSF90)
+CFLAGSC       := -march=pentium-m $(CFLAGSC)
+CFLAGSCXX     := -march=pentium-m $(CFLAGSCXX)
+LDFLAGS       := -march=pentium-m $(LDFLAGS)
+endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-pentium3-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium3-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium3-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium3-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-################################# Pentium M ##################################
-
-ifeq ($(call match,$(ID),pc-pentiumm-linux-gcc-.*),yes)
+ifeq ($(call match,$(ID),pc-pentiumm-.*-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
@@ -1810,489 +1216,280 @@ CFLAGSF77LIBS := -march=pentium-m $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium-m $(CFLAGSF77)
 CFLAGSF90     := -march=pentium-m $(CFLAGSF90)
 CFLAGSC       := -march=pentium-m $(CFLAGSC)
+CFLAGSCXX     := -march=pentium-m $(CFLAGSCXX)
+LDFLAGS       := -march=pentium-m $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc-pentiumm-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentiumm-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentiumm-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentiumm-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-################################# Pentium 4 ##################################
-
-ifeq ($(call match,$(ID),pc-pentium4-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium4 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=pentium4 $(CFLAGSF77)
-CFLAGSF90     := -march=pentium4 $(CFLAGSF90)
-CFLAGSC       := -march=pentium4 $(CFLAGSC)
-LDFLAGS       := -march=pentium4 $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium4 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=pentium4 $(CFLAGSF77)
-CFLAGSF90     := -march=pentium4 $(CFLAGSF90)
-CFLAGSC       := -march=pentium4 $(CFLAGSC)
-LDFLAGS       := -march=pentium4 $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4-linux-intel-.*),yes)
+ifeq ($(call match,$(ID),pc-pentiumm-.*-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xN $(CFLAGSF77LIBS) #-tpp6
-CFLAGSF77     := -xN $(CFLAGSF77)     #-tpp6
-CFLAGSF90     := -xN $(CFLAGSF90)     #-tpp6
-CFLAGSC       := -xN $(CFLAGSC)       #-tpp6
-LDFLAGS       := -xN $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4-linux-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-############################# Pentium 4 (Nocona) #############################
-
-ifeq ($(call match,$(ID),pc64-pentium4-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/intel-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -xP $(CFLAGSF77LIBS)
-CFLAGSF77     := -xP $(CFLAGSF77)
-CFLAGSF90     := -xP $(CFLAGSF90)
-CFLAGSC       := -xP $(CFLAGSC)
-LDFLAGS       := -xP $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-.*-lanlmpi),yes)
-# Use LANL MPI
-include $(TEMPLATESDIR)/lanlmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-pentium4-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-############################## Pentium 4 Mobile ##############################
-
-ifeq ($(call match,$(ID),pc-pentium4m-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium4m $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=pentium4m $(CFLAGSF77)
-CFLAGSF90     := -march=pentium4m $(CFLAGSF90)
-CFLAGSC       := -march=pentium4m $(CFLAGSC)
-LDFLAGS       := -march=pentium4m $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4m-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium4m $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=pentium4m $(CFLAGSF77)
-CFLAGSF90     := -march=pentium4m $(CFLAGSF90)
-CFLAGSC       := -march=pentium4m $(CFLAGSC)
-LDFLAGS       := -march=pentium4m $(LDFLAGS)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4m-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium4m $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=pentium4m $(CFLAGSF77)
-CFLAGSF90     := -march=pentium4m $(CFLAGSF90)
-CFLAGSC       := -march=pentium4m $(CFLAGSC)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4m-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/intel-generic.mk
-ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE2 $(CFLAGSF77)
+CFLAGSF90     := -xSSE2 $(CFLAGSF90)
+CFLAGSC       := -xSSE2 $(CFLAGSC)
+CFLAGSCXX     := -xSSE2 $(CFLAGSCXX)
+LDFLAGS       := -xSSE2 $(LDFLAGS)
+else
 CFLAGSF77LIBS := -xB $(CFLAGSF77LIBS)
 CFLAGSF77     := -xB $(CFLAGSF77)
 CFLAGSF90     := -xB $(CFLAGSF90)
 CFLAGSC       := -xB $(CFLAGSC)
+CFLAGSCXX     := -xB $(CFLAGSCXX)
 LDFLAGS       := -xB $(LDFLAGS)
 endif
 endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4m-linux-sunstudio-.*),yes)
-# invokes the Sun Studio Compiler suite, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/sunstudio-generic.mk
-#CFLAGSC       := -xc99 $(CFLAGSC)
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc-pentium4m-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
 
 
-######################### Nehalem 64 bit (Xeon X5560) #########################
-#########################   Nehalem 64 bit (HP BETA)  #########################
-#########################        Core i7 64 bit       #########################
+##############################################################################
+# Intel Pentium 4
+#
+##############################################################################
 
-ifeq ($(call match,$(ID),pc64-nehalem-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/intel-generic.mk
-ifeq ($(strip $(optimise)), YES)
-# older intel versions
-ifneq (,$(findstring 10.1.,$(INTELVERSION)))
-CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
-CFLAGSF77     := -xT $(CFLAGSF77)
-CFLAGSF90     := -xT $(CFLAGSF90)
-CFLAGSC       := -xT $(CFLAGSC)
-CFLAGSCXX     := -xT $(CFLAGSCXX)
-CFLAGSCOPROC  := -xT $(CFLAGSCOPROC)
-LDFLAGS       := -xT $(LDFLAGS)
-endif
-# intel 11.1
-ifneq (,$(findstring 11.1,$(INTELVERSION)))
-CFLAGSF77LIBS := -xSSE4.2 $(CFLAGSF77LIBS)
-CFLAGSF77     := -xSSE4.2 $(CFLAGSF77)
-CFLAGSF90     := -xSSE4.2 $(CFLAGSF90)
-CFLAGSC       := -xSSE4.2 $(CFLAGSC)
-CFLAGSCXX     := -xSSE4.2 $(CFLAGSCXX)
-CFLAGSCOPROC  := -xSSE4.2 $(CFLAGSCOPROC)
-LDFLAGS       := -xSSE4.2 $(LDFLAGS)
-endif
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-nehalem-linux-gcc-.*),yes)
-# invokes the GCC Fortran 77/90 compiler, local umfpack, local metis
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-ifeq ($(strip $(optimise)), YES)
-CFLAGSF77LIBS := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF77LIBS)
-CFLAGSF77     := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF77)
-CFLAGSF90     := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF90)
-CFLAGSC       := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSC)
-CFLAGSCXX     := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSCXX)
-CFLAGSCOPROC  := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSCOPROC)
-endif
-endif
-
-
-#sun (ideas, not tested yet):
-#-fast -xtarget=nehalem -xarch=generic 
-
-
-ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-mkl.*),yes)
-# Use Intel Math Kernel Library
-include $(TEMPLATESDIR)/mkl-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-######################### Penryn 32 bit #########################
-
-ifeq ($(call match,$(ID),pc-penryn-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+ifeq ($(call match,$(ID),pc-pentium4-.*-g95-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
-# g95 is based on gcc 4.0.3. So, it supports less processors
-# than gcc 4.3 and 4.4. For all available options see
-# http://gcc.gnu.org/onlinedocs/gcc-4.0.3/gcc.pdf, page 145.
-ifeq ($(strip $(optimise)), YES)
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=pentium4 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=pentium4 $(CFLAGSF77)
+CFLAGSF90     := -march=pentium4 $(CFLAGSF90)
+CFLAGSC       := -march=pentium4 $(CFLAGSC)
+CFLAGSCXX     := -march=pentium4 $(CFLAGSCXX)
+LDFLAGS       := -march=pentium4 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-pentium4-.*-g95-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=nocona $(CFLAGSF77)
 CFLAGSF90     := -march=nocona $(CFLAGSF90)
 CFLAGSC       := -march=nocona $(CFLAGSC)
 CFLAGSCXX     := -march=nocona $(CFLAGSCXX)
-CFLAGSCOPROC  := -march=nocona $(CFLAGSCOPROC)
 LDFLAGS       := -march=nocona $(LDFLAGS)
 endif
 endif
 
-ifeq ($(call match,$(ID),pc-penryn-darwin-g95-.*),yes)
-# invokes the GNU Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -m32 -march=nocona $(CFLAGSF77LIBS)
-CFLAGSF77     := -m32 -march=nocona $(CFLAGSF77)
-CFLAGSF90     := -m32 -march=nocona $(CFLAGSF90)
-CFLAGSC       := -m32 -march=nocona $(CFLAGSC)
-CFLAGSCXX     := -m32 -march=nocona $(CFLAGSCXX)
-LDFLAGS       := -m32 -march=nocona -read_only_relocs suppress $(LDFLAGS)
-endif
-endif
-
-ifeq ($(call match,$(ID),pc-penryn-darwin-gcc-.*),yes)
+ifeq ($(call match,$(ID),pc-pentium4-.*-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
-gcc43or44=NO
-ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
-gcc43or44=YES
-endif
-ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
-gcc43or44=YES
-endif
-ifeq ($(strip $(gcc43or44)), YES)
 ifeq ($(call optimise), YES)
-# Options choosen based on 
-# * the article at http://www.outsourcingi.com/articles_content.php?id=454
-# * 'info gcc', section 3.17.14 Intel 386 and AMD x86-64 Options
-# * and the options gcc itself passes when '-march=native --verbose' is 
-#   invoked on a MacBookPro5,5.
-# Note: It is absolutely mandatory to use a recent binutils package!
-#       Otherwise SSE4.1 is not available and the compiler will bail out.
-VERBOSEOPTFLAGS = \
-         -m32 -march=core2 -msse4.1 -mcx16 -msahf --param l1-cache-size=32 \
-         --param l1-cache-line-size=64 --param l2-cache-size=3072 \
-	 -mtune=core2 -ftree-vectorize
-
-CFLAGSF77LIBS := $(VERBOSEOPTFLAGS) $(CFLAGSF77LIBS)
-CFLAGSF77     := $(VERBOSEOPTFLAGS) $(CFLAGSF77)
-CFLAGSF90     := $(VERBOSEOPTFLAGS) $(CFLAGSF90)
-CFLAGSC       := $(VERBOSEOPTFLAGS) $(CFLAGSC)
-CFLAGSCXX     := $(VERBOSEOPTFLAGS) $(CFLAGSCXX)
-CFLAGSCOPROC  := $(VERBOSEOPTFLAGS) $(CFLAGSCOPROC)
-LDFLAGS       := $(VERBOSEOPTFLAGS) -read_only_relocs suppress $(LDFLAGS)
-endif
-else
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -m32 -march=nocona $(CFLAGSF77LIBS)
-CFLAGSF77     := -m32 -march=nocona $(CFLAGSF77)
-CFLAGSF90     := -m32 -march=nocona $(CFLAGSF90)
-CFLAGSC       := -m32 -march=nocona $(CFLAGSC)
-CFLAGSCXX     := -m32 -march=nocona $(CFLAGSCXX)
-LDFLAGS       := -m32 -march=nocona -read_only_relocs suppress $(LDFLAGS)
-endif
+CFLAGSF77LIBS := -march=pentium4 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=pentium4 $(CFLAGSF77)
+CFLAGSF90     := -march=pentium4 $(CFLAGSF90)
+CFLAGSC       := -march=pentium4 $(CFLAGSC)
+CFLAGSCXX     := -march=pentium4 $(CFLAGSCXX)
+LDFLAGS       := -march=pentium4 $(LDFLAGS)
 endif
 endif
 
-ifeq ($(call match,$(ID),pc-penryn-darwin-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-ifeq ($(call match,$(ID),pc-penryn-darwin-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-ifeq ($(call match,$(ID),pc-penryn-darwin-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-######################### Penryn 64 bit (Xeon E5450) #########################
-######################### Penryn 64 bit (LiDO 2)     #########################
-
-ifeq ($(call match,$(ID),pc64-penryn-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+ifeq ($(call match,$(ID),pc64-pentium4-.*-gcc-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-# g95 is based on gcc 4.0.3. So, it supports less processors
-# than gcc 4.3 and 4.4. For all available options see
-# http://gcc.gnu.org/onlinedocs/gcc-4.0.3/gcc.pdf, page 145.
-ifeq ($(strip $(optimise)), YES)
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=nocona $(CFLAGSF77)
 CFLAGSF90     := -march=nocona $(CFLAGSF90)
 CFLAGSC       := -march=nocona $(CFLAGSC)
 CFLAGSCXX     := -march=nocona $(CFLAGSCXX)
-CFLAGSCOPROC  := -march=nocona $(CFLAGSCOPROC)
 LDFLAGS       := -march=nocona $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc64-penryn-linux-gcc-.*),yes)
-# invokes the GNU Compiler suite, local umfpack, local metis
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-gcc43or44=NO
-ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
-gcc43or44=YES
-endif
-ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
-gcc43or44=YES
-endif
-ifeq ($(strip $(gcc43or44)), YES)
-ifeq ($(strip $(optimise)), YES)
-# Options choosen based on 
-# * the article at http://www.outsourcingi.com/articles_content.php?id=454
-# * 'info gcc', section 3.17.14 Intel 386 and AMD x86-64 Options
-# * and the options gcc itself passes when '-march=native --verbose' is 
-#   invoked on the LiDO-2 eth/ib compute nodes.
-# Note: It is absolutely mandatory to use a recent binutils package!
-#       Otherwise SSE4.1 is not available and the compiler will bail out.
-LIDO2COMPUTENODESOPTFLAGS = \
-         -march=core2 -msse4.1 -mcx16 -msahf --param l1-cache-size=32 \
-         --param l1-cache-line-size=64 --param l2-cache-size=6144 \
-         -ftree-vectorize
-CFLAGSF77LIBS := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSF77LIBS)
-CFLAGSF77     := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSF77)
-CFLAGSF90     := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSF90)
-CFLAGSC       := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSC)
-CFLAGSCXX     := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSCXX)
-CFLAGSCOPROC  := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSCOPROC)
-LDFLAGS       := $(LIDO2COMPUTENODESOPTFLAGS) $(LDFLAGS)
-endif
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-penryn-linux-intel-.*),yes)
+ifeq ($(call match,$(ID),pc-pentium4-.*-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-ifneq (,$(findstring 10.1.,$(INTELVERSION)))
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE2 $(CFLAGSF77)
+CFLAGSF90     := -xSSE2 $(CFLAGSF90)
+CFLAGSC       := -xSSE2 $(CFLAGSC)
+CFLAGSCXX     := -xSSE2 $(CFLAGSCXX)
+LDFLAGS       := -xSSE2 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -xN $(CFLAGSF77LIBS)
+CFLAGSF77     := -xN $(CFLAGSF77)
+CFLAGSF90     := -xN $(CFLAGSF90)
+CFLAGSC       := -xN $(CFLAGSC)
+CFLAGSCXX     := -xN $(CFLAGSCXX)
+LDFLAGS       := -xN $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-pentium4-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE2 $(CFLAGSF77)
+CFLAGSF90     := -xSSE2 $(CFLAGSF90)
+CFLAGSC       := -xSSE2 $(CFLAGSC)
+CFLAGSCXX     := -xSSE2 $(CFLAGSCXX)
+LDFLAGS       := -xSSE2 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -xW $(CFLAGSF77LIBS)
+CFLAGSF77     := -xW $(CFLAGSF77)
+CFLAGSF90     := -xW $(CFLAGSF90)
+CFLAGSC       := -xW $(CFLAGSC)
+CFLAGSCXX     := -xW $(CFLAGSCXX)
+LDFLAGS       := -xW $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-pentium4-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp piv $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp piv $(CFLAGSF77)
+CFLAGSF90     := -tp piv $(CFLAGSF90)
+CFLAGSC       := -tp piv $(CFLAGSC)
+CFLAGSCXX     := -tp piv $(CFLAGSCXX)
+LDFLAGS       := -tp piv $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-pentium4-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=pentium4 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=pentium4 $(CFLAGSF77)
+CFLAGSF90     := -march=pentium4 $(CFLAGSF90)
+CFLAGSC       := -march=pentium4 $(CFLAGSC)
+CFLAGSCXX     := -march=pentium4 $(CFLAGSCXX)
+LDFLAGS       := -march=pentium4 $(LDFLAGS)
+endif
+endif
+
+
+
+##############################################################################
+# Intel CoreDuo 2
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),pc-coreduo-.*-g95-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=prescott $(CFLAGSF77)
+CFLAGSF90     := -march=prescott $(CFLAGSF90)
+CFLAGSC       := -march=prescott $(CFLAGSC)
+CFLAGSCXX     := -march=prescott $(CFLAGSCXX)
+LDFLAGS       := -march=prescott $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-coreduo-.*-g95-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -march=nocona $(CFLAGSF90)
+CFLAGSC       := -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -march=nocona $(CFLAGSCXX)
+LDFLAGS       := -march=nocona $(LDFLAGS)
+endif
+endif
+
+
+ifeq ($(call match,$(ID),pc-coreduo-.*-gcc-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=prescott -msse3 -mfpmath=sse $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=prescott -msse3 -mfpmath=sse $(CFLAGSF77)
+CFLAGSF90     := -march=prescott -msse3 -mfpmath=sse $(CFLAGSF90)
+CFLAGSC       := -march=prescott -msse3 -mfpmath=sse $(CFLAGSC)
+CFLAGSCXX     := -march=prescott -msse3 -mfpmath=sse $(CFLAGSCXX)
+LDFLAGS       := -march=prescott -msse3 -mfpmath=sse $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-coreduo-.*-gcc-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call gfortranminversion_4_3,),yes)
+CFLAGSF77LIBS := -march=core2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=core2 $(CFLAGSF77)
+CFLAGSF90     := -march=core2 $(CFLAGSF90)
+CFLAGSC       := -march=core2 $(CFLAGSC)
+CFLAGSCXX     := -march=core2 $(CFLAGSCXX)
+LDFLAGS       := -march=core2 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77)
+CFLAGSF90     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF90)
+CFLAGSC       := -march=nocona -msse3 -mfpmath=sse $(CFLAGSC)
+CFLAGSCXX     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSCXX)
+LDFLAGS       := -march=nocona -msse3 -mfpmath=sse $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-coreduo-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE3 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE3 $(CFLAGSF77)
+CFLAGSF90     := -xSSE3 $(CFLAGSF90)
+CFLAGSC       := -xSSE3 $(CFLAGSC)
+CFLAGSCXX     := -xSSE3 $(CFLAGSCXX)
+LDFLAGS       := -xSSE3 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -xP $(CFLAGSF77LIBS)
+CFLAGSF77     := -xP $(CFLAGSF77)
+CFLAGSF90     := -xP $(CFLAGSF90)
+CFLAGSC       := -xP $(CFLAGSC)
+CFLAGSCXX     := -xP $(CFLAGSCXX)
+LDFLAGS       := -xP $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-coreduo-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE3 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE3 $(CFLAGSF77)
+CFLAGSF90     := -xSSE3 $(CFLAGSF90)
+CFLAGSC       := -xSSE3 $(CFLAGSC)
+CFLAGSCXX     := -xSSE3 $(CFLAGSCXX)
+LDFLAGS       := -xSSE3 $(LDFLAGS)
+else
 CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
 CFLAGSF77     := -xT $(CFLAGSF77)
 CFLAGSF90     := -xT $(CFLAGSF90)
@@ -2300,189 +1497,552 @@ CFLAGSC       := -xT $(CFLAGSC)
 CFLAGSCXX     := -xT $(CFLAGSCXX)
 LDFLAGS       := -xT $(LDFLAGS)
 endif
-ifneq (,$(findstring 11.0.0,$(INTELVERSION)))
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-coreduo-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp core2-32 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp core2-32 $(CFLAGSF77)
+CFLAGSF90     := -tp core2-32 $(CFLAGSF90)
+CFLAGSC       := -tp core2-32 $(CFLAGSC)
+CFLAGSCXX     := -tp core2-32 $(CFLAGSCXX)
+LDFLAGS       := -tp core2-32 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-coreduo-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp core2-64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp core2-64 $(CFLAGSF77)
+CFLAGSF90     := -tp core2-64 $(CFLAGSF90)
+CFLAGSC       := -tp core2-64 $(CFLAGSC)
+CFLAGSCXX     := -tp core2-64 $(CFLAGSCXX)
+LDFLAGS       := -tp core2-64 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-coreduo-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=core $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=core $(CFLAGSF77)
+CFLAGSF90     := -march=core $(CFLAGSF90)
+CFLAGSC       := -march=core $(CFLAGSC)
+CFLAGSCXX     := -march=core $(CFLAGSCXX)
+LDFLAGS       := -march=core $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-woodymkl.*),yes)
+# Use special BKL blas on Woodcrest cluster of the RRZE Erlangen
+LIBS := $(LIBS) $(MKL_LIB)
+TOKEN5 := 1
+endif
+
+
+
+##############################################################################
+# Intel CoreSolo
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),pc-coresolo-.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=prescott -mtune=prescott -msse $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=prescott -mtune=prescott -msse $(CFLAGSF77)
+CFLAGSF90     := -march=prescott -mtune=prescott -msse $(CFLAGSF90)
+CFLAGSC       := -march=prescott -mtune=prescott -msse $(CFLAGSC)
+CFLAGSCXX     := -march=prescott -mtune=prescott -msse $(CFLAGSCXX)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-coresolo-.*-gcc-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=prescott $(CFLAGSF77)
+CFLAGSF90     := -march=prescott $(CFLAGSF90)
+CFLAGSC       := -march=prescott $(CFLAGSC)
+CFLAGSCXX     := -march=prescott $(CFLAGSCXX)
+LDFLAGS       := -march=prescott $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-coresolo-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -msse3 $(CFLAGSF77LIBS)
+CFLAGSF77     := -msse3 $(CFLAGSF77)
+CFLAGSF90     := -msse3 $(CFLAGSF90)
+CFLAGSC       := -msse3 $(CFLAGSC)
+CFLAGSCXX     := -msse3 $(CFLAGSCXX)
+LDFLAGS       := -msse3 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -xO $(CFLAGSF77LIBS)
+CFLAGSF77     := -xO $(CFLAGSF77)
+CFLAGSF90     := -xO $(CFLAGSF90)
+CFLAGSC       := -xO $(CFLAGSC)
+CFLAGSCXX     := -xO $(CFLAGSCXX)
+LDFLAGS       := -xO $(LDFLAGS)
+endif
+endif
+endif
+
+
+
+##############################################################################
+# Intel Penryn
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),pc-penryn-.*-g95-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=prescott $(CFLAGSF77)
+CFLAGSF90     := -march=prescott $(CFLAGSF90)
+CFLAGSC       := -march=prescott $(CFLAGSC)
+CFLAGSCXX     := -march=prescott $(CFLAGSCXX)
+LDFLAGS       := $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-penryn-.*-g95-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -march=nocona $(CFLAGSF90)
+CFLAGSC       := -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -march=nocona $(CFLAGSCXX)
+LDFLAGS       := $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-penryn-.*-gcc-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=prescott $(CFLAGSF77)
+CFLAGSF90     := -march=prescott $(CFLAGSF90)
+CFLAGSC       := -march=prescott $(CFLAGSC)
+CFLAGSCXX     := -march=prescott $(CFLAGSCXX)
+LDFLAGS       := -march=prescott $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-penryn-.*-gcc-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call gfortranminversion_4_3,),yes)
+CFLAGSF77LIBS := -march=core2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=core2 $(CFLAGSF77)
+CFLAGSF90     := -march=core2 $(CFLAGSF90)
+CFLAGSC       := -march=core2 $(CFLAGSC)
+CFLAGSCXX     := -march=core2 $(CFLAGSCXX)
+LDFLAGS       := -march=core2 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -march=nocona $(CFLAGSF90)
+CFLAGSC       := -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -march=nocona $(CFLAGSCXX)
+LDFLAGS       := -march=nocona $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-penryn-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
 CFLAGSF77LIBS := -xSSE4.1 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE4.1 $(CFLAGSF77)
 CFLAGSF90     := -xSSE4.1 $(CFLAGSF90)
 CFLAGSC       := -xSSE4.1 $(CFLAGSC)
 CFLAGSCXX     := -xSSE4.1 $(CFLAGSCXX)
 LDFLAGS       := -xSSE4.1 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
+CFLAGSF77     := -xT $(CFLAGSF77)
+CFLAGSF90     := -xT $(CFLAGSF90)
+CFLAGSC       := -xT $(CFLAGSC)
+CFLAGSCXX     := -xT $(CFLAGSCXX)
+LDFLAGS       := -xT $(LDFLAGS)
 endif
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc64-penryn-linux-psc-.*),yes)
-# invokes the PathScale Fortran 77/90 compiler, local umfpack, local metis
-MESSAGE  := $(MESSAGE) \
-	    echo; \
-	    echo '*** Warning: SB wants to state: Not yet sure whether optimisation flags are already optimal!'; \
-	    echo;
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/pathscale-generic.mk
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64 -march=auto
-CFLAGSF77     := $(CFLAGSF77) -m64 -march=auto
-CFLAGSF90     := $(CFLAGSF90) -m64 -march=auto
-CFLAGSC       := $(CFLAGSC) -m64 -march=auto
-CFLAGSCXX     := $(CFLAGSCXX) -m64 -march=auto
-CFLAGSCOPROC  := $(CFLAGSCOPROC) -m64 -march=auto
-LDFLAGS       := $(LDFLAGS) -m64 -march=auto
-# default is -march=auto
-ifeq ($(strip $(optimise)), YES)
-# -msse4a
-endif
-endif
-
-
-ifeq ($(call match,$(ID),pc64-penryn-linux-pgi-.*),yes)
+ifeq ($(call match,$(ID),pc-penryn-.*-pgi-.*),yes)
 # invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-MESSAGE  := $(MESSAGE) \
-	    echo; \
-	    echo '*** Warning: SB wants to state: Not yet sure whether optimisation flags are already optimal!'; \
-	    echo;
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -tp penryn-64
-CFLAGSF77     := $(CFLAGSF77) -tp=penryn-64
-CFLAGSF90     := $(CFLAGSF90) -tp=penryn-64
-CFLAGSC       := $(CFLAGSC) -tp=penryn-64
-LDFLAGS       := $(LDFLAGS) -tp=penryn-64
-endif
-# Probably activate 64 bit integer support
-ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -i8
-CFLAGSF90     := $(CFLAGSF90) -i8
+CFLAGSF77LIBS := -tp penryn-32 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp penryn-32 $(CFLAGSF77)
+CFLAGSF90     := -tp penryn-32 $(CFLAGSF90)
+CFLAGSC       := -tp penryn-32 $(CFLAGSC)
+CFLAGSCXX     := -tp penryn-32 $(CFLAGSCXX)
+LDFLAGS       := -tp penryn-32 $(LDFLAGS)
 endif
 endif
 
-
-ifeq ($(call match,$(ID),pc64-penryn-linux-sunstudio-.*),yes)
-# invokes the Sun Studio Compiler suite, local umfpack, local metis
+ifeq ($(call match,$(ID),pc64-penryn-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/sunstudio-generic.mk
-ifeq ($(strip $(optimise)), YES)
-# Options choosen based on 
-# * the options the sun compiler themselves pass when '-fast -dryrun' is 
-#   invoked on the LiDO-2 eth/ib compute nodes.
-LIDO2COMPUTENODESOPTFLAGS = \
-          -xO5 -xarch=sse4_1 -xcache=32/64/8:6144/64/24 -xchip=penryn \
-          -fsimple=2 -fns=yes -ftrap=common -xlibmil -nofstore -xregs=frameptr
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) $(LIDO2COMPUTENODESOPTFLAGS) -dalign
-CFLAGSF77     := $(CFLAGSF77) $(LIDO2COMPUTENODESOPTFLAGS) -dalign
-CFLAGSF90     := $(CFLAGSF90) $(LIDO2COMPUTENODESOPTFLAGS) -dalign
-CFLAGSC       := $(CFLAGSC) $(LIDO2COMPUTENODESOPTFLAGS)
-CFLAGSCXX     := $(CFLAGSCXX) $(LIDO2COMPUTENODESOPTFLAGS)
-CFLAGSCOPROC  := $(CFLAGSCOPROC) $(LIDO2COMPUTENODESOPTFLAGS)
-LDFLAGS       := $(LDFLAGS) $(LIDO2COMPUTENODESOPTFLAGS) -dalign
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp penryn-64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp penryn-64 $(CFLAGSF77)
+CFLAGSF90     := -tp penryn-64 $(CFLAGSF90)
+CFLAGSC       := -tp penryn-64 $(CFLAGSC)
+CFLAGSCXX     := -tp penryn-64 $(CFLAGSCXX)
+LDFLAGS       := -tp penryn-64 $(LDFLAGS)
 endif
 endif
 
 
-ifeq ($(call match,$(ID),pc64-penryn-linux-.*-acml.*),yes)
-# Use AMD Core Math Library
-include $(TEMPLATESDIR)/acml-generic.mk
-endif
 
+##############################################################################
+# Intel Nehalem
+#
+##############################################################################
 
-ifeq ($(call match,$(ID),pc64-penryn-linux-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-penryn-linux-.*-mkl.*),yes)
-# Use Intel Math Kernel Library
-include $(TEMPLATESDIR)/mkl-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-penryn-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-ifeq ($(call match,$(ID),pc64-penryn-linux-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
-endif
-
-ifeq ($(call match,$(ID),pc64-penryn-darwin-g95-.*),yes)
+ifeq ($(call match,$(ID),pc-nehalem-.*-g95-.*),yes)
 # invokes the GNU Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -m64 -march=nocona $(CFLAGSF77LIBS)
-CFLAGSF77     := -m64 -march=nocona $(CFLAGSF77)
-CFLAGSF90     := -m64 -march=nocona $(CFLAGSF90)
-CFLAGSC       := -m64 -march=nocona $(CFLAGSC)
-CFLAGSCXX     := -m64 -march=nocona $(CFLAGSCXX)
-LDFLAGS       := -m64 -march=nocona -read_only_relocs suppress $(LDFLAGS)
+CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=prescott $(CFLAGSF77)
+CFLAGSF90     := -march=prescott $(CFLAGSF90)
+CFLAGSC       := -march=prescott $(CFLAGSC)
+CFLAGSCXX     := -march=prescott $(CFLAGSCXX)
+LDFLAGS       := $(LDFLAGS)
 endif
 endif
 
-ifeq ($(call match,$(ID),pc64-penryn-darwin-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack
+ifeq ($(call match,$(ID),pc64-nehalem-.*-g95-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -march=nocona $(CFLAGSF90)
+CFLAGSC       := -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -march=nocona $(CFLAGSCXX)
+LDFLAGS       := $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-nehalem-.*-gcc-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
-gcc43or44=NO
-ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
-gcc43or44=YES
-endif
-ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
-gcc43or44=YES
-endif
-ifeq ($(strip $(gcc43or44)), YES)
 ifeq ($(call optimise), YES)
-# Options choosen based on 
-# * the article at http://www.outsourcingi.com/articles_content.php?id=454
-# * 'info gcc', section 3.17.14 Intel 386 and AMD x86-64 Options
-# * and the options gcc itself passes when '-march=native --verbose' is 
-#   invoked on a MacBookPro5,5.
-# Note: It is absolutely mandatory to use a recent binutils package!
-#       Otherwise SSE4.1 is not available and the compiler will bail out.
-VERBOSEOPTFLAGS = \
-         -m64 -march=core2 -msse4.1 -mcx16 -msahf --param l1-cache-size=32 \
-         --param l1-cache-line-size=64 --param l2-cache-size=3072 \
-	 -mtune=core2 -ftree-vectorize
-
-CFLAGSF77LIBS := $(VERBOSEOPTFLAGS) $(CFLAGSF77LIBS)
-CFLAGSF77     := $(VERBOSEOPTFLAGS) $(CFLAGSF77)
-CFLAGSF90     := $(VERBOSEOPTFLAGS) $(CFLAGSF90)
-CFLAGSC       := $(VERBOSEOPTFLAGS) $(CFLAGSC)
-CFLAGSCXX     := $(VERBOSEOPTFLAGS) $(CFLAGSCXX)
-CFLAGSCOPROC  := $(VERBOSEOPTFLAGS) $(CFLAGSCOPROC)
-LDFLAGS       := $(VERBOSEOPTFLAGS) -read_only_relocs suppress $(LDFLAGS)
+CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=prescott $(CFLAGSF77)
+CFLAGSF90     := -march=prescott $(CFLAGSF90)
+CFLAGSC       := -march=prescott $(CFLAGSC)
+CFLAGSCXX     := -march=prescott $(CFLAGSCXX)
+LDFLAGS       := -march=prescott $(LDFLAGS)
 endif
+endif
+
+ifeq ($(call match,$(ID),pc64-nehalem-.*-gcc-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call gfortranminversion_4_3,),yes)
+CFLAGSF77LIBS := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF77)
+CFLAGSF90     := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF90)
+CFLAGSC       := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSC)
+CFLAGSCXX     := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSCXX)
+LDFLAGS       := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(LDFLAGS)
 else
+CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -march=nocona $(CFLAGSF90)
+CFLAGSC       := -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -march=nocona $(CFLAGSCXX)
+LDFLAGS       := -march=nocona $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-nehalem-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -m64 -march=nocona $(CFLAGSF77LIBS)
-CFLAGSF77     := -m64 -march=nocona $(CFLAGSF77)
-CFLAGSF90     := -m64 -march=nocona $(CFLAGSF90)
-CFLAGSC       := -m64 -march=nocona $(CFLAGSC)
-CFLAGSCXX     := -m64 -march=nocona $(CFLAGSCXX)
-LDFLAGS       := -m64 -march=nocona -read_only_relocs suppress $(LDFLAGS)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xSSE4.2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE4.2 $(CFLAGSF77)
+CFLAGSF90     := -xSSE4.2 $(CFLAGSF90)
+CFLAGSC       := -xSSE4.2 $(CFLAGSC)
+CFLAGSCXX     := -xSSE4.2 $(CFLAGSCXX)
+LDFLAGS       := -xSSE4.2 $(LDFLAGS)
+else
+CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
+CFLAGSF77     := -xT $(CFLAGSF77)
+CFLAGSF90     := -xT $(CFLAGSF90)
+CFLAGSC       := -xT $(CFLAGSC)
+CFLAGSCXX     := -xT $(CFLAGSCXX)
+LDFLAGS       := -xT $(LDFLAGS)
 endif
 endif
 endif
 
-ifeq ($(call match,$(ID),pc64-penryn-darwin-.*-blas.*),yes)
-# Use self-compiled local BLAS
+ifeq ($(call match,$(ID),pc-nehalem-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp nehalem-32 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp nehalem-32 $(CFLAGSF77)
+CFLAGSF90     := -tp nehalem-32 $(CFLAGSF90)
+CFLAGSC       := -tp nehalem-32 $(CFLAGSC)
+CFLAGSCXX     := -tp nehalem-32 $(CFLAGSCXX)
+LDFLAGS       := -tp nehalem-32 $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-nehalem-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -tp nehalem-64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -tp nehalem-64 $(CFLAGSF77)
+CFLAGSF90     := -tp nehalem-64 $(CFLAGSF90)
+CFLAGSC       := -tp nehalem-64 $(CFLAGSC)
+CFLAGSCXX     := -tp nehalem-64 $(CFLAGSCXX)
+LDFLAGS       := -tp nehalem-64 $(LDFLAGS)
+endif
+endif
+
+
+
+##############################################################################
+# Itanium
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),ia64-itanium-.*-gcc-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=itanium $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=itanium $(CFLAGSF77)
+CFLAGSF90     := -march=itanium $(CFLAGSF90)
+CFLAGSC       := -march=itanium $(CFLAGSC)
+CFLAGSCXX     := -march=itanium $(CFLAGSCXX)
+LDFLAGS       := -march=itanium $(LDFLAGS)
+endif
+#CFLAGSF77:=$(CFLAGSF77) -fno-underscoring
+#CFLAGSF90:=$(CFLAGSF90) -fno-underscoring
+endif
+
+
+
+##############################################################################
+# Itanium 2
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),ia64-itanium2-.*-gcc-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=itanium2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=itanium2 $(CFLAGSF77)
+CFLAGSF90     := -march=itanium2 $(CFLAGSF90)
+CFLAGSC       := -march=itanium2 $(CFLAGSC)
+CFLAGSCXX     := -march=itanium2 $(CFLAGSCXX)
+LDFLAGS       := -march=itanium2 $(LDFLAGS)
+endif
+#CFLAGSF77:=$(CFLAGSF77) -fno-underscoring
+#CFLAGSF90:=$(CFLAGSF90) -fno-underscoring
+endif
+
+ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-blas-mpi),yes)
+# invokes the intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/intel64-generic.mk
 include $(TEMPLATESDIR)/blas-generic.mk
+# Add preprocessor flag to enable 64bit UMFPACK support.
+# UMFPACK documentation states to also add -DLP64, but there is no
+# reference to it in the UMFPACK 5.2 sources.
+CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
+CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
+TOKEN6 := 1
 endif
 
-ifeq ($(call match,$(ID),pc64-penryn-darwin-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
+ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-mkl-mpi),yes)
+# invokes the intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/intel64-generic.mk
+# Add preprocessor flag to enable 64bit UMFPACK support.
+# UMFPACK documentation states to also add -DLP64, but there is no
+# reference to it in the UMFPACK 5.2 sources.
+CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
+CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
+LIBS     := $(LIBS) -L/opt/MathKeisan/MKL/lib/64 -lguide -lmkl_lapack64 -lmkl
+#LIBS     := $(LIBS) -L/nfs/home11/HLRS/xam/xamsbuij/intel/Compiler/11.0/074/mkl/lib/64 -lguide -lmkl_lapack -lmkl
+SBB_LIBS := $(SBB_LIBS) -L/opt/MathKeisan/MKL/lib/64 -lguide -lmkl_lapack64 -lmkl
+TOKEN5 := 1
+TOKEN6 := 1
 endif
 
-ifeq ($(call match,$(ID),pc64-penryn-darwin-.*-goto2.*),yes)
-# Use Goto BLAS 2
-include $(TEMPLATESDIR)/gotoblas2-generic.mk
+
+
+##############################################################################
+# Itanium 2 Dual Core
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),ia64-itanium2x2-.*-gcc-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=itanium2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=itanium2 $(CFLAGSF77)
+CFLAGSF90     := -march=itanium2 $(CFLAGSF90)
+CFLAGSC       := -march=itanium2 $(CFLAGSC)
+CFLAGSCXX     := -march=itanium2 $(CFLAGSCXX)
+LDFLAGS       := -march=itanium2 $(LDFLAGS)
+endif
+#CFLAGSF77:=$(CFLAGSF77) -fno-underscoring
+#CFLAGSF90:=$(CFLAGSF90) -fno-underscoring
+endif
+
+ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-mkl.*),yes)
+ifneq ($(strip $(INTEL_MKL_LIB)),)
+# Split up string if multiple directories are given
+# Note: Do not put whitespace between comma and the environment variable, because
+#       if you do, a string like "-L /path/to/mkl" is the result and that string
+#       won't make it into the command line.
+LIBDIR   := $(LIBDIR) -L$(subst :, -L,$(INTEL_MKL_LIB))
+endif
+LIBS     := $(LIBS) -lmkl_lapack -lmkl_intel_thread -lmkl_core -lmkl_intel_lp64 -lguide -lpthread
+SBB_LIBS := $(SBB_LIBS) -lmkl_lapack -lmkl_intel_thread -lmkl_core -lmkl_intel_lp64 -lguide -lpthread
+TOKEN5 := 1
+endif
+
+ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-.*-ompi),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/openmpi-generic.mk
+# Add preprocessor flag to enable 64bit UMFPACK support.
+# UMFPACK documentation states to also add -DLP64, but there is no
+# reference to it in the UMFPACK 5.2 sources.
+CFLAGSF90     := -DENABLE_64BIT_UMFPACK $(CFLAGSF90)
+CFLAGSC       := -DENABLE_64BIT_UMFPACK $(CFLAGSC)
 endif
 
 
-############################### Sun Ultrasparc v8 #############################
+
+##############################################################################
+# NEC
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),sx6-none-superux-f90-keisan-mpi),yes)
+TOKEN5 := 1
+TOKEN6 := 1
+include $(TEMPLATESDIR)/necsx-generic.mk
+include $(TEMPLATESDIR)/necsxcompiler-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -sx6 $(CFLAGSF77LIBS)
+CFLAGSF77     := -sx6 $(CFLAGSF77)
+CFLAGSF90     := -sx6 $(CFLAGSF90)
+CFLAGSC       := -sx6 $(CFLAGSC)
+LDFLAGS       := -sx6 $(LDFLAGS)
+endif
+INC       = 
+#BUILDLIB  = metis blas lapack umfpack amd
+BUILDLIB  = metis umfpack amd
+LIBS      = -lmetis -lumfpack -lamd -L/SX/opt/MathKeisan/lib -llapack -lblas
+SBB_LIBS  = -L/SX/opt/MathKeisan/lib -llapack -lblas
+MPILIBS   = -lmpi
+endif
+
+ifeq ($(call match,$(ID),sx8-none-superux-f90-.*-mpi),yes)
+TOKEN6 := 1
+include $(TEMPLATESDIR)/necsx-generic.mk
+include $(TEMPLATESDIR)/necsxcompiler-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -sx8 $(CFLAGSF77LIBS) #-ftrace
+CFLAGSF77     := -sx8 $(CFLAGSF77)  #-ftrace
+CFLAGSF90     := -sx8 $(CFLAGSF90) #-Wf~-L fmtlist map summary transform~ -ftrace
+CFLAGSC       := -sx8 $(CFLAGSC) #-ftrace
+LDFLAGS       := -sx8 $(LDFLAGS) #-ftrace
+endif
+INC       =
+SBB_LIBS  = -llapack -lblas
+endif
+
+
+ifeq ($(call match,$(ID),sx8-none-superux-f90-keisan-mpi),yes)
+TOKEN5 := 1
+#BUILDLIB  = metis blas lapack umfpack amd
+BUILDLIB  = metis umfpack amd
+#LIBDIR   := $(LIBDIR) -L/SX/opt/MathKeisan/lib
+#LIBDIR   := $(LIBDIR) -L/SX/opt/mathkeisan/MK1_6/lib0/lib64
+LIBS  := $(LIBS) -L/SX/opt/MathKeisan/lib -llapack -lblas
+MPILIBS   = -lmpi
+endif
+
+
+
+
+ifeq ($(call match,$(ID),sx8-none-superux-f90-blas-mpi),yes)
+TOKEN5 := 1
+#BUILDLIB  = metis blas lapack umfpack amd
+BUILDLIB  = metis umfpack amd blas lapack
+#LIBDIR   := $(LIBDIR) -L/SX/usr/lib0/libp
+MPILIBS   = -lmpi
+MPILIBS   =
+endif
+
+
+
+##############################################################################
+# SUN Ultrasparc v8
+#
+##############################################################################
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-g95-blas.*),yes)
 # invokes the GNU g95 compiler, local umfpack
@@ -2499,7 +2059,6 @@ LDFLAGS       := -mcpu=ultrasparc $(LDFLAGS)
 endif
 endif
 
-
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-g95-perf.*),yes)
 # invokes the GNU g95 compiler, uses LAM MPI, Perflib BLAS,
 # local umfpack
@@ -2515,19 +2074,6 @@ CFLAGSC       := -mcpu=ultrasparc $(CFLAGSC)
 LDFLAGS       := -mcpu=ultrasparc $(LDFLAGS)
 endif
 endif
-
-
-ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, uses LAM MPI, local BLAS,
@@ -2557,13 +2103,6 @@ MPILIBS       := $(filter-out -lpthread, $(MPILIBS))
 MPILIBS       := $(filter-out -ldl, $(MPILIBS))
 endif
 
-
-ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-sunstudio-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-sunstudio-perf.*),yes)
 # Use Perflib BLAS,
 include $(TEMPLATESDIR)/sunperf-generic.mk
@@ -2574,7 +2113,10 @@ endif
 
 
 
-############################### Sun Ultrasparc v9 #############################
+##############################################################################
+# SUN Ultrasparc v9
+#
+##############################################################################
 
 ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, local umfpack
@@ -2593,25 +2135,6 @@ LDFLAGS       := $(LDFLAGS)       -xarch=native64
 LIBS          := $(LIBS) -lmvec -lsocket -lnsl
 endif
 
-
-ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-.*-.*-lammpi),yes)
-# Use LAM/MPI
-include $(TEMPLATESDIR)/lammpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
 ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-perf.*),yes)
 # Use Perflib BLAS,
 include $(TEMPLATESDIR)/sunperf-generic.mk
@@ -2622,7 +2145,10 @@ endif
 
 
 
-########################## Sun Whatever Solaris 10 ###########################
+##############################################################################
+# SUN Whatever Solaris 10
+#
+##############################################################################
 
 ifeq ($(call match,$(ID),sun4v-sparcv9-sunos-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, local umfpack
@@ -2651,7 +2177,6 @@ LIBS          := $(filter-out -lsunperf, $(LIBS))
 LIBS          := $(LIBS) -xlic_lib=sunperf
 endif
 
-
 ifeq ($(call match,$(ID),sun4v-sparcv9-sunos-gcc-.*),yes)
 # invokes the GNU Compiler suite, local umfpack
 #
@@ -2675,84 +2200,451 @@ endif
 endif
 
 
-ifeq ($(call match,$(ID),sun4v-sparcv9-sunos-.*-.*-ompi),yes)
-# Use OpenMPI
-include $(TEMPLATESDIR)/openmpi-generic.mk
+
+# # # # # # # # #      IMPORTANT NOTICE !!!     # # # # # # # # #
+#
+# DO NOT EDIT THE LINES BELOW UNLESS YOU REALLY(!!!) KNOW WHAT
+# YOU ARE DOING. AN ERROR IN THE GENERIC RULES WILL MOST PROPABLY
+# STOP THE BUILD-SYSTEM TO WORK.
+#
+# # # # # # # # #      IMPORTANT NOTICE !!!     # # # # # # # # #
+
+ifeq ($(TOKEN4), 0)
+
+##############################################################################
+# Alpha generic
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),alpha-.*-.*-.*-.*),yes)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Error: No generic rule available for Alpha-bases systems';
 endif
 
 
-ifeq ($(call match,$(ID),sun4v-sparcv9-sunos-.*-perf.*),yes)
+
+##############################################################################
+# IBM generic
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),ibm-.*-.*-.*-.*),yes)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Error: No generic rule available for IBM systems';
+endif
+
+
+
+##############################################################################
+# x86 / x_86_64 generic
+#
+# This rule tries to find the optimal compiler settings for 
+# x86- and x86_64-based systems.
+#
+# At the time of writing, the following compilers support auto-tuning:
+# - GNU GCC 4.2.0 and better
+# - Portland Group Fortran Compiler
+# - PathScale Fortran Compiler
+# - SunStudio Fortran Compiler
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-g95-.*),yes)
+# invokes the G95 Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Warning: No auto-tuning for G95 compiler available!';
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-gcc-.*),yes)
+# invokes the gfortran Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call gfortranminversion_4_2,),yes)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Message: Used auto-tuning by GNU GCC compiler!';
+CFLAGSF77LIBS := -march=native $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=native $(CFLAGSF77)
+CFLAGSF90     := -march=native $(CFLAGSF90)
+CFLAGSC       := -march=native $(CFLAGSC)
+CFLAGSCXX     := -march=native $(CFLAGSCXX)
+LDFLAGS       := -march=native $(LDFLAGS)
+else
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Warning: No auto-tuning for GNU GCC below 4.2.0 compiler available!';
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xHOST $(CFLAGSF77LIBS)
+CFLAGSF77     := -xHOST $(CFLAGSF77)
+CFLAGSF90     := -xHOST $(CFLAGSF90)
+CFLAGSC       := -xHOST $(CFLAGSC)
+CFLAGSCXX     := -xHOST $(CFLAGSCXX)
+LDFLAGS       := -xHOST $(LDFLAGS)
+else
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Warning: No auto-tuning for Intel compiler below 11.1 available!';
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Message: Used auto-tuning by Portland Group Fortan compiler!';
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Message: Used auto-tuning by PathScale Fortran compiler!';
+CFLAGSF77LIBS := -march=auto $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=auto $(CFLAGSF77)
+CFLAGSF90     := -march=auto $(CFLAGSF90)
+CFLAGSC       := -march=auto $(CFLAGSC)
+CFLAGSCXX     := -march=auto $(CFLAGSCXX)
+CFLAGSCOPROC  := -march=auto $(CFLAGSCOPROC)
+LDFLAGS       := -march=auto $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-.*-.*-sunstudio-.*),yes)
+# invokes the Sunstudio Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Message: Used auto-tuning by SunStudio Fortran compiler!';
+CFLAGSF77LIBS := -xautopar  $(CFLAGSF77LIBS)
+CFLAGSF77     := -xautopar  $(CFLAGSF77)
+CFLAGSF90     := -xautopar  $(CFLAGSF90)
+CFLAGSC       := -xautopar  $(CFLAGSC)
+CFLAGSCXX     := -xautopar  $(CFLAGSCXX)
+LDFLAGS       := -xautopar  $(LDFLAGS)
+endif
+endif
+
+
+
+##############################################################################
+# i64 (Itanium/Itanium 2) generic
+#
+# This rule tries to find the optimal compiler settings for 
+# i64-based systems.
+#
+# At the time of writing, the following compilers support auto-tuning:
+# - GNU GCC 4.2.0 and better
+# - Portland Group Fortran Compiler
+# - PathScale Fortran Compiler
+# - SunStudio Fortran Compiler
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),ia64-.*-.*.*-g95-.*),yes)
+# invokes the G95 Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Warning: No auto-tuning for G95 compiler available!';
+endif
+endif
+
+ifeq ($(call match,$(ID),ia64-.*-.*-gcc-.*),yes)
+# invokes the gfortran Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+# detect compiler version
+gcc42better=NO
+ifneq (,$(findstring 4.2.,$(GFORTRANVERSION)))
+gcc42better=YES
+endif
+ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
+gcc42better=YES
+endif
+ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
+gcc42better=YES
+endif
+ifneq (,$(findstring 4.5.,$(GFORTRANVERSION)))
+gcc42better=YES
+endif
+
+ifeq ($(strip $(gcc42better)), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Message: Used auto-tuning by GNU GCC compiler!';
+CFLAGSF77LIBS := -march=native $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=native $(CFLAGSF77)
+CFLAGSF90     := -march=native $(CFLAGSF90)
+CFLAGSC       := -march=native $(CFLAGSC)
+CFLAGSCXX     := -march=native $(CFLAGSCXX)
+LDFLAGS       := -march=native $(LDFLAGS)
+else
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Warning: No auto-tuning for GNU GCC below 4.2.0 compiler available!';
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),ia64-.*-.*-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(call optimise), YES)
+ifeq ($(call intelminversion_11_0,),yes)
+CFLAGSF77LIBS := -xHOST $(CFLAGSF77LIBS)
+CFLAGSF77     := -xHOST $(CFLAGSF77)
+CFLAGSF90     := -xHOST $(CFLAGSF90)
+CFLAGSC       := -xHOST $(CFLAGSC)
+CFLAGSCXX     := -xHOST $(CFLAGSCXX)
+LDFLAGS       := -xHOST $(LDFLAGS)
+else
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Warning: No auto-tuning for Intel compiler below 11.1 available!';
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),ia64-.*-.*-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Message: Auto-tuning by Portland Group Fortan compiler!';
+endif
+endif
+
+ifeq ($(call match,$(ID),ia64-.*-.*-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Message: Used auto-tuning by PathScale Fortran compiler!';
+CFLAGSF77LIBS := -march=auto $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=auto $(CFLAGSF77)
+CFLAGSF90     := -march=auto $(CFLAGSF90)
+CFLAGSC       := -march=auto $(CFLAGSC)
+CFLAGSCXX     := -march=auto $(CFLAGSCXX)
+CFLAGSCOPROC  := -march=auto $(CFLAGSCOPROC)
+LDFLAGS       := -march=auto $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),ia64-.*-.*-sunstudio-.*),yes)
+# invokes the Sunstudio Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Message: Used auto-tuning by SunStudio Fortran compiler!';
+CFLAGSF77LIBS := -xautopar  $(CFLAGSF77LIBS)
+CFLAGSF77     := -xautopar  $(CFLAGSF77)
+CFLAGSF90     := -xautopar  $(CFLAGSF90)
+CFLAGSC       := -xautopar  $(CFLAGSC)
+CFLAGSCXX     := -xautopar  $(CFLAGSCXX)
+LDFLAGS       := -xautopar  $(LDFLAGS)
+endif
+endif
+
+
+
+##############################################################################
+# NEC generic
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),sx.*-.*-.*-.*-.*),yes)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Error: No generic rule available for NEC systems';
+endif
+
+# End of generic architecture rules
+endif
+
+
+
+##############################################################################
+# Libraries
+#
+##############################################################################
+
+ifeq ($(TOKEN5), 0)
+
+# Include BLAS/Lapack libraries the default way
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-acml.*),yes)
+# Use AMD Core Math Library
+include $(TEMPLATESDIR)/acml-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-atlas.*),yes)
+# Use ATLAS BLAS
+include $(TEMPLATESDIR)/atlasblas-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-blas.*),yes)
+# Use self-compiled local BLAS
+include $(TEMPLATESDIR)/blas-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-goto.*),yes)
+# Use Goto BLAS
+include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-goto2.*),yes)
+# Use Goto BLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-mkl.*),yes)
+# Use MKL BLAS
+include $(TEMPLATESDIR)/mkl-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-perf.*),yes)
 # Use Perflib BLAS
 include $(TEMPLATESDIR)/sunperf-generic.mk
 endif
 
-
-
-#################################### NEC #####################################
-
-ifeq ($(call match,$(ID),sx6-none-superux-f90-keisan-mpi),yes)
-TOKEN5 := 1
-TOKEN6 := 1
-include $(TEMPLATESDIR)/necsx-generic.mk
-include $(TEMPLATESDIR)/necsxcompiler-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -sx6 $(CFLAGSF77LIBS)
-CFLAGSF77     := -sx6 $(CFLAGSF77)
-CFLAGSF90     := -sx6 $(CFLAGSF90)
-CFLAGSC       := -sx6 $(CFLAGSC)
-LDFLAGS       := -sx6 $(LDFLAGS)
-endif
-INC       = 
-#BUILDLIB  = metis blas lapack umfpack amd
-BUILDLIB  = metis umfpack amd
-LIBS      = -lmetis -lumfpack -lamd -L/SX/opt/MathKeisan/lib -llapack -lblas
-SBB_LIBS  = -L/SX/opt/MathKeisan/lib -llapack -lblas
-MPILIBS   = -lmpi
 endif
 
 
-ifeq ($(call match,$(ID),sx8-none-superux-f90-.*-mpi),yes)
-TOKEN6 := 1
-include $(TEMPLATESDIR)/necsx-generic.mk
-include $(TEMPLATESDIR)/necsxcompiler-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -sx8 $(CFLAGSF77LIBS) #-ftrace
-CFLAGSF77     := -sx8 $(CFLAGSF77)  #-ftrace
-CFLAGSF90     := -sx8 $(CFLAGSF90) #-Wf~-L fmtlist map summary transform~ -ftrace
-CFLAGSC       := -sx8 $(CFLAGSC) #-ftrace
-LDFLAGS       := -sx8 $(LDFLAGS) #-ftrace
+
+ifeq ($(TOKEN6), 0)
+
+# Include MPI libraries the default way
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-.*-lammpi),yes)
+# Use LAM/MPI
+include $(TEMPLATESDIR)/lammpi-generic.mk
 endif
-INC       =
-SBB_LIBS  = -llapack -lblas
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-.*-lanlmpi),yes)
+# Use LANL MPI
+include $(TEMPLATESDIR)/lanlmpi-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-.*-mpich),yes)
+# Use MPICH
+include $(TEMPLATESDIR)/mpich-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-.*-mpich2),yes)
+# Use MPICH2
+include $(TEMPLATESDIR)/mpich2-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-.*-mvapich),yes)
+# Use MVAPICH
+include $(TEMPLATESDIR)/mvapich-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-.*-ompi),yes)
+# Use OpenMPI
+include $(TEMPLATESDIR)/openmpi-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-.*-.*-.*-optmpich),yes)
+# Use Allinea Opt MPI
+include $(TEMPLATESDIR)/optmpich-generic.mk
+# # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
+#
+# Code compiles, but does not run with OPT 1.0rc4. Dynamic linker
+# can not find libopt.so. (Not a FEAT2 problem, though.)
+#
+# Additionally, OPT 1.0rc4 needs additional arguments in MPI calls.
+# (Not sure about OPT 1.0 and above!!) parallel.f90 and parallelsys.f90
+# are not prepared for them any more. (SB, 2006-06-02)
+#
+# # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
+CFLAGSF77LIBS := $(CFLAGSF77LIBS) -assume 2underscore
+CFLAGSF77     := $(CFLAGSF77) -assume 2underscore
+CFLAGSF90     := $(filter-out -DMPICALLS_NO_UNDERSCORE, $(CFLAGSF90)) \
+		-DMPICALLS_NO_UNDERSCORE -assume 2underscore
+SRCEXTRA      := $(SRCEXTRA) mpir_iargc.f
+
+# Previous settings
+# CFLAGSF77 = -g -us -assume 2underscore
+# CFLAGSF90 = $(CFLAGSF77) -module $(OBJDIR) -check bounds -traceback \
+#             -DHAS_INTRINSIC_IARGC -DHAS_FLUSH -DMPICALLS_NO_UNDERSCORE
+# CFLAGSC   = -g -fpstkchk
+# LDFLAGS   =
+# SRCEXTRA  := $(SRCEXTRA) optmpi_wrapper.c
+# MPIINC    = -I/usr/local/opt/mpich/include
+# MPILIBDIR = -L/usr/local/opt/mpich/lib
+# MPILIBS   = -L/usr/local/opt/opt/lib -lopt -lfmpich -lmpich -lpthread -lrt
+# #MPILIBS   = -lpmpich -lfmpich -lmpich -lpthread -lrt
+endif
+
 endif
 
 
-ifeq ($(call match,$(ID),sx8-none-superux-f90-keisan-mpi),yes)
-TOKEN5 := 1
-#BUILDLIB  = metis blas lapack umfpack amd
-BUILDLIB  = metis umfpack amd
-#LIBDIR   := $(LIBDIR) -L/SX/opt/MathKeisan/lib
-#LIBDIR   := $(LIBDIR) -L/SX/opt/mathkeisan/MK1_6/lib0/lib64
-LIBS  := $(LIBS) -L/SX/opt/MathKeisan/lib -llapack -lblas
-MPILIBS   = -lmpi
+
+##############################################################################
+# Check for forced 32bit/64bit binary
+##############################################################################
+ifeq ($(strip $(BINARY)), 32)
+CFLAGSF77LIBS := -m32 $(CFLAGSF77LIBS)
+CFLAGSF77     := -m32 $(CFLAGSF77)
+CFLAGSF90     := -m32 $(CFLAGSF90)
+CFLAGSC       := -m32 $(CFLAGSC)
+CFLAGSCXX     := -m32 $(CFLAGSCXX)
+LDFLAGS       := -m32 $(LDFLAGS)
+endif
+
+ifeq ($(strip $(BINARY)), 64)
+CFLAGSF77LIBS := -m64 $(CFLAGSF77LIBS)
+CFLAGSF77     := -m64 $(CFLAGSF77)
+CFLAGSF90     := -m64 $(CFLAGSF90)
+CFLAGSC       := -m64 $(CFLAGSC)
+CFLAGSCXX     := -m64 $(CFLAGSCXX)
+LDFLAGS       := -m64 $(LDFLAGS)
 endif
 
 
-ifeq ($(call match,$(ID),sx8-none-superux-f90-blas-mpi),yes)
-TOKEN5 := 1
-#BUILDLIB  = metis blas lapack umfpack amd
-BUILDLIB  = metis umfpack amd blas lapack
-#LIBDIR   := $(LIBDIR) -L/SX/usr/lib0/libp
-MPILIBS   = -lmpi
-MPILIBS   =
+
+##############################################################################
+# Check for workaround
+##############################################################################
+
+# Intel-based Macs are quite tricky. Newer OSes claim to be 32bit but
+# they are able to run 64bit code. Even worse, they generate 64bit
+# code by default. However, if 32bit generation is forced then the
+# linker must must be envoked with flag '-read_only_relocs suppress'.
+ifeq ($(call match,$(ID),(pc|pc64)-.*-darwin-(g95|gcc)-.*),yes)
+ifeq ($(strip $(BINARY)), 32)
+LDFLAGS := -read_only_relocs suppress $(LDFLAGS)
 endif
+endif
+
 
 
 ##############################################################################
 # auxiliary targets: .id, .idonly
 #
 ##############################################################################
-#
+
 
 # hack to have this target in all Makefiles, the dot is to not
 # consider it as a default rule when called without specific target

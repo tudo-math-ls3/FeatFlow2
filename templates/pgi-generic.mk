@@ -1,7 +1,7 @@
 # -*- mode: makefile -*-
 
 ##############################################################################
-# Select compilers
+# Portland Group compiler suite
 #
 ##############################################################################
 COMPILERNAME = PGI
@@ -11,7 +11,7 @@ COMPILERNAME = PGI
 F77       = pgf77
 F90       = pgf95
 CC        = pgcc
-CXX	      = pgCC
+CXX	  = pgCC
 LD        = pgf95
 
 # If preprocessor switch -DENABLE_SERIAL_BUILD does not occur in compiler flags,
@@ -21,7 +21,7 @@ ifeq ($(strip $(MPIWRAPPERS)), YES)
 F77       = mpif77
 F90       = mpif90
 CC        = mpicc
-CXX	      = mpiCC
+CXX	  = mpiCC
 LD        = mpif90
 endif
 endif
@@ -40,39 +40,30 @@ CXXVERSION = $(CXX) -V | head -n 2
 # compiler flags 
 # (including non-architecture specific optimisation flags)
 ##############################################################################
-ifeq ($(strip $(OPT)), EXPENSIVE)
-# Specify -Mipa for all PGI compilers
-CFLAGSF77LIBS := -Mipa $(CFLAGSF77LIBS)
-CFLAGSF77     := -Mipa $(CFLAGSF77)
-CFLAGSF90     := -Mipa $(CFLAGSF90)
-CFLAGSC       := -Mipa $(CFLAGSC)
-CFLAGSCXX     := -Mipa $(CFLAGSCXX)
-LDFLAGS       := -Mipa $(LDFLAGS)
+
+# Set default type of integer variables explicitly
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -i8
+CFLAGSF90     := $(CFLAGSF90) -i8
 endif
+# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
+# pray that they default the 'int' type properly.
+
+
 
 # Specify -openmp for all PGI compilers
 ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77LIBS := -DUSE_OPENMP -mp $(CFLAGSF77LIBS)
 CFLAGSF77     := -DUSE_OPENMP -mp $(CFLAGSF77)
-CFLAGSF90     := -mp $(CFLAGSF90)
+CFLAGSF90     := -DUSE_OPENMP -mp $(CFLAGSF90)
 CFLAGSC       := -DUSE_OPENMP -mp $(CFLAGSC)
 CFLAGSCXX     := -DUSE_OPENMP -mp $(CFLAGSCXX)
 LDFLAGS       := -DUSE_OPENMP -mp $(LDFLAGS)
 endif
 
-# WARNING WARNING WARNING
-# All integer variables in FEAT2 are explicitly typed to either 32 or 64 bits.
-# The only native integers are literals and code written in F77 (blas, lapack, 
-# sbblas) and C (metis, coproc backend). FEAT2 assumes that all these (native) 
-# integers are 32-bit!!!
-# So, to get things running with compilers that do not default native integers
-# to 32 bits, we need to add an appropriate compiler flag to
-# CFLAGSF77LIBS:. 
-# This also applies when changing the kind-values in kernel/fsystem.f90.
 
-# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
-# pray that they default the 'int' type properly.
 
+# Set default compile flags
 ifeq ($(call optimise), YES)
 # -Mcache_align is important when using ACML.
 CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -O4 -fastsse \
@@ -101,28 +92,42 @@ LDFLAGS       := $(LDFLAGS)
 endif
 
 
-# detect compiler version
+
+ifeq ($(strip $(OPT)), EXPENSIVE)
+# Specify -Mipa for all PGI compilers
+CFLAGSF77LIBS := -Mipa $(CFLAGSF77LIBS)
+CFLAGSF77     := -Mipa $(CFLAGSF77)
+CFLAGSF90     := -Mipa $(CFLAGSF90)
+CFLAGSC       := -Mipa $(CFLAGSC)
+CFLAGSCXX     := -Mipa $(CFLAGSCXX)
+LDFLAGS       := -Mipa $(LDFLAGS)
+endif
+
+
+
+# Detect compiler version
 PGIVERSION  := $(shell eval $(F90VERSION) )
 
-# enable workarounds for PGI 6.1 compiler
+# Enable workarounds for PGI 6.1 compiler
 ifneq (,$(findstring pgf90 6.1-,$(PGIVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_PGI_6_1 $(CFLAGSF90)
 endif
 
-# enable workarounds for PGI 6.2 compiler
+# Enable workarounds for PGI 6.2 compiler
 ifneq (,$(findstring pgf90 6.2-,$(PGIVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_PGI_6_2 $(CFLAGSF90)
 endif
 
-# enable workarounds for PGI 7.0 compiler
+# Enable workarounds for PGI 7.0 compiler
 ifneq (,$(findstring pgf95 7.0-,$(PGIVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_PGI_7_0 $(CFLAGSF90)
 endif
 
-# enable workarounds for PGI 7.2 compiler
+# Enable workarounds for PGI 7.2 compiler
 ifneq (,$(findstring pgf95 7.2-,$(PGIVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_PGI_7_2 $(CFLAGSF90)
 endif
+
 
 
 ##############################################################################
