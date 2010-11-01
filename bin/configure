@@ -312,6 +312,7 @@ my %defaults = (
     APPNAME              => "feat2app",
     APPONLYFLAGS         => [],
     AR                   => "",
+    BINARY               => "STD",
     BUILDLIB             => [],
     CC                   => "",
     CFLAGSC              => [],
@@ -377,6 +378,7 @@ GetOptions (
             "no-opt"                        => sub { $cl{'OPT'} = 0 },
             "apponlyflags=s"                => \@{ $cl{'APPONLYFLAGS'} },
             "ar=s"                          => \$cl{'AR'},
+            "binary=s"                      => \$cl{'BINARY'},
             "regressionbenchmark"           => \$cl{'regressionbenchmark'},
             "regression-benchmark"          => \$cl{'regressionbenchmark'},
             "buildlib=s"                    => \@{ $cl{'BUILDLIB'} },
@@ -573,6 +575,7 @@ if ($cl{'regressionbenchmark'}) {
     # call to benchmark applications' configure
     my $options = "";
     $options .= " --apponlyflags=\""   . join(',', @{$cl{'APPONLYFLAGS'}}) . "\"" if ($#{$cl{'APPONLYFLAGS'}}  >= 0);
+    $options .= " --binary=\""         . $cl{'BINARY'}                     . "\"" if (defined($cl{'BINARY'}) && $cl{'BINARY'});
     $options .= " --buildlib=\""       . join(',', @{$cl{'BUILDLIB'}})     . "\"" if ($#{$cl{'BUILDLIB'}} >= 0);
     $options .= " --cc=\""             . $cl{'CC'}                         . "\"" if (defined($cl{'CC'}) && $cl{'CC'});
     $options .= " --cflagsc=\""        . join(',', @{$cl{'CFLAGSC'}})      . "\"" if ($#{$cl{'CFLAGSC'}} >= 0);
@@ -912,7 +915,7 @@ sub check_options {
     #   command line options
     # * Values are converted to upper case for the Makefile
     # * 0/1 values are mapped to NO/YES for the Makefile
-    foreach my $entry ('FORCE_ID', 'INTSIZE', 'MODE', 'MONITOR_COMPILE_ENV',
+    foreach my $entry ('BINARY', 'FORCE_ID', 'INTSIZE', 'MODE', 'MONITOR_COMPILE_ENV',
                        'MPI', 'MPIWRAPPERS', 'OPENMP', 'OPT', 'RELINK_ALWAYS') {
 	# Check environment variable MAKEFLAGS and give a warning if
 	# options given via environment *and* command line collide.
@@ -971,6 +974,7 @@ sub check_options {
 
     # Valid keywords? (both for options that take exactly one string and those that can take multiple)
     my %validkeywords = (
+	"BINARY"              => [ "std", "32", "64" ],
 	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "opengl" ],  # List of valid coprocessor backends
 	"FORCE_ID"            => [ "yes", "no" ],
         "INTSIZE"             => [ "std", "large" ],
@@ -1235,6 +1239,14 @@ sub create_feastAppMakefile {
     print MAKEFILE_HDL
         "# Application name\n" .
         "APPNAME             = $entry\n\n";
+
+    $entry = (defined($cl{'BINARY'})) ? $cl{'BINARY'} : $defaults{'BINARY'};
+    print MAKEFILE_HDL
+        "# Defines the binary type.\n" .
+	"# =STD : Standard code environment of the system.\n" .
+        "# =32  : Force 32-bit code environment.\n" .
+        "# =64  : Force 64-bit code environment.\n" .
+        "BINARY              = $entry\n\n";
 
     $entry = (defined($cl{'FORCE_ID'})) ? $cl{'FORCE_ID'} : $defaults{'FORCE_ID'};
     print MAKEFILE_HDL
@@ -1812,6 +1824,32 @@ sub create_feastAppMakefile {
 	"CXX = \$(F77)\n" .
 	"LD  = \$(F77)\n" .
 	"endif\n\n" .
+
+	"# Makefile variable BINARY must have exactly one out of three possible values:\n" .
+        "# STD, 32 or 64\n" .
+        "# In case neither STD, 32 nor 64 is specified, unset all compiler\n" .
+        "# definitions in order to always raise an error when make is invoked.\n" .
+        "ifneq (\$(strip \$(BINARY)), STD)\n" .
+        "ifneq (\$(strip \$(BINARY)), 32)\n" .
+        "ifneq (\$(strip \$(BINARY)), 64)\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Error: Binary type BINARY=\$(BINARY) unknown.'; \\\n" .
+        "\t   echo '***        Valid keywords are STD, 32 or 64.'; \\\n" .
+        "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77 = \$(MESSAGE) echo\n" .
+        "F90 = \$(F77)\n" .
+        "CC  = \$(F77)\n" .
+        "CXX = \$(F77)\n" .
+        "LD  = \$(F77)\n" .
+        "endif\n" .
+	"endif\n" .
+	"endif\n" .
+	"\n\n" .
 
 	"# Makefile variable OPT must have exactly one out of three possible values:\n" .
 	"# NO, YES or EXPENSIVE. If that requirement is not met, unset all compiler\n" .
@@ -3461,6 +3499,11 @@ sub create_feastBenchmarkMakefile {
         "FEAT2BASEDIR = ..\n" .
         "\n";
 
+    $entry = (defined($cl{'BINARY'})) ? $cl{'BINARY'} : $defaults{'BINARY'};
+    print MAKEFILE_HDL
+        "# Binary type?\n" .
+        "BINARY = $entry\n\n";
+
     $entry = (defined($cl{'INTSIZE'})) ? $cl{'INTSIZE'} : $defaults{'INTSIZE'};
     print MAKEFILE_HDL
         "# Size of integers?\n" .
@@ -3952,8 +3995,8 @@ sub concat_filename {
 sub debug_command_line_options {
     my $string = "";
 
-    foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
-		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90',
+    foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
+		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90',
 		       'COPROCLIST', 'CPP', 'CXX', 'F77', 'F90', 'FORCE_ID', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
@@ -4694,6 +4737,16 @@ sub print_statistics_about_feastAppMakefile {
     print "  Application binary           : will be " .
 	( ($string eq "YES") ? "relinked every time make is invoked" : "linked only when missing" ) . "\n";
 
+    print "  Application binary type      : ";
+    $string = (defined($cl{'BINARY'})) ? $cl{'BINARY'} : $defaults{'BINARY'};
+    if ($string eq "STD") {
+        print "use system environment\n";
+    } elsif ($string eq "32") {
+        print "force 32-bit code generation\n";
+    } else {
+        print "force 64-bit code generation\n";
+    }
+
     $string = $objdir;
     # Replace the symbolic names $(HOME) and $(ID), used in the Makefile,
     # with something that works on the command line: ~ and build ID.
@@ -4775,6 +4828,10 @@ sub show_help {
         "                    applications as they are compiled without flags in\n" .
         "                    <string>.\n" .
         "--ar=<file>         Path and options for creating archives\n" .
+	"--binary=<string>   Allows to set the default binary.\n" .
+	"                    <string> can be one of the following:\n" .
+	"                    --binary=32 : Generate code for 32-bit environment.\n" .
+	"                    --binary=64 : Generate code for 64-bit environment.\n" .
         "--buildlib=<string> Specify libraries to build\n" .
         "                    (like: umfpack blas lapack splib)\n" .
         "--cc=<file>         C compiler\n" .
