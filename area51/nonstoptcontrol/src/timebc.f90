@@ -103,42 +103,26 @@ contains
     
     ! If a RHS is present, incorporate the initial condition into the RHS.
     if (present(rrhs)) then
-      call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rvector2,.true.)
-      
-      ! Multiply the solution with the matrix in the 1st timestep to
-      ! get the correct RHS.
-      call sth_getLevel(rmatrix%p_rspaceTimeHierarchy,rmatrix%ilevel,&
-          ispaceLevel=ispaceLevel)
-      call stmat_allocSubmatrix (rmatrix%cmatrixType,rmatrix%p_rphysics,&
-        rmatrix%p_rmatVecTempl(ispaceLevel),rsubmatrix)
-      call stmat_getSubmatrix (rmatrix, ispaceLevel, 1, 1, rsubmatrix)
-      
-      call lsysbl_blockMatVec (rsubmatrix,rvector,rvector2,1.0_DP,0.0_DP)
-
-      call lsysbl_releaseMatrix (rsubmatrix)
-      
+    
       ! Incorporate the primal RHS into the given RHS.
-      call sptivec_getTimestepData (rrhs, 1, rvector)
+      call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rvector2,.true.)    
+      call sptivec_getTimestepData (rrhs, 1, rvector2)
+
+      call stmat_applyOperator (rmatrix, 1, 1, 1, rvector, rvector2)
       
       select case (rmatrix%p_rphysics%cequation)
-      case (0,2)
-        ! 1D/2D Heat equation
-        call lsyssc_copyVector (rvector2%RvectorBlock(1),rvector%RvectorBlock(1))
-        
       case (1)
-        ! 2D Stokes equation
-        call lsyssc_copyVector (rvector2%RvectorBlock(1),rvector%RvectorBlock(1))
-        call lsyssc_copyVector (rvector2%RvectorBlock(2),rvector%RvectorBlock(2))
+        ! 2D Stokes equation. DIvergence free projection
+        call lsyssc_clearVector (rvector2%RvectorBlock(3))
         
       end select
       
-      call sptivec_setTimestepData (rrhs, 1, rvector)
-      
+      call sptivec_setTimestepData (rrhs, 1, rvector2)
       call lsysbl_releaseVector (rvector2)
     end if
-    
-    call lsysbl_releaseVector (rvector)
 
+    call lsysbl_releaseVector (rvector)
+    
   end subroutine
 
   ! ***************************************************************************

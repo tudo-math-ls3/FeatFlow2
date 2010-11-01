@@ -1295,6 +1295,7 @@ contains
     drho0  = 1.0_DP
     dalpha = 1.0_DP
     domega0 = 1.0_DP
+    ITE = 0
 
     ! Copy our RHS rd to p_DR. As the iteration vector is 0, this
     ! is also our initial defect.

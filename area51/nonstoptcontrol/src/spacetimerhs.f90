@@ -29,6 +29,7 @@ module spacetimerhs
   
   use physics
   use spacetimevectors
+  use spacetimematrices
   use callback
   
   implicit none
@@ -209,12 +210,12 @@ contains
 
   ! ***************************************************************************
 
-  subroutine strhs_assembleRHS (rphysics,rrhs)
+  subroutine strhs_assembleRHS (rmatrix,rrhs)
   
   ! Assembles the space-time RHS.
 
-  ! Physics of the problem
-  type(t_physics), intent(in), target :: rphysics
+  ! Space-time matrix that defines the operators.
+  type(t_spaceTimeMatrix), intent(in), target :: rmatrix
 
   ! Destination vector in space
   type(t_spacetimeVector), intent(inout) :: rrhs
@@ -227,6 +228,11 @@ contains
     type(t_spaceTimeVectorAccess) :: raccessPoolSol,raccessPoolRhs
     real(DP), dimension(:), pointer :: p_Ddata, p_DdataTemp
     
+    ! Physics of the problem
+    type(t_physics), pointer :: p_rphysics
+
+    p_rphysics => rmatrix%p_rphysics
+
     ithetaschemetype = rrhs%p_rtimeDiscr%itag
   
     ! Clear the RHS.
@@ -253,9 +259,9 @@ contains
       do istep = 1,rrhs%NEQtime
       
         ! Create the 'current' rhs.
-        call getrhs (rphysics,rrhs%p_rtimediscr,raccesspoolRhs,istep,0,p_rrhsTemp)
+        call getrhs (p_rphysics,rrhs%p_rtimediscr,raccesspoolRhs,istep,0,p_rrhsTemp)
 
-        select case (rphysics%cequation)
+        select case (p_rphysics%cequation)
         case (0,2)
 
           ! ###############################################################################
@@ -280,13 +286,13 @@ contains
             if (istep .eq. rrhs%NEQtime-1) then
               ! Scale the RHS according to the timestep scheme.
               call lsyssc_scaleVector (rrhsSpace%RvectorBlock(2),&
-                  (1.0_DP + (1.0_DP-dtheta)*rphysics%doptControlGamma/dtstep))
+                  (1.0_DP + (1.0_DP-dtheta)*p_rphysics%doptControlGamma/dtstep))
             end if
 
             if (istep .eq. rrhs%NEQtime) then
               ! Scale the RHS according to the timestep scheme.
               call lsyssc_scaleVector (rrhsSpace%RvectorBlock(2),&
-                  (dtheta + dtheta*rphysics%doptControlGamma/dtstep))
+                  (dtheta + dtheta*p_rphysics%doptControlGamma/dtstep))
             end if
             
           case default
@@ -298,19 +304,19 @@ contains
             if (istep .eq. rrhs%NEQtime) then
               ! Scale the RHS according to the timestep scheme.
               call lsyssc_scaleVector (rrhsSpace%RvectorBlock(2),&
-                  (1.0_DP + rphysics%doptControlGamma/dtstep))
+                  (1.0_DP + p_rphysics%doptControlGamma/dtstep))
             end if
 
             ! Forward equation
             if (istep .gt. 1) then
-              call getrhs (rphysics,rrhs%p_rtimediscr,raccesspoolRhs,istep-1,0,p_rrhsTemp)
+              call getrhs (p_rphysics,rrhs%p_rtimediscr,raccesspoolRhs,istep-1,0,p_rrhsTemp)
               call lsyssc_vectorLinearComb (p_rrhsTemp%RvectorBlock(1),rrhsSpace%RvectorBlock(1),&
                   1.0_DP-dtheta,dtheta)
             end if
 
             ! Backward equation
             if (istep .lt. rrhs%NEQtime) then
-              call getrhs (rphysics,rrhs%p_rtimediscr,raccesspoolRhs,istep+1,0,p_rrhsTemp)
+              call getrhs (p_rphysics,rrhs%p_rtimediscr,raccesspoolRhs,istep+1,0,p_rrhsTemp)
               call lsyssc_vectorLinearComb (p_rrhsTemp%RvectorBlock(2),rrhsSpace%RvectorBlock(2),&
                   1.0_DP-dtheta,dtheta)
             end if
@@ -320,47 +326,47 @@ contains
           ! Process the coupling -- or decoupling -- of the equations.
           !
 
-          if ((rphysics%dcoupleDualToPrimal .ne. 1.0_DP) .or. &
-              (rphysics%dcouplePrimalToDual .ne. 1.0_DP)) then
+          if ((p_rphysics%dcoupleDualToPrimal .ne. 1.0_DP) .or. &
+              (p_rphysics%dcouplePrimalToDual .ne. 1.0_DP)) then
 
             ! Dual decoupling
             select case (ithetaschemetype)
             case (1)
 
               ! Create the 'current' solution rhs.
-              call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
+              call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
             
               ! Primal decoupling
               call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(2),&
                   rrhsSpace%RvectorBlock(1),&
-                  (1.0_DP-rphysics%dcoupleDualToPrimal)*(-1.0_DP/rphysics%doptControlAlpha),1.0_DP)
+                  (1.0_DP-p_rphysics%dcoupleDualToPrimal)*(-1.0_DP/p_rphysics%doptControlAlpha),1.0_DP)
 
               if (istep .eq. 1) then
               
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
                     rrhsSpace%RvectorBlock(2),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*(1.0_DP-dtheta),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*(1.0_DP-dtheta),1.0_DP)
               
               else if (istep .eq. rrhs%NEQtime-1) then
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
                     rrhsSpace%RvectorBlock(2),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*&
-                      (1.0_DP+(1.0_DP-dtheta)*rphysics%doptControlGamma/dtstep),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*&
+                      (1.0_DP+(1.0_DP-dtheta)*p_rphysics%doptControlGamma/dtstep),1.0_DP)
 
               else if (istep .eq. rrhs%NEQtime) then
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
                     rrhsSpace%RvectorBlock(2),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*&
-                      (rphysics%dcoupleTermCond*dtheta+dtheta*rphysics%doptControlGamma/dtstep),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*&
+                      (p_rphysics%dcoupleTermCond*dtheta+dtheta*p_rphysics%doptControlGamma/dtstep),1.0_DP)
 
               else
               
                 ! Standard weights.
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
                     rrhsSpace%RvectorBlock(2),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual),1.0_DP)
                     
               end if
             
@@ -369,44 +375,44 @@ contains
               ! Primal decoupling
               if (istep .gt. 1) then
                 ! Create the 'previous' solution rhs.
-                call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep-1,1,p_rrhsSol)
+                call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep-1,1,p_rrhsSol)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(2),&
                     rrhsSpace%RvectorBlock(1),&
-                    (1.0_DP-dtheta)*(1.0_DP-rphysics%dcoupleDualToPrimal)*(-1.0_DP/rphysics%doptControlAlpha),1.0_DP)
+                    (1.0_DP-dtheta)*(1.0_DP-p_rphysics%dcoupleDualToPrimal)*(-1.0_DP/p_rphysics%doptControlAlpha),1.0_DP)
 
                 ! Create the 'current' solution rhs.
-                call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
+                call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(2),&
                     rrhsSpace%RvectorBlock(1),&
-                    dtheta*(1.0_DP-rphysics%dcoupleDualToPrimal)*(-1.0_DP/rphysics%doptControlAlpha),1.0_DP)
+                    dtheta*(1.0_DP-p_rphysics%dcoupleDualToPrimal)*(-1.0_DP/p_rphysics%doptControlAlpha),1.0_DP)
               end if
 
               ! Dual decoupling
               if (istep .lt. rrhs%NEQtime) then
               
                 ! Create the 'previous' solution rhs.
-                call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep+1,1,p_rrhsSol)
+                call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep+1,1,p_rrhsSol)
               
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
-                    rrhsSpace%RvectorBlock(2),(1.0_DP-dtheta)*(1.0_DP-rphysics%dcouplePrimalToDual),1.0_DP)
+                    rrhsSpace%RvectorBlock(2),(1.0_DP-dtheta)*(1.0_DP-p_rphysics%dcouplePrimalToDual),1.0_DP)
 
                 ! Create the 'current' solution rhs.
-                call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
+                call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
-                    rrhsSpace%RvectorBlock(2),dtheta*(1.0_DP-rphysics%dcouplePrimalToDual),1.0_DP)
+                    rrhsSpace%RvectorBlock(2),dtheta*(1.0_DP-p_rphysics%dcouplePrimalToDual),1.0_DP)
                     
               else
 
                 ! Create the 'current' solution rhs.
-                call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
+                call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
               
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
                     rrhsSpace%RvectorBlock(2),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*&
-                        (rphysics%dcoupleTermCond+rphysics%doptControlGamma/dtstep),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*&
+                        (p_rphysics%dcoupleTermCond+p_rphysics%doptControlGamma/dtstep),1.0_DP)
               end if
               
             end select
@@ -438,19 +444,19 @@ contains
             if (istep .eq. rrhs%NEQtime-1) then
               ! Scale the RHS according to the timestep scheme.
               call lsyssc_scaleVector (rrhsSpace%RvectorBlock(4),&
-                  (1.0_DP + (1.0_DP-dtheta)*rphysics%doptControlGamma/dtstep))
+                  (1.0_DP + (1.0_DP-dtheta)*p_rphysics%doptControlGamma/dtstep))
 
               call lsyssc_scaleVector (rrhsSpace%RvectorBlock(5),&
-                  (1.0_DP + (1.0_DP-dtheta)*rphysics%doptControlGamma/dtstep))
+                  (1.0_DP + (1.0_DP-dtheta)*p_rphysics%doptControlGamma/dtstep))
             end if
 
             if (istep .eq. rrhs%NEQtime) then
               ! Scale the RHS according to the timestep scheme.
               call lsyssc_scaleVector (rrhsSpace%RvectorBlock(4),&
-                  (dtheta + dtheta*rphysics%doptControlGamma/dtstep))
+                  (dtheta + dtheta*p_rphysics%doptControlGamma/dtstep))
 
               call lsyssc_scaleVector (rrhsSpace%RvectorBlock(5),&
-                  (dtheta + dtheta*rphysics%doptControlGamma/dtstep))
+                  (dtheta + dtheta*p_rphysics%doptControlGamma/dtstep))
             end if
             
           case default
@@ -460,17 +466,14 @@ contains
             call lsysbl_copyVector (p_rrhsTemp,rrhsSpace)
             
             if (istep .eq. rrhs%NEQtime) then
-              ! Scale the RHS according to the timestep scheme.
-              call lsyssc_scaleVector (rrhsSpace%RvectorBlock(4),&
-                  (1.0_DP + rphysics%doptControlGamma/dtstep))
-
-              call lsyssc_scaleVector (rrhsSpace%RvectorBlock(5),&
-                  (1.0_DP + rphysics%doptControlGamma/dtstep))
+              ! In the last timestep, the projection operator "gamma (I/dt - theta Laplace)"
+              ! has to be applied to the dual RHS.
+              call stmat_applyOperator (rmatrix, istep, istep, 2, rrhsSpace, rrhsSpace)
             end if
 
             ! Forward equation
             if (istep .gt. 1) then
-              call getrhs (rphysics,rrhs%p_rtimediscr,raccesspoolRhs,istep-1,0,p_rrhsTemp)
+              call getrhs (p_rphysics,rrhs%p_rtimediscr,raccesspoolRhs,istep-1,0,p_rrhsTemp)
 
               call lsyssc_vectorLinearComb (p_rrhsTemp%RvectorBlock(1),rrhsSpace%RvectorBlock(1),&
                   1.0_DP-dtheta,dtheta)
@@ -481,7 +484,7 @@ contains
 
             ! Backward equation
             if (istep .lt. rrhs%NEQtime) then
-              call getrhs (rphysics,rrhs%p_rtimediscr,raccesspoolRhs,istep+1,0,p_rrhsTemp)
+              call getrhs (p_rphysics,rrhs%p_rtimediscr,raccesspoolRhs,istep+1,0,p_rrhsTemp)
 
               call lsyssc_vectorLinearComb (p_rrhsTemp%RvectorBlock(4),rrhsSpace%RvectorBlock(4),&
                   1.0_DP-dtheta,dtheta)
@@ -495,69 +498,69 @@ contains
           ! Process the coupling -- or decoupling -- of the equations.
           !
 
-          if ((rphysics%dcoupleDualToPrimal .ne. 1.0_DP) .or. &
-              (rphysics%dcouplePrimalToDual .ne. 1.0_DP)) then
+          if ((p_rphysics%dcoupleDualToPrimal .ne. 1.0_DP) .or. &
+              (p_rphysics%dcouplePrimalToDual .ne. 1.0_DP)) then
 
             ! Dual decoupling
             select case (ithetaschemetype)
             case (1)
 
               ! Create the 'current' solution rhs.
-              call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
+              call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
             
               ! Primal decoupling
               call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(4),&
                   rrhsSpace%RvectorBlock(1),&
-                  (1.0_DP-rphysics%dcoupleDualToPrimal)*(-1.0_DP/rphysics%doptControlAlpha),1.0_DP)
+                  (1.0_DP-p_rphysics%dcoupleDualToPrimal)*(-1.0_DP/p_rphysics%doptControlAlpha),1.0_DP)
                   
               call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(5),&
                   rrhsSpace%RvectorBlock(2),&
-                  (1.0_DP-rphysics%dcoupleDualToPrimal)*(-1.0_DP/rphysics%doptControlAlpha),1.0_DP)
+                  (1.0_DP-p_rphysics%dcoupleDualToPrimal)*(-1.0_DP/p_rphysics%doptControlAlpha),1.0_DP)
 
               if (istep .eq. 1) then
               
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
                     rrhsSpace%RvectorBlock(4),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*(1.0_DP-dtheta),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*(1.0_DP-dtheta),1.0_DP)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(2),&
                     rrhsSpace%RvectorBlock(5),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*(1.0_DP-dtheta),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*(1.0_DP-dtheta),1.0_DP)
               
               else if (istep .eq. rrhs%NEQtime-1) then
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
                     rrhsSpace%RvectorBlock(4),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*&
-                      (1.0_DP+(1.0_DP-dtheta)*rphysics%doptControlGamma/dtstep),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*&
+                      (1.0_DP+(1.0_DP-dtheta)*p_rphysics%doptControlGamma/dtstep),1.0_DP)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(2),&
                     rrhsSpace%RvectorBlock(5),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*&
-                      (1.0_DP+(1.0_DP-dtheta)*rphysics%doptControlGamma/dtstep),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*&
+                      (1.0_DP+(1.0_DP-dtheta)*p_rphysics%doptControlGamma/dtstep),1.0_DP)
 
               else if (istep .eq. rrhs%NEQtime) then
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
                     rrhsSpace%RvectorBlock(4),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*&
-                      (rphysics%dcoupleTermCond*dtheta+dtheta*rphysics%doptControlGamma/dtstep),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*&
+                      (p_rphysics%dcoupleTermCond*dtheta+dtheta*p_rphysics%doptControlGamma/dtstep),1.0_DP)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(2),&
                     rrhsSpace%RvectorBlock(5),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*&
-                      (rphysics%dcoupleTermCond*dtheta+dtheta*rphysics%doptControlGamma/dtstep),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*&
+                      (p_rphysics%dcoupleTermCond*dtheta+dtheta*p_rphysics%doptControlGamma/dtstep),1.0_DP)
 
               else
               
                 ! Standard weights.
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
                     rrhsSpace%RvectorBlock(4),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual),1.0_DP)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(2),&
                     rrhsSpace%RvectorBlock(5),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual),1.0_DP)
                     
               end if
             
@@ -566,63 +569,63 @@ contains
               ! Primal decoupling
               if (istep .gt. 1) then
                 ! Create the 'previous' solution rhs.
-                call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep-1,1,p_rrhsSol)
+                call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep-1,1,p_rrhsSol)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(4),&
                     rrhsSpace%RvectorBlock(1),&
-                    (1.0_DP-dtheta)*(1.0_DP-rphysics%dcoupleDualToPrimal)*(-1.0_DP/rphysics%doptControlAlpha),1.0_DP)
+                    (1.0_DP-dtheta)*(1.0_DP-p_rphysics%dcoupleDualToPrimal)*(-1.0_DP/p_rphysics%doptControlAlpha),1.0_DP)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(5),&
                     rrhsSpace%RvectorBlock(2),&
-                    (1.0_DP-dtheta)*(1.0_DP-rphysics%dcoupleDualToPrimal)*(-1.0_DP/rphysics%doptControlAlpha),1.0_DP)
+                    (1.0_DP-dtheta)*(1.0_DP-p_rphysics%dcoupleDualToPrimal)*(-1.0_DP/p_rphysics%doptControlAlpha),1.0_DP)
 
                 ! Create the 'current' solution rhs.
-                call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
+                call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(4),&
                     rrhsSpace%RvectorBlock(1),&
-                    dtheta*(1.0_DP-rphysics%dcoupleDualToPrimal)*(-1.0_DP/rphysics%doptControlAlpha),1.0_DP)
+                    dtheta*(1.0_DP-p_rphysics%dcoupleDualToPrimal)*(-1.0_DP/p_rphysics%doptControlAlpha),1.0_DP)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(5),&
                     rrhsSpace%RvectorBlock(2),&
-                    dtheta*(1.0_DP-rphysics%dcoupleDualToPrimal)*(-1.0_DP/rphysics%doptControlAlpha),1.0_DP)
+                    dtheta*(1.0_DP-p_rphysics%dcoupleDualToPrimal)*(-1.0_DP/p_rphysics%doptControlAlpha),1.0_DP)
               end if
 
               ! Dual decoupling
               if (istep .lt. rrhs%NEQtime) then
               
                 ! Create the 'previous' solution rhs.
-                call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep+1,1,p_rrhsSol)
+                call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep+1,1,p_rrhsSol)
               
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
-                    rrhsSpace%RvectorBlock(4),(1.0_DP-dtheta)*(1.0_DP-rphysics%dcouplePrimalToDual),1.0_DP)
+                    rrhsSpace%RvectorBlock(4),(1.0_DP-dtheta)*(1.0_DP-p_rphysics%dcouplePrimalToDual),1.0_DP)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(2),&
-                    rrhsSpace%RvectorBlock(5),(1.0_DP-dtheta)*(1.0_DP-rphysics%dcouplePrimalToDual),1.0_DP)
+                    rrhsSpace%RvectorBlock(5),(1.0_DP-dtheta)*(1.0_DP-p_rphysics%dcouplePrimalToDual),1.0_DP)
 
                 ! Create the 'current' solution rhs.
-                call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
+                call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
-                    rrhsSpace%RvectorBlock(4),dtheta*(1.0_DP-rphysics%dcouplePrimalToDual),1.0_DP)
+                    rrhsSpace%RvectorBlock(4),dtheta*(1.0_DP-p_rphysics%dcouplePrimalToDual),1.0_DP)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(2),&
-                    rrhsSpace%RvectorBlock(5),dtheta*(1.0_DP-rphysics%dcouplePrimalToDual),1.0_DP)
+                    rrhsSpace%RvectorBlock(5),dtheta*(1.0_DP-p_rphysics%dcouplePrimalToDual),1.0_DP)
                     
               else
 
                 ! Create the 'current' solution rhs.
-                call getrhs (rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
+                call getrhs (p_rphysics,rrhs%p_rtimediscr,raccessPoolSol,istep,1,p_rrhsSol)
               
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(1),&
                     rrhsSpace%RvectorBlock(4),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*&
-                        (rphysics%dcoupleTermCond+rphysics%doptControlGamma/dtstep),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*&
+                        (p_rphysics%dcoupleTermCond+p_rphysics%doptControlGamma/dtstep),1.0_DP)
 
                 call lsyssc_vectorLinearComb (p_rrhsSol%RvectorBlock(2),&
                     rrhsSpace%RvectorBlock(5),&
-                    (1.0_DP-rphysics%dcouplePrimalToDual)*&
-                        (rphysics%dcoupleTermCond+rphysics%doptControlGamma/dtstep),1.0_DP)
+                    (1.0_DP-p_rphysics%dcouplePrimalToDual)*&
+                        (p_rphysics%dcoupleTermCond+p_rphysics%doptControlGamma/dtstep),1.0_DP)
               end if
               
             end select

@@ -789,19 +789,31 @@ contains
                   rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
             end if
             
-          else
+          else if (ithetaschemetype .eq. 0) then
             
             if (irow .eq. p_rtimeDiscr%nintervals+1) then
             
+              ! Impose a divergence free projection here.
+            
               call lsyssc_matrixLinearComb (&
                   rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
-                  -dcouplePrimalToDual*(dcoupleTermCond+dgamma/dtstep),&
+                  -dcouplePrimalToDual*(dgamma/dtstep),&
                   rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
                   rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 
               call lsyssc_matrixLinearComb (&
                   rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
-                  -dcouplePrimalToDual*(dcoupleTermCond+dgamma/dtstep),&
+                  -dcouplePrimalToDual*(dgamma/dtstep),&
+                  rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
+                  rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
+                  
+              call lsyssc_matrixLinearComb (&
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (dgamma*rmatrix%p_rphysics%dviscosity*dtheta),&
+                  rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
+                  rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
+
+              call lsyssc_matrixLinearComb (&
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (dgamma*rmatrix%p_rphysics%dviscosity*dtheta),&
                   rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                   rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
                   
@@ -941,4 +953,124 @@ contains
 
   end subroutine
   
+  ! ***************************************************************************
+
+  subroutine stmat_applyOperator (rmatrix, irow, icol, cprimaldual, rvector, rdestVector)
+
+  ! Applies the operator to a vector.
+  
+  ! Space-time matrix that defines the operators.
+  type(t_spaceTimeMatrix), intent(in) :: rmatrix
+  
+  ! Row/column of the operator in the space-time matrix which should be applieed
+  ! to rvector
+  integer, intent(in) :: irow, icol
+  
+  ! Determines whether the primal and/or dual operator should be applied
+  ! to the vector.
+  ! =1: only primal, decoupled. =2: only dual, decoupled. 
+  ! =3: primal + dual, both decoupled.
+  integer, intent(in) :: cprimaldual
+  
+  ! Vector, the operator should be applied to
+  type(t_vectorBlock), intent(inout) :: rvector
+
+  ! Destination vector that receives the result. The content of the primal
+  ! and/or dual part is overwritten, depending on cprimaldual
+  type(t_vectorBlock), intent(inout) :: rdestVector
+  
+    ! local varibales
+    type(t_vectorBlock) :: rvector2,rvector3
+    type(t_matrixBlock) :: rsubmatrix
+    integer :: ispaceLevel
+
+    call lsysbl_createVectorBlock(rvector,rvector2,.true.)
+    call lsysbl_createVectorBlock(rvector,rvector3,.true.)
+    
+    ! Multiply the solution with the matrix in the 1st timestep to
+    ! get the correct RHS.
+    call sth_getLevel(rmatrix%p_rspaceTimeHierarchy,rmatrix%ilevel,&
+        ispaceLevel=ispaceLevel)
+    call stmat_allocSubmatrix (rmatrix%cmatrixType,rmatrix%p_rphysics,&
+      rmatrix%p_rmatVecTempl(ispaceLevel),rsubmatrix)
+    call stmat_getSubmatrix (rmatrix, ispaceLevel, irow, icol, rsubmatrix)
+    
+    ! Primal part.
+    if (iand(cprimaldual,1) .ne. 0) then
+    
+      ! Copy the primal part to the input vector, delete dual part.
+      call lsysbl_clearVector (rvector2)
+      select case (rmatrix%p_rphysics%cequation)
+      case (0,2)
+        ! 1D/2D Heat equation
+        call lsyssc_copyVector (rvector%RvectorBlock(1),rdestVector%RvectorBlock(1))
+        
+      case (1)
+        ! 2D Stokes equation
+        call lsyssc_copyVector (rvector%RvectorBlock(1),rdestVector%RvectorBlock(1))
+        call lsyssc_copyVector (rvector%RvectorBlock(2),rdestVector%RvectorBlock(2))
+        call lsyssc_copyVector (rvector%RvectorBlock(3),rdestVector%RvectorBlock(3))
+        
+      end select
+    
+      call lsysbl_blockMatVec (rsubmatrix,rvector2,rvector3,1.0_DP,0.0_DP)
+      
+      ! Copy back.
+      select case (rmatrix%p_rphysics%cequation)
+      case (0,2)
+        ! 1D/2D Heat equation
+        call lsyssc_copyVector (rvector3%RvectorBlock(1),rvector%RvectorBlock(1))
+        
+      case (1)
+        ! 2D Stokes equation
+        call lsyssc_copyVector (rvector3%RvectorBlock(1),rvector%RvectorBlock(1))
+        call lsyssc_copyVector (rvector3%RvectorBlock(2),rvector%RvectorBlock(2))
+        call lsyssc_copyVector (rvector3%RvectorBlock(3),rvector%RvectorBlock(3))
+        
+      end select
+      
+    end if
+
+    ! Dual part.
+    if (iand(cprimaldual,2) .ne. 0) then
+    
+      ! Copy the dual part to the input vector, delete dual part.
+      call lsysbl_clearVector (rvector2)
+      select case (rmatrix%p_rphysics%cequation)
+      case (0,2)
+        ! 1D/2D Heat equation
+        call lsyssc_copyVector (rvector%RvectorBlock(2),rvector2%RvectorBlock(2))
+        
+      case (1)
+        ! 2D Stokes equation
+        call lsyssc_copyVector (rvector%RvectorBlock(4),rvector2%RvectorBlock(4))
+        call lsyssc_copyVector (rvector%RvectorBlock(5),rvector2%RvectorBlock(5))
+        call lsyssc_copyVector (rvector%RvectorBlock(6),rvector2%RvectorBlock(6))
+        
+      end select
+    
+      call lsysbl_blockMatVec (rsubmatrix,rvector2,rvector3,1.0_DP,0.0_DP)
+      
+      ! Copy back.
+      select case (rmatrix%p_rphysics%cequation)
+      case (0,2)
+        ! 1D/2D Heat equation
+        call lsyssc_copyVector (rvector3%RvectorBlock(2),rdestVector%RvectorBlock(2))
+        
+      case (1)
+        ! 2D Stokes equation
+        call lsyssc_copyVector (rvector3%RvectorBlock(4),rdestVector%RvectorBlock(4))
+        call lsyssc_copyVector (rvector3%RvectorBlock(5),rdestVector%RvectorBlock(5))
+        call lsyssc_copyVector (rvector3%RvectorBlock(6),rdestVector%RvectorBlock(6))
+        
+      end select
+      
+    end if
+
+    call lsysbl_releaseMatrix (rsubmatrix)
+    call lsysbl_releaseVector (rvector3)
+    call lsysbl_releaseVector (rvector2)
+
+  end subroutine
+
 end module

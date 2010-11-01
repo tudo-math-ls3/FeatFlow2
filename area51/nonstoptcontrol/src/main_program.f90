@@ -1092,7 +1092,7 @@ contains
       
       ! Create the right hand side.
       call sptivec_initVector (rrhs,p_rtimeDiscr,p_rspaceDiscr)
-      call strhs_assembleRHS (rparams%rphysics,rrhs)
+      call strhs_assembleRHS (p_Rmatrices(rparams%rspacetimeHierarchy%nlevels),rrhs)
       
       ! Create the solver.
       call main_initLinearSolver (rparlist,rparams,rparams%rspacetimeHierarchy%nlevels,rlinearSolver)
@@ -1303,54 +1303,54 @@ contains
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     type(t_vectorBlock) :: rspaceTempVecFine,rspaceTempVecCoarse
     
-    ! Create the RHS vector on the two levels
-    call sth_getLevel (rspacetimeHierarchy,ilevel,p_rfeSpaceLevel,p_rtimeDiscr)
-    p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
-    
-    ! Create the right hand side.
-    call sptivec_initVector (rdefectFine,p_rtimeDiscr,p_rspaceDiscr)
-    call strhs_assembleRHS (rphysics,rdefectFine)
-
-    call spop_applyBC (RspaceTimeBC(ilevel), SPOP_DEFECT, rdefectFine)
-    
-    ! Allocate temp vectors
-    call sptivec_initVector (rtempVecFine,p_rtimeDiscr,p_rspaceDiscr)
-    call lsysbl_createVectorBlock (p_rspaceDiscr,rspaceTempVecFine,.false.)
-
-    ! Create the RHS vector on the lower levels
-    call sth_getLevel (rspacetimeHierarchy,ilevel-1,p_rfeSpaceLevel,p_rtimeDiscr)
-    p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
-    
-    call sptivec_initVector (rdefectCoarse,p_rtimeDiscr,p_rspaceDiscr)
-    call strhs_assembleRHS (rphysics,rdefectCoarse)
-
-    call spop_applyBC (RspaceTimeBC(ilevel-1), SPOP_DEFECT, rdefectCoarse)
-     
-    ! Allocate temp vectors
-    call sptivec_initVector (rtempVecCoarse,p_rtimeDiscr,p_rspaceDiscr)
-    
-    ! Restrict the fine grid defect.
-    call sptivec_initVector (rrestDefectCoarse,p_rtimeDiscr,p_rspaceDiscr)
-    call lsysbl_createVectorBlock (p_rspaceDiscr,rspaceTempVecCoarse,.false.)
-    
-    call sptipr_performRestriction (rprojHier,ilevel,rrestDefectCoarse, &
-      rdefectFine,rspaceTempVecCoarse,rspaceTempVecFine,&
-      rtempVecCoarse,rtempVecFine)
-    
-    call spop_applyBC (RspaceTimeBC(ilevel-1), SPOP_DEFECT, rdefectCoarse)
-      
-    ! Calculate the L2-norm of the difference
-    call sptivec_vectorLinearComb (rrestDefectCoarse,rdefectCoarse,1.0_DP,-1.0_DP)
-    call test_vectorNormExt (rdefectCoarse,LINALG_NORML2)
-      
-    ! Clean up
-    call lsysbl_releaseVector (rspaceTempVecFine)
-    call lsysbl_releaseVector (rspaceTempVecCoarse)
-    call sptivec_releaseVector (rtempVecFine)
-    call sptivec_releaseVector (rtempVecCoarse)
-    call sptivec_releaseVector (rdefectFine)
-    call sptivec_releaseVector (rdefectCoarse)
-    call sptivec_releaseVector (rrestDefectCoarse)
+!    ! Create the RHS vector on the two levels
+!    call sth_getLevel (rspacetimeHierarchy,ilevel,p_rfeSpaceLevel,p_rtimeDiscr)
+!    p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
+!    
+!    ! Create the right hand side.
+!    call sptivec_initVector (rdefectFine,p_rtimeDiscr,p_rspaceDiscr)
+!    call strhs_assembleRHS (rphysics,rdefectFine)
+!
+!    call spop_applyBC (RspaceTimeBC(ilevel), SPOP_DEFECT, rdefectFine)
+!    
+!    ! Allocate temp vectors
+!    call sptivec_initVector (rtempVecFine,p_rtimeDiscr,p_rspaceDiscr)
+!    call lsysbl_createVectorBlock (p_rspaceDiscr,rspaceTempVecFine,.false.)
+!
+!    ! Create the RHS vector on the lower levels
+!    call sth_getLevel (rspacetimeHierarchy,ilevel-1,p_rfeSpaceLevel,p_rtimeDiscr)
+!    p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
+!    
+!    call sptivec_initVector (rdefectCoarse,p_rtimeDiscr,p_rspaceDiscr)
+!    call strhs_assembleRHS (rphysics,rdefectCoarse)
+!
+!    call spop_applyBC (RspaceTimeBC(ilevel-1), SPOP_DEFECT, rdefectCoarse)
+!     
+!    ! Allocate temp vectors
+!    call sptivec_initVector (rtempVecCoarse,p_rtimeDiscr,p_rspaceDiscr)
+!    
+!    ! Restrict the fine grid defect.
+!    call sptivec_initVector (rrestDefectCoarse,p_rtimeDiscr,p_rspaceDiscr)
+!    call lsysbl_createVectorBlock (p_rspaceDiscr,rspaceTempVecCoarse,.false.)
+!    
+!    call sptipr_performRestriction (rprojHier,ilevel,rrestDefectCoarse, &
+!      rdefectFine,rspaceTempVecCoarse,rspaceTempVecFine,&
+!      rtempVecCoarse,rtempVecFine)
+!    
+!    call spop_applyBC (RspaceTimeBC(ilevel-1), SPOP_DEFECT, rdefectCoarse)
+!      
+!    ! Calculate the L2-norm of the difference
+!    call sptivec_vectorLinearComb (rrestDefectCoarse,rdefectCoarse,1.0_DP,-1.0_DP)
+!    call test_vectorNormExt (rdefectCoarse,LINALG_NORML2)
+!      
+!    ! Clean up
+!    call lsysbl_releaseVector (rspaceTempVecFine)
+!    call lsysbl_releaseVector (rspaceTempVecCoarse)
+!    call sptivec_releaseVector (rtempVecFine)
+!    call sptivec_releaseVector (rtempVecCoarse)
+!    call sptivec_releaseVector (rdefectFine)
+!    call sptivec_releaseVector (rdefectCoarse)
+!    call sptivec_releaseVector (rrestDefectCoarse)
 
   end subroutine
 
