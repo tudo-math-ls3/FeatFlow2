@@ -1020,6 +1020,8 @@ contains
     call stmv_matvec (rsolver%p_rmatrix,rx, rd, -1.0_DP, 1.0_DP)
     call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rd)
 
+    !call sptivec_printVectorNorm(rd,"D",3)
+
     ! Apply preconditioning
     call stls_precondDefect(rsolver,rd)
     

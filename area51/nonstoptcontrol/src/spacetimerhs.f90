@@ -280,7 +280,7 @@ contains
             if (istep .eq. 1) then
               ! Scale the RHS according to the timestep scheme.
               call lsyssc_scaleVector (rrhsSpace%RvectorBlock(2),&
-                  dtheta)
+                  1.0_DP-dtheta)
             end if
 
             if (istep .eq. rrhs%NEQtime-1) then
@@ -436,9 +436,9 @@ contains
             if (istep .eq. 1) then
               ! Scale the RHS according to the timestep scheme.
               call lsyssc_scaleVector (rrhsSpace%RvectorBlock(4),&
-                  dtheta)
+                  1.0_DP-dtheta)
               call lsyssc_scaleVector (rrhsSpace%RvectorBlock(5),&
-                  dtheta)
+                  1.0_DP-dtheta)
             end if
             
             if (istep .eq. rrhs%NEQtime-1) then
@@ -680,6 +680,7 @@ contains
       real(DP) :: dtimeend,dtstep,dtimestart,dtimeprimal,dtimedual
       real(DP) :: dtheta
       integer :: ithetaschemetype
+      real(DP), dimension(:), pointer :: p_Ddata
       
       dtheta = rtimediscr%dtheta
       ithetaschemetype = rtimediscr%itag
@@ -691,6 +692,7 @@ contains
         
         ! Create it.
         call sptivec_getFreeBufferFromPool (raccessPool,itimestep,p_rvector)
+        call lsysbl_getbase_double (p_rvector, p_Ddata)
         
         ! Get the time of the primal and dual equation
         call tdiscr_getTimestep(rtimediscr,itimestep-1,&

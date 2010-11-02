@@ -126,6 +126,7 @@ module spacetimevectors
   public :: sptivec_scaleVector
   public :: sptivec_printVector
   public :: sptivec_setSubvectorConstant
+  public :: sptivec_printVectorNorm
   
   public :: t_spaceTimeVectorAccess
   public :: sptivec_createAccessPool
@@ -1901,6 +1902,92 @@ contains
       !    OU_TERMINAL, '', '(E15.5)')
 
     end do
+
+    ! Release temp memory    
+    call lsysbl_releaseVector (rxBlock)
+      
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_printVectorNorm (rx,svecName,ioutputlevel)
+
+!<description>
+  ! Prints an overview about the vector norm to the terminal.
+  ! This includes the vector norm of all components and all timesteps.
+!</desctiprion>
+
+!<input>
+  ! Vector to print
+  type(t_spacetimeVector), intent(IN)   :: rx
+  
+  ! Name of the vector. Used for output.
+  character(len=*), intent(in) :: svecName
+  
+  ! OPTIONAL: Output level.
+  ! =1: print the norm.
+  ! =2: print the norm and subnorms of the timesteps.
+  ! =3: print the norm, subnorms of the timesteps and subnorm of the blocks.
+  integer, intent(in), optional :: ioutputlevel
+!</input>
+
+!</subroutine>
+
+    integer :: ieqtime,icp
+    integer, dimension(1) :: Isize
+    type(t_vectorBlock) :: rxBlock
+    real(DP) :: dnormpart,dnorm
+    integer :: iout
+    
+    ! DEBUG!!!
+    real(DP), dimension(:), pointer :: p_Dx
+    
+    iout = 1
+    if (present(ioutputlevel)) iout = ioutputlevel
+    
+    Isize(1) = rx%NEQ
+
+    ! Allocate a 'little bit' of memory for the subvectors
+    call lsysbl_createVectorBlock (rx%p_rspaceDiscr,rxBlock,.false.)
+    
+    ! DEBUG!!!
+    call lsysbl_getbase_double (rxBlock,p_Dx)
+
+    ! Loop through the substeps, load the data in, perform the linear combination
+    ! and write out again.
+    dnorm = 0.0_DP
+    do ieqtime=rx%istartidx,rx%iendidx
+      
+      call sptivec_getTimestepData (rx, ieqtime, rxBlock)
+
+      dnormpart = lsysbl_vectorNorm(rxBlock,LINALG_NORML2)**2
+      dnorm = dnorm + dnormpart
+      
+      if (iout .ge. 2) then
+        call output_line ("||"//trim(svecName)//"_"//trim(sys_siL(ieqTime,10))//"|| = "//&
+            trim(sys_sdEL(sqrt(dnormpart),10)) )
+      end if
+      
+      if (iout .ge. 3) then
+        do icp=1,rxBlock%nblocks
+          call output_line ("  ||"//trim(svecName)//"_"//&
+              trim(sys_siL(ieqTime,10))//"^"//trim(sys_siL(icp,2))&
+              //"|| = "//&
+              trim(sys_sdEL(&
+                  lsyssc_vectorNorm(rxBlock%RvectorBlock(icp),LINALG_NORML2),10)) )
+        end do
+      end if
+
+    end do
+
+    dnorm = sqrt(dnorm / real(rx%NEQ,DP))
+
+    if (iout .ge. 1) then
+      call output_line ("||"//trim(svecName)//"|| = "//&
+          trim(sys_sdEL(sqrt(dnorm),10)) )
+    end if
 
     ! Release temp memory    
     call lsysbl_releaseVector (rxBlock)
