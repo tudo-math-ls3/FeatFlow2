@@ -45,5 +45,5 @@
 		<File RelativePath="..\src\renum2d.f90"/>
 		<File RelativePath="..\src\renum2d_callback.f90"/>
 		<File RelativePath="..\src\renum2d_test1.f90"/>
-		<File RelativePath="..\src\renum2d_test2.f90"/></Filter>
+		<File RelativePath="..\src\renum2d_test2.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>
