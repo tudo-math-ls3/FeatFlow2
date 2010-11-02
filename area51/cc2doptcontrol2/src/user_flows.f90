@@ -378,37 +378,43 @@ contains
 
   elemental real(DP) function fct_stokesZ4_x (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_stokesZ4_x = 6 * dx * dy ** 2 * dtime ** 2 &
-        - 0.12D2 * dx * dy ** 2 * dtime ** 3 &
-        + 6 * dx * dy ** 2 * dtime ** 4 + 2 * dx ** 3 * dtime ** 2 &
-        - 4 * dx ** 3 * dtime ** 3 + 2 * dx ** 3 * dtime ** 4 &
-        + dx ** 3 * dy ** 2 * dtime ** 2 - 2 * dx ** 3 * dy ** 2 * dtime ** 3 &
-        + dx ** 3 * dy ** 2 * dtime ** 4 + 0.12D2 * dalpha * dx * dy ** 2 * dtime &
-        - 0.36D2 * dalpha * dx * dy ** 2 * dtime ** 2 &
-        + 0.24D2 * dalpha * dx * dy ** 2 * dtime ** 3 &
-        + 4 * dalpha * dx ** 3 * dtime &
-        - 0.12D2 * dalpha * dx ** 3 * dtime ** 2 &
-        + 8 * dalpha * dx ** 3 * dtime ** 3 &
-        - 2 * dalpha * dx ** 3 * dy ** 2 &
-        + 0.12D2 * dalpha * dx ** 3 * dy ** 2 * dtime &
-        - 0.12D2 * dalpha * dx ** 3 * dy ** 2 * dtime ** 2
+    fct_stokesZ4_x = &
+        -2*dalpha*dx**3*dy**2+12*dalpha*dx**3*dy**2*dtime-12*dalpha*dx**3*dy**2*dtime**2+dx**3*dy**2*dtime**2 &
+        -2*dx**3*dy**2*dtime**3+dx**3*dy**2*dtime**4+24*dalpha*dx*dtime**2-48*dalpha*dx*dtime**3+24*dalpha*dx*dtime**4
+!    fct_stokesZ4_x = 6 * dx * dy ** 2 * dtime ** 2 &
+!        - 0.12D2 * dx * dy ** 2 * dtime ** 3 &
+!        + 6 * dx * dy ** 2 * dtime ** 4 + 2 * dx ** 3 * dtime ** 2 &
+!        - 4 * dx ** 3 * dtime ** 3 + 2 * dx ** 3 * dtime ** 4 &
+!        + dx ** 3 * dy ** 2 * dtime ** 2 - 2 * dx ** 3 * dy ** 2 * dtime ** 3 &
+!        + dx ** 3 * dy ** 2 * dtime ** 4 + 0.12D2 * dalpha * dx * dy ** 2 * dtime &
+!        - 0.36D2 * dalpha * dx * dy ** 2 * dtime ** 2 &
+!        + 0.24D2 * dalpha * dx * dy ** 2 * dtime ** 3 &
+!        + 4 * dalpha * dx ** 3 * dtime &
+!        - 0.12D2 * dalpha * dx ** 3 * dtime ** 2 &
+!        + 8 * dalpha * dx ** 3 * dtime ** 3 &
+!        - 2 * dalpha * dx ** 3 * dy ** 2 &
+!        + 0.12D2 * dalpha * dx ** 3 * dy ** 2 * dtime &
+!        - 0.12D2 * dalpha * dx ** 3 * dy ** 2 * dtime ** 2
   end function
 
   elemental real(DP) function fct_stokesZ4_y (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_stokesZ4_y = -2 * dy ** 3 * dtime ** 2 + 4 * dy ** 3 * dtime ** 3 &
-        - 2 * dy ** 3 * dtime ** 4 - 6 * dx ** 2 * dy * dtime ** 2 &
-        + 0.12D2 * dx ** 2 * dy * dtime ** 3 - 6 * dx ** 2 * dy * dtime ** 4 &
-        - dx ** 2 * dy ** 3 * dtime ** 2 + 2 * dx ** 2 * dy ** 3 * dtime ** 3 &
-        - dx ** 2 * dy ** 3 * dtime ** 4 - 4 * dalpha * dy ** 3 * dtime &
-        + 0.12D2 * dalpha * dy ** 3 * dtime ** 2 &
-        - 8 * dalpha * dy ** 3 * dtime ** 3 &
-        - 0.12D2 * dalpha * dx ** 2 * dy * dtime &
-        + 0.36D2 * dalpha * dx ** 2 * dy * dtime ** 2 &
-        - 0.24D2 * dalpha * dx ** 2 * dy * dtime ** 3 &
-        + 2 * dalpha * dx ** 2 * dy ** 3 &
-        - 0.12D2 * dalpha * dx ** 2 * dy ** 3 * dtime &
-        + 0.12D2 * dalpha * dx ** 2 * dy ** 3 * dtime ** 2
+    fct_stokesZ4_y = &
+        2*dalpha*dy**3*dx**2-12*dalpha*dy**3*dx**2*dtime+12*dalpha*dy**3*dx**2*dtime**2-dx**2*dy**3*dtime**2 &
+        +2*dx**2*dy**3*dtime**3-dx**2*dy**3*dtime**4-24*dalpha*dy*dtime**2+48*dalpha*dy*dtime**3-24*dalpha*dy*dtime**4
+!    fct_stokesZ4_y = -2 * dy ** 3 * dtime ** 2 + 4 * dy ** 3 * dtime ** 3 &
+!        - 2 * dy ** 3 * dtime ** 4 - 6 * dx ** 2 * dy * dtime ** 2 &
+!        + 0.12D2 * dx ** 2 * dy * dtime ** 3 - 6 * dx ** 2 * dy * dtime ** 4 &
+!        - dx ** 2 * dy ** 3 * dtime ** 2 + 2 * dx ** 2 * dy ** 3 * dtime ** 3 &
+!        - dx ** 2 * dy ** 3 * dtime ** 4 - 4 * dalpha * dy ** 3 * dtime &
+!        + 0.12D2 * dalpha * dy ** 3 * dtime ** 2 &
+!        - 8 * dalpha * dy ** 3 * dtime ** 3 &
+!        - 0.12D2 * dalpha * dx ** 2 * dy * dtime &
+!        + 0.36D2 * dalpha * dx ** 2 * dy * dtime ** 2 &
+!        - 0.24D2 * dalpha * dx ** 2 * dy * dtime ** 3 &
+!        + 2 * dalpha * dx ** 2 * dy ** 3 &
+!        - 0.12D2 * dalpha * dx ** 2 * dy ** 3 * dtime &
+!        + 0.12D2 * dalpha * dx ** 2 * dy ** 3 * dtime ** 2
   end function
   
   ! ***************************************************************************
@@ -524,7 +530,7 @@ contains
   end function
 
   ! ***************************************************************************
-  ! Stokes, function set 6.
+  ! Stokes, function set 7.
   !   y      =     t^2 ( x2(1-x2) , 0 , 0 )
   !   lambda = (1-t)^2 ( x2(1-x2) , 0 , 0 )
   ! ***************************************************************************
@@ -584,5 +590,180 @@ contains
     fct_stokesF7_y = 0.0_DP
   end function
 
+  ! ***************************************************************************
+  ! Stokes, function set 8
+  !   w      = sin (Pi/2 x1) sin (Pi x2)
+  !   y      = sin (Pi t ) w
+  !   lambda = sin (Pi t ) w
+  ! ***************************************************************************
+
+  elemental real(DP) function fct_eigSt8(dx,dy,dtime,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dalpha
+    fct_eigSt8 = sin(0.5_DP*SYS_PI*dx) * sin(SYS_PI*dy)
+  end function
+
+  elemental real(DP) function fct_stokesY8_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesY8_x = fct_eigSt8(dx,dy,dtime,dalpha)*sin(0.5_DP*SYS_PI*dtime)
+  end function
+
+  elemental real(DP) function fct_stokesY8_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesY8_y = fct_eigSt8(dx,dy,dtime,dalpha)*sin(0.5_DP*SYS_PI*dtime)
+  end function
+
+  elemental real(DP) function fct_stokesP8 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesP8 = 0.0_DP
+  end function
+
+  elemental real(DP) function fct_stokesLambda8_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesLambda8_x = fct_eigSt8(dx,dy,dtime,dalpha)*(sin(0.5_DP*SYS_PI*dtime)-1.0_DP)
+  end function
+
+  elemental real(DP) function fct_stokesLambda8_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesLambda8_y = fct_eigSt8(dx,dy,dtime,dalpha)*(sin(0.5_DP*SYS_PI*dtime)-1.0_DP)
+  end function
+
+  elemental real(DP) function fct_stokesXi8 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesXi8 = 0.0_DP
+  end function
+
+  elemental real(DP) function fct_stokesZ8_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesZ8_x = -0.25_DP*fct_eigSt8(dx,dy,dtime,dalpha)*(-4.0_DP*sin(0.5_DP*SYS_PI*dtime)+&
+        5.0_DP*SYS_PI**2*sin(0.5_DP*SYS_PI*dtime)-5.0_DP*SYS_PI**2-2*cos(0.5_DP*SYS_PI*dtime)*SYS_PI)
+  end function
+
+  elemental real(DP) function fct_stokesZ8_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesZ8_y = -0.25_DP*fct_eigSt8(dx,dy,dtime,dalpha)*(-4.0_DP*sin(0.5_DP*SYS_PI*dtime)+&
+        5.0_DP*SYS_PI**2*sin(0.5_DP*SYS_PI*dtime)-5.0_DP*SYS_PI**2-2*cos(0.5_DP*SYS_PI*dtime)*SYS_PI)
+  end function
+
+  elemental real(DP) function fct_stokesZ8_p (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesZ8_p = -0.5_DP*SYS_PI*(sin(0.5_DP*SYS_PI*dtime)*cos(0.5_DP*SYS_PI*dx)*sin(SYS_PI*dy)+&
+        2.0_DP*sin(0.5_DP*SYS_PI*dtime)*sin(0.5_DP*SYS_PI*dx)*cos(SYS_PI*dy)-&
+        cos(0.5_DP*SYS_PI*dx)*sin(SYS_PI*dy)-2*sin(0.5_DP*SYS_PI*dx)*cos(SYS_PI*dy))
+  end function
+
+  elemental real(DP) function fct_stokesF8_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesF8_x = 1.25_DP*fct_eigSt8(dx,dy,dtime,dalpha)*SYS_PI**2*sin(0.5_DP*SYS_PI*dtime)+&
+        0.5_DP*fct_eigSt8(dx,dy,dtime,dalpha)*cos(0.5_DP*SYS_PI*dtime)*SYS_PI+&
+        fct_eigSt8(dx,dy,dtime,dalpha)*(sin(0.5_DP*SYS_PI*dtime)-1)/dalpha
+  end function
+
+  elemental real(DP) function fct_stokesF8_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesF8_y = 1.25_DP*fct_eigSt8(dx,dy,dtime,dalpha)*SYS_PI**2*sin(0.5_DP*SYS_PI*dtime)+&
+        0.5_DP*fct_eigSt8(dx,dy,dtime,dalpha)*cos(0.5_DP*SYS_PI*dtime)*SYS_PI+&
+        fct_eigSt8(dx,dy,dtime,dalpha)*(sin(0.5_DP*SYS_PI*dtime)-1)/dalpha
+  end function
+
+  elemental real(DP) function fct_stokesF8_p (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesF8_p = -0.5_DP*SYS_PI*sin(0.5_DP*SYS_PI*dtime)*(cos(0.5_DP*SYS_PI*dx)*sin(SYS_PI*dy)+&
+        2*sin(0.5_DP*SYS_PI*dx)*cos(SYS_PI*dy))
+  end function
+
+
+  ! ***************************************************************************
+  ! Stokes, function set 9
+  !   w      = sin (Pi/2 x1) sin (Pi x2)
+  !   w_0    = sin (Pi x1) sin (Pi x2)
+  !   y      = sin (Pi t ) ( w , w )
+  !   lambda = sin (Pi t ) ( w , w )
+  !   p      = sin (Pi t) w_0
+  !   xi     = sin (Pi t) w_0
+  ! ***************************************************************************
+
+  elemental real(DP) function fct_eigSt9(dx,dy,dtime,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dalpha
+    fct_eigSt9 = sin(0.5_DP*SYS_PI*dx) * sin(SYS_PI*dy)
+  end function
+
+  elemental real(DP) function fct_eigSt9_1(dx,dy,dtime,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dalpha
+    ! No int-mean = 0 since there is a Neumann edge that forces p=0 on the edge.
+    fct_eigSt9_1 = sin(SYS_PI*dx) * sin(SYS_PI*dy)
+  end function
+
+  elemental real(DP) function fct_stokesY9_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesY9_x = fct_eigSt9(dx,dy,dtime,dalpha)*sin(0.5_DP*SYS_PI*dtime)
+  end function
+
+  elemental real(DP) function fct_stokesY9_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesY9_y = fct_eigSt9(dx,dy,dtime,dalpha)*sin(0.5_DP*SYS_PI*dtime)
+  end function
+
+  elemental real(DP) function fct_stokesP9 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesP9 = sin(SYS_PI*dtime)*fct_eigSt9_1(dx,dy,dtime,dalpha)
+  end function
+
+  elemental real(DP) function fct_stokesLambda9_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesLambda9_x = fct_eigSt9(dx,dy,dtime,dalpha)*(sin(0.5_DP*SYS_PI*dtime)-1.0_DP)
+  end function
+
+  elemental real(DP) function fct_stokesLambda9_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesLambda9_y = fct_eigSt9(dx,dy,dtime,dalpha)*(sin(0.5_DP*SYS_PI*dtime)-1.0_DP)
+  end function
+
+  elemental real(DP) function fct_stokesXi9 (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesXi9 = sin(SYS_PI*dtime)*fct_eigSt9_1(dx,dy,dtime,dalpha)
+  end function
+
+  elemental real(DP) function fct_stokesZ9_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesZ9_x = -0.25_DP*fct_eigSt9(dx,dy,dtime,dalpha)*(-4.0_DP*sin(0.5_DP*SYS_PI*dtime)+&
+        5.0_DP*SYS_PI**2*sin(0.5_DP*SYS_PI*dtime)-5.0_DP*SYS_PI**2-2*cos(0.5_DP*SYS_PI*dtime)*SYS_PI) - &
+        sin(SYS_PI*dtime)*SYS_PI*cos(SYS_PI*dx) * sin(SYS_PI*dy)
+  end function
+
+  elemental real(DP) function fct_stokesZ9_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesZ9_y = -0.25_DP*fct_eigSt9(dx,dy,dtime,dalpha)*(-4.0_DP*sin(0.5_DP*SYS_PI*dtime)+&
+        5.0_DP*SYS_PI**2*sin(0.5_DP*SYS_PI*dtime)-5.0_DP*SYS_PI**2-2*cos(0.5_DP*SYS_PI*dtime)*SYS_PI) - &
+        sin(SYS_PI*dtime)*SYS_PI*sin(SYS_PI*dx) * cos(SYS_PI*dy)
+  end function
+
+  elemental real(DP) function fct_stokesZ9_p (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesZ9_p = -0.5_DP*SYS_PI*(sin(0.5_DP*SYS_PI*dtime)*cos(0.5_DP*SYS_PI*dx)*sin(SYS_PI*dy)+&
+        2.0_DP*sin(0.5_DP*SYS_PI*dtime)*sin(0.5_DP*SYS_PI*dx)*cos(SYS_PI*dy)-&
+        cos(0.5_DP*SYS_PI*dx)*sin(SYS_PI*dy)-2*sin(0.5_DP*SYS_PI*dx)*cos(SYS_PI*dy))
+  end function
+
+  elemental real(DP) function fct_stokesF9_x (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesF9_x = 1.25_DP*fct_eigSt9(dx,dy,dtime,dalpha)*SYS_PI**2*sin(0.5_DP*SYS_PI*dtime)+&
+        0.5_DP*fct_eigSt9(dx,dy,dtime,dalpha)*cos(0.5_DP*SYS_PI*dtime)*SYS_PI+&
+        fct_eigSt9(dx,dy,dtime,dalpha)*(sin(0.5_DP*SYS_PI*dtime)-1)/dalpha + &
+        sin(SYS_PI*dtime)*SYS_PI*cos(SYS_PI*dx) * sin(SYS_PI*dy)
+  end function
+
+  elemental real(DP) function fct_stokesF9_y (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesF9_y = 1.25_DP*fct_eigSt9(dx,dy,dtime,dalpha)*SYS_PI**2*sin(0.5_DP*SYS_PI*dtime)+&
+        0.5_DP*fct_eigSt9(dx,dy,dtime,dalpha)*cos(0.5_DP*SYS_PI*dtime)*SYS_PI+&
+        fct_eigSt9(dx,dy,dtime,dalpha)*(sin(0.5_DP*SYS_PI*dtime)-1)/dalpha + &
+        sin(SYS_PI*dtime)*SYS_PI*sin(SYS_PI*dx) * cos(SYS_PI*dy)
+  end function
+
+  elemental real(DP) function fct_stokesF9_p (dx,dy,dtime,dtimeMin,dtimeMax,dalpha)
+  real(DP), intent(in) :: dx,dy,dtime,dtimemin,dtimemax,dalpha
+    fct_stokesF9_p = -0.5_DP*SYS_PI*sin(0.5_DP*SYS_PI*dtime)*(cos(0.5_DP*SYS_PI*dx)*sin(SYS_PI*dy)+&
+        2*sin(0.5_DP*SYS_PI*dx)*cos(SYS_PI*dy))
+  end function
 
 end module
