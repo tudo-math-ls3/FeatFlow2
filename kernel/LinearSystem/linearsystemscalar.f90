@@ -244,6 +244,9 @@
 !# 70.) lsyssc_swapMatrices
 !#      -> Swaps two matrices
 !#
+!# 71.) lsyssc_sortMatrixCols
+!#      -> Sorts the columns of a format 9 matrix to be in ascending order.
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -854,6 +857,7 @@ module linearsystemscalar
   public :: lsyssc_setDataTypeVector
   public :: lsyssc_moveMatrix
   public :: lsyssc_addConstant
+  public :: lsyssc_sortMatrixCols
 
   public :: lsyssc_rebuildKdiagonal 
   public :: lsyssc_infoMatrix
@@ -20559,6 +20563,7 @@ contains
   end subroutine
 
   ! ***************************************************************************
+
 !<subroutine>
 
   subroutine lsyssc_setRowMatrix9 (rmatrix,irow,nentries,Kcol,Da)
@@ -20667,6 +20672,120 @@ contains
       
     end if
 
+  end subroutine
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_sortMatrixCols(rmatrix)
+  
+!<description>
+  ! Sorts the columns on a format 9 matrix to be in ascending order.
+  ! This routine also recalculates the diagonal pointer array of the matrix.
+!</description>
+
+!<inputoutput>
+  ! The matrix that is to be sorted.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+  integer, dimension(:), pointer :: p_IrowPtr, p_IcolIdx, p_Idiag
+  real(SP), dimension(:), pointer :: p_Fdata
+  real(DP), dimension(:), pointer :: p_Ddata
+  real(SP) :: ft
+  real(DP) :: dt
+  integer :: i,it,j,j1,j2,k
+
+    ! First of all, ensure that the matrix is of format 9
+    if(rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) then
+      call output_line('Matrix must be of format 9!', &
+          OU_CLASS_ERROR, OU_MODE_STD, 'lsyssc_sortMatrixCols')
+      call sys_halt()
+    end if
+    
+    ! Fetch the structure arrays of the matrix
+    call storage_getbase_int(rmatrix%h_Kld,  p_IrowPtr)
+    call storage_getbase_int(rmatrix%h_Kcol, p_IcolIdx)
+    call storage_getbase_int(rmatrix%h_Kdiagonal, p_Idiag)
+    
+    ! Note: The sorting algorithm used below is linear insertion sort.
+    !       Since we assume the number of non-zeroes per row to be
+    !       "small", there shouldn't be any runtime issues here.
+    
+    ! Check whether the data array is allocated
+    if(rmatrix%h_DA .eq. ST_NOHANDLE) then
+
+      ! matrix data not present
+      do i = 1, rmatrix%NEQ
+        j1 = p_IrowPtr(i)
+        j2 = p_IrowPtr(i+1)-1
+        do j = j1, j2
+          it = p_IcolIdx(j)
+          do k = j-1, j1, -1
+            if(p_IcolIdx(k) .le. it) exit
+            p_IcolIdx(k+1) = p_IcolIdx(k)
+          end do ! k
+          p_IcolIdx(k+1) = it
+        end do ! j
+      end do ! i
+      
+    else
+        
+      select case(rmatrix%cdataType)
+      case (ST_SINGLE)
+        ! fetch the data array
+        call storage_getbase_single(rmatrix%h_DA, p_Fdata)
+        do i = 1, rmatrix%NEQ
+          j1 = p_IrowPtr(i)
+          j2 = p_IrowPtr(i+1)-1
+          do j = j1, j2
+            it = p_IcolIdx(j)
+            ft = p_Fdata(j)
+            do k = j-1, j1, -1
+              if(p_IcolIdx(k) .le. it) exit
+              p_IcolIdx(k+1) = p_IcolIdx(k)
+              p_Fdata(k+1) = p_Fdata(k)
+            end do ! k
+            p_IcolIdx(k+1) = it
+            p_Fdata(k+1) = ft
+          end do ! j
+        end do ! i
+
+      case (ST_DOUBLE)
+        ! fetch the data array
+        call storage_getbase_double(rmatrix%h_DA, p_Ddata)
+        do i = 1, rmatrix%NEQ
+          j1 = p_IrowPtr(i)
+          j2 = p_IrowPtr(i+1)-1
+          do j = j1, j2
+            it = p_IcolIdx(j)
+            dt = p_Fdata(j)
+            do k = j-1, j1, -1
+              if(p_IcolIdx(k) .le. it) exit
+              p_IcolIdx(k+1) = p_IcolIdx(k)
+              p_Ddata(k+1) = p_Ddata(k)
+            end do ! k
+            p_IcolIdx(k+1) = it
+            p_Ddata(k+1) = dt
+          end do ! j
+        end do ! i
+        
+      case default
+        ! Datatype not supported
+        call output_line('Only single and double precision matrices are supported!', &
+            OU_CLASS_ERROR, OU_MODE_STD, 'lsyssc_sortMatrixCols')
+        call sys_halt()
+      end select
+
+    end if
+    
+    ! Finally, recalculate the diagonal pointer array.
+    call lsyssc_rebuildKdiagonal(p_IcolIdx, p_IrowPtr, p_Idiag, rmatrix%NEQ)
+  
   end subroutine
 
 end module
