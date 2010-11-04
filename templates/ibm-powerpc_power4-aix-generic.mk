@@ -42,8 +42,7 @@ SBB_SRCEXTRA = ztime_ibmregatta.f
 # information available which BLAS implementation to use and where to find the
 # library.
 # 
-# In this file, the first three tokens have been set: architecture, cpu and
-# operating system. Set the flags accordingly.
+# In this file, the first two tokens have been set: architecture and cpu.
+# Set the flags accordingly.
 TOKEN1 := 1
 TOKEN2 := 1
-TOKEN3 := 1

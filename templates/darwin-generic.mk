@@ -1,23 +1,5 @@
 # -*- mode: makefile -*-
 
-##############################################################################
-# command to create archive from object files
-##############################################################################
-AR        = ar -rv
-
-##############################################################################
-# command to create index to archive
-#############################################################################
-RANLIB    = ranlib
-
-##############################################################################
-# subroutines/functions missing in system libraries
-##############################################################################
-SRCEXTRA := $(SRCEXTRA) \
-	    # kernel/arch/amub.f90 kernel/arch/if117.f kernel/arch/ifd17.f \
-	    # kernel/arch/transp.f90 kernel/arch/ib21.f kernel/arch/sysextra.c
-
-
 # The settings needed to compile a FEAT2 application are "wildly" distributed
 # over several files ((Makefile.inc and templates/*.mk) and if-branches 
 # (in an attempt to reduce duplicate code and inconsistencies among all build 
@@ -36,8 +18,18 @@ SRCEXTRA := $(SRCEXTRA) \
 # what information is missing, e.g. token 5 not set which means there is no
 # information available which BLAS implementation to use and where to find the
 # library.
-# 
-# In this file, the first two tokens have been set: architecture and cpu.
+
+# Intel-based Macs are quite tricky. Newer OSes claim to be 32bit but
+# they are able to run 64bit code. Even worse, they generate 64bit
+# code by default. However, if 32bit generation is forced then the
+# linker must must be envoked with flag '-read_only_relocs suppress'.
+ifeq ($(call match,$(ID),(pc|pc64)-.*-darwin-(g95|gcc)-.*),yes)
+ifeq ($(strip $(BINARY)), 32)
+LDFLAGS := -read_only_relocs suppress $(LDFLAGS)
+endif
+endif
+
+# In this file, the third token has been set: operating system
 # Set the flags accordingly.
-TOKEN1 := 1
-TOKEN2 := 1
+TOKEN3 := 1
+

@@ -301,6 +301,7 @@ ifeq ($(call match,$(ID),alpha-ev6-osf1-cf90-.*),yes)
 MPIWRAPPERS = NO
 include $(TEMPLATESDIR)/alpha-ev6-osf1-generic.mk
 include $(TEMPLATESDIR)/decf90-generic.mk
+include $(TEMPLATESDIR)/osf1-generic.mk
 endif
 
 ifeq ($(call match,$(ID),alpha-ev6-osf1-.*-dxml.*),yes)
@@ -738,6 +739,7 @@ endif
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-goto2),yes)
 # Use GotoBLAS 2
 include $(TEMPLATESDIR)/gotoblas2-generic.mk
+include $(TEMPLATESDIR)/linux-generic.mk
 # Workaround for linker problem:
 # ld: hidden symbol `__svml_cosf4' in libsvml.a(svml_stub_scos4.o) is referenced by DSO
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-intel-goto2.*),yes)
@@ -748,6 +750,7 @@ endif
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*-optmpich),yes)
 # Use Allinea Opt MPI
 include $(TEMPLATESDIR)/optmpich-generic.mk
+include $(TEMPLATESDIR)/linux-generic.mk
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
 #
 # Code compiles, but does not run with OPT 1.0rc4. Dynamic linker
@@ -1088,6 +1091,7 @@ ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-xlf-.*-poempi),yes)
 # invokes the IBM XL Fortran compiler, uses POE MPI
 # local umfpack
 TOKEN6 := 1
+include $(TEMPLATESDIR)/aix-generic.mk
 include $(TEMPLATESDIR)/xlf-generic.mk
 include $(TEMPLATESDIR)/ibm-powerpc_power4-aix-generic.mk
 # The system provides a METIS library, but we have problems using it.
@@ -1544,6 +1548,7 @@ endif
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-woodymkl.*),yes)
 # Use special BKL blas on Woodcrest cluster of the RRZE Erlangen
+include $(TEMPLATESDIR)/linux-generic.mk
 LIBS := $(LIBS) $(MKL_LIB)
 TOKEN5 := 1
 endif
@@ -1900,6 +1905,7 @@ endif
 ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-blas-mpi),yes)
 # invokes the intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/linux-generic.mk
 include $(TEMPLATESDIR)/intel64-generic.mk
 include $(TEMPLATESDIR)/blas-generic.mk
 # Add preprocessor flag to enable 64bit UMFPACK support.
@@ -1913,6 +1919,7 @@ endif
 ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-mkl-mpi),yes)
 # invokes the intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/ia64-generic.mk
+include $(TEMPLATESDIR)/linux-generic.mk
 include $(TEMPLATESDIR)/intel64-generic.mk
 # Add preprocessor flag to enable 64bit UMFPACK support.
 # UMFPACK documentation states to also add -DLP64, but there is no
@@ -1950,6 +1957,7 @@ endif
 endif
 
 ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-mkl.*),yes)
+include $(TEMPLATESDIR)/linux-generic.mk
 ifneq ($(strip $(INTEL_MKL_LIB)),)
 # Split up string if multiple directories are given
 # Note: Do not put whitespace between comma and the environment variable, because
@@ -1963,6 +1971,7 @@ TOKEN5 := 1
 endif
 
 ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-.*-ompi),yes)
+include $(TEMPLATESDIR)/linux-generic.mk
 # invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/openmpi-generic.mk
 # Add preprocessor flag to enable 64bit UMFPACK support.
@@ -1984,6 +1993,7 @@ TOKEN5 := 1
 TOKEN6 := 1
 include $(TEMPLATESDIR)/necsx-generic.mk
 include $(TEMPLATESDIR)/necsxcompiler-generic.mk
+include $(TEMPLATESDIR)/superux-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -sx6 $(CFLAGSF77LIBS)
 CFLAGSF77     := -sx6 $(CFLAGSF77)
@@ -2003,6 +2013,7 @@ ifeq ($(call match,$(ID),sx8-none-superux-f90-.*-mpi),yes)
 TOKEN6 := 1
 include $(TEMPLATESDIR)/necsx-generic.mk
 include $(TEMPLATESDIR)/necsxcompiler-generic.mk
+include $(TEMPLATESDIR)/superux-generic.mk
 ifeq ($(call optimise), YES)
 CFLAGSF77LIBS := -sx8 $(CFLAGSF77LIBS) #-ftrace
 CFLAGSF77     := -sx8 $(CFLAGSF77)  #-ftrace
@@ -2017,6 +2028,7 @@ endif
 
 ifeq ($(call match,$(ID),sx8-none-superux-f90-keisan-mpi),yes)
 TOKEN5 := 1
+include $(TEMPLATESDIR)/superux-generic.mk
 #BUILDLIB  = metis blas lapack umfpack amd
 BUILDLIB  = metis umfpack amd
 #LIBDIR   := $(LIBDIR) -L/SX/opt/MathKeisan/lib
@@ -2030,6 +2042,7 @@ endif
 
 ifeq ($(call match,$(ID),sx8-none-superux-f90-blas-mpi),yes)
 TOKEN5 := 1
+include $(TEMPLATESDIR)/superux-generic.mk
 #BUILDLIB  = metis blas lapack umfpack amd
 BUILDLIB  = metis umfpack amd blas lapack
 #LIBDIR   := $(LIBDIR) -L/SX/usr/lib0/libp
@@ -2047,6 +2060,7 @@ endif
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-g95-blas.*),yes)
 # invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunos-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
@@ -2063,6 +2077,7 @@ ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-g95-perf.*),yes)
 # invokes the GNU g95 compiler, uses LAM MPI, Perflib BLAS,
 # local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunos-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 include $(TEMPLATESDIR)/sunperf-generic.mk
 CFLAGSC       := $(CFLAGSC) #-DNSUNPERF
@@ -2079,6 +2094,7 @@ ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, uses LAM MPI, local BLAS,
 # local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunos-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
@@ -2121,6 +2137,7 @@ endif
 ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunos-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
@@ -2159,6 +2176,7 @@ MESSAGE := $(MESSAGE) \
 	    echo '*** Warning: The settings for this build ID have not been thoroughly tested yet'; \
 	    echo;
 include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunos-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
@@ -2186,6 +2204,7 @@ MESSAGE := $(MESSAGE) \
 	    echo '*** Warning: The settings for this build ID have not been thoroughly tested yet'; \
 	    echo;
 include $(TEMPLATESDIR)/sun4u-generic.mk
+include $(TEMPLATESDIR)/sunos-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
@@ -2208,6 +2227,58 @@ endif
 # STOP THE BUILD-SYSTEM TO WORK.
 #
 # # # # # # # # #      IMPORTANT NOTICE !!!     # # # # # # # # #
+
+ifeq ($(TOKEN3), 0)
+
+##############################################################################
+# Operating systems
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),.*-.*-aix-.*-.*),yes)
+# Use IBM Aix as operating system
+include $(TEMPLATESDIR)/aix-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-cygwin_nt-.*-.*),yes)
+# Use Cygwin NT as operating system
+include $(TEMPLATESDIR)/cygwin_nt-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-darwin-.*-.*),yes)
+# Use Darwin (Mac OS X) as operating system
+include $(TEMPLATESDIR)/darwin-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-hpux-.*-.*),yes)
+# Use HP UX as operating system
+include $(TEMPLATESDIR)/hpux-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-linux-.*-.*),yes)
+# Use Linux as operating system
+include $(TEMPLATESDIR)/linux-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-osf1-.*-.*),yes)
+# Use DEC OSF1 as operating system
+include $(TEMPLATESDIR)/osf1-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-sunos-.*-.*),yes)
+# Use SUN Solaris as operating system
+include $(TEMPLATESDIR)/sunos-generic.mk
+endif
+
+ifeq ($(call match,$(ID),.*-.*-superux-.*-.*),yes)
+# Use NEC Super-UX as operating system
+include $(TEMPLATESDIR)/superux-generic.mk
+endif
+
+# End of generic operating system rules
+endif
+
+
 
 ifeq ($(TOKEN4), 0)
 
@@ -2630,22 +2701,6 @@ CFLAGSF90     := -m64 $(CFLAGSF90)
 CFLAGSC       := -m64 $(CFLAGSC)
 CFLAGSCXX     := -m64 $(CFLAGSCXX)
 LDFLAGS       := -m64 $(LDFLAGS)
-endif
-
-
-
-##############################################################################
-# Check for workaround
-##############################################################################
-
-# Intel-based Macs are quite tricky. Newer OSes claim to be 32bit but
-# they are able to run 64bit code. Even worse, they generate 64bit
-# code by default. However, if 32bit generation is forced then the
-# linker must must be envoked with flag '-read_only_relocs suppress'.
-ifeq ($(call match,$(ID),(pc|pc64)-.*-darwin-(g95|gcc)-.*),yes)
-ifeq ($(strip $(BINARY)), 32)
-LDFLAGS := -read_only_relocs suppress $(LDFLAGS)
-endif
 endif
 
 

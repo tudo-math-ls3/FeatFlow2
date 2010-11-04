@@ -1,23 +1,5 @@
 # -*- mode: makefile -*-
 
-##############################################################################
-# command to create archive from object files
-##############################################################################
-AR        = ar -rv
-
-##############################################################################
-# command to create index to archive
-#############################################################################
-RANLIB    = ranlib
-
-##############################################################################
-# subroutines/functions missing in system libraries
-##############################################################################
-SRCEXTRA := $(SRCEXTRA) \
-	    # kernel/arch/amub.f90 kernel/arch/if117.f kernel/arch/ifd17.f \
-	    # kernel/arch/transp.f90 kernel/arch/ib21.f kernel/arch/sysextra.c
-
-
 # The settings needed to compile a FEAT2 application are "wildly" distributed
 # over several files ((Makefile.inc and templates/*.mk) and if-branches 
 # (in an attempt to reduce duplicate code and inconsistencies among all build 
@@ -37,7 +19,7 @@ SRCEXTRA := $(SRCEXTRA) \
 # information available which BLAS implementation to use and where to find the
 # library.
 # 
-# In this file, the first two tokens have been set: architecture and cpu.
+# In this file, the third token has been set: operating system
 # Set the flags accordingly.
-TOKEN1 := 1
-TOKEN2 := 1
+TOKEN3 := 1
+
