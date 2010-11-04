@@ -507,7 +507,7 @@ contains
 #endif
 
       !-------------------------------------------------------------------------
-      ! Evaluate the scalar dissipation proportional to the spaectral radius
+      ! Evaluate the scalar dissipation proportional to the spectral radius
       !-------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient and its norm
