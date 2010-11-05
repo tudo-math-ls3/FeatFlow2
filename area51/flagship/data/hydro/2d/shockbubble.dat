@@ -3,117 +3,35 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                           Z-pinch implosion problem                          #
+#                           Shock-Bubble interaction                           #
 ################################################################################
 
-simportdatafiles(3) =
-  'data/zpinch/2d/default.dat'
+simportdatafiles(2) =
+  'data/hydro/2d/default.dat'
   'data/solverdefault.dat'
-  'data/zpinch/solverdefault.dat'
 
 ################################################################################
 
-application = zpinch
-
-################################################################################
-[Zpinch]
-################################################################################
-
-# section names of sub-applications
-subapplication(2) =
-  Hydro
-  Transport
-
-# file which contains the application specific data
-indatfile = data/zpinch/2d/z-pinch.indat
-
-# section name of boundary condition for primal problem
-sprimalbdrcondname(2) =
-  bdrcond_hydro_primal
-  bdrcond_transport_primal
-
-# section name of boundary condition for dual problem
-sdualbdrcondname(2) =
-  bdrcond_hydro_dual
-  bdrcond_transport_dual
-
-# number of spatial dimensions
-ndimension = 2
-
-# solution algorithm
-algorithm = transient_primal
-
-#-------------------------------------------------------------------------------
-
-# type of coordinate system
-# 1 = Cartesian coordinates (x-y)
-# 2 = Cylindrical coordinates (r-z)
-icoordinateSystem = 1
-
-# type of Lorentz force term treatment
-# 0 = segregated approach
-# 1 = fully-coupled approach
-ilorentzforcetype = 1
-
-# section name of Lorentz force term
-slorentzforcename = @forceterm
-
-# minimum effective radius
-deffectiveradius = 1e-4
-
-# type of synchronization used for flux correction
-# 0 = no synchronization
-# 1 = minimum synchronization
-# 2 = Hydrodynamic model first, transport model second
-# 3 = Transport model first, hydrodynamic model second
-# 4 = Hydrodynamic model only
-# 5 = Transport model only
-ilimitersynchronisation = 3
-
-#-------------------------------------------------------------------------------
-
-# file which contains the boundary parametrisation
-prmfile = grids/2d/z-pinch_paper.prm
-
-# file which contains the triangulation
-trifile = grids/2d/z-pinch_paper.tri
-
-# convert mesh to triangular mesh?
-iconvToTria = 0
-
-#-------------------------------------------------------------------------------
-
-# section name of the time-stepping algorithm
-timestep = Timestepping
-
-# section name of the top-level solver
-solver = CoupledSolver
-
-# section name of the output configuration
-output = Output
-
-# section name of the adaptation configuration
-adaptivity = Adaptivity
-
-# section name of the error estimation configuration
-errorestimator = ErrorEstimator
-
+application = hydro
 
 ################################################################################
 [Hydro]
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/zpinch/2d/z-pinch.indat
+indatfile = data/hydro/2d/shockbubble.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = %{Zpinch.sprimalbdrcondname:1}
+sprimalbdrcondname = bdrcond_strong_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = %{Zpinch.sdualbdrcondname:1}
+sdualbdrcondname = 
 
 # number of spatial dimensions
-ndimension = %{Zpinch.ndimension}
+ndimension = 2
+
+# solution algorithm
+algorithm = transient_primal
 
 #-------------------------------------------------------------------------------
 
@@ -133,7 +51,7 @@ imassantidiffusiontype = 0
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 3
+idissipationtype = 1
 
 # type of system coupling
 # 0 = segregated approach
@@ -145,9 +63,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 3
-
-#-------------------------------------------------------------------------------
+isystemPrecond = 2
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -162,20 +78,16 @@ isystemPrecond = 3
 #      density
 #      pressure
 #      velocity
-slimitingvariable(2) = 
-  density
-  pressure
+slimitingvariable = density,energy,momentum
 
 # number of failsafe steps
-nfailsafe = 3
+nfailsafe = 4
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =
-  density
   pressure
-  advect
-
-#-------------------------------------------------------------------------------
+  velocity_x
+  velocity_y
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -184,15 +96,6 @@ sfailsafevariable(3) =
 # 3 = anayltical initial solution: consistent L2-projection
 # 4 = anayltical initial solution: lumped L2-projection
 isolutiontype = 3
-
-# absolute tolerance for Richardson iteration
-depsAbsSolution = 1e-4
-
-# relative tolerance for Richardson iteration
-depsRelSolution = 1e-3
-
-# maximum number of Richardson iterations
-nmaxIterationsSolution = 100
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -207,21 +110,15 @@ ssolutionname(4) =
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = 
-
-# variables for constrained initialization
-ssolutionconstrainvariable(1) =
-  density
-  
-# number of failsafe steps in constrained initialization
-nsolutionfailsafe = 0
-
-# variables for failsafe constrained initialization
-ssolutionfailsafevariable(2) =
-  density
-  energy
+sexactsolutionname =
 
 #-------------------------------------------------------------------------------
+
+# file which contains the boundary parametrisation
+prmfile = grids/2d/rect_shockbubble_quads.prm
+
+# file which contains the triangulation
+trifile = grids/2d/rect_shockbubble_quads.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -231,6 +128,9 @@ ssolutionfailsafevariable(2) =
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
 celement = -1
+
+# convert mesh to triangular mesh?
+iconvToTria = 0
 
 # type of matrix format
 # 7 = matrix format 7
@@ -244,13 +144,23 @@ isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
-# Number of refinement steps used for summed cubature rules
-nsumcubRefLinForm = 2
-
-#-------------------------------------------------------------------------------
-
 # section name of the inviscid stabilization
 inviscid = Inviscid
+
+# section name of the time-stepping algorithm
+timestep = Timestepping
+
+# section name of the top-level solver
+solver = FullMultigridSolver
+
+# section name of the output configuration
+output = Output
+
+# section name of the adaptation configuration
+adaptivity = Adaptivity
+
+# section name of the error estimation configuration
+errorestimator = ErrorEstimator
 
 
 ################################################################################
@@ -267,182 +177,10 @@ inviscid = Inviscid
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 20
 
 # perform prelimiting
 iprelimiting = 0
-
-
-################################################################################
-[Transport]
-################################################################################
-
-# file which contains the application specific data
-indatfile = %{Hydro.indatfile}
-
-# section name of boundary condition for primal problem
-sprimalbdrcondname = %{Zpinch.sprimalbdrcondname:2}
-
-# section name of boundary condition for dual problem
-sdualbdrcondname = %{Zpinch.sdualbdrcondname:2}
-
-# number of spatial dimensions
-ndimension = %{Zpinch.ndimension}
-
-#-------------------------------------------------------------------------------
-
-# type of mass matrix
-# 0 = no mass matrix
-# 1 = consistent mass matrix
-# 2 = lumped mass matrix
-imasstype = %{Hydro.imasstype}
-
-# type of mass antidiffusion
-# 0 = no mass antidiffusion
-# 1 = consistent mass antidiffusion
-imassantidiffusiontype = %{Hydro.imassantidiffusiontype}
-
-# type of flow velocity
-# 0 = zero velocity v=0
-# 1 = linear constant velocity v=v(x)
-# 2 = linear time-dependent velocity v=v(x,t)
-# 3 = Burgers equation in space-time (x,t)
-# 4 = Buckley Leverett equation in space-time (x,t)
-# 5 = Burgers' equation in 1D
-# 6 = Burgers' equation in 2D
-# 7 = Burgers' equation in 3D
-# 8 = Buckley Leverett equation in 1D
-ivelocitytype = 999
-
-# section name of velocity field
-svelocityname = 
-
-# type of flow diffusion
-# 0 = zero diffusion
-# 1 = isotropic diffusion
-# 2 = anisotropic diffusion
-# 3 = variable diffusion
-idiffusiontype = 0
-
-# section name of diffusion tensor
-sdiffusionname = 
-
-# type of flow reaction
-# 0 = zero reactive term
-# 1 = analytical initial solution
-ireactiontype = 0
-
-# section name of reactive term
-sreactionname = 
-
-# type of right-hand side vector
-# 0 = zero right-hand side
-# 1 = analytical right-hand side
-irhstype = 0
-
-# section name of right-hand side vector
-srhsname = 
-
-#-------------------------------------------------------------------------------
-
-# type of initial solution profile
-# 0 = zero initial solution
-# 1 = analytical initial solution: pointwise values
-# 2 = PGM image
-# 3 = anayltical initial solution: consistent L2-projection
-# 4 = anayltical initial solution: lumped L2-projection
-isolutiontype = %{Hydro.isolutiontype}
-
-# absolute tolerance for Richardson iteration
-depsAbsSolution = %{Hydro.depsAbsSolution}
-
-# relative tolerance for Richardson iteration
-depsRelSolution = %{Hydro.depsRelSolution}
-
-# maximum number of Richardson iterations
-nmaxIterationsSolution = %{Hydro.nmaxIterationsSolution}
-
-# section name of initial solution
-ssolutionname = @initsol_tracer
-
-# type of exact solution profile
-# 0 = no exact solution available
-# 1 = analytical exact solution
-# 2 = PGM image
-iexactsolutiontype = %{Hydro.iexactsolutiontype}
-
-# section name of exact solution
-sexactsolutionname = 
-
-# type of target functional
-# 0 = no target variable
-# 1 = volume integral
-# 2 = surface integral
-itargetfunctype = 0
-
-# section name of target functional
-stargetfuncname = 
-
-# type of exact target functional type
-# 0 = zero target functional
-# 1 = volume integral
-# 2 = surface integral
-# 3 = analytical target functional
-iexacttargetfunctype = 0
-
-# section name of exact target functional
-sexacttargetfuncname = 
-
-#-------------------------------------------------------------------------------
-
-# type of finite element space
-#  1 = P1 finite elements
-#  2 = P2 finite elements
-# 11 = Q1 finite elements
-# 12 = Q2 finite elements
-# -1 = mixed P1/Q1 finite elements
-# -2 = mixed P2/Q2 finite elements
-celement = %{Hydro.celement}
-
-# type of matrix format
-# 7 = matrix format 7
-# 9 = matrix format 9
-imatrixformat = %{Hydro.imatrixformat}
-
-# type of Jacobian matrix
-# 0 = standard sparsity pattern
-# 1 = extended sparsity pattern
-ijacobianformat = 0
-
-#-------------------------------------------------------------------------------
-
-# Number of refinement steps used for summed cubature rules
-nsumcubRefLinForm = %{Hydro.nsumcubRefLinForm}
-
-#-------------------------------------------------------------------------------
-
-# section name of the convection stabilization
-convection = Convection
-
-
-################################################################################
-[Convection]
-################################################################################
-
-# type of spatial stabilization: 
-#  0 = no stabilization (Galerkin)
-#  1 = discrete upwinding
-# 10 = semi-impl. FEM-FCT
-# 11 = semi-expl. FEM-FCT
-# 12 = linearised FEM-FCT
-# 13 = iterative FEM-FCT
-# 14 = characteristic FEM-FCT
-# 20 = FEM-TVD
-# 21 = FEM-GP
-istabilisation = %{Inviscid.istabilisation}
-
-# perform prelimiting
-iprelimiting = %{Inviscid.iprelimiting}
 
 
 ################################################################################
@@ -457,24 +195,20 @@ iprelimiting = %{Inviscid.iprelimiting}
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.05
+dstepUCD = 1.0
 
 # file for UCD output of solution
-sucdsolution = out/zpinch
-
-# file for UCD import of solution
-sucdimport = 
+sucdsolution = out/shockbubble
 
 # file for UCD output of error
-sucderror = out/
+sucderror = out/shockbubble_error
 
 # variables for ucd output
-sucdvariable(5) =
+sucdvariable(4) =
  density
  velocity
  energy
  pressure
- advect
 
 
 ################################################################################
@@ -487,7 +221,7 @@ sucdvariable(5) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 2
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -506,22 +240,22 @@ isolNorm = 0
 theta = 0.5
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 1
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.1
+dfinalTime = 0.0005
 
 # initial time step size
-dinitialStep = 1e-5
+dinitialStep = 0.0005
 
 # lower bound for the admissible time step
-dminStep = 1e-4
+dminStep = 0.0005
 
 # upper bound for the admissible time step
-dmaxStep = 1e-4
+dmaxStep = 0.0005
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -530,30 +264,27 @@ iadaptTimestep = 0
 dadaptTime = 0.0
 
 # minimum factor by which time step may change
-ddecreaseFactor = 0.9
+ddecreaseFactor = 0.1
 
 # maximum factor by which time step may change
-dincreaseFactor = 1.1
+dincreaseFactor = 1.5
 
 # reduction factor by which time step is reduced if simulation fails
 dstepReductionFactor = 0.8
 
 # target tolerace for relative changes
-depsRel = 1e-2
+depsRel = 0.0
 
 # absolute tolerance for relative changes
 depsAbs = 0.0
-
-# maximum tolerance for relative changes
-dmaxRel = 1e-1
 
 # tolerance for steady state convergence
 depsSteady = 0.0
 
 
 ################################################################################
-[CoupledSolver]
- csolverType = 6
+[FullMultigridSolver]
+ csolverType = 5
 ################################################################################
 
 # level of output information:
@@ -562,126 +293,119 @@ depsSteady = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 2
+
+# minimum multigrid level number
+nlmin = 5
+
+# maximum multigrid level number
+nlmax = 5
+
+# type of multigrid cycle
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 = corresponding saw tooth variants
+icycle = 0
+
+# minimum number of multigrid steps
+ilmin = 1
+
+# maximum number of multigrid steps
+ilmax = 1
+
+# nonlinear subsolver
+# 1 = nonlinear single-grid solver
+# 3 = nonlinear multigrid solver
+isolver = 1
+
+# name of the subsolver
+ssolvername = NonlinearSolver
+
+
+################################################################################
+[NonlinearMultigridSolver]
+ csolverType = 3
+################################################################################
+
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = 0
 
 # norm to use for defect checking
 # 0 = Euclidian norm
 # 1 = L1-norm
 # 2 = L2-norm
 # 3 = MAX-norm
-iresNorm = 3
+iresNorm = 0
 
-# stopping criterion
-istoppingCriterion = 0
+# minimum multigrid level number
+# If NLMIN = NLMAX then the nonlinear problem is solved by a single-grid solver
+nlmin = 1
 
-# minimum number of coupling steps
-nminIterations = 1
+# maximum multigrid level number (see NLMIN)
+nlmax = 1
 
-# maximum number of coupling steps
-nmaxIterations = 25
+# minimum number of linear mg steps
+ilmin = 1
+
+# maximum number of linear mg steps
+ilmax = 1
+
+# type of multigrid cycle
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 =  corresponding saw tooth variants
+icycle = 1
+
+# nonlinear coarse grid solver
+# 1 = nonlinear single-grid solver
+# 3 = nonlinear multigrid solver
+isolver = 1
+
+# name of nonlinear coarse grid solver
+ssolvername = NonlinearSolver
+
+# smoother for the nonlinear multigrid solver
+# =1, nonlinear single-grid smoother, =3 nonlinear multigrid smoother
+ismoother = 1
+
+# name of nonlinear smoother
+ssmoothername = NonlinearSolver
+
+# number of presmoothing steps (if saw tooth variant is used, then no
+# presmoothing steps are performed in the coarse-to-fine part of the cycle)
+npresmooth = 2
+
+# number of postsmoothing steps (if saw tooth variant is used, then no
+# postsmoothing steps are performed in the coarse-to-fine part of the cycle)
+npostsmooth = 2
+
+# factor for pre/postsm. on coarser levels (On each level l, the number of
+# smoothing steps is computed from SM_l=SM_L*NSFAC**(L-l), where L stands
+# for the finest grid level and SM_L is the prescribed number of smoothing steps)
+nsfac = 1
 
 # nonlinear relaxation parameter
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-10
+depsAbs = 0.0
 
 # relative tolerance for residual
-depsRel = 1e-4
+depsRel = 0.0
 
 # relative tolerance for stagnation
 depsStag = 0.0
 
-# names of the subsolvers
-ssolvername(2) = 
-   FullMultigridSolverHydro
-   FullMultigridSolverTransport
-
 
 ################################################################################
-[FullMultigridSolverHydro]
- csolverType = 5
-################################################################################
-
-# level of output information:
-# 0 = no output
-# 1 = errors
-# 2 = errors+warnings
-# 3 = information
-# 4 = verbose output
-ioutputlevel = 0
-
-# minimum multigrid level number
-nlmin = 1
-
-# maximum multigrid level number
-nlmax = 1
-
-# type of multigrid cycle
-# 0 = F-cylce
-# 1 = V-cycle
-# 2 = W-cycle
-# 3,4,5 = corresponding saw tooth variants
-icycle = 0
-
-# minimum number of multigrid steps
-ilmin = 1
-
-# maximum number of multigrid steps
-ilmax = 1
-
-# nonlinear subsolver
-# 1 = nonlinear single-grid solver
-# 3 = nonlinear multigrid solver
-isolver = 1
-
-# name of the subsolver
-ssolvername = NonlinearSolverHydro
-
-
-################################################################################
-[FullMultigridSolverTransport]
- csolverType = 5
-################################################################################
-
-# level of output information:
-# 0 = no output
-# 1 = errors
-# 2 = errors+warnings
-# 3 = information
-# 4 = verbose output
-ioutputlevel = 0
-
-# minimum multigrid level number
-nlmin = 1
-
-# maximum multigrid level number
-nlmax = 1
-
-# type of multigrid cycle
-# 0 = F-cylce
-# 1 = V-cycle
-# 2 = W-cycle
-# 3,4,5 = corresponding saw tooth variants
-icycle = 0
-
-# minimum number of multigrid steps
-ilmin = 1
-
-# maximum number of multigrid steps
-ilmax = 1
-
-# nonlinear subsolver
-# 1 = nonlinear single-grid solver
-# 3 = nonlinear multigrid solver
-isolver = 1
-
-# name of the subsolver
-ssolvername = NonlinearSolverTransport
-
-
-################################################################################
-[NonlinearSolverHydro]
+[NonlinearSolver]
  csolverType = 1
 ################################################################################
 
@@ -704,85 +428,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 25
-
-# preconditioner for the nonlinear solver
-# 1 = block-diagonal preconditioner
-# 2 = defect-correction algorithm
-# 3 = algebraic Newton algorithm
-iprecond = 2
-
-# nonlinear solver
-# 101 = fixed-point iteration
-# 102 = predictor-corrector fixed-point iteration
-isolver = 101
-
-# strategy for choosing the perturbation parameter in Newton's method
-# 1 = NITSOL
-# 2 = SQRT(EPS)
-# otherwise, user-defined value
-dperturbationStrategy = 2
-
-# strategy for choosing the forcing term in Newton's method
-# 1 = choice 1 by Eisenstat/Walker
-# 2 = choice 2 by Eisenstat/Walker
-# 3 = choice by Brown/Saad
-# 4 = choice by Dembo/Steihaug
-# otherwise, user-defined fixed value
-dforcingStrategy = 1e-1
-
-# check sufficient decrease condition in globalization
-# 0 = apply Newton increment without globalization
-# 1 = check sufficient decrease condition and perform backtracking if required
-icheckSufficientDecrease = 0
-
-# maximum number of backtracking steps
-nmaxBacktrackingSteps = 5
-
-# update frequency of Jacobian
-iupdateFrequency = 0
-
-# nonlinear relaxation parameter
-domega = 1.0
-
-# absolute tolerance for residual
-depsAbs = 1e-10
-
-# relative tolerance for residual
-depsRel = 1e-2
-
-# relative tolerance for stagnation
-depsStag = 0.0
-
-# name of linear sub-solver
-ssolvername = LinearSolver
-
-
-################################################################################
-[NonlinearSolverTransport]
- csolverType = 1
-################################################################################
-
-# level of output information:
-# 0 = no output
-# 1 = errors
-# 2 = errors+warnings
-# 3 = information
-# 4 = verbose output
-ioutputlevel = 3
-
-# norm to use for defect checking
-# 0 = Euclidian norm
-# 1 = L1-norm
-# 2 = L2-norm
-# 3 = MAX-norm
-iresNorm = 0
-
-# minimum number of nonlinear steps
-nminIterations = 1
-
-# maximum number of nonlinear steps
-nmaxIterations = 25
+nmaxIterations = 20
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -812,7 +458,7 @@ dforcingStrategy = 1
 # check sufficient decrease condition in globalization
 # 0 = apply Newton increment without globalization
 # 1 = check sufficient decrease condition and perform backtracking if required
-icheckSufficientDecrease = 1
+icheckSufficientDecrease = 0
 
 # maximum number of backtracking steps
 nmaxBacktrackingSteps = 5
@@ -824,7 +470,91 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-10
+depsAbs = 1e-12
+
+# relative tolerance for residual
+depsRel = 1e-4
+
+# relative tolerance for stagnation
+depsStag = 0.0
+
+# name of linear sub-solver
+ssolvername = LinearSolver
+
+
+################################################################################
+[LinearMultigridSolver]
+ csolverType = 4
+################################################################################
+
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = 0
+
+# norm to use for defect checking
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
+iresNorm = 0
+
+# minimum multigrid level number
+# If NLMIN = NLMAX then the nonlinear problem is solved by a single-grid solver
+nlmin = 1
+
+# maximum multigrid level number (see NLMIN)
+nlmax = 1
+
+# minimum number of linear mg steps
+ilmin = 1
+
+# maximum number of linear mg steps
+ilmax = 100
+
+# type of multigrid cycle
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 =  corresponding saw tooth variants
+icycle = 1
+
+# linear coarse grid solver
+# 2 = linear single-grid solver
+isolver = 2
+
+# name of linear coarse grid solver
+ssolvername = LinearSolver
+
+# smoother for the linear multigrid solver
+# 2 = linear single-grid solver
+# 4 = linear multigrid solver
+ismoother = 2
+
+# name of smoother
+ssmoothername = LinearSmoother
+
+# number of presmoothing steps (if saw tooth variant is used, then no
+# presmoothing steps are performed in the coarse-to-fine part of the cycle)
+npresmooth = 2
+
+# number of postsmoothing steps (if saw tooth variant is used, then no
+# postsmoothing steps are performed in the coarse-to-fine part of the cycle)
+npostsmooth = 2
+
+# factor for pre/postsm. on coarser levels (On each level l, the number of
+# smoothing steps is computed from SM_l=SM_L*NSFAC**(L-l), where L stands
+# for the finest grid level and SM_L is the prescribed number of smoothing steps)
+nsmoothfactor = 1
+
+# linear relaxation parameter
+domega = 1.0
+
+# absolute tolerance for residual
+depsAbs = 0.0
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -832,8 +562,35 @@ depsRel = 0.0
 # relative tolerance for stagnation
 depsStag = 0.0
 
-# name of linear sub-solver
-ssolvername = LinearSolver
+
+################################################################################
+[LinearSmoother]
+ csolverType = 2
+################################################################################
+
+# smoother for the linear multigrid solver
+#  2 = Jacobi
+#  4 = SOR
+#  5 = SSOR
+#  7 = BiCGSTAB
+#  8 = FGMRES
+# 50 = ILU
+isolver = 4
+
+# dimension of the Krylov subspace for FGMRES method
+nkrylov = 15
+
+# tolerance of (M)ILU-preconditioner
+depsILU = 1e-12
+
+# size of fill-in for (M)ILU(s)
+ifill = 0
+
+# (M)ILU(s) relaxation
+domega = 1.0
+
+# name of preconditioner
+sprecondName = LinearPrecond
 
 
 ################################################################################
@@ -869,10 +626,10 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 5
+isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
-nkrylov = 0
+nkrylov = 25
 
 # linear relaxation parameter
 domega = 1.0
@@ -881,13 +638,13 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-3
+depsRel = 0.0
 
 # relative tolerance for stagnation
 depsStag = 0.0
 
 # name of preconditioner
-sprecondName =
+sprecondName = LinearPrecond
 
 
 ################################################################################
@@ -917,7 +674,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 0
+npreadapt = 3
 
 # number of adaptation steps
 nadapt = 0
@@ -926,20 +683,20 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.0
+dstepadapt = 0.002
 
 # maximum number of refinement levels
-nsubdividemax = 0
+nsubdividemax = 2
 
 # adaptation strategy
 # 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.8
+drefinementTolerance = 1e-3
 
 # coarsening tolerance
-dcoarseningTolerance = 0.2
+dcoarseningTolerance = 1e-4
 
 
 ################################################################################
@@ -953,7 +710,7 @@ dcoarseningTolerance = 0.2
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-ierrorestimator = 1
+ierrorestimator = 6
 
 # type or grid indicator
 # 0 = as is
@@ -962,16 +719,16 @@ ierrorestimator = 1
 igridindicator = 0
 
 # noise filter
-dnoisefilter = 0.01
+dnoisefilter = 0.005
 
 # absolute filter
-dabsfilter = 0.0001
+dabsfilter = 1e-6
 
 # number of protection layers
-nprotectLayers = 5
+nprotectLayers = 2
 
 # tolerance for protection layers
-dprotectLayerTolerance = 0.8
+dprotectLayerTolerance = 0.0
 
 # type of error variables
 #   density
@@ -983,4 +740,4 @@ dprotectLayerTolerance = 0.8
 #   machnumber
 serrorvariable(2) =
   density
-  velocity_magnitude
+  pressure

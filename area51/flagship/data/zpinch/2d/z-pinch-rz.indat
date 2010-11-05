@@ -32,7 +32,7 @@ deffunc: @initsol_Etot = 2.5 ; x,y,z,t
 
 
 # Specify the boundary conditions for the Euler model
-[bdrcond_euler_primal]
+[bdrcond_hydro_primal]
 NBCT
 1
 NEXPR

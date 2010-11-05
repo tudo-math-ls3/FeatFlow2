@@ -8,7 +8,7 @@
 
 
 ################################################################################
-[Euler]
+[Hydro]
 ################################################################################
 
 # Position of the discretisation in the array of discretisations
@@ -17,10 +17,10 @@ Discretisation = 1
 # Position of the stabilization for the inviscid term
 InviscidAFC = 1
 
-# Position of the system matrix for the compressible Euler model
+# Position of the system matrix for the hydrodynamic model
 SystemMatrix = 1
 
-# Position of the Jacobian matrix for the compressible Euler model
+# Position of the Jacobian matrix for the hydrodynamic model
 JacobianMatrix = 2
 
 # Position of the template matrix in the scalar matrix structure

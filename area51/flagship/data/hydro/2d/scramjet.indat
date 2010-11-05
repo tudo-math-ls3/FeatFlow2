@@ -1,0 +1,47 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                           Supersonic Scramjet flow                           #
+################################################################################
+
+defconst: ang = 0.0
+
+# Specify the initial solution
+deffunc: @initsol_rho = 1.0 ; x,y,z,t
+deffunc: @initsol_vel_x = COS(_ang*_PI/180) ; x,y,z,t
+deffunc: @initsol_vel_y = SIN(_ang*_PI/180) ; x,y,z,t
+deffunc: @initsol_Etot = 1.0/5.04+0.5*(COS(_ang*_PI/180)^2+SIN(_ang*_PI/180)^2) ; x,y,z,t
+
+# Specify the boundary conditions
+[bdrcond_strong_primal]
+NBCT
+3
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+IBCT
+2
+NCOMP
+4
+IBCT
+3
+NCOMP
+4
+PARAMETERS
+5.0   T  'FREESLIP_WEAK'
+6.0   F  'SUPEROUTLET_WEAK'
+11.0  T  'FREESLIP_WEAK'
+12.0  F	 'SUPERINLET_WEAK'  '1.0'  'COS(_ang*_PI/180)'  'SIN(_ang*_PI/180)'  '1.0/12.6'
+0.0   T  'FREESLIP_WEAK' #0
+3.0   F  'FREESLIP_WEAK'
+3.0   T  'FREESLIP_WEAK' #0
+5.0   F  'FREESLIP_WEAK'
+0.0   T  'FREESLIP_WEAK' #0
+2.0   F  'FREESLIP_WEAK'
+2.0   T  'FREESLIP_WEAK' #0
+5.0   F  'FREESLIP_WEAK'
