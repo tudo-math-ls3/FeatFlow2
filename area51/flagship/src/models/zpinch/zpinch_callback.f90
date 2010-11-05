@@ -36,11 +36,11 @@ module zpinch_callback
   use boundaryfilter
   use collection
   use derivatives
-  use euler_basic
-  use euler_callback
-  use euler_callback1d
-  use euler_callback2d
-  use euler_callback3d
+  use hydro_basic
+  use hydro_callback
+  use hydro_callback1d
+  use hydro_callback2d
+  use hydro_callback3d
   use flagship_basic
   use fparser
   use fsystem
@@ -130,22 +130,22 @@ contains
 !</subroutine>
 
     ! local parameter which is saved
-    real(DP), save :: dtimeEuler = 0.0_DP
+    real(DP), save :: dtimeHydro = 0.0_DP
     real(DP), save :: dtimeTransport = 0.0_DP
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionTransport
+    type(t_vectorBlock), pointer :: p_rsolutionHydro, p_rsolutionTransport
     type(t_vectorBlock) :: rforce
     real(DP) :: dscaleLorentzForceTerm
     integer :: ilorentzForceType
     integer(i32) :: iSpec
     integer :: isystemFormat, jacobianMatrix
 
-    if (trim(rsolver%ssolverName) .eq. 'NonlinearSolverEuler') then
+    if (trim(rsolver%ssolverName) .eq. 'NonlinearSolverHydro') then
 
       ! Set the first string quick access array to the section name
-      ! of the Euler model which is stored in the third array
+      ! of the hydrodynamic model which is stored in the third array
       rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
 
       ! Do we have to calculate the preconditioner?
@@ -153,7 +153,7 @@ contains
       if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
 
         ! Compute the preconditioner
-        call euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+        call hydro_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
             rsolver, rsolution, rcollection)
       end if
 
@@ -163,21 +163,21 @@ contains
       if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
         if ((istep .eq. 0) .and.&
-            (dtimeEuler .ne. rtimestep%dTime)) then
+            (dtimeHydro .ne. rtimestep%dTime)) then
 
           ! Update time variable so that no re-evaluation of the
           ! const right-hand side takes place for current time step
-          dtimeEuler = rtimestep%dTime
+          dtimeHydro = rtimestep%dTime
 
           ! Compute the constant right-hand side including the
           ! given explicit part of the Lorentz force term
-          call euler_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+          call hydro_calcRhsThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution0, rrhs, rcollection, rsource)
         end if
 
         ! Set pointers to current solution vectors stored in the
         ! first and second quick access vector
-        p_rsolutionEuler     => rcollection%p_rvectorQuickAccess1
+        p_rsolutionHydro     => rcollection%p_rvectorQuickAccess1
         p_rsolutionTransport => rcollection%p_rvectorQuickAccess2
 
         ! Set pointer to parameter list
@@ -197,12 +197,12 @@ contains
           call zpinch_calcLorentzforceTerm(p_rparlist,&
               rcollection%SquickAccess(2), rcollection%SquickAccess(3),&
               rcollection%SquickAccess(4), rproblemLevel,&
-              p_rsolutionEuler, p_rsolutionTransport, rtimestep%dTime,&
+              p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime,&
               dscaleLorentzForceTerm, rforce, rcollection)
 
           ! Compute the residual including the pre-computed implicit
           ! part of the Lorentz force term
-          call euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+          call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, rrhs, rres, istep,&
               rcollection, rforce)
 
@@ -212,7 +212,7 @@ contains
         else
 
           ! Compute the residual without the Lorentz force term
-          call euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+          call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, rrhs, rres, istep, rcollection)
 
         end if
@@ -224,7 +224,7 @@ contains
       if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
         ! Impose boundary conditions
-        call euler_setBoundaryConditions(rproblemLevel, rtimestep,&
+        call hydro_setBoundaryConditions(rproblemLevel, rtimestep,&
             rsolver, rsolution, rsolution0, rres, rcollection)
       end if
 
@@ -238,7 +238,7 @@ contains
       ! Set pointer to parameter list
       p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
       
-      ! Get configuration from Euler section of parameter list 
+      ! Get configuration from hydrodynamic section of parameter list 
       call parlst_getvalue_int(p_rparlist,&
           rcollection%SquickAccess(3), 'isystemformat', isystemFormat)
       
@@ -357,15 +357,15 @@ contains
 
           end if
 
-          ! Set pointer to the solution vector of the Euler model
+          ! Set pointer to the solution vector of the hydrodynamic model
           ! from the current time step
-          p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
+          p_rsolutionHydro => rcollection%p_rvectorQuickAccess1
 
           ! Calculate the velocity vector using the solution of the
-          ! Euler model from the current time step
+          ! Hydrodynamic model from the current time step
           call zpinch_calcVelocityField(p_rparlist,&
               rcollection%SquickAccess(1), rproblemLevel,&
-              p_rsolutionEuler, rcollection)
+              p_rsolutionHydro, rcollection)
 
           ! What type of system format are we?
           select case(isystemFormat)
@@ -535,7 +535,7 @@ contains
 
 !<description>
     ! This subroutine initializes the velocity field from the solution
-    ! of the compressible Euler model. The result is stored separately
+    ! of the compressible hydrodynamic model. The result is stored separately
     ! for each problem level.
 !</description>
 
@@ -546,7 +546,7 @@ contains
     ! section name in parameter list
     character(LEN=*), intent(in) :: ssectionName
 
-    ! solution vector of compressible Euler model
+    ! solution vector of compressible hydrodynamic model
     type(t_vectorBlock), intent(in) :: rsolution
 !</input>
 
@@ -584,13 +584,13 @@ contains
     end if
 
     ! Set x-velocity
-    call euler_getVariable(rsolution, 'velocity_x',&
+    call hydro_getVariable(rsolution, 'velocity_x',&
         rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
     call zpinch_setVariable2d(&
         rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
 
     ! Set y-velocity
-    call euler_getVariable(rsolution, 'velocity_y',&
+    call hydro_getVariable(rsolution, 'velocity_y',&
         rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
     call zpinch_setVariable2d(&
         rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
@@ -612,8 +612,8 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
-      ssectionNameEuler, ssectionNameTransport, rproblemLevel,&
-      rsolutionEuler, rsolutionTransport, dtime, dscale, rforce,&
+      ssectionNameHydro, ssectionNameTransport, rproblemLevel,&
+      rsolutionHydro, rsolutionTransport, dtime, dscale, rforce,&
       rcollection)
 
 !<description>
@@ -627,7 +627,7 @@ contains
 
     ! section names in parameter list
     character(LEN=*), intent(in) :: ssectionName
-    character(LEN=*), intent(in) :: ssectionNameEuler
+    character(LEN=*), intent(in) :: ssectionNameHydro
     character(LEN=*), intent(in) :: ssectionNameTransport
 
     ! problem level structure
@@ -636,8 +636,8 @@ contains
     ! solution vector for transport model
     type(t_vectorBlock), intent(in) :: rsolutionTransport
 
-    ! solution vector for Euler model
-    type(t_vectorBlock), intent(in) :: rsolutionEuler
+    ! solution vector for hydrodynamic model
+    type(t_vectorBlock), intent(in) :: rsolutionHydro
 
     ! simulation time
     real(DP), intent(in) :: dtime
@@ -658,7 +658,7 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataEuler, p_Ddata
+    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataHydro, p_Ddata
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix
     character(LEN=SYS_STRLEN) :: slorentzforceName
     real(DP) :: dcurrentDrive, deffectiveRadius
@@ -668,9 +668,9 @@ contains
 
 
     ! Check if solution vector and Lorentz force vector are compatible
-    call lsysbl_isVectorCompatible(rsolutionEuler, rforce, bcompatible)
+    call lsysbl_isVectorCompatible(rsolutionHydro, rforce, bcompatible)
     if (.not.bcompatible)&
-        call lsysbl_resizeVectorBlock(rforce, rsolutionEuler, .false.)
+        call lsysbl_resizeVectorBlock(rforce, rsolutionHydro, .false.)
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName,&
@@ -679,9 +679,9 @@ contains
         'deffectiveradius', deffectiveRadius)
     call parlst_getvalue_int(rparlist, ssectionName,&
         'icoordinatesystem', icoordinatesystem)
-    call parlst_getvalue_int(rparlist, ssectionNameEuler,&
+    call parlst_getvalue_int(rparlist, ssectionNameHydro,&
         'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(rparlist, ssectionNameEuler,&
+    call parlst_getvalue_int(rparlist, ssectionNameHydro,&
         'isystemformat', isystemFormat)
     
     ! Get lumped and consistent mass matrix
@@ -696,7 +696,7 @@ contains
     
     ! Set pointer to global solution vectors
     call lsysbl_getbase_double(rforce, p_Ddata)
-    call lsysbl_getbase_double(rsolutionEuler, p_DdataEuler)
+    call lsysbl_getbase_double(rsolutionHydro, p_DdataHydro)
     call lsysbl_getbase_double(rsolutionTransport, p_DdataTransport)
 
     ! Set pointer to the vertex coordinates
@@ -705,7 +705,7 @@ contains
 
     ! Set dimensions
     neq  = rsolutionTransport%NEQ
-    nvar = euler_getNVAR(rproblemLevel)
+    nvar = hydro_getNVAR(rproblemLevel)
 
     ! Get function parser from collection structure
     p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
@@ -730,12 +730,12 @@ contains
       case(1)
         call calcForceXYInterleaveFormat(dcurrentDrive, deffectiveRadius,&
             neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
-            p_DdataTransport, p_DdataEuler, p_Ddata)
+            p_DdataTransport, p_DdataHydro, p_Ddata)
 
       case(2)
         call calcForceRZInterleaveFormat(dcurrentDrive, deffectiveRadius,&
             neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
-            p_DdataTransport, p_DdataEuler, p_Ddata)
+            p_DdataTransport, p_DdataHydro, p_Ddata)
 
       case default
         call output_line('Invalid type of coordinate system!',&
@@ -749,12 +749,12 @@ contains
       case(1)
         call calcForceXYBlockFormat(dcurrentDrive, deffectiveRadius,&
             neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
-            p_DdataTransport, p_DdataEuler, p_Ddata)
+            p_DdataTransport, p_DdataHydro, p_Ddata)
 
       case(2)
         call calcForceRZBlockFormat(dcurrentDrive, deffectiveRadius,&
             neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
-            p_DdataTransport, p_DdataEuler, p_Ddata)
+            p_DdataTransport, p_DdataHydro, p_Ddata)
 
       case default
         call output_line('Invalid type of coordinate system!',&
@@ -779,10 +779,10 @@ contains
 
     subroutine calcForceXYInterleaveFormat(dcurrentDrive,&
         deffectiveRadius, neq, nvar, DvertexCoords,&
-        DmassMatrix, DdataTransport, DdataEuler, DdataForce)
+        DmassMatrix, DdataTransport, DdataHydro, DdataForce)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      real(DP), dimension(nvar,neq), intent(in) :: DdataEuler
+      real(DP), dimension(nvar,neq), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
       integer, intent(in) :: neq, nvar
@@ -819,8 +819,8 @@ contains
         DdataForce(1,i) = 0.0_DP
         DdataForce(2,i) = daux * x1
         DdataForce(3,i) = daux * x2
-        DdataForce(4,i) = daux * (DdataEuler(2,i)*x1 +&
-                                  DdataEuler(3,i)*x2) / DdataEuler(1,i)
+        DdataForce(4,i) = daux * (DdataHydro(2,i)*x1 +&
+                                  DdataHydro(3,i)*x2) / DdataHydro(1,i)
       end do
       !$omp end parallel do
 
@@ -833,10 +833,10 @@ contains
 
     subroutine calcForceRZInterleaveFormat(dcurrentDrive,&
         deffectiveRadius, neq, nvar, DvertexCoords, DmassMatrix,&
-        DdataTransport, DdataEuler, DdataForce)
+        DdataTransport, DdataHydro, DdataForce)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      real(DP), dimension(nvar,neq), intent(in) :: DdataEuler
+      real(DP), dimension(nvar,neq), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
       integer, intent(in) :: neq, nvar
@@ -869,7 +869,7 @@ contains
         DdataForce(1,i) = 0.0_DP
         DdataForce(2,i) = daux * x1
         DdataForce(3,i) = 0.0_DP
-        DdataForce(4,i) = daux * DdataEuler(2,i)*x1 / DdataEuler(1,i)
+        DdataForce(4,i) = daux * DdataHydro(2,i)*x1 / DdataHydro(1,i)
       end do
       !$omp end parallel do
 
@@ -882,10 +882,10 @@ contains
 
     subroutine calcForceXYBlockFormat(dcurrentDrive,&
         deffectiveRadius, neq, nvar, DvertexCoords,&
-        DmassMatrix, DdataTransport, DdataEuler, DdataForce)
+        DmassMatrix, DdataTransport, DdataHydro, DdataForce)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      real(DP), dimension(neq,nvar), intent(in) :: DdataEuler
+      real(DP), dimension(neq,nvar), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
       integer, intent(in) :: neq, nvar
@@ -922,8 +922,8 @@ contains
         DdataForce(i,1) = 0.0_DP
         DdataForce(i,2) = daux * x1
         DdataForce(i,3) = daux * x2
-        DdataForce(i,4) = daux * (DdataEuler(i,2)*x1 +&
-                                  DdataEuler(i,3)*x2) / DdataEuler(i,1)
+        DdataForce(i,4) = daux * (DdataHydro(i,2)*x1 +&
+                                  DdataHydro(i,3)*x2) / DdataHydro(i,1)
       end do
       !$omp end parallel do
 
@@ -936,10 +936,10 @@ contains
 
     subroutine calcForceRZBlockFormat(dcurrentDrive,&
         deffectiveRadius, neq, nvar, DvertexCoords, DmassMatrix,&
-        DdataTransport, DdataEuler, DdataForce)
+        DdataTransport, DdataHydro, DdataForce)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      real(DP), dimension(neq,nvar), intent(in) :: DdataEuler
+      real(DP), dimension(neq,nvar), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
       integer, intent(in) :: neq, nvar
@@ -972,7 +972,7 @@ contains
         DdataForce(i,1) = 0.0_DP
         DdataForce(i,2) = daux * x1
         DdataForce(i,3) = 0.0_DP
-        DdataForce(i,4) = daux * DdataEuler(i,2)*x1 / DdataEuler(i,1)
+        DdataForce(i,4) = daux * DdataHydro(i,2)*x1 / DdataHydro(i,1)
       end do
       !$omp end parallel do
 
@@ -985,7 +985,7 @@ contains
 !<subroutine>
   
   subroutine zpinch_calcLinearisedFCT(RbdrCond, rproblemLevel, rtimestep,&
-      rsolverEuler, rsolverTransport, Rsolution, rcollection, Rsource)
+      rsolverHydro, rsolverTransport, Rsolution, rcollection, Rsource)
 
 !<description>
     ! This subroutine calculates the linearised FCT correction
@@ -1007,7 +1007,7 @@ contains
     type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! solver structures
-    type(t_solver), intent(inout) :: rsolverEuler
+    type(t_solver), intent(inout) :: rsolverHydro
     type(t_solver), intent(inout) :: rsolverTransport
 
     ! solution vectors
@@ -1021,10 +1021,10 @@ contains
     ! local variables
     type(t_timestep) :: rtimestepAux
     type(t_vectorBlock), dimension(:), pointer :: p_Rpredictor
-    type(t_vectorBlock), pointer :: p_rpredictorEuler,p_rpredictorTransport
+    type(t_vectorBlock), pointer :: p_rpredictorHydro,p_rpredictorTransport
     type(t_parlist), pointer :: p_rparlist
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
-    real(DP), dimension(:), pointer :: p_DalphaEuler, p_DalphaTransport
+    real(DP), dimension(:), pointer :: p_DalphaHydro, p_DalphaTransport
     integer, dimension(2) :: IposAFC
     integer :: convectionAFC,inviscidAFC,lumpedMassMatrix,consistentMassMatrix
     integer :: imassantidiffusiontype,nfailsafe,ivariable,nvariable
@@ -1074,26 +1074,26 @@ contains
     rtimestepAux%dStep = 1.0_DP
     rtimestepAux%theta = 0.0_DP
     
-    !--- compressible Euler model ----------------------------------------------
+    !--- compressible hydrodynamic model ----------------------------------------------
 
     ! Set pointer to predictor
-    p_rpredictorEuler => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+    p_rpredictorHydro => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
 
     ! Set the first string quick access array to the section name
-    ! of the Euler model which is stored in the third array
+    ! of the hydrodynamic model which is stored in the third array
     rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
 
     ! Compute low-order "right-hand side" without theta parameter
-    call euler_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolverEuler, Rsolution(1), p_rpredictorEuler, rcollection, Rsource(1))
+    call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+        rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection, Rsource(1))
 
     ! Compute low-order predictor
     call lsysbl_invertedDiagMatVec(&
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
-        p_rpredictorEuler, 1.0_DP, p_rpredictorEuler)
+        p_rpredictorHydro, 1.0_DP, p_rpredictorHydro)
 
     ! Compute the raw antidiffusive fluxes
-    call euler_calcFluxFCT(rproblemLevel, p_rpredictorEuler,&
+    call hydro_calcFluxFCT(rproblemLevel, p_rpredictorHydro,&
         Rsolution(1), 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
 
     !--- transport model -------------------------------------------------------
@@ -1155,17 +1155,17 @@ contains
       end do
 
       ! Set up the predictor, that is, make a virtual copy of the
-      ! predictor vectors from the Euler system and the scalar tracer
+      ! predictor vectors from the hydrodynamic system and the scalar tracer
       ! equation which can be passed to the failsafe subroutine.
       allocate(p_rpredictor(2))
-      call lsysbl_duplicateVector(p_rpredictorEuler, p_Rpredictor(1),&
+      call lsysbl_duplicateVector(p_rpredictorHydro, p_Rpredictor(1),&
           LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_SHARE)
       call lsysbl_duplicateVector(p_rpredictorTransport, p_Rpredictor(2),&
           LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_SHARE)
     end if
 
     ! Set the first string quick access array to the section name
-    ! of the Euler model which is stored in the third array
+    ! of the hydrodynamic model which is stored in the third array
     rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
     
     ! What type of limiter synchronisation is performed?
@@ -1176,7 +1176,7 @@ contains
       if (nfailsafe .gt. 0) then
         
         ! Compute linearised FEM-FCT correction
-        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
         
@@ -1184,7 +1184,7 @@ contains
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            euler_getVariable, Rsolution(1), p_rpredictorEuler)
+            hydro_getVariable, Rsolution(1), p_rpredictorHydro)
 
         ! Apply linearised FEM-FCT correction
         call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -1204,7 +1204,7 @@ contains
       else
         
         ! Compute linearised FEM-FCT correction
-        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
@@ -1218,7 +1218,7 @@ contains
     case (1)   ! minimum synchronisation
       
       ! Compute linearised FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+      call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
       
@@ -1229,12 +1229,12 @@ contains
       
       ! Compute minimum correction factor
       call lsyssc_getbase_double(&
-          rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorAlpha, p_DalphaEuler)
+          rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorAlpha, p_DalphaHydro)
       call lsyssc_getbase_double(&
           rproblemLevel%Rafcstab(convectionAFC)%p_rvectorAlpha, p_DalphaTransport)
       
-      p_DalphaEuler = min(p_DalphaEuler, p_DalphaTransport)
-      call lalg_copyVector(p_DalphaEuler, p_DalphaTransport)
+      p_DalphaHydro = min(p_DalphaHydro, p_DalphaTransport)
+      call lalg_copyVector(p_DalphaHydro, p_DalphaTransport)
       
       if (nfailsafe .gt. 0) then
 
@@ -1252,7 +1252,7 @@ contains
       else
         
         ! Apply linearised FEM-FCT correction
-        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
@@ -1263,14 +1263,14 @@ contains
       end if
 
 
-    case (2)   ! Euler first, transport second
+    case (2)   ! Hydrodynamic first, transport second
       
       ! Compute linearised FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+      call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
       
-      ! Copy correction factor for Euler system to transport model
+      ! Copy correction factor for hydrodynamic system to transport model
       call afcstab_duplicateStabilisation(&
           rproblemLevel%Rafcstab(inviscidAFC),&
           rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
@@ -1281,7 +1281,7 @@ contains
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
-      ! Copy final correction factor back to Euler system
+      ! Copy final correction factor back to hydrodynamic system
       call afcstab_duplicateStabilisation(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
@@ -1302,7 +1302,7 @@ contains
       else
         
         ! Apply linearised FEM-FCT correction
-        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
@@ -1313,7 +1313,7 @@ contains
       end if
 
 
-    case (3)   ! Transport first, Euler second
+    case (3)   ! Transport first, hydrodynamic second
       
       ! Compute linearised FEM-FCT correction      
       call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -1321,13 +1321,13 @@ contains
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
-      ! Copy correction factor for transport model to Euler system
+      ! Copy correction factor for transport model to hydrodynamic system
       call afcstab_duplicateStabilisation(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
       
       ! Compute linearised FEM-FCT correction (without initialisation)
-      call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+      call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT,&
           Rsolution(1), rcollection)
@@ -1353,7 +1353,7 @@ contains
       else
       
         ! Apply linearised FEM-FCT correction
-        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
@@ -1364,16 +1364,16 @@ contains
       end if
       
 
-    case (4)   ! Euler system only
+    case (4)   ! Hydrodynamic system only
       
       if (nfailsafe .gt. 0) then
 
         ! Compute linearised FEM-FCT correction
-        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
 
-        ! Copy correction factor for Euler system to transport model
+        ! Copy correction factor for hydrodynamic system to transport model
         call afcstab_duplicateStabilisation(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
@@ -1392,11 +1392,11 @@ contains
       else
         
         ! Apply linearised FEM-FCT correction      
-        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        ! Copy correction factor for Euler system to transport model
+        ! Copy correction factor for hydrodynamic system to transport model
         call afcstab_duplicateStabilisation(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
@@ -1419,7 +1419,7 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
 
-        ! Copy correction factor for transport model to Euler system
+        ! Copy correction factor for transport model to hydrodynamic system
         call afcstab_duplicateStabilisation(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
@@ -1443,13 +1443,13 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
         
-        ! Copy correction factor for transport model to Euler system
+        ! Copy correction factor for transport model to hydrodynamic system
         call afcstab_duplicateStabilisation(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
         
         ! Apply linearised FEM-FCT correction
-        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
       end if
@@ -1466,15 +1466,15 @@ contains
     select case(rproblemLevel%rtriangulation%ndim)
     case (NDIM1D)
       call bdrf_filterVectorExplicit(rbdrCond(1), Rsolution(1),&
-          rtimestep%dTime, euler_calcBoundaryvalues1d)
+          rtimestep%dTime, hydro_calcBoundaryvalues1d)
 
     case (NDIM2D)
       call bdrf_filterVectorExplicit(rbdrCond(1), Rsolution(1),&
-          rtimestep%dTime, euler_calcBoundaryvalues2d)
+          rtimestep%dTime, hydro_calcBoundaryvalues2d)
 
     case (NDIM3D)
       call bdrf_filterVectorExplicit(rbdrCond(1), Rsolution(1),&
-          rtimestep%dTime, euler_calcBoundaryvalues3d)
+          rtimestep%dTime, hydro_calcBoundaryvalues3d)
     end select
 
     ! Impose boundary conditions for the solution vector
@@ -1493,12 +1493,12 @@ contains
     ! This subroutine extracts a single variable from the vector of
     ! conservative variables which is stored in interleave of block 
     ! format. In contrast to the corresponding subroutine from the
-    ! Euler model, this subroutine accepts arrays of block vectors,
-    ! e.g., to pass the solution from the Euler system and the
+    ! Hydrodynamic model, this subroutine accepts arrays of block vectors,
+    ! e.g., to pass the solution from the hydrodynamic system and the
     ! scalar tracer equation simultaneously.
     !
     ! This subroutine is a wrapper which calls either the getVariable
-    ! subroutine for the Euler system or returns the scalar tracer.
+    ! subroutine for the hydrodynamic system or returns the scalar tracer.
 !</description>
 
 !<input>
@@ -1518,7 +1518,7 @@ contains
     if (trim(cvariable) .eq. 'advect') then
       call lsyssc_copyVector(RvectorBlock(2)%RvectorBlock(1), rvectorScalar)
     else
-      call euler_getVariable(RvectorBlock(1), cvariable, rvectorScalar)
+      call hydro_getVariable(RvectorBlock(1), cvariable, rvectorScalar)
     end if
 
   end subroutine zpinch_getVariable

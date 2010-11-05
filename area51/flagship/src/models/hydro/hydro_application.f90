@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> euler_application </name>
+!# <name> hydro_application </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -35,7 +35,7 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) euler_app
+!# 1.) hydro_app
 !#     -> The main routine of the application called from the main
 !#        program. The routine gets all required information from the
 !#        parameter list which needs to be initialised and filled in
@@ -44,61 +44,61 @@
 !#        the simulation. The user should only have to modify this
 !#        routine if another solution algorithm is implemented.
 !#
-!# 2.) euler_initSolvers
+!# 2.) hydro_initSolvers
 !#     -> Initializes the solve structures from the parameter list.
 !#
-!# 3.) euler_initProblem
+!# 3.) hydro_initProblem
 !#     -> Initializes the global problem structure based on the
 !#        parameter settings given by the parameter list. This routine
 !#        is quite universal, that is, it prepares the internal
 !#        structure of the global problem and generates a linked
 !#        list of problem levels used in the multigrid hierarchy.
 !#
-!# 4.) euler_initProblemLevel
+!# 4.) hydro_initProblemLevel
 !#     -> Initializes the individual problem level based on the
 !#        parameter settings given by the parameter list.
 !#        This routine is called repeatedly by the global
-!#        initialisation routine euler_initAllProblemLevels.
+!#        initialisation routine hydro_initAllProblemLevels.
 !#
-!# 5.) euler_initAllProblemLevels
+!# 5.) hydro_initAllProblemLevels
 !#     -> Initializes ALL problem levels attached to the global
 !#        problem structure based on the parameter settings
 !#        given by the parameter list.
 !#
-!# 6.) euler_initSolution
+!# 6.) hydro_initSolution
 !#     -> Initializes the solution vector based on the parameter
 !#        settings given by the parameter list
 !#
-!# 7.) euler_outputSolution
+!# 7.) hydro_outputSolution
 !#     -> Outputs the solution vector to file in UCD format
 !#
-!# 8.) euler_outputStatistics
+!# 8.) hydro_outputStatistics
 !#     -> Outputs the application statitics
 !#
-!# 9.) euler_estimateRecoveryError
+!# 9.) hydro_estimateRecoveryError
 !#      -> Estimates the solution error using recovery techniques
 !#
-!# 10.) euler_adaptTriangulation
+!# 10.) hydro_adaptTriangulation
 !#      -> Performs h-adaptation for the given triangulation
 !#
-!# 11.) euler_solveTransientPrimal
+!# 11.) hydro_solveTransientPrimal
 !#      -> Solves the primal formulation of the time-dependent
 !#         compressible Euler equations.
 !#
-!# 12.) euler_projectSolution
+!# 12.) hydro_projectSolution
 !#      -> Performs conservative projection of the solution from
 !#         a given FE-space to another FE-space
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) euler_parseCmdlArguments
+!# 1.) hydro_parseCmdlArguments
 !#     -> Parses the list of commandline arguments and overwrites
 !#        parameter values from the parameter files
 !#
 !# </purpose>
 !##############################################################################
 
-module euler_application
+module hydro_application
 
   use afcstabilisation
   use bilinearformevaluation
@@ -109,11 +109,11 @@ module euler_application
   use cubature
   use derivatives
   use element
-  use euler_basic
-  use euler_callback
-  use euler_callback1d
-  use euler_callback2d
-  use euler_callback3d
+  use hydro_basic
+  use hydro_callback
+  use hydro_callback1d
+  use hydro_callback2d
+  use hydro_callback3d
   use flagship_basic
   use fparser
   use fsystem
@@ -144,18 +144,18 @@ module euler_application
   implicit none
 
   private
-  public :: euler_app
-  public :: euler_adaptTriangulation
-  public :: euler_adjustParameterlist
-  public :: euler_estimateRecoveryError
-  public :: euler_initAllProblemLevels
-  public :: euler_initProblem
-  public :: euler_initProblemLevel
-  public :: euler_initSolution
-  public :: euler_initSolvers
-  public :: euler_outputSolution
-  public :: euler_outputStatistics
-  public :: euler_solveTransientPrimal
+  public :: hydro_app
+  public :: hydro_adaptTriangulation
+  public :: hydro_adjustParameterlist
+  public :: hydro_estimateRecoveryError
+  public :: hydro_initAllProblemLevels
+  public :: hydro_initProblem
+  public :: hydro_initProblemLevel
+  public :: hydro_initSolution
+  public :: hydro_initSolvers
+  public :: hydro_outputSolution
+  public :: hydro_outputStatistics
+  public :: hydro_solveTransientPrimal
 
 
 contains
@@ -164,12 +164,12 @@ contains
 
 !<subroutine>
 
-  subroutine euler_app(rparlist, ssectionName)
+  subroutine hydro_app(rparlist, ssectionName)
 
 !<description>
     ! This is the main application for the compressible Euler
     ! equations.  It is a so-called driver routine which can be used
-    ! to start a standalone Euler simulation.
+    ! to start a standalone hydrodynamic simulation.
 !</description>
 
 !<input>
@@ -262,8 +262,8 @@ contains
     ! Overwrite configuration from command line arguments. After this
     ! subroutine has been called, the parameter list remains unchanged
     ! unless the used updates some parameter values interactively.
-    call euler_parseCmdlArguments(rparlist)
-    call euler_adjustParameterlist(rparlist, ssectionName)
+    call hydro_parseCmdlArguments(rparlist)
+    call hydro_adjustParameterlist(rparlist, ssectionName)
 
     ! Initialize global collection structure
     call collct_init(rcollection)
@@ -306,15 +306,15 @@ contains
     call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.)
 
     ! Initialize the solver structures
-    call euler_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
+    call hydro_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
     ! Initialize the abstract problem structure
-    call euler_initProblem(rparlist, ssectionName,&
+    call hydro_initProblem(rparlist, ssectionName,&
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver), rproblem)
 
     ! Initialize the individual problem levels
-    call euler_initAllProblemLevels(rparlist, ssectionName,&
+    call hydro_initAllProblemLevels(rparlist, ssectionName,&
         rproblem, rcollection)
 
     ! Prepare internal data arrays of the solver structure
@@ -348,7 +348,7 @@ contains
       ! all solution strategies so initialize it from the parameter file
       call bdrc_readBoundaryCondition(rbdrCondPrimal,&
           sindatfileName, '['//trim(sbdrcondName)//']',&
-          ndimension, euler_parseBoundaryCondition)
+          ndimension, hydro_parseBoundaryCondition)
 
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
@@ -356,24 +356,24 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call euler_solveTransientPrimal(rparlist, ssectionName,&
+        call hydro_solveTransientPrimal(rparlist, ssectionName,&
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
-        call euler_outputSolution(rparlist, ssectionName,&
+        call hydro_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_app')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_app')
         call sys_halt()
       end if
 
     else
 
       ! Just output the computational mesh and exit
-      call euler_outputSolution(rparlist, ssectionName,&
+      call hydro_outputSolution(rparlist, ssectionName,&
           rproblem%p_rproblemLevelMax)
 
     end if
@@ -414,18 +414,18 @@ contains
     call stat_stopTimer(rtimerTotal)
 
     ! Output statistics
-    call euler_outputStatistics(rtimerTotal, rcollection)
+    call hydro_outputStatistics(rtimerTotal, rcollection)
 
     ! Release collection
     call collct_done(rcollection)
 
-  end subroutine euler_app
+  end subroutine hydro_app
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_initSolvers(rparlist, ssectionName,&
+  subroutine hydro_initSolvers(rparlist, ssectionName,&
       rtimestep, rsolver)
 
 !<description>
@@ -480,13 +480,13 @@ contains
     end if
     call solver_updateStructure(rsolver)
 
-  end subroutine euler_initSolvers
+  end subroutine hydro_initSolvers
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_initProblem(rparlist, ssectionName,&
+  subroutine hydro_initProblem(rparlist, ssectionName,&
       nlmin, nlmax, rproblem)
 
 !<description>
@@ -570,13 +570,13 @@ contains
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
 
-  end subroutine euler_initProblem
+  end subroutine hydro_initProblem
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_initProblemLevel(rparlist, ssectionName,&
+  subroutine hydro_initProblemLevel(rparlist, ssectionName,&
       rproblemLevel, rcollection)
 
 !<description>
@@ -679,11 +679,11 @@ contains
 
         case (SYSTEM_BLOCKFORMAT)
           call spdiscr_initBlockDiscr(p_rdiscretisation,&
-              euler_getNVAR(rproblemLevel), p_rtriangulation)
+              hydro_getNVAR(rproblemLevel), p_rtriangulation)
 
         case DEFAULT
           call output_line('Unsupported system format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
           call sys_halt()
         end select
       end if
@@ -708,7 +708,7 @@ contains
 
         case DEFAULT
           call output_line('Unsupproted element type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
           call sys_halt()
         end select
 
@@ -758,7 +758,7 @@ contains
 
         case DEFAULT
           call output_line('Unsupproted element type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
           call sys_halt()
         end select
 
@@ -780,19 +780,19 @@ contains
 
         case DEFAULT
           call output_line('Unsupproted element type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
           call sys_halt()
         end select
 
       case DEFAULT
         call output_line('Invalid number of spatial dimensions',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
         call sys_halt()
       end select
 
       ! Duplicate scalar discretisation structure for block matrix format
       if (isystemFormat .eq. SYSTEM_BLOCKFORMAT) then
-        do ivar = 2, euler_getNVAR(rproblemLevel)
+        do ivar = 2, hydro_getNVAR(rproblemLevel)
           call spdiscr_duplicateDiscrSc(&
               p_rdiscretisation%RspatialDiscr(1),&
               p_rdiscretisation%RspatialDiscr(ivar), .true.)
@@ -858,7 +858,7 @@ contains
               LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
 
           ! Set number of variables per node
-          rproblemLevel%Rmatrix(systemMatrix)%NVAR = euler_getNVAR(rproblemLevel)
+          rproblemLevel%Rmatrix(systemMatrix)%NVAR = hydro_getNVAR(rproblemLevel)
 
           ! What matrix format should be used?
           select case(imatrixFormat)
@@ -870,7 +870,7 @@ contains
 
           case DEFAULT
             call output_line('Unsupported matrix format!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
             call sys_halt()
           end select
 
@@ -884,7 +884,7 @@ contains
 
           case DEFAULT
             call output_line('Unsupported interleave matrix format!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+                             OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
             call sys_halt()
           end select
 
@@ -913,7 +913,7 @@ contains
 
           case (SYSTEM_SEGREGATED)
             ! Create only NVAR diagonal blocks
-            do ivar = 1, euler_getNVAR(rproblemLevel)
+            do ivar = 1, hydro_getNVAR(rproblemLevel)
               call lsyssc_resizeMatrix(&
                   rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                   rproblemLevel%Rmatrix(templateMatrix), .false., .false., .true.)
@@ -921,8 +921,8 @@ contains
 
           case (SYSTEM_ALLCOUPLED)
             ! Create all NVAR x NVAR blocks
-            do ivar = 1, euler_getNVAR(rproblemLevel)
-              do jvar = 1, euler_getNVAR(rproblemLevel)
+            do ivar = 1, hydro_getNVAR(rproblemLevel)
+              do jvar = 1, hydro_getNVAR(rproblemLevel)
                 call lsyssc_resizeMatrix(&
                     rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar ,jvar),&
                     rproblemLevel%Rmatrix(templateMatrix), .false., .false., .true.)
@@ -931,7 +931,7 @@ contains
 
           case DEFAULT
             call output_line('Unsupported block matrix format!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+                             OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
             call sys_halt()
           end select
 
@@ -940,8 +940,8 @@ contains
           ! Create empty NVARxNVAR block matrix directly
           call lsysbl_createEmptyMatrix(&
               rproblemLevel%RmatrixBlock(systemMatrix),&
-              euler_getNVAR(rproblemLevel),&
-              euler_getNVAR(rproblemLevel))
+              hydro_getNVAR(rproblemLevel),&
+              hydro_getNVAR(rproblemLevel))
 
           ! Specify matrix as 'group matrix'
           rproblemLevel%RmatrixBlock(systemMatrix)%imatrixSpec = LSYSBS_MSPEC_GROUPMATRIX
@@ -951,7 +951,7 @@ contains
 
           case (SYSTEM_SEGREGATED)
             ! Create only NVAR diagonal blocks
-            do ivar = 1, euler_getNVAR(rproblemLevel)
+            do ivar = 1, hydro_getNVAR(rproblemLevel)
               call lsyssc_duplicateMatrix(&
                   rproblemLevel%Rmatrix(templateMatrix),&
                   rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
@@ -960,8 +960,8 @@ contains
 
           case (SYSTEM_ALLCOUPLED)
             ! Create all NVAR x NVAR blocks
-            do ivar = 1, euler_getNVAR(rproblemLevel)
-              do jvar = 1, euler_getNVAR(rproblemLevel)
+            do ivar = 1, hydro_getNVAR(rproblemLevel)
+              do jvar = 1, hydro_getNVAR(rproblemLevel)
                 call lsyssc_duplicateMatrix(&
                     rproblemLevel%Rmatrix(templateMatrix),&
                     rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
@@ -971,7 +971,7 @@ contains
 
           case DEFAULT
             call output_line('Unsupported block matrix format!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
             call sys_halt()
           end select
 
@@ -982,7 +982,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupported system format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_initProblemLevel')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
         call sys_halt()
       end select
     end if
@@ -1131,7 +1131,7 @@ contains
               ssectionName, 'slimitingvariable',&
               slimitingvariable, isubstring=ivariable)
           nvartransformed = max(nvartransformed,&
-              euler_getNVARtransformed(rproblemLevel, slimitingvariable))
+              hydro_getNVARtransformed(rproblemLevel, slimitingvariable))
         end do
 
         ! Initialise stabilisation structure
@@ -1152,13 +1152,13 @@ contains
       end if
     end if
 
-  end subroutine euler_initProblemLevel
+  end subroutine hydro_initProblemLevel
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_initAllProblemLevels(rparlist, ssectionName,&
+  subroutine hydro_initAllProblemLevels(rparlist, ssectionName,&
       rproblem, rcollection)
 
 !<description>
@@ -1194,20 +1194,20 @@ contains
     do while(associated(p_rproblemLevel))
 
       ! Initialize individual problem level
-      call euler_initProblemLevel(rparlist, ssectionName,&
+      call hydro_initProblemLevel(rparlist, ssectionName,&
           p_rproblemLevel, rcollection)
 
       ! Switch to next coarser level
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
 
-  end subroutine euler_initAllProblemLevels
+  end subroutine hydro_initAllProblemLevels
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_initSolution(rparlist, ssectionName,&
+  subroutine hydro_initSolution(rparlist, ssectionName,&
       rproblemLevel, dtime, rvector, rcollection)
 
 !<description>
@@ -1279,7 +1279,7 @@ contains
       !-------------------------------------------------------------------------
 
       call output_line('Initialisation if solution by graymap image is not yet supported!',&
-          OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
+          OU_CLASS_ERROR, OU_MODE_STD, 'hydro_initSolution')
       call sys_halt()
 
 
@@ -1301,7 +1301,7 @@ contains
       if (parlst_querysubstrings(rparlist, ssectionName,&
           'ssolutionname') .lt. nexpression) then
         call output_line('Invalid number of expressions!',&
-            OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
+            OU_CLASS_ERROR, OU_MODE_STD, 'hydro_initSolution')
         call sys_halt()
       end if
 
@@ -1378,7 +1378,7 @@ contains
       if (parlst_querysubstrings(rparlist, ssectionName,&
           'ssolutionname') .lt. nexpression) then
         call output_line('Invalid number of expressions!',&
-            OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
+            OU_CLASS_ERROR, OU_MODE_STD, 'hydro_initSolution')
         call sys_halt()
       end if
 
@@ -1443,7 +1443,7 @@ contains
           
           ! Assemble the linear form for the scalar subvector
           call linf_buildVectorScalar2(rform, .true.,&
-              rvector%RvectorBlock(iblock), euler_coeffVectorAnalytic, rcollection)
+              rvector%RvectorBlock(iblock), hydro_coeffVectorAnalytic, rcollection)
 
           ! Increase number of processed expressions
           nexpression = nexpression + 1
@@ -1465,7 +1465,7 @@ contains
 
             ! Assemble the linear form for the scalar subvector
             call linf_buildVectorScalar2(rform, .true.,&
-                rvectorBlock%RvectorBlock(ivar), euler_coeffVectorAnalytic,&
+                rvectorBlock%RvectorBlock(ivar), hydro_coeffVectorAnalytic,&
                 rcollection)
           end do
 
@@ -1556,7 +1556,7 @@ contains
         ! callback function for assembling the antidiffusive fluxes since it 
         ! will not be used for assembling antidiffusive mass fluxes !!!
         call gfsys_buildFluxFCT((/p_rconsistentMassMatrix/),&
-            rafcstab, rvectorHigh, rvectorHigh, euler_calcFluxFCTScalarDiss1d,&
+            rafcstab, rvectorHigh, rvectorHigh, hydro_calcFluxFCTScalarDiss1d,&
             0.0_DP, 0.0_DP, 1.0_DP, .true., p_rconsistentMassMatrix)
         
         ! Attach section name to collection structure
@@ -1580,14 +1580,14 @@ contains
           end do
 
           ! Compute and apply FEM-FCT correction
-          call euler_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
+          call hydro_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
               .false., AFCSTAB_FCTALGO_STANDARD-AFCSTAB_FCTALGO_CORRECT,&
               rvector, rcollection, rafcstab, 'ssolutionconstrainvariable')
           
           ! Apply failsafe flux correction
           call afcstab_failsafeLimiting(rafcstab, p_rlumpedMassMatrix,&
               SsolutionFailsafeVariables, 1.0_DP,&
-              nsolutionfailsafe, euler_getVariable, rvector)
+              nsolutionfailsafe, hydro_getVariable, rvector)
           
           ! Deallocate temporal memory
           deallocate(SsolutionFailsafeVariables)
@@ -1595,7 +1595,7 @@ contains
         else
           
           ! Compute and apply FEM-FCT correction
-          call euler_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
+          call hydro_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
               .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS,&
               rvector, rcollection, rafcstab, 'ssolutionconstrainvariable')
         end if
@@ -1618,17 +1618,17 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of solution profile!',&
-          OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
+          OU_CLASS_ERROR, OU_MODE_STD, 'hydro_initSolution')
       call sys_halt()
     end select
     
-  end subroutine euler_initSolution
+  end subroutine hydro_initSolution
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_outputSolution(rparlist, ssectionName,&
+  subroutine hydro_outputSolution(rparlist, ssectionName,&
       rproblemLevel, rsolutionPrimal, rsolutionDual, dtime)
 
 !<description>
@@ -1696,7 +1696,7 @@ contains
       
       ! Set pointers
       call lsysbl_getbase_double(rsolutionPrimal, p_Dsolution)
-      nvar  = euler_getNVAR(rproblemLevel)
+      nvar  = hydro_getNVAR(rproblemLevel)
       isize = size(p_Dsolution)/nvar
       ndim  = rproblemLevel%rtriangulation%ndim
 
@@ -1722,7 +1722,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid number of spatial dimensions',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_outputSolution')
         call sys_halt()
       end select
 
@@ -1746,24 +1746,24 @@ contains
             ! Special treatment of velocity vector
             select case(ndim)
             case (NDIM1D)
-              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
 
             case (NDIM2D)
-              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
+              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
-              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
-              call euler_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
                   'velocity_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
@@ -1774,24 +1774,24 @@ contains
             ! Special treatment of momentum vector
             select case(ndim)
             case (NDIM1D)
-              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
 
             case (NDIM2D)
-              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
-              call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
+              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
                   'momentum_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
-              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
-              call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
                   'momentum_y', p_Dsolution, p_Ddata2)
-              call euler_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
                   'momentum_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
@@ -1800,7 +1800,7 @@ contains
           else
 
             ! Standard treatment for scalar quantity
-            call euler_getVarInterleaveFormat(rvector1%NEQ,  nvar,&
+            call hydro_getVarInterleaveFormat(rvector1%NEQ,  nvar,&
                 cvariable, p_Dsolution, p_Ddata1)
             call ucd_addVariableVertexBased (rexport, cvariable,&
                 UCD_VAR_STANDARD, p_Ddata1)
@@ -1822,24 +1822,24 @@ contains
             ! Special treatment of velocity vector
             select case(ndim)
             case (NDIM1D)
-              call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
 
             case (NDIM2D)
-              call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call euler_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
-              call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call euler_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
-              call euler_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
                   'velocity_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
@@ -1850,24 +1850,24 @@ contains
             ! Special treatment of momentum vector
             select case(ndim)
             case (NDIM1D)
-              call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
 
             case (NDIM2D)
-              call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
-              call euler_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
                   'momentum_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
-              call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
-              call euler_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
                   'momentum_y', p_Dsolution, p_Ddata2)
-              call euler_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
                   'momentum_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
@@ -1876,7 +1876,7 @@ contains
           else
             
             ! Standard treatment for scalar quantity
-            call euler_getVarBlockFormat(rvector1%NEQ, nvar,&
+            call hydro_getVarBlockFormat(rvector1%NEQ, nvar,&
                 cvariable, p_Dsolution, p_Ddata1)
             call ucd_addVariableVertexBased (rexport, cvariable,&
                 UCD_VAR_STANDARD, p_Ddata1)
@@ -1886,7 +1886,7 @@ contains
 
       case default
         call output_line('Invalid system format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_outputSolution')
         call sys_halt()
       end select
       
@@ -1901,13 +1901,13 @@ contains
     call ucd_write(rexport)
     call ucd_release(rexport)
 
-  end subroutine euler_outputSolution
+  end subroutine hydro_outputSolution
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_outputStatistics(rtimerTotal, rcollection)
+  subroutine hydro_outputStatistics(rtimerTotal, rcollection)
 
 !<description>
     ! This subroutine output application statistics
@@ -1986,13 +1986,13 @@ contains
                      trim(adjustl(sys_sdE(dtotalTime, 5))))
     call output_lbrk()
 
-  end subroutine euler_outputStatistics
+  end subroutine hydro_outputStatistics
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_estimateRecoveryError(rparlist, ssectionName,&
+  subroutine hydro_estimateRecoveryError(rparlist, ssectionName,&
       rproblemLevel, rsolution, dtime, rerror, derror)
 
 !<description>
@@ -2084,7 +2084,7 @@ contains
           'serrorvariable', serrorVariable, isubString=ierrorVariable)
 
       ! Extract scalar variable from vector of conservative variables
-      call euler_getVariable(rsolution, serrorVariable, rvectorScalar)
+      call hydro_getVariable(rsolution, serrorVariable, rvectorScalar)
 
       ! What type of error estimator are we?
       select case(ierrorEstimator)
@@ -2132,7 +2132,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid type of error estimator!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_estimateRecoveryError')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_estimateRecoveryError')
         call sys_halt()
       end select
 
@@ -2273,13 +2273,13 @@ contains
       end do
     end subroutine doProtectionLayerUniform
 
-  end subroutine euler_estimateRecoveryError
+  end subroutine hydro_estimateRecoveryError
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_adaptTriangulation(rparlist, ssectionName, rhadapt ,&
+  subroutine hydro_adaptTriangulation(rparlist, ssectionName, rhadapt ,&
       rtriangulationSrc, rindicator, rcollection, rtriangulationDest)
 
 !<description>
@@ -2344,22 +2344,22 @@ contains
       ! How many spatial dimensions do we have?
       select case(rtriangulationSrc%ndim)
       case (NDIM1D)
-        call euler_hadaptCallbackScalar1D(&
+        call hydro_hadaptCallbackScalar1D(&
             HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
-            rcollection, euler_hadaptCallbackScalar1D)
+            rcollection, hydro_hadaptCallbackScalar1D)
 
       case (NDIM2D)
-        call euler_hadaptCallbackScalar2D(&
+        call hydro_hadaptCallbackScalar2D(&
             HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
-            rcollection, euler_hadaptCallbackScalar2D)
+            rcollection, hydro_hadaptCallbackScalar2D)
 
       case (NDIM3D)
-        call euler_hadaptCallbackScalar3D(&
+        call hydro_hadaptCallbackScalar3D(&
             HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
-            rcollection, euler_hadaptCallbackScalar3D)
+            rcollection, hydro_hadaptCallbackScalar3D)
       end select
 
     case (SYSTEM_BLOCKFORMAT)
@@ -2367,22 +2367,22 @@ contains
       ! How many spatial dimensions do we have?
       select case(rtriangulationSrc%ndim)
       case (NDIM1D)
-        call euler_hadaptCallbackBlock1D(&
+        call hydro_hadaptCallbackBlock1D(&
             HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
-            rcollection, euler_hadaptCallbackBlock1D)
+            rcollection, hydro_hadaptCallbackBlock1D)
 
       case (NDIM2D)
-        call euler_hadaptCallbackBlock2D(&
+        call hydro_hadaptCallbackBlock2D(&
             HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
-            rcollection, euler_hadaptCallbackBlock2D)
+            rcollection, hydro_hadaptCallbackBlock2D)
 
       case (NDIM3D)
-        call euler_hadaptCallbackBlock3D(&
+        call hydro_hadaptCallbackBlock3D(&
             HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
-            rcollection, euler_hadaptCallbackBlock3D)
+            rcollection, hydro_hadaptCallbackBlock3D)
       end select
 
     case DEFAULT
@@ -2413,13 +2413,13 @@ contains
     ! Generate raw mesh from adaptation structure
     call hadapt_generateRawMesh(rhadapt, p_rtriangulation)
 
-  end subroutine euler_adaptTriangulation
+  end subroutine hydro_adaptTriangulation
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_solveTransientPrimal(rparlist, ssectionName,&
+  subroutine hydro_solveTransientPrimal(rparlist, ssectionName,&
       rbdrCond, rproblem, rtimestep, rsolver, rsolution, rcollection)
 
 !<description>
@@ -2520,28 +2520,28 @@ contains
     call lsysbl_createVectorBlock(p_rdiscretisation,&
         rsolution, .false., ST_DOUBLE)
     if (p_rdiscretisation%ncomponents .ne.&
-        euler_getNVAR(p_rproblemLevel)) then
-      rsolution%RvectorBlock(1)%NVAR = euler_getNVAR(p_rproblemLevel)
-      isize = rsolution%NEQ*euler_getNVAR(p_rproblemLevel)
+        hydro_getNVAR(p_rproblemLevel)) then
+      rsolution%RvectorBlock(1)%NVAR = hydro_getNVAR(p_rproblemLevel)
+      isize = rsolution%NEQ*hydro_getNVAR(p_rproblemLevel)
       call lsysbl_resizeVectorBlock(rsolution, isize, .false., .false.)
     end if
 
     ! Initialize the solution vector and impose boundary conditions
-    call euler_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+    call hydro_initSolution(rparlist, ssectionName, p_rproblemLevel,&
         rtimestep%dinitialTime, rsolution, rcollection)
 
     select case(ndimension)
     case (NDIM1D)
       call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-          rtimestep%dinitialTime, euler_calcBoundaryvalues1d)
+          rtimestep%dinitialTime, hydro_calcBoundaryvalues1d)
 
     case (NDIM2D)
       call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-          rtimestep%dinitialTime, euler_calcBoundaryvalues2d)
+          rtimestep%dinitialTime, hydro_calcBoundaryvalues2d)
 
     case (NDIM3D)
       call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-          rtimestep%dinitialTime, euler_calcBoundaryvalues3d)
+          rtimestep%dinitialTime, hydro_calcBoundaryvalues3d)
     end select
 
     ! Initialize timer for intermediate UCD exporter
@@ -2590,7 +2590,7 @@ contains
           do ipreadapt = 1, npreadapt
 
             ! Compute the error estimator using recovery techniques
-            call euler_estimateRecoveryError(rparlist, ssectionname,&
+            call hydro_estimateRecoveryError(rparlist, ssectionname,&
                 p_rproblemLevel, rsolution, rtimestep%dinitialTime,&
                 relementError, derror)
 
@@ -2601,7 +2601,7 @@ contains
             rcollection%p_rvectorQuickAccess1 => rsolution
 
             ! Perform h-adaptation and update the triangulation structure
-            call euler_adaptTriangulation(rparlist, ssectionname,&
+            call hydro_adaptTriangulation(rparlist, ssectionname,&
                 rhadapt, p_rproblemLevel%rtriangulation,&
                 relementError, rcollection)
 
@@ -2617,7 +2617,7 @@ contains
                 p_rproblemLevel%Rmatrix(templateMatrix))
 
             ! Re-initialize all constant coefficient matrices
-            call euler_initProblemLevel(rparlist,&
+            call hydro_initProblemLevel(rparlist,&
                 ssectionName, p_rproblemLevel, rcollection)
 
             ! Resize the solution vector accordingly
@@ -2629,7 +2629,7 @@ contains
 
             ! Re-generate the initial solution vector and impose
             ! boundary conditions explicitly
-            call euler_initSolution(rparlist, ssectionname,&
+            call hydro_initSolution(rparlist, ssectionname,&
                 p_rproblemLevel, rtimestep%dinitialTime, rsolution,&
                 rcollection)
 
@@ -2637,14 +2637,14 @@ contains
             case (NDIM1D)
               call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
 
-                  rtimestep%dinitialTime, euler_calcBoundaryvalues1d)
+                  rtimestep%dinitialTime, hydro_calcBoundaryvalues1d)
             case (NDIM2D)
               call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-                  rtimestep%dinitialTime, euler_calcBoundaryvalues2d)
+                  rtimestep%dinitialTime, hydro_calcBoundaryvalues2d)
 
             case (NDIM3D)
               call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-                  rtimestep%dinitialTime, euler_calcBoundaryvalues3d)
+                  rtimestep%dinitialTime, hydro_calcBoundaryvalues3d)
             end select
           end do
 
@@ -2677,7 +2677,7 @@ contains
       call ucd_readGMV(sucdimport, rimport, p_rproblemLevel%rtriangulation)
       call ucd_getSimulationTime(rimport, rtimestep%dinitialTime)
       call ucd_getSimulationTime(rimport, rtimestep%dTime)
-      call euler_setVariables(rimport, rsolution)
+      call hydro_setVariables(rimport, rsolution)
       call ucd_release(rimport)
       
       ! Set time for solution output
@@ -2702,7 +2702,7 @@ contains
 
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
-          call euler_outputSolution(rparlist, ssectionName,&
+          call hydro_outputSolution(rparlist, ssectionName,&
           p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
 
       !-------------------------------------------------------------------------
@@ -2722,22 +2722,22 @@ contains
 
         ! Adopt explicit Runge-Kutta scheme
         call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
-            rsolution, euler_nlsolverCallback, rcollection)
+            rsolution, hydro_nlsolverCallback, rcollection)
 
       case (TSTEP_THETA_SCHEME)
 
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-            rsolver, rsolution, euler_nlsolverCallback, rcollection)
+            rsolver, rsolution, hydro_nlsolverCallback, rcollection)
 
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_solveTransientPrimal')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_solveTransientPrimal')
         call sys_halt()
       end select
 
       ! Perform linearised FEM-FCT post-processing
-      call euler_calcLinearisedFCT(rbdrCond, p_rproblemLevel,&
+      call hydro_calcLinearisedFCT(rbdrCond, p_rproblemLevel,&
           rtimestep, rsolver, rsolution, rcollection)
 
       ! Stop time measurement for solution procedure
@@ -2760,7 +2760,7 @@ contains
         call stat_startTimer(p_rtimerPrepostProcess, STAT_TIMERSHORT)
 
         ! Export the intermediate solution
-        call euler_outputSolution(rparlist, ssectionName,&
+        call hydro_outputSolution(rparlist, ssectionName,&
             p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
 
         ! Stop time measurement for post-processing
@@ -2786,7 +2786,7 @@ contains
         call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
         ! Compute the error estimator using recovery techniques
-        call euler_estimateRecoveryError(rparlist, ssectionname,&
+        call hydro_estimateRecoveryError(rparlist, ssectionname,&
             p_rproblemLevel, rsolution, rtimestep%dTime,&
             relementError, derror)
 
@@ -2808,7 +2808,7 @@ contains
         rcollection%p_rvectorQuickAccess1 => rsolution
 
         ! Perform h-adaptation and update the triangulation structure
-        call euler_adaptTriangulation(rparlist, ssectionname,&
+        call hydro_adaptTriangulation(rparlist, ssectionname,&
             rhadapt, p_rproblemLevel%rtriangulation,&
             relementError, rcollection)
 
@@ -2843,7 +2843,7 @@ contains
         call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
         ! Re-initialize all constant coefficient matrices
-        call euler_initProblemLevel(rparlist, ssectionName,&
+        call hydro_initProblemLevel(rparlist, ssectionName,&
             p_rproblemLevel, rcollection)
 
         ! Resize the solution vector accordingly
@@ -2877,13 +2877,13 @@ contains
       end if
     end if
 
-  end subroutine euler_solveTransientPrimal
+  end subroutine hydro_solveTransientPrimal
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_projectSolution(rsourceVector, rdestVector)
+  subroutine hydro_projectSolution(rsourceVector, rdestVector)
     
 !<description>
     ! This subroutine performs conservative projection of the given solution
@@ -2944,7 +2944,7 @@ contains
       
       ! Assemble the linear form for the scalar subvector
       call linf_buildVectorScalar2(rform, .true.,&
-          rdestVector%RvectorBlock(iblock), euler_coeffVectorFE, rcollection)
+          rdestVector%RvectorBlock(iblock), hydro_coeffVectorFE, rcollection)
 
       ! Compute the lumped L2-projection
       call lsyssc_invertedDiagMatVec(rmatrix2, rdestVector%RvectorBlock(iblock),&
@@ -2979,7 +2979,7 @@ contains
     ! Release the collection structure
     call collct_done(rcollection)
 
-  end subroutine euler_projectSolution
+  end subroutine hydro_projectSolution
 
   !*****************************************************************************
   ! AUXILIARY ROUTINES
@@ -2987,7 +2987,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_parseCmdlArguments(rparlist)
+  subroutine hydro_parseCmdlArguments(rparlist)
 
 !<description>
     ! This subroutine parses the commandline arguments and modifies the
@@ -3058,13 +3058,13 @@ contains
       end if
     end do cmdarg
 
-  end subroutine euler_parseCmdlArguments
+  end subroutine hydro_parseCmdlArguments
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_adjustParameterlist(rparlist, ssectionName)
+  subroutine hydro_adjustParameterlist(rparlist, ssectionName)
 
 !<description>
     ! This subroutine adjusts the content of the parameter list
@@ -3124,6 +3124,6 @@ contains
           ssectionName, 'CoeffMatrix_CZ', '0')
     end select
 
-  end subroutine euler_adjustParameterlist
+  end subroutine hydro_adjustParameterlist
 
-end module euler_application
+end module hydro_application

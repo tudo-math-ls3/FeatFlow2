@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> euler_callback </name>
+!# <name> hydro_callback </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,70 +9,70 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) euler_nlsolverCallback
+!# 1.) hydro_nlsolverCallback
 !#     -> Callback routine for the nonlinear solver
 !#
 !# ****************************************************************************
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) euler_calcPrecondThetaScheme
+!# 1.) hydro_calcPrecondThetaScheme
 !#     -> Calculates the nonlinear preconditioner
 !#        used in the two-level theta-scheme
 !#
-!# 2.) euler_calcJacobianThetaScheme
+!# 2.) hydro_calcJacobianThetaScheme
 !#     -> Calculates the Jacobian matrix
 !#        used in the two-level theta-scheme
 !#
-!# 3.) euler_calcResidualThetaScheme
+!# 3.) hydro_calcResidualThetaScheme
 !#     -> Calculates the nonlinear residual vector
 !#        used in the two-level theta-scheme
 !#
-!# 4.) euler_calcRhsThetaScheme
+!# 4.) hydro_calcRhsThetaScheme
 !#     -> Calculates the explicit right-hand side vector
 !#        used in the two-level theta-scheme
 !#
-!# 5.) euler_calcRhsRungeKuttaScheme
+!# 5.) hydro_calcRhsRungeKuttaScheme
 !#     -> Calculates the right-hand side vector
 !#        used in the explicit Runge-Kutta scheme
 !#
-!# 6.) euler_setBoundaryConditions
+!# 6.) hydro_setBoundaryConditions
 !#     -> Imposes boundary conditions for nonlinear solver
 !#        by filtering the system matrix and the solution/residual
 !#        vector explicitly (i.e. strong boundary conditions)
 !#
-!# 7.) euler_calcLinearisedFCT
+!# 7.) hydro_calcLinearisedFCT
 !#     -> Calculates the linearised FCT correction
 !#
-!# 8.) euler_calcFluxFCT
+!# 8.) hydro_calcFluxFCT
 !#     -> Calculates the raw antidiffusive fluxes for FCT algorithm
 !#
-!# 9.) euler_calcCorrectionFCT
+!# 9.) hydro_calcCorrectionFCT
 !#     -> Calculates the contribution of the antidiffusive fluxes
 !#        limited by the FCT algorithm and applies them to the residual
 !#
-!# 10.) euler_limitEdgewiseVelocity
+!# 10.) hydro_limitEdgewiseVelocity
 !#      -> Performs synchronised flux correction for the velocity
 !#
-!# 11.) euler_limitEdgewiseMomentum
+!# 11.) hydro_limitEdgewiseMomentum
 !#      -> Performs synchronised flux correction for the momentum
 !#
-!# 12.) euler_coeffVectorFE
+!# 12.) hydro_coeffVectorFE
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
-!# 13.) euler_coeffVectorAnalytic
+!# 13.) hydro_coeffVectorAnalytic
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
-!# 14.) euler_parseBoundaryCondition
+!# 14.) hydro_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
-!# 15.) euler_calcBilfBoundaryConditions
+!# 15.) hydro_calcBilfBoundaryConditions
 !#      -> Calculates the bilinear form arising from the weak
 !#        imposition of boundary conditions
 !#
-!# 16.) euler_calcLinfBoundaryConditions
+!# 16.) hydro_calcLinfBoundaryConditions
 !#      -> Calculates the linear form arising from the weak
 !#         imposition of boundary conditions
 !#
@@ -95,7 +95,7 @@
 !# </purpose>
 !##############################################################################
 
-module euler_callback
+module hydro_callback
 
   use afcstabilisation
   use basicgeometry
@@ -105,10 +105,10 @@ module euler_callback
   use cubature
   use collection
   use derivatives
-  use euler_basic
-  use euler_callback1d
-  use euler_callback2d
-  use euler_callback3d
+  use hydro_basic
+  use hydro_callback1d
+  use hydro_callback2d
+  use hydro_callback3d
   use flagship_basic
   use fsystem
   use genoutput
@@ -128,23 +128,23 @@ module euler_callback
   implicit none
 
   private
-  public :: euler_nlsolverCallback
-  public :: euler_calcPrecondThetaScheme
-  public :: euler_calcJacobianThetaScheme
-  public :: euler_calcResidualThetaScheme
-  public :: euler_calcRhsThetaScheme
-  public :: euler_calcRhsRungeKuttaScheme
-  public :: euler_setBoundaryConditions
-  public :: euler_calcLinearisedFCT
-  public :: euler_calcFluxFCT
-  public :: euler_calcCorrectionFCT
-  public :: euler_limitEdgewiseVelocity
-  public :: euler_limitEdgewiseMomentum
-  public :: euler_coeffVectorFE
-  public :: euler_coeffVectorAnalytic
-  public :: euler_parseBoundaryCondition
-  public :: euler_calcBilfBoundaryConditions
-  public :: euler_calcLinfBoundaryConditions
+  public :: hydro_nlsolverCallback
+  public :: hydro_calcPrecondThetaScheme
+  public :: hydro_calcJacobianThetaScheme
+  public :: hydro_calcResidualThetaScheme
+  public :: hydro_calcRhsThetaScheme
+  public :: hydro_calcRhsRungeKuttaScheme
+  public :: hydro_setBoundaryConditions
+  public :: hydro_calcLinearisedFCT
+  public :: hydro_calcFluxFCT
+  public :: hydro_calcCorrectionFCT
+  public :: hydro_limitEdgewiseVelocity
+  public :: hydro_limitEdgewiseMomentum
+  public :: hydro_coeffVectorFE
+  public :: hydro_coeffVectorAnalytic
+  public :: hydro_parseBoundaryCondition
+  public :: hydro_calcBilfBoundaryConditions
+  public :: hydro_calcLinfBoundaryConditions
 
 contains
 
@@ -152,7 +152,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_nlsolverCallback(rproblemLevel, rtimestep,&
+  subroutine hydro_nlsolverCallback(rproblemLevel, rtimestep,&
       rsolver, rsolution, rsolution0, rrhs, rres, istep,&
       ioperationSpec, rcollection, istatus, rsource)
 
@@ -210,7 +210,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
 
       ! Compute the preconditioner
-      call euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+      call hydro_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
     end if
 
@@ -220,7 +220,7 @@ contains
     if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
 
       ! Compute the right-hand side
-      call euler_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
+      call hydro_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rrhs, istep,&
           rcollection)
     end if
@@ -232,12 +232,12 @@ contains
 
       if (istep .eq. 0) then
         ! Compute the constant right-hand side
-        call euler_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+        call hydro_calcRhsThetaScheme(rproblemLevel, rtimestep,&
             rsolver, rsolution0, rrhs, rcollection, rsource)
       end if
 
       ! Compute the residual
-      call euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+      call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rrhs, rres, istep,&
           rcollection)
     end if
@@ -248,7 +248,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
       ! Impose boundary conditions
-      call euler_setBoundaryConditions(rproblemLevel, rtimestep,&
+      call hydro_setBoundaryConditions(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rres, rcollection)
     end if
 
@@ -256,13 +256,13 @@ contains
     ! Set status flag
     istatus = 0
 
-  end subroutine euler_nlsolverCallback
+  end subroutine hydro_nlsolverCallback
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
       rsolver, rsolution, rcollection)
 
 !<description>
@@ -344,7 +344,7 @@ contains
               rproblemLevel%Rmatrix(systemMatrix))
         case DEFAULT
           call output_line('Empty system matrix is invalid!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -353,7 +353,7 @@ contains
         select case(imasstype)
         case (MASS_LUMPED)
           call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
-          do ivar = 1, euler_getNVAR(rproblemLevel)
+          do ivar = 1, hydro_getNVAR(rproblemLevel)
             call lsyssc_matrixLinearComb(&
                 rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar), 1.0_DP,&
@@ -363,7 +363,7 @@ contains
 
         case (MASS_CONSISTENT)
           call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
-          do ivar = 1, euler_getNVAR(rproblemLevel)
+          do ivar = 1, hydro_getNVAR(rproblemLevel)
             call lsyssc_matrixLinearComb(&
                 rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar), 1.0_DP,&
@@ -373,13 +373,13 @@ contains
 
         case DEFAULT
           call output_line('Empty system matrix is invalid!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
       case DEFAULT
         call output_line('Invalid system format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
         call sys_halt()
       end select
 
@@ -447,26 +447,26 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD1d_sim, euler_calcMatGalMatD1d_sim,&
+              hydro_calcMatDiagMatD1d_sim, hydro_calcMatGalMatD1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD2d_sim, euler_calcMatGalMatD2d_sim,&
+              hydro_calcMatDiagMatD2d_sim, hydro_calcMatGalMatD2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD3d_sim, euler_calcMatGalMatD3d_sim,&
+              hydro_calcMatDiagMatD3d_sim, hydro_calcMatGalMatD3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -480,26 +480,26 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD1d_sim, euler_calcMatScDissMatD1d_sim,&
+              hydro_calcMatDiagMatD1d_sim, hydro_calcMatScDissMatD1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD2d_sim, euler_calcMatScDissMatD2d_sim,&
+              hydro_calcMatDiagMatD2d_sim, hydro_calcMatScDissMatD2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD3d_sim, euler_calcMatScDissMatD3d_sim,&
+              hydro_calcMatDiagMatD3d_sim, hydro_calcMatScDissMatD3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecond')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecond')
           call sys_halt()
         end select
 
@@ -513,26 +513,26 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD1d_sim, euler_calcMatRoeDissMatD1d_sim,&
+              hydro_calcMatDiagMatD1d_sim, hydro_calcMatRoeDissMatD1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD2d_sim, euler_calcMatRoeDissMatD2d_sim,&
+              hydro_calcMatDiagMatD2d_sim, hydro_calcMatRoeDissMatD2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD3d_sim, euler_calcMatRoeDissMatD3d_sim,&
+              hydro_calcMatDiagMatD3d_sim, hydro_calcMatRoeDissMatD3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -546,26 +546,26 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD1d_sim, euler_calcMatRusDissMatD1d_sim,&
+              hydro_calcMatDiagMatD1d_sim, hydro_calcMatRusDissMatD1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD2d_sim, euler_calcMatRusDissMatD2d_sim,&
+              hydro_calcMatDiagMatD2d_sim, hydro_calcMatRusDissMatD2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiagMatD3d_sim, euler_calcMatRusDissMatD3d_sim,&
+              hydro_calcMatDiagMatD3d_sim, hydro_calcMatRusDissMatD3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -594,26 +594,26 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag1d_sim, euler_calcMatGal1d_sim,&
+              hydro_calcMatDiag1d_sim, hydro_calcMatGal1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag2d_sim, euler_calcMatGal2d_sim,&
+              hydro_calcMatDiag2d_sim, hydro_calcMatGal2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag3d_sim, euler_calcMatGal3d_sim,&
+              hydro_calcMatDiag3d_sim, hydro_calcMatGal3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -627,26 +627,26 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag1d_sim, euler_calcMatScDiss1d_sim,&
+              hydro_calcMatDiag1d_sim, hydro_calcMatScDiss1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag2d_sim, euler_calcMatScDiss2d_sim,&
+              hydro_calcMatDiag2d_sim, hydro_calcMatScDiss2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag3d_sim, euler_calcMatScDiss3d_sim,&
+              hydro_calcMatDiag3d_sim, hydro_calcMatScDiss3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -660,26 +660,26 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag1d_sim, euler_calcMatRoeDiss1d_sim,&
+              hydro_calcMatDiag1d_sim, hydro_calcMatRoeDiss1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag2d_sim, euler_calcMatRoeDiss2d_sim,&
+              hydro_calcMatDiag2d_sim, hydro_calcMatRoeDiss2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag3d_sim, euler_calcMatRoeDiss3d_sim,&
+              hydro_calcMatDiag3d_sim, hydro_calcMatRoeDiss3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -693,26 +693,26 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag1d_sim, euler_calcMatRusDiss1d_sim,&
+              hydro_calcMatDiag1d_sim, hydro_calcMatRusDiss1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag2d_sim, euler_calcMatRusDiss2d_sim,&
+              hydro_calcMatDiag2d_sim, hydro_calcMatRusDiss2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcMatDiag3d_sim, euler_calcMatRusDiss3d_sim,&
+              hydro_calcMatDiag3d_sim, hydro_calcMatRusDiss3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -725,7 +725,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of flow coupling!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
       call sys_halt()
     end select
 
@@ -824,8 +824,8 @@ contains
         call parlst_getvalue_int(p_rparlist,&
             rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
 
-        do ivar = 1, euler_getNVAR(rproblemLevel)
-          do jvar = 1, euler_getNVAR(rproblemLevel)
+        do ivar = 1, hydro_getNVAR(rproblemLevel)
+          do jvar = 1, hydro_getNVAR(rproblemLevel)
 
             if (ivar .eq. jvar) then
 
@@ -862,8 +862,8 @@ contains
         call parlst_getvalue_int(p_rparlist,&
             rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
 
-        do ivar = 1, euler_getNVAR(rproblemLevel)
-          do jvar = 1, euler_getNVAR(rproblemLevel)
+        do ivar = 1, hydro_getNVAR(rproblemLevel)
+          do jvar = 1, hydro_getNVAR(rproblemLevel)
 
             if (ivar .eq. jvar) then
 
@@ -901,7 +901,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid system format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
       call sys_halt()
     end select
 
@@ -922,13 +922,13 @@ contains
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
 
-  end subroutine euler_calcPrecondThetaScheme
+  end subroutine hydro_calcPrecondThetaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
       rsolver, rsolution, rsolution0, rcollection)
 
 !<description>
@@ -963,13 +963,13 @@ contains
     print *, "!!! Euler/Navier Stokes equations has yet not been implemented  !!!"
     stop
 
-  end subroutine euler_calcJacobianThetaScheme
+  end subroutine hydro_calcJacobianThetaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcRhsThetaScheme(rproblemLevel, rtimestep,&
       rsolver, rsolution, rrhs, rcollection, rsource)
 
 !<description>
@@ -1065,19 +1065,19 @@ contains
             call gfsys_buildDivVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                euler_calcFluxGal1d_sim, dscale, .true., rrhs)
+                hydro_calcFluxGal1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
             call gfsys_buildDivVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                euler_calcFluxGal2d_sim, dscale, .true., rrhs)
+                hydro_calcFluxGal2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
             call gfsys_buildDivVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxGal3d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxGal3d_sim, dscale, .true., rrhs)
           end select
 
         case (AFCSTAB_UPWIND,&
@@ -1104,19 +1104,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxGal1d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxGal1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxGal2d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxGal2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxGal3d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxGal3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_SCALAR)
@@ -1128,19 +1128,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDiss1d_sim, dscale, .true. , rrhs)
+                  hydro_calcFluxScDiss1d_sim, dscale, .true. , rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDiss2d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxScDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDiss3d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxScDiss3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_SCALAR_DSPLIT)
@@ -1153,19 +1153,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDiss1d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxScDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDissDiSp2d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxScDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxScDissDiSp3d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxScDissDiSp3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_TENSOR)
@@ -1177,19 +1177,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDiss2d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRoeDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDiss3d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRoeDiss3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_TENSOR_DSPLIT)
@@ -1202,19 +1202,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
               
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRoeDissDiSp3d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRoeDissDiSp3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_RUSANOV)
@@ -1226,19 +1226,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDiss2d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRusDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDiss3d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRusDiss3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_RUSANOV_DSPLIT)
@@ -1251,24 +1251,24 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDissDiSp2d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRusDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxRusDissDiSp3d_sim, dscale, .true., rrhs)
+                  hydro_calcFluxRusDissDiSp3d_sim, dscale, .true., rrhs)
             end select
 
           case DEFAULT
             call output_line('Invalid type of dissipation!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsThetaScheme')
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcRhsThetaScheme')
             call sys_halt()
           end select
 
@@ -1285,27 +1285,27 @@ contains
             call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                euler_calcFluxGalNoBdr1d_sim,&
-                euler_calcCharacteristics1d_sim, dscale, .true., rrhs)
+                hydro_calcFluxGalNoBdr1d_sim,&
+                hydro_calcCharacteristics1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
             call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                euler_calcFluxGalNoBdr2d_sim,&
-                euler_calcCharacteristics2d_sim, dscale, .true., rrhs)
+                hydro_calcFluxGalNoBdr2d_sim,&
+                hydro_calcCharacteristics2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
             call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                euler_calcFluxGalNoBdr3d_sim,&
-                euler_calcCharacteristics3d_sim, dscale, .true., rrhs)
+                hydro_calcFluxGalNoBdr3d_sim,&
+                hydro_calcCharacteristics3d_sim, dscale, .true., rrhs)
           end select
 
         case DEFAULT
           call output_line('Invalid type of stabilisation!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsThetaScheme')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcRhsThetaScheme')
           call sys_halt()
         end select
 
@@ -1314,16 +1314,16 @@ contains
         !-----------------------------------------------------------------------
 
         ! --- explicit part ---
-        call euler_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+        call hydro_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
             rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
-            euler_coeffVectorBdr2d_sim, rrhs, rcollection)
+            hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
 
         dscale = rtimestep%theta*rtimestep%dStep
         
         ! --- implicit part ---
-        call euler_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+        call hydro_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
             rsolution, rtimestep%dTime, -dscale,&
-            euler_coeffVectorBdr2d_sim, rrhs, rcollection)
+            hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
 
         !-----------------------------------------------------------------------
         ! Compute the transient term
@@ -1364,9 +1364,9 @@ contains
         dscale = rtimestep%theta*rtimestep%dStep
 
         ! --- implicit part ---
-        call euler_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+        call hydro_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
             rsolution, rtimestep%dTime, -dscale,&
-            euler_coeffVectorBdr2d_sim, rrhs, rcollection)
+            hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
 
       end if ! theta
 
@@ -1382,9 +1382,9 @@ contains
       call lsysbl_clearVector(rrhs)
 
       ! Evaluate linear form for boundary integral (if any)
-      call euler_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+      call hydro_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
           rsolution, rtimestep%dTime, -1.0_DP,&
-          euler_coeffVectorBdr2d_sim, rrhs, rcollection)
+          hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
 
     end select
 
@@ -1395,13 +1395,13 @@ contains
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine euler_calcRhsThetaScheme
+  end subroutine hydro_calcRhsThetaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
       rsolver, rsolution, rsolution0, rrhs, rres, ite, rcollection,&
       rsource)
 
@@ -1545,19 +1545,19 @@ contains
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal1d_sim, dscale, .false., rres)
+            hydro_calcFluxGal1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal2d_sim, dscale, .false., rres)
+            hydro_calcFluxGal2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal3d_sim, dscale, .false., rres)
+            hydro_calcFluxGal3d_sim, dscale, .false., rres)
       end select
 
     case (AFCSTAB_UPWIND,&
@@ -1586,19 +1586,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal1d_sim, dscale, .false., rres)
+              hydro_calcFluxGal1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal2d_sim, dscale, .false., rres)
+              hydro_calcFluxGal2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal3d_sim, dscale, .false., rres)
+              hydro_calcFluxGal3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_SCALAR)
@@ -1610,19 +1610,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss1d_sim, dscale, .false., rres)
+              hydro_calcFluxScDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss2d_sim, dscale, .false., rres)
+              hydro_calcFluxScDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss3d_sim, dscale, .false., rres)
+              hydro_calcFluxScDiss3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_SCALAR_DSPLIT)
@@ -1635,19 +1635,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss1d_sim, dscale, .false., rres)
+              hydro_calcFluxScDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDissDiSp2d_sim, dscale, .false., rres)
+              hydro_calcFluxScDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDissDiSp3d_sim, dscale, .false., rres)
+              hydro_calcFluxScDissDiSp3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_TENSOR)
@@ -1659,19 +1659,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss1d_sim, dscale, .false., rres)
+              hydro_calcFluxRoeDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss2d_sim, dscale, .false., rres)
+              hydro_calcFluxRoeDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss3d_sim, dscale, .false., rres)
+              hydro_calcFluxRoeDiss3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_TENSOR_DSPLIT)
@@ -1684,19 +1684,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss1d_sim, dscale, .false., rres)
+              hydro_calcFluxRoeDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDissDiSp2d_sim, dscale, .false., rres)
+              hydro_calcFluxRoeDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDissDiSp3d_sim, dscale, .false., rres)
+              hydro_calcFluxRoeDissDiSp3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_RUSANOV)
@@ -1708,19 +1708,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss1d_sim, dscale, .false., rres)
+              hydro_calcFluxRusDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss2d_sim, dscale, .false., rres)
+              hydro_calcFluxRusDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss3d_sim, dscale, .false., rres)
+              hydro_calcFluxRusDiss3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_RUSANOV_DSPLIT)
@@ -1733,24 +1733,24 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss1d_sim, dscale, .false., rres)
+              hydro_calcFluxRusDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDissDiSp2d_sim, dscale, .false., rres)
+              hydro_calcFluxRusDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDissDiSp3d_sim, dscale, .false., rres)
+              hydro_calcFluxRusDissDiSp3d_sim, dscale, .false., rres)
         end select
 
       case DEFAULT
         call output_line('Invalid type of dissipation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualThetaScheme')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcResidualThetaScheme')
         call sys_halt()
       end select
 
@@ -1767,27 +1767,27 @@ contains
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGalNoBdr1d_sim,&
-            euler_calcCharacteristics1d_sim, dscale, .false., rres)
+            hydro_calcFluxGalNoBdr1d_sim,&
+            hydro_calcCharacteristics1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGalNoBdr2d_sim,&
-            euler_calcCharacteristics2d_sim, dscale, .false., rres)
+            hydro_calcFluxGalNoBdr2d_sim,&
+            hydro_calcCharacteristics2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGalNoBdr3d_sim,&
-            euler_calcCharacteristics3d_sim, dscale , .false., rres)
+            hydro_calcFluxGalNoBdr3d_sim,&
+            hydro_calcCharacteristics3d_sim, dscale , .false., rres)
       end select
 
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualThetaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcResidualThetaScheme')
       call sys_halt()
     end select
 
@@ -1827,7 +1827,7 @@ contains
       end if
 
       ! Assemble the raw antidiffusive fluxes
-      call euler_calcFluxFCT(rproblemLevel, rsolution, rsolution,&
+      call hydro_calcFluxFCT(rproblemLevel, rsolution, rsolution,&
           rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0), rcollection)
 
       !-------------------------------------------------------------------------
@@ -1858,7 +1858,7 @@ contains
       end if
 
       ! Apply FEM-FCT algorithm
-      call euler_calcCorrectionFCT(rproblemLevel, p_rpredictor,&
+      call hydro_calcCorrectionFCT(rproblemLevel, p_rpredictor,&
           rtimestep%dStep, .false., ioperationSpec, rres, rcollection)
 
       ! Subtract corrected antidiffusion from right-hand side
@@ -1880,13 +1880,13 @@ contains
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine euler_calcResidualThetaScheme
+  end subroutine hydro_calcResidualThetaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
+  subroutine hydro_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
       rsolver, rsolution, rsolution0, rrhs, istep, rcollection)
 
 !<description>
@@ -2033,19 +2033,19 @@ contains
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal1d_sim, dscale, .false., rrhs)
+            hydro_calcFluxGal1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal2d_sim, dscale, .false., rrhs)
+            hydro_calcFluxGal2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGal3d_sim, dscale, .false., rrhs)
+            hydro_calcFluxGal3d_sim, dscale, .false., rrhs)
       end select
 
     case (AFCSTAB_UPWIND,&
@@ -2072,19 +2072,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal1d_sim, dscale, .false., rrhs)
+              hydro_calcFluxGal1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal2d_sim, dscale, .false., rrhs)
+              hydro_calcFluxGal2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxGal3d_sim, dscale, .false., rrhs)
+              hydro_calcFluxGal3d_sim, dscale, .false., rrhs)
         end select
 
       case (DISSIPATION_SCALAR)
@@ -2096,19 +2096,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss1d_sim, dscale, .false., rrhs)
+              hydro_calcFluxScDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss2d_sim, dscale, .false., rrhs)
+              hydro_calcFluxScDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScDiss3d_sim, dscale, .false., rrhs)
+              hydro_calcFluxScDiss3d_sim, dscale, .false., rrhs)
         end select
 
       case (DISSIPATION_TENSOR)
@@ -2120,19 +2120,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss1d_sim, dscale, .false., rrhs)
+              hydro_calcFluxRoeDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss2d_sim, dscale, .false., rrhs)
+              hydro_calcFluxRoeDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRoeDiss3d_sim, dscale, .false., rrhs)
+              hydro_calcFluxRoeDiss3d_sim, dscale, .false., rrhs)
         end select
 
       case (DISSIPATION_RUSANOV)
@@ -2144,24 +2144,24 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss1d_sim, dscale, .false., rrhs)
+              hydro_calcFluxRusDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss2d_sim, dscale, .false., rrhs)
+              hydro_calcFluxRusDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxRusDiss3d_sim, dscale, .false., rrhs)
+              hydro_calcFluxRusDiss3d_sim, dscale, .false., rrhs)
         end select
 
       case DEFAULT
         call output_line('Invalid type of dissipation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsRungeKuttaScheme')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcRhsRungeKuttaScheme')
         call sys_halt()
       end select
 
@@ -2178,41 +2178,41 @@ contains
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGalNoBdr1d_sim,&
-            euler_calcCharacteristics1d_sim, dscale, .false., rrhs)
+            hydro_calcFluxGalNoBdr1d_sim,&
+            hydro_calcCharacteristics1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGalNoBdr2d_sim,&
-            euler_calcCharacteristics2d_sim, dscale, .false., rrhs)
+            hydro_calcFluxGalNoBdr2d_sim,&
+            hydro_calcCharacteristics2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            euler_calcFluxGalNoBdr3d_sim,&
-            euler_calcCharacteristics3d_sim, dscale, .false., rrhs)
+            hydro_calcFluxGalNoBdr3d_sim,&
+            hydro_calcCharacteristics3d_sim, dscale, .false., rrhs)
 
       end select
 
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsRungeKuttaScheme')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcRhsRungeKuttaScheme')
       call sys_halt()
     end select
 
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
 
-  end subroutine euler_calcRhsRungeKuttaScheme
+  end subroutine hydro_calcRhsRungeKuttaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_setBoundaryConditions(rproblemLevel, rtimestep,&
+  subroutine hydro_setBoundaryConditions(rproblemLevel, rtimestep,&
       rsolver, rsolution, rsolution0, rres, rcollection)
 
 !<description>
@@ -2270,7 +2270,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundaryConditions')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setBoundaryConditions')
       call sys_halt()
     end select
 
@@ -2285,35 +2285,35 @@ contains
           rsolver%rboundaryCondition,&
           rproblemLevel%RmatrixBlock(imatrix),&
           rsolution, rres, rsolution0, rtimestep%dTime,&
-          euler_calcBoundaryvalues1d, istatus)
+          hydro_calcBoundaryvalues1d, istatus)
 
     case (NDIM2D)
       call bdrf_filterSolution(&
           rsolver%rboundaryCondition,&
           rproblemLevel%RmatrixBlock(imatrix),&
           rsolution, rres, rsolution0, rtimestep%dTime,&
-          euler_calcBoundaryvalues2d, istatus)
+          hydro_calcBoundaryvalues2d, istatus)
 
     case (NDIM3D)
       call bdrf_filterSolution(&
           rsolver%rboundaryCondition,&
           rproblemLevel%RmatrixBlock(imatrix),&
           rsolution, rres, rsolution0, rtimestep%dTime,&
-          euler_calcBoundaryvalues3d, istatus)
+          hydro_calcBoundaryvalues3d, istatus)
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundaryConditions')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setBoundaryConditions')
       call sys_halt()
     end select
 
-  end subroutine euler_setBoundaryConditions
+  end subroutine hydro_setBoundaryConditions
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcLinearisedFCT(rbdrCond, rproblemLevel,&
+  subroutine hydro_calcLinearisedFCT(rbdrCond, rproblemLevel,&
       rtimestep, rsolver, rsolution, rcollection, rsource)
 
 !<description>
@@ -2387,7 +2387,7 @@ contains
     p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
     
     ! Compute low-order "right-hand side" without theta parameter
-    call euler_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+    call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
         rsolver, rsolution, p_rpredictor, rcollection, rsource)
 
     ! Compute low-order predictor
@@ -2396,7 +2396,7 @@ contains
         p_rpredictor, 1.0_DP, p_rpredictor)
 
     ! Compute the raw antidiffusive fluxes
-    call euler_calcFluxFCT(rproblemLevel, p_rpredictor,&
+    call hydro_calcFluxFCT(rproblemLevel, p_rpredictor,&
         rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
     
     !---------------------------------------------------------------------------
@@ -2421,7 +2421,7 @@ contains
       end do
 
       ! Compute FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel,&
+      call hydro_calcCorrectionFCT(rproblemLevel,&
           rsolution, rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT,&
@@ -2432,7 +2432,7 @@ contains
           rproblemLevel%Rafcstab(inviscidAFC),&
           rproblemLevel%Rmatrix(lumpedMassMatrix),&
           SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-          euler_getVariable, rsolution, p_rpredictor)
+          hydro_getVariable, rsolution, p_rpredictor)
 
       ! Deallocate temporal memory
       deallocate(SfailsafeVariables)
@@ -2440,7 +2440,7 @@ contains
     else
       
       ! Apply linearised FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel,&
+      call hydro_calcCorrectionFCT(rproblemLevel,&
           rsolution, rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD+&
           AFCSTAB_FCTALGO_SCALEBYMASS,&
@@ -2451,24 +2451,24 @@ contains
     select case(rproblemLevel%rtriangulation%ndim)
     case (NDIM1D)
       call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-          rtimestep%dTime, euler_calcBoundaryvalues1d)
+          rtimestep%dTime, hydro_calcBoundaryvalues1d)
 
     case (NDIM2D)
       call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-          rtimestep%dTime, euler_calcBoundaryvalues2d)
+          rtimestep%dTime, hydro_calcBoundaryvalues2d)
 
     case (NDIM3D)
       call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-          rtimestep%dTime, euler_calcBoundaryvalues3d)
+          rtimestep%dTime, hydro_calcBoundaryvalues3d)
     end select
 
-  end subroutine euler_calcLinearisedFCT
+  end subroutine hydro_calcLinearisedFCT
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcFluxFCT(rproblemLevel, rsolution1, rsolution2,&
+  subroutine hydro_calcFluxFCT(rproblemLevel, rsolution1, rsolution2,&
       theta, tstep, dscale, binit, rcollection)
 
 !<description>
@@ -2554,14 +2554,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss1d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss1d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss1d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss1d,&
               theta, tstep, dscale, binit)
         end if
 
@@ -2571,14 +2571,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss2d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss2d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss2d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss2d,&
               theta, tstep, dscale, binit)
         end if
 
@@ -2588,14 +2588,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss3d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss3d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss3d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss3d,&
               theta, tstep, dscale, binit)
         end if
       end select
@@ -2612,14 +2612,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss1d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss1d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss1d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss1d,&
               theta, tstep, dscale, binit)
         end if
 
@@ -2629,14 +2629,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss2d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss2d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss2d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss2d,&
               theta, tstep, dscale, binit)
         end if
 
@@ -2646,14 +2646,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss3d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss3d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss3d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss3d,&
               theta, tstep, dscale, binit)
         end if
       end select
@@ -2670,14 +2670,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTRusanov1d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRusanov1d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTRusanov1d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRusanov1d,&
               theta, tstep, dscale, binit)
         end if
 
@@ -2687,14 +2687,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTRusanov2d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRusanov2d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTRusanov2d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRusanov2d,&
               theta, tstep, dscale, binit)
         end if
 
@@ -2704,14 +2704,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTRusanov3d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRusanov3d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, euler_calcFluxFCTRusanov3d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRusanov3d,&
               theta, tstep, dscale, binit)
         end if
       end select
@@ -2719,17 +2719,17 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of dissipation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcFluxFCT')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcFluxFCT')
       call sys_halt()
     end select
 
-  end subroutine euler_calcFluxFCT
+  end subroutine hydro_calcFluxFCT
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcCorrectionFCT(rproblemLevel, rsolution, &
+  subroutine hydro_calcCorrectionFCT(rproblemLevel, rsolution, &
       dscale, bclear, ioperationSpec, rresidual, rcollection,&
       rafcstab, slimitingvariableName)
 
@@ -2835,7 +2835,7 @@ contains
       end if
 
       ! Get number of variables to be limited simultaneously
-      nvartransformed = euler_getNVARtransformed(rproblemLevel, slimitingvariable)
+      nvartransformed = hydro_getNVARtransformed(rproblemLevel, slimitingvariable)
 
       ! What type of flux transformation is applied?
       if (trim(slimitingvariable) .eq. 'density') then
@@ -2846,17 +2846,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDensity1d_sim, euler_trafoDiffDensity1d_sim)
+              hydro_trafoFluxDensity1d_sim, hydro_trafoDiffDensity1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDensity2d_sim, euler_trafoDiffDensity2d_sim)
+              hydro_trafoFluxDensity2d_sim, hydro_trafoDiffDensity2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDensity3d_sim, euler_trafoDiffDensity3d_sim)
+              hydro_trafoFluxDensity3d_sim, hydro_trafoDiffDensity3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'energy') then
@@ -2867,17 +2867,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxEnergy1d_sim, euler_trafoDiffEnergy1d_sim)
+              hydro_trafoFluxEnergy1d_sim, hydro_trafoDiffEnergy1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxEnergy2d_sim, euler_trafoDiffEnergy2d_sim)
+              hydro_trafoFluxEnergy2d_sim, hydro_trafoDiffEnergy2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxEnergy3d_sim, euler_trafoDiffEnergy3d_sim)
+              hydro_trafoFluxEnergy3d_sim, hydro_trafoDiffEnergy3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'pressure') then
@@ -2888,17 +2888,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxPressure1d_sim, euler_trafoDiffPressure1d_sim)
+              hydro_trafoFluxPressure1d_sim, hydro_trafoDiffPressure1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxPressure2d_sim, euler_trafoDiffPressure2d_sim)
+              hydro_trafoFluxPressure2d_sim, hydro_trafoDiffPressure2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxPressure3d_sim, euler_trafoDiffPressure3d_sim)
+              hydro_trafoFluxPressure3d_sim, hydro_trafoDiffPressure3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'velocity') then
@@ -2909,19 +2909,19 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxVelocity1d_sim, euler_trafoDiffVelocity1d_sim)
+              hydro_trafoFluxVelocity1d_sim, hydro_trafoDiffVelocity1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxVelocity2d_sim, euler_trafoDiffVelocity2d_sim,&
-              fcb_limitEdgewise=euler_limitEdgewiseVelocity)
+              hydro_trafoFluxVelocity2d_sim, hydro_trafoDiffVelocity2d_sim,&
+              fcb_limitEdgewise=hydro_limitEdgewiseVelocity)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxVelocity3d_sim, euler_trafoDiffVelocity3d_sim,&
-              fcb_limitEdgewise=euler_limitEdgewiseVelocity)
+              hydro_trafoFluxVelocity3d_sim, hydro_trafoDiffVelocity3d_sim,&
+              fcb_limitEdgewise=hydro_limitEdgewiseVelocity)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'momentum') then
@@ -2932,19 +2932,19 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxMomentum1d_sim, euler_trafoDiffMomentum1d_sim)
+              hydro_trafoFluxMomentum1d_sim, hydro_trafoDiffMomentum1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxMomentum2d_sim, euler_trafoDiffMomentum2d_sim,&
-              fcb_limitEdgewise=euler_limitEdgewiseMomentum)
+              hydro_trafoFluxMomentum2d_sim, hydro_trafoDiffMomentum2d_sim,&
+              fcb_limitEdgewise=hydro_limitEdgewiseMomentum)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxMomentum3d_sim, euler_trafoDiffMomentum3d_sim,&
-              fcb_limitEdgewise=euler_limitEdgewiseMomentum)
+              hydro_trafoFluxMomentum3d_sim, hydro_trafoDiffMomentum3d_sim,&
+              fcb_limitEdgewise=hydro_limitEdgewiseMomentum)
         end select
         
       elseif (trim(slimitingvariable) .eq. 'density,energy') then
@@ -2955,17 +2955,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenEng1d_sim, euler_trafoDiffDenEng1d_sim)
+              hydro_trafoFluxDenEng1d_sim, hydro_trafoDiffDenEng1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenEng2d_sim, euler_trafoDiffDenEng2d_sim)
+              hydro_trafoFluxDenEng2d_sim, hydro_trafoDiffDenEng2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenEng3d_sim, euler_trafoDiffDenEng3d_sim)
+              hydro_trafoFluxDenEng3d_sim, hydro_trafoDiffDenEng3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure') then
@@ -2976,22 +2976,22 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPre1d_sim, euler_trafoDiffDenPre1d_sim)
+              hydro_trafoFluxDenPre1d_sim, hydro_trafoDiffDenPre1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPre2d_sim, euler_trafoDiffDenPre2d_sim)
+              hydro_trafoFluxDenPre2d_sim, hydro_trafoDiffDenPre2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPre3d_sim, euler_trafoDiffDenPre3d_sim)
+              hydro_trafoFluxDenPre3d_sim, hydro_trafoDiffDenPre3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,energy,momentum') then
 
-        nvartransformed = euler_getNVARtransformed(rproblemLevel, slimitingvariable)
+        nvartransformed = hydro_getNVARtransformed(rproblemLevel, slimitingvariable)
 
         ! Apply FEM-FCT algorithm for full conservative fluxes
         call gfsys_buildDivVectorFCT(&
@@ -3000,7 +3000,7 @@ contains
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure,velocity') then
 
-        nvartransformed = euler_getNVARtransformed(rproblemLevel, slimitingvariable)
+        nvartransformed = hydro_getNVARtransformed(rproblemLevel, slimitingvariable)
 
         ! Apply FEM-FCT algorithm for density, velocity and pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
@@ -3008,17 +3008,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPreVel1d_sim, euler_trafoDiffDenPreVel1d_sim)
+              hydro_trafoFluxDenPreVel1d_sim, hydro_trafoDiffDenPreVel1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPreVel2d_sim, euler_trafoDiffDenPreVel2d_sim)
+              hydro_trafoFluxDenPreVel2d_sim, hydro_trafoDiffDenPreVel2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPreVel3d_sim, euler_trafoDiffDenPreVel3d_sim)
+              hydro_trafoFluxDenPreVel3d_sim, hydro_trafoDiffDenPreVel3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'none') then
@@ -3042,7 +3042,7 @@ contains
 
       else
         call output_line('Invalid type of flux transformation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcCorrectionFCT')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcCorrectionFCT')
         call sys_halt()
       end if
 
@@ -3069,13 +3069,13 @@ contains
           rsolution, dscale, bclear, iopSpec, rresidual)
     end if
 
-  end subroutine euler_calcCorrectionFCT
+  end subroutine hydro_calcCorrectionFCT
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine euler_limitEdgewiseVelocity(IverticesAtEdge, NEDGE, NEQ,&
+  subroutine hydro_limitEdgewiseVelocity(IverticesAtEdge, NEDGE, NEQ,&
       NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
       fcb_calcFluxTransformation_sim, Dflux0, rcollection)
 
@@ -3299,19 +3299,19 @@ contains
       else
         
         call output_line('Invalid system format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_limitEdgewiseVelocity')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_limitEdgewiseVelocity')
         call sys_halt()
         
       end if
     end if
     
-  end subroutine euler_limitEdgewiseVelocity
+  end subroutine hydro_limitEdgewiseVelocity
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine euler_limitEdgewiseMomentum(IverticesAtEdge, NEDGE, NEQ,&
+  subroutine hydro_limitEdgewiseMomentum(IverticesAtEdge, NEDGE, NEQ,&
       NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
       fcb_calcFluxTransformation_sim, Dflux0, rcollection)
 
@@ -3535,19 +3535,19 @@ contains
       else
 
         call output_line('Invalid system format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_limitEdgewiseMomentum')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_limitEdgewiseMomentum')
         call sys_halt()
         
       end if
     end if
 
-  end subroutine euler_limitEdgewiseMomentum
+  end subroutine hydro_limitEdgewiseMomentum
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine euler_coeffVectorFE(rdiscretisation, rform,&
+  subroutine hydro_coeffVectorFE(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -3668,17 +3668,17 @@ contains
 
     case default
       call output_line ('Invalid system format!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_coeffVectorFE')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorFE')
       call sys_halt()
     end select
     
-  end subroutine euler_coeffVectorFE
+  end subroutine hydro_coeffVectorFE
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine euler_coeffVectorAnalytic(rdiscretisation, rform,&
+  subroutine hydro_coeffVectorAnalytic(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -3807,13 +3807,13 @@ contains
 
     end do ! itermCount
     
-  end subroutine euler_coeffVectorAnalytic
+  end subroutine hydro_coeffVectorAnalytic
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMassFluxFCT(&
+  pure subroutine hydro_calcMassFluxFCT(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
 
@@ -3845,13 +3845,13 @@ contains
     ! Compute raw antidiffusive mass fluxes
     F_ij = dscale1*(U1_i-U1_j)
     
-  end subroutine euler_calcMassFluxFCT
+  end subroutine hydro_calcMassFluxFCT
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_parseBoundaryCondition(cbdrCondType, ndimension,&
+  subroutine hydro_parseBoundaryCondition(cbdrCondType, ndimension,&
       ibdrCondType, nexpressions)
 
 !<description>
@@ -3882,17 +3882,17 @@ contains
     ! Determine type of boundary condition in numeral form
     select case (sys_upcase(cbdrCondType))
 
-    case ('EULERWALL_STRONG')
-      ibdrCondType = BDRC_EULERWALL + BDRC_STRONG
+    case ('FREESLIP_STRONG')
+      ibdrCondType = BDRC_FREESLIP + BDRC_STRONG
 
-    case ('EULERWALL_WEAK')
-      ibdrCondType = BDRC_EULERWALL + BDRC_WEAK
+    case ('FREESLIP_WEAK')
+      ibdrCondType = BDRC_FREESLIP + BDRC_WEAK
 
-    case ('RLXEULERWALL_STRONG')
-      ibdrCondType = BDRC_RLXEULERWALL + BDRC_STRONG
+    case ('RLXFREESLIP_STRONG')
+      ibdrCondType = BDRC_RLXFREESLIP + BDRC_STRONG
 
-    case ('RLXEULERWALL_WEAK')
-      ibdrCondType = BDRC_RLXEULERWALL + BDRC_WEAK
+    case ('RLXFREESLIP_WEAK')
+      ibdrCondType = BDRC_RLXFREESLIP + BDRC_WEAK
 
     case ('VISCOUSWALL_STRONG')
       ibdrCondType = BDRC_VISCOUSWALL + BDRC_STRONG
@@ -3963,10 +3963,10 @@ contains
     ! Determine number of mathematical expressions
     select case (iand(ibdrCondType, BDRC_TYPEMASK))
       
-    case (BDRC_EULERWALL, BDRC_VISCOUSWALL, BDRC_SUPEROUTLET)
+    case (BDRC_FREESLIP, BDRC_VISCOUSWALL, BDRC_SUPEROUTLET)
       nexpressions = 0
 
-    case (BDRC_SUBOUTLET, BDRC_MASSOUTLET, BDRC_RLXEULERWALL)
+    case (BDRC_SUBOUTLET, BDRC_MASSOUTLET, BDRC_RLXFREESLIP)
       nexpressions = 1
      
     case (BDRC_MASSINLET)
@@ -3985,13 +3985,13 @@ contains
       nexpressions = 0
     end select
 
-  end subroutine euler_parseBoundaryCondition
+  end subroutine hydro_parseBoundaryCondition
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+  subroutine hydro_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
       rsolution, dtime, dscale, fcoeff_buildMatrixScBdr2D_sim,&
       rmatrix, rcollection, cconstrType)
 
@@ -4039,13 +4039,13 @@ contains
     ! not be called. It may be necessary to assemble some bilinear
     ! forms at the boundary in future.
 
-  end subroutine euler_calcBilfBoundaryConditions
+  end subroutine hydro_calcBilfBoundaryConditions
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcLinfBoundaryConditions(rproblemLevel, rsolver, rsolution,&
+  subroutine hydro_calcLinfBoundaryConditions(rproblemLevel, rsolver, rsolution,&
       dtime, dscale, fcoeff_buildVectorBlBdr2D_sim, rvector, rcollection)
 
 !<description>
@@ -4161,13 +4161,13 @@ contains
       
     case default
       call output_line('Unsupported spatial dimension !',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcLinfBoundaryConditions')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcLinfBoundaryConditions')
       call sys_halt()
     end select
     
     ! Release temporal collection structure
     call collct_done(rcollectionTmp)
 
-  end subroutine euler_calcLinfBoundaryConditions
+  end subroutine hydro_calcLinfBoundaryConditions
 
-end module euler_callback
+end module hydro_callback

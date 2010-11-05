@@ -27,7 +27,7 @@
 !#     linearised version. We still need to think about how to assemble
 !#     the fluxes for prelimiting.
 !#
-!# 3.) FEM-FCT algorithms for Euler model are not working except for the
+!# 3.) FEM-FCT algorithms for hydrodynamic model are not working except for the
 !#     linearised version.
 !#
 !# 4.) Jacobian matrix for the semi-implicit FEM-FCT algorithm has to be
@@ -36,7 +36,7 @@
 !#
 !# 5.) Implement weak boundary conditions in 1D
 !#
-!# 6.) Implement Euler model in 3D
+!# 6.) Implement hydrodynamic model in 3D
 !#
 !# 7.) Implement Navier-Stokes model
 !#
@@ -56,7 +56,7 @@ program flagship
   use signals
   use storage
 
-  use euler_application
+  use hydro_application
   use transport_application
   use zpinch_application
 
@@ -148,8 +148,8 @@ program flagship
   if (trim(application) .eq. 'transport') then
     call transp_app(rparlist, 'transport')
 
-  elseif (trim(application) .eq. 'euler') then
-    call euler_app(rparlist, 'euler')
+  elseif (trim(application) .eq. 'hydro') then
+    call hydro_app(rparlist, 'hydro')
 
   elseif (trim(application) .eq. 'zpinch') then
     call zpinch_app(rparlist, 'zpinch')

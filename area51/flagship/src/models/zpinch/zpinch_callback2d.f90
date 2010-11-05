@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> euler_callback2d </name>
+!# <name> hydro_callback2d </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -24,70 +24,70 @@
 !# 4.) zpinch_calcMatDiagConvIntlP2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (primal formulation)
-!#        for Euler systems stored in interleaved format
+!#        for hydrodynamic systems stored in interleaved format
 !#
 !# 5.) zpinch_calcMatRusConvIntlP2d_sim
 !#     -> Calculates the off-diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (primal formulation)
 !#        and applies scalar artificial viscosities of Rusanov-type
-!#        for Euler systems stored in interleaved format
+!#        for hydrodynamic systems stored in interleaved format
 !#
 !# 6.) zpinch_calcMatRusConvIntlP2d
 !#     -> Calculates the transport Galerkin coefficients
 !#        for linear convection in 2D (primal formulation)
 !#        and applies scalar artificial viscosities of Rusanov-type
-!#        for Euler systems stored in interleaved format
+!#        for hydrodynamic systems stored in interleaved format
 !#
 !# 7.) zpinch_calcMatDiagConvIntlD2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (dual formulation)
-!#        for Euler systems stored in interleaved format
+!#        for hydrodynamic systems stored in interleaved format
 !#
 !# 8.) zpinch_calcMatRusConvIntlD2d_sim
 !#     -> Calculates the off-diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (dual formulation)
 !#        and applies scalar artificial viscosities of Rusanov-type
-!#        for Euler systems stored in interleaved format
+!#        for hydrodynamic systems stored in interleaved format
 !#
 !# 9.) zpinch_calcMatRusConvIntlD2d
 !#     -> Calculates the transport Galerkin coefficients
 !#        for linear convection in 2D (dual formulation)
 !#        and applies scalar artificial viscosities of Rusanov-type
-!#        for Euler systems stored in interleaved format
+!#        for hydrodynamic systems stored in interleaved format
 !#
 !# 10.) zpinch_calcMatDiagConvBlockP2d_sim
 !#      -> Calculates the diagonal Galerkin transport coefficients
 !#         for linear convection in 2D (primal formulation)
-!#         for Euler systems stored in block format
+!#         for hydrodynamic systems stored in block format
 !#
 !# 11.) zpinch_calcMatRusConvBlockP2d_sim
 !#      -> Calculates the off-diagonal Galerkin transport coefficients
 !#         for linear convection in 2D (primal formulation)
 !#         and applies scalar artificial viscosities of Rusanov-type
-!#         for Euler systems stored in block format
+!#         for hydrodynamic systems stored in block format
 !#
 !# 12.) zpinch_calcMatRusConvBlockP2d
 !#      -> Calculates the transport Galerkin coefficients
 !#         for linear convection in 2D (primal formulation)
 !#         and applies scalar artificial viscosities of Rusanov-type
-!#         for Euler systems stored in block format
+!#         for hydrodynamic systems stored in block format
 !#
 !# 13.) zpinch_calcMatDiagConvBlockD2d_sim
 !#      -> Calculates the diagonal Galerkin transport coefficients
 !#         for linear convection in 2D (dual formulation)
-!#         for Euler systems stored in block format
+!#         for hydrodynamic systems stored in block format
 !#
 !# 14.) zpinch_calcMatRusConvBlockD2d_sim
 !#      -> Calculates the off-diagonal Galerkin transport coefficients
 !#         for linear convection in 2D (dual formulation)
 !#         and applies scalar artificial viscosities of Rusanov-type
-!#         for Euler systems stored in block format
+!#         for hydrodynamic systems stored in block format
 !#
 !# 15.) zpinch_calcMatRusConvBlockD2d
 !#      -> Calculates the transport Galerkin coefficients
 !#         for linear convection in 2D (dual formulation)
 !#         and applies scalar artificial viscosities of Rusanov-type
-!#         for Euler systems stored in block format
+!#         for hydrodynamic systems stored in block format
 !#
 !# </purpose>
 !##############################################################################
@@ -95,7 +95,7 @@
 module zpinch_callback2d
 
   use collection
-  use euler_basic
+  use hydro_basic
   use flagship_callback
   use fsystem
   use genoutput
@@ -254,8 +254,8 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer, save :: rsolutionEuler, rsolutionTransport
-    real(DP), dimension(:), pointer, save :: p_DsolutionEuler, p_DsolutionTransport
+    type(t_vectorBlock), pointer, save :: rsolutionHydro, rsolutionTransport
+    real(DP), dimension(:), pointer, save :: p_DsolutionHydro, p_DsolutionTransport
     integer :: ivar
 
 
@@ -264,18 +264,18 @@ contains
 
     case(HADAPT_OPR_INITCALLBACK)
       ! Retrieve solution vectors from colletion and set pointer
-      rsolutionEuler     => rcollection%p_rvectorQuickAccess1
+      rsolutionHydro     => rcollection%p_rvectorQuickAccess1
       rsolutionTransport => rcollection%p_rvectorQuickAccess2
 
       ! Check if solution is stored in interleave format
-      if (rsolutionEuler%nblocks .ne. 1) then
+      if (rsolutionHydro%nblocks .ne. 1) then
         call output_line('Vector is not in interleave format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_hadaptCallbackScalar2d')
         call sys_halt()
       end if
 
       ! Set pointers
-      call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
+      call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
       call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
 
       ! Call the general callback function
@@ -284,7 +284,7 @@ contains
 
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vectors
-      nullify(rsolutionEuler, p_DsolutionEuler)
+      nullify(rsolutionHydro, p_DsolutionHydro)
       nullify(rsolutionTransport, p_DsolutionTransport)
 
       ! Call the general callback function
@@ -292,11 +292,11 @@ contains
 
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector for the Euler model
-      if (rsolutionEuler%NEQ .ne. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionEuler,&
+      ! Resize solution vector for the hydrodynamic model
+      if (rsolutionHydro%NEQ .ne. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolutionHydro,&
             NVAR2D*rcollection%IquickAccess(1), .false., .true.)
-        call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
+        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
       end if
 
       ! Resize solution vector for the scalar transport model
@@ -308,16 +308,16 @@ contains
 
 
     case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector for the Euler model
-      if (rsolutionEuler%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionEuler,&
+      ! Insert vertex into solution vector for the hydrodynamic model
+      if (rsolutionHydro%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolutionHydro,&
             NVAR2D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
+        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
       end if
       do ivar = 1, NVAR2D
-        p_DsolutionEuler((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
-            0.5_DP*(p_DsolutionEuler((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
-                    p_DsolutionEuler((rcollection%IquickAccess(3)-1)*NVAR2D+ivar))
+        p_DsolutionHydro((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
+            0.5_DP*(p_DsolutionHydro((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
+                    p_DsolutionHydro((rcollection%IquickAccess(3)-1)*NVAR2D+ivar))
       end do
 
       ! Insert vertex into solution vector for the scalar transport model
@@ -335,18 +335,18 @@ contains
       
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into solution vector for the Euler model
-      if (rsolutionEuler%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionEuler,&
+      ! Insert vertex into solution vector for the hydrodynamic model
+      if (rsolutionHydro%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolutionHydro,&
             NVAR2D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
+        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
       end if
       do ivar = 1, NVAR2D
-        p_DsolutionEuler((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
-            0.25_DP*(p_DsolutionEuler((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
-                     p_DsolutionEuler((rcollection%IquickAccess(3)-1)*NVAR2D+ivar)+&
-                     p_DsolutionEuler((rcollection%IquickAccess(4)-1)*NVAR2D+ivar)+&
-                     p_DsolutionEuler((rcollection%IquickAccess(5)-1)*NVAR2D+ivar))
+        p_DsolutionHydro((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
+            0.25_DP*(p_DsolutionHydro((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
+                     p_DsolutionHydro((rcollection%IquickAccess(3)-1)*NVAR2D+ivar)+&
+                     p_DsolutionHydro((rcollection%IquickAccess(4)-1)*NVAR2D+ivar)+&
+                     p_DsolutionHydro((rcollection%IquickAccess(5)-1)*NVAR2D+ivar))
       end do
 
       ! Insert vertex into solution vector for the scalar transport model
@@ -367,15 +367,15 @@ contains
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution for the Euler model
+      ! Remove vertex from solution for the hydrodynamic model
       if (rcollection%IquickAccess(2) .ne. 0) then
         do ivar = 1, NVAR2D
-          p_DsolutionEuler((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
-              p_DsolutionEuler((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)
+          p_DsolutionHydro((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
+              p_DsolutionHydro((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)
         end do
       else
         do ivar = 1, NVAR2D
-          p_DsolutionEuler((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = 0.0_DP
+          p_DsolutionHydro((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = 0.0_DP
         end do
       end if
 
@@ -424,8 +424,8 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer, save :: rsolutionEuler, rsolutionTransport
-    real(DP), dimension(:), pointer, save :: p_DsolutionEuler, p_DsolutionTransport
+    type(t_vectorBlock), pointer, save :: rsolutionHydro, rsolutionTransport
+    real(DP), dimension(:), pointer, save :: p_DsolutionHydro, p_DsolutionTransport
     integer :: ivar,neq
 
 
@@ -434,18 +434,18 @@ contains
 
     case(HADAPT_OPR_INITCALLBACK)
       ! Retrieve solution vectors from colletion and set pointer
-      rsolutionEuler     => rcollection%p_rvectorQuickAccess1
+      rsolutionHydro     => rcollection%p_rvectorQuickAccess1
       rsolutionTransport => rcollection%p_rvectorQuickAccess2
 
       ! Check if solution is stored in interleave format
-      if (rsolutionEuler%nblocks .ne. NVAR2D) then
+      if (rsolutionHydro%nblocks .ne. NVAR2D) then
         call output_line('Vector is not in block format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_hadaptCallbackBlock2d')
         call sys_halt()
       end if
 
       ! Set pointers
-      call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
+      call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
       call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
 
       ! Call the general callback function
@@ -454,7 +454,7 @@ contains
 
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vectors
-      nullify(rsolutionEuler, p_DsolutionEuler)
+      nullify(rsolutionHydro, p_DsolutionHydro)
       nullify(rsolutionTransport, p_DsolutionTransport)
 
       ! Call the general callback function
@@ -462,11 +462,11 @@ contains
 
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector for the Euler model
-      if (rsolutionEuler%NEQ .ne. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionEuler,&
+      ! Resize solution vector for the hydrodynamic model
+      if (rsolutionHydro%NEQ .ne. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolutionHydro,&
             NVAR2D*rcollection%IquickAccess(1), .false., .true.)
-        call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
+        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
       end if
 
       ! Resize solution vector for the scalar transport model
@@ -478,17 +478,17 @@ contains
 
 
     case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector for the Euler model
-      if (rsolutionEuler%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionEuler, NVAR2D&
+      ! Insert vertex into solution vector for the hydrodynamic model
+      if (rsolutionHydro%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolutionHydro, NVAR2D&
             *rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
+        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
       end if
-      neq = rsolutionEuler%NEQ/NVAR2D
+      neq = rsolutionHydro%NEQ/NVAR2D
       do ivar = 1, NVAR2D
-        p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-            0.5_DP*(p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(2))+&
-                    p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(3)) )
+        p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(1)) = &
+            0.5_DP*(p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(2))+&
+                    p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(3)) )
       end do
 
       ! Insert vertex into solution vector for the scalar transport model
@@ -506,19 +506,19 @@ contains
 
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into solution vector for the Euler model
-      if (rsolutionEuler%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionEuler, NVAR2D&
+      ! Insert vertex into solution vector for the hydrodynamic model
+      if (rsolutionHydro%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolutionHydro, NVAR2D&
             *rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
+        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
       end if
-      neq = rsolutionEuler%NEQ/NVAR2D
+      neq = rsolutionHydro%NEQ/NVAR2D
       do ivar = 1, NVAR2D
-        p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(1)) =&
-            0.25_DP*(p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(2))+&
-                     p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(3))+&
-                     p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(4))+&
-                     p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(5)) )
+        p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(1)) =&
+            0.25_DP*(p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(2))+&
+                     p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(3))+&
+                     p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(4))+&
+                     p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(5)) )
       end do
 
       ! Insert vertex into solution vector for the scalar transport model
@@ -538,17 +538,17 @@ contains
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution for the Euler model
+      ! Remove vertex from solution for the hydrodynamic model
       if (rcollection%IquickAccess(2) .ne. 0) then
-        neq = rsolutionEuler%NEQ/NVAR2D
+        neq = rsolutionHydro%NEQ/NVAR2D
         do ivar = 1, NVAR2D
-          p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-              p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(2))
+          p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(1)) = &
+              p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(2))
         end do
       else
-        neq = rsolutionEuler%NEQ/NVAR2D
+        neq = rsolutionHydro%NEQ/NVAR2D
         do ivar = 1, NVAR2D
-          p_DsolutionEuler((ivar-1)*neq+rcollection%IquickAccess(1)) = 0.0_DP
+          p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(1)) = 0.0_DP
         end do
       end if
 
@@ -586,7 +586,7 @@ contains
     ! for the primal problem in 2D.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in interleaved format.
+    ! Hydrodynamic system are stored in interleaved format.
 !</description>
 
 !<input>
@@ -645,7 +645,7 @@ contains
     ! of Rusanov-type is applied.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in interleaved format.
+    ! Hydrodynamic system are stored in interleaved format.
 !</description>
 
 !<input>
@@ -741,7 +741,7 @@ contains
     ! of Rusanov-type is applied.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in interleaved format.
+    ! Hydrodynamic system are stored in interleaved format.
 !</description>
 
 !<input>
@@ -810,7 +810,7 @@ contains
     ! for the dual problem in 2D.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in interleaved format.
+    ! Hydrodynamic system are stored in interleaved format.
 !</description>
 
 !<input>
@@ -869,7 +869,7 @@ contains
     ! of Rusanov-type is applied.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in interleaved format.
+    ! Hydrodynamic system are stored in interleaved format.
 !</description>
 
 !<input>
@@ -965,7 +965,7 @@ contains
     ! of Rusanov-type is applied.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in interleaved format.
+    ! Hydrodynamic system are stored in interleaved format.
 !</description>
 
 !<input>
@@ -1008,7 +1008,7 @@ contains
     ! for the primal problem in 2D.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in block format.
+    ! Hydrodynamic system are stored in block format.
 !</description>
 
 !<input>
@@ -1067,7 +1067,7 @@ contains
     ! of Rusanov-type is applied.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in interleaved format.
+    ! Hydrodynamic system are stored in interleaved format.
 !</description>
 
 !<input>
@@ -1166,7 +1166,7 @@ contains
     ! of Rusanov-type is applied.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in interleaved format.
+    ! Hydrodynamic system are stored in interleaved format.
 !</description>
 
 !<input>
@@ -1235,7 +1235,7 @@ contains
     ! for the dual problem in 2D.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in block format.
+    ! Hydrodynamic system are stored in block format.
 !</description>
 
 !<input>
@@ -1294,7 +1294,7 @@ contains
     ! of Rusanov-type is applied.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in block format.
+    ! Hydrodynamic system are stored in block format.
 !</description>
 
 !<input>
@@ -1393,7 +1393,7 @@ contains
     ! Moreover, scalar artificial diffusion is applied.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in interleaved format.
+    ! Hydrodynamic system are stored in interleaved format.
 !</description>
 
 !<input>

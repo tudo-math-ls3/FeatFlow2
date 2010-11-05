@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> euler_basic </name>
+!# <name> hydro_basic </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,33 +9,33 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) euler_getNVAR
+!# 1.) hydro_getNVAR
 !#     -> Returns the number of variables depending on the spatial dimension
 !#
-!# 2.) euler_getNVARtransformed
+!# 2.) hydro_getNVARtransformed
 !#     -> Returns the number of variables after transformation
 !#
-!# 3.) euler_getVariable
+!# 3.) hydro_getVariable
 !#     -> Extracts a single variable from the vector of conservative
 !#        variables stored in interleave or block format
 !#
-!# 4.) euler_getVarInterleaveFormat
+!# 4.) hydro_getVarInterleaveFormat
 !#     -> Extracts a single variable from the scalar vector of
 !#        conservative variables stored in interleave format
 !#
-!# 5.) euler_getVarBlockFormat
+!# 5.) hydro_getVarBlockFormat
 !#     -> Extracts a single variable from the vector of conservative
 !#        variables stored in block format
 !#
-!# 6.) euler_setVariables
+!# 6.) hydro_setVariables
 !#     -> Sets the conservative variables from an UCD import
 !#
 !# </purpose>
 !##############################################################################
 
-module euler_basic
+module hydro_basic
 
-#include "euler.h"
+#include "hydro.h"
 
   use basicgeometry
   use boundarycondaux
@@ -52,12 +52,12 @@ module euler_basic
   implicit none
 
   private
-  public :: euler_getNVAR
-  public :: euler_getNVARtransformed
-  public :: euler_getVariable
-  public :: euler_getVarInterleaveFormat
-  public :: euler_getVarBlockFormat
-  public :: euler_setVariables
+  public :: hydro_getNVAR
+  public :: hydro_getNVARtransformed
+  public :: hydro_getVariable
+  public :: hydro_getVarInterleaveFormat
+  public :: hydro_getVarBlockFormat
+  public :: hydro_setVariables
 
 !<constants>
 
@@ -181,19 +181,19 @@ module euler_basic
 
 !<constantblock description="Types of boundary conditions">
 
-  ! Euler wall and symmetry plane boundary condition
+  ! Free-slip and symmetry plane boundary condition
   ! The normal component of the velocity vector is set to zero
   !
   ! V*n = 0
 
-  integer, parameter, public :: BDRC_EULERWALL    = 1
+  integer, parameter, public :: BDRC_FREESLIP    = 1
 
-  ! Relaxed Euler wall and symmetry plane boundary condition
+  ! Relaxed free-slip and symmetry plane boundary condition
   ! The normal component of the velocity vector is "approching" zero
   !
   ! (V-c*Vold)*n = 0, where   0 < c <= 1
 
-  integer, parameter, public :: BDRC_RLXEULERWALL = 2
+  integer, parameter, public :: BDRC_RLXFREESLIP = 2
 
   ! Viscous wall boundary condition
   ! The velocity vector is set to zero
@@ -294,7 +294,7 @@ contains
 
 !<function>
 
-  pure function euler_getNVAR(rproblemLevel) result(NVAR)
+  pure function hydro_getNVAR(rproblemLevel) result(NVAR)
 
 !<description>
     ! This function returns the number of flow variables
@@ -313,13 +313,13 @@ contains
 
     NVAR = rproblemLevel%rtriangulation%ndim + 2
 
-  end function euler_getNVAR
+  end function hydro_getNVAR
   
   !*****************************************************************************
 
 !<function>
 
-  pure function euler_getNVARtransformed(rproblemLevel,&
+  pure function hydro_getNVARtransformed(rproblemLevel,&
       svariables) result(NVARtransformed)
 
 !<description>
@@ -343,11 +343,11 @@ contains
     ! Check for supported lists of variables
     if (svariables .eq. 'density,energy,momentum') then
 
-      NVARtransformed = euler_getNVAR(rproblemLevel)
+      NVARtransformed = hydro_getNVAR(rproblemLevel)
 
     elseif (svariables .eq. 'density,pressure,velocity') then
 
-      NVARtransformed = euler_getNVAR(rproblemLevel)
+      NVARtransformed = hydro_getNVAR(rproblemLevel)
 
     elseif (svariables .eq. 'density,pressure') then
 
@@ -371,13 +371,13 @@ contains
 
     end if
 
-  end function euler_getNVARtransformed
+  end function hydro_getNVARtransformed
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_getVariable(rvectorBlock, cvariable, rvectorScalar)
+  subroutine hydro_getVariable(rvectorBlock, cvariable, rvectorScalar)
 
 !<description>
     ! This subroutine extracts a single variable from the vector of
@@ -422,7 +422,7 @@ contains
       call lsyssc_getbase_double(rvectorScalar, p_Dvalue)
 
       ! Fill the scalar vector with data from the variable
-      call euler_getVarInterleaveFormat(neq, nvar, cvariable,&
+      call hydro_getVarInterleaveFormat(neq, nvar, cvariable,&
           p_Ddata, p_Dvalue)
 
     else
@@ -443,7 +443,7 @@ contains
       call lsyssc_getbase_double(rvectorScalar, p_Dvalue)
 
       ! Fill the scalar vector with data from the variable
-      call euler_getVarBlockFormat(neq, nvar, cvariable,&
+      call hydro_getVarBlockFormat(neq, nvar, cvariable,&
           p_Ddata, p_Dvalue)
 
     end if
@@ -452,13 +452,13 @@ contains
     rvectorScalar%p_rspatialDiscr =>&
         rvectorBlock%RvectorBlock(1)%p_rspatialDiscr
 
-  end subroutine euler_getVariable
+  end subroutine hydro_getVariable
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_getVarInterleaveFormat(neq, nvar, cvariable, Ddata, Dvalue)
+  subroutine hydro_getVarInterleaveFormat(neq, nvar, cvariable, Ddata, Dvalue)
 
 !<description>
     ! This subroutine extracs a single variable from the vector of
@@ -688,18 +688,18 @@ contains
     else
       
       call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_getVarInterleaveFormat')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_getVarInterleaveFormat')
       call sys_halt()
 
     end if
 
-  end subroutine euler_getVarInterleaveFormat
+  end subroutine hydro_getVarInterleaveFormat
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
+  subroutine hydro_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
 
 !<description>
     ! This subroutine extracs a single variable from the vector of
@@ -931,18 +931,18 @@ contains
     else
 
       call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_getVarBlockformat')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_getVarBlockformat')
       call sys_halt()
       
     end if
 
-  end subroutine euler_getVarBlockformat
+  end subroutine hydro_getVarBlockformat
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_setVariables(rexport, rvectorBlock)
+  subroutine hydro_setVariables(rexport, rvectorBlock)
 
 !<description>
     ! This subroutine sets the conservative variables from a UCD export
@@ -986,7 +986,7 @@ contains
 
     if (nlength .ne. neq) then
       call output_line ('Invalid size of data', &
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setVariables')
       call sys_halt()
     end if
     
@@ -1020,7 +1020,7 @@ contains
       
       if (nlength .ne. neq) then
         call output_line ('Invalid size of data', &
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_setVariables')
         call sys_halt()
       end if
       
@@ -1066,7 +1066,7 @@ contains
 
     if (nlength .ne. neq) then
       call output_line ('Invalid size of data', &
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setVariables')
       call sys_halt()
     end if
     
@@ -1147,6 +1147,6 @@ contains
 
     end subroutine setVarBlockformat
 
-  end subroutine euler_setVariables
+  end subroutine hydro_setVariables
 
-end module euler_basic
+end module hydro_basic

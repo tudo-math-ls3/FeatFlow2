@@ -72,12 +72,12 @@ module zpinch_application
   use boundarycondaux
   use boundaryfilter
   use collection
-  use euler_application
-  use euler_basic
-  use euler_callback
-  use euler_callback1d
-  use euler_callback2d
-  use euler_callback3d
+  use hydro_application
+  use hydro_basic
+  use hydro_callback
+  use hydro_callback1d
+  use hydro_callback2d
+  use hydro_callback3d
   use flagship_basic
   use fparser
   use genoutput
@@ -145,7 +145,7 @@ contains
 
     ! Boundary condition structures for the primal problem and pointers
     type(t_boundaryCondition), dimension(2), target :: RbdrCond
-    type(t_boundaryCondition), pointer :: p_rbdrCondEuler, p_rbdrCondTransport
+    type(t_boundaryCondition), pointer :: p_rbdrCondHydro, p_rbdrCondTransport
 
     ! Problem structure which holds all internal data (vectors/matrices)
     type(t_problem) :: rproblem
@@ -159,7 +159,7 @@ contains
 
     ! Solution vectors and pointers
     type(t_vectorBlock), dimension(2), target :: Rsolution
-    type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionTransport
+    type(t_vectorBlock), pointer :: p_rsolutionHydro, p_rsolutionTransport
 
     ! Timer for the total solution process
     type(t_timer) :: rtimerTotal
@@ -192,7 +192,7 @@ contains
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
     character(LEN=SYS_STRLEN) :: algorithm
-    character(LEN=SYS_STRLEN) :: ssectionNameEuler
+    character(LEN=SYS_STRLEN) :: ssectionNameHydro
     character(LEN=SYS_STRLEN) :: ssectionNameTransport
 
     ! local variables
@@ -210,15 +210,15 @@ contains
     call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
 
     ! Set pointer
-    p_rbdrCondEuler => RbdrCond(1)
-    p_rsolutionEuler => Rsolution(1)
+    p_rbdrCondHydro => RbdrCond(1)
+    p_rsolutionHydro => Rsolution(1)
 
     p_rsolutionTransport => Rsolution(2)
     p_rbdrCondTransport => RbdrCond(2)
 
     ! Retrieve section names of sub-applications
     call parlst_getvalue_string(rparlist,&
-        ssectionName, 'subapplication', ssectionNameEuler, isubstring=1)
+        ssectionName, 'subapplication', ssectionNameHydro, isubstring=1)
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'subapplication', ssectionNameTransport, isubstring=2)
 
@@ -226,7 +226,7 @@ contains
     ! subroutine has been called, the parameter list remains unchanged
     ! unless the used updates some parameter values interactively.
     call zpinch_parseCmdlArguments(rparlist)
-    call euler_adjustParameterlist(rparlist, ssectionNameEuler)
+    call hydro_adjustParameterlist(rparlist, ssectionNameHydro)
     call transp_adjustParameterlist(rparlist, ssectionNameTransport)
 
 
@@ -234,7 +234,7 @@ contains
     call collct_init(rcollection)
 
     ! Attach the parameter list and the timers
-    ! to the collection for the Euler model
+    ! to the collection for the hydrodynamic model
     call collct_setvalue_parlst(rcollection,&
         'rparlist', rparlist, .true.)
     call collct_setvalue_timer(rcollection,&
@@ -269,7 +269,7 @@ contains
         sindatfileName, 'deffunc', FPAR_FUNCTION)
 
     call parlst_getvalue_string(rparlist,&
-        ssectionNameEuler, 'indatfile', sindatfileName)
+        ssectionNameHydro, 'indatfile', sindatfileName)
     call fparser_parseFileForKeyword(rfparser,&
         sindatfileName, 'defconst', FPAR_CONSTANT)
     call fparser_parseFileForKeyword(rfparser,&
@@ -302,16 +302,16 @@ contains
         nlmin, nlmax, rproblem, rcollection)
 
     ! Initialize the individual problem levels
-    call euler_initAllProblemLevels(rparlist,&
-        ssectionNameEuler, rproblem, rcollection)
+    call hydro_initAllProblemLevels(rparlist,&
+        ssectionNameHydro, rproblem, rcollection)
     call transp_initAllProblemLevels(rparlist,&
         ssectionNameTransport, rproblem, rcollection)
 
-    ! Prepare internal data arrays of the solver structure for Euler model
+    ! Prepare internal data arrays of the solver structure for hydrodynamic model
     call parlst_getvalue_int(rparlist,&
-        ssectionNameEuler, 'systemMatrix', systemMatrix)
+        ssectionNameHydro, 'systemMatrix', systemMatrix)
     call parlst_getvalue_int(rparlist,&
-        ssectionNameEuler, 'isystemFormat', isystemFormat)
+        ssectionNameHydro, 'isystemFormat', isystemFormat)
 
     ! Get first solver subnode
     p_rsolver => solver_getNextSolver(rsolver, 1)
@@ -346,17 +346,17 @@ contains
       call parlst_getvalue_int(rparlist, ssectionName,&
           'ndimension', ndimension)
 
-      ! Initialize the boundary condition for the Euler model
-      call parlst_getvalue_string(rparlist, ssectionNameEuler,&
+      ! Initialize the boundary condition for the hydrodynamic model
+      call parlst_getvalue_string(rparlist, ssectionNameHydro,&
           'sprimalbdrcondname', sbdrcondName)
-      call parlst_getvalue_string(rparlist, ssectionNameEuler,&
+      call parlst_getvalue_string(rparlist, ssectionNameHydro,&
           'indatfile', sindatfileName)
 
       ! The boundary condition for the primal problem is required for
       ! all solution strategies so initialize it from the parameter file
-      call bdrc_readBoundaryCondition(p_rbdrCondEuler,&
+      call bdrc_readBoundaryCondition(p_rbdrCondHydro,&
           sindatfileName, '['//trim(sbdrcondName)//']',&
-          ndimension, euler_parseBoundaryCondition)
+          ndimension, hydro_parseBoundaryCondition)
 
       ! Initialize the boundary condition for the transport model
       call parlst_getvalue_string(rparlist, ssectionNameTransport,&
@@ -377,7 +377,7 @@ contains
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call zpinch_solveTransientPrimal(rparlist, ssectionName,&
-            ssectionNameEuler, ssectionNameTransport, RbdrCond,&
+            ssectionNameHydro, ssectionNameTransport, RbdrCond,&
             rproblem, rtimestep, rsolver, Rsolution, rcollection)
 
         call zpinch_outputSolution(rparlist, ssectionName,&
@@ -414,11 +414,11 @@ contains
     call problem_releaseProblem(rproblem)
 
     ! Release boundary conditions
-    call bdrc_release(p_rbdrCondEuler)
+    call bdrc_release(p_rbdrCondHydro)
     call bdrc_release(p_rbdrCondTransport)
 
     ! Release vectors
-    call lsysbl_releaseVector(p_rsolutionEuler)
+    call lsysbl_releaseVector(p_rsolutionHydro)
     call lsysbl_releaseVector(p_rsolutionTransport)
 
     ! Release function parser
@@ -431,7 +431,7 @@ contains
     call stat_stopTimer(rtimerTotal)
 
     ! Output statistics
-    call euler_outputStatistics(rtimerTotal, rcollection)
+    call hydro_outputStatistics(rtimerTotal, rcollection)
 
     ! Release collection
     call collct_done(rcollection)
@@ -527,7 +527,7 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: ssectionNameEuler
+    character(LEN=SYS_STRLEN) :: ssectionNameHydro
     character(LEN=SYS_STRLEN) :: ssectionNameTransport
     character(LEN=SYS_STRLEN) :: sconvection
     character(LEN=SYS_STRLEN) :: sinviscid
@@ -546,7 +546,7 @@ contains
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
-        ssectionName, 'subapplication', ssectionNameEuler, isubstring=1)
+        ssectionName, 'subapplication', ssectionNameHydro, isubstring=1)
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'subapplication', ssectionNameTransport, isubstring=2)
 
@@ -564,9 +564,9 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionNameTransport, 'convectionAFC', convectionAFC)
     call parlst_getvalue_string(rparlist,&
-        ssectionNameEuler, 'inviscid', sinviscid)
+        ssectionNameHydro, 'inviscid', sinviscid)
     call parlst_getvalue_int(rparlist,&
-        ssectionNameEuler, 'inviscidAFC', inviscidAFC)
+        ssectionNameHydro, 'inviscidAFC', inviscidAFC)
 
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 2
@@ -611,12 +611,12 @@ contains
 !<subroutine>
 
   subroutine zpinch_applyLorentzforceTerm(rparlist, ssectionName,&
-      ssectionNameEuler, ssectionNameTransport, rproblemLevel,&
-      rtimestep, rsolutionTransport, rsolutionEuler, rcollection)
+      ssectionNameHydro, ssectionNameTransport, rproblemLevel,&
+      rtimestep, rsolutionTransport, rsolutionHydro, rcollection)
 
 !<description>
     ! This subroutine evaluates the Lorentz force term based on the
-    ! given solution vectors and applies it to the Euler model
+    ! given solution vectors and applies it to the hydrodynamic model
 !</description>
 
 !<input>
@@ -625,7 +625,7 @@ contains
 
     ! section names in parameter list
     character(LEN=*), intent(in) :: ssectionName
-    character(LEN=*), intent(in) :: ssectionNameEuler
+    character(LEN=*), intent(in) :: ssectionNameHydro
     character(LEN=*), intent(in) :: ssectionNameTransport
 
     ! solution vector for transport model
@@ -639,8 +639,8 @@ contains
     ! time-stepping structure
     type(t_timestep), intent(inout) :: rtimestep
 
-    ! solution vector for Euler model
-    type(t_vectorBlock), intent(inout) :: rsolutionEuler
+    ! solution vector for hydrodynamic model
+    type(t_vectorBlock), intent(inout) :: rsolutionHydro
 
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
@@ -651,7 +651,7 @@ contains
     ! local variable
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataEuler
+    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataHydro
     real(DP), dimension(:), pointer :: p_DconsistentMassMatrix, p_DlumpedMassMatrix
     integer, dimension(:), pointer :: p_Kld, p_Kcol
     character(LEN=SYS_STRLEN) :: slorentzforceName
@@ -665,11 +665,11 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'icoordinateSystem', icoordinateSystem)
     call parlst_getvalue_int(rparlist,&
-          ssectionNameEuler, 'lumpedmassmatrix', lumpedMassMatrix)
+          ssectionNameHydro, 'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(rparlist,&
           ssectionNameTransport, 'consistentmassmatrix', consistentMassMatrix)
     call parlst_getvalue_int(rparlist,&
-          ssectionNameEuler, 'isystemformat', isystemFormat)
+          ssectionNameHydro, 'isystemformat', isystemFormat)
 
     ! Get lumped and consistent mass matrix
     call lsyssc_getbase_double(rproblemLevel&
@@ -682,7 +682,7 @@ contains
         %Rmatrix(consistentMassMatrix), p_Kcol)
 
     ! Set pointer to global solution vectors
-    call lsysbl_getbase_double(rsolutionEuler, p_DdataEuler)
+    call lsysbl_getbase_double(rsolutionHydro, p_DdataHydro)
     call lsysbl_getbase_double(rsolutionTransport, p_DdataTransport)
 
     ! Set pointer to the vertex coordinates
@@ -691,7 +691,7 @@ contains
 
     ! Set dimensions
     neq  = rsolutionTransport%NEQ
-    nvar = euler_getNVAR(rproblemLevel)
+    nvar = hydro_getNVAR(rproblemLevel)
 
     ! Get function parser from collection structure
     p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
@@ -716,12 +716,12 @@ contains
       case(1)
         call calcForceXYInterleaveFormat(dscale, neq, nvar,&
             p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
-            p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
+            p_DlumpedMassMatrix, p_DdataTransport, p_DdataHydro)
 
       case(2)
         call calcForceRZInterleaveFormat(dscale, neq, nvar,&
             p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
-            p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
+            p_DlumpedMassMatrix, p_DdataTransport, p_DdataHydro)
 
       case default
         call output_line('Invalid type of coordinate system!',&
@@ -735,12 +735,12 @@ contains
       case(1)
         call calcForceXYBlockFormat(dscale, neq, nvar,&
             p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
-            p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
+            p_DlumpedMassMatrix, p_DdataTransport, p_DdataHydro)
 
       case(2)
         call calcForceRZBlockFormat(dscale, neq, nvar,&
             p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
-            p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
+            p_DlumpedMassMatrix, p_DdataTransport, p_DdataHydro)
 
       case default
         call output_line('Invalid type of coordinate system!',&
@@ -763,7 +763,7 @@ contains
     ! The system is stored in interleave format.
 
     subroutine calcForceXYInterleaveFormat(dscale, neq, nvar,&
-        DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
+        DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataHydro)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
       real(DP), dimension(:), intent(in) :: MC,ML,DdataTransport
@@ -771,7 +771,7 @@ contains
       integer, dimension(:), intent(in) :: Kld, Kcol
       integer, intent(in) :: neq, nvar
 
-      real(DP), dimension(nvar,neq), intent(inout) :: DdataEuler
+      real(DP), dimension(nvar,neq), intent(inout) :: DdataHydro
 
       ! local variables
       real(DP), dimension(:,:), allocatable :: DsourceTerm
@@ -821,22 +821,22 @@ contains
       do i = 1, neq
 
         ! Compute kinetic energy from momentum values without source term
-        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
-                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)
+        rq = 0.5 * ( DdataHydro(2, i)*DdataHydro(2, i) +&
+                     DdataHydro(3, i)*DdataHydro(3, i) ) / DdataHydro(1, i)
 
         ! Compute pressure value
-        p = DdataEuler(4, i) - rq
+        p = DdataHydro(4, i) - rq
 
         ! Update momentum equations
-        DdataEuler(2, i) = DdataEuler(2, i) + DsourceTerm(1, i)/ML(i)
-        DdataEuler(3, i) = DdataEuler(3, i) + DsourceTerm(2, i)/ML(i)
+        DdataHydro(2, i) = DdataHydro(2, i) + DsourceTerm(1, i)/ML(i)
+        DdataHydro(3, i) = DdataHydro(3, i) + DsourceTerm(2, i)/ML(i)
 
         ! Compute kinetic energy from momentum values with source term
-        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
-                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)
+        rq = 0.5 * ( DdataHydro(2, i)*DdataHydro(2, i) +&
+                     DdataHydro(3, i)*DdataHydro(3, i) ) / DdataHydro(1, i)
 
         ! Update total energy equation
-        DdataEuler(4, i) = p + rq
+        DdataHydro(4, i) = p + rq
 
       end do
 
@@ -849,7 +849,7 @@ contains
     ! The system is stored in interleave format.
 
     subroutine calcForceRZInterleaveFormat(dscale, neq, nvar,&
-        DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
+        DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataHydro)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
       real(DP), dimension(:), intent(in) :: MC,ML,DdataTransport
@@ -857,7 +857,7 @@ contains
       integer, dimension(:), intent(in) :: Kld, Kcol
       integer, intent(in) :: neq, nvar
 
-      real(DP), dimension(nvar,neq), intent(inout) :: DdataEuler
+      real(DP), dimension(nvar,neq), intent(inout) :: DdataHydro
 
       ! local variables
       real(DP), dimension(:,:), allocatable :: DsourceTerm
@@ -901,22 +901,22 @@ contains
       do i = 1, neq
 
         ! Compute kinetic energy from momentum values without source term
-        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
-                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)
+        rq = 0.5 * ( DdataHydro(2, i)*DdataHydro(2, i) +&
+                     DdataHydro(3, i)*DdataHydro(3, i) ) / DdataHydro(1, i)
 
         ! Compute pressure value
-        p = DdataEuler(4, i) - rq
+        p = DdataHydro(4, i) - rq
 
         ! Update momentum equations
-        DdataEuler(2, i) = DdataEuler(2, i) + DsourceTerm(1, i)/ML(i)
-        DdataEuler(3, i) = DdataEuler(3, i) + DsourceTerm(2, i)/ML(i)
+        DdataHydro(2, i) = DdataHydro(2, i) + DsourceTerm(1, i)/ML(i)
+        DdataHydro(3, i) = DdataHydro(3, i) + DsourceTerm(2, i)/ML(i)
 
         ! Compute kinetic energy from momentum values with source term
-        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
-                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)
+        rq = 0.5 * ( DdataHydro(2, i)*DdataHydro(2, i) +&
+                     DdataHydro(3, i)*DdataHydro(3, i) ) / DdataHydro(1, i)
 
         ! Update total energy equation
-        DdataEuler(4, i) = p + rq
+        DdataHydro(4, i) = p + rq
 
       end do
 
@@ -929,7 +929,7 @@ contains
     ! The system is stored in block format.
 
     subroutine calcForceXYBlockFormat(dscale, neq, nvar,&
-        DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
+        DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataHydro)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
       real(DP), dimension(:), intent(in) :: MC,ML,DdataTransport
@@ -937,7 +937,7 @@ contains
       integer, dimension(:), intent(in) :: Kld, Kcol
       integer, intent(in) :: neq, nvar
 
-      real(DP), dimension(neq,nvar), intent(inout) :: DdataEuler
+      real(DP), dimension(neq,nvar), intent(inout) :: DdataHydro
 
       ! local variables
       real(DP), dimension(:,:), allocatable :: DsourceTerm
@@ -990,24 +990,24 @@ contains
       do i = 1, neq
 
         ! Compute kinetic energy from momentum values without source term
-        rq = 0.5 * ( DdataEuler(i, 2)*DdataEuler(i, 2) +&
-                     DdataEuler(i, 3)*DdataEuler(i, 3) ) /&
-                     DdataEuler(i, 1)
+        rq = 0.5 * ( DdataHydro(i, 2)*DdataHydro(i, 2) +&
+                     DdataHydro(i, 3)*DdataHydro(i, 3) ) /&
+                     DdataHydro(i, 1)
 
         ! Compute pressure value
-        p = DdataEuler(i, 4) - rq
+        p = DdataHydro(i, 4) - rq
 
         ! Update momentum equations
-        DdataEuler(i, 2) = DdataEuler(i, 2) + DsourceTerm(1, i)/ML(i)
-        DdataEuler(i, 3) = DdataEuler(i, 3) + DsourceTerm(2, i)/ML(i)
+        DdataHydro(i, 2) = DdataHydro(i, 2) + DsourceTerm(1, i)/ML(i)
+        DdataHydro(i, 3) = DdataHydro(i, 3) + DsourceTerm(2, i)/ML(i)
 
         ! Compute kinetic energy from momentum values with source term
-        rq = 0.5 * ( DdataEuler(i, 2)*DdataEuler(i, 2) +&
-                     DdataEuler(i, 3)*DdataEuler(i, 3) ) /&
-                     DdataEuler(i, 1)
+        rq = 0.5 * ( DdataHydro(i, 2)*DdataHydro(i, 2) +&
+                     DdataHydro(i, 3)*DdataHydro(i, 3) ) /&
+                     DdataHydro(i, 1)
 
         ! Update total energy equation
-        DdataEuler(i, 4) = p + rq
+        DdataHydro(i, 4) = p + rq
 
       end do
 
@@ -1020,7 +1020,7 @@ contains
     ! The system is stored in block format.
 
     subroutine calcForceRZBlockFormat(dscale, neq, nvar,&
-        DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
+        DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataHydro)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
       real(DP), dimension(:), intent(in) :: MC,ML,DdataTransport
@@ -1028,7 +1028,7 @@ contains
       integer, dimension(:), intent(in) :: Kld, Kcol
       integer, intent(in) :: neq, nvar
 
-      real(DP), dimension(neq,nvar), intent(inout) :: DdataEuler
+      real(DP), dimension(neq,nvar), intent(inout) :: DdataHydro
 
       ! local variables
       real(DP), dimension(:,:), allocatable :: DsourceTerm
@@ -1075,24 +1075,24 @@ contains
       do i = 1, neq
 
         ! Compute kinetic energy from momentum values without source term
-        rq = 0.5 * ( DdataEuler(i, 2)*DdataEuler(i, 2) +&
-                     DdataEuler(i, 3)*DdataEuler(i, 3) ) /&
-                     DdataEuler(i, 1)
+        rq = 0.5 * ( DdataHydro(i, 2)*DdataHydro(i, 2) +&
+                     DdataHydro(i, 3)*DdataHydro(i, 3) ) /&
+                     DdataHydro(i, 1)
 
         ! Compute pressure value
-        p = DdataEuler(i, 4) - rq
+        p = DdataHydro(i, 4) - rq
 
         ! Update momentum equations
-        DdataEuler(i, 2) = DdataEuler(i, 2) + DsourceTerm(1, i)/ML(i)
-        DdataEuler(i, 3) = DdataEuler(i, 3) + DsourceTerm(2, i)/ML(i)
+        DdataHydro(i, 2) = DdataHydro(i, 2) + DsourceTerm(1, i)/ML(i)
+        DdataHydro(i, 3) = DdataHydro(i, 3) + DsourceTerm(2, i)/ML(i)
 
         ! Compute kinetic energy from momentum values with source term
-        rq = 0.5 * ( DdataEuler(i, 2)*DdataEuler(i, 2) +&
-                     DdataEuler(i, 3)*DdataEuler(i, 3) ) /&
-                     DdataEuler(i, 1)
+        rq = 0.5 * ( DdataHydro(i, 2)*DdataHydro(i, 2) +&
+                     DdataHydro(i, 3)*DdataHydro(i, 3) ) /&
+                     DdataHydro(i, 1)
 
         ! Update total energy equation
-        DdataEuler(i, 4) = p + rq
+        DdataHydro(i, 4) = p + rq
 
       end do
 
@@ -1106,7 +1106,7 @@ contains
 
 !<subroutine>
 
-  subroutine zpinch_calcAdaptationIndicator(rsolutionEuler,&
+  subroutine zpinch_calcAdaptationIndicator(rsolutionHydro,&
       rsolutionTransport, rindicator)
 
 !<description>
@@ -1117,7 +1117,7 @@ contains
 
 !<input>
     ! solution vectors
-    type(t_vectorBlock), intent(in) :: rsolutionEuler, rsolutionTransport
+    type(t_vectorBlock), intent(in) :: rsolutionHydro, rsolutionTransport
 !</input>
 
 !<inputoutput>
@@ -1141,11 +1141,11 @@ contains
 
 
     ! Set pointer to the underlying triangulation
-    p_rtriangulation => rsolutionEuler%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
+    p_rtriangulation => rsolutionHydro%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
 
     ! Extract primitive variables from conservative solution values
-    call euler_getVariable(rsolutionEuler, 'density', rdensity)
-    call euler_getVariable(rsolutionEuler, 'pressure', rpressure)
+    call hydro_getVariable(rsolutionHydro, 'density', rdensity)
+    call hydro_getVariable(rsolutionHydro, 'pressure', rpressure)
 
     ! Create element-wise indicator
     call lsyssc_createVector(rindicator, p_rtriangulation%NEL, .true.)
@@ -1262,7 +1262,7 @@ contains
 
     ! section names
     character(LEN=SYS_STRLEN) :: soutputName
-    character(LEN=SYS_STRLEN) :: ssectionNameEuler
+    character(LEN=SYS_STRLEN) :: ssectionNameHydro
     character(LEN=SYS_STRLEN) :: sucdsolution
 
     ! persistent variable
@@ -1285,9 +1285,9 @@ contains
         trim(soutputName), 'iformatucd', iformatUCD)
 
     call parlst_getvalue_string(rparlist,&
-        ssectionName, 'subapplication', ssectionNameEuler, isubstring=1)
+        ssectionName, 'subapplication', ssectionNameHydro, isubstring=1)
     call parlst_getvalue_int(rparlist,&
-        ssectionNameEuler, 'isystemformat', isystemformat)
+        ssectionNameHydro, 'isystemformat', isystemformat)
     
     ! Initialize the UCD exporter
     call flagship_initUCDexport(rproblemLevel, sucdsolution,&
@@ -1302,9 +1302,9 @@ contains
     ! Add solution vectors
     if (present(rsolution)) then
 
-      ! Add solution for Euler model
+      ! Add solution for hydrodynamic model
       call lsysbl_getbase_double(rsolution(1), p_Dsolution)
-      nvar  = euler_getNVAR(rproblemLevel)
+      nvar  = hydro_getNVAR(rproblemLevel)
       isize = size(p_Dsolution)/nvar
       ndim  = rproblemLevel%rtriangulation%ndim
       
@@ -1330,7 +1330,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid number of spatial dimensions',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_outputSolution')
         call sys_halt()
       end select
 
@@ -1354,24 +1354,24 @@ contains
             ! Special treatment of velocity vector
             select case(ndim)
             case (NDIM1D)
-              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
 
             case (NDIM2D)
-              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
+              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
-              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
-              call euler_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
                   'velocity_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
@@ -1387,7 +1387,7 @@ contains
           else
 
             ! Standard treatment for scalar quantity
-            call euler_getVarInterleaveFormat(rvector1%NEQ, nvar,&
+            call hydro_getVarInterleaveFormat(rvector1%NEQ, nvar,&
                 cvariable, p_Dsolution, p_Ddata1)
             call ucd_addVariableVertexBased (rexport, cvariable,&
                 UCD_VAR_STANDARD, p_Ddata1)
@@ -1409,24 +1409,24 @@ contains
             ! Special treatment of velocity vector
             select case(ndim)
             case (NDIM1D)
-              call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
 
             case (NDIM2D)
-              call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call euler_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
-              call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call euler_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
-              call euler_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
                   'velocity_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
@@ -1442,7 +1442,7 @@ contains
           else
             
             ! Standard treatment for scalar quantity
-            call euler_getVarBlockFormat(rvector1%NEQ, nvar,&
+            call hydro_getVarBlockFormat(rvector1%NEQ, nvar,&
                 cvariable, p_Dsolution, p_Ddata1)
             call ucd_addVariableVertexBased (rexport, cvariable,&
                 UCD_VAR_STANDARD, p_Ddata1)
@@ -1585,7 +1585,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_solveTransientPrimal(rparlist, ssectionName,&
-      ssectionNameEuler, ssectionNameTransport, RbdrCond,&
+      ssectionNameHydro, ssectionNameTransport, RbdrCond,&
       rproblem, rtimestep, rsolver, Rsolution, rcollection)
 
 !<description>
@@ -1595,7 +1595,7 @@ contains
 !<input>
     ! section name in parameter list
     character(LEN=*), intent(in) :: ssectionName
-    character(LEN=*), intent(in) :: ssectionNameEuler
+    character(LEN=*), intent(in) :: ssectionNameHydro
     character(LEN=*), intent(in) :: ssectionNameTransport
 
     ! array of boundary condition structures
@@ -1630,13 +1630,13 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Pointer to the solver structures
-    type(t_solver), pointer :: p_rsolverEuler, p_rsolverTransport
+    type(t_solver), pointer :: p_rsolverHydro, p_rsolverTransport
 
     ! Pointer to the solution vectors
-    type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionTransport
+    type(t_vectorBlock), pointer :: p_rsolutionHydro, p_rsolutionTransport
 
     ! Pointer to the boundary condition structure
-    type(t_boundaryCondition), pointer :: p_rbdrCondEuler, p_rbdrCondTransport
+    type(t_boundaryCondition), pointer :: p_rbdrCondHydro, p_rbdrCondTransport
 
     ! Vector for the element-wise feature indicator
     type(t_vectorScalar) :: relementError
@@ -1667,7 +1667,7 @@ contains
     real(dp) :: dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     real(dp) :: dscaleLorentzForceTerm
     integer :: templateMatrix, systemMatrix, isystemFormat
-    integer :: discretisationEuler, discretisationTransport
+    integer :: discretisationHydro, discretisationTransport
     integer :: isize, ipreadapt, npreadapt, ndimension, ilorentzForceType
     integer, external :: signal_SIGINT
 
@@ -1680,15 +1680,15 @@ contains
     p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
 
     ! Set pointers to solver structures
-    p_rsolverEuler => solver_getNextSolver(rsolver, 1)
+    p_rsolverHydro => solver_getNextSolver(rsolver, 1)
     p_rsolverTransport => solver_getNextSolver(rsolver, 2)
 
     ! Set pointers to solution vectors
-    p_rsolutionEuler => Rsolution(1)
+    p_rsolutionHydro => Rsolution(1)
     p_rsolutionTransport => Rsolution(2)
 
     ! Set pointer to boundary condition structures
-    p_rbdrCondEuler => RbdrCond(1)
+    p_rbdrCondHydro => RbdrCond(1)
     p_rbdrCondTransport => RbdrCond(2)
 
     ! Start time measurement for pre-processing
@@ -1702,51 +1702,51 @@ contains
     p_rproblemLevel => rproblem%p_rproblemLevelMax
 
 
-    !--- compressible Euler model ----------------------------------------------
+    !--- compressible hydrodynamic model ----------------------------------------------
 
     ! Get position of discretisation structure
     call parlst_getvalue_int(rparlist,&
-        ssectionNameEuler, 'discretisation', discretisationEuler)
+        ssectionNameHydro, 'discretisation', discretisationHydro)
 
     ! Set pointer to discretisation structure
     p_rdiscretisation =>&
-        p_rproblemLevel%Rdiscretisation(discretisationEuler)
+        p_rproblemLevel%Rdiscretisation(discretisationHydro)
 
     ! Create the solution vector
     call lsysbl_createVectorBlock(p_rdiscretisation,&
-        p_rsolutionEuler, .false., ST_DOUBLE)
+        p_rsolutionHydro, .false., ST_DOUBLE)
     if (p_rdiscretisation%ncomponents .ne.&
-        euler_getNVAR(p_rproblemLevel)) then
-      p_rsolutionEuler%RvectorBlock(1)%NVAR =&
-          euler_getNVAR(p_rproblemLevel)
-      isize = p_rsolutionEuler%NEQ*euler_getNVAR(p_rproblemLevel)
-      call lsysbl_resizeVectorBlock(p_rsolutionEuler,&
+        hydro_getNVAR(p_rproblemLevel)) then
+      p_rsolutionHydro%RvectorBlock(1)%NVAR =&
+          hydro_getNVAR(p_rproblemLevel)
+      isize = p_rsolutionHydro%NEQ*hydro_getNVAR(p_rproblemLevel)
+      call lsysbl_resizeVectorBlock(p_rsolutionHydro,&
           isize, .false., .false.)
     end if
 
     ! Initialize the solution vector
-    call euler_initSolution(rparlist, ssectionNameEuler,&
-        p_rproblemLevel, rtimestep%dinitialTime, p_rsolutionEuler,&
+    call hydro_initSolution(rparlist, ssectionNameHydro,&
+        p_rproblemLevel, rtimestep%dinitialTime, p_rsolutionHydro,&
         rcollection)
     
     ! Impose boundary conditions
     select case(ndimension)
     case (NDIM1D)
-      call bdrf_filterVectorExplicit(p_rbdrCondEuler, p_rsolutionEuler,&
-          rtimestep%dinitialTime, euler_calcBoundaryvalues1d)
+      call bdrf_filterVectorExplicit(p_rbdrCondHydro, p_rsolutionHydro,&
+          rtimestep%dinitialTime, hydro_calcBoundaryvalues1d)
     case (NDIM2D)
-      call bdrf_filterVectorExplicit(p_rbdrCondEuler, p_rsolutionEuler,&
-          rtimestep%dinitialTime, euler_calcBoundaryvalues2d)
+      call bdrf_filterVectorExplicit(p_rbdrCondHydro, p_rsolutionHydro,&
+          rtimestep%dinitialTime, hydro_calcBoundaryvalues2d)
     case (NDIM3D)
-      call bdrf_filterVectorExplicit(p_rbdrCondEuler, p_rsolutionEuler,&
-          rtimestep%dinitialTime, euler_calcBoundaryvalues3d)
+      call bdrf_filterVectorExplicit(p_rbdrCondHydro, p_rsolutionHydro,&
+          rtimestep%dinitialTime, hydro_calcBoundaryvalues3d)
     end select
 
     ! Attach the boundary condition
-    call solver_setBoundaryCondition(p_rsolverEuler, p_rbdrCondEuler, .true.)
+    call solver_setBoundaryCondition(p_rsolverHydro, p_rbdrCondHydro, .true.)
 
     ! Set collection to primal problem mode
-    call parlst_addvalue(rparlist, ssectionNameEuler, 'mode', 'primal')
+    call parlst_addvalue(rparlist, ssectionNameHydro, 'mode', 'primal')
 
 
     !--- transport model -------------------------------------------------------
@@ -1813,11 +1813,11 @@ contains
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this
         ! type to the callback function for h-adaptation. Note that
-        ! the template matrix is the same for the compressible Euler
-        ! model and the transport model. Therefore, the
-        ! template matrix is adopted from the transport Euler model.
+        ! the template matrix is the same for the hydrodynamic model
+        ! and the transport model. Therefore, the template matrix is
+	! adopted from the transport model.
         call parlst_getvalue_int(rparlist,&
-            ssectionNameEuler, 'templateMatrix', templateMatrix)
+            ssectionNameHydro, 'templateMatrix', templateMatrix)
         call grph_createGraphFromMatrix(p_rproblemLevel&
             %Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection,&
@@ -1830,7 +1830,7 @@ contains
           do ipreadapt = 1, npreadapt
 
             ! Compute the error estimator based on the tracer
-            call zpinch_calcAdaptationIndicator(p_rsolutionEuler,&
+            call zpinch_calcAdaptationIndicator(p_rsolutionHydro,&
                 p_rsolutionTransport, relementError)
 
             ! Set the names of the template matrix
@@ -1842,7 +1842,7 @@ contains
 
             ! Perform h-adaptation and update the triangulation structure
             call zpinch_adaptTriangulation(rparlist,&
-                ssectionnameEuler, rhadapt, p_rproblemLevel&
+                ssectionnameHydro, rhadapt, p_rproblemLevel&
                 %rtriangulation, relementError, rcollection)
 
             ! Release element-wise error distribution
@@ -1857,42 +1857,42 @@ contains
                 %Rmatrix(templateMatrix))
 
             ! Re-initialize all constant coefficient matrices
-            call euler_initProblemLevel(rparlist,&
-                ssectionNameEuler, p_rproblemLevel, rcollection)
+            call hydro_initProblemLevel(rparlist,&
+                ssectionNameHydro, p_rproblemLevel, rcollection)
             call transp_initProblemLevel(rparlist,&
                 ssectionNameTransport, p_rproblemLevel, rcollection)
 
-            ! Resize the solution vector for the Euler model accordingly
+            ! Resize the solution vector for the hydrodynamic model accordingly
             call parlst_getvalue_int(rparlist,&
-                ssectionNameEuler, 'systemMatrix', systemMatrix)
+                ssectionNameHydro, 'systemMatrix', systemMatrix)
             call lsysbl_resizeVecBlockIndMat(p_rproblemLevel&
-                %RmatrixBlock(systemMatrix), p_rsolutionEuler, .false., .true.)
+                %RmatrixBlock(systemMatrix), p_rsolutionHydro, .false., .true.)
 
             ! Resize the solution vector for the transport model accordingly
             call lsysbl_resizeVectorBlock(p_rsolutionTransport, &
                 p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
 
-            ! Re-generate the initial solution vector for the Euler model
-            call euler_initSolution(rparlist, ssectionnameEuler,&
+            ! Re-generate the initial solution vector for the hydrodynamic model
+            call hydro_initSolution(rparlist, ssectionnameHydro,&
                 p_rproblemLevel, rtimestep%dinitialTime,&
-                p_rsolutionEuler, rcollection)
+                p_rsolutionHydro, rcollection)
 
             ! Impose boundary conditions
             select case(ndimension)
             case (NDIM1D)
-              call bdrf_filterVectorExplicit(p_rbdrCondEuler,&
-                  p_rsolutionEuler, rtimestep%dinitialTime,&
-                  euler_calcBoundaryvalues1d)
+              call bdrf_filterVectorExplicit(p_rbdrCondHydro,&
+                  p_rsolutionHydro, rtimestep%dinitialTime,&
+                  hydro_calcBoundaryvalues1d)
 
             case (NDIM2D)
-              call bdrf_filterVectorExplicit(p_rbdrCondEuler,&
-                  p_rsolutionEuler, rtimestep%dinitialTime,&
-                  euler_calcBoundaryvalues2d)
+              call bdrf_filterVectorExplicit(p_rbdrCondHydro,&
+                  p_rsolutionHydro, rtimestep%dinitialTime,&
+                  hydro_calcBoundaryvalues2d)
 
             case (NDIM3D)
-              call bdrf_filterVectorExplicit(p_rbdrCondEuler,&
-                  p_rsolutionEuler, rtimestep%dinitialTime,&
-                  euler_calcBoundaryvalues3d)
+              call bdrf_filterVectorExplicit(p_rbdrCondHydro,&
+                  p_rsolutionHydro, rtimestep%dinitialTime,&
+                  hydro_calcBoundaryvalues3d)
             end select
 
             ! Re-generate the initial solution vector for the transport model
@@ -1907,12 +1907,12 @@ contains
 
           ! Prepare internal data arrays of the solver structure
           call parlst_getvalue_int(rparlist,&
-              ssectionNameEuler, 'systemMatrix', systemMatrix)
+              ssectionNameHydro, 'systemMatrix', systemMatrix)
           call parlst_getvalue_int(rparlist,&
-              ssectionNameEuler, 'isystemFormat', isystemFormat)
+              ssectionNameHydro, 'isystemFormat', isystemFormat)
           call flagship_updateSolverMatrix(p_rproblemLevel,&
-              p_rsolverEuler, systemMatrix, isystemFormat, UPDMAT_ALL)
-          call solver_updateStructure(p_rsolverEuler)
+              p_rsolverHydro, systemMatrix, isystemFormat, UPDMAT_ALL)
+          call solver_updateStructure(p_rsolverHydro)
 
           ! Prepare internal data arrays of the solver structure
           call parlst_getvalue_int(rparlist,&
@@ -1942,7 +1942,7 @@ contains
       call ucd_readGMV(sucdimport, rimport, p_rproblemLevel%rtriangulation)
       call ucd_getSimulationTime(rimport, rtimestep%dinitialTime)
       call ucd_getSimulationTime(rimport, rtimestep%dTime)
-      call euler_setVariables(rimport, p_rsolutionEuler)
+      call hydro_setVariables(rimport, p_rsolutionHydro)
       call transp_setVariable(rimport, 'advect', p_rsolutionTransport)
       call ucd_release(rimport)
 
@@ -1952,11 +1952,11 @@ contains
 
     !---------------------------------------------------------------------------
     ! Calculate velocity field (\rho v) for the scalar model problem
-    ! based on the initial solution U^0 of the Euler model
+    ! based on the initial solution U^0 of the hydrodynamic model
     !---------------------------------------------------------------------------
 
     call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
-        p_rproblemLevel, p_rsolutionEuler, rcollection)
+        p_rproblemLevel, p_rsolutionHydro, rcollection)
 
     ! Stop time measurement for pre-processing
     call stat_stopTimer(p_rtimerPrePostprocess)
@@ -1976,7 +1976,7 @@ contains
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
 
       !-----------------------------------------------------------------------
-      ! Compute Euler model + scalar tracer in coupled fashion
+      ! Compute hydrodynamic model + scalar tracer in coupled fashion
       ! for full time step: $U^n \to U^{n+1}$ and $u^n \to u^{n+1}$
       !-----------------------------------------------------------------------
 
@@ -1989,15 +1989,15 @@ contains
       ! Calculate explicit part of the Lorentz force term
       if (dscaleLorentzForceTerm   .ne. 0.0_DP) then
         call zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
-            ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
-            p_rsolutionEuler, p_rsolutionTransport, rtimestep%dTime, &
+            ssectionNameHydro, ssectionNameTransport, p_rproblemLevel,&
+            p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime, &
             dscaleLorentzForceTerm, rforce(1), rcollection)
       end if
 
       ! Prepare quick access arrays/vectors
       rcollection%SquickAccess(1) = 'null'
       rcollection%SquickAccess(2) = ssectionName
-      rcollection%SquickAccess(3) = ssectionNameEuler
+      rcollection%SquickAccess(3) = ssectionNameHydro
       rcollection%SquickAccess(4) = ssectionNameTransport
       rcollection%p_rvectorQuickAccess1 => rsolution(1)
       rcollection%p_rvectorQuickAccess2 => rsolution(2)
@@ -2046,22 +2046,22 @@ contains
       end select
 
       !-------------------------------------------------------------------------
-      ! Compute linearised FCT correction for Euler and transport model
+      ! Compute linearised FCT correction for hydrodynamic and transport model
       !-------------------------------------------------------------------------
 
       ! Prepare quick access arrays
       rcollection%SquickAccess(1) = 'null'
       rcollection%SquickAccess(2) = ssectionName
-      rcollection%SquickAccess(3) = ssectionNameEuler
+      rcollection%SquickAccess(3) = ssectionNameHydro
       rcollection%SquickAccess(4) = ssectionNameTransport
 
       ! Apply linearised FEM-FCT post-processing
       call zpinch_calcLinearisedFCT(RbdrCond, p_rproblemLevel, rtimestep,&
-          p_rsolverEuler, p_rsolverTransport, Rsolution, rcollection, Rforce)
+          p_rsolverHydro, p_rsolverTransport, Rsolution, rcollection, Rforce)
 
       ! Calculate velocity field (\rho v)
       call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
-          p_rproblemLevel, p_rsolutionEuler, rcollection)
+          p_rproblemLevel, p_rsolutionHydro, rcollection)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
@@ -2075,9 +2075,9 @@ contains
 
       if (ilorentzForceType .eq. 0) then
         call zpinch_applyLorentzforceTerm(rparlist, ssectionName,&
-            ssectionNameEuler, ssectionNameTransport,&
+            ssectionNameHydro, ssectionNameTransport,&
             p_rproblemLevel, rtimestep, p_rsolutionTransport,&
-            p_rsolutionEuler, rcollection)
+            p_rsolutionHydro, rcollection)
       end if
       
       ! Reached final time, then exit the infinite time loop?
@@ -2124,12 +2124,12 @@ contains
         call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
 !!$        ! Compute the error estimator using recovery techniques
-!!$        call euler_estimateRecoveryError(rparlist, ssectionnameEuler,&
-!!$            p_rproblemLevel, p_rsolutionEuler, rtimestep&
+!!$        call hydro_estimateRecoveryError(rparlist, ssectionnameHydro,&
+!!$            p_rproblemLevel, p_rsolutionHydro, rtimestep&
 !!$            %dinitialTime, relementError, derror)
 
         ! Compute the error indicator based on the tracer
-        call zpinch_calcAdaptationIndicator(p_rsolutionEuler,&
+        call zpinch_calcAdaptationIndicator(p_rsolutionHydro,&
             p_rsolutionTransport, relementError)
 
         ! Stop time measurement for error estimation
@@ -2151,7 +2151,7 @@ contains
         rcollection%p_rvectorQuickAccess2 => rsolution(2)
 
         ! Perform h-adaptation and update the triangulation structure
-        call zpinch_adaptTriangulation(rparlist, ssectionnameEuler,&
+        call zpinch_adaptTriangulation(rparlist, ssectionnameHydro,&
             rhadapt, p_rproblemLevel%rtriangulation, relementError,&
             rcollection)
 
@@ -2185,16 +2185,16 @@ contains
         call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
         ! Re-initialize all constant coefficient matrices
-        call euler_initProblemLevel(rparlist, ssectionNameEuler,&
+        call hydro_initProblemLevel(rparlist, ssectionNameHydro,&
             p_rproblemLevel, rcollection)
         call transp_initProblemLevel(rparlist, ssectionNameTransport,&
             p_rproblemLevel, rcollection)
 
-        ! Resize the solution vector for the Euler model accordingly
+        ! Resize the solution vector for the hydrodynamic model accordingly
         call parlst_getvalue_int(rparlist,&
-            ssectionNameEuler, 'systemmatrix', systemMatrix)
+            ssectionNameHydro, 'systemmatrix', systemMatrix)
         call lsysbl_resizeVecBlockIndMat(p_rproblemLevel&
-            %RmatrixBlock(systemMatrix), p_rsolutionEuler, .false., .true.)
+            %RmatrixBlock(systemMatrix), p_rsolutionHydro, .false., .true.)
 
         ! Resize the solution vector for the transport model accordingly
         call lsysbl_resizeVectorBlock(p_rsolutionTransport, &
@@ -2202,12 +2202,12 @@ contains
 
         ! Prepare internal data arrays of the solver structure
         call parlst_getvalue_int(rparlist,&
-            ssectionNameEuler, 'systemmatrix', systemMatrix)
+            ssectionNameHydro, 'systemmatrix', systemMatrix)
         call parlst_getvalue_int(rparlist,&
-            ssectionNameEuler, 'isystemformat', isystemFormat)
+            ssectionNameHydro, 'isystemformat', isystemFormat)
         call flagship_updateSolverMatrix(p_rproblemLevel,&
-            p_rsolverEuler, systemMatrix, isystemFormat, UPDMAT_ALL)
-        call solver_updateStructure(p_rsolverEuler)
+            p_rsolverHydro, systemMatrix, isystemFormat, UPDMAT_ALL)
+        call solver_updateStructure(p_rsolverHydro)
 
         ! Prepare internal data arrays of the solver structure
         call parlst_getvalue_int(rparlist,&
@@ -2218,7 +2218,7 @@ contains
 
         ! Calculate velocity field (\rho v)
         call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
-            p_rproblemLevel, p_rsolutionEuler, rcollection)
+            p_rproblemLevel, p_rsolutionHydro, rcollection)
 
         ! Stop time measurement for generation of constant
         ! coefficient matrices
@@ -2350,8 +2350,8 @@ contains
 
     case(1)
 
-      ! Get density distribution from the solution of the Euler model
-      call euler_getVariable(rvector, 'density', rvectorScalar)
+      ! Get density distribution from the solution of the hydrodynamic model
+      call hydro_getVariable(rvector, 'density', rvectorScalar)
 
       ! Get density distribution
       call lsyssc_getbase_double(rvectorScalar, p_Dvector)

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> euler_callback3d </name>
+!# <name> hydro_callback3d </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,171 +9,171 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) euler_calcFluxGal3d_sim
+!# 1.) hydro_calcFluxGal3d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#
-!# 2.) euler_calcFluxGalNoBdr3d_sim
+!# 2.) hydro_calcFluxGalNoBdr3d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#        without assembling the symmetric boundary contribution
 !#
-!# 3.) euler_calcFluxScDiss3d_sim
+!# 3.) hydro_calcFluxScDiss3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities
 !#
-!# 4.) euler_calcFluxScDissDiSp3d_sim
+!# 4.) hydro_calcFluxScDissDiSp3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities based on
 !#        dimensional splitting approach
 !#
-!# 5.) euler_calcFluxRoeDiss3d_sim
+!# 5.) hydro_calcFluxRoeDiss3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities
 !#
-!# 6.) euler_calcFluxRoeDissDiSp3d_sim
+!# 6.) hydro_calcFluxRoeDissDiSp3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities based on
 !#        dimensional splitting approach
 !#
-!# 7.) euler_calcFluxRusDiss3d_sim
+!# 7.) hydro_calcFluxRusDiss3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion
 !#
-!# 8.) euler_calcFluxRusDissDiSp3d_sim
+!# 8.) hydro_calcFluxRusDissDiSp3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion
 !#
-!# 9.) euler_calcMatDiagMatD3d_sim
+!# 9.) hydro_calcMatDiagMatD3d_sim
 !#     -> Computes local matrix for diagonal entry
 !#
-!# 10.) euler_calcMatDiag3d_sim
+!# 10.) hydro_calcMatDiag3d_sim
 !#      -> Computes local matrix for diagonal entry
 !#
-!# 11.) euler_calcMatGalMatD3d_sim
+!# 11.) hydro_calcMatGalMatD3d_sim
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
-!# 12.) euler_calcMatGal3d_sim
+!# 12.) hydro_calcMatGal3d_sim
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
-!# 13.) euler_calcMatScDissMatD3d_sim
+!# 13.) hydro_calcMatScDissMatD3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting scalar artificial viscosities
 !#
-!# 14.) euler_calcMatScDiss3d_sim
+!# 14.) hydro_calcMatScDiss3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting scalar artificial viscosities
 !#
-!# 15.) euler_calcMatRoeDissMatD3d_sim
+!# 15.) hydro_calcMatRoeDissMatD3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting tensorial artificial viscosities
 !#
-!# 16.) euler_calcMatRoeDiss3d_sim
+!# 16.) hydro_calcMatRoeDiss3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting tensorial artificial viscosities
 !#
-!# 17.) euler_calcMatRusDissMatD3d_sim
+!# 17.) hydro_calcMatRusDissMatD3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 18.) euler_calcMatRusDiss3d_sim
+!# 18.) hydro_calcMatRusDiss3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov flux artificial viscosities
 !#
-!# 19.) euler_calcCharacteristics3d_sim
+!# 19.) hydro_calcCharacteristics3d_sim
 !#      -> Computes characteristic variables
 !#
-!# 20.) euler_calcFluxFCTScalarDiss3d
+!# 20.) hydro_calcFluxFCTScalarDiss3d
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting scalar artificial viscosities
 !#
-!# 21.) euler_calcFluxFCTTensorDiss3d
+!# 21.) hydro_calcFluxFCTTensorDiss3d
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting tensorial artificial viscosities
 !#
-!# 22.) euler_calcFluxFCTRusanov3d
+!# 22.) hydro_calcFluxFCTRusanov3d
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 23.) euler_trafoFluxDensity3d_sim
+!# 23.) hydro_trafoFluxDensity3d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
-!# 24.) euler_trafoDiffDensity3d_sim
+!# 24.) hydro_trafoDiffDensity3d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density
 !#
-!# 25.) euler_trafoFluxEnergy3d_sim
+!# 25.) hydro_trafoFluxEnergy3d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the energy
 !#
-!# 26.) euler_trafoDiffEnergy3d_sim
+!# 26.) hydro_trafoDiffEnergy3d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the energy
 !#
-!# 27.) euler_trafoFluxPressure3d_sim
+!# 27.) hydro_trafoFluxPressure3d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the pressure
 !#
-!# 28.) euler_trafoFluxVelocity3d_sim
+!# 28.) hydro_trafoFluxVelocity3d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the velocity
 !#
-!# 29.) euler_trafoDiffVelocity3d_sim
+!# 29.) hydro_trafoDiffVelocity3d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the velocity
 !#
-!# 30.) euler_trafoFluxMomentum3d_sim
+!# 30.) hydro_trafoFluxMomentum3d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the momentum
 !#
-!# 31.) euler_trafoDiffMomentum3d_sim
+!# 31.) hydro_trafoDiffMomentum3d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the momentum
 !#
-!# 32.) euler_trafoFluxDenEng3d_sim
+!# 32.) hydro_trafoFluxDenEng3d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
-!# 33.) euler_trafoDiffDenEng3d_sim
+!# 33.) hydro_trafoDiffDenEng3d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density and energy
 !#
-!# 34.) euler_trafoFluxDenPre3d_sim
+!# 34.) hydro_trafoFluxDenPre3d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
-!# 35.) euler_trafoDiffDenPre3d_sim
+!# 35.) hydro_trafoDiffDenPre3d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density and the pessure
 !#
-!# 36.) euler_trafoFluxDenPreVel3d_sim
+!# 36.) hydro_trafoFluxDenPreVel3d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
-!# 37.) euler_trafoDiffDenPreVel3d_sim
+!# 37.) hydro_trafoDiffDenPreVel3d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density, the pressure 
 !#         and the velocity
 !#
-!# 38.) euler_calcBoundaryvalues3d
+!# 38.) hydro_calcBoundaryvalues3d
 !#      -> Computes the boundary values for a given node
 !#
-!# 39.) euler_hadaptCallbackScalar3d
+!# 39.) hydro_hadaptCallbackScalar3d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 3D, whereby the vector is stored in interleave format
 !#
-!# 40.) euler_hadaptCallbackBlock3d
+!# 40.) hydro_hadaptCallbackBlock3d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 3D, whereby the vector is stored in block format
 !#
 !# </purpose>
 !##############################################################################
 
-module euler_callback3d
+module hydro_callback3d
 
-#include "euler.h"
+#include "hydro.h"
 
   use collection
-  use euler_basic
+  use hydro_basic
   use flagship_callback
   use fsystem
   use genoutput
@@ -189,47 +189,47 @@ module euler_callback3d
   implicit none
 
   private
-  public :: euler_calcFluxGal3d_sim
-  public :: euler_calcFluxGalNoBdr3d_sim
-  public :: euler_calcFluxScDiss3d_sim
-  public :: euler_calcFluxScDissDiSp3d_sim
-  public :: euler_calcFluxRoeDiss3d_sim
-  public :: euler_calcFluxRoeDissDiSp3d_sim
-  public :: euler_calcFluxRusDiss3d_sim
-  public :: euler_calcFluxRusDissDiSp3d_sim
-  public :: euler_calcMatDiagMatD3d_sim
-  public :: euler_calcMatDiag3d_sim
-  public :: euler_calcMatGalMatD3d_sim
-  public :: euler_calcMatGal3d_sim
-  public :: euler_calcMatScDissMatD3d_sim
-  public :: euler_calcMatScDiss3d_sim
-  public :: euler_calcMatRoeDissMatD3d_sim
-  public :: euler_calcMatRoeDiss3d_sim
-  public :: euler_calcMatRusDissMatD3d_sim
-  public :: euler_calcMatRusDiss3d_sim
-  public :: euler_calcCharacteristics3d_sim
-  public :: euler_calcFluxFCTScalarDiss3d
-  public :: euler_calcFluxFCTTensorDiss3d
-  public :: euler_calcFluxFCTRusanov3d
-  public :: euler_trafoFluxDensity3d_sim
-  public :: euler_trafoFluxEnergy3d_sim
-  public :: euler_trafoFluxPressure3d_sim
-  public :: euler_trafoFluxVelocity3d_sim
-  public :: euler_trafoFluxMomentum3d_sim
-  public :: euler_trafoFluxDenEng3d_sim
-  public :: euler_trafoFluxDenPre3d_sim
-  public :: euler_trafoFluxDenPreVel3d_sim
-  public :: euler_trafoDiffDensity3d_sim
-  public :: euler_trafoDiffEnergy3d_sim
-  public :: euler_trafoDiffPressure3d_sim
-  public :: euler_trafoDiffVelocity3d_sim
-  public :: euler_trafoDiffMomentum3d_sim
-  public :: euler_trafoDiffDenEng3d_sim
-  public :: euler_trafoDiffDenPre3d_sim
-  public :: euler_trafoDiffDenPreVel3d_sim
-  public :: euler_calcBoundaryvalues3d
-  public :: euler_hadaptCallbackScalar3d
-  public :: euler_hadaptCallbackBlock3d
+  public :: hydro_calcFluxGal3d_sim
+  public :: hydro_calcFluxGalNoBdr3d_sim
+  public :: hydro_calcFluxScDiss3d_sim
+  public :: hydro_calcFluxScDissDiSp3d_sim
+  public :: hydro_calcFluxRoeDiss3d_sim
+  public :: hydro_calcFluxRoeDissDiSp3d_sim
+  public :: hydro_calcFluxRusDiss3d_sim
+  public :: hydro_calcFluxRusDissDiSp3d_sim
+  public :: hydro_calcMatDiagMatD3d_sim
+  public :: hydro_calcMatDiag3d_sim
+  public :: hydro_calcMatGalMatD3d_sim
+  public :: hydro_calcMatGal3d_sim
+  public :: hydro_calcMatScDissMatD3d_sim
+  public :: hydro_calcMatScDiss3d_sim
+  public :: hydro_calcMatRoeDissMatD3d_sim
+  public :: hydro_calcMatRoeDiss3d_sim
+  public :: hydro_calcMatRusDissMatD3d_sim
+  public :: hydro_calcMatRusDiss3d_sim
+  public :: hydro_calcCharacteristics3d_sim
+  public :: hydro_calcFluxFCTScalarDiss3d
+  public :: hydro_calcFluxFCTTensorDiss3d
+  public :: hydro_calcFluxFCTRusanov3d
+  public :: hydro_trafoFluxDensity3d_sim
+  public :: hydro_trafoFluxEnergy3d_sim
+  public :: hydro_trafoFluxPressure3d_sim
+  public :: hydro_trafoFluxVelocity3d_sim
+  public :: hydro_trafoFluxMomentum3d_sim
+  public :: hydro_trafoFluxDenEng3d_sim
+  public :: hydro_trafoFluxDenPre3d_sim
+  public :: hydro_trafoFluxDenPreVel3d_sim
+  public :: hydro_trafoDiffDensity3d_sim
+  public :: hydro_trafoDiffEnergy3d_sim
+  public :: hydro_trafoDiffPressure3d_sim
+  public :: hydro_trafoDiffVelocity3d_sim
+  public :: hydro_trafoDiffMomentum3d_sim
+  public :: hydro_trafoDiffDenEng3d_sim
+  public :: hydro_trafoDiffDenPre3d_sim
+  public :: hydro_trafoDiffDenPreVel3d_sim
+  public :: hydro_calcBoundaryvalues3d
+  public :: hydro_hadaptCallbackScalar3d
+  public :: hydro_hadaptCallbackBlock3d
 
 contains
 
@@ -237,7 +237,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxGal3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxGal3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -279,7 +279,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
 #else
     real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
@@ -312,7 +312,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
@@ -407,13 +407,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcFluxGal3d_sim
+  end subroutine hydro_calcFluxGal3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxGalNoBdr3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxGalNoBdr3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -531,13 +531,13 @@ contains
       DfluxesAtEdge(:,2,idx) = DfluxesAtEdge(:,1,idx)
     end do
 
-  end subroutine euler_calcFluxGalNoBdr3d_sim
+  end subroutine hydro_calcFluxGalNoBdr3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxScDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxScDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 !<description>
@@ -579,7 +579,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
 #else
     real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
@@ -614,7 +614,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
@@ -733,7 +733,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
@@ -751,13 +751,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcFluxScDiss3d_sim
+  end subroutine hydro_calcFluxScDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxScDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxScDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 
@@ -801,7 +801,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
 #else
     real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
@@ -836,7 +836,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
@@ -955,7 +955,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
@@ -973,13 +973,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcFluxScDissDiSp3d_sim
+  end subroutine hydro_calcFluxScDissDiSp3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRoeDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxRoeDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -1021,7 +1021,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
 #else
     real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
@@ -1058,7 +1058,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
@@ -1249,7 +1249,7 @@ contains
         ! Build both contributions into the fluxes
         !-----------------------------------------------------------------------
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
@@ -1267,7 +1267,7 @@ contains
 #endif
       else
         
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
@@ -1286,13 +1286,13 @@ contains
       end if
     end do
 
-  end subroutine euler_calcFluxRoeDiss3d_sim
+  end subroutine hydro_calcFluxRoeDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRoeDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxRoeDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 
@@ -1336,7 +1336,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
 #else
     real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
@@ -1372,7 +1372,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
@@ -1494,7 +1494,7 @@ contains
         ! Build both contributions into the fluxes
         !-----------------------------------------------------------------------
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
@@ -1512,7 +1512,7 @@ contains
 #endif
       else
         
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
@@ -1531,13 +1531,13 @@ contains
       end if
     end do
 
-  end subroutine euler_calcFluxRoeDissDiSp3d_sim
+  end subroutine hydro_calcFluxRoeDissDiSp3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRusDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxRusDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 !<description>
@@ -1579,7 +1579,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
 #else
     real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
@@ -1613,7 +1613,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
@@ -1723,7 +1723,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
       
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
@@ -1741,13 +1741,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcFluxRusDiss3d_sim
+  end subroutine hydro_calcFluxRusDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRusDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxRusDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -1790,7 +1790,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
 #else
     real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
@@ -1824,7 +1824,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
@@ -1934,7 +1934,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
@@ -1952,13 +1952,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcFluxRusDissDiSp3d_sim
+  end subroutine hydro_calcFluxRusDissDiSp3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatDiagMatD3d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
+  pure subroutine hydro_calcMatDiagMatD3d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
       IverticesAtNode, dscale, DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -1991,13 +1991,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatDiagMatD3d_sim
+  end subroutine hydro_calcMatDiagMatD3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatDiag3d_sim(DdataAtNode,&
+  pure subroutine hydro_calcMatDiag3d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
       DcoefficientsAtNode, rcollection)
 
@@ -2031,13 +2031,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatDiag3d_sim
+  end subroutine hydro_calcMatDiag3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatGalMatD3d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatGalMatD3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2070,13 +2070,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatGalMatD3d_sim
+  end subroutine hydro_calcMatGalMatD3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatGal3d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatGal3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2109,13 +2109,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatGal3d_sim
+  end subroutine hydro_calcMatGal3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatScDissMatD3d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatScDissMatD3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
     
@@ -2149,13 +2149,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatScDissMatD3d_sim
+  end subroutine hydro_calcMatScDissMatD3d_sim
 
 !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatScDiss3d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatScDiss3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2189,13 +2189,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatScDiss3d_sim
+  end subroutine hydro_calcMatScDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatRoeDissMatD3d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatRoeDissMatD3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2229,13 +2229,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatRoeDissMatD3d_sim
+  end subroutine hydro_calcMatRoeDissMatD3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatRoeDiss3d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatRoeDiss3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2269,13 +2269,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatRoeDiss3d_sim
+  end subroutine hydro_calcMatRoeDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatRusDissMatD3d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatRusDissMatD3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2309,13 +2309,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatRusDissMatD3d_sim
+  end subroutine hydro_calcMatRusDissMatD3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatRusDiss3d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatRusDiss3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2349,13 +2349,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatRusDiss3d_sim
+  end subroutine hydro_calcMatRusDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcCharacteristics3d_sim(Dweight, DdataAtEdge,&
+  pure subroutine hydro_calcCharacteristics3d_sim(Dweight, DdataAtEdge,&
       DcharVariablesAtEdge, DeigenvaluesAtEdge,&
       DrightEigenvectorsAtEdge, DleftEigenvectorsAtEdge, rcollection)
 
@@ -2401,13 +2401,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcCharacteristics3d_sim
+  end subroutine hydro_calcCharacteristics3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxFCTScalarDiss3d(&
+  pure subroutine hydro_calcFluxFCTScalarDiss3d(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
 
@@ -2436,13 +2436,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcFluxFCTScalarDiss3d
+  end subroutine hydro_calcFluxFCTScalarDiss3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxFCTTensorDiss3d(&
+  pure subroutine hydro_calcFluxFCTTensorDiss3d(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
 
@@ -2471,13 +2471,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcFluxFCTTensorDiss3d
+  end subroutine hydro_calcFluxFCTTensorDiss3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxFCTRusanov3d(&
+  pure subroutine hydro_calcFluxFCTRusanov3d(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
 
@@ -2506,13 +2506,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcFluxFCTRusanov3d
+  end subroutine hydro_calcFluxFCTRusanov3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDensity3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxDensity3d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -2557,13 +2557,13 @@ contains
          -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
     end do
 
-  end subroutine euler_trafoFluxDensity3d_sim
+  end subroutine hydro_trafoFluxDensity3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDensity3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffDensity3d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -2602,13 +2602,13 @@ contains
           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffDensity3d_sim
+  end subroutine hydro_trafoDiffDensity3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxEnergy3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxEnergy3d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -2653,13 +2653,13 @@ contains
          -TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
     end do
 
-  end subroutine euler_trafoFluxEnergy3d_sim
+  end subroutine hydro_trafoFluxEnergy3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffEnergy3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffEnergy3d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -2698,13 +2698,13 @@ contains
           TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffEnergy3d_sim
+  end subroutine hydro_trafoDiffEnergy3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxPressure3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxPressure3d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -2770,13 +2770,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_trafoFluxPressure3d_sim
+  end subroutine hydro_trafoFluxPressure3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffPressure3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffPressure3d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -2815,13 +2815,13 @@ contains
           PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffPressure3d_sim
+  end subroutine hydro_trafoDiffPressure3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxVelocity3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxVelocity3d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -2900,13 +2900,13 @@ contains
           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
     end do
     
-  end subroutine euler_trafoFluxVelocity3d_sim
+  end subroutine hydro_trafoFluxVelocity3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffVelocity3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffVelocity3d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -2955,13 +2955,13 @@ contains
           Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
     end do
     
-  end subroutine euler_trafoDiffVelocity3d_sim
+  end subroutine hydro_trafoDiffVelocity3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxMomentum3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxMomentum3d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -3018,13 +3018,13 @@ contains
          -Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
     end do
     
-  end subroutine euler_trafoFluxMomentum3d_sim
+  end subroutine hydro_trafoFluxMomentum3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffMomentum3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffMomentum3d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -3073,13 +3073,13 @@ contains
           Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
     end do
     
-  end subroutine euler_trafoDiffMomentum3d_sim
+  end subroutine hydro_trafoDiffMomentum3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDenEng3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxDenEng3d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -3130,13 +3130,13 @@ contains
          -TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR3D,idx)
     end do
 
-  end subroutine euler_trafoFluxDenEng3d_sim
+  end subroutine hydro_trafoFluxDenEng3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDenEng3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffDenEng3d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -3180,13 +3180,13 @@ contains
           TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffDenEng3d_sim
+  end subroutine hydro_trafoDiffDenEng3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDenPre3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxDenPre3d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -3258,13 +3258,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_trafoFluxDenPre3d_sim
+  end subroutine hydro_trafoFluxDenPre3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDenPre3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffDenPre3d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -3308,13 +3308,13 @@ contains
           PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
     end do
     
-  end subroutine euler_trafoDiffDenPre3d_sim
+  end subroutine hydro_trafoDiffDenPre3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDenPreVel3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxDenPreVel3d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -3416,13 +3416,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_trafoFluxDenPreVel3d_sim
+  end subroutine hydro_trafoFluxDenPreVel3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDenPreVel3d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffDenPreVel3d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -3481,13 +3481,13 @@ contains
           PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffDenPreVel3d_sim
+  end subroutine hydro_trafoDiffDenPreVel3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcBoundaryvalues3d(DbdrNormal, DpointNormal,&
+  subroutine hydro_calcBoundaryvalues3d(DbdrNormal, DpointNormal,&
       DbdrValue, ibdrCondType, Du, Du0, istatus)
 
 !<description>
@@ -3520,13 +3520,13 @@ contains
 !</inputoutput>
 !</subroutine>
 
-  end subroutine euler_calcBoundaryvalues3d
+  end subroutine hydro_calcBoundaryvalues3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_hadaptCallbackScalar3d(iOperation, rcollection)
+  subroutine hydro_hadaptCallbackScalar3d(iOperation, rcollection)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -3562,7 +3562,7 @@ contains
       ! Check if solution is stored in interleave format
       if (rsolution%nblocks .ne. 1) then
         call output_line('Vector is not in interleave format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackScalar3d')
+            OU_CLASS_WARNING,OU_MODE_STD,'hydro_hadaptCallbackScalar3d')
         call sys_halt()
       end if
 
@@ -3649,13 +3649,13 @@ contains
 
     end select
 
-  end subroutine euler_hadaptCallbackScalar3d
+  end subroutine hydro_hadaptCallbackScalar3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_hadaptCallbackBlock3d(iOperation, rcollection)
+  subroutine hydro_hadaptCallbackBlock3d(iOperation, rcollection)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -3691,7 +3691,7 @@ contains
       ! Check if solution is stored in interleave format
       if (rsolution%nblocks .ne. NVAR3D) then
         call output_line('Vector is not in block format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackBlock3d')
+            OU_CLASS_WARNING,OU_MODE_STD,'hydro_hadaptCallbackBlock3d')
         call sys_halt()
       end if
 
@@ -3782,6 +3782,6 @@ contains
 
     end select
 
-  end subroutine euler_hadaptCallbackBlock3d
+  end subroutine hydro_hadaptCallbackBlock3d
 
-end module euler_callback3d
+end module hydro_callback3d

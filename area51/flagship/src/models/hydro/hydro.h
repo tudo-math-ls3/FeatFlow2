@@ -2,18 +2,18 @@
 !-*- mode: f90; -*-
 !##############################################################################
 !# ****************************************************************************
-!# <name> euler </name>
+!# <name> hydro </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This is the main header file for the compressible Euler model
+!# This is the main header file for the hydrodynamic model
 !#
 !# </purpose>
 !##############################################################################
 #endif
 
-#ifndef _EULER_H_
-#define _EULER_H_
+#ifndef _HYDRO_H_
+#define _HYDRO_H_
 
 #if 0
 ! Equation of state for perfect gas

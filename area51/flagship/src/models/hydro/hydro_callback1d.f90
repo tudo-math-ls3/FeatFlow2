@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> euler_callback1d </name>
+!# <name> hydro_callback1d </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -9,162 +9,162 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) euler_calcFluxGal1d_sim
+!# 1.) hydro_calcFluxGal1d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#
-!# 2.) euler_calcFluxGalNoBdr1d_sim
+!# 2.) hydro_calcFluxGalNoBdr1d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#        without assembling the symmetric boundary contribution
 !#
-!# 3.) euler_calcFluxScDiss1d_sim
+!# 3.) hydro_calcFluxScDiss1d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities
 !#
-!# 4.) euler_calcFluxRoeDiss1d_sim
+!# 4.) hydro_calcFluxRoeDiss1d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities
 !#
-!# 5.) euler_calcFluxRusDiss1d_sim
+!# 5.) hydro_calcFluxRusDiss1d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion
 !#
-!# 6.) euler_calcMatDiagMatD1d_sim
+!# 6.) hydro_calcMatDiagMatD1d_sim
 !#     -> Computes local matrix for diagonal entry
 !#
-!# 7.) euler_calcMatDiag1d_sim
+!# 7.) hydro_calcMatDiag1d_sim
 !#     -> Computes local matrix for diagonal entry
 !#
-!# 8.) euler_calcMatGalMatD1d_sim
+!# 8.) hydro_calcMatGalMatD1d_sim
 !#     -> Computes local matrices for standard Galerkin scheme
 !#
-!# 9.) euler_calcMatGal1d_sim
+!# 9.) hydro_calcMatGal1d_sim
 !#     -> Computes local matrices for standard Galerkin scheme
 !#
-!# 10.) euler_calcMatScDissMatD1d_sim
+!# 10.) hydro_calcMatScDissMatD1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting scalar artificial viscosities
 !#
-!# 11.) euler_calcMatScDiss1d_sim
+!# 11.) hydro_calcMatScDiss1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting scalar artificial viscosities
 !#
-!# 12.) euler_calcMatRoeDissMatD1d_sim
+!# 12.) hydro_calcMatRoeDissMatD1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting tensorial artificial viscosities
 !#
-!# 13.) euler_calcMatRoeDiss1d_sim
+!# 13.) hydro_calcMatRoeDiss1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting tensorial artificial viscosities
 !#
-!# 14.) euler_calcMatRusDissMatD1d_sim
+!# 14.) hydro_calcMatRusDissMatD1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 15.) euler_calcMatRusDiss1d_sim
+!# 15.) hydro_calcMatRusDiss1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov flux artificial viscosities
 !#
-!# 16.) euler_calcCharacteristics1d_sim
+!# 16.) hydro_calcCharacteristics1d_sim
 !#      -> Computes characteristic variables
 !#
-!# 17.) euler_calcFluxFCTScalarDiss1d
+!# 17.) hydro_calcFluxFCTScalarDiss1d
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting scalar artificial viscosities
 !#
-!# 18.) euler_calcFluxFCTTensorDiss1d
+!# 18.) hydro_calcFluxFCTTensorDiss1d
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting tensorial artificial viscosities
 !#
-!# 19.) euler_calcFluxFCTRusanov1d
+!# 19.) hydro_calcFluxFCTRusanov1d
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 20.) euler_trafoFluxDensity1d_sim
+!# 20.) hydro_trafoFluxDensity1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
-!# 21.) euler_trafoDiffDensity1d_sim
+!# 21.) hydro_trafoDiffDensity1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density
 !#
-!# 22.) euler_trafoFluxEnergy1d_sim
+!# 22.) hydro_trafoFluxEnergy1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the energy
 !#
-!# 23.) euler_trafoDiffEnergy1d_sim
+!# 23.) hydro_trafoDiffEnergy1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the energy
 !#
-!# 24.) euler_trafoFluxPressure1d_sim
+!# 24.) hydro_trafoFluxPressure1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the pressure
 !#
-!# 25.) euler_trafoDiffPressure1d_sim
+!# 25.) hydro_trafoDiffPressure1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the pressure
 !#
-!# 26.) euler_trafoFluxVelocity1d_sim
+!# 26.) hydro_trafoFluxVelocity1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the velocity
 !#
-!# 27.) euler_trafoDiffVelocity1d_sim
+!# 27.) hydro_trafoDiffVelocity1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the velocity
 !#
-!# 28.) euler_trafoFluxMomentum1d_sim
+!# 28.) hydro_trafoFluxMomentum1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the momentum
 !#
-!# 29.) euler_trafoDiffMomentum1d_sim
+!# 29.) hydro_trafoDiffMomentum1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the momentum
 !#
-!# 30.) euler_trafoFluxDenEng1d_sim
+!# 30.) hydro_trafoFluxDenEng1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
-!# 31.) euler_trafoDiffDenEng1d_sim
+!# 31.) hydro_trafoDiffDenEng1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density and energy
 !#
-!# 32.) euler_trafoFluxDenPre1d_sim
+!# 32.) hydro_trafoFluxDenPre1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
-!# 33.) euler_trafoDiffDenPre1d_sim
+!# 33.) hydro_trafoDiffDenPre1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density and the pessure
 !#
-!# 34.) euler_trafoFluxDenPreVel1d_sim
+!# 34.) hydro_trafoFluxDenPreVel1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
-!# 35.) euler_trafoDiffDenPreVel1d_sim
+!# 35.) hydro_trafoDiffDenPreVel1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density, the pressure 
 !#         and the velocity
 !#
-!# 36.) euler_calcBoundaryvalues1d
+!# 36.) hydro_calcBoundaryvalues1d
 !#      -> Computes the boundary values for a given node
 !#
-!# 37.) euler_hadaptCallbackScalar1d
+!# 37.) hydro_hadaptCallbackScalar1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in interleave format
 !#
-!# 38.) euler_hadaptCallbackBlock1d
+!# 38.) hydro_hadaptCallbackBlock1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in block format
 !#
 !# </purpose>
 !##############################################################################
 
-module euler_callback1d
+module hydro_callback1d
 
-#include "euler.h"
+#include "hydro.h"
 
   use boundarycondaux
   use collection
-  use euler_basic
+  use hydro_basic
   use flagship_callback
   use fsystem
   use genoutput
@@ -180,44 +180,44 @@ module euler_callback1d
   implicit none
 
   private
-  public :: euler_calcFluxGal1d_sim
-  public :: euler_calcFluxGalNoBdr1d_sim
-  public :: euler_calcFluxScDiss1d_sim
-  public :: euler_calcFluxRoeDiss1d_sim
-  public :: euler_calcFluxRusDiss1d_sim
-  public :: euler_calcMatDiagMatD1d_sim
-  public :: euler_calcMatDiag1d_sim
-  public :: euler_calcMatGalMatD1d_sim
-  public :: euler_calcMatGal1d_sim
-  public :: euler_calcMatScDissMatD1d_sim
-  public :: euler_calcMatScDiss1d_sim
-  public :: euler_calcMatRoeDissMatD1d_sim
-  public :: euler_calcMatRoeDiss1d_sim
-  public :: euler_calcMatRusDissMatD1d_sim
-  public :: euler_calcMatRusDiss1d_sim
-  public :: euler_calcCharacteristics1d_sim
-  public :: euler_calcFluxFCTScalarDiss1d
-  public :: euler_calcFluxFCTTensorDiss1d
-  public :: euler_calcFluxFCTRusanov1d
-  public :: euler_trafoFluxDensity1d_sim
-  public :: euler_trafoFluxEnergy1d_sim
-  public :: euler_trafoFluxPressure1d_sim
-  public :: euler_trafoFluxVelocity1d_sim
-  public :: euler_trafoFluxMomentum1d_sim
-  public :: euler_trafoFluxDenEng1d_sim
-  public :: euler_trafoFluxDenPre1d_sim
-  public :: euler_trafoFluxDenPreVel1d_sim
-  public :: euler_trafoDiffDensity1d_sim
-  public :: euler_trafoDiffEnergy1d_sim
-  public :: euler_trafoDiffPressure1d_sim
-  public :: euler_trafoDiffVelocity1d_sim
-  public :: euler_trafoDiffMomentum1d_sim
-  public :: euler_trafoDiffDenEng1d_sim
-  public :: euler_trafoDiffDenPre1d_sim
-  public :: euler_trafoDiffDenPreVel1d_sim
-  public :: euler_calcBoundaryvalues1d
-  public :: euler_hadaptCallbackScalar1d
-  public :: euler_hadaptCallbackBlock1d
+  public :: hydro_calcFluxGal1d_sim
+  public :: hydro_calcFluxGalNoBdr1d_sim
+  public :: hydro_calcFluxScDiss1d_sim
+  public :: hydro_calcFluxRoeDiss1d_sim
+  public :: hydro_calcFluxRusDiss1d_sim
+  public :: hydro_calcMatDiagMatD1d_sim
+  public :: hydro_calcMatDiag1d_sim
+  public :: hydro_calcMatGalMatD1d_sim
+  public :: hydro_calcMatGal1d_sim
+  public :: hydro_calcMatScDissMatD1d_sim
+  public :: hydro_calcMatScDiss1d_sim
+  public :: hydro_calcMatRoeDissMatD1d_sim
+  public :: hydro_calcMatRoeDiss1d_sim
+  public :: hydro_calcMatRusDissMatD1d_sim
+  public :: hydro_calcMatRusDiss1d_sim
+  public :: hydro_calcCharacteristics1d_sim
+  public :: hydro_calcFluxFCTScalarDiss1d
+  public :: hydro_calcFluxFCTTensorDiss1d
+  public :: hydro_calcFluxFCTRusanov1d
+  public :: hydro_trafoFluxDensity1d_sim
+  public :: hydro_trafoFluxEnergy1d_sim
+  public :: hydro_trafoFluxPressure1d_sim
+  public :: hydro_trafoFluxVelocity1d_sim
+  public :: hydro_trafoFluxMomentum1d_sim
+  public :: hydro_trafoFluxDenEng1d_sim
+  public :: hydro_trafoFluxDenPre1d_sim
+  public :: hydro_trafoFluxDenPreVel1d_sim
+  public :: hydro_trafoDiffDensity1d_sim
+  public :: hydro_trafoDiffEnergy1d_sim
+  public :: hydro_trafoDiffPressure1d_sim
+  public :: hydro_trafoDiffVelocity1d_sim
+  public :: hydro_trafoDiffMomentum1d_sim
+  public :: hydro_trafoDiffDenEng1d_sim
+  public :: hydro_trafoDiffDenPre1d_sim
+  public :: hydro_trafoDiffDenPreVel1d_sim
+  public :: hydro_calcBoundaryvalues1d
+  public :: hydro_hadaptCallbackScalar1d
+  public :: hydro_hadaptCallbackBlock1d
 
 contains
 
@@ -225,7 +225,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxGal1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxGal1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -267,7 +267,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR1D) :: dF_i,dF_j
 #else
     real(DP), dimension(NVAR1D) :: dF_ij
@@ -294,7 +294,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
       dF_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
@@ -323,13 +323,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcFluxGal1d_sim
+  end subroutine hydro_calcFluxGal1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxGalNoBdr1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxGalNoBdr1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -411,13 +411,13 @@ contains
       DfluxesAtEdge(:,2,idx) = DfluxesAtEdge(:,1,idx)
     end do
 
-  end subroutine euler_calcFluxGalNoBdr1d_sim
+  end subroutine hydro_calcFluxGalNoBdr1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxScDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxScDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -459,7 +459,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR1D) :: dF_i,dF_j
 #else
     real(DP), dimension(NVAR1D) :: dF_ij
@@ -487,7 +487,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
       dF_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
@@ -546,7 +546,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
       
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
                                          DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
@@ -556,13 +556,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcFluxScDiss1d_sim
+  end subroutine hydro_calcFluxScDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRoeDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxRoeDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -604,7 +604,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR1D) :: dF_i,dF_j
 #else
     real(DP), dimension(NVAR1D) :: dF_ij
@@ -634,7 +634,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
       dF_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
@@ -717,7 +717,7 @@ contains
         ! Build both contributions into the fluxes
         !-------------------------------------------------------------------------
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
                                            DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
@@ -727,7 +727,7 @@ contains
 #endif
       else
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
                                            DmatrixCoeffsAtEdge(1,1,idx)*dF_i )
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
@@ -738,13 +738,13 @@ contains
       end if
     end do
 
-  end subroutine euler_calcFluxRoeDiss1d_sim
+  end subroutine hydro_calcFluxRoeDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxRusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 
@@ -787,7 +787,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
     real(DP), dimension(NVAR1D) :: dF_i,dF_j
 #else
     real(DP), dimension(NVAR1D) :: dF_ij
@@ -815,7 +815,7 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
       dF_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
       dF_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
@@ -859,7 +859,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
                                          DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
@@ -869,13 +869,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcFluxRusDiss1d_sim
+  end subroutine hydro_calcFluxRusDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatDiagMatD1d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
+  pure subroutine hydro_calcMatDiagMatD1d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
       IverticesAtNode, dscale, DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -917,7 +917,7 @@ contains
       ! Compute velocity
       ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
       
-#ifdef EULER_USE_IBP      
+#ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ii = diag(A_i)*C_{ii}$
       DcoefficientsAtNode(1,1,inode) = 0.0
       DcoefficientsAtNode(2,1,inode) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtNode(1,inode)
@@ -930,13 +930,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcMatDiagMatD1d_sim
+  end subroutine hydro_calcMatDiagMatD1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatDiag1d_sim(DdataAtNode,&
+  pure subroutine hydro_calcMatDiag1d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
       DcoefficientsAtNode, rcollection)
 
@@ -981,7 +981,7 @@ contains
       Ei = TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
       uPow2i = ui*ui
 
-#ifdef EULER_USE_IBP      
+#ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       DcoefficientsAtNode(1,1,inode) = 0.0
       DcoefficientsAtNode(2,1,inode) = dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtNode(1,inode)
@@ -1014,13 +1014,13 @@ contains
 #endif
     end do
     
-  end subroutine euler_calcMatDiag1d_sim
+  end subroutine hydro_calcMatDiag1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatGalMatD1d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatGalMatD1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1066,7 +1066,7 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0
       DcoefficientsAtEdge(2,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
@@ -1089,13 +1089,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcMatGalMatD1d_sim
+  end subroutine hydro_calcMatGalMatD1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatGal1d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatGal1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1146,7 +1146,7 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0
       DcoefficientsAtEdge(2,2,idx) = dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
@@ -1209,13 +1209,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_calcMatGal1d_sim
+  end subroutine hydro_calcMatGal1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatScDissMatD1d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatScDissMatD1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
     
@@ -1263,7 +1263,7 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0
       DcoefficientsAtEdge(2,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
@@ -1326,13 +1326,13 @@ contains
       end if
     end do
 
-  end subroutine euler_calcMatScDissMatD1d_sim
+  end subroutine hydro_calcMatScDissMatD1d_sim
 
 !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatScDiss1d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatScDiss1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1382,7 +1382,7 @@ contains
       Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
       uPow2j = uj*uj
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0
       DcoefficientsAtEdge(2,2,idx) = dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
@@ -1487,13 +1487,13 @@ contains
       end if
     end do
     
-  end subroutine euler_calcMatScDiss1d_sim
+  end subroutine hydro_calcMatScDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatRoeDissMatD1d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatRoeDissMatD1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1543,7 +1543,7 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0
       DcoefficientsAtEdge(2,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
@@ -1650,13 +1650,13 @@ contains
       end if
     end do
 
-  end subroutine euler_calcMatRoeDissMatD1d_sim
+  end subroutine hydro_calcMatRoeDissMatD1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatRoeDiss1d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatRoeDiss1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1708,7 +1708,7 @@ contains
       Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
       uPow2j = uj*uj
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0
       DcoefficientsAtEdge(2,2,idx) = dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
@@ -1858,13 +1858,13 @@ contains
       end if
     end do
 
-  end subroutine euler_calcMatRoeDiss1d_sim
+  end subroutine hydro_calcMatRoeDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatRusDissMatD1d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatRusDissMatD1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1910,7 +1910,7 @@ contains
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
       Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0
       DcoefficientsAtEdge(2,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
@@ -1952,13 +1952,13 @@ contains
                abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )
     end do
     
-  end subroutine euler_calcMatRusDissMatD1d_sim
+  end subroutine hydro_calcMatRusDissMatD1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatRusDiss1d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatRusDiss1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2007,7 +2007,7 @@ contains
       Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
       uPow2j = uj*uj
 
-#ifdef EULER_USE_IBP
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
       DcoefficientsAtEdge(1,2,idx) = 0.0
       DcoefficientsAtEdge(2,2,idx) = dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
@@ -2093,13 +2093,13 @@ contains
       DcoefficientsAtEdge(9,1,idx) = aux
     end do
     
-  end subroutine euler_calcMatRusDiss1d_sim
+  end subroutine hydro_calcMatRusDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcCharacteristics1d_sim(Dweight, DdataAtEdge,&
+  pure subroutine hydro_calcCharacteristics1d_sim(Dweight, DdataAtEdge,&
       DcharVariablesAtEdge, DeigenvaluesAtEdge,&
       DrightEigenvectorsAtEdge, DleftEigenvectorsAtEdge, rcollection)
 
@@ -2347,13 +2347,13 @@ contains
       end do
     end if
     
-  end subroutine euler_calcCharacteristics1d_sim
+  end subroutine hydro_calcCharacteristics1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxFCTScalarDiss1d(&
+  pure subroutine hydro_calcFluxFCTScalarDiss1d(&
       U1_i, U1_j, U2_i, U2_j, Coeff_ij, Coeff_ji,&
       i, j, dscale1, dscale2, F_ij)
 
@@ -2418,13 +2418,13 @@ contains
     ! Compute conservative fluxes
     F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
 
-  end subroutine euler_calcFluxFCTScalarDiss1d
+  end subroutine hydro_calcFluxFCTScalarDiss1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxFCTTensorDiss1d(&
+  pure subroutine hydro_calcFluxFCTTensorDiss1d(&
       U1_i, U1_j, U2_i, U2_j, Coeff_ij, Coeff_ji,&
       i, j, dscale1, dscale2, F_ij)
 
@@ -2516,13 +2516,13 @@ contains
     ! Compute conservative fluxes
     F_ij = dscale1*(U1_i-U1_j) + dscale2*anorm*Diff
 
-  end subroutine euler_calcFluxFCTTensorDiss1d
+  end subroutine hydro_calcFluxFCTTensorDiss1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxFCTRusanov1d(&
+  pure subroutine hydro_calcFluxFCTRusanov1d(&
       U1_i, U1_j, U2_i, U2_j, Coeff_ij, Coeff_ji,&
       i, j, dscale1, dscale2, F_ij)
 
@@ -2575,13 +2575,13 @@ contains
     ! Compute conservative fluxes
     F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
 
-  end subroutine euler_calcFluxFCTRusanov1d
+  end subroutine hydro_calcFluxFCTRusanov1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDensity1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxDensity1d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -2626,13 +2626,13 @@ contains
          -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
     end do
 
-  end subroutine euler_trafoFluxDensity1d_sim
+  end subroutine hydro_trafoFluxDensity1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDensity1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffDensity1d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -2671,13 +2671,13 @@ contains
           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffDensity1d_sim
+  end subroutine hydro_trafoDiffDensity1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxEnergy1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxEnergy1d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -2722,13 +2722,13 @@ contains
          -TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
     end do
 
-  end subroutine euler_trafoFluxEnergy1d_sim
+  end subroutine hydro_trafoFluxEnergy1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffEnergy1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffEnergy1d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -2767,13 +2767,13 @@ contains
           TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffEnergy1d_sim
+  end subroutine hydro_trafoDiffEnergy1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxPressure1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxPressure1d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -2831,13 +2831,13 @@ contains
 #endif
     end do
     
-  end subroutine euler_trafoFluxPressure1d_sim
+  end subroutine hydro_trafoFluxPressure1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffPressure1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffPressure1d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -2876,13 +2876,13 @@ contains
           PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffPressure1d_sim
+  end subroutine hydro_trafoDiffPressure1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxVelocity1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxVelocity1d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -2936,13 +2936,13 @@ contains
            DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
     end do
     
-  end subroutine euler_trafoFluxVelocity1d_sim
+  end subroutine hydro_trafoFluxVelocity1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffVelocity1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffVelocity1d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -2981,13 +2981,13 @@ contains
           X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffVelocity1d_sim
+  end subroutine hydro_trafoDiffVelocity1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxMomentum1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxMomentum1d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -3032,13 +3032,13 @@ contains
          -X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
     end do
     
-  end subroutine euler_trafoFluxMomentum1d_sim
+  end subroutine hydro_trafoFluxMomentum1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffMomentum1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffMomentum1d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -3077,13 +3077,13 @@ contains
           X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
     end do
     
-  end subroutine euler_trafoDiffMomentum1d_sim
+  end subroutine hydro_trafoDiffMomentum1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDenEng1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxDenEng1d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -3134,13 +3134,13 @@ contains
          -TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
     end do
 
-  end subroutine euler_trafoFluxDenEng1d_sim
+  end subroutine hydro_trafoFluxDenEng1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDenEng1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffDenEng1d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -3184,13 +3184,13 @@ contains
           TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffDenEng1d_sim
+  end subroutine hydro_trafoDiffDenEng1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDenPre1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxDenPre1d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -3254,13 +3254,13 @@ contains
 #endif
     end do
 
-  end subroutine euler_trafoFluxDenPre1d_sim
+  end subroutine hydro_trafoFluxDenPre1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDenPre1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffDenPre1d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -3304,13 +3304,13 @@ contains
           PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffDenPre1d_sim
+  end subroutine hydro_trafoDiffDenPre1d_sim
   
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDenPreVel1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoFluxDenPreVel1d_sim(DdataAtEdge,&
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
@@ -3384,13 +3384,13 @@ contains
 #endif
     end do
       
-  end subroutine euler_trafoFluxDenPreVel1d_sim
+  end subroutine hydro_trafoFluxDenPreVel1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDenPreVel1d_sim(DdataAtEdge,&
+  pure subroutine hydro_trafoDiffDenPreVel1d_sim(DdataAtEdge,&
       DtransformedDataAtEdge, rcollection)
 
 !<description>
@@ -3439,13 +3439,13 @@ contains
           PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
     end do
 
-  end subroutine euler_trafoDiffDenPreVel1d_sim
+  end subroutine hydro_trafoDiffDenPreVel1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcBoundaryvalues1d(DbdrNormal, DpointNormal,&
+  subroutine hydro_calcBoundaryvalues1d(DbdrNormal, DpointNormal,&
       DbdrValue, ibdrCondType, Du, Du0, istatus)
 
 !<description>
@@ -3489,7 +3489,7 @@ contains
 
     ! What type of boundary condition is given?
     select case(iand(ibdrCondType, BDRC_TYPEMASK))
-    case(BDRC_EULERWALL, BDRC_RLXEULERWALL)
+    case(BDRC_FREESLIP, BDRC_RLXFREESLIP)
       !-------------------------------------------------------------------------
 
       ! The wall boundary conditions follow algorithm II from the paper
@@ -3535,7 +3535,7 @@ contains
           return
         else
           call output_line('Riemann solver failed due to vacuum',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues1d')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcBoundaryvalues1d')
           call sys_halt()
         end if
       end if
@@ -3614,7 +3614,7 @@ contains
         else
           call output_line('Riemann solver failed due to divergence in' // &
               ' Newton-Raphson iteration',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues1d')
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcBoundaryvalues1d')
           call sys_halt()
         end if
       end if
@@ -3803,17 +3803,17 @@ contains
 
     case DEFAULT
       call output_line('Unsupported type of boundary condition!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues1d')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcBoundaryvalues1d')
       call sys_halt()
     end select
 
-  end subroutine euler_calcBoundaryvalues1d
+  end subroutine hydro_calcBoundaryvalues1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_hadaptCallbackScalar1d(iOperation, rcollection)
+  subroutine hydro_hadaptCallbackScalar1d(iOperation, rcollection)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -3849,7 +3849,7 @@ contains
       ! Check if solution is stored in interleave format
       if (rsolution%nblocks .ne. 1) then
         call output_line('Vector is not in interleave format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackScalar1d')
+            OU_CLASS_WARNING,OU_MODE_STD,'hydro_hadaptCallbackScalar1d')
         call sys_halt()
       end if
 
@@ -3917,13 +3917,13 @@ contains
 
     end select
 
-  end subroutine euler_hadaptCallbackScalar1d
+  end subroutine hydro_hadaptCallbackScalar1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_hadaptCallbackBlock1d(iOperation, rcollection)
+  subroutine hydro_hadaptCallbackBlock1d(iOperation, rcollection)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -3959,7 +3959,7 @@ contains
       ! Check if solution is stored in interleave format
       if (rsolution%nblocks .ne. NVAR1D) then
         call output_line('Vector is not in block format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackBlock1d')
+            OU_CLASS_WARNING,OU_MODE_STD,'hydro_hadaptCallbackBlock1d')
         call sys_halt()
       end if
 
@@ -4030,6 +4030,6 @@ contains
 
     end select
 
-  end subroutine euler_hadaptCallbackBlock1d
+  end subroutine hydro_hadaptCallbackBlock1d
 
-end module euler_callback1d
+end module hydro_callback1d
