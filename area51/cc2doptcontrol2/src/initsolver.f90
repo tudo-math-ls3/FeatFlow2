@@ -2500,6 +2500,9 @@ contains
     call parlst_getvalue_string (rparlist, ssection, &
         'slinearSolver', rparams%slinearSpaceSolver, "",bdequote=.true.)
 
+    call parlst_getvalue_string (rparlist, ssection, &
+        'slinearSolverAlternative', rparams%slinearSpaceSolverAlternative, "",bdequote=.true.)
+
   end subroutine
 
   ! ***************************************************************************
@@ -2635,6 +2638,9 @@ contains
     ! configuring it.
     call parlst_getvalue_string (rparlist, ssection, &
         'slinearSolver', rparams%slinearSpaceSolver, "",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist, ssection, &
+        'slinearSolverAlternative', rparams%slinearSpaceSolverAlternative, "",bdequote=.true.)
         
     ! Remember the parameter list, it contains additional parameters
     ! about the linear solver in space.

@@ -106,6 +106,10 @@ module structuresspacetimelinsol
     ! Name of the section in the DAT file specifying a linear subsolver
     ! for the smoother.
     character(len=SYS_STRLEN) :: slinearSpaceSolver = ""
+
+    ! Name of the section in the DAT file specifying an alternative linear subsolver
+    ! for the smoother. ="": Not specified.
+    character(len=SYS_STRLEN) :: slinearSpaceSolverAlternative = ""
   
   end type
 
@@ -231,10 +235,13 @@ module structuresspacetimelinsol
     ! subsolver (if one is needed).
     type(t_parlist), pointer :: p_rparlist => null()
     
-    ! Name of the section in the DAT file specifying a linear subsolver
-    ! for the solver.
+    ! Name of the section in the DAT file specifying an alternative linear subsolver
+    ! for the solver. ="": Not specified.
     character(len=SYS_STRLEN) :: slinearSpaceSolver = ""
 
+    ! Name of the section in the DAT file specifying a linear subsolver
+    ! for the solver.
+    character(len=SYS_STRLEN) :: slinearSpaceSolverAlternative = ""
   end type
 
 !</typeblock>
@@ -617,7 +624,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,1.0_DP)
+          p_rprecond,1.0_DP,rprecsettings%slinearSpaceSolverAlternative)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%domega = rprecsettings%domega
@@ -633,7 +640,7 @@ contains
       ! Create a SOR preconditioner
       call sptils_initBlockFBSOR (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,rprecsettings%drelax,1.0_DP)
+          p_rprecond,rprecsettings%drelax,1.0_DP,rprecsettings%slinearSpaceSolverAlternative)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%nminIterations = rprecsettings%nminIterations
@@ -650,7 +657,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,1.0_DP)
+          p_rprecond,1.0_DP,rprecsettings%slinearSpaceSolverAlternative)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%domega = rprecsettings%domega
@@ -667,7 +674,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initBlockFBSOR (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,rprecsettings%drelax,1.0_DP)
+          p_rprecond,rprecsettings%drelax,1.0_DP,rprecsettings%slinearSpaceSolverAlternative)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%nminIterations = rprecsettings%nminIterations
@@ -825,7 +832,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,1.0_DP)
+          p_rprecond,1.0_DP,rprecsettings%slinearSpaceSolverAlternative)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%domega = rprecsettings%domega
@@ -843,7 +850,7 @@ contains
       ! GS relaxation.
       call sptils_initBlockFBSOR (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,rprecsettings%drelax,1.0_DP)
+          p_rprecond,rprecsettings%drelax,1.0_DP,rprecsettings%slinearSpaceSolverAlternative)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%nminIterations = rprecsettings%nminIterations
@@ -860,7 +867,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,1.0_DP)
+          p_rprecond,1.0_DP,rprecsettings%slinearSpaceSolverAlternative)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%domega = rprecsettings%domega
@@ -877,7 +884,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initBlockFBSOR (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,rprecsettings%drelax,1.0_DP)
+          p_rprecond,rprecsettings%drelax,1.0_DP,rprecsettings%slinearSpaceSolverAlternative)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%nminIterations = rprecsettings%nminIterations

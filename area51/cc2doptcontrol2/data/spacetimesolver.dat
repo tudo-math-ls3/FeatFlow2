@@ -203,6 +203,11 @@ ioutputLevel = 2
 
 slinearSolver        = CC-LINEARSOLVER
 
+# Specifies the section of an alternative linear solver on space which is
+# used if slinearSolver fails. ="": Not specified.
+
+slinearSolverAlternative = 
+
 # Reinitialisation counter, e.g. for BiCGStab.
 # Every niteReinit iterations, the algorithm reinitialises.
 # =0: no reinitialisation.
@@ -230,6 +235,11 @@ ioutputLevel = 0
 # preconditioning.
 
 slinearSolver        = CC-LINEARSOLVER
+
+# Specifies the section of an alternative linear solver on space which is
+# used if slinearSolver fails. ="": Not specified.
+
+slinearSolverAlternative = 
 
 # For FBSOR-Type smoothers: Do a partial update of the solution
 # during the iteration (only primal on forward sweep, only dual
@@ -364,3 +374,7 @@ ifbSORPartialUpdate=0
 
 slinearSolver = CC-LINEARSOLVER
 
+# Specifies the section of an alternative linear solver on space which is
+# used if slinearSolver fails. ="": Not specified.
+
+slinearSolverAlternative = 
