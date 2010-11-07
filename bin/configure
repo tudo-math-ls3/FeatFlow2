@@ -350,7 +350,7 @@ my %defaults = (
     PROGRAMFILE          => "DETERMINED_ON_DEMAND_IF_UNSET",
     RANLIB               => "",
     RELINK_ALWAYS        => "YES",
-    SRCEXTRA             => "",
+    SRCEXTRA             => [],
     SRCLIST_APP          => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
 );
 
@@ -849,18 +849,29 @@ sub check_options {
     foreach my $entry ('APPONLYFLAGS', 'BUILDLIB', 'CFLAGSC', 'CFLAGSCOPROC', 'CFLAGSCXX',
     		       'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
     		       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
-    		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCLIST_APP') {
-	# $cl{'...'} has been passed as an array to GetOptions()
-	# and as such is always defined. But is does not necessarily have
-	# entries: unset => #entries=-1; set, but empty => #entries=0
-	# So, don't test with perl function defined(). Test whether set.
-	if ($#{$cl{$entry}} > -1) {
-	    @{ $cl{$entry} } = split(/\s+/,
-				     join(' ',
-					  split(/,/,
-						join(',', @{ $cl{$entry} })
-					  )));
-	}
+    		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCEXTRA', 'SRCLIST_APP') {
+    	# $cl{'...'} has been passed as an array to GetOptions()
+    	# and as such is always defined. But is does not necessarily have
+    	# entries: unset => #entries=-1; set, but empty => #entries=0
+    	# So, don't test with perl function defined(). Test whether set.
+    	if (defined($cl{$entry})) {
+	    my $numentries = $#{$cl{$entry}};
+    	    if ($numentries > -1) {
+    		@{ $cl{$entry} } = split(/\s+/,
+    					 join(' ',
+    					      split(/,/,
+    						    join(',', @{ $cl{$entry} })
+    					      )));
+    	    }
+	    # Converting comma-separated entries into space-separated
+	    # ones may only increase the number of array entries, not
+	    # reduce them. If an array merely contained an empty
+	    # string, though, that string got removed by the previous
+	    # block. Re-add it.
+	    if ($numentries > $#{$cl{$entry}}) {
+		push @{ $cl{$entry} }, " ";
+	    }
+    	}
     }
 
     # For this list only commas are allowed to separate things.
@@ -1492,7 +1503,7 @@ sub create_feastAppMakefile {
 		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX', 'F77',
 		       'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
 		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
-		       'MPILIBS', 'RANLIB') {
+		       'MPILIBS', 'RANLIB', 'SRCEXTRA') {
 	$colwidth = &max(length($entry), $colwidth);
     }
     $colwidth++;
@@ -1501,7 +1512,7 @@ sub create_feastAppMakefile {
 		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX', 'F77',
 		       'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
 		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
-		       'MPILIBS', 'RANLIB') {
+		       'MPILIBS', 'RANLIB', 'SRCEXTRA') {
 	# Determine type of variable: scalar or array
 	if (ref($cl{$entry}) eq "") {
 	    # current token is a scalar value, print if not empty
