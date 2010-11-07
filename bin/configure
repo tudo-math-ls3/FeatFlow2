@@ -376,12 +376,12 @@ my $unknownoption=0;
 GetOptions (
             "appname=s"                     => \$cl{'APPNAME'},
             "no-opt"                        => sub { $cl{'OPT'} = 0 },
-            "apponlyflags=s"                => \@{ $cl{'APPONLYFLAGS'} },
+            "apponlyflags=s{0,}"            => \@{ $cl{'APPONLYFLAGS'} },
             "ar=s"                          => \$cl{'AR'},
             "binary=s"                      => \$cl{'BINARY'},
             "regressionbenchmark"           => \$cl{'regressionbenchmark'},
             "regression-benchmark"          => \$cl{'regressionbenchmark'},
-            "buildlib=s"                    => \@{ $cl{'BUILDLIB'} },
+            "buildlib=s{0,}"                => \@{ $cl{'BUILDLIB'} },
             # Store values given via --cached-* in a cache,
             # the related tests will be skipped, greatly speeding up
             # configure process.
@@ -390,12 +390,12 @@ GetOptions (
             "cached-make-sets-make-var"     => sub { $cachedtests{'make-sets-make-var'} = 1; },
             "cached-build-id=s"             => sub { $cachedtests{'build-id'} = $_[1]; },
             "cc=s"                          => \$cl{'CC'},
-            "cflagsc=s"                     => \@{ $cl{'CFLAGSC'} },
-            "cflagscoproc=s"                => \@{ $cl{'CFLAGSCOPROC'} },
-            "cflagscxx=s"                   => \@{ $cl{'CFLAGSCXX'} },
-            "cflagsf77=s"                   => \@{ $cl{'CFLAGSF77'} },
-            "cflagsf90=s"                   => \@{ $cl{'CFLAGSF90'} },
-	    "coproclist=s"                  => \@{ $cl{'COPROCLIST'} },
+            "cflagsc=s{0,}"                 => \@{ $cl{'CFLAGSC'} },
+            "cflagscoproc=s{0,}"            => \@{ $cl{'CFLAGSCOPROC'} },
+            "cflagscxx=s{0,}"               => \@{ $cl{'CFLAGSCXX'} },
+            "cflagsf77=s{0,}"               => \@{ $cl{'CFLAGSF77'} },
+            "cflagsf90=s{0,}"               => \@{ $cl{'CFLAGSF90'} },
+	    "coproclist=s{0,}"              => \@{ $cl{'COPROCLIST'} },
             "cxx=s"                         => \$cl{'CXX'},
             "cpp=s"                         => \$cl{'CPP'},
             "debug"                         => \$cl{'debug'},
@@ -403,14 +403,14 @@ GetOptions (
             "f90=s"                         => \$cl{'F90'},
             "force-id"                      => \$cl{'FORCE_ID'},
             "help"                          => \$cl{'help'},
-            "header-files-to-copy=s"        => \@{ $cl{'HEADER_FILES_TO_COPY'} },
+            "header-files-to-copy=s{0,}"    => \@{ $cl{'HEADER_FILES_TO_COPY'} },
             "int-size=s"                    => \$cl{'INTSIZE'},
             "id=s"                          => \$cl{'ID'},
             "inc=s"                         => \@{ $cl{'INC'} },
             "ld=s"                          => \$cl{'LD'},
-            "ldflags=s"                     => \@{ $cl{'LDFLAGS'} },
-            "libdir=s"                      => \@{ $cl{'LIBDIR'} },
-            "libs=s"                        => \@{ $cl{'LIBS'} },
+            "ldflags=s{0,}"                 => \@{ $cl{'LDFLAGS'} },
+            "libdir=s{0,}"                  => \@{ $cl{'LIBDIR'} },
+            "libs=s{0,}"                    => \@{ $cl{'LIBS'} },
             "list-all-ids"                  => \$cl{'listallids'},
             "list-app-modules"              => \$cl{'listappmodules'},
             "list-ids"                      => \$cl{'listids'},
@@ -432,9 +432,9 @@ GetOptions (
             "movemod=s"                     => \$cl{'MOVEMOD'},
             "no-mpi"                        => sub { $cl{'MPI'} = 0 },
             "mpi:s"                         => \$cl{'MPI'},
-            "mpiinc=s"                      => \@{ $cl{'MPIINC'} },
-            "mpilibdir=s"                   => \@{ $cl{'MPILIBDIR'} },
-            "mpilibs=s"                     => \@{ $cl{'MPILIBS'} },
+            "mpiinc=s{0,}"                  => \@{ $cl{'MPIINC'} },
+            "mpilibdir=s{0,}"               => \@{ $cl{'MPILIBDIR'} },
+            "mpilibs=s{0,}"                 => \@{ $cl{'MPILIBS'} },
             "mpiwrappers!"                  => \$cl{'MPIWRAPPERS'},
             "objdir-prefix=s"               => \$cl{'objdirprefix'},
             "objdir-lib-prefix=s"           => \$cl{'objdirlibprefix'},
@@ -446,7 +446,7 @@ GetOptions (
             "ranlib=s"                      => \$cl{'RANLIB'},
             "relink-always!"                => \$cl{'RELINK_ALWAYS'},
             "serial"                        => sub { $cl{'MPI'} = "no" },
-            "srcextra=s"                    => \@{ $cl{'SRCEXTRA'} },
+            "srcextra=s{0,}"                => \@{ $cl{'SRCEXTRA'} },
             "srclist-app=s"                 => \@{ $cl{'SRCLIST_APP'} },
             "srclist_app=s"                 => \@{ $cl{'SRCLIST_APP'} },
             "suppressflags=s"               => \@{ $cl{'suppressflags'} },
@@ -847,14 +847,20 @@ sub check_options {
     # lists of values and multiple instances of the option are allowed.
     # Normalise the values by converting strings to real arrays.
     foreach my $entry ('APPONLYFLAGS', 'BUILDLIB', 'CFLAGSC', 'CFLAGSCOPROC', 'CFLAGSCXX',
-		       'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
-		       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
-		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCLIST_APP') {
-	@{ $cl{$entry} } = split(/\s+/,
-				 join(' ',
-				      split(/,/,
-					    join(',', @{ $cl{$entry} })
-				      )));
+    		       'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
+    		       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
+    		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCLIST_APP') {
+	# $cl{'...'} has been passed as an array to GetOptions()
+	# and as such is always defined. But is does not necessarily have
+	# entries: unset => #entries=-1; set, but empty => #entries=0
+	# So, don't test with perl function defined(). Test whether set.
+	if ($#{$cl{$entry}} > -1) {
+	    @{ $cl{$entry} } = split(/\s+/,
+				     join(' ',
+					  split(/,/,
+						join(',', @{ $cl{$entry} })
+					  )));
+	}
     }
 
     # For this list only commas are allowed to separate things.
@@ -1496,21 +1502,34 @@ sub create_feastAppMakefile {
 		       'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
 		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
 		       'MPILIBS', 'RANLIB') {
-	my $string = (defined($cl{$entry})) ? $cl{$entry} : $defaults{$entry};
-	if (ref($string) eq "") {
+	# Determine type of variable: scalar or array
+	if (ref($cl{$entry}) eq "") {
 	    # current token is a scalar value, print if not empty
-	    if ($string ne "") {
-		print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= $string\n";
-		$overwritten++;
-	    }
-	} elsif (ref($string) eq "ARRAY") {
+	    # (Remember that an empty string is not allowed for
+	    #  command line options that take a string, not an array!)
+	    my $string = (defined($cl{$entry})) ? $cl{$entry} : $defaults{$entry};
+ 	    if (length($string) > 0) {
+ 		print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= $string\n";
+ 		$overwritten++;
+ 	    }
+
+	} elsif (ref($cl{$entry}) eq "ARRAY") {
 	    # current token is an array, print if at least one entry
 
 	    # $cl{'...'} has been passed as an array to GetOptions()
 	    # and as such is always defined. But is does not necessarily have
-	    # entries. So, don't test with perl function defined(). Test whether
-	    # one or more entries. (Perl count from zero, like C does.)
-	    if ($#{$string} >= 0) {
+	    # entries: unset => #entries=-1; set, but empty => #entries=0
+	    # So, don't test with perl function defined(). Test whether set.
+	    my ($string, $minlengthToBeSet);
+	    if ($#{ $cl{$entry} } > -1) {
+		$string = $cl{$entry};
+		$minlengthToBeSet = 0;      # unset arrays have length -1, empty arrays length 0
+	    } else {
+		$string = $defaults{$entry};
+		$minlengthToBeSet = 1;     # defaults are always set; size of an empty array is 0, not -1 as for an unset array
+	    }
+
+	    if ($#{$string} >= $minlengthToBeSet) {
 		# Exception for 'APPONLYFLAGS': for better readability put every preprocessor directive on a separate line
 		if ($entry eq "APPONLYFLAGS") {
 		    print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= " . join(" \\\n\t", @{$string}) . "\n";
@@ -4739,6 +4758,14 @@ sub make_dep_list {
     return &format_list($objstring, 8, 70, $depstring, "\\\n", "\\");
 }
 
+
+# Function: Returns maximum of two numbers
+sub max() {
+    my ($a, $b) = (@_);
+
+    die "$0: Function 'max' takes exactly 2 arguments, not " . ($#_ + 1) . ".\n" if ($#_ != 1);
+    $a > $b ? return $a : return $b;
+}
 
 
 # Function: Print statistics about Makefile for a FEAT2 application created just now
