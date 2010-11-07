@@ -1481,6 +1481,15 @@ sub create_feastAppMakefile {
     # Override settings from Makefile.inc with settings from command line
     # (or default values from hash %default.)
     print MAKEFILE_HDL "# Settings from configure command line which override settings from Makefile.inc\n";
+    my $colwidth = 0;
+    foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
+		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX', 'F77',
+		       'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
+		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
+		       'MPILIBS', 'RANLIB') {
+	$colwidth = &max(length($entry), $colwidth);
+    }
+    $colwidth++;
     my $overwritten = 0;
     foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
 		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX', 'F77',
@@ -1491,7 +1500,7 @@ sub create_feastAppMakefile {
 	if (ref($string) eq "") {
 	    # current token is a scalar value, print if not empty
 	    if ($string ne "") {
-		print MAKEFILE_HDL $entry . " "x(13-length($entry)) . "= $string\n";
+		print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= $string\n";
 		$overwritten++;
 	    }
 	} elsif (ref($string) eq "ARRAY") {
@@ -1504,9 +1513,9 @@ sub create_feastAppMakefile {
 	    if ($#{$string} >= 0) {
 		# Exception for 'APPONLYFLAGS': for better readability put every preprocessor directive on a separate line
 		if ($entry eq "APPONLYFLAGS") {
-		    print MAKEFILE_HDL $entry . " "x(13-length($entry)) . "= " . join(" \\\n\t", @{$string}) . "\n";
+		    print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= " . join(" \\\n\t", @{$string}) . "\n";
 		} else {
-		    print MAKEFILE_HDL $entry . " "x(13-length($entry)) . "= " . join(' ', @{$string}) . "\n";
+		    print MAKEFILE_HDL $entry . " "x($colwidth-length($entry)) . ":= " . join(' ', @{$string}) . "\n";
 		}
 		$overwritten++;
 	    }
@@ -1516,11 +1525,12 @@ sub create_feastAppMakefile {
         foreach $entry ("CFLAGSF77", "CFLAGSF90", "CFLAGSC", "CFLAGSCOPROC", "CFLAGSCXX", "LDFLAGS") {
             foreach (@{$cl{'suppressflags'}}) {
                 print MAKEFILE_HDL
-                    $entry . " " x (12 - length($entry)) . ":= \$(filter-out $_, \$($entry))\n";
+                    $entry . " " x ($colwidth - length($entry)) . ":= \$(filter-out $_, \$($entry))\n";
             }
         }
         $overwritten++;
     }
+    undef $colwidth;
 
     print MAKEFILE_HDL "# (none given on command line)\n" unless ($overwritten);
     print MAKEFILE_HDL "\n";
@@ -3995,9 +4005,22 @@ sub concat_filename {
 sub debug_command_line_options {
     my $string = "";
 
+    my $colwidth = 0;
     foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
 		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90',
-		       'COPROCLIST', 'CPP', 'CXX', 'F77', 'F90', 'FORCE_ID', 'ID', 'INC',
+		       'COPROCLIST', 'CPP', 'CXX', 'F77', 'F90', 'FORCE_ID',
+		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
+                       'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
+                       'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
+                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCLIST_APP') {
+	$colwidth = &max(length($entry), $colwidth);
+    }
+    $colwidth++;
+
+    foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
+		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90',
+		       'COPROCLIST', 'CPP', 'CXX', 'F77', 'F90', 'FORCE_ID',
+		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
                        'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCLIST_APP') {
@@ -4006,17 +4029,17 @@ sub debug_command_line_options {
 	    # current token is a scalar value, print if not empty
 	    next unless (defined($cl{$entry}));
 
-	    $string .= $entry . " "x(13-length($entry)) . "= " . $cl{$entry} . "\n";
+	    $string .= $entry . " "x($colwidth-length($entry)) . "= " . $cl{$entry} . "\n";
 	} elsif (ref($cl{$entry}) eq "ARRAY") {
 	    # current token is an array, print if at least one entry
 
 	    # $cl{'...'} has been passed as an array to GetOptions()
 	    # and as such is always defined. But is does not necessarily have
-	    # entries. So, don't test with perl function defined(). Test whether
-	    # one or more entries. (Perl count from zero, like C does.)
-	    next unless ($#{ $cl{$entry} } >= 0);
+	    # entries: unset => #entries=-1; set, but empty => #entries=0
+	    # So, don't test with perl function defined(). Test whether set.
+	    next unless ($#{ $cl{$entry} } > -1);
 
-	    $string .= $entry . " "x(13-length($entry)) . "= " . join(' ', @{ $cl{$entry} }) . "\n";
+	    $string .= $entry . " "x($colwidth-length($entry)) . "= " . join(' ', @{ $cl{$entry} }) . "\n";
 	}
     }
 
