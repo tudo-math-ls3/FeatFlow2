@@ -2812,7 +2812,7 @@ contains
             
         if (.not. bsuccess) then
           ! That failed. Try again with the alternative preconditioner.
-          if (rsolverNode%ioutputLevel .ge. 1) then
+          if (rsolverNode%ioutputLevel .ge. 0) then
             call output_line ("Space-Time-Block-Jacobi: Iteration failed in step "//&
                 trim(sys_siL(iiterate,10)) // ". Trying alternative preconditioner." )
           end if
@@ -3643,7 +3643,7 @@ contains
               
           if (.not. bsuccess) then
             ! That failed. Try again with the alternative preconditioner.
-            if (rsolverNode%ioutputLevel .ge. 1) then
+            if (rsolverNode%ioutputLevel .ge. 0) then
               call output_line ("Space-Time-Block-FBSOR: Iteration failed in step "//&
                   trim(sys_siL(iiterate,10)) // ". Trying alternative preconditioner." )
             end if
@@ -3896,7 +3896,7 @@ contains
               
           if (.not. bsuccess) then
             ! That failed. Try again with the alternative preconditioner.
-            if (rsolverNode%ioutputLevel .ge. 1) then
+            if (rsolverNode%ioutputLevel .ge. 0) then
               call output_line ("Space-Time-Block-FBSOR: Iteration failed in step "//&
                   trim(sys_siL(iiterate,10)) // ". Trying alternative preconditioner." )
             end if
