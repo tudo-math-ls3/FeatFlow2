@@ -100,7 +100,7 @@ STDOUT->autoflush(1);
 # ===========================================
 # === Define some constants and variables ===
 
-use constant VERSION => 2.0.8056;
+use constant VERSION => "2.0.8056";
 
 use constant INITIAL_MESSAGE =>
     "This is the FEAT2 custom configuration program.\n" .
