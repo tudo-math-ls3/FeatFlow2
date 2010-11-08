@@ -24,15 +24,21 @@
 LC_ALL=C
 
 # Initialise some variables
-option=""
-objdir=""
-addcppflags=""
 STORAGEGETBASE_CALLS_TO_MACRO=0
+addcppflags=""
+cppcmd=""
+cppflags=""
+objdir=""
+option=""
 
 if test -n "${CPP}"; then
     cppcmd="${CPP}"
 else
     cppcmd="cpp " # previously: "cpp -CC "
+fi
+
+if test -n "${CPPFLAGS}"; then
+    cppflags="${CPPFLAGS}"
 fi
 
 AWK_SCRIPT="`dirname $0`/postprocess_cppoutput.awk"
@@ -299,7 +305,7 @@ perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE_
 #    Hide the preprocessor directives for the C/C++ compiler (see previous
 #    point) from the Fortran compiler.
 perl -pe "${perlscript}" ${sourcefile} > ${preprocessedfile}
-${cppcmd} -I${objdir} ${addcppflags} ${preprocessedfile} > ${preprocessedfile}".$$"
+${cppcmd} ${cppflags} -I${objdir} ${addcppflags} ${preprocessedfile} > ${preprocessedfile}".$$"
 rc=$?
 # in order to catch all errors raised by the preprocessor one
 # *must not* directly pipe its output to our postprocessing chain!

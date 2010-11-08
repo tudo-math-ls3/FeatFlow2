@@ -107,7 +107,8 @@ CDPATH =
 # C preprocessor
 CPP           = cpp
 # C preprocessor flags
-CPPFLAGS      = $(shell echo $(APPONLYFLAGS) $(CFLAGSF90) | tr ' ' '\n' | sed -e '/^-[DU]/!d')
+CPPFLAGS      = --traditional \
+		$(shell echo $(APPONLYFLAGS) $(CFLAGSF90) | tr ' ' '\n' | sed -e '/^-[DU]/!d')
 
 # FEAT2's preprocessor
 F90CPP        = $(FEAT2BASEDIR)/bin/f90cpp
@@ -2768,6 +2769,7 @@ endif
 	@echo
 	@echo 'Flags to be used:'
 	@echo '  OPT          =' $(OPT)
+	@echo '  CPPFLAGS     =' $(CPPFLAGS)
 	@echo '  CFLAGSF77    =' $(CFLAGSF77)
 	@echo '  CFLAGSF90    =' $(CFLAGSF90)
 	@echo '  CFLAGSC      =' $(CFLAGSC)

@@ -2260,14 +2260,14 @@ sub create_feastAppMakefile {
 #        "ifneq (,\$(findstring NEC Fortran IA-64 Compiler,\$(COMPILERVERSION)))\n" .
 #        "ifneq (,\$(findstring Revision 6.1,\$(COMPILERVERSION)))\n" .
 #        "\$(OBJDIR)/linearsystem.o \$(OBJDIR)/masterservice.o \$(OBJDIR)/storage.o \$(OBJDIR)/visoutput.o:\n" .
-#        "\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(subst -O3,-O2,\$(CFLAGSF90)) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n" .
+#        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(subst -O3,-O2,\$(CFLAGSF90)) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n" .
 #        "endif\n" .
 #        "endif\n\n" .
 
 	"# Create build rule for object files from Fortran 90 source\n" .
         "\$(OBJF90): | \$(OBJDIR)\n" .
         "\$(OBJF90):\n" .
-        "\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n\n" .
+        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n\n" .
 
     # Create separate rule for source file containing program
         "# Compile statement for source file containing program start\n" .
@@ -2275,7 +2275,7 @@ sub create_feastAppMakefile {
         "#  and, hence, we should not try to move a .mod file as we do with any module.)\n" .
         "\$(OBJPRG): | \$(OBJDIR)\n" .
         "\$(OBJPRG):\n" .
-        "\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
+        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
 
     # Include implicit rules for files only needed for specific
     # build IDs. They are listed in $(SRCEXTRA) and are supposed
@@ -2306,7 +2306,7 @@ sub create_feastAppMakefile {
 	"# prematurely, e.g. in a highly parallel make run (make -j N, with N>32 or\n" .
 	"# N missing).\n" .
 	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA) \$(filter-out \$(OBJEXTRA), \$(OBJ))\n" .
-	"\t\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA)) -o \$\@\n\n" .
+	"\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA)) -o \$\@\n\n" .
 
     # Generic rule for *.c files out of SRCEXTRA
 	"# Generic rule for *.c files out of SRCEXTRA\n" .
