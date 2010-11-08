@@ -4910,9 +4910,9 @@ sub show_help {
 	"                    Set Fortran 90 compiler flags to <string>\n" .
 	"--coproclist=<string>\n" .
 	"                    Identifier for coprocessor support.\n" .
-	"                    Valid IDs are: cpu, opengl, cuda10, cuda11, cuda12, cuda13. \n" .
-	"                    Note that the cpu identifier must always be set if coprocessor\n" .
-	"                    support is requested.\n" .
+	"                    Valid IDs are: cpu, opengl, cuda10, cuda11, cuda12,\n" .
+	"                    cuda13. Note that the cpu identifier must always be\n" .
+	"                    set if coprocessor support is requested.\n" .
         "--cpp=<file>        C preprocessor\n" .
         "--cxx=<file>        C++ compiler\n" .
         "--debug             Show settings stored into Makefile which will\n" .
@@ -4990,6 +4990,11 @@ sub show_help {
         "                    Controls whether to use no (but including debugging\n" .
         "                    symbols), good or expensive compiler optimisation\n" .
         "                    (default: " . lc($defaults{'OPT'}) . ").\n" .
+        "--programfile=<file>\n" .
+	"                    Set application's program file to <file>\n" .
+	"                    (Reason: Parsing to build a minimal list of required \n" .
+	"                     source files needs a starting point. Being explicit\n" .
+	"                     avoids problems with less tidy users.)\n" .
         "--ranlib=<file>     Path and options to create index for archives\n" .
         "--regression-benchmark\n" .
         "                    Create Makefile for FEAT2 regression benchmark and\n" .
@@ -5003,11 +5008,6 @@ sub show_help {
         "                    When developing on multiple platforms, your\n" .
         "                    application might not be relinked if no source file\n" .
         "                    has changed since you changed platform!\n" .
-        "--programfile=<file>\n" .
-	"                    Set application's program file to <file>\n" .
-	"                    (Reason: Parsing to build a minimal list of required \n" .
-	"                     source files needs a starting point. Being explicit\n" .
-	"                     avoids problems with less tidy users.)\n" .
         "--srclist_app=<string>\n" .
 	"                    Set application's source files to <string>\n" .
         "--suppressflags=<string>\n" .
@@ -5023,9 +5023,9 @@ sub show_help {
         "Options which cause $progname to print only information without a\n" .
         "Makefile being created:\n" .
         "--help              Print this message\n" .
-        "--list-app-modules  Print application's proprietary source files\n" .
         "--list-all-ids      Print a list of all valid build IDs. Use any\n" .
         "                    of them as ARCH argument for --id option\n" .
+        "--list-app-modules  Print application's proprietary source files\n" .
         "--list-ids          Print a list of valid build IDs for current\n" .
         "                    host. Use any of the items as ARCH argument for --id\n" .
         "                    option.\n" .
