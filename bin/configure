@@ -4167,10 +4167,10 @@ sub get_buildID {
 
         # Use build id string from command line if specified or environment
         if (defined($cl{'ID'}) && $cl{'ID'} !~ m/^\s*$/) {
-            print "using given build ID... ";
+            print "done\nusing given build ID... ";
             $buildID = $cl{'ID'};
         } elsif (defined($ENV{ID})) {
-            print "using given build ID... ";
+            print "done\nusing given build ID... ";
             $cl{'ID'} = $ENV{ID};
             $buildID  = $ENV{ID};
         }
@@ -4542,7 +4542,7 @@ sub list_ids {
     # Get valid IDs from MAKEFILE_INC
     &get_validIDs();
 
-    my $id_1st3tokens = $buildID;
+    my $id_1st3tokens = $defaultBuildID;
     $id_1st3tokens =~ s/^([^-]+-[^-]+-[^-]+).*$/$1/;
 
     print "\n$progname v" . &get_version() . ":\n" .
@@ -4580,8 +4580,9 @@ sub list_ids {
 	print "\n" .
 	      "Use any of these build IDs as argument for the --id option.\n" .
 	      "The current build ID for " . &hostname() . " is:\n" .
-	      " " x ((66 - length($buildID))/2) . $buildID . "\n" .
-	      "\n";
+	      " " x ((66 - length($buildID))/2) . $buildID;
+	print " (enforced)" if ($buildID ne $defaultBuildID);
+	print "\n\n";
     }
     exit 0;
 }
