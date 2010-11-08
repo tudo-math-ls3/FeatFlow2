@@ -12,12 +12,12 @@
 !#
 !#   $$U=[\rho,\rho{\bf v},\rho E]^T$$
 !#
-!# and the tuple/triple of fluxes ${\bf F}=(F^1,F^2,F^3)$
+!# and the set of inviscid fluxes ${\bf F}=(F^1,F^2,F^3)$
 !# for each coordinate direction
 !#
 !#   $${\bf F}=[\rho{\bf v},
-!#              \rho{\bf v}\otimes{\bf v}+o{\mathcal I},
-!#              \rho H{\bf v}]^T$$
+!#              \rho{\bf v}\otimes{\bf v}+p{\mathcal I},
+!#              (\rho E+p){\bf v}]^T$$
 !#
 !# in the one-, two- or three-dimensional domain $\Omega$.
 !#

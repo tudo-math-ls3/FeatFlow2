@@ -131,6 +131,7 @@ module hydro_basic
 
 !</constantblock>
 
+
 !<constantblock description="Global type of recovery-based error estimation">
 
   ! L2-projection
