@@ -206,6 +206,7 @@ module vanka
 
   ! Public entities imported from vanka_optcontrol.f90
   public :: VANKATP_NAVSTOPTC2D_DIAG
+  public :: VANKATP_NAVSTOPTC2D_FULL
 
 !<constants>
 

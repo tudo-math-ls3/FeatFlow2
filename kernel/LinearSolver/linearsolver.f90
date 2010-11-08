@@ -951,6 +951,16 @@ module linearsolver
   ! correction approach to give an additional speedup. 
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIAGDIR2 = 25
 
+  ! Full VANKA, 2D Navier-Stokes optimal control problem, general discretisation,
+  ! new implementation.
+  integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCFULL2   = 26
+
+  ! Full VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
+  ! Specialised 'direct' version, i.e. when 
+  ! used as a smoother in multigrid, this bypasses the usual defect
+  ! correction approach to give an additional speedup. 
+  integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCFULLDIR2 = 27
+
   ! Simple VANKA, 3D Navier-Stokes problem, general discretisation
   integer, parameter, public :: LINSOL_VANKA_3DNAVST           = 30
 
@@ -5688,10 +5698,16 @@ contains
                                 VANKAPC_BOUSSINESQ2D,VANKATP_BOUSS2D_FULL)
 
     case (LINSOL_VANKA_2DFNAVSTOCDIAG2,LINSOL_VANKA_2DFNAVSTOCDIAGDIR2 )
-      ! Full VANKA for Navier-Stokes optimal control
+      ! Diagonal VANKA for Navier-Stokes optimal control
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_NAVIERSTOKESOPTC2D,VANKATP_NAVSTOPTC2D_DIAG)
+
+    case (LINSOL_VANKA_2DFNAVSTOCFULL2,LINSOL_VANKA_2DFNAVSTOCFULLDIR2 )
+      ! Full VANKA for Navier-Stokes optimal control
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_NAVIERSTOKESOPTC2D,VANKATP_NAVSTOPTC2D_FULL)
 
     end select
       
