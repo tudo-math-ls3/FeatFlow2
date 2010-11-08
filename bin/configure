@@ -622,6 +622,7 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --relink-always"                                                if (defined($cl{'RELINK_ALWAYS'}) && $cl{'RELINK_ALWAYS'} eq "YES");
     $options .= " --no-relink-always"                                             if (defined($cl{'RELINK_ALWAYS'}) && $cl{'RELINK_ALWAYS'} eq "NO");
     # --serial skipped as it is an alternative for --mode=".." only
+    $options .= " --srcextra=\"" . join(',', @{$cl{'SRCEXTRA'}}) . "\"" if ($#{$cl{'SRCEXTRA'}} >= 0);
     $options .= " --suppressflags=\"" . join(',', @{$cl{'suppressflags'}}) . "\"" if ($#{$cl{'suppressflags'}} >= 0);
 
     foreach my $feastappdir (sort @srcdirs) {
