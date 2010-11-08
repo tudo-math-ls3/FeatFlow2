@@ -6,19 +6,16 @@
 #
 # Call:
 #
-#     generate_tests.pl filename [list] [output.fbdef/.fbconf]
+#     generate_tests.pl filename [output.fbdef] [output.fbconf]
 #
 # In:
 #
 #     filename = name of a .fbgen file
-#     list     = optional command to generate a list of configurations.
-#     output   = optional, name of an output file. If not specified, the
-#                    output is printed to stdout.
+#     output.fbdef = name of a target .fbdef file.
+#     output.fbconf = name of a target .fbconf file.
 # 
 # The utility parses the .fbgen file 'filename' and creates a
-# .fbdef compatible configuration set from it which is printed to the
-# terminal. If the optional command 'list' is specified, a list of all
-# configuration id's in the .fbgen file is printed to the terminal.
+# .fbdef compatible configuration set and/or a .fbconf id list from it.
 #
 # The file "demotestset.fbgen" defines a demo file which can be
 # parsed with this test generator.
@@ -772,32 +769,27 @@ sub generate_tests($$) {
 if ($#ARGV < 0) {
   die "\ngenerate_tests.pl: Command line script to generate .FBDEF files.\n\n" .
       "Call:\n\n" .
-      "    generate_tests.pl filename [list] [output.fbdef/.fbconf]\n\n" .
+      "    generate_tests.pl filename [output.fbdef] [output.fbconf]\n\n" .
       "In:\n\n" .
       "    filename = name of a .fbgen file\n" .
-      "    list     = optional command to generate a list of configurations.\n" .
-      "    output   = optional, name of an output file. If not specified, the\n" .
-      "               output is printed to stdout.\n" .
+      "    output.fbdef = name of a target .fbdef file.\n" .
+      "    output.fbconf = name of a target .fbconf file.\n" .
       "\n" .
       "The utility parses the .fbgen file 'filename' and creates a\n" .
-      ".fbdef compatible configuration set from it which is printed to the\n" .
-      "terminal. If the optional command 'list' is specified, a list of all\n" .
-      "configuration id's in the .fbgen file is printed to the terminal.\n\n";
+      ".fbdef compatible configuration set and/or a .fbconf id list from it.\n\n";
 }
 
 my %configuration;
 
 # Get the parameters.
-my $genlist = 0;
+my $fbdeffile = "";
+my $fbconffile = "";
+
 foreach (@ARGV) {
   my $command = $_;
   
-  if ($command eq "list") {
-    # Generate only list of ID's.
-    $genlist = 1;
-  }
-  
   if ($command =~ m/.*\.fbdef$/) {
+    $fbdeffile = $command;
     # This is the filename of the destination output.
     # Redirect stdout to that file.
     open STDOUT, ">$command" 
@@ -805,6 +797,7 @@ foreach (@ARGV) {
   }
 
   if ($command =~ m/.*\.fbconf$/) {
+    $fbconffile = $command;
     # This is the filename of the destination output.
     # Redirect stdout to that file.
     open STDOUT, ">$command" 
@@ -825,4 +818,19 @@ if ($keycount == 0) {
 }
 
 # Generate the tests.
-generate_tests($genlist,\%configuration);
+if ($fbdeffile ne "") {
+  # This is the filename of the destination output.
+  # Redirect stdout to that file.
+  open STDOUT, ">$fbdeffile" 
+  or die "Can't redirect STDOUT: $!";
+  generate_tests(0,\%configuration);
+}
+
+# Generate the test id list
+if ($fbconffile ne "") {
+  # This is the filename of the destination output.
+  # Redirect stdout to that file.
+  open STDOUT, ">$fbconffile" 
+  or die "Can't redirect STDOUT: $!";
+  generate_tests(1,\%configuration);
+}
