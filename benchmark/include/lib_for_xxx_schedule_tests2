@@ -768,9 +768,6 @@ EOF
 # ==================================================
 
 fb_createTempFBConf() {
-    benchmarktest="$1"
-    scriptname="$2"
-
     # Create a unique temporary file
     # (Unfortunately 'mktemp' does not support suffixes.
     #  So, get a temporary name, append the suffix ".fbconf", check whether
@@ -974,7 +971,7 @@ fb_createPBSHeader()
       echo "#PBS -l nodes=$NODES"
     else
       # Allocate complete nodes
-      echo "#PBS -l nodes=$NODES:ppn=${CORES}"
+      echo "#PBS -l nodes=$NODES:ppn=${USEDCORES}"
     fi
 
   if test "$VMEM" != "0"
@@ -1274,6 +1271,9 @@ fb_scriptToBenchmarkJobfile ()
 #   - A queue being selected
 #   - The GNU makefile system determined
 #   - The MPI and queueing system being defined
+#
+# Returns:
+#   [testIDsWithErrors] - test ID's that did not work.
 # ==================================================
 
 fb_createBenchmarkJobfileForAll()
@@ -1301,17 +1301,27 @@ fb_createBenchmarkJobfileForAll()
   ./include/make_test.pl MULTIPLEFILES=1 TEMPIDFILE=$tempidfile BUILDID=$buildid SCRIPT=$tempfilename $ALLTESTS
   
   # Loop through all the id's and the generated files.
+  testIDsWithErrors=""
   for testid in $ALLTESTS
     do
       # Convert to benchmark jobfiles.
       sourcefile="$tempfilename.$testid"
-      fb_getJobfileName $testid 0
-      fb_scriptToBenchmarkJobfile "$sourcefile" "$JOBFILE" "$LOG_FILE"
-      
-      # Delete the old temporary file.
-      rm -f "$sourcefile"
-
-      echo $0": Jobfile <$JOBFILE> created."
+      if test -f "$sourcefile"
+        then
+          fb_getJobfileName $testid 0
+          fb_scriptToBenchmarkJobfile "$sourcefile" "$JOBFILE" "$LOG_FILE"
+          
+          # Delete the old temporary file.
+          rm -f "$sourcefile"
+    
+          echo $0": Jobfile <$JOBFILE> created."
+        else
+          testIDsWithErrors="$testIDsWithErrors $testid"
+          
+          # Delete the file in case there is one - probably from an older build.
+          rm -f "$JOBFILE"
+          
+        fi
     done
 }
 
@@ -1375,6 +1385,7 @@ fb_createBenchmarkJobfiles()
     
       # Alternative job creation, "direct" method. This is not done
       # in parallel, the jobs are directly created all-at-once.
+      # The routine sets testIDsWithErrors to the test id's that did not work.
       fb_createBenchmarkJobfileForAll
     
     fi

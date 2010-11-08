@@ -371,6 +371,7 @@ my @subentry    = ();
 my @subsubentry = ();
 my $testidsFound = 0;
 my @vars2export = ();
+my @testidsok = ();
 ID: foreach my $testid (@idsToCode) {
     # Check whether anything at all has been defined in any of
     # the *.$testfileext files for the requested ID.
@@ -508,8 +509,12 @@ ID: foreach my $testid (@idsToCode) {
     }
 
 
+
     # Write to screen or append to file?
     if ($cl{'append-to-files'}) {
+        # save old stdout
+        open(SAVEOUT, ">&STDOUT");
+
         my $filename = $cl{'append-to-files'} . $testid;
         open(STDOUT, '>>', $filename)
             or warn "$progname: WARNING: Cannot append to file <$filename>: $!\n";
@@ -662,9 +667,15 @@ ID: foreach my $testid (@idsToCode) {
         }
     }
     print STDOUT "\nunset TESTID\n\n";
+    
+    push (@testidsok,$testid);
 
     if ($cl{'append-to-files'}) {
         close(STDOUT);
+        open(STDOUT, ">&SAVEOUT");
+
+        # Print the test id's which have successfully been created to screen.
+        # print "@testidsok";
     }
 }
 
@@ -1190,19 +1201,21 @@ sub show_help {
         "---------------------\n" .
         "--append-to-files <string>\n" .
         "                    Instead of writing to screen, append output to a\n" .
-    "                    file, one per test ID. File names are constructed\n" .
-    "                    according to\n" .
-    "                        <string>.<test ID>\n" .
+        "                    file, one per test ID. File names are constructed\n" .
+        "                    according to\n" .
+        "                        <string>.<test ID>\n" .
+#        "                    All successfully created build ID's are written" .
+#        "                    to the terminal." .
         "--log-base-directory <directory>\n" .
         "                    Name of base directory for all log files.\n" .
-    "                    Default: LOG_BASE_DIR variable from Makefile\n" .
+        "                    Default: LOG_BASE_DIR variable from Makefile\n" .
         "--overwrite-log-directory\n" .
         "                    Every test ID writes its logs to separate directory.\n" .
-    "                    By default, if such a directory does already exist,\n" .
-    "                    the existing one is renamed to \"<test ID>.prev\".\n" .
-    "                    Specifying this option this behaviour can be turned off\n" .
-    "                    Alternatively, the flag can be set by means of the\n" .
-    "                    environment variable OVERWRITE_LOG_DIRECTORY=1.\n" .
+        "                    By default, if such a directory does already exist,\n" .
+        "                    the existing one is renamed to \"<test ID>.prev\".\n" .
+        "                    Specifying this option this behaviour can be turned off\n" .
+        "                    Alternatively, the flag can be set by means of the\n" .
+        "                    environment variable OVERWRITE_LOG_DIRECTORY=1.\n" .
         "--help              Print this message\n" .
         "--version           Show version information\n";
     exit 0;

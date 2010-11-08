@@ -362,6 +362,7 @@ sub generate_tests (\@\@) {
   else {
 
     # Create output files, write headers
+    my $fsize = -1;
     for my $testid (@$testids) {
       my $filename = "$basefilename.$testid";
 
@@ -383,25 +384,43 @@ sub generate_tests (\@\@) {
     
       close (FHANDLE);
       
+      if ($fsize == -1) {
+        # Get the file size. It's the same for all files!
+        $fsize = -s $filename;
+      }
     }
     
     # Invoke create_script.pl, get one file per test id.
     # The test instructions are appended to the existing files.
     my $output=`$screatescriptinvoke $tempfilename --append-to-files $basefilename.`;
     
-    # Append footers
+    # Append footers or remove the file.
+    
     for my $testid (@$testids) {
       my $filename = "$basefilename.$testid";
+
+      # Check if the file size is different from the default file size.
+      # If not, create_script.pl did not append anything, so the test id
+      # is invalid!
+      my $newfsize = -s $filename;
       
-      # Write a footer.
-      open (FHANDLE,">>$filename");
-      print FHANDLE "\nfb_footer\n";
-      close (FHANDLE);
-      
-      # Make the script executable
-      chmod 0755,$filename;
-      
-      print "$0: Script named <$filename> has been created.\n"
+      if ($fsize ne $newfsize) {
+        
+        # Write a footer.
+        open (FHANDLE,">>$filename");
+        print FHANDLE "\nfb_footer\n";
+        close (FHANDLE);
+        
+        # Make the script executable
+        chmod 0755,$filename;
+        
+        print "$0: Script named <$filename> has been created.\n";
+      }
+      else {
+        unlink ($filename)
+          or die "$0: Script named <$filename> cannot be deleted!\n";
+        print "$0: Script named <$filename> not created, test id invalid.\n";
+      }
       
     }
   }
