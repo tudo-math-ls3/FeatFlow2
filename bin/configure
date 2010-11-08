@@ -3307,7 +3307,7 @@ sub create_feastAppMakefile {
         "\t\@echo; \\\n" .
         "\t echo '*** Error: Build ID \$(ID)'; \\\n" .
         "\t echo '***        is *not* valid for current host!'; \\\n" .
-        "\t echo '***        \$(FEAT2BASEDIR)/bin/guess_id reported a host of type \$(REALID).'; \\\n" .
+        "\t echo '***        \$(FEASTBASEDIR)/bin/guess_id reported a host of type \$(REALID_SHORT).'; \\\n" .
         "\t echo '***        Cowardly refusing compilation.'; \\\n" .
         "\t echo;\n" .
 	"\t\@exit 1;\n" .
@@ -3373,7 +3373,7 @@ sub create_feastAppMakefile {
         "# It would be a lot nicer if we could distribute the following perl\n" .
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
-        "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
+        "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo;\n" .
         "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
