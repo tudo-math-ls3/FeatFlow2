@@ -1,12 +1,44 @@
 #!/bin/sh
 
+# Get building date
 date="`date +%y`"/"`date +%m`"
 build="`date +%Y%m%d`"
 
+# Include configuration file
+. ./flagship.conf
+
+# Start with non-optional apponly flags
+APPONLYFLAGS="-DVERSION=\\\"${date}\\\",-DBUILD=\\\"${build}\\\",-DUSE_PREPROC_F90CPP"
+MESSAGE=""
+
+# Add flags for transport model
+if [ -n "$TRANSP_USE_IBP" -a "$TRANSP_USE_IBP" = "YES" ]
+then
+  APPONLYFLAGS="$APPONLYFLAGS,-DTRANSP_USE_IBP"
+  MESSAGE="TRANSP_USE_IBP = YES"
+else
+  MESSAGE="TRANSP_USE_IBP = NO"
+fi
+
+# Add flags for hydrodynamic model
+if [ -n "$HYDRO_USE_IBP" -a "$HYDRO_USE_IBP" = "YES" ]
+then
+  APPONLYFLAGS="$APPONLYFLAGS,-DHYDRO_USE_IBP"
+  MESSAGE="$MESSAGE\nHYDRO_USE_IBP = YES"
+else
+  MESSAGE="$MESSAGE\nHYDRO_USE_IBP = NO"
+fi
+
+# Use system-wide configure
 ../../bin/configure \
-	--appname=flagship \
-	--programfile=src/flagship.f90 \
-	--srclist_app="`ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90`" \
-        --header-files-to-copy=src/models/euler/euler.h,src/kernel/thermodynamics.h \
-	--apponlyflags="-DVERSION=\\\"${date}\\\",-DBUILD=\\\"${build}\\\",-DTRANSP_USE_IBP,-DEULER_USE_IBP"\
-	$@
+    --appname=flagship \
+    --programfile=src/flagship.f90 \
+    --srclist_app="`ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90`" \
+    --header-files-to-copy=src/flagship.h \
+    --header-files-to-copy=src/models/hydro/hydro.h \
+    --header-files-to-copy=src/kernel/thermodynamics.h \
+    --apponlyflags="$APPONLYFLAGS"\
+    $@
+
+echo "Application will be compiled with the following flags:\n"
+echo $MESSAGE

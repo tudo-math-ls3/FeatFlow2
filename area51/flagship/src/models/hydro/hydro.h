@@ -15,6 +15,8 @@
 #ifndef _HYDRO_H_
 #define _HYDRO_H_
 
+#include "../../flagship.h"
+
 #if 0
 ! Equation of state for perfect gas
 #endif

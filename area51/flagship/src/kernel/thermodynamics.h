@@ -15,6 +15,8 @@
 #ifndef _THERMODYNAMICS_H_
 #define _THERMODYNAMICS_H_
 
+#include "../flagship.h"
+
 #if 0
 !##############################################################################
 ! Compile-time constants
