@@ -83,7 +83,7 @@
 #endif
 
 #define ROE_MEAN_RATIO(ul,ur) (ul/ur)
-#define ROE_MEAN_VALUE(ul,ur,ratio) ((aux*ul+ur)/(aux+1))
+#define ROE_MEAN_VALUE(ul,ur,ratio) ((ratio*ul+ur)/(ratio+1))
 
 #if 0
 ! Include thermodynamic header file
