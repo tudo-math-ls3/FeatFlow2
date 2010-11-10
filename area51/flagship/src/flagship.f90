@@ -31,6 +31,7 @@ program flagship
   use storage
 
   use hydro_application
+  use mhd_application
   use transport_application
   use zpinch_application
 
@@ -128,6 +129,8 @@ program flagship
   elseif (trim(application) .eq. 'zpinch') then
     call zpinch_app(rparlist, 'zpinch')
 
+  elseif (trim(application) .eq. 'mhd') then
+    call mhd_app(rparlist, 'mhd')
   else
     call output_line('Invalid application name!',&
         OU_CLASS_WARNING,OU_MODE_STD,'flagship')

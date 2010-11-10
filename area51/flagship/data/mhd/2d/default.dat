@@ -1,0 +1,42 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                                                                              #
+#               Default parameters for MHD application in 2D                   #
+#                                                                              #
+################################################################################
+
+
+################################################################################
+[Mhd]
+################################################################################
+
+# Position of the discretisation in the array of discretisations
+Discretisation = 1
+
+# Position of the stabilization for the inviscid term
+InviscidAFC = 1
+
+# Position of the template matrix in the scalar matrix structure
+TemplateMatrix = 3
+
+# Position of the system matrix in the scalar matrix structure
+SystemMatrix = 1
+
+# Position of the Jacobian matrix in the scalar matrix structure
+JacobianMatrix = 2
+
+# Position of the consistent mass matrix in the scalar matrix structure
+ConsistentMassMatrix = 4
+
+# Position of the lumped mass matrix in the scalar matrix structure
+LumpedMassMatrix = 5
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CX = 6
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CY = 7
+
+# Position of the constant coefficient matrix S in the scalar matrix structure
+CoeffMatrix_CZ = 0
