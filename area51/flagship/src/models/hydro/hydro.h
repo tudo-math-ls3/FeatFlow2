@@ -25,7 +25,11 @@
 #if 0
 ! Ratio of specific heats for air at sea-level
 #endif
+#ifdef HYDRO_GAMMA
+#define GAMMA HYDRO_GAMMA
+#else
 #define GAMMA 1.4_DP
+#endif
 
 #if 0
 !##############################################################################

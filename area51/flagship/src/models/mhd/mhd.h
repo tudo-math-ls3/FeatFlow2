@@ -25,17 +25,30 @@
 #if 0
 ! Vacuum permittivity
 #endif
+#ifdef MHD_VACUUM_PERM
+#define VACUUM_PERM MHD_VACUUM_PERM
+#else
 #define VACUUM_PERM 1.0
+#endif
 
 #if 0
 ! Ratio of specific heats for air at sea-level
 #endif
+#ifdef MHD_GAMMA
+#define GAMMA MHD_GAMMA
+#else
 #define GAMMA 1.4_DP
+#endif
 
 #if 0
 ! In one dimension, the x-component of the magnetic field is constant.
 #endif
-#define X_MAGNETICFIELD_CONSTANT_1D 3.0/4.0
+#ifdef MHD_X_MAGNETICFIELD_CONSTANT_1D
+#define X_MAGNETICFIELD_CONSTANT_1D MHD_X_MAGNETICFIELD_CONSTANT_1D
+#else
+#define X_MAGNETICFIELD_CONSTANT_1D 1.0
+#endif
+
 
 #if 0
 !##############################################################################
