@@ -1751,11 +1751,11 @@ contains
           elseif (trim(cvariable) .eq. 'magneticfield') then
 
             ! Special treatment of magnetic field
-            call mhd_getVarBlockFormat(rvector1%NEQ, nvar,&
+            call mhd_getVarInterleaveFormat(rvector1%NEQ, nvar,&
                 'magneticfield_x', p_Dsolution, p_Ddata1)
-            call mhd_getVarBlockFormat(rvector2%NEQ, nvar,&
+            call mhd_getVarInterleaveFormat(rvector2%NEQ, nvar,&
                 'magneticfield_y', p_Dsolution, p_Ddata2)
-            call mhd_getVarBlockFormat(rvector3%NEQ, nvar,&
+            call mhd_getVarInterleaveFormat(rvector3%NEQ, nvar,&
                 'magneticfield_z', p_Dsolution, p_Ddata3)
             call ucd_addVarVertBasedVec(rexport, 'magneticfield',&
                 p_Ddata1, p_Ddata2, p_Ddata3)

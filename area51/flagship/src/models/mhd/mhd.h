@@ -104,47 +104,47 @@
 #if 0
 ! Compute x-component of the magnetic fiels from conservative variables in 2D, and 3D
 #endif
-#define X_MAGNETICFIELD_FROM_CONSVAR(u,nvar) (u(nvar/2+1))
-#define X_MAGNETICFIELD_1T_FROM_CONSVAR(u,nvar,i1) (u(nvar/2+1,i1))
-#define X_MAGNETICFIELD_1L_FROM_CONSVAR(u,nvar,i1) (u(i1,nvar/2+1))
-#define X_MAGNETICFIELD_2T_FROM_CONSVAR(u,nvar,i1,i2) (u(nvar/2+1,i1,i2))
-#define X_MAGNETICFIELD_2L_FROM_CONSVAR(u,nvar,i1,i2) (u(i1,i2,nvar/2+1))
+#define X_MAGNETICFIELD_FROM_CONSVAR(u,nvar) (u(5))
+#define X_MAGNETICFIELD_1T_FROM_CONSVAR(u,nvar,i1) (u(5,i1))
+#define X_MAGNETICFIELD_1L_FROM_CONSVAR(u,nvar,i1) (u(i1,5))
+#define X_MAGNETICFIELD_2T_FROM_CONSVAR(u,nvar,i1,i2) (u(5,i1,i2))
+#define X_MAGNETICFIELD_2L_FROM_CONSVAR(u,nvar,i1,i2) (u(i1,i2,5))
 
 #if 0
 ! Compute y-component of the magnetic fiels from conservative variables in 1D
 #endif
-#define Y_MAGNETICFIELD_FROM_CONSVAR_1D(u,nvar) (u((nvar-1)/2+2))
-#define Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(u,nvar,i1) (u((nvar-1)/2+2,i1))
-#define Y_MAGNETICFIELD_1L_FROM_CONSVAR_1D(u,nvar,i1) (u(i1,(nvar-1)/2+2))
-#define Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(u,nvar,i1,i2) (u((nvar-1)/2+2,i1,i2))
-#define Y_MAGNETICFIELD_2L_FROM_CONSVAR_1D(u,nvar,i1,i2) (u(i1,i2,(nvar-1)/2+2))
+#define Y_MAGNETICFIELD_FROM_CONSVAR_1D(u,nvar) (u(5))
+#define Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(u,nvar,i1) (u(5,i1))
+#define Y_MAGNETICFIELD_1L_FROM_CONSVAR_1D(u,nvar,i1) (u(i1,5))
+#define Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(u,nvar,i1,i2) (u(5,i1,i2))
+#define Y_MAGNETICFIELD_2L_FROM_CONSVAR_1D(u,nvar,i1,i2) (u(i1,i2,5))
 
 #if 0
 ! Compute y-component of the magnetic fiels from conservative variables in 2D, and 3D
 #endif
-#define Y_MAGNETICFIELD_FROM_CONSVAR(u,nvar) (u(nvar/2+2))
-#define Y_MAGNETICFIELD_1T_FROM_CONSVAR(u,nvar,i1) (u(nvar/2+2,i1))
-#define Y_MAGNETICFIELD_1L_FROM_CONSVAR(u,nvar,i1) (u(i1,nvar/2+2))
-#define Y_MAGNETICFIELD_2T_FROM_CONSVAR(u,nvar,i1,i2) (u(nvar/2+2,i1,i2))
-#define Y_MAGNETICFIELD_2L_FROM_CONSVAR(u,nvar,i1,i2) (u(i1,i2,nvar/2+2))
+#define Y_MAGNETICFIELD_FROM_CONSVAR(u,nvar) (u(6))
+#define Y_MAGNETICFIELD_1T_FROM_CONSVAR(u,nvar,i1) (u(6,i1))
+#define Y_MAGNETICFIELD_1L_FROM_CONSVAR(u,nvar,i1) (u(i1,6))
+#define Y_MAGNETICFIELD_2T_FROM_CONSVAR(u,nvar,i1,i2) (u(6,i1,i2))
+#define Y_MAGNETICFIELD_2L_FROM_CONSVAR(u,nvar,i1,i2) (u(i1,i2,6))
 
 #if 0
 ! Compute z-component of the magnetic fiels from conservative variables in 1D
 #endif
-#define Z_MAGNETICFIELD_FROM_CONSVAR_1D(u,nvar) (u((nvar-1)/2+3))
-#define Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(u,nvar,i1) (u((nvar-1)/2+3,i1))
-#define Z_MAGNETICFIELD_1L_FROM_CONSVAR_1D(u,nvar,i1) (u(i1,(nvar-1)/2+3))
-#define Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(u,nvar,i1,i2) (u((nvar-1)/2+3,i1,i2))
-#define Z_MAGNETICFIELD_2L_FROM_CONSVAR_1D(u,nvar,i1,i2) (u(i1,i2,(nvar-1)/2+3))
+#define Z_MAGNETICFIELD_FROM_CONSVAR_1D(u,nvar) (u(6))
+#define Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(u,nvar,i1) (u(6,i1))
+#define Z_MAGNETICFIELD_1L_FROM_CONSVAR_1D(u,nvar,i1) (u(i1,6))
+#define Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(u,nvar,i1,i2) (u(6,i1,i2))
+#define Z_MAGNETICFIELD_2L_FROM_CONSVAR_1D(u,nvar,i1,i2) (u(i1,i2,6))
 
 #if 0
 ! Compute z-component of the magnetic fiels from conservative variables in 2D, and 3D
 #endif
-#define Z_MAGNETICFIELD_FROM_CONSVAR(u,nvar) (u(nvar/2+3))
-#define Z_MAGNETICFIELD_1T_FROM_CONSVAR(u,nvar,i1) (u(nvar/2+3,i1))
-#define Z_MAGNETICFIELD_1L_FROM_CONSVAR(u,nvar,i1) (u(i1,nvar/2+3))
-#define Z_MAGNETICFIELD_2T_FROM_CONSVAR(u,nvar,i1,i2) (u(nvar/2+3,i1,i2))
-#define Z_MAGNETICFIELD_2L_FROM_CONSVAR(u,nvar,i1,i2) (u(i1,i2,nvar/2+3))
+#define Z_MAGNETICFIELD_FROM_CONSVAR(u,nvar) (u(7))
+#define Z_MAGNETICFIELD_1T_FROM_CONSVAR(u,nvar,i1) (u(7,i1))
+#define Z_MAGNETICFIELD_1L_FROM_CONSVAR(u,nvar,i1) (u(i1,7))
+#define Z_MAGNETICFIELD_2T_FROM_CONSVAR(u,nvar,i1,i2) (u(7,i1,i2))
+#define Z_MAGNETICFIELD_2L_FROM_CONSVAR(u,nvar,i1,i2) (u(i1,i2,7))
 
 #if 0
 ! Compute total energy from conservative variables in 1D, 2D, and 3D
