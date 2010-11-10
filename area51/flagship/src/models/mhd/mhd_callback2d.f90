@@ -4319,7 +4319,7 @@ contains
       DrightEigenvectorsAtEdge, DleftEigenvectorsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the characteristic variables in 1D
+    ! This subroutine computes the characteristic variables in 2D
 !</description>
 
 !<input>
