@@ -204,7 +204,6 @@ contains
 !</output>
 !</subroutine>
 
-
     ! Do we have to calculate the preconditioner?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
@@ -229,7 +228,6 @@ contains
     ! Do we have to calculate the residual?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
-
       if (istep .eq. 0) then
         ! Compute the constant right-hand side
         call mhd_calcRhsThetaScheme(rproblemLevel, rtimestep,&
@@ -504,7 +502,7 @@ contains
         end select
 
 
-      case (DISSIPATION_TENSOR)
+      case (DISSIPATION_ROE)
 
         ! Assemble divergence operator with tensorial dissipation
 
@@ -651,7 +649,7 @@ contains
         end select
 
 
-      case (DISSIPATION_TENSOR)
+      case (DISSIPATION_ROE)
 
         ! Assemble divergence operator with tensorial dissipation
 
@@ -1168,7 +1166,7 @@ contains
                   mhd_calcFluxScDissDiSp3d_sim, dscale, .true., rrhs)
             end select
 
-          case (DISSIPATION_TENSOR)
+          case (DISSIPATION_ROE)
 
             ! Assemble divergence operator with tensorial dissipation
 
@@ -1192,7 +1190,7 @@ contains
                   mhd_calcFluxRoeDiss3d_sim, dscale, .true., rrhs)
             end select
 
-          case (DISSIPATION_TENSOR_DSPLIT)
+          case (DISSIPATION_ROE_DSPLIT)
 
             ! Assemble divergence operator with tensorial dissipation
             ! adopting dimensional splitting
@@ -1650,7 +1648,7 @@ contains
               mhd_calcFluxScDissDiSp3d_sim, dscale, .false., rres)
         end select
 
-      case (DISSIPATION_TENSOR)
+      case (DISSIPATION_ROE)
 
         ! Assemble divergence operator with tensorial dissipation
 
@@ -1674,7 +1672,7 @@ contains
               mhd_calcFluxRoeDiss3d_sim, dscale, .false., rres)
         end select
 
-      case (DISSIPATION_TENSOR_DSPLIT)
+      case (DISSIPATION_ROE_DSPLIT)
 
         ! Assemble divergence operator with tensorial dissipation
         ! adopting dimensional splitting
@@ -2111,7 +2109,7 @@ contains
               mhd_calcFluxScDiss3d_sim, dscale, .false., rrhs)
         end select
 
-      case (DISSIPATION_TENSOR)
+      case (DISSIPATION_ROE)
 
         ! Assemble divergence operator with tensorial dissipation
 
@@ -2601,7 +2599,7 @@ contains
       end select
 
 
-    case (DISSIPATION_TENSOR)
+    case (DISSIPATION_ROE)
 
       ! Assemble raw antidiffusive fluxes using tensorial dissipation
 
@@ -3882,6 +3880,13 @@ contains
     ! Determine type of boundary condition in numeral form
     select case (sys_upcase(cbdrCondType))
 
+    case ('DUMMYALL_STRONG')
+      ibdrCondType = BDRC_DUMMYALL + BDRC_STRONG
+
+    case ('DUMMYNONE_STRONG')
+      ibdrCondType = BDRC_DUMMYNONE
+      ! No strong boundary conditions are prescribed
+            
 !!$    case ('FREESLIP_STRONG')
 !!$      ibdrCondType = BDRC_FREESLIP + BDRC_STRONG
 !!$
@@ -3955,14 +3960,17 @@ contains
 !!$    case ('ANTIPERIODIC_WEAK')
 !!$      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK
 
-!!$    case default
-!!$      read(cbdrCondType, '(I3)') ibdrCondType
+    case default
+      read(cbdrCondType, '(I3)') ibdrCondType
     end select
 
     
     ! Determine number of mathematical expressions
     select case (iand(ibdrCondType, BDRC_TYPEMASK))
-      
+
+    case (BDRC_DUMMYALL)
+      nexpressions = 7
+
 !!$    case (BDRC_FREESLIP, BDRC_VISCOUSWALL, BDRC_SUPEROUTLET)
 !!$      nexpressions = 0
 !!$

@@ -504,7 +504,7 @@ contains
         end select
 
 
-      case (DISSIPATION_TENSOR)
+      case (DISSIPATION_ROE)
 
         ! Assemble divergence operator with tensorial dissipation
 
@@ -651,7 +651,7 @@ contains
         end select
 
 
-      case (DISSIPATION_TENSOR)
+      case (DISSIPATION_ROE)
 
         ! Assemble divergence operator with tensorial dissipation
 
@@ -1168,7 +1168,7 @@ contains
                   hydro_calcFluxScDissDiSp3d_sim, dscale, .true., rrhs)
             end select
 
-          case (DISSIPATION_TENSOR)
+          case (DISSIPATION_ROE)
 
             ! Assemble divergence operator with tensorial dissipation
 
@@ -1192,7 +1192,7 @@ contains
                   hydro_calcFluxRoeDiss3d_sim, dscale, .true., rrhs)
             end select
 
-          case (DISSIPATION_TENSOR_DSPLIT)
+          case (DISSIPATION_ROE_DSPLIT)
 
             ! Assemble divergence operator with tensorial dissipation
             ! adopting dimensional splitting
@@ -1650,7 +1650,7 @@ contains
               hydro_calcFluxScDissDiSp3d_sim, dscale, .false., rres)
         end select
 
-      case (DISSIPATION_TENSOR)
+      case (DISSIPATION_ROE)
 
         ! Assemble divergence operator with tensorial dissipation
 
@@ -1674,7 +1674,7 @@ contains
               hydro_calcFluxRoeDiss3d_sim, dscale, .false., rres)
         end select
 
-      case (DISSIPATION_TENSOR_DSPLIT)
+      case (DISSIPATION_ROE_DSPLIT)
 
         ! Assemble divergence operator with tensorial dissipation
         ! adopting dimensional splitting
@@ -2111,7 +2111,7 @@ contains
               hydro_calcFluxScDiss3d_sim, dscale, .false., rrhs)
         end select
 
-      case (DISSIPATION_TENSOR)
+      case (DISSIPATION_ROE)
 
         ! Assemble divergence operator with tensorial dissipation
 
@@ -2601,7 +2601,7 @@ contains
       end select
 
 
-    case (DISSIPATION_TENSOR)
+    case (DISSIPATION_ROE)
 
       ! Assemble raw antidiffusive fluxes using tensorial dissipation
 

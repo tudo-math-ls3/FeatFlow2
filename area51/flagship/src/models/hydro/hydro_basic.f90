@@ -115,7 +115,7 @@ module hydro_basic
   integer, parameter, public :: DISSIPATION_SCALAR         = 1
 
   ! Tensorial dissipation
-  integer, parameter, public :: DISSIPATION_TENSOR         = 2
+  integer, parameter, public :: DISSIPATION_ROE            = 2
 
   ! Rusanov flux
   integer, parameter, public :: DISSIPATION_RUSANOV        = 3
@@ -124,7 +124,7 @@ module hydro_basic
   integer, parameter, public :: DISSIPATION_SCALAR_DSPLIT  = -DISSIPATION_SCALAR
 
   ! Tensorial dissipation adopting dimensional splitting
-  integer, parameter, public :: DISSIPATION_TENSOR_DSPLIT  = -DISSIPATION_TENSOR
+  integer, parameter, public :: DISSIPATION_ROE_DSPLIT     = -DISSIPATION_ROE
 
   ! Rusanov flux adopting dimensional splitting
   integer, parameter, public :: DISSIPATION_RUSANOV_DSPLIT = -DISSIPATION_RUSANOV
