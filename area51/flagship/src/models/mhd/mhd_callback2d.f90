@@ -910,7 +910,7 @@ contains
       dF2_ij(8) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx) + pi)*vi -&
                    Y_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)*qi) -&
                   ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx) + pj)*vj -&
-                   Y_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)*qj
+                   Y_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)*qj)
 #endif
 
       !-------------------------------------------------------------------------
