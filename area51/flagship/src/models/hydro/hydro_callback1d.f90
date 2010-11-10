@@ -71,7 +71,7 @@
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting scalar artificial viscosities
 !#
-!# 18.) hydro_calcFluxFCTTensorDiss1d
+!# 18.) hydro_calcFluxFCTRoeDiss1d
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting tensorial artificial viscosities
 !#
@@ -197,7 +197,7 @@ module hydro_callback1d
   public :: hydro_calcMatRusDiss1d_sim
   public :: hydro_calcCharacteristics1d_sim
   public :: hydro_calcFluxFCTScalarDiss1d
-  public :: hydro_calcFluxFCTTensorDiss1d
+  public :: hydro_calcFluxFCTRoeDiss1d
   public :: hydro_calcFluxFCTRusanov1d
   public :: hydro_trafoFluxDensity1d_sim
   public :: hydro_trafoFluxEnergy1d_sim
@@ -2424,7 +2424,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxFCTTensorDiss1d(&
+  pure subroutine hydro_calcFluxFCTRoeDiss1d(&
       U1_i, U1_j, U2_i, U2_j, Coeff_ij, Coeff_ji,&
       i, j, dscale1, dscale2, F_ij)
 
@@ -2516,7 +2516,7 @@ contains
     ! Compute conservative fluxes
     F_ij = dscale1*(U1_i-U1_j) + dscale2*anorm*Diff
 
-  end subroutine hydro_calcFluxFCTTensorDiss1d
+  end subroutine hydro_calcFluxFCTRoeDiss1d
 
   !*****************************************************************************
 

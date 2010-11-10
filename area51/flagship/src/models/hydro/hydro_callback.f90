@@ -2612,14 +2612,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss1d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss1d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss1d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss1d,&
               theta, tstep, dscale, binit)
         end if
 
@@ -2629,14 +2629,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss2d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss2d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss2d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss2d,&
               theta, tstep, dscale, binit)
         end if
 
@@ -2646,14 +2646,14 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss3d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss3d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTTensorDiss3d,&
+              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss3d,&
               theta, tstep, dscale, binit)
         end if
       end select

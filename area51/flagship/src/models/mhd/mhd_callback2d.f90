@@ -86,7 +86,7 @@
 !#      -> Computes fluxes for FCT algorithm
 !#         adopting scalar artificial viscosities
 !#
-!# 21.) mhd_calcFluxFCTTensorDiss2d
+!# 21.) mhd_calcFluxFCTRoeDiss2d
 !#      -> Computes fluxes for FCT algorithm
 !#         adopting tensorial artificial viscosities
 !#
@@ -217,7 +217,7 @@ module mhd_callback2d
   public :: mhd_calcMatRusDiss2d_sim
   public :: mhd_calcCharacteristics2d_sim
   public :: mhd_calcFluxFCTScalarDiss2d
-  public :: mhd_calcFluxFCTTensorDiss2d
+  public :: mhd_calcFluxFCTRoeDiss2d
   public :: mhd_calcFluxFCTRusanov2d
   public :: mhd_trafoFluxDensity2d_sim
   public :: mhd_trafoFluxEnergy2d_sim
@@ -4674,7 +4674,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxFCTTensorDiss2d(&
+  pure subroutine mhd_calcFluxFCTRoeDiss2d(&
       U1_i, U1_j, U2_i, U2_j, Coeff_ij, Coeff_ji,&
       i, j, dscale1, dscale2, F_ij)
 
@@ -4782,7 +4782,7 @@ contains
       F_ij = dscale1*(U1_i-U1_j)
 
     end if
-  end subroutine mhd_calcFluxFCTTensorDiss2d
+  end subroutine mhd_calcFluxFCTRoeDiss2d
 
   !*****************************************************************************
 
