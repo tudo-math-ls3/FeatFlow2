@@ -18,32 +18,6 @@
 !#     application name and user-defined parameters are supplied via
 !#     the parameter list rparlist.
 !#
-!# TODO
-!#
-!# 1.) Remove the old splib (ILU-k) from the solver module and replace it
-!#     by the routines from the iluk.f90 module.
-!#
-!# 2.) Prelimiting does not work for FEM-FCT algorithms except for the
-!#     linearised version. We still need to think about how to assemble
-!#     the fluxes for prelimiting.
-!#
-!# 3.) FEM-FCT algorithms for hydrodynamic model are not working except for the
-!#     linearised version.
-!#
-!# 4.) Jacobian matrix for the semi-implicit FEM-FCT algorithm has to be
-!#     fixed (it was based on the fluxes but now it has to be based on the
-!#     edgewise correciton factors).
-!#
-!# 5.) Implement weak boundary conditions in 1D
-!#
-!# 6.) Implement hydrodynamic model in 3D
-!#
-!# 7.) Implement Navier-Stokes model
-!#
-!# 8.) Implement Z-pinch model in x-r coordinates
-!#
-!# 9.) Implement MHD model
-!#
 !# </purpose>
 !##############################################################################
 
