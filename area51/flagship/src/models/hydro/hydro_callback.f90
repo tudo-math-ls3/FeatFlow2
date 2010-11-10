@@ -506,7 +506,7 @@ contains
 
       case (DISSIPATION_ROE)
 
-        ! Assemble divergence operator with tensorial dissipation
+        ! Assemble divergence operator with Roe-type dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -539,7 +539,7 @@ contains
 
       case (DISSIPATION_RUSANOV)
 
-        ! Assemble divergence operator with the Rusanov dissipation
+        ! Assemble divergence operator with the Rusanov-type dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -653,7 +653,7 @@ contains
 
       case (DISSIPATION_ROE)
 
-        ! Assemble divergence operator with tensorial dissipation
+        ! Assemble divergence operator with Roe-type dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -686,7 +686,7 @@ contains
 
       case (DISSIPATION_RUSANOV)
 
-        ! Assemble divergence operator with the Rusanov dissipation
+        ! Assemble divergence operator with the Rusanov-type dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -1097,7 +1097,7 @@ contains
 
           case (DISSIPATION_ZERO)
 
-            ! Assemble divergence operator without dissipation
+            ! Assemble divergence of flux without dissipation
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
@@ -1121,7 +1121,7 @@ contains
 
           case (DISSIPATION_SCALAR)
 
-            ! Assemble divergence operator with scalar dissipation
+            ! Assemble divergence of flux with scalar dissipation
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
@@ -1145,7 +1145,7 @@ contains
 
           case (DISSIPATION_SCALAR_DSPLIT)
 
-            ! Assemble divergence operator with scalar dissipation
+            ! Assemble divergence of flux with scalar dissipation
             ! adopting dimensional splitting
 
             select case(rproblemLevel%rtriangulation%ndim)
@@ -1170,7 +1170,7 @@ contains
 
           case (DISSIPATION_ROE)
 
-            ! Assemble divergence operator with tensorial dissipation
+            ! Assemble divergence of flux with Roe-type dissipation
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
@@ -1194,7 +1194,7 @@ contains
 
           case (DISSIPATION_ROE_DSPLIT)
 
-            ! Assemble divergence operator with tensorial dissipation
+            ! Assemble divergence of flux with Roe-type dissipation
             ! adopting dimensional splitting
 
             select case(rproblemLevel%rtriangulation%ndim)
@@ -1219,7 +1219,7 @@ contains
 
           case (DISSIPATION_RUSANOV)
 
-            ! Assemble divergence operator with Rusanov flux
+            ! Assemble divergence of flux with Rusanov-type flux
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
@@ -1243,7 +1243,7 @@ contains
 
           case (DISSIPATION_RUSANOV_DSPLIT)
 
-            ! Assemble divergence operator with Rusanov flux
+            ! Assemble divergence of flux with Rusanov-type flux
             ! adopting dimensional splitting
 
             select case(rproblemLevel%rtriangulation%ndim)
@@ -1580,7 +1580,7 @@ contains
 
       case (DISSIPATION_ZERO)
 
-        ! Assemble divergence operator without dissipation
+        ! Assemble divergence of flux without dissipation
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
@@ -1603,7 +1603,7 @@ contains
 
       case (DISSIPATION_SCALAR)
 
-        ! Assemble divergence operator with scalar dissipation
+        ! Assemble divergence of flux with scalar dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -1627,7 +1627,7 @@ contains
 
       case (DISSIPATION_SCALAR_DSPLIT)
 
-        ! Assemble divergence operator with scalar dissipation
+        ! Assemble divergence of flux with scalar dissipation
         ! adopting dimensional splitting
 
         select case(rproblemLevel%rtriangulation%ndim)
@@ -1652,7 +1652,7 @@ contains
 
       case (DISSIPATION_ROE)
 
-        ! Assemble divergence operator with tensorial dissipation
+        ! Assemble divergence of flux with Roe-type dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -1676,7 +1676,7 @@ contains
 
       case (DISSIPATION_ROE_DSPLIT)
 
-        ! Assemble divergence operator with tensorial dissipation
+        ! Assemble divergence of flux with Roe-type dissipation
         ! adopting dimensional splitting
 
         select case(rproblemLevel%rtriangulation%ndim)
@@ -1701,7 +1701,7 @@ contains
 
       case (DISSIPATION_RUSANOV)
 
-        ! Assemble divergence operator with Rusanov flux
+        ! Assemble divergence of flux with Rusanov-type flux
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -1725,7 +1725,7 @@ contains
 
       case (DISSIPATION_RUSANOV_DSPLIT)
 
-        ! Assemble divergence operator with Rusanov flux adopting
+        ! Assemble divergence of flux with Rusanov-type flux adopting
         ! dimensional splitting
 
         select case(rproblemLevel%rtriangulation%ndim)
@@ -2065,7 +2065,7 @@ contains
 
       case (DISSIPATION_ZERO)
 
-        ! Assemble divergence operator without dissipation
+        ! Assemble divergence of flux without dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -2089,7 +2089,7 @@ contains
 
       case (DISSIPATION_SCALAR)
 
-        ! Assemble divergence operator with scalar dissipation
+        ! Assemble divergence of flux with scalar dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -2113,7 +2113,7 @@ contains
 
       case (DISSIPATION_ROE)
 
-        ! Assemble divergence operator with tensorial dissipation
+        ! Assemble divergence of flux with Roe-type dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -2137,7 +2137,7 @@ contains
 
       case (DISSIPATION_RUSANOV)
 
-        ! Assemble divergence operator with Rusanov flux
+        ! Assemble divergence of flux with Rusanov-type flux
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
@@ -2603,7 +2603,7 @@ contains
 
     case (DISSIPATION_ROE)
 
-      ! Assemble raw antidiffusive fluxes using tensorial dissipation
+      ! Assemble raw antidiffusive fluxes using Roe-type dissipation
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
@@ -2661,7 +2661,7 @@ contains
 
     case (DISSIPATION_RUSANOV)
 
-      ! Assemble raw antidiffusive fluxes using th Rusanov dissipation
+      ! Assemble raw antidiffusive fluxes using th Rusanov-type dissipation
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
