@@ -17,6 +17,7 @@
 
 #include "../flagship.h"
 
+
 #if 0
 !##############################################################################
 ! Compile-time constants
@@ -27,6 +28,7 @@
 ! Universal gas constant
 #endif
 #define UNIVERSAL_GAS_CONSTANT   8.3145_DP
+
 
 #if 0
 !##############################################################################
@@ -62,9 +64,10 @@
 #endif
 #endif
 
+
 #if 0
 !##############################################################################
-! Velocity
+! Velocity field
 !##############################################################################
 #endif
 
@@ -124,6 +127,7 @@
 #define Z_VELOCITY_2L_FROM_CONSVAR(u,nvar,i1,i2) \
   (Z_MOMENTUM_2L_FROM_CONSVAR(u,nvar,i1,i2)/ MYNEWLINE\
    DENSITY_2L_FROM_CONSVAR(u,nvar,i1,i2))
+
 
 #if 0
 !##############################################################################
@@ -188,6 +192,7 @@
         Y_VELOCITY_2L_FROM_CONSVAR(u,nvar,i1,i2)**2+ MYNEWLINE\
         Z_VELOCITY_2L_FROM_CONSVAR(u,nvar,i1,i2)**2))
 
+
 #if 0
 !##############################################################################
 ! Pressure
@@ -204,62 +209,48 @@
 ! Compute pressure from conservative variables in 1D
 #endif
 #define PRESSURE_FROM_CONSVAR_1D(u,nvar) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_FROM_CONSVAR_1D(u,nvar))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_FROM_CONSVAR_1D(u,nvar))
 #define PRESSURE_1T_FROM_CONSVAR_1D(u,nvar,i1) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_1T_FROM_CONSVAR_1D(u,nvar,i1))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_1T_FROM_CONSVAR_1D(u,nvar,i1))
 #define PRESSURE_1L_FROM_CONSVAR_1D(u,nvar,i1) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_1L_FROM_CONSVAR_1D(u,nvar,i1))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_1L_FROM_CONSVAR_1D(u,nvar,i1))
 #define PRESSURE_2T_FROM_CONSVAR_1D(u,nvar,i1,i2) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_2T_FROM_CONSVAR_1D(u,nvar,i1,i2))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_2T_FROM_CONSVAR_1D(u,nvar,i1,i2))
 #define PRESSURE_2L_FROM_CONSVAR_1D(u,nvar,i1,i2) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_2L_FROM_CONSVAR_1D(u,nvar,i1,i2))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_2L_FROM_CONSVAR_1D(u,nvar,i1,i2))
 
 #if 0
 ! Compute pressure from conservative variables in 2D
 #endif
 #define PRESSURE_FROM_CONSVAR_2D(u,nvar) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_FROM_CONSVAR_2D(u,nvar))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_FROM_CONSVAR_2D(u,nvar))
 #define PRESSURE_1T_FROM_CONSVAR_2D(u,nvar,i1) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_1T_FROM_CONSVAR_2D(u,nvar,i1))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_1T_FROM_CONSVAR_2D(u,nvar,i1))
 #define PRESSURE_1L_FROM_CONSVAR_2D(u,nvar,i1) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_1L_FROM_CONSVAR_2D(u,nvar,i1))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_1L_FROM_CONSVAR_2D(u,nvar,i1))
 #define PRESSURE_2T_FROM_CONSVAR_2D(u,nvar,i1,i2) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_2T_FROM_CONSVAR_2D(u,nvar,i1,i2))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_2T_FROM_CONSVAR_2D(u,nvar,i1,i2))
 #define PRESSURE_2L_FROM_CONSVAR_2D(u,nvar,i1,i2) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_2L_FROM_CONSVAR_2D(u,nvar,i1,i2))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_2L_FROM_CONSVAR_2D(u,nvar,i1,i2))
 
 #if 0
 ! Compute pressure from conservative variables in 3D
 #endif
 #define PRESSURE_FROM_CONSVAR_3D(u,nvar) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_FROM_CONSVAR_3D(u,nvar))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_FROM_CONSVAR_3D(u,nvar))
 #define PRESSURE_1T_FROM_CONSVAR_3D(u,nvar,i1) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_1T_FROM_CONSVAR_3D(u,nvar,i1))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_1T_FROM_CONSVAR_3D(u,nvar,i1))
 #define PRESSURE_1L_FROM_CONSVAR_3D(u,nvar,i1) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_1L_FROM_CONSVAR_3D(u,nvar,i1))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_1L_FROM_CONSVAR_3D(u,nvar,i1))
 #define PRESSURE_2T_FROM_CONSVAR_3D(u,nvar,i1,i2) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_2T_FROM_CONSVAR_3D(u,nvar,i1,i2))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_2T_FROM_CONSVAR_3D(u,nvar,i1,i2))
 #define PRESSURE_2L_FROM_CONSVAR_3D(u,nvar,i1,i2) \
-  ((GAMMA-1.0)* MYNEWLINE\
-   INTERNAL_ENERGY_2L_FROM_CONSVAR_3D(u,nvar,i1,i2))
+  ((GAMMA-1.0)*INTERNAL_ENERGY_2L_FROM_CONSVAR_3D(u,nvar,i1,i2))
 
 #else
 #error "Invalid equation of state"
 #endif
+
 
 #if 0
 !##############################################################################
@@ -323,6 +314,7 @@
 #define INTERNAL_ENERGY_2L_FROM_CONSVAR_3D(u,nvar,i1,i2) \
   (TOTAL_ENERGY_2L_FROM_CONSVAR(u,nvar,i1,i2)- MYNEWLINE\
    KINETIC_ENERGY_2L_FROM_CONSVAR_3D(u,nvar,i1,i2))
+
 
 #if 0
 !##############################################################################
@@ -401,6 +393,7 @@
          Y_MOMENTUM_2L_FROM_CONSVAR(u,nvar,i1,i2)**2+ MYNEWLINE\
          Z_MOMENTUM_2L_FROM_CONSVAR(u,nvar,i1,i2)**2)/ MYNEWLINE\
          DENSITY_2L_FROM_CONSVAR(u,nvar,i1,i2))
+
 
 #if 0
 !##############################################################################
@@ -482,6 +475,7 @@
    PRESSURE_2L_FROM_CONSVAR_3D(u,nvar,i1,i2)/ MYNEWLINE\
    DENSITY_2L_FROM_CONSVAR(u,nvar,i1,i2)))
 #endif
+
 
 #if 0
 !##############################################################################
