@@ -3867,7 +3867,7 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to fluxes for the density in 2D
 !</description>
 
@@ -3918,7 +3918,7 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to differences for the density in 2D
 !</description>
 
@@ -3963,7 +3963,7 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to fluxes for the energy in 2D
 !</description>
 
@@ -4014,7 +4014,7 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to differences for the energy in 2D
 !</description>
 
@@ -4059,7 +4059,7 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to fluxes for the pressure in 2D
 !</description>
 
@@ -4127,7 +4127,7 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to differences for the pressure in 2D
 !</description>
 
@@ -4172,7 +4172,7 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to fluxes for the x- and y-velocity
 !</description>
 
@@ -4244,7 +4244,7 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to differences for the x- and y-velocity
 !</description>
 
@@ -4294,7 +4294,7 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to fluxes for the x- and y-momentum
 !</description>
 
@@ -4351,7 +4351,7 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to differences for the x- and y-momentum
 !</description>
 
@@ -4401,7 +4401,7 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to fluxes for the density and energy in 2D
 !</description>
 
@@ -4458,7 +4458,7 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to differences for the density and energy in 2D
 !</description>
 
@@ -4508,7 +4508,7 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to fluxes for the density and energy in 2D
 !</description>
 
@@ -4582,7 +4582,7 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to differences for the density and energy in 2D
 !</description>
 
@@ -4726,7 +4726,7 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
+    ! This subroutine computes the transformation of the given
     ! conservative to differences for the density, pressure and velocity in 2D
 !</description>
 

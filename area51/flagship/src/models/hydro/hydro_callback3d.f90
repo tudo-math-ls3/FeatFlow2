@@ -2516,8 +2516,8 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to fluxes for the density in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to fluxes for the density in 3D
 !</description>
 
 !<input>
@@ -2567,8 +2567,8 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to differences for the density in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to differences for the density in 3D
 !</description>
 
 !<input>
@@ -2612,8 +2612,8 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to fluxes for the energy in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to fluxes for the energy in 3D
 !</description>
 
 !<input>
@@ -2663,8 +2663,8 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to differences for the energy in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to differences for the energy in 3D
 !</description>
 
 !<input>
@@ -2708,8 +2708,8 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to fluxes for the pressure in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to fluxes for the pressure in 3D
 !</description>
 
 !<input>
@@ -2780,8 +2780,8 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to differences for the pressure in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to differences for the pressure in 3D
 !</description>
 
 !<input>
@@ -2825,8 +2825,8 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to fluxes for the x-, y- and z-velocity
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to fluxes for the x-, y- and z-velocity
 !</description>
 
 !<input>
@@ -2910,8 +2910,8 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to differences for the x-, y- and z-velocity
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to differences for the x-, y- and z-velocity
 !</description>
 
 !<input>
@@ -2965,8 +2965,8 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to fluxes for the x-, y- and z-momentum
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to fluxes for the x-, y- and z-momentum
 !</description>
 
 !<input>
@@ -3028,8 +3028,8 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to differences for the x-, y- and z-momentum
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to differences for the x-, y- and z-momentum
 !</description>
 
 !<input>
@@ -3083,8 +3083,8 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to fluxes for the density and energy in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to fluxes for the density and energy in 3D
 !</description>
 
 !<input>
@@ -3140,8 +3140,8 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to differences for the density and energy in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to differences for the density and energy in 3D
 !</description>
 
 !<input>
@@ -3190,8 +3190,8 @@ contains
       DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to fluxes for the density and energy in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to fluxes for the density and energy in 3D
 !</description>
 
 !<input>
@@ -3268,8 +3268,8 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to differences for the density and energy in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to differences for the density and energy in 3D
 !</description>
 
 !<input>
@@ -3426,8 +3426,8 @@ contains
       DtransformedDataAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the transformation of
-    ! conservative to differences for the density, pressure and velocity in 3D
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to differences for the density, pressure and velocity in 3D
 !</description>
 
 !<input>
