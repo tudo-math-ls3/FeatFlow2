@@ -211,8 +211,8 @@ contains
     integer :: NVAR
 !</result>
 !</function>
-
-    NVAR = ceiling((rproblemLevel%rtriangulation%ndim-1)/2.0) + 7
+    
+    NVAR = merge(7, 8, rproblemLevel%rtriangulation%ndim .eq. NDIM1D)
 
   end function mhd_getNVAR
   
@@ -267,8 +267,8 @@ contains
       NVARtransformed = 3
 
     elseif (svariables .eq. 'magneticfield') then
-
-      NVARtransformed = ceiling((rproblemLevel%rtriangulation%ndim-1)/2.0) + 2
+      
+      NVARtransformed = merge(2, 3, rproblemLevel%rtriangulation%ndim .eq. NDIM1D)
 
     else
 
