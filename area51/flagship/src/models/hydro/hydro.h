@@ -95,6 +95,6 @@
 ! Include thermodynamic header file
 #endif
 
-#include "thermodynamics.h"
+#include "../../kernel/thermodynamics.h"
 
 #endif
