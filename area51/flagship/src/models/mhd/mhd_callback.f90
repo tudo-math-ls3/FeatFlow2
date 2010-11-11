@@ -57,22 +57,25 @@
 !# 11.) mhd_limitEdgewiseMomentum
 !#      -> Performs synchronised flux correction for the momentum
 !#
-!# 12.) mhd_coeffVectorFE
+!# 12.) mhd_limitEdgewiseagfield
+!#      -> Performs synchronised flux correction for the magnetic field
+!#
+!# 13.) mhd_coeffVectorFE
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
-!# 13.) mhd_coeffVectorAnalytic
+!# 14.) mhd_coeffVectorAnalytic
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
-!# 14.) mhd_parseBoundaryCondition
+!# 15.) mhd_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
-!# 15.) mhd_calcBilfBoundaryConditions
+!# 16.) mhd_calcBilfBoundaryConditions
 !#      -> Calculates the bilinear form arising from the weak
 !#        imposition of boundary conditions
 !#
-!# 16.) mhd_calcLinfBoundaryConditions
+!# 17.) mhd_calcLinfBoundaryConditions
 !#      -> Calculates the linear form arising from the weak
 !#         imposition of boundary conditions
 !#
@@ -140,6 +143,7 @@ module mhd_callback
   public :: mhd_calcCorrectionFCT
   public :: mhd_limitEdgewiseVelocity
   public :: mhd_limitEdgewiseMomentum
+  public :: mhd_limitEdgewiseMagfield
   public :: mhd_coeffVectorFE
   public :: mhd_coeffVectorAnalytic
   public :: mhd_parseBoundaryCondition
@@ -2944,6 +2948,29 @@ contains
               mhd_trafoFluxMomentum3d_sim, mhd_trafoDiffMomentum3d_sim,&
               fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
         end select
+
+      elseif (trim(slimitingvariable) .eq. 'magneticfield') then
+
+        ! Apply FEM-FCT algorithm for magnetic field fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
+              mhd_trafoFluxMagfield1d_sim, mhd_trafoDiffMagfield1d_sim)
+        case (NDIM2D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
+              mhd_trafoFluxMagfield2d_sim, mhd_trafoDiffMagfield2d_sim,&
+              fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
+        case (NDIM3D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
+              mhd_trafoFluxMagfield3d_sim, mhd_trafoDiffMagfield3d_sim,&
+              fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
+        end select
         
       elseif (trim(slimitingvariable) .eq. 'density,energy') then
 
@@ -3440,7 +3467,7 @@ contains
             ! Compute edgewise correction factors
             R_ij = min(R_ij, R_ji)
             
-            ! Compute velocity average
+            ! Compute momentum average
             Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)+&
                           Dx(2:NVARtransformed+1,j))
             
@@ -3514,7 +3541,7 @@ contains
             ! Compute edgewise correction factors
             R_ij = min(R_ij, R_ji)
 
-            ! Compute velocity average
+            ! Compute momentum average
             Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)+&
                           Dx(j,2:NVARtransformed+1))
             
@@ -3540,6 +3567,242 @@ contains
     end if
 
   end subroutine mhd_limitEdgewiseMomentum
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine mhd_limitEdgewiseMagfield(IverticesAtEdge, NEDGE, NEQ,&
+      NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
+      fcb_calcFluxTransformation_sim, Dflux0, rcollection)
+
+!<description>
+    ! This subroutine computes the edgewise correction factors
+    ! for the magnetic field in synchronised fashion.
+    ! Note that this subroutine is designed for vectors in
+    ! interleave and block format, whereby the concrete format
+    ! is determined by means of the variables ndim1 and ndim2.
+!</description>
+
+!<input>
+    ! Number of edges
+    integer, intent(in) :: NEDGE
+    
+    ! Number of nodes
+    integer, intent(in) :: NEQ
+    
+    ! Number of solution variables
+    integer, intent(IN) :: NVAR
+
+    ! Number of transformed variables
+    integer, intent(IN) :: NVARtransformed
+
+    ! Dimensions of the solution vector
+    integer, intent(in) :: ndim1, ndim2
+
+    ! Solution used for flux transformation
+    real(DP), dimension(ndim1,ndim2), intent(in) :: Dx
+
+    ! Raw antidiffusive flux
+    real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+
+    ! Nodal correction factors
+    real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
+
+    ! Edge data structure
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! OPTIONAL: callback function to compute variable transformation
+    include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
+    optional :: fcb_calcFluxTransformation_sim
+
+    ! OPTIONAL: Antidiffusive flux for constraining
+    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
+!</intput>
+
+!<inputoutput>
+    ! Edgewise correction factors
+    real(DP), dimension(:), intent(inout) :: Dalpha
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! auxiliary arras
+    real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+    real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+    
+    ! local variables
+    real(DP), dimension(NVARtransformed) :: R_ij,R_ji,Uij
+    real(DP) :: alpha_ij
+    integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
+    
+    ! Do we have to use the explicit fluxes as constraints?
+    if (present(Dflux0)) then
+      print *, "Not implemented yet"
+      stop
+      
+    else
+
+      if ((ndim1 .eq. NVAR) .and. (ndim2 .eq. NEQ)) then
+
+        !-----------------------------------------------------------------------
+        ! The vector is given in interleave format
+        !-----------------------------------------------------------------------
+
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+        allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+        ! Loop over the edges
+        do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
+          
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
+          
+          IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
+          
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
+            DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+          end do
+
+          ! Use callback function to compute transformed fluxes
+          call fcb_calcFluxTransformation_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              Dflux(:,IEDGEset:IEDGEmax),&
+              DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
+
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+
+            ! Compute nodal correction factors
+            R_ij = merge(Drp(:,i), Drm(:,i),&
+                         DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+            R_ji = merge(Drp(:,j), Drm(:,j),&
+                         DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+            
+            ! Compute edgewise correction factors
+            R_ij = min(R_ij, R_ji)
+            
+            ! Compute average of magnetic field
+            Uij = 0.5_DP*(Dx(5:NVARtransformed+4,i)+&
+                          Dx(5:NVARtransformed+4,j))
+            
+            ! Compute correction factor
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            
+            ! Compute multiplicative correction factor
+            Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          end do
+        end do
+
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        deallocate(DtransformedFluxesAtEdge)
+
+      elseif ((ndim1 .eq. NEQ) .and. (ndim2 .eq. NVAR)) then
+
+        !-----------------------------------------------------------------------
+        ! The vector is goven in block format
+        !-----------------------------------------------------------------------
+
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+        allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+        ! Loop over the edges
+        do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
+          
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
+          
+          IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
+          
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
+            DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+          end do
+
+          ! Use callback function to compute transformed fluxes
+          call fcb_calcFluxTransformation_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              Dflux(:,IEDGEset:IEDGEmax),&
+              DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
+          
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+
+            ! Compute nodal correction factors
+            R_ij = merge(Drp(:,i), Drm(:,i),&
+                         DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+            R_ji = merge(Drp(:,j), Drm(:,j),&
+                         DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+            
+            ! Compute edgewise correction factors
+            R_ij = min(R_ij, R_ji)
+
+            ! Compute average of magnetic field
+            Uij = 0.5_DP*(Dx(i,5:NVARtransformed+4)+&
+                          Dx(j,5:NVARtransformed+4))
+            
+            ! Compute correction factor
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            
+            ! Compute multiplicative correction factor
+            Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          end do
+        end do
+        
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        deallocate(DtransformedFluxesAtEdge)
+
+      else
+
+        call output_line('Invalid system format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'mhd_limitEdgewiseMomentum')
+        call sys_halt()
+        
+      end if
+    end if
+
+  end subroutine mhd_limitEdgewiseMagfield
 
   ! ***************************************************************************
 
