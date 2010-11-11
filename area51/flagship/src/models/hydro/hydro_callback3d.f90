@@ -173,13 +173,13 @@ module hydro_callback3d
 #include "hydro.h"
 
   use collection
-  use hydro_basic
   use flagship_callback
   use fsystem
   use genoutput
   use graph
   use groupfemsystem
   use hadaptaux
+  use hydro_basic
   use linearsystemblock
   use linearsystemscalar
   use problem
