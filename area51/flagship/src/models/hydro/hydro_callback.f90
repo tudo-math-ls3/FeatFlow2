@@ -3442,7 +3442,7 @@ contains
             ! Compute edgewise correction factors
             R_ij = min(R_ij, R_ji)
             
-            ! Compute velocity average
+            ! Compute momentum average
             Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)+&
                           Dx(2:NVARtransformed+1,j))
             
@@ -3516,7 +3516,7 @@ contains
             ! Compute edgewise correction factors
             R_ij = min(R_ij, R_ji)
 
-            ! Compute velocity average
+            ! Compute momentum average
             Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)+&
                           Dx(j,2:NVARtransformed+1))
             
