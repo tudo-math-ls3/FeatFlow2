@@ -170,6 +170,11 @@ do
   shift
 done
 
+# Avoid setting preprocessor flags twice
+if test -n "${cppflags}"; then
+    addcppflags=""
+fi
+
 if test -z "${preprocessedfile}"; then
     echo $0": No source file in given command line detected. Aborting..."
     exit 1;
