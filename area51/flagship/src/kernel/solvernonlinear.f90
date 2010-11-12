@@ -905,7 +905,7 @@ contains
     type(t_solver) :: rsolverTemp
     real(DP) :: eta, drtlm, drtjs, redfac, doldDefect
     integer(I32) :: ioperationSpec
-    integer :: iiterations, iblock, ibacktrackingsteps, istatus
+    integer :: iiterations, iblock, istatus
     logical :: bstagnate, bcompatible
 
 
