@@ -105,11 +105,23 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 # Some non-generic, i.e. application-specific options:
 date="`date +%y`"/"`date +%m`"
 build="`date +%Y%m%d`"
+
+# Include configuration file
+. ../../area51/flagship/flagship.conf
+
 ../../bin/configure \
 	--appname=flagship \
 	--programfile=../../area51/flagship/src/flagship.f90 \
 	--srclist_app="`ls ../../area51/flagship/src/*.f90 ../../area51/flagship/src/models/*/*.f90 ../../area51/flagship/src/kernel/*.f90`" \
+        --header-files-to-copy=../../area51/flagship/src/flagship.h \
+        --header-files-to-copy=../../area51/flagship/src/models/hydro/hydro.h \
+        --header-files-to-copy=../../area51/flagship/src/models/mhd/mhd.h \
+        --header-files-to-copy=../../area51/flagship/src/kernel/thermodynamics.h \
+        --header-files-to-copy=../../area51/flagship/src/kernel/magnetohydrodynamics.h \
 	--objdir-prefix=${OBJDIRPREFIX} \
 	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
-	--apponlyflags=-DVERSION=\\\"${date}\\\",-DBUILD=\\\"${build}\\\" \
+	--apponlyflags="$APPONLYFLAGS"\
 	$@
+
+echo "Application will be compiled with the following flags:\n"
+echo $MESSAGE
