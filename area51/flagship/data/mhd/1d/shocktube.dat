@@ -67,7 +67,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 1111
+isystemPrecond = 111
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -78,22 +78,23 @@ isystemPrecond = 1111
 # (ii) for sequential/multiplicative flux correction list
 #      all variables one by one, e.g.
 #
-slimitingvariable(3) =
+slimitingvariable(2) =
   density
   pressure
-  velocity
 
 # number of failsafe steps
-nfailsafe = 4
+nfailsafe = 0
 
 # variables for failsafe flux correction
-sfailsafevariable(2) =
-  pressure
-  velocity_x
+sfailsafevariable(1) =
+  none
 
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution
+# 1 = analytical initial solution: pointwise values
+# 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
 isolutiontype = 1
 
 # section name of initial solution
@@ -117,7 +118,7 @@ sexactsolutionname =
 #-------------------------------------------------------------------------------
 
 # file which contains the triangulation
-trifile = grids/1d/unit50.tri
+trifile = grids/1d/unit800.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -139,7 +140,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 0
+isystemformat = 1
 
 #-------------------------------------------------------------------------------
 
@@ -176,7 +177,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 0
@@ -191,21 +192,22 @@ iprelimiting = 0
 # 1 = GMV
 # 2 = AVS
 # 3 = Paraview (VTK)
-iformatUCD = 1
+iformatUCD = 3
 
 # time interval for UCD output
-dstepUCD = 0.0
+dstepUCD = 0.001
 
 # file for UCD output of solution
-sucdsolution = out/shocktube
+sucdsolution = out/shocktubeFCT
 
 # file for UCD output of error
 sucderror = out/shocktube_error
 
 # variables for ucd output
-sucdvariable(4) =
+sucdvariable(5) =
  density
  velocity
+ magneticfield
  pressure
  total_energy
 
@@ -244,16 +246,16 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 0.1
 
 # initial time step size
-dinitialStep = 0.001
+dinitialStep = 1e-4
 
 # lower bound for the admissible time step
-dminStep = 0.001
+dminStep = 1e-4
 
 # upper bound for the admissible time step
-dmaxStep = 0.001
+dmaxStep = 1e-4
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -624,7 +626,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 2
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
