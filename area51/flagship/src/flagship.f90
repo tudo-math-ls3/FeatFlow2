@@ -40,10 +40,6 @@ program flagship
   ! global parameter list
   type(t_parlist) :: rparlist
 
-  ! local constants
-  character(LEN=*), parameter  :: sversion = VERSION
-  character(LEN=*), parameter  :: sbuild = BUILD
-
   ! local variables
   character(LEN=SYS_STRLEN) :: cbuffer, hostname, hosttype, username
   character(LEN=SYS_STRLEN) :: application, sparameterfileName
@@ -75,12 +71,8 @@ program flagship
   ! Print welcome screen
   call output_lbrk()
   call output_separator(OU_SEP_STAR)
-  call output_line('  FLAGSHIP: Version ' // sversion // ',   Build ' // sbuild)
-  call output_line('            Date '//sdate(7:8)//'.'//sdate(5:6)//'.'//sdate(1:4)//&
-                   ', Time '//stime(1:2)//':'//stime(3:4)//':'//stime(5:6))
-  call output_separator(OU_SEP_STAR)
   call output_line('  FlAGSHiP: Flux-corrected Aerodynamics by Galerkin')
-  call output_line('            Schemes with High Performance (2004-2009)')
+  call output_line('            Schemes with High Performance (2004-2010)')
   call output_lbrk()
   call output_line('  Authors:  Dmitri Kuzmin, Matthias Moeller')
   call output_line('            Institute of Applied Mathematics')
@@ -93,6 +85,8 @@ program flagship
   call output_line('  Hosttype:        '//trim(hosttype))
   call getenv('USER',cbuffer); username = adjustl(cbuffer)
   call output_line('  Username:        '//trim(username))
+  call output_line('  Date:            '//sdate(7:8)//'.'//sdate(5:6)//'.'//sdate(1:4))
+  call output_line('  Time:            '//stime(1:2)//':'//stime(3:4)//':'//stime(5:6))
 
   ! Get command line arguments
   if (command_argument_count() .eq. 0) then

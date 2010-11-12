@@ -1,9 +1,5 @@
 #!/bin/sh
 
-# Get building date
-date="`date +%y`"/"`date +%m`"
-build="`date +%Y%m%d`"
-
 # Include configuration file
 . ./flagship.conf
 
@@ -20,5 +16,5 @@ build="`date +%Y%m%d`"
     --apponlyflags="$APPONLYFLAGS"\
     $@
 
-echo "Application will be compiled with the following flags:\n"
-echo $MESSAGE
+printf "Application will be compiled with the following flags:\n"
+printf "$MESSAGE\n\n"
