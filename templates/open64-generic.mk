@@ -70,7 +70,7 @@ CFLAGSF77LIBS := -DUSE_COMPILER_OPEN64 $(CFLAGSF77LIBS) -O2 -LNO -mso \
 		  -finline-functions -inline -fno-second-underscore
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH \
-	         -DHAS_INTRINSIC_ISATTY $(CFLAGSF90) $(CFLAGSF77LIBS) \
+	         $(CFLAGSF90) $(CFLAGSF77LIBS) \
 		 -module $(OBJDIR)
 CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O2 -LNO -mso \
 		 -ffast-math -ffast-stdlib -CG:compute_to=on \
@@ -82,7 +82,7 @@ CFLAGSF77LIBS := -DUSE_COMPILER_OPEN64 $(CFLAGSF77LIBS) -O0 -g3 \
 	         -fno-second-underscore
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH \
-		 -DHAS_INTRINSIC_ISATTY $(CFLAGSF90) $(CFLAGSF77LIBS) \
+		 $(CFLAGSF90) $(CFLAGSF77LIBS) \
 		 -module $(OBJDIR) -ffortran-bounds-check -fullwarn
 CFLAGSC       := -DUSE_COMPILER_OPEN64 $(CFLAGSC) -O0 -g3 -trapuv
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
