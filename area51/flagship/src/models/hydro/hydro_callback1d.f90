@@ -2384,14 +2384,14 @@ contains
 
     ! local variables
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: ui,uj,d_ij,H_ij,q_ij,u_ij,aux,vel_ij,c_ij
+    real(DP) :: ui,uj,d_ij,H_ij,q_ij,u_ij,aux,vel_ij,c_ij,anorm
 
     ! Compute velocities
     ui = X_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D)
     uj = X_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D)
 
     ! Compute skew-symmetric coefficient
-    a = 0.5*(Coeff_ij-Coeff_ji)
+    a = 0.5*(Coeff_ij-Coeff_ji); anorm = abs(a(1))
 
     ! Compute Roe mean values
     aux  = ROE_MEAN_RATIO(MYNEWLINE
@@ -2413,7 +2413,7 @@ contains
 #endif
 
     ! Scalar dissipation
-    d_ij = abs(vel_ij) + abs(a(1))*c_ij
+    d_ij = abs(vel_ij) + anorm*c_ij
 
     ! Compute conservative fluxes
     F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
