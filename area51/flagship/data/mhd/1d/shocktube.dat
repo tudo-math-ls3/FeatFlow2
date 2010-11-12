@@ -55,7 +55,7 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
 # 3 = Rusanov type
-idissipationtype = 3
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -177,7 +177,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 1
 
 # perform prelimiting
 iprelimiting = 0
@@ -195,7 +195,7 @@ iprelimiting = 0
 iformatUCD = 3
 
 # time interval for UCD output
-dstepUCD = 0.001
+dstepUCD = 0.0025
 
 # file for UCD output of solution
 sucdsolution = out/shocktubeFCT
