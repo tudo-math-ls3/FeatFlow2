@@ -380,8 +380,8 @@ contains
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi) -&
                  (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj)
-      dF_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                  X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj) -&
+      dF_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
+                  X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi) -&
                  (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj)
       dF_ij(7) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
@@ -507,8 +507,8 @@ contains
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi) -&
                  (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj)
-      dF_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                  X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj) -&
+      dF_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
+                  X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi) -&
                  (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj)
       dF_ij(7) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
@@ -672,8 +672,8 @@ contains
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi) -&
                  (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj)
-      dF_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                  X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj) -&
+      dF_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
+                  X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi) -&
                  (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj)
       dF_ij(7) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
@@ -943,8 +943,8 @@ contains
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi) -&
                  (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj)
-      dF_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                  X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj) -&
+      dF_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
+                  X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi) -&
                  (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj)
       dF_ij(7) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
@@ -1239,8 +1239,8 @@ contains
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi) -&
                  (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj)
-      dF_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                  X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj) -&
+      dF_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
+                  X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi) -&
                  (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj)
       dF_ij(7) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
