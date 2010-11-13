@@ -284,9 +284,9 @@ contains
 
     ! local variables
 #ifdef HYDRO_USE_IBP
-    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
 #else
-    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+    real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
     real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj
     integer :: idx
@@ -299,7 +299,7 @@ contains
       !
       !      / rho*u         \        / rho*v         \         / rho*w         \
       !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
-      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      ! Fx = | rho*v*u       |   Fy = | rho*v*v + p   |   Fz =  | rho*v*w       |
       !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
       !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
       !-------------------------------------------------------------------------
@@ -318,96 +318,96 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
-      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+      Fxi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fxi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      Fxi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
 
-      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
-      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+      Fxj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fxj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      Fxj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
 
       ! Compute fluxes for y-direction
-      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+      Fyi(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
 
-      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+      Fyj(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
 
       ! Compute fluxes for z-direction
-      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+      Fyi(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
 
-      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+      Fyj(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
 
       ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
-                                         DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
-                                         DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
-                                         DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
-                                         DmatrixCoeffsAtEdge(3,1,idx)*dF3_i )
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fxj+&
+                                         DmatrixCoeffsAtEdge(2,2,idx)*Fyj+&
+                                         DmatrixCoeffsAtEdge(3,2,idx)*Fzj-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*Fxi-&
+                                         DmatrixCoeffsAtEdge(2,1,idx)*Fyi-&
+                                         DmatrixCoeffsAtEdge(3,1,idx)*Fzi )
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
-                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+      Fx_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fx_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                 (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      Fx_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
 
       ! Compute flux difference for y-direction
-      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
-                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
-      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+      Fy_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fy_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                 (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      Fy_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
 
       ! Compute flux difference for z-direction
-      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
-                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+      Fz_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fz_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                 (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      Fz_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
 
       ! Assemble fluxes
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
-                                          DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
-                                          DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
-                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
-                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij)
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*Fx_ij+&
+                                          DmatrixCoeffsAtEdge(2,1,idx)*Fy_ij+&
+                                          DmatrixCoeffsAtEdge(3,1,idx)*Fz_ij)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fx_ij+&
+                                          DmatrixCoeffsAtEdge(2,2,idx)*Fy_ij+&
+                                          DmatrixCoeffsAtEdge(3,2,idx)*Fz_ij)
 #endif
     end do
 
@@ -462,7 +462,7 @@ contains
 !</subroutine>
 
   ! local variables
-  real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+  real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
   real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj
   integer :: idx
   
@@ -474,7 +474,7 @@ contains
       !
       !      / rho*u         \        / rho*v         \         / rho*w         \
       !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
-      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      ! Fx = | rho*v*u       |   Fy = | rho*v*v + p   |   Fz =  | rho*v*w       |
       !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
       !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
       !-------------------------------------------------------------------------
@@ -492,46 +492,46 @@ contains
       pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
 
       ! Compute flux difference for x-direction
-      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
-                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+      Fx_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fx_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                 (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      Fx_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
 
       ! Compute flux difference for y-direction
-      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
-                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
-      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+      Fy_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fy_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                 (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      Fy_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
 
       ! Compute flux difference for z-direction
-      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
-                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+      Fz_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fz_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                 (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      Fz_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
 
       ! Assemble fluxes
       DfluxesAtEdge(:,1,idx) =  dscale *&
-          (0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))*dF1_ij+&
-           0.5*(DmatrixCoeffsAtEdge(2,1,idx)-DmatrixCoeffsAtEdge(2,2,idx))*dF2_ij+&
-           0.5*(DmatrixCoeffsAtEdge(3,1,idx)-DmatrixCoeffsAtEdge(3,2,idx))*dF3_ij)
+          (0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))*Fx_ij+&
+           0.5*(DmatrixCoeffsAtEdge(2,1,idx)-DmatrixCoeffsAtEdge(2,2,idx))*Fy_ij+&
+           0.5*(DmatrixCoeffsAtEdge(3,1,idx)-DmatrixCoeffsAtEdge(3,2,idx))*Fz_ij)
       DfluxesAtEdge(:,2,idx) = DfluxesAtEdge(:,1,idx)
     end do
 
@@ -584,9 +584,9 @@ contains
 
     ! local variables
 #ifdef HYDRO_USE_IBP
-    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
 #else
-    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+    real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
     real(DP), dimension(NVAR3D) :: Diff
     real(DP), dimension(NDIM3D) :: a
@@ -601,7 +601,7 @@ contains
       !
       !      / rho*u         \        / rho*v         \         / rho*w         \
       !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
-      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      ! Fx = | rho*v*u       |   Fy = | rho*v*v + p   |   Fz =  | rho*v*w       |
       !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
       !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
       !-------------------------------------------------------------------------
@@ -620,79 +620,79 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
-      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+      Fxi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fxi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      Fxi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
 
-      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
-      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+      Fxj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fxj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      Fxj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
 
       ! Compute fluxes for y-direction
-      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+      Fyi(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
 
-      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+      Fyj(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
 
       ! Compute fluxes for z-direction
-      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+      Fyi(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
 
-      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+      Fyj(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
-                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+      Fx_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fx_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                 (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      Fx_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
 
       ! Compute flux difference for y-direction
-      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
-                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
-      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+      Fy_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fy_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                 (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      Fy_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
 
       ! Compute flux difference for z-direction
-      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
-                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+      Fz_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fz_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                 (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      Fz_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -738,20 +738,20 @@ contains
       !-------------------------------------------------------------------------
 
 #ifdef HYDRO_USE_IBP
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
-                                         DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
-                                         DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
-                                         DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
-                                         DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fxj+&
+                                         DmatrixCoeffsAtEdge(2,2,idx)*Fyj+&
+                                         DmatrixCoeffsAtEdge(3,2,idx)*Fzj-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*Fxi-&
+                                         DmatrixCoeffsAtEdge(2,1,idx)*Fyi-&
+                                         DmatrixCoeffsAtEdge(3,1,idx)*Fzi + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
-                                          DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
-                                          DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij+ Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
-                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
-                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij+ Diff)
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*Fx_ij+&
+                                          DmatrixCoeffsAtEdge(2,1,idx)*Fy_ij+&
+                                          DmatrixCoeffsAtEdge(3,1,idx)*Fz_ij+ Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fx_ij+&
+                                          DmatrixCoeffsAtEdge(2,2,idx)*Fy_ij+&
+                                          DmatrixCoeffsAtEdge(3,2,idx)*Fz_ij+ Diff)
 #endif
     end do
 
@@ -806,9 +806,9 @@ contains
 
     ! local variables
 #ifdef HYDRO_USE_IBP
-    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
 #else
-    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+    real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
     real(DP), dimension(NVAR3D) :: Diff
     real(DP), dimension(NDIM3D) :: a
@@ -823,7 +823,7 @@ contains
       !
       !      / rho*u         \        / rho*v         \         / rho*w         \
       !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
-      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      ! Fx = | rho*v*u       |   Fy = | rho*v*v + p   |   Fz =  | rho*v*w       |
       !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
       !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
       !-------------------------------------------------------------------------
@@ -842,79 +842,79 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
-      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+      Fxi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fxi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      Fxi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
 
-      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
-      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+      Fxj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fxj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      Fxj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
 
       ! Compute fluxes for y-direction
-      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+      Fyi(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
 
-      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+      Fyj(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
 
       ! Compute fluxes for z-direction
-      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+      Fyi(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
 
-      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+      Fyj(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
-                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+      Fx_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fx_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                 (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      Fx_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
 
       ! Compute flux difference for y-direction
-      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
-                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
-      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+      Fy_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fy_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                 (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      Fy_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
 
       ! Compute flux difference for z-direction
-      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
-                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+      Fz_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fz_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                 (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      Fz_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -960,20 +960,20 @@ contains
       !-------------------------------------------------------------------------
 
 #ifdef HYDRO_USE_IBP
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
-                                         DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
-                                         DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
-                                         DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
-                                         DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fxj+&
+                                         DmatrixCoeffsAtEdge(2,2,idx)*Fyj+&
+                                         DmatrixCoeffsAtEdge(3,2,idx)*Fzj-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*Fxi-&
+                                         DmatrixCoeffsAtEdge(2,1,idx)*Fyi-&
+                                         DmatrixCoeffsAtEdge(3,1,idx)*Fzi + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
-                                          DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
-                                          DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij + Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
-                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
-                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij + Diff)
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*Fx_ij+&
+                                          DmatrixCoeffsAtEdge(2,1,idx)*Fy_ij+&
+                                          DmatrixCoeffsAtEdge(3,1,idx)*Fz_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fx_ij+&
+                                          DmatrixCoeffsAtEdge(2,2,idx)*Fy_ij+&
+                                          DmatrixCoeffsAtEdge(3,2,idx)*Fz_ij + Diff)
 #endif
     end do
 
@@ -1026,9 +1026,9 @@ contains
 
     ! local variables
 #ifdef HYDRO_USE_IBP
-    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
 #else
-    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+    real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
     real(DP), dimension(NVAR3D) :: Diff
     real(DP), dimension(NDIM3D) :: a
@@ -1045,7 +1045,7 @@ contains
       !
       !      / rho*u         \        / rho*v         \         / rho*w         \
       !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
-      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      ! Fx = | rho*v*u       |   Fy = | rho*v*v + p   |   Fz =  | rho*v*w       |
       !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
       !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
       !-------------------------------------------------------------------------
@@ -1064,79 +1064,79 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
-      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+      Fxi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fxi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      Fxi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
 
-      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
-      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+      Fxj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fxj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      Fxj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
 
       ! Compute fluxes for y-direction
-      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+      Fyi(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
 
-      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+      Fyj(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
 
       ! Compute fluxes for z-direction
-      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+      Fyi(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
 
-      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+      Fyj(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
-                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+      Fx_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fx_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                 (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      Fx_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
 
       ! Compute flux difference for y-direction
-      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
-                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
-      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+      Fy_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fy_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                 (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      Fy_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
 
       ! Compute flux difference for z-direction
-      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
-                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+      Fz_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fz_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                 (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      Fz_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -1254,38 +1254,38 @@ contains
         !-----------------------------------------------------------------------
 
 #ifdef HYDRO_USE_IBP
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
-                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
-                                           DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
-                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
-                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
-                                           DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff)
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fxj+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*Fyj+&
+                                           DmatrixCoeffsAtEdge(3,2,idx)*Fzj-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*Fxi-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*Fyi-&
+                                           DmatrixCoeffsAtEdge(3,1,idx)*Fzi + Diff)
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
-        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
-                                            DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij + Diff)
-        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
-                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij + Diff)
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*Fx_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*Fy_ij+&
+                                            DmatrixCoeffsAtEdge(3,1,idx)*Fz_ij + Diff)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fx_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*Fy_ij+&
+                                            DmatrixCoeffsAtEdge(3,2,idx)*Fz_ij + Diff)
 #endif
       else
         
 #ifdef HYDRO_USE_IBP
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
-                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
-                                           DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
-                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
-                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
-                                           DmatrixCoeffsAtEdge(3,1,idx)*dF3_i)
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fxj+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*Fyj+&
+                                           DmatrixCoeffsAtEdge(3,2,idx)*Fzj-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*Fxi-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*Fyi-&
+                                           DmatrixCoeffsAtEdge(3,1,idx)*Fzi)
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
-        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
-                                            DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij)
-        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
-                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij)
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*Fx_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*Fy_ij+&
+                                            DmatrixCoeffsAtEdge(3,1,idx)*Fz_ij)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fx_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*Fy_ij+&
+                                            DmatrixCoeffsAtEdge(3,2,idx)*Fz_ij)
 #endif
       end if
     end do
@@ -1341,11 +1341,11 @@ contains
 
     ! local variables
 #ifdef HYDRO_USE_IBP
-    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
 #else
-    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+    real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
-    real(DP), dimension(NVAR3D) :: Diff1,Diff2,Diff3
+    real(DP), dimension(NVAR3D) :: DiffX,DiffY,DiffZ
     real(DP), dimension(NDIM3D) :: a
     real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj,u_ij,v_ij,w_ij,H_ij,q_ij,c_ij,c2_ij,vel_ij
     real(DP) :: aux,aux1,aux2,anorm
@@ -1359,7 +1359,7 @@ contains
       !
       !      / rho*u         \        / rho*v         \         / rho*w         \
       !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
-      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      ! Fx = | rho*v*u       |   Fy = | rho*v*v + p   |   Fz =  | rho*v*w       |
       !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
       !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
       !-------------------------------------------------------------------------
@@ -1378,79 +1378,79 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
-      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+      Fxi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fxi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      Fxi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
 
-      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
-      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+      Fxj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fxj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      Fxj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
 
       ! Compute fluxes for y-direction
-      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+      Fyi(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
 
-      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+      Fyj(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
 
       ! Compute fluxes for z-direction
-      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+      Fyi(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
 
-      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+      Fyj(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
-                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+      Fx_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fx_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                 (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      Fx_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
 
       ! Compute flux difference for y-direction
-      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
-                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
-      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+      Fy_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fy_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                 (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      Fy_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
 
       ! Compute flux difference for z-direction
-      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
-                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+      Fz_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fz_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                 (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      Fz_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
 #endif
       
       !-------------------------------------------------------------------------
@@ -1499,38 +1499,41 @@ contains
         !-----------------------------------------------------------------------
 
 #ifdef HYDRO_USE_IBP
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
-                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
-                                           DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
-                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
-                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
-                                           DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff1+Diff2+Diff3)
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fxj+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*Fyj+&
+                                           DmatrixCoeffsAtEdge(3,2,idx)*Fzj-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*Fxi-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*Fyi-&
+                                           DmatrixCoeffsAtEdge(3,1,idx)*Fzi+&
+                                           DiffX+DiffY+DiffZ)
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
-        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
-                                            DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij + Diff1+Diff2+Diff3)
-        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
-                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij + Diff1+Diff2+Diff3)
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*Fx_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*Fy_ij+&
+                                            DmatrixCoeffsAtEdge(3,1,idx)*Fz_ij+&
+                                            DiffX+DiffY+DiffZ)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fx_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*Fy_ij+&
+                                            DmatrixCoeffsAtEdge(3,2,idx)*Fz_ij+&
+                                            DiffX+DiffY+DiffZ)
 #endif
       else
         
 #ifdef HYDRO_USE_IBP
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
-                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
-                                           DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
-                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
-                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
-                                           DmatrixCoeffsAtEdge(3,1,idx)*dF3_i)
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fxj+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*Fyj+&
+                                           DmatrixCoeffsAtEdge(3,2,idx)*Fzj-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*Fxi-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*Fyi-&
+                                           DmatrixCoeffsAtEdge(3,1,idx)*Fzi)
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
-        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
-                                            DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij)
-        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
-                                            DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij)
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*Fx_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*Fy_ij+&
+                                            DmatrixCoeffsAtEdge(3,1,idx)*Fz_ij)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fx_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*Fy_ij+&
+                                            DmatrixCoeffsAtEdge(3,2,idx)*Fz_ij)
 #endif
       end if
     end do
@@ -1584,9 +1587,9 @@ contains
 
     ! local variables
 #ifdef HYDRO_USE_IBP
-    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
 #else
-    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+    real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
     real(DP), dimension(NVAR3D) :: Diff
     real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj,d_ij,ci,cj,Ei,Ej
@@ -1600,7 +1603,7 @@ contains
       !
       !      / rho*u         \        / rho*v         \         / rho*w         \
       !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
-      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      ! Fx = | rho*v*u       |   Fy = | rho*v*v + p   |   Fz =  | rho*v*w       |
       !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
       !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
       !-------------------------------------------------------------------------
@@ -1619,79 +1622,79 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
-      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+      Fxi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fxi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      Fxi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
 
-      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
-      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+      Fxj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fxj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      Fxj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
 
       ! Compute fluxes for y-direction
-      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+      Fyi(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
 
-      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+      Fyj(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
 
       ! Compute fluxes for z-direction
-      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+      Fyi(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
 
-      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+      Fyj(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
-                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+      Fx_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fx_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                 (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      Fx_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
 
       ! Compute flux difference for y-direction
-      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
-                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
-      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+      Fy_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fy_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                 (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      Fy_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
 
       ! Compute flux difference for z-direction
-      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
-                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+      Fz_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fz_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                 (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      Fz_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1728,20 +1731,20 @@ contains
       !-------------------------------------------------------------------------
       
 #ifdef HYDRO_USE_IBP
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
-                                         DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
-                                         DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
-                                         DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
-                                         DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fxj+&
+                                         DmatrixCoeffsAtEdge(2,2,idx)*Fyj+&
+                                         DmatrixCoeffsAtEdge(3,2,idx)*Fzj-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*Fxi-&
+                                         DmatrixCoeffsAtEdge(2,1,idx)*Fyi-&
+                                         DmatrixCoeffsAtEdge(3,1,idx)*Fzi + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
-                                          DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
-                                          DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij + Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
-                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
-                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij + Diff)
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*Fx_ij+&
+                                          DmatrixCoeffsAtEdge(2,1,idx)*Fy_ij+&
+                                          DmatrixCoeffsAtEdge(3,1,idx)*Fz_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fx_ij+&
+                                          DmatrixCoeffsAtEdge(2,2,idx)*Fy_ij+&
+                                          DmatrixCoeffsAtEdge(3,2,idx)*Fz_ij + Diff)
 #endif
     end do
 
@@ -1795,9 +1798,9 @@ contains
 
     ! local variables
 #ifdef HYDRO_USE_IBP
-    real(DP), dimension(NVAR3D) :: dF1_i,dF2_i,dF1_j,dF2_j,dF3_i,dF3_j
+    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
 #else
-    real(DP), dimension(NVAR3D) :: dF1_ij,dF2_ij,dF3_ij
+    real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
     real(DP), dimension(NVAR3D) :: Diff
     real(DP) :: pi,pj,ui,vi,uj,vj,wi,wj,d_ij,ci,cj,Ei,Ej
@@ -1811,7 +1814,7 @@ contains
       !
       !      / rho*u         \        / rho*v         \         / rho*w         \
       !      | rho*u*u + p   |        | rho*u*v       |         | rho*u*w       |
-      ! F1 = | rho*v*u       |   F2 = | rho*v*v + p   |   F3 =  | rho*v*w       |
+      ! Fx = | rho*v*u       |   Fy = | rho*v*v + p   |   Fz =  | rho*v*w       |
       !      | rho*w*u       |        | rho*w*v       |         | rho*w*w + p   |
       !      \ rho*E*u + p*u /        \ rho*E*v + p*v /         \ rho*E*w + p*w /
       !-------------------------------------------------------------------------
@@ -1830,79 +1833,79 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF1_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
-      dF1_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
-      dF1_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
+      Fxi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fxi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi
+      Fxi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui
+      Fxi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui
 
-      dF1_j(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
-      dF1_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
+      Fxj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fxj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj
+      Fxj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fxj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj
 
       ! Compute fluxes for y-direction
-      dF2_i(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
+      Fyi(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi
 
-      dF2_j(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
+      Fyj(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj
 
       ! Compute fluxes for z-direction
-      dF2_i(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      dF2_i(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
-      dF2_i(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
-      dF2_i(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
+      Fyi(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Fyi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi
+      Fyi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi
+      Fyi(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi
 
-      dF2_j(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_j(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_j(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
-      dF2_j(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
+      Fyj(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fyj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fyj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj
+      Fyj(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF1_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
-                  (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
-      dF1_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
+      Fx_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fx_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi)-&
+                 (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj)
+      Fx_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj
+      Fx_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*ui + pi*ui)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*uj + pj*uj)
 
       ! Compute flux difference for y-direction
-      dF2_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
-                  (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
-      dF2_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
+      Fy_ij(1) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fy_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi)-&
+                 (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj)
+      Fy_ij(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj
+      Fy_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*vi + pi*vi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*vj + pj*vj)
 
       ! Compute flux difference for z-direction
-      dF2_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
-                  Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      dF2_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF1_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
-                  Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
-      dF2_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
-                  (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
-      dF2_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
-                  (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
+      Fz_ij(1) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)-&
+                 Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Fz_ij(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi-&
+                 Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj
+      Fz_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi)-&
+                 (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj)
+      Fz_ij(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)*wi + pi*wi)-&
+                 (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)*wj + pj*wj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -1939,20 +1942,20 @@ contains
       !-------------------------------------------------------------------------
 
 #ifdef HYDRO_USE_IBP
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
-                                         DmatrixCoeffsAtEdge(2,2,idx)*dF2_j+&
-                                         DmatrixCoeffsAtEdge(3,2,idx)*dF3_j-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
-                                         DmatrixCoeffsAtEdge(2,1,idx)*dF2_i-&
-                                         DmatrixCoeffsAtEdge(3,1,idx)*dF3_i + Diff)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fxj+&
+                                         DmatrixCoeffsAtEdge(2,2,idx)*Fyj+&
+                                         DmatrixCoeffsAtEdge(3,2,idx)*Fzj-&
+                                         DmatrixCoeffsAtEdge(1,1,idx)*Fxi-&
+                                         DmatrixCoeffsAtEdge(2,1,idx)*Fyi-&
+                                         DmatrixCoeffsAtEdge(3,1,idx)*Fzi + Diff)
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
-                                          DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
-                                          DmatrixCoeffsAtEdge(3,1,idx)*dF3_ij + Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
-                                          DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
-                                          DmatrixCoeffsAtEdge(3,2,idx)*dF3_ij + Diff)
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*Fx_ij+&
+                                          DmatrixCoeffsAtEdge(2,1,idx)*Fy_ij+&
+                                          DmatrixCoeffsAtEdge(3,1,idx)*Fz_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fx_ij+&
+                                          DmatrixCoeffsAtEdge(2,2,idx)*Fy_ij+&
+                                          DmatrixCoeffsAtEdge(3,2,idx)*Fz_ij + Diff)
 #endif
     end do
 
