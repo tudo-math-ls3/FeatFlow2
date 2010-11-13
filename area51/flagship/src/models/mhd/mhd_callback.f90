@@ -4361,7 +4361,6 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
-    integer :: ivelocitytype, velocityfield
     integer :: ibct, isegment
 
     ! Evaluate linear form for boundary integral and return if
