@@ -55,7 +55,7 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
 # 3 = Rusanov type
-idissipationtype = 2
+idissipationtype = 1
 
 # type of system coupling
 # 0 = segregated approach
@@ -78,9 +78,10 @@ isystemPrecond = 111
 # (ii) for sequential/multiplicative flux correction list
 #      all variables one by one, e.g.
 #
-slimitingvariable(2) =
+slimitingvariable(3) =
   density
   pressure
+  velocity
 
 # number of failsafe steps
 nfailsafe = 0
@@ -177,7 +178,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 0
@@ -198,7 +199,7 @@ iformatUCD = 3
 dstepUCD = 0.0025
 
 # file for UCD output of solution
-sucdsolution = out/shocktubeFCT
+sucdsolution = out/shocktubeTest
 
 # file for UCD output of error
 sucderror = out/shocktube_error
