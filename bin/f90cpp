@@ -239,17 +239,19 @@ perlscript="${perlscript} s|//|/=%/~|g; s|/\*|/=%*~|g;"
 #       portable sed syntax
 perlscript="${perlscript} s|([# ]include [<"\""']).*/([^/]*[>"\""'])|\$1\$2|;"
 
-# Perl command (4) to hide all LaTeX forced line breaks (\\) and ASCII art
-# ending in a backslash from the C preprocessor. Especially from
-# version >= 4.5.0. But ensure that preprocessor directives that
-# comprise a trailing backslash (think of multiline #define's) are not
-# hidden from the C preprocessor.
+# Perl command (4) to hide in comments all LaTeX forced line breaks (\\) and
+# ASCII art ending in a backslash from the C preprocessor. Especially from
+# version >= 4.5.0. But ensure that preprocessor directives that comprise a
+# trailing backslash (think of multiline #define's) are not hidden from the C
+# preprocessor.
 #
 # Note: These particular instructions could be accomplished with GNU
 #       sed, but would not be portable to NEC and Sun sed, because of
 #       their lacking support for matching \n in the s/// operator.
-perlscript="${perlscript} while (/^#.*\\\s*\$/) { \$_ .= <>; s/\\\s*\n//; }"
-perlscript="${perlscript} s|^([^#].*)\\\\[ \t]*\$|\1\\\\=%/~~|g;"
+#perlscript="${perlscript} while (/^#.*\\\s*\$/) { \$_ .= <>; s/\\\s*\n//; }"
+#perlscript="${perlscript} s|^([^#].*)\\\\[ \t]*\$|\1\\\\=%/~~|g;"
+perlscript="${perlscript} s|^(.*!.*)\\\\[ \t]*\$|\1\\\\=%/~~|g;"
+
 
 # Replaces calls of error_print() with a version that automatically
 # inserts file name and line number of calling position.
