@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Use this app-only flag and compile your application with
+#
+#   ./configure && make
+#
+# to compiler the application the default way, that is, f90cpp uses
+# the C preprocessor cpp to preprocess the source code and line breaks
+# need to be enforced manually by placing the string MYNEWLINE in the
+# source code. If you want to pass the source code through the Fortran
+# preprocessor (fpp) making use of the f90cpp script type
+#
+#  ./configure && make CPP="fpp"
+#
+# If you want to compile the source code natively, that is, without
+# the configure-based build system then envoke the Fortran compiler
+# with a special flag that tells it to preprocess the file. The
+# following compilers have been tested so far:
+#
+# Intel Fortran compiler:
+#   ifort -fpp src/preproctest.f90 -o preproctest
+#
+# SUN Studio Fortran compiler:
+#   sunf90 -fpp src/preproctest.f90 -o preproctest
+#
+# PathScale Fortran compiler:
+#   pathf90 -cpp src/preproctest.f90 -o preproctest
+#
+# GNU Gfortran compiler (Note that the preprocessor does NOT include
+# line breaks automatically and gfortran does not support lines which
+# exceed the maximum length of 132 characters. Thus, the code does
+# not compile natively with gfortran and g95 at the time being!)
+#   gfortran -x f95-cpp-input src/preproctest.f90 -o preproctest
+
+APPONLYFLAGS="-DUSE_PREPROC_F90CPP"
+
+../../bin/configure \
+        --appname=preproctest \
+        --programfile=src/preproctest.f90 \
+        --header-files-to-copy=src/preproctest.h \
+        --srclist_app="`ls src/*.f90`" \
+        --apponlyflags="$APPONLYFLAGS"\
+	--buildlib=""\
+	--libs=""\
+        $@
