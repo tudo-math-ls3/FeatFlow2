@@ -130,9 +130,13 @@ intelminversion_10_0=\
 	$(if $(findstring yes,\
 	$(call intelminversion_10_1) \
 	$(if $(findstring 10.0.,$(INTELVERSION)),yes,no)),yes,no)
-intelminversion_9_0=\
+intelminversion_9_1=\
 	$(if $(findstring yes,\
 	$(call intelminversion_10_0) \
+	$(if $(findstring 9.1.,$(INTELVERSION)),yes,no)),yes,no)
+intelminversion_9_0=\
+	$(if $(findstring yes,\
+	$(call intelminversion_9_1) \
 	$(if $(findstring 9.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_8_1=\
 	$(if $(findstring yes,\
@@ -170,8 +174,12 @@ intelmaxversion_10_1=\
 	$(if $(findstring 10.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_10_0=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_9_0) \
+	$(call intelmaxversion_9_1) \
 	$(if $(findstring 10.0.,$(INTELVERSION)),yes,no)),yes,no)
+intelmaxversion_9_1=\
+	$(if $(findstring yes,\
+	$(call intelmaxversion_9_0) \
+	$(if $(findstring 9.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_9_0=\
 	$(if $(findstring yes,\
 	$(call intelmaxversion_8_1) \
