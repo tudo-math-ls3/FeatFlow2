@@ -237,8 +237,192 @@ contains
 
 !<subroutine>
 
-  subroutine optcpp_postprocessSingleSol (rpostproc,ifileid,dtimePrimal,dtimeDual,rvector,&
-      rrhs,roptcontrol,rsettings,bfirstFile)
+  subroutine optcpp_unshiftSubvectors (rpostproc,iorder,&
+      dtimePrimal1,dtimeDual1,rvector1,&
+      dtimePrimal2,dtimeDual2,rvector2,&
+      dtimePrimal3,dtimeDual3,rvector3,&
+      dtime,rvector)
+  
+!<description>
+  ! 'Unshifts' time shifts in the components of a vector.
+  ! Interpolates quadratically a solution from rvectorPrev, rvectorCurr
+  ! and rvectorNext into rvectorTarget such that it represents
+  ! the solution at time dtimeTarget.
+  !
+  ! note: there must be dtime1 <= dtime2 <= dtime3 !
+!</description>
+
+!<inputoutput>
+  ! Postprocessing structure
+  type(t_optcPostprocessing), intent(inout) :: rpostproc
+!</inputoutput>
+
+!<input>
+  ! Order of the interpolation. =1: linear, =2: quadratic.
+  integer, intent(in) :: iorder
+
+  ! 1st simulation time in the primal and dual equation.
+  ! and the vector.
+  real(dp), intent(in) :: dtimePrimal1
+  real(dp), intent(in) :: dtimeDual1
+  type(t_vectorBlock), intent(inout) :: rvector1
+
+  ! 2nd simulation time in the primal and dual equation.
+  ! and the vector.
+  real(dp), intent(in) :: dtimePrimal2
+  real(dp), intent(in) :: dtimeDual2
+  type(t_vectorBlock), intent(inout) :: rvector2
+
+  ! 3rd simulation time in the primal and dual equation.
+  ! and the vector.
+  real(dp), intent(in) :: dtimePrimal3
+  real(dp), intent(in) :: dtimeDual3
+  type(t_vectorBlock), intent(inout) :: rvector3
+!</input>
+
+!<inputoutput>
+  ! Destination simulation time in the primal and dual equation.
+  ! and the vector.
+  real(dp), intent(in) :: dtime
+  type(t_vectorBlock), intent(inout) :: rvector
+!</inputoutput>
+
+    ! local variables
+    real(DP) :: tmidPrimal, tmidDual, tprimal, tdual
+
+    ! General quadratic interpolation:
+    !
+    !   p(t1) = p1
+    !   p(t2) = p2
+    !   p(t3) = p3
+    !
+    ! Substitute: tmid := sigma(t2) := (t1+t3-2*t2)/(t1-t3)
+    ! => t1 -> -1,  t3 -> 1
+    ! then:
+    !
+    !   p(-1)   = p1
+    !   p(tmid) = p2
+    !   p(1)    = p3
+    !
+    ! The linear interpolation polynom with
+    !
+    !   p(-1)   = p1
+    !   p(1)    = p3
+    !
+    ! is
+    !
+    !   p(t) = (-(1/2)*t+1/2)*p1 + ((1/2)*t+1/2)*p3
+    !
+    ! and through 3 disjuct points
+    !
+    !  p(t) =  (1/2)*(t2*t^2-t2^2*t+t2^2-t^2+t-t2)*p1/(t2^2-1)
+    !         +(1/2)*(2*t^2-2)*p2/(t2^2-1)
+    !         +(1/2)*(-t2*t^2+t2^2*t+t2^2-t^2-t+t2)*p3/(t2^2-1)
+    
+    select case (rpostproc%p_rphysics%cequation)
+    case (0,1)
+      ! Map the time midpoint(s)
+      tmidPrimal = (dtimePrimal1+dtimePrimal3-2.0_DP*dtimePrimal2)/(dtimePrimal1-dtimePrimal3)
+      tmidDual = (dtimeDual1+dtimeDual3-2.0_DP*dtimeDual2)/(dtimeDual1-dtimeDual3)
+
+      tprimal = (dtimePrimal1+dtimePrimal3-2.0_DP*dtime)/(dtimePrimal1-dtimePrimal3)
+      tdual = (dtimeDual1+dtimeDual3-2.0_DP*dtime)/(dtimeDual1-dtimeDual3)
+    
+      ! Interpolate the subvectors.
+      call interpolateScalar (iorder,&
+          rvector1%RvectorBlock(1),rvector2%RvectorBlock(1),rvector3%RvectorBlock(1),&
+          tmidPrimal,tprimal,rvector%RvectorBlock(1))
+      call interpolateScalar (iorder,&
+          rvector1%RvectorBlock(2),rvector2%RvectorBlock(2),rvector3%RvectorBlock(2),&
+          tmidPrimal,tprimal,rvector%RvectorBlock(2))
+      call interpolateScalar (iorder,&
+          rvector1%RvectorBlock(3),rvector2%RvectorBlock(3),rvector3%RvectorBlock(3),&
+          tmidDual,tdual,rvector%RvectorBlock(3))
+          
+      call interpolateScalar (iorder,&
+          rvector1%RvectorBlock(4),rvector2%RvectorBlock(4),rvector3%RvectorBlock(4),&
+          tmidDual,tdual,rvector%RvectorBlock(4))
+      call interpolateScalar (iorder,&
+          rvector1%RvectorBlock(5),rvector2%RvectorBlock(5),rvector3%RvectorBlock(5),&
+          tmidDual,tdual,rvector%RvectorBlock(5))
+      call interpolateScalar (iorder,&
+          rvector1%RvectorBlock(6),rvector2%RvectorBlock(6),rvector3%RvectorBlock(6),&
+          tmidPrimal,tprimal,rvector%RvectorBlock(6))
+    end select
+    
+  contains
+  
+    ! linear interpolation routine for a scalar vector.
+    ! rvec1 is at time -1, rvec2 at time tmid in [-1,1], dtime3 at time 3.
+    ! The result at time t in [-1,1] is written to rvec.
+    subroutine interpolateScalar (iorder,rvec1,rvec2,rvec3,tmid,t,rvec)
+      type(t_vectorScalar), intent(in) :: rvec1, rvec2, rvec3
+      type(t_vectorScalar), intent(inout) :: rvec
+      real(DP), intent(in) :: tmid,t
+      integer :: iorder
+      
+      select case (iorder)
+      case (1)
+        ! Left or right from the time midpoint?
+        if (t .le. tmid) then
+          ! Linear interpolation at the left interval
+          call lsyssc_copyVector (rvec2,rvec)
+          call lsyssc_vectorLinearComb (rvec1,rvec,lincoeff1(-1.0_DP,tmid,t),lincoeff2(-1.0_DP,tmid,t))
+        else
+          ! Linear interpolation at the right interval
+          call lsyssc_copyVector (rvec3,rvec)
+          call lsyssc_vectorLinearComb (rvec2,rvec,lincoeff1(tmid,1.0_DP,t),lincoeff2(tmid,1.0_DP,t))
+        end if
+      case (2)
+        call output_line ("Not yet implemented!")
+        call sys_halt()
+      end select
+    end subroutine
+
+    ! Linear interpolation formula  
+  
+    real(DP) function lincoeff1 (t1,t2,t)
+      real(DP), intent(in) :: t1,t2,t
+      if (t1 .eq. t2) then
+        lincoeff1 = 1.0_DP
+      else
+        lincoeff1 = (t-t2)/(t1-t2)
+      end if
+    end function
+
+    real(DP) function lincoeff2 (t1,t2,t)
+      real(DP), intent(in) :: t1,t2,t
+      lincoeff2 = 1.0_DP-lincoeff1 (t1,t2,t)
+    end function
+
+    ! Coefficient functions for the linear and quadratic interpolation formula.
+
+    real(DP) function quadcoeff1 (t2,t)
+      real(DP), intent(in) :: t2,t
+      quadcoeff1 = 0.5_DP*(t2*t**2-t2**2*t+t2**2-t**2+t-t2)/(t2**2-1.0_DP)
+    end function
+
+    real(DP) function quadcoeff2 (t2,t)
+      real(DP), intent(in) :: t2,t
+      quadcoeff2 = 0.5_DP*(2.0_DP*t**2-2.0_DP)/(t2**2-1.0_DP)
+    end function
+
+    real(DP) function quadcoeff3 (t2,t)
+      real(DP), intent(in) :: t2,t
+      quadcoeff3 = 0.5_DP*(-t2*t**2+t2**2*t+t2**2-t**2-t+t2)/(t2**2-1.0_DP)
+    end function
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine optcpp_postprocessSingleSol (rpostproc,roptcontrol,rsettings,&
+      ifileid,bfirstFile,blastFile,&
+      dtimePrimal,dtimeDual,rvector,rrhs,&
+      dtimePrimalPrev,dtimeDualPrev,rvectorPrev,rrhsPrev,&
+      dtimePrimalNext,dtimeDualNext,rvectorNext,rrhsNext)
   
 !<description>
   ! Postprocessing of a single solution at a definite time.
@@ -254,25 +438,51 @@ contains
   ! The global settings structure, passed to callback routines.
   type(t_settings_optflow), intent(inout), target :: rsettings
 
+  ! Id of the file on the hard disc; added to the filename.
+  integer, intent(in) :: ifileid
+  
+  ! Parameters about the optimal control
+  type(t_settings_optcontrol), intent(in) :: roptControl
+  
+  ! Must be set to TRUE for the first file of a sequence of files or
+  ! of the file does not belong to a sequence.
+  logical, intent(in) :: bfirstFile
+
+  ! Must be set to TRUE for the last file of a sequence of files or
+  ! of the file does not belong to a sequence.
+  logical, intent(in) :: blastFile
+
+  ! Current simulation time in the primal and dual equation.
+  real(dp), intent(in) :: dtimePrimal
+  real(dp), intent(in) :: dtimeDual
+  
   ! The solution vector which is to be evaluated by the postprocessing routines.
   type(t_vectorBlock), intent(inout) :: rvector
 
   ! The RHS of the system.
   type(t_vectorBlock), intent(inout) :: rrhs
   
-  ! Id of the file on the hard disc; added to the filename.
-  integer, intent(in) :: ifileid
-  
-  ! Current simulation time in the primal and dual equation.
-  real(dp), intent(in) :: dtimePrimal
-  real(dp), intent(in) :: dtimeDual
-  
-  ! Parameters about the optimal control
-  type(t_settings_optcontrol), intent(in) :: roptControl
-  
-  ! Must be set to TRUE for the first file of a sequence of files or
-  ! of teh file does not belong to a sequence.
-  logical, intent(in) :: bfirstFile
+  ! Solution vector of the previous timestep. May coincide with
+  ! rvector if there is none; then, bfirstFile=.true. 
+  type(t_vectorBlock), intent(inout) :: rvectorPrev
+
+  ! The RHS of the previous timestep.
+  type(t_vectorBlock), intent(inout) :: rrhsPrev
+
+  ! Simulation time in the primal and dual equation of the previous timestep
+  real(dp), intent(in) :: dtimePrimalPrev
+  real(dp), intent(in) :: dtimeDualPrev
+
+  ! Solution vector of the next timestep. May coincide with
+  ! rvector if there is none; then blastFile=.true.
+  type(t_vectorBlock), intent(inout) :: rvectorNext
+
+  ! The RHS of the next timestep.
+  type(t_vectorBlock), intent(inout) :: rrhsNext
+
+  ! Simulation time in the primal and dual equation of the next timestep
+  real(dp), intent(in) :: dtimePrimalNext
+  real(dp), intent(in) :: dtimeDualNext
 !</input>
 
 !</subroutine>
@@ -310,6 +520,9 @@ contains
   
   ! Discrete fictitious boundary conditions
   type(t_discreteFBC) :: rdiscreteFBC
+  
+    ! Local variables
+    type(t_vectorBlock) :: rvectemp
 
     select case (rpostproc%p_rphysics%cequation)
     case (0,1)
@@ -334,13 +547,25 @@ contains
         call output_lbrk()
         call output_line ('Body forces real bd., bdc/horiz/vert')
 
+        ! Create a temp vector that contains the solution at the desired time.
+        ! We evaluate in the dual time, so for CN this is in the time midpoint.
+        call lsysbl_createVectorBlock (rvector,rvectemp)
+        call optcpp_unshiftSubvectors (rpostproc,1,&
+            dtimePrimalPrev,dtimeDualPrev,rvectorPrev,&
+            dtimePrimal,dtimeDual,rvector,&
+            dtimePrimalNext,dtimeDualNext,rvectorNext,&
+            dtimeDual,rvectemp)
+
         ! Calculate drag-/lift coefficients on the 2nd boundary component.
         ! This is for the benchmark channel!
         call boundary_createRegion (rvector%p_rblockDiscr%p_rboundary, &
             2, 0, rregion)
         rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-        call ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,&
+        call ppns2D_bdforces_uniform (rvectemp,rregion,Dforces,CUB_G1_1D,&
             rpostproc%dbdForcesCoeff1,rpostproc%dbdForcesCoeff2)
+            
+        ! Release the temp vector
+        call lsysbl_releaseVector (rvectemp)
         
         call output_line (' 2 / ' &
             //trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
@@ -356,7 +581,7 @@ contains
             write (iunit,'(A)') '# timestep time bdc horiz vert'
           end if
           stemp = trim(sys_siL(ifileid,10)) // ' ' &
-              // trim(sys_sdEL(dtimePrimal,10)) // ' ' &
+              // trim(sys_sdEL(dtimeDual,10)) // ' ' &
               // trim(sys_siL(rpostproc%ibodyForcesBdComponent,10)) // ' ' &
               // trim(sys_sdEL(Dforces(1),10)) // ' '&
               // trim(sys_sdEL(Dforces(2),10))
@@ -702,10 +927,15 @@ contains
 !</subroutine>
 
   ! local variables
-  type(t_vectorBlock) :: rvecTemp,rrhsTemp
+  type(t_vectorBlock), pointer :: p_rvecTemp1,p_rrhsTemp1
+  type(t_vectorBlock), pointer :: p_rvecTemp2,p_rrhsTemp2
+  type(t_vectorBlock), pointer :: p_rvecTemp3,p_rrhsTemp3
   integer :: istep
   real(dp) :: dtimePrimal,dtimeDual,dtstep
+  real(dp) :: dtimePrimalNext,dtimeDualNext
+  real(dp) :: dtimePrimalPrev,dtimeDualPrev
   real(DP), dimension(4) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
+  type(t_spaceTimeVectorAccess) :: raccessPoolSol,raccessPoolRhs
 
     select case (rpostproc%p_rphysics%cequation)
     case (0,1)
@@ -714,22 +944,57 @@ contains
       ! Visualisation output, force calculation
       ! -------------------------------------------------------------------------
 
-      ! Create a temp vector in space for postprocessing
-      call lsysbl_createVectorBlock (rvector%p_rspaceDiscr,rvecTemp)
-      call lsysbl_createVectorBlock (rvector%p_rspaceDiscr,rrhsTemp)
+      ! Create a vector access pool for the RHS and the solution.
+      call sptivec_createAccessPool (rvector,raccessPoolSol,3)
+      call sptivec_createAccessPool (rrhs,raccessPoolRhs,3)
 
       ! Write a file for every timestep
       do istep = 1,rvector%NEQtime
+
+        ! Get the solution and RHS of the current timestep
         call tdiscr_getTimestep(rpostproc%p_rtimediscr,istep-1,dtimePrimal,dtstep)
         dtimeDual = dtimePrimal - (1.0_DP-rpostproc%p_rtimeDiscr%dtheta)*dtstep
-        call sptivec_getTimestepData(rvector,istep,rvecTemp)
-        call sptivec_getTimestepData(rrhs,istep,rrhsTemp)
-        call optcpp_postprocessSingleSol (rpostproc,istep-1,dtimePrimal,dtimeDual,rvecTemp,&
-            rrhsTemp,roptControl,rsettings,istep .eq. 1)
+        call sptivec_getVectorFromPool (raccessPoolSol,istep,p_rvecTemp2)
+        call sptivec_getVectorFromPool (raccessPoolRhs,istep,p_rrhsTemp2)
+        
+        ! Previous/next timestep.
+        if (istep .eq. 1) then
+          ! No previous timestep.
+          dtimePrimalPrev = dtimePrimal
+          dtimeDualPrev = dtimeDual
+          p_rvecTemp1 => p_rvecTemp2
+          p_rrhsTemp1 => p_rrhsTemp2
+        else
+          ! Get the solution and RHS of the current timestep
+          call tdiscr_getTimestep(rpostproc%p_rtimediscr,istep-2,dtimePrimalPrev,dtstep)
+          dtimeDualPrev = dtimePrimalPrev - (1.0_DP-rpostproc%p_rtimeDiscr%dtheta)*dtstep
+          call sptivec_getVectorFromPool (raccessPoolSol,istep-1,p_rvecTemp1)
+          call sptivec_getVectorFromPool (raccessPoolRhs,istep-1,p_rrhsTemp1)
+        end if
+
+        if (istep .eq. rvector%NEQtime) then
+          ! No next timestep
+          dtimePrimalNext = dtimePrimal
+          dtimeDualNext = dtimeDual
+          p_rvecTemp3 => p_rvecTemp2
+          p_rrhsTemp3 => p_rrhsTemp2
+        else
+          ! Get the solution and RHS of the current timestep
+          call tdiscr_getTimestep(rpostproc%p_rtimediscr,istep,dtimePrimalNext,dtstep)
+          dtimeDualNext = dtimePrimalNext - (1.0_DP-rpostproc%p_rtimeDiscr%dtheta)*dtstep
+          call sptivec_getVectorFromPool (raccessPoolSol,istep+1,p_rvecTemp3)
+          call sptivec_getVectorFromPool (raccessPoolRhs,istep+1,p_rrhsTemp3)
+        end if
+        
+        call optcpp_postprocessSingleSol (rpostproc,roptControl,rsettings,&
+            istep-1,istep .eq. 1,istep .eq. rvector%NEQtime,&
+            dtimePrimal,dtimeDual,p_rvecTemp2,p_rrhsTemp2,&
+            dtimePrimalPrev,dtimeDualPrev,p_rvecTemp1,p_rrhsTemp1,&
+            dtimePrimalNext,dtimeDualNext,p_rvecTemp3,p_rrhsTemp3)
       end do
       
-      call lsysbl_releaseVector (rvecTemp)
-      call lsysbl_releaseVector (rrhsTemp)
+      call sptivec_releaseAccessPool (raccessPoolRhs)
+      call sptivec_releaseAccessPool (raccessPoolSol)
       
       ! -------------------------------------------------------------------------
       ! Error analysis
@@ -854,8 +1119,11 @@ contains
       dtimeDual = dtimePrimal - (1.0_DP-rtimediscr%dtheta)*dtstep
       call sptivec_getTimestepData(rvector,istep,rvecTemp)
       call sptivec_getTimestepData(rrhs,istep,rrhsTemp)
-      call optcpp_postprocessSingleSol (rpostproc,istep,dtimePrimal,dtimeDual,rvecTemp,&
-          rrhsTemp,rsettings%rsettingsOptControl,rsettings,istep .eq. 1)
+      call optcpp_postprocessSingleSol (rpostproc,rsettings%rsettingsOptControl,rsettings,&
+          istep, istep .eq. 1, istep .eq. rvector%NEQtime,&
+          dtimePrimal,dtimeDual,rvecTemp,rrhsTemp,&
+          dtimePrimal,dtimeDual,rvecTemp,rrhsTemp,&
+          dtimePrimal,dtimeDual,rvecTemp,rrhsTemp)
     end do
     
     ! Release all created stuff
