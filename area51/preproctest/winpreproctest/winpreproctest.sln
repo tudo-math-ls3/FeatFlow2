@@ -1,0 +1,25 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winpreproctest", "winpreproctest.vfproj", "{766450C9-5F21-4692-AEA5-D8F5A18A24E3}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Debug Parallel = Debug Parallel
+		Release = Release
+		Release ohne IPO = Release ohne IPO
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{766450C9-5F21-4692-AEA5-D8F5A18A24E3}.Debug.ActiveCfg = Debug|Win32
+		{766450C9-5F21-4692-AEA5-D8F5A18A24E3}.Debug Parallel.ActiveCfg = Debug|Win32
+		{766450C9-5F21-4692-AEA5-D8F5A18A24E3}.Release.ActiveCfg = Release|Win32
+		{766450C9-5F21-4692-AEA5-D8F5A18A24E3}.Release ohne IPO.ActiveCfg = Release ohne IPO|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
