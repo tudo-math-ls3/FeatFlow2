@@ -324,35 +324,8 @@ contains
       
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      Fi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Fi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
-      Fi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-              Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      Fi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-              Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      Fi(5) = Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi
-      Fi(6) = Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi
-      Fi(7) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*qi
-      
-      Fj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Fj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj
-      Fj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-              Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
-      Fj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-              Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
-      Fj(5) = Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj
-      Fj(6) = Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj
-      Fj(7) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + pj)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*qj
+      FLUX_MHD_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,vi,wi,pi,qi)
+      FLUX_MHD_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,vj,wj,pj,qj)
       
       ! Assemble skew-symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
@@ -360,34 +333,7 @@ contains
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       ! Compute flux difference for x-direction
-      F_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)-&
-                X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      F_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi) -&
-                (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj)
-      F_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)) -&
-                (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
-      F_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)) -&
-                (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
-      F_ij(5) = (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi) -&
-                (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj)
-      F_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi) -&
-                (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj)
-      F_ij(7) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*qi) -&
-                ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + pj)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*qj)
+      FLUXDIFF_MHD_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,vi,vj,wi,wj,pi,pj,qi,qj)
                  
       ! Assemble fluxes
       DfluxesAtEdge(:,1,idx) =  dscale * DmatrixCoeffsAtEdge(1,1,idx)*F_ij
@@ -487,35 +433,8 @@ contains
            Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj
       
       ! Compute flux difference for x-direction
-      F_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)-&
-                X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      F_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi) -&
-                (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj)
-      F_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)) -&
-                (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
-      F_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)) -&
-                (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
-      F_ij(5) = (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi) -&
-                (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj)
-      F_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi) -&
-                (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj)
-      F_ij(7) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*qi) -&
-                ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + pj)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*qj)
-
+      FLUXDIFF_MHD_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,vi,vj,wi,wj,pi,pj,qi,qj)
+      
       ! Assemble symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale *&
           0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))*F_ij
@@ -621,65 +540,11 @@ contains
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      Fi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Fi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
-      Fi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-              Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      Fi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-              Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      Fi(5) = Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi
-      Fi(6) = Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi
-      Fi(7) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*qi
-      
-      Fj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Fj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj
-      Fj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-              Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
-      Fj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-              Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
-      Fj(5) = Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj
-      Fj(6) = Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj
-      Fj(7) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + pj)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*qj
+      FLUX_MHD_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,vi,wi,pi,qi)
+      FLUX_MHD_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      F_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)-&
-                X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      F_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi) -&
-                (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj)
-      F_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)) -&
-                (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
-      F_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)) -&
-                (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
-      F_ij(5) = (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi) -&
-                (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj)
-      F_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi) -&
-                (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj)
-      F_ij(7) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*qi) -&
-                ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + pj)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*qj)
+      FLUXDIFF_MHD_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,vi,vj,wi,wj,pi,pj,qi,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -700,61 +565,61 @@ contains
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(MYNEWLINE
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+      aux  = ROE_MEAN_RATIO(\
+              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
       u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      H_ij = ROE_MEAN_VALUE(MYNEWLINE
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-              TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-              TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
+      H_ij = ROE_MEAN_VALUE(\
+             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+              TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+              TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
         
       ! Compute the square of the Roe-averaged speed of the Alfven waves.
       ! Note that left and right states are interchanged!
-      bxPow2_ij = (ROE_MEAN_VALUE(MYNEWLINE
-                    X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
-                    X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux))**2/MYNEWLINE
-                  ROE_MEAN_VALUE(MYNEWLINE
-                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
+      bxPow2_ij = (ROE_MEAN_VALUE(\
+                    X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
+                    X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux))**2/\
+                  ROE_MEAN_VALUE(\
+                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
                    DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
     
       ! Compute the density-averaged magnetic field
-      X_ij = ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-MYNEWLINE
-               X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+MYNEWLINE
-              (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-MYNEWLINE
-               Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+MYNEWLINE
-              (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-MYNEWLINE
-               Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/MYNEWLINE
-              (2.0*(sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))+MYNEWLINE
+      X_ij = ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
+               X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
+              (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
+               Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
+              (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
+               Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/&
+              (2.0*(sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))+&
                     sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))))
 
       ! Compute the square of the Roe-averaged magnetic field.
       ! Note that left and right states are interchanged!
-      bPow2_ij = (ROE_MEAN_VALUE(MYNEWLINE
-                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
-                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+MYNEWLINE
-                  ROE_MEAN_VALUE(MYNEWLINE
-                   Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
-                   Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+MYNEWLINE
-                  ROE_MEAN_VALUE(MYNEWLINE
-                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
-                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/MYNEWLINE
-                  ROE_MEAN_VALUE(MYNEWLINE
-                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
+      bPow2_ij = (ROE_MEAN_VALUE(\
+                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
+                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
+                  ROE_MEAN_VALUE(\
+                   Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
+                   Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
+                  ROE_MEAN_VALUE(\
+                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
+                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/\
+                  ROE_MEAN_VALUE(\
+                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
                    DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
 
       ! Compute the magnitude of the Roe-averaged velocity
-      q_ij = ROE_MEAN_VALUE(MYNEWLINE
-              X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-              X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+MYNEWLINE
-             ROE_MEAN_VALUE(MYNEWLINE
-              Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-              Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+MYNEWLINE
-             ROE_MEAN_VALUE(MYNEWLINE
-              Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+      q_ij = ROE_MEAN_VALUE(\
+              X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+              X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+             ROE_MEAN_VALUE(\
+              Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+              Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+             ROE_MEAN_VALUE(\
+              Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
               Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2
 
       ! Compute the Roe-averaged speed of sound
@@ -895,65 +760,11 @@ contains
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      Fi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Fi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
-      Fi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-              Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      Fi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-              Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      Fi(5) = Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi
-      Fi(6) = Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi
-      Fi(7) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*qi
-      
-      Fj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Fj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj
-      Fj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-              Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
-      Fj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-              Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
-      Fj(5) = Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj
-      Fj(6) = Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj
-      Fj(7) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + pj)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*qj
+      FLUX_MHD_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,vi,wi,pi,qi)
+      FLUX_MHD_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      F_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)-&
-                X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      F_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi) -&
-                (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj)
-      F_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)) -&
-                (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
-      F_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)) -&
-                (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
-      F_ij(5) = (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi) -&
-                (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj)
-      F_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi) -&
-                (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj)
-      F_ij(7) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*qi) -&
-                ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + pj)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*qj)
+      FLUXDIFF_MHD_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,vi,vj,wi,wj,pi,pj,qi,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -974,63 +785,63 @@ contains
       if (anorm .gt. SYS_EPSREAL) then
 
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
         v_ij = ROE_MEAN_VALUE(vi,vj,aux)
         w_ij = ROE_MEAN_VALUE(wi,wj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-                TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-                TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+                TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+                TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
 
         ! Compute the Roe-averaged density with left and right states interchanged!
-        rho_ij = ROE_MEAN_VALUE(MYNEWLINE
-                  DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
+        rho_ij = ROE_MEAN_VALUE(\
+                  DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
         
         ! Compute the square of the Roe-averaged speed of the Alfven waves.
         ! Note that left and right states are interchanged!
-        bxPow2_ij = (ROE_MEAN_VALUE(MYNEWLINE
-                      X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
+        bxPow2_ij = (ROE_MEAN_VALUE(\
+                      X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
                       X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux))**2/rho_ij
         ca_ij = sqrt(bxPow2_ij)
     
         ! Compute the density-averaged magnetic field
-        X_ij = ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-MYNEWLINE
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+MYNEWLINE
-                (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-MYNEWLINE
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+MYNEWLINE
-                (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-MYNEWLINE
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/MYNEWLINE
-                (2.0*(sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))+MYNEWLINE
+        X_ij = ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
+                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
+                (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
+                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
+                (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
+                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/&
+                (2.0*(sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))+&
                       sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))))
 
         ! Compute the square of the Roe-averaged magnetic field.
         ! Note that left and right states are interchanged!
-        bPow2_ij = (ROE_MEAN_VALUE(MYNEWLINE
-                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
-                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+MYNEWLINE
-                    ROE_MEAN_VALUE(MYNEWLINE
-                     Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
-                     Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+MYNEWLINE
-                    ROE_MEAN_VALUE(MYNEWLINE
-                     Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
+        bPow2_ij = (ROE_MEAN_VALUE(\
+                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
+                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
+                    ROE_MEAN_VALUE(\
+                     Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
+                     Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
+                    ROE_MEAN_VALUE(\
+                     Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
                      Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/rho_ij
 
         ! Compute the magnitude of the Roe-averaged velocity
-        q_ij = ROE_MEAN_VALUE(MYNEWLINE
-                X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-                X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+MYNEWLINE
-               ROE_MEAN_VALUE(MYNEWLINE
-                Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-                Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+MYNEWLINE
-               ROE_MEAN_VALUE(MYNEWLINE
-                Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        q_ij = ROE_MEAN_VALUE(\
+                X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+                X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+               ROE_MEAN_VALUE(\
+                Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+                Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+               ROE_MEAN_VALUE(\
+                Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                 Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2
 
         ! Compute the Roe-averaged speed of sound
@@ -1070,11 +881,11 @@ contains
         auxs = sqrt((cfPow2_ij-aPow2_ij)/(cfPow2_ij-csPow2_ij))
 
         ! Compute the "beta_"y,z" values (with left and right states interchanged!)
-        auxy = ROE_MEAN_VALUE(MYNEWLINE
-                Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
+        auxy = ROE_MEAN_VALUE(\
+                Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)
-        auxz = ROE_MEAN_VALUE(MYNEWLINE
-                Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),MYNEWLINE
+        auxz = ROE_MEAN_VALUE(\
+                Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)
         aux  = sqrt(auxy**2+auxz**2)
         auxy = auxy/aux
@@ -1315,65 +1126,11 @@ contains
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      Fi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Fi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
-      Fi(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-              Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      Fi(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-              Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      Fi(5) = Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi
-      Fi(6) = Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi
-      Fi(7) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*qi
-      
-      Fj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Fj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj
-      Fj(3) = Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-              Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
-      Fj(4) = Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-              Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
-      Fj(5) = Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj
-      Fj(6) = Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj
-      Fj(7) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + pj)*uj -&
-              X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*qj
+      FLUX_MHD_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,vi,wi,pi,qi)
+      FLUX_MHD_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      F_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)-&
-                X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      F_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi) -&
-                (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj)
-      F_ij(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)) -&
-                (Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
-      F_ij(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)) -&
-                (Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
-      F_ij(5) = (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi) -&
-                (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj)
-      F_ij(6) = (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi) -&
-                (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj)
-      F_ij(7) = ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + pi)*ui -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*qi) -&
-                ((TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + pj)*uj -&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*qj)
+      FLUXDIFF_MHD_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,vi,vj,wi,wj,pi,pj,qi,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -1401,18 +1158,18 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      aPow2i = GAMMA*PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)/MYNEWLINE
+      aPow2i = GAMMA*PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)/&
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      aPow2j = GAMMA*PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)/MYNEWLINE
+      aPow2j = GAMMA*PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)/&
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 #else
 #error "Speed of sound must be implemented!"
 #endif
 
       ! Compute auxiliary quantities
-      astPow2i = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)/MYNEWLINE
+      astPow2i = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)/&
                  DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + aPow2i
-      astPow2j = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)/MYNEWLINE
+      astPow2j = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)/&
                  DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + aPow2j
 
       ! Compute the speed of the fast waves
@@ -1592,8 +1349,8 @@ contains
       DcoefficientsAtEdge(:,1,idx) = 0.0
 
       ! Compute Roe mean value
-      aux  = ROE_MEAN_RATIO(MYNEWLINE
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+      aux  = ROE_MEAN_RATIO(\
+              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
       u_ij = ROE_MEAN_VALUE(ui,uj,aux)
 
@@ -1843,16 +1600,16 @@ contains
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
         
         ! Compute auxiliary values
@@ -2005,16 +1762,16 @@ contains
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
         
         ! Compute auxiliary values
@@ -2124,16 +1881,16 @@ contains
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
                 
         ! Compute auxiliary values
@@ -2328,16 +2085,16 @@ contains
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
         
         ! Compute auxiliary values
@@ -2721,16 +2478,16 @@ contains
         uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
                
         ! Compute auxiliary variables
@@ -2774,16 +2531,16 @@ contains
         uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
         
         ! Compute auxiliary variable
@@ -2810,16 +2567,16 @@ contains
         uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
 
         ! Compute auxiliary variables
@@ -2855,16 +2612,16 @@ contains
         uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))/\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+                PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))/\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
 
         ! Compute auxiliary variables
@@ -2947,61 +2704,61 @@ contains
     a = 0.5*(Coeff_ij-Coeff_ji); anorm = abs(a(1))
 
     ! Compute Roe mean values
-    aux  = ROE_MEAN_RATIO(MYNEWLINE
-            DENSITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
+    aux  = ROE_MEAN_RATIO(\
+            DENSITY_FROM_CONSVAR(U2_i,NVAR1D),\
             DENSITY_FROM_CONSVAR(U2_j,NVAR1D))
     u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-    H_ij = ROE_MEAN_VALUE(MYNEWLINE
-           (TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR1D)+MYNEWLINE
-            TOTAL_PRESSURE_FROM_CONSVAR_1D(U2_i,NVAR1D))/MYNEWLINE
-            DENSITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
-           (TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR1D)+MYNEWLINE
-            TOTAL_PRESSURE_FROM_CONSVAR_1D(U2_j,NVAR1D))/MYNEWLINE
+    H_ij = ROE_MEAN_VALUE(\
+           (TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR1D)+\
+            TOTAL_PRESSURE_FROM_CONSVAR_1D(U2_i,NVAR1D))/\
+            DENSITY_FROM_CONSVAR(U2_i,NVAR1D),\
+           (TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR1D)+\
+            TOTAL_PRESSURE_FROM_CONSVAR_1D(U2_j,NVAR1D))/\
             DENSITY_FROM_CONSVAR(U2_j,NVAR1D), aux)
 
     ! Compute the square of the Roe-averaged speed of the Alfven waves.
     ! Note that left and right states are interchanged!
-    bxPow2_ij = (ROE_MEAN_VALUE(MYNEWLINE
-                  X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),MYNEWLINE
-                  X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux))**2/MYNEWLINE
-                ROE_MEAN_VALUE(MYNEWLINE
-                 DENSITY_FROM_CONSVAR(U2_j,NVAR1D),MYNEWLINE
+    bxPow2_ij = (ROE_MEAN_VALUE(\
+                  X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),\
+                  X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux))**2/\
+                ROE_MEAN_VALUE(\
+                 DENSITY_FROM_CONSVAR(U2_j,NVAR1D),\
                  DENSITY_FROM_CONSVAR(U2_i,NVAR1D),aux)
 
     ! Compute the density-averaged magnetic field
-    X_ij = ((X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-MYNEWLINE
-             X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2 +MYNEWLINE
-            (Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-MYNEWLINE
-             Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2 +MYNEWLINE
-            (Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-MYNEWLINE
-             Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2)/MYNEWLINE
-            (2.0*(sqrt(X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D))+MYNEWLINE
+    X_ij = ((X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-&
+             X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2+&
+            (Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-&
+             Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2+&
+            (Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-&
+             Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2)/&
+            (2.0*(sqrt(X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D))+&
                   sqrt(X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))))
 
     ! Compute the square of the Roe-averaged magnetic field.
     ! Note that left and right states are interchanged!
-    bPow2_ij = (ROE_MEAN_VALUE(MYNEWLINE
-                 X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),MYNEWLINE
-                 X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2+MYNEWLINE
-                ROE_MEAN_VALUE(MYNEWLINE
-                 Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),MYNEWLINE
-                 Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2+MYNEWLINE
-                ROE_MEAN_VALUE(MYNEWLINE
-                 Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),MYNEWLINE
-                 Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2)/MYNEWLINE
-                ROE_MEAN_VALUE(MYNEWLINE
-                 DENSITY_FROM_CONSVAR(U2_j,NVAR1D),MYNEWLINE
+    bPow2_ij = (ROE_MEAN_VALUE(\
+                 X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),\
+                 X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2+\
+                ROE_MEAN_VALUE(\
+                 Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),\
+                 Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2+\
+                ROE_MEAN_VALUE(\
+                 Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),\
+                 Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2)/\
+                ROE_MEAN_VALUE(\
+                 DENSITY_FROM_CONSVAR(U2_j,NVAR1D),\
                  DENSITY_FROM_CONSVAR(U2_i,NVAR1D),aux)
 
     ! Compute the magnitude of the Roe-averaged velocity
-    q_ij = ROE_MEAN_VALUE(MYNEWLINE
-            X_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
-            X_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D),aux)**2+MYNEWLINE
-           ROE_MEAN_VALUE(MYNEWLINE
-            Y_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
-            Y_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D),aux)**2+MYNEWLINE
-           ROE_MEAN_VALUE(MYNEWLINE
-            Z_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
+    q_ij = ROE_MEAN_VALUE(\
+            X_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),\
+            X_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D),aux)**2+\
+           ROE_MEAN_VALUE(\
+            Y_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),\
+            Y_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D),aux)**2+\
+           ROE_MEAN_VALUE(\
+            Z_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),\
             Z_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D),aux)**2
 
     ! Compute the Roe-averaged speed of sound
@@ -3085,63 +2842,63 @@ contains
     wj = Z_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D)
 
     ! Compute Roe mean values
-    aux  = ROE_MEAN_RATIO(MYNEWLINE
-            DENSITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
+    aux  = ROE_MEAN_RATIO(\
+            DENSITY_FROM_CONSVAR(U2_i,NVAR1D),\
             DENSITY_FROM_CONSVAR(U2_j,NVAR1D))
     u_ij = ROE_MEAN_VALUE(ui,uj,aux)
     v_ij = ROE_MEAN_VALUE(vi,vj,aux)
     w_ij = ROE_MEAN_VALUE(wi,wj,aux)
-    H_ij = ROE_MEAN_VALUE(MYNEWLINE
-           (TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR1D)+MYNEWLINE
-            TOTAL_PRESSURE_FROM_CONSVAR_1D(U2_i,NVAR1D))/MYNEWLINE
-            DENSITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
-           (TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR1D)+MYNEWLINE
-            TOTAL_PRESSURE_FROM_CONSVAR_1D(U2_j,NVAR1D))/MYNEWLINE
+    H_ij = ROE_MEAN_VALUE(\
+           (TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR1D)+\
+            TOTAL_PRESSURE_FROM_CONSVAR_1D(U2_i,NVAR1D))/\
+            DENSITY_FROM_CONSVAR(U2_i,NVAR1D),\
+           (TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR1D)+\
+            TOTAL_PRESSURE_FROM_CONSVAR_1D(U2_j,NVAR1D))/\
             DENSITY_FROM_CONSVAR(U2_j,NVAR1D), aux)
 
     ! Compute the Roe-averaged density with left and right states interchanged!
-    rho_ij = ROE_MEAN_VALUE(MYNEWLINE
-              DENSITY_FROM_CONSVAR(U2_j,NVAR1D),MYNEWLINE
+    rho_ij = ROE_MEAN_VALUE(\
+              DENSITY_FROM_CONSVAR(U2_j,NVAR1D),\
               DENSITY_FROM_CONSVAR(U2_i,NVAR1D),aux)
 
     ! Compute the square of the Roe-averaged speed of the Alfven waves.
     ! Note that left and right states are interchanged!
-    bxPow2_ij = (ROE_MEAN_VALUE(MYNEWLINE
-                  X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),MYNEWLINE
+    bxPow2_ij = (ROE_MEAN_VALUE(\
+                  X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),\
                   X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux))**2/rho_ij
     ca_ij = sqrt(bxPow2_ij)
     
     ! Compute the density-averaged magnetic field
-    X_ij = ((X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-MYNEWLINE
-             X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2+MYNEWLINE
-            (Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-MYNEWLINE
-             Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2+MYNEWLINE
-            (Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-MYNEWLINE
-             Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2)/MYNEWLINE
-            (2.0*(sqrt(X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D))+MYNEWLINE
+    X_ij = ((X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-&
+             X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2+&
+            (Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-&
+             Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2+&
+            (Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D)-&
+             Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))**2)/&
+            (2.0*(sqrt(X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D))+&
                   sqrt(X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D))))
 
     ! Compute the square of the Roe-averaged magnetic field.
     ! Note that left and right states are interchanged!
-    bPow2_ij = (ROE_MEAN_VALUE(MYNEWLINE
-                 X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),MYNEWLINE
-                 X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2+MYNEWLINE
-                ROE_MEAN_VALUE(MYNEWLINE
-                 Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),MYNEWLINE
-                 Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2+MYNEWLINE
-                ROE_MEAN_VALUE(MYNEWLINE
-                 Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),MYNEWLINE
+    bPow2_ij = (ROE_MEAN_VALUE(\
+                 X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),\
+                 X_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2+\
+                ROE_MEAN_VALUE(\
+                 Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),\
+                 Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2+\
+                ROE_MEAN_VALUE(\
+                 Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),\
                  Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)**2)/rho_ij
 
     ! Compute the magnitude of the Roe-averaged velocity
-    q_ij = ROE_MEAN_VALUE(MYNEWLINE
-            X_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
-            X_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D),aux)**2+MYNEWLINE
-           ROE_MEAN_VALUE(MYNEWLINE
-            Y_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
-            Y_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D),aux)**2+MYNEWLINE
-           ROE_MEAN_VALUE(MYNEWLINE
-            Z_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
+    q_ij = ROE_MEAN_VALUE(\
+            X_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),\
+            X_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D),aux)**2+\
+           ROE_MEAN_VALUE(\
+            Y_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),\
+            Y_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D),aux)**2+\
+           ROE_MEAN_VALUE(\
+            Z_VELOCITY_FROM_CONSVAR(U2_i,NVAR1D),\
             Z_VELOCITY_FROM_CONSVAR(U2_j,NVAR1D),aux)**2
 
         ! Compute the Roe-averaged speed of sound
@@ -3182,11 +2939,11 @@ contains
     auxs = sqrt((cfPow2_ij-aPow2_ij)/(cfPow2_ij-csPow2_ij))
     
     ! Compute the "beta_"y,z" values (with left and right states interchanged!)
-    auxy = ROE_MEAN_VALUE(MYNEWLINE
-            Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),MYNEWLINE
+    auxy = ROE_MEAN_VALUE(\
+            Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),\
             Y_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)
-    auxz = ROE_MEAN_VALUE(MYNEWLINE
-            Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),MYNEWLINE
+    auxz = ROE_MEAN_VALUE(\
+            Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_j,NVAR1D),\
             Z_MAGNETICFIELD_FROM_CONSVAR_1D(U2_i,NVAR1D),aux)
     aux  = sqrt(auxy**2+auxz**2)
     auxy = auxy/aux
@@ -3354,18 +3111,18 @@ contains
 
     ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-    aPow2i = GAMMA*PRESSURE_FROM_CONSVAR_1D(U2_i,NVAR1D)/MYNEWLINE
+    aPow2i = GAMMA*PRESSURE_FROM_CONSVAR_1D(U2_i,NVAR1D)/&
              DENSITY_FROM_CONSVAR(U2_i,NVAR1D)
-    aPow2j = GAMMA*PRESSURE_FROM_CONSVAR_1D(U2_j,NVAR1D)/MYNEWLINE
+    aPow2j = GAMMA*PRESSURE_FROM_CONSVAR_1D(U2_j,NVAR1D)/&
              DENSITY_FROM_CONSVAR(U2_j,NVAR1D)
 #else
 #error "Speed of sound must be implemented!"
 #endif
 
     ! Compute auxiliary quantities
-    astPow2i = MAGNETICFIELD_MAGNITUDE_FROM_CONSVAR_1D(U2_i,NVAR1D)/MYNEWLINE
+    astPow2i = MAGNETICFIELD_MAGNITUDE_FROM_CONSVAR_1D(U2_i,NVAR1D)/&
                DENSITY_FROM_CONSVAR(U2_i,NVAR1D) + aPow2i
-    astPow2j = MAGNETICFIELD_MAGNITUDE_FROM_CONSVAR_1D(U2_j,NVAR1D)/MYNEWLINE
+    astPow2j = MAGNETICFIELD_MAGNITUDE_FROM_CONSVAR_1D(U2_j,NVAR1D)/&
                DENSITY_FROM_CONSVAR(U2_j,NVAR1D) + aPow2j
 
     ! Compute the speed of the fast waves
