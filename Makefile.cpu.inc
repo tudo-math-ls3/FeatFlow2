@@ -107,7 +107,7 @@ CDPATH =
 # C preprocessor
 CPP           = cpp
 # C preprocessor flags
-CPPFLAGS      = --traditional \
+CPPFLAGS      = -x assembler-with-cpp \
 		$(shell echo $(APPONLYFLAGS) $(CFLAGSF90) | tr ' ' '\n' | sed -e '/^-[DU]/!d')
 
 # FEAT2's preprocessor
