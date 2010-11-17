@@ -18,7 +18,7 @@
 #ifdef USE_PREPROC_F90CPP
 #undef MYNEWLINE
 #else
-#define MYNEWLINE &
+#define MYNEWLINE
 #endif
 
 #endif
