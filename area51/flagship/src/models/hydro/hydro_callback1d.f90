@@ -296,13 +296,8 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      Fi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Fi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
-      Fi(3) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi*ui
-      
-      Fj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Fj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj
-      Fj(3) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj*uj
+      FLUX_HYDRO_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,pi)
+      FLUX_HYDRO_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,pj)
       
       ! Assemble skew-symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
@@ -310,12 +305,7 @@ contains
       DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       ! Compute flux difference for x-direction
-      F_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)-&
-                X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      F_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi)-&
-                (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj)
-      F_ij(3) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi*ui)-&
-                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj*uj)
+      FLUXDIFF_HYDRO_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,pi,pj)
                  
       ! Assemble fluxes
       DfluxesAtEdge(:,1,idx) =  dscale * DmatrixCoeffsAtEdge(1,1,idx)*F_ij
@@ -398,12 +388,7 @@ contains
       pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
       
       ! Compute flux difference for x-direction
-      F_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)-&
-                X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      F_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi)-&
-                (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj)
-      F_ij(3) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi*ui)-&
-                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj*uj)
+      FLUXDIFF_HYDRO_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,pi,pj)
 
       ! Assemble symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale *&
@@ -466,7 +451,8 @@ contains
 #endif
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: pi,pj,ui,uj,d_ij,H_ij,q_ij,u_ij,aux,anorm,vel_ij,c_ij
+    real(DP) :: pi,pj,ui,uj
+    real(DP) :: aux,anorm,vel_ij,c_ij,d_ij,H_ij,q_ij,u_ij
     integer :: idx
 
     do idx = 1, size(DfluxesAtEdge,3)
@@ -489,21 +475,11 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      Fi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Fi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
-      Fi(3) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi*ui
-      
-      Fj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Fj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj
-      Fj(3) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj*uj
+      FLUX_HYDRO_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,pi)
+      FLUX_HYDRO_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,pj)
 #else
       ! Compute flux difference for x-direction
-      F_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)-&
-                X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      F_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi)-&
-                (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj)
-      F_ij(3) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi*ui)-&
-                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj*uj)
+      FLUXDIFF_HYDRO_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,pi,pj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -515,15 +491,15 @@ contains
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(MYNEWLINE
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+      aux  = ROE_MEAN_RATIO(\
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
       u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      H_ij = ROE_MEAN_VALUE(MYNEWLINE
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+pi)/MYNEWLINE
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+pj)/MYNEWLINE
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+      H_ij = ROE_MEAN_VALUE(\
+             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+pi)/\
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+pj)/\
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
       
       ! Compute auxiliary variables
       vel_ij = u_ij*a(1)
@@ -636,21 +612,11 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      Fi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Fi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
-      Fi(3) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi*ui
-      
-      Fj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Fj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj
-      Fj(3) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj*uj
+      FLUX_HYDRO_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,pi)
+      FLUX_HYDRO_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,pj)
 #else
       ! Compute flux difference for x-direction
-      F_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)-&
-                X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      F_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi)-&
-                (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj)
-      F_ij(3) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi*ui)-&
-                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj*uj)
+      FLUXDIFF_HYDRO_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,pi,pj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -664,15 +630,15 @@ contains
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(MYNEWLINE
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+      aux  = ROE_MEAN_RATIO(\
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
       u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      H_ij = ROE_MEAN_VALUE(MYNEWLINE
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+pi)/MYNEWLINE
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+pj)/MYNEWLINE
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+      H_ij = ROE_MEAN_VALUE(\
+             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+pi)/\
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+pj)/\
+             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
         
         ! Compute auxiliary variables
         q_ij = 0.5*(u_ij*u_ij)
@@ -817,21 +783,11 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      Fi(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Fi(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi
-      Fi(3) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi*ui
-      
-      Fj(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Fj(2) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj
-      Fj(3) = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj*uj
+      FLUX_HYDRO_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,pi)
+      FLUX_HYDRO_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,pj)
 #else
       ! Compute flux difference for x-direction
-      F_ij(1) = X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)-&
-                X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      F_ij(2) = (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi)-&
-                (X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj)
-      F_ij(3) = (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)*ui + pi*ui)-&
-                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)*uj + pj*uj)
+      FLUXDIFF_HYDRO_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,pi,pj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -919,14 +875,12 @@ contains
       
 #ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ii = diag(A_i)*C_{ii}$
-      DcoefficientsAtNode(1,1,inode) = 0.0
-      DcoefficientsAtNode(2,1,inode) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(3,1,inode) = dscale * GAMMA*ui*DmatrixCoeffsAtNode(1,inode)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtNode,1,inode,\
+        dscale,DmatrixCoeffsAtNode(1,inode),ui)
 #else
       ! Compute Galerkin coefficient $K_ii = -diag(A_i)*C_{ii}$
-      DcoefficientsAtNode(1,1,inode) = 0.0
-      DcoefficientsAtNode(2,1,inode) = -dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(3,1,inode) = -dscale * GAMMA*ui*DmatrixCoeffsAtNode(1,inode)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtNode,1,inode,\
+        -dscale,DmatrixCoeffsAtNode(1,inode),ui)
 #endif
     end do
 
@@ -971,7 +925,7 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP) :: ui,Ei,uPow2i
+    real(DP) :: ui,Ei
     integer :: inode
 
     do inode = 1, size(DcoefficientsAtNode,3)
@@ -979,38 +933,15 @@ contains
       ! Compute auxiliary variables
       ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
       Ei = TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
-      uPow2i = ui*ui
 
 #ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
-      DcoefficientsAtNode(1,1,inode) = 0.0
-      DcoefficientsAtNode(2,1,inode) = dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(3,1,inode) = dscale * ((GAMMA-1.0)*uPow2i-GAMMA*Ei)*&
-                                                ui*DmatrixCoeffsAtNode(1,inode)
-
-      DcoefficientsAtNode(4,1,inode) = dscale * DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(5,1,inode) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(6,1,inode) = dscale * (GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*&
-                                                uPow2i)*DmatrixCoeffsAtNode(1,inode)
-
-      DcoefficientsAtNode(7,1,inode) = 0.0
-      DcoefficientsAtNode(8,1,inode) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(9,1,inode) = dscale * GAMMA*ui*DmatrixCoeffsAtNode(1,inode)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtNode,1,inode,\
+        dscale,DmatrixCoeffsAtNode(1,inode),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ii = -A_i*C_{ii}$
-      DcoefficientsAtNode(1,1,inode) = 0.0
-      DcoefficientsAtNode(2,1,inode) = -dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(3,1,inode) = -dscale * ((GAMMA-1.0)*uPow2i-GAMMA*Ei)*&
-                                                 ui*DmatrixCoeffsAtNode(1,inode)
-      
-      DcoefficientsAtNode(4,1,inode) = -dscale * DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(5,1,inode) = -dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(6,1,inode) = -dscale * (GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*&
-                                                 uPow2i)*DmatrixCoeffsAtNode(1,inode)
-      
-      DcoefficientsAtNode(7,1,inode) = 0.0
-      DcoefficientsAtNode(8,1,inode) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(9,1,inode) = -dscale * GAMMA*ui*DmatrixCoeffsAtNode(1,inode)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtNode,1,inode,\
+        -dscale,DmatrixCoeffsAtNode(1,inode),ui,Ei)
 #endif
     end do
     
@@ -1068,24 +999,20 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj)
+
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui)
 #endif
     end do
 
@@ -1129,7 +1056,7 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP) :: ui,uj,Ei,Ej,uPow2i,uPow2j
+    real(DP) :: ui,uj,Ei,Ej
     integer :: idx
 
     do idx = 1, size(DcoefficientsAtEdge,3)
@@ -1137,75 +1064,29 @@ contains
       ! Compute auxiliary variables
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
       Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uPow2i = ui*ui
       
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
       Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      uPow2j = uj*uj
       
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * ((GAMMA-1.0)*uPow2j-GAMMA*Ej)*&
-                                              uj*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-3.0*(GAMMA-1.0)/2.0*&
-                                              uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(7,2,idx) = 0.0
-      DcoefficientsAtEdge(8,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * ((GAMMA-1.0)*uPow2i-GAMMA*Ei)*&
-                                              ui*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,3,idx) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*&
-                                              uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(7,3,idx) = 0.0
-      DcoefficientsAtEdge(8,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*uj*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = -dscale * ((GAMMA-1.0)*uPow2j-GAMMA*Ej)*&
-                                               uj*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(4,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,2,idx) = -dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,2,idx) = -dscale * (GAMMA*Ej-3.0*(GAMMA-1.0)/2.0*&
-                                               uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(7,2,idx) = 0.0
-      DcoefficientsAtEdge(8,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = -dscale * ((GAMMA-1.0)*uPow2i-GAMMA*Ei)*&
-                                               ui*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(4,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,3,idx) = -dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,3,idx) = -dscale * (GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*&
-                                               uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(7,3,idx) = 0.0
-      DcoefficientsAtEdge(8,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui,Ei)
 #endif
     end do
 
@@ -1265,24 +1146,20 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui)
 #endif
       
       !---------------------------------------------------------------------------
@@ -1296,17 +1173,17 @@ contains
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
         
         ! Compute auxiliary values
         q_ij = 0.5*(u_ij*u_ij)
@@ -1368,7 +1245,7 @@ contains
 
     ! local variable
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: anorm,aux,Ei,Ej,H_ij,q_ij,ui,uj,u_ij,uPow2i,uPow2j
+    real(DP) :: anorm,aux,Ei,Ej,H_ij,q_ij,ui,uj,u_ij
     integer :: idx
 
     do idx = 1, size(DcoefficientsAtEdge,3)
@@ -1376,72 +1253,26 @@ contains
       ! Compute auxiliary variables
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
       Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uPow2i = ui*ui
       
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
       Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      uPow2j = uj*uj
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * ((GAMMA-1.0)*uPow2j-GAMMA*Ej)*&
-                                              uj*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-3.0*(GAMMA-1.0)/2.0*&
-                                              uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(7,2,idx) = 0.0
-      DcoefficientsAtEdge(8,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * ((GAMMA-1.0)*uPow2i-GAMMA*Ei)*&
-                                              ui*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,3,idx) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*&
-                                              uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(7,3,idx) = 0.0
-      DcoefficientsAtEdge(8,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*uj*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = -dscale * ((GAMMA-1.0)*uPow2j-GAMMA*Ej)*&
-                                               uj*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(4,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,2,idx) = -dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,2,idx) = -dscale * (GAMMA*Ej-3.0*(GAMMA-1.0)/2.0*&
-                                               uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(7,2,idx) = 0.0
-      DcoefficientsAtEdge(8,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = -dscale * ((GAMMA-1.0)*uPow2i-GAMMA*Ei)*&
-                                               ui*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(4,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,3,idx) = -dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,3,idx) = -dscale * (GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*&
-                                               uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(7,3,idx) = 0.0
-      DcoefficientsAtEdge(8,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1458,17 +1289,17 @@ contains
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
         
         ! Compute auxiliary values
         q_ij = 0.5*(u_ij*u_ij)
@@ -1545,24 +1376,20 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1577,17 +1404,17 @@ contains
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
                 
         ! Compute auxiliary values
         q_ij = 0.5*(u_ij*u_ij)
@@ -1637,11 +1464,14 @@ contains
 
         ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
         DcoefficientsAtEdge(1,1,idx) = anorm*( R_ij(1,1)*L_ij(1,1)+&
-            R_ij(1,2)*L_ij(2,1)+R_ij(1,3)*L_ij(3,1)  )
+                                               R_ij(1,2)*L_ij(2,1)+&
+                                               R_ij(1,3)*L_ij(3,1)  )
         DcoefficientsAtEdge(2,1,idx) = anorm*( R_ij(2,1)*L_ij(1,2)+&
-            R_ij(2,2)*L_ij(2,2)+R_ij(2,3)*L_ij(3,2)  )
+                                               R_ij(2,2)*L_ij(2,2)+&
+                                               R_ij(2,3)*L_ij(3,2)  )
         DcoefficientsAtEdge(3,1,idx) = anorm*( R_ij(3,1)*L_ij(1,3)+&
-            R_ij(3,2)*L_ij(2,3)+R_ij(3,3)*L_ij(3,3)  )
+                                               R_ij(3,2)*L_ij(2,3)+&
+                                               R_ij(3,3)*L_ij(3,3)  )
       else
         
         ! Nullify dissipation tensor
@@ -1694,7 +1524,7 @@ contains
     real(DP), dimension(NVAR1D,NVAR1D) :: R_ij,L_ij
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: aux,Ei,Ej,H_ij,q_ij,ui,uj,u_ij
-    real(DP) :: l1,l2,l3,anorm,c_ij,cPow2_ij,b1,b2,uPow2i,uPow2j
+    real(DP) :: l1,l2,l3,anorm,c_ij,cPow2_ij,b1,b2
     integer :: idx,i,j,k
 
     do idx = 1, size(DcoefficientsAtEdge,3)
@@ -1702,72 +1532,26 @@ contains
       ! Compute auxiliary variables
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
       Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uPow2i = ui*ui
       
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
       Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      uPow2j = uj*uj
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * ((GAMMA-1.0)*uPow2j-GAMMA*Ej)*&
-                                              uj*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-3.0*(GAMMA-1.0)/2.0*&
-                                              uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(7,2,idx) = 0.0
-      DcoefficientsAtEdge(8,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * ((GAMMA-1.0)*uPow2i-GAMMA*Ei)*&
-                                              ui*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,3,idx) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*&
-                                              uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(7,3,idx) = 0.0
-      DcoefficientsAtEdge(8,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*uj*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = -dscale * ((GAMMA-1.0)*uPow2j-GAMMA*Ej)*&
-                                               uj*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(4,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,2,idx) = -dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,2,idx) = -dscale * (GAMMA*Ej-3.0*(GAMMA-1.0)/2.0*&
-                                               uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(7,2,idx) = 0.0
-      DcoefficientsAtEdge(8,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = -dscale * ((GAMMA-1.0)*uPow2i-GAMMA*Ei)*&
-                                               ui*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(4,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,3,idx) = -dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,3,idx) = -dscale * (GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*&
-                                               uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(7,3,idx) = 0.0
-      DcoefficientsAtEdge(8,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1781,17 +1565,17 @@ contains
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
         
         ! Compute auxiliary values
         q_ij = 0.5*u_ij*u_ij
@@ -1912,24 +1696,20 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1993,7 +1773,7 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP) :: ui,uj,ci,cj,Ei,Ej,uPow2i,uPow2j,aux
+    real(DP) :: ui,uj,ci,cj,Ei,Ej,aux
     integer :: idx
 
     do idx = 1, size(DcoefficientsAtEdge,3)
@@ -2001,72 +1781,26 @@ contains
       ! Compute auxiliary variables
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
       Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uPow2i = ui*ui
 
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
       Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      uPow2j = uj*uj
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,2,idx) = dscale * ((GAMMA-1.0)*uPow2j-GAMMA*Ej)*&
-                                              uj*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(4,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,2,idx) = dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,2,idx) = dscale * (GAMMA*Ej-3.0*(GAMMA-1.0)/2.0*&
-                                              uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(7,2,idx) = 0.0
-      DcoefficientsAtEdge(8,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,2,idx) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,2,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,3,idx) = dscale * ((GAMMA-1.0)*uPow2i-GAMMA*Ei)*&
-                                              ui*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(4,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,3,idx) = dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,3,idx) = dscale * (GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*&
-                                              uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(7,3,idx) = 0.0
-      DcoefficientsAtEdge(8,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,3,idx) = dscale * GAMMA*uj*ui*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * (GAMMA-3.0)/2.0*uPow2j*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(3,2,idx) = -dscale * ((GAMMA-1.0)*uPow2j-GAMMA*Ej)*&
-                                               uj*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(4,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(5,2,idx) = -dscale * (3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(6,2,idx) = -dscale * (GAMMA*Ej-3.0*(GAMMA-1.0)/2.0*&
-                                               uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)
-      
-      DcoefficientsAtEdge(7,2,idx) = 0.0
-      DcoefficientsAtEdge(8,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(9,2,idx) = -dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,idx)
+      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * (GAMMA-3.0)/2.0*uPow2i*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(3,3,idx) = -dscale * ((GAMMA-1.0)*uPow2i-GAMMA*Ei)*&
-                                               ui*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(4,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(5,3,idx) = -dscale * (3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(6,3,idx) = -dscale * (GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*&
-                                               uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)
-      
-      DcoefficientsAtEdge(7,3,idx) = 0.0
-      DcoefficientsAtEdge(8,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(9,3,idx) = -dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,idx)
+       MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
+        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -2174,17 +1908,17 @@ contains
         uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
                
         ! Compute auxiliary variables
         q_ij = 0.5*(u_ij*u_ij)
@@ -2227,17 +1961,17 @@ contains
         uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
         
         ! Compute auxiliary variable
 #ifdef THERMALLY_IDEAL_GAS
@@ -2263,17 +1997,17 @@ contains
         uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
 
         ! Compute auxiliary variables
         q_ij = 0.5*(u_ij*u_ij)
@@ -2308,17 +2042,17 @@ contains
         uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
+        aux  = ROE_MEAN_RATIO(\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),MYNEWLINE
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+MYNEWLINE
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/MYNEWLINE
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+        H_ij = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
+               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
 
         ! Compute auxiliary variables
         q_ij = 0.5*(u_ij*u_ij)
@@ -2394,14 +2128,15 @@ contains
     a = 0.5*(Coeff_ij-Coeff_ji); anorm = abs(a(1))
 
     ! Compute Roe mean values
-    aux  = ROE_MEAN_RATIO(MYNEWLINE
-           DENSITY_FROM_CONSVAR(U2_i,NVAR1D), DENSITY_FROM_CONSVAR(U2_j,NVAR1D))
+    aux  = ROE_MEAN_RATIO(\
+           DENSITY_FROM_CONSVAR(U2_i,NVAR1D),\
+           DENSITY_FROM_CONSVAR(U2_j,NVAR1D))
     u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-    H_ij = ROE_MEAN_VALUE(MYNEWLINE
-           (TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR1D)+MYNEWLINE
-            PRESSURE_FROM_CONSVAR_1D(U2_i,NVAR1D))/DENSITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
-           (TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR1D)+MYNEWLINE
-            PRESSURE_FROM_CONSVAR_1D(U2_j,NVAR1D))/DENSITY_FROM_CONSVAR(U2_j,NVAR1D), aux)
+    H_ij = ROE_MEAN_VALUE(\
+           (TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR1D)+\
+            PRESSURE_FROM_CONSVAR_1D(U2_i,NVAR1D))/DENSITY_FROM_CONSVAR(U2_i,NVAR1D),\
+           (TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR1D)+\
+            PRESSURE_FROM_CONSVAR_1D(U2_j,NVAR1D))/DENSITY_FROM_CONSVAR(U2_j,NVAR1D),aux)
 
     ! Compute auxiliary variables
     vel_ij = u_ij*a(1)
@@ -2467,14 +2202,15 @@ contains
     a = 0.5*(Coeff_ij-Coeff_ji); anorm = abs(a(1))
 
     ! Compute Roe mean values
-    aux  = ROE_MEAN_RATIO(MYNEWLINE
-           DENSITY_FROM_CONSVAR(U2_i,NVAR1D), DENSITY_FROM_CONSVAR(U2_j,NVAR1D))
+    aux  = ROE_MEAN_RATIO(\
+           DENSITY_FROM_CONSVAR(U2_i,NVAR1D),\
+           DENSITY_FROM_CONSVAR(U2_j,NVAR1D))
     u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-    H_ij = ROE_MEAN_VALUE(MYNEWLINE
-           (TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR1D)+MYNEWLINE
-            PRESSURE_FROM_CONSVAR_1D(U2_i,NVAR1D))/DENSITY_FROM_CONSVAR(U2_i,NVAR1D),MYNEWLINE
-           (TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR1D)+MYNEWLINE
-            PRESSURE_FROM_CONSVAR_1D(U2_j,NVAR1D))/DENSITY_FROM_CONSVAR(U2_j,NVAR1D), aux)
+    H_ij = ROE_MEAN_VALUE(\
+           (TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR1D)+\
+            PRESSURE_FROM_CONSVAR_1D(U2_i,NVAR1D))/DENSITY_FROM_CONSVAR(U2_i,NVAR1D),\
+           (TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR1D)+\
+            PRESSURE_FROM_CONSVAR_1D(U2_j,NVAR1D))/DENSITY_FROM_CONSVAR(U2_j,NVAR1D),aux)
 
     ! Compute auxiliary variables
     q_ij = 0.5*(u_ij*u_ij)
