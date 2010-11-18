@@ -545,7 +545,7 @@ contains
     end select
 
     ! Set specifier
-    rafcstab%iSpec = AFCSTAB_INITIALISED
+    rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
 
   end subroutine gfsys_initStabilisationBlock
 
@@ -791,7 +791,7 @@ contains
     end select
 
     ! Set specifier
-    rafcstab%iSpec = AFCSTAB_INITIALISED
+    rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
 
   end subroutine gfsys_initStabilisationScalar
 
@@ -1116,15 +1116,15 @@ contains
     end if
 
     ! Check if stabilisation has been initialised
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
       call sys_halt()
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
-        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
 
@@ -2494,15 +2494,15 @@ contains
 
 
     ! Check if stabilisation has been initialised
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
       call sys_halt()
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
-        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
 
@@ -3234,15 +3234,15 @@ contains
     end if
 
     ! Check if stabilisation has been initialised
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVectorBlock')
       call sys_halt()
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
-        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
 
@@ -3656,15 +3656,15 @@ contains
 
 
     ! Check if stabilisation has been initialised
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVectorScalar')
       call sys_halt()
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
-        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
 
@@ -4090,7 +4090,7 @@ contains
     end if
 
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDBlock')
       call sys_halt()
@@ -4098,8 +4098,8 @@ contains
 
     ! Check if stabilisation provides edge-based structure
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
-        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
 
@@ -4172,7 +4172,8 @@ contains
     end select
 
     ! Set specifiers for Ps, Qs and Rs
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+    rafcstab%istabilisationSpec =&
+        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)
 
   contains
 
@@ -5191,15 +5192,15 @@ contains
 
 
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDScalar')
       call sys_halt()
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
-        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
 
@@ -5271,7 +5272,8 @@ contains
     end select
 
     ! Set specifiers for Ps, Qs and Rs
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+    rafcstab%istabilisationSpec =&
+        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)
 
   contains
 
@@ -6325,7 +6327,7 @@ contains
     end if
 
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBLock')
       call sys_halt()
@@ -6379,15 +6381,15 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides raw antidiffusive fluxes
-      if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides edge-based structure
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
@@ -6453,7 +6455,8 @@ contains
       end if
         
       ! Set specifiers
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
     end if
 
 
@@ -6463,8 +6466,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides edge-based structure
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
@@ -6495,7 +6498,8 @@ contains
       end if
       
       ! Set specifiers
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)
     end if
 
 
@@ -6505,8 +6509,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides antidiffusive increments and local bounds
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
@@ -6537,7 +6541,8 @@ contains
       end if
 
       ! Set specifier
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)
     end if
 
 
@@ -6547,15 +6552,15 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides nodal correction factors
-      if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides nodal correction factors',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides edge-based structure
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
@@ -6617,7 +6622,8 @@ contains
       end if
 
       ! Set specifier
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
     end if
 
 
@@ -6627,22 +6633,22 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides edgewise correction factors
-      if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides edgewise correction factors',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides raw antidiffusive fluxes
-      if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides edge-based structure
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
@@ -7741,7 +7747,7 @@ contains
     integer :: nvariable
 
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
       call sys_halt()
@@ -7796,15 +7802,15 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides raw antidiffusive fluxes
-      if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides edge-based structure
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
@@ -7870,7 +7876,8 @@ contains
       end if
 
       ! Set specifiers
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
     end if
 
 
@@ -7880,8 +7887,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides edge-based structure
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
@@ -7913,7 +7920,8 @@ contains
       end if
 
       ! Set specifiers
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)
     end if
 
 
@@ -7923,8 +7931,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides antidiffusive increments and local bounds
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
@@ -7955,7 +7963,8 @@ contains
       end if
 
       ! Set specifier
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)
     end if
 
 
@@ -7965,15 +7974,15 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides nodal correction factors
-      if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides nodal correction factors',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides edge-based structure
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
@@ -8036,7 +8045,8 @@ contains
       end if
 
       ! Set specifier
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
     end if
 
 
@@ -8046,22 +8056,22 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides edgewise correction factors
-      if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides edgewise correction factors',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides raw antidiffusive fluxes
-      if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides edge-based structure
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
@@ -9106,15 +9116,15 @@ contains
     end if
 
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
       call sys_halt()
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
 
@@ -9178,14 +9188,14 @@ contains
           rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_ITERATIVE) then
 
         ! Check if stabilisation provides raw antidiffusive fluxes
-        if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
           call output_line('Stabilisation does not provide correction factors',&
               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
           call sys_halt()
         end if
 
         ! Check if stabilisation provides raw antidiffusive fluxes
-        if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
           call output_line('Stabilisation does not provide antidiffusive fluxes',&
               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
           call sys_halt()
@@ -9336,7 +9346,8 @@ contains
       end if
 
       ! Set specifiers for raw antidiffusive fluxes
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
 
 
     case (AFCSTAB_FEMFCT_LINEARISED)
@@ -9449,7 +9460,8 @@ contains
       end if
 
       ! Set specifiers for raw antidiffusive fluxes
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
 
 
     case (AFCSTAB_FEMFCT_MASS)
@@ -9482,7 +9494,8 @@ contains
         end select
 
         ! Set specifiers for raw antidiffusive fluxes
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
         
       else
         call output_line('Unable to compute mass antidiffusion without mass matrix!',&
@@ -9867,15 +9880,15 @@ contains
     integer :: ndim
 
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
       call sys_halt()
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
 
@@ -9939,14 +9952,14 @@ contains
           rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_ITERATIVE) then
 
         ! Check if stabilisation provides raw antidiffusive fluxes
-        if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
           call output_line('Stabilisation does not provide correction factors',&
               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
           call sys_halt()
         end if
 
         ! Check if stabilisation provides raw antidiffusive fluxes
-        if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
           call output_line('Stabilisation does not provide antidiffusive fluxes',&
               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
           call sys_halt()
@@ -10097,7 +10110,8 @@ contains
       end if
 
       ! Set specifiers for raw antidiffusive fluxes
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
 
 
     case (AFCSTAB_FEMFCT_LINEARISED)
@@ -10208,7 +10222,8 @@ contains
       end if
 
       ! Set specifiers for raw antidiffusive fluxes
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
 
       
     case (AFCSTAB_FEMFCT_MASS)
@@ -10241,7 +10256,8 @@ contains
         end select
         
         ! Set specifiers for raw antidiffusive fluxes
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
 
       else
         call output_line('Unable to compute mass antidiffusion without mass matrix!',&

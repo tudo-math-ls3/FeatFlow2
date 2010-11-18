@@ -3056,7 +3056,8 @@ contains
         iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
         
         ! Enforce existence of edgewise correction factors
-        p_rafcstab%iSpec = ior(p_rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER)
+        p_rafcstab%istabilisationSpec =&
+            ior(p_rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
 
         call gfsys_buildDivVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&

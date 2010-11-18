@@ -1240,7 +1240,8 @@ contains
     ! indicator for the subdiagonal edge structure. If they are
     ! needed, then they are re-generated on-the-fly.
     if (convectionAFC > 0) then
-      if (rproblemLevel%Rafcstab(convectionAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
+      if (rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
+          .eq. AFCSTAB_UNDEFINED) then
         call gfsc_initStabilisation(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rafcstab(convectionAFC),&
@@ -1251,8 +1252,8 @@ contains
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(templateMatrix))
 
-        rproblemLevel%Rafcstab(convectionAFC)%iSpec =&
-            iand(rproblemLevel%Rafcstab(convectionAFC)%iSpec,&
+        rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec =&
+            iand(rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec,&
             not(AFCSTAB_HAS_OFFDIAGONALEDGES))
       end if
     end if
@@ -1260,7 +1261,8 @@ contains
 
     ! The same applies to the diffusive stabilisation structure
     if (diffusionAFC > 0) then
-      if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
+      if (rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
+          .eq. AFCSTAB_UNDEFINED) then
         call gfsc_initStabilisation(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rafcstab(diffusionAFC),&
@@ -1271,8 +1273,8 @@ contains
             rproblemLevel%Rafcstab(diffusionAFC),&
             rproblemLevel%Rmatrix(templateMatrix))
 
-        rproblemLevel%Rafcstab(diffusionAFC)%iSpec =&
-            iand(rproblemLevel%Rafcstab(diffusionAFC)%iSpec,&
+        rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec =&
+            iand(rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec,&
             not(AFCSTAB_HAS_OFFDIAGONALEDGES))
       end if
     end if
@@ -1787,7 +1789,7 @@ contains
         end do richardson
         
         ! Initialise stabilisation structure by hand
-        rafcstab%iSpec= AFCSTAB_UNDEFINED
+        rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
         rafcstab%bprelimiting = .false.
         rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
         call gfsc_initStabilisation(rproblemLevel%Rmatrix(systemMatrix), rafcstab)

@@ -1115,7 +1115,8 @@ contains
     ! indicator for the subdiagonal edge structure. If they are
     ! needed, then they are re-generated on-the-fly.
     if (inviscidAFC > 0) then
-      if (rproblemLevel%Rafcstab(inviscidAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
+      if (rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
+          .eq. AFCSTAB_UNDEFINED) then
 
         ! Get number of expressions for limiting variables
         nvariable = max(1,&
@@ -1146,8 +1147,8 @@ contains
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(templateMatrix))
 
-        rproblemLevel%Rafcstab(inviscidAFC)%iSpec =&
-            iand(rproblemLevel%Rafcstab(inviscidAFC)%iSpec,&
+        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
+            iand(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
             not(AFCSTAB_HAS_OFFDIAGONALEDGES))
       end if
     end if
@@ -1546,7 +1547,7 @@ contains
         end do
         
         ! Initialise stabilisation structure by hand
-        rafcstab%iSpec= AFCSTAB_UNDEFINED
+        rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
         rafcstab%bprelimiting = .false.
         rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
         call gfsys_initStabilisation(&
