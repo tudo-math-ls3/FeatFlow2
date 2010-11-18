@@ -21,36 +21,39 @@
 !#                                   afcstab_resizeStabIndBlock
 !#     -> Resizes a stabilisation structure
 !#
-!# 4.) afcstab_duplicateStabilisation
-!#     -> Duplicates a stabilisation structure
+!# 4.) afcstab_copyStabilisation
+!#     -> Copies a stabilisation structure to another structure
 !#
-!# 5.) afcstab_getbase_IverticesAtEdge
+!# 5.) afcstab_duplicateStabilisation
+!#     -> Duplicate (parts of) a stabilisation structure
+!#
+!# 6.) afcstab_getbase_IverticesAtEdge
 !#     -> Returns pointer to the vertices at edge structure
 !#
-!# 6.) afcstab_getbase_IsupdiagEdgeIdx
+!# 7.) afcstab_getbase_IsupdiagEdgeIdx
 !#     -> Returns pointer to the index pointer for the
 !#        superdiagonal edge numbers
 !#
-!# 7.) afcstab_getbase_IsubdiagEdgeIdx
+!# 8.) afcstab_getbase_IsubdiagEdgeIdx
 !#     -> Returns pointer to the index pointer for the
 !#        subdiagonal edge numbers
 !#
-!# 8.) afcstab_getbase_IsubdiagEdge
+!# 9.) afcstab_getbase_IsubdiagEdge
 !#     -> Returns pointer to the subdiagonal edge numbers
 !#
-!# 9.) afcstab_getbase_DcoeffsAtEdge
-!#     -> Returns pointer to edge data
+!# 10.) afcstab_getbase_DcoeffsAtEdge
+!#      -> Returns pointer to edge data
 !#
-!# 10.) afcstab_generateVerticesAtEdge
+!# 11.) afcstab_generateVerticesAtEdge
 !#      -> Generates the standard edge data structure
 !#
-!# 11.) afcstab_generateOffdiagEdges
+!# 12.) afcstab_generateOffdiagEdges
 !#      -> Generates the subdiagonal edge data structure
 !#
-!# 12.) afcstab_generateExtSparsity
+!# 13.) afcstab_generateExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 12.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
+!# 14.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
 !#                                 afcstab_failsafeLimitingArray
 !#      -> Perform failsafe flux correction
 !#
@@ -80,6 +83,7 @@ module afcstabilisation
   public :: afcstab_initFromParameterlist
   public :: afcstab_releaseStabilisation
   public :: afcstab_resizeStabilisation
+  public :: afcstab_copyStabilisation
   public :: afcstab_duplicateStabilisation
   public :: afcstab_getbase_IverticesAtEdge
   public :: afcstab_getbase_IsupdiagEdgeIdx
@@ -139,7 +143,7 @@ module afcstabilisation
 !</constantblock>
 
 
-!<constantblock description="Bitfield identifiers for duplication">
+!<constantblock description="Bitfield identifiers for state of stabilisation">
 
 ! Stabilisation is undefined
   integer(I32), parameter, public :: AFCSTAB_UNDEFINED            = 2_I32**0
@@ -174,10 +178,13 @@ module afcstabilisation
   ! Edgewise correction factors: ALPHA
   integer(I32), parameter, public :: AFCSTAB_HAS_EDGELIMITER      = 2_I32**10
 
+  ! Low-order predictor
+  integer(I32), parameter, public :: AFCSTAB_HAS_PREDICTOR        = 2_I32**11
+
 !</constantblock>
 
 
-!<constantblock description="Bitfield identifiers for state of stabilisation">
+!<constantblock description="Duplication flags. Specifies which information is duplicated">
   
   ! Stabilisation has been initialised
   integer(I32), parameter, public :: AFCSTAB_DUP_STRUCTURE        = 2_I32**1
@@ -205,6 +212,44 @@ module afcstabilisation
   
   ! Edgewise correction factors: ALPHA
   integer(I32), parameter, public :: AFCSTAB_DUP_EDGELIMITER      = AFCSTAB_HAS_EDGELIMITER
+
+  ! Low-order predictor
+  integer(I32), parameter, public :: AFCSTAB_DUP_PREDICTOR        = AFCSTAB_HAS_PREDICTOR
+    
+!</constantblock>
+
+!<constantblock description="Duplication flags. Specifies which information is shared \
+!                            between stabilisation structures">
+  
+  ! Stabilisation has been initialised
+  integer(I32), parameter, public :: AFCSTAB_SHARE_STRUCTURE        = AFCSTAB_DUP_STRUCTURE
+
+  ! Edge-based structure generated: IverticesAtEdge
+  integer(I32), parameter, public :: AFCSTAB_SHARE_EDGESTRUCTURE    = AFCSTAB_DUP_EDGESTRUCTURE
+
+  ! Edge-based values computed from matrix: DcoefficientsAtEdge
+  integer(I32), parameter, public :: AFCSTAB_SHARE_EDGEVALUES       = AFCSTAB_DUP_EDGEVALUES
+
+  ! Subdiagonal edge-based structure generated
+  integer(I32), parameter, public :: AFCSTAB_SHARE_OFFDIAGONALEDGES = AFCSTAB_DUP_OFFDIAGONALEDGES
+  
+  ! Precomputed antidiffusive fluxes
+  integer(I32), parameter, public :: AFCSTAB_SHARE_ADFLUXES         = AFCSTAB_DUP_ADFLUXES
+  
+  ! Nodal sums of antidiffusive increments: PP, PM
+  integer(I32), parameter, public :: AFCSTAB_SHARE_ADINCREMENTS     = AFCSTAB_DUP_ADINCREMENTS
+
+  ! Nodal upper/lower bounds: QP, QM
+  integer(I32), parameter, public :: AFCSTAB_SHARE_BOUNDS           = AFCSTAB_DUP_BOUNDS
+  
+  ! Nodal correction factors: RP, RM
+  integer(I32), parameter, public :: AFCSTAB_SHARE_NODELIMITER      = AFCSTAB_DUP_NODELIMITER
+  
+  ! Edgewise correction factors: ALPHA
+  integer(I32), parameter, public :: AFCSTAB_SHARE_EDGELIMITER      = AFCSTAB_DUP_EDGELIMITER
+
+  ! Low-order predictor
+  integer(I32), parameter, public :: AFCSTAB_SHARE_PREDICTOR        = AFCSTAB_DUP_PREDICTOR
     
 !</constantblock>
 
@@ -495,68 +540,125 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! local variables
-    integer :: i
 
-    ! Free storage
-    if (rafcstab%h_IsuperdiagEdgesIdx .ne. ST_NOHANDLE)&
-        call storage_free(rafcstab%h_IsuperdiagEdgesIdx)
-    if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+    ! Release edge structure
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE) .and.&
+        (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE))&
         call storage_free(rafcstab%h_IverticesAtEdge)
-    if (rafcstab%h_IsubdiagEdgesIdx .ne. ST_NOHANDLE)&
-        call storage_free(rafcstab%h_IsubdiagEdgesIdx)
-    if (rafcstab%h_IsubdiagEdges .ne. ST_NOHANDLE)&
-        call storage_free(rafcstab%h_IsubdiagEdges)
-    if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
+
+    ! Release edge values
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES) .and.&
+        (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE))&
         call storage_free(rafcstab%h_DcoefficientsAtEdge)
+
+    ! Release off-diagonal edges
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
+      if (rafcstab%h_IsuperdiagEdgesIdx .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IsuperdiagEdgesIdx)
+      if (rafcstab%h_IsubdiagEdgesIdx .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IsubdiagEdgesIdx)
+      if (rafcstab%h_IsubdiagEdges .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IsubdiagEdges)
+    end if
+        
+    ! Release antidiffusive fluxes
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
+      if (associated(rafcstab%p_rvectorFlux0)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorFlux0)
+        deallocate(rafcstab%p_rvectorFlux0)
+      end if
+      if (associated(rafcstab%p_rvectorFlux)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorFlux)
+        deallocate(rafcstab%p_rvectorFlux)
+      end if
+    end if
+
+    ! Release antidiffusive increments
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS)) then
+      if (associated(rafcstab%p_rvectorPp)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorPp)
+        deallocate(rafcstab%p_rvectorPp)
+      end if
+      if (associated(rafcstab%p_rvectorPm)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorPm)
+        deallocate(rafcstab%p_rvectorPm)
+      end if
+    end if
+
+    ! Release upper/lower bounds
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_BOUNDS)) then
+      if (associated(rafcstab%p_rvectorQp)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorQp)
+        deallocate(rafcstab%p_rvectorQp)
+      end if
+      if (associated(rafcstab%p_rvectorQm)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorQm)
+        deallocate(rafcstab%p_rvectorQm)
+      end if
+    end if
+    
+    ! Release nodal limiting factors
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER)) then
+      if (associated(rafcstab%p_rvectorRp)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorRp)
+        deallocate(rafcstab%p_rvectorRp)
+      end if
+      if (associated(rafcstab%p_rvectorRm)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorRm)
+        deallocate(rafcstab%p_rvectorRm)
+      end if
+    end if
+
+    ! Release edge-wise limiting coefficients
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIMITER) .and.&
+        (associated(rafcstab%p_rvectorAlpha))) then
+      call lsyssc_releaseVector(rafcstab%p_rvectorAlpha)
+      deallocate(rafcstab%p_rvectorAlpha)
+    end if
+
+    ! Release low-order predictor
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_PREDICTOR) .and.&
+        (associated(rafcstab%p_rvectorPredictor))) then
+      call lsysbl_releaseVector(rafcstab%p_rvectorPredictor)
+      deallocate(rafcstab%p_rvectorPredictor)
+    end if
+
+    ! Nullify pointers
+    rafcstab%p_rvectorPp        => null()
+    rafcstab%p_rvectorPm        => null()
+    rafcstab%p_rvectorQp        => null()
+    rafcstab%p_rvectorQm        => null()
+    rafcstab%p_rvectorRp        => null()
+    rafcstab%p_rvectorRm        => null()
+    rafcstab%p_rvectorAlpha     => null()
+    rafcstab%p_rvectorFlux      => null()
+    rafcstab%p_rvectorFlux0     => null()
+    rafcstab%p_rvectorPredictor => null()
     
     ! Reset atomic data
     rafcstab%ctypeAFCstabilisation = AFCSTAB_GALERKIN
     rafcstab%istabilisationSpec    = AFCSTAB_UNDEFINED
+    rafcstab%iduplicationFlag      = 0
     rafcstab%NEQ                   = 0
     rafcstab%NVAR                  = 1
     rafcstab%NVARtransformed       = 1
     rafcstab%NEDGE                 = 0
     rafcstab%NNVEDGE               = 0
 
-    ! Nullify pointers
-    nullify(rafcstab%p_rvectorAlpha)
-    nullify(rafcstab%p_rvectorFlux0)
-    nullify(rafcstab%p_rvectorFlux)
-    nullify(rafcstab%p_rvectorPp)
-    nullify(rafcstab%p_rvectorPm)
-    nullify(rafcstab%p_rvectorQp)
-    nullify(rafcstab%p_rvectorQm)
-    nullify(rafcstab%p_rvectorRp)
-    nullify(rafcstab%p_rvectorRm)
-    nullify(rafcstab%p_rvectorPredictor)
+  contains
 
-    ! Release auxiliary nodal block vectors
-    if (associated(rafcstab%RnodalBlockVectors)) then
-      do i = lbound(rafcstab%RnodalBlockVectors,1),&
-             ubound(rafcstab%RnodalBlockVectors,1)
-        call lsysbl_releaseVector(rafcstab%RnodalBlockVectors(i))
-      end do
-      deallocate(rafcstab%RnodalBlockVectors)
-    end if
+    !**************************************************************
+    ! Checks if bitfield ibitfiled in idupFlag is not set.
 
-    ! Release auxiliary nodal vectors
-    if (associated(rafcstab%RnodalVectors)) then
-      do i = lbound(rafcstab%RnodalVectors,1),&
-             ubound(rafcstab%RnodalVectors,1)
-        call lsyssc_releaseVector(rafcstab%RnodalVectors(i))
-      end do
-      deallocate(rafcstab%RnodalVectors)
-    end if
+    pure function check(idupFlag, ibitfield)
 
-    ! Release auxiliary edge vectors
-    if (associated(rafcstab%RedgeVectors)) then
-      do i = lbound(rafcstab%RedgeVectors,1),&
-             ubound(rafcstab%RedgeVectors,1)
-        call lsyssc_releaseVector(rafcstab%RedgeVectors(i))
-      end do
-      deallocate(rafcstab%RedgeVectors)
-    end if
+      integer(I32), intent(in) :: idupFlag,ibitfield
+      
+      logical :: check
+      
+      check = (iand(idupFlag,ibitfield) .ne. ibitfield)
+
+    end function check
 
   end subroutine afcstab_releaseStabilisation
 
@@ -611,28 +713,33 @@ contains
             ST_NEWBLOCK_NOINIT, .false.)
       end if
 
-      ! Resize auxiliary nodal vectors
-      if(associated(rafcstab%RnodalVectors)) then
-        do i = lbound(rafcstab%RnodalVectors,1),&
-               ubound(rafcstab%RnodalVectors,1)
-          if (rafcstab%RnodalVectors(i)%NEQ .ne. 0)&
-              call lsyssc_resizeVector(rafcstab%RnodalVectors(i),&
-              rafcstab%NEQ, .false., .false.)
-        end do
-      end if
-
-      ! Resize auxiliary nodal vectors
-      if(associated(rafcstab%RnodalBlockVectors)) then
-        do i = lbound(rafcstab%RnodalBlockVectors,1),&
-               ubound(rafcstab%RnodalBlockVectors,1)
-          if (rafcstab%RnodalBlockVectors(i)%NEQ .ne. 0)&
-              call lsysbl_resizeVectorBlock(rafcstab%RnodalBlockVectors(i),&
-              rafcstab%NEQ, .false., .false.)
-        end do
-      end if
+      ! Resize nodal vectors P, Q, and R for '+' and '-'
+      if (associated(rafcstab%p_rvectorPp))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorPp,&
+          rafcstab%NEQ, .false., .false.)
+      if (associated(rafcstab%p_rvectorPm))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorPm,&
+          rafcstab%NEQ, .false., .false.)
+      if (associated(rafcstab%p_rvectorQp))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorQp,&
+          rafcstab%NEQ, .false., .false.)
+      if (associated(rafcstab%p_rvectorQm))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorQm,&
+          rafcstab%NEQ, .false., .false.)
+      if (associated(rafcstab%p_rvectorRp))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorRp,&
+          rafcstab%NEQ, .false., .false.)
+      if (associated(rafcstab%p_rvectorRm))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorRm,&
+          rafcstab%NEQ, .false., .false.)
+      
+      ! Resize nodal vector for the low-order predictor
+      if (associated(rafcstab%p_rvectorPredictor))&
+          call lsysbl_resizeVectorBlock(rafcstab%p_rvectorPredictor,&
+          rafcstab%NEQ, .false., .false.)
     end if
-
-
+    
+    
     ! Resize edge quantities
     if (rafcstab%NEDGE .ne. nedge) then
 
@@ -660,17 +767,21 @@ contains
             ST_NEWBLOCK_NOINIT, .false.)
       end if
 
-      ! Resize auxiliary edge vectors
-      if(associated(rafcstab%RedgeVectors)) then
-        do i = lbound(rafcstab%RedgeVectors,1),&
-               ubound(rafcstab%RedgeVectors,1)
-          if (rafcstab%RedgeVectors(i)%NEQ .ne. 0)&
-              call lsyssc_resizeVector(rafcstab%RedgeVectors(i),&
-              rafcstab%NEDGE, .false., .false.)
-        end do
-      end if
+      ! Resize edge vectors for the correction factor and the fluxes
+      if(associated(rafcstab%p_rvectorAlpha))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorAlpha,&
+          rafcstab%NEDGE, .false., .false.)
+      if(associated(rafcstab%p_rvectorFlux0))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorFlux0,&
+          rafcstab%NEDGE, .false., .false.)
+      if(associated(rafcstab%p_rvectorFlux))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorFlux,&
+          rafcstab%NEDGE, .false., .false.)
+      if(associated(rafcstab%p_rvectorPrelimit))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorPrelimit,&
+          rafcstab%NEDGE, .false., .false.)
     end if
-
+    
     ! Set state of stabilisation
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
@@ -805,12 +916,12 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_duplicateStabilisation(rafcstabSrc, rafcstabDest, idupFlag)
+  subroutine afcstab_copyStabilisation(rafcstabSrc, rafcstabDest, idupFlag)
 
 !<description>
-    ! This subroutine duplicates an existing stabilisation structure, creates
-    ! a new stabilisation structure rafcstabDest based on the template
-    ! structure rafcstabSrc
+    ! This subroutine selectively copies data from the source
+    ! stabilisation structure rafcstabScr to the destination
+    ! stabilisation structure rsfcatsbDest
 !</description>
 
 !<input>
@@ -827,6 +938,263 @@ contains
 !</inputoutput>
 !</subroutine>
    
+    ! Copy structural data
+    if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
+      rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
+      rafcstabDest%NEQ                   = rafcstabSrc%NEQ
+      rafcstabDest%NVAR                  = rafcstabSrc%NVAR
+      rafcstabDest%NVARtransformed       = rafcstabSrc%NVARtransformed
+      rafcstabDest%NEDGE                 = rafcstabSrc%NEDGE
+      rafcstabDest%NNVEDGE               = rafcstabSrc%NNVEDGE
+      rafcstabDest%bprelimiting          = rafcstabSrc%bprelimiting
+    end if
+
+    ! Copy edge structre
+    if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
+      ! Copy content from source to destination structure
+      call storage_copy(rafcstabSrc%h_IverticesAtEdge,&
+          rafcstabDest%h_IverticesAtEdge)
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE))
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION))
+      ! Reset ownership
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          not(AFCSTAB_SHARE_EDGESTRUCTURE))
+    end if
+
+    ! Copy edge values
+    if (check(idupFlag, AFCSTAB_DUP_EDGEVALUES) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)) then
+      ! Copy content from source to destination structure
+      call storage_copy(rafcstabSrc%h_DcoefficientsAtEdge,&
+          rafcstabDest%h_DcoefficientsAtEdge)
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES))
+      ! Reset ownership
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          not(AFCSTAB_SHARE_EDGEVALUES))
+    end if
+
+    ! Copy off-diagonal edges
+    if (check(idupFlag, AFCSTAB_DUP_OFFDIAGONALEDGES) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)) then
+      ! Copy content from source to destination structure
+      call storage_copy(rafcstabSrc%h_IsuperdiagEdgesIdx,&
+          rafcstabDest%h_IsuperdiagEdgesIdx)
+      call storage_copy(rafcstabSrc%h_IsubdiagEdgesIdx,&
+          rafcstabDest%h_IsubdiagEdgesIdx)
+      call storage_copy(rafcstabSrc%h_IsubdiagEdges,&
+          rafcstabDest%h_IsubdiagEdges)
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES))
+      ! Reset ownership
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          not(AFCSTAB_SHARE_OFFDIAGONALEDGES))
+    end if
+
+    ! Copy antidiffusive fluxes
+    if (check(idupFlag, AFCSTAB_DUP_ADFLUXES) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)) then
+      ! Unlink pointers to vectors which are shared by the structure
+      if (check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES))&
+          nullify(rafcstabDest%p_rvectorFlux0, rafcstabDest%p_rvectorFlux)
+      ! Reset ownership
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          not(AFCSTAB_SHARE_ADFLUXES))
+      ! Copy explicit raw antidiffusive flux (if any)
+      if (associated(rafcstabSrc%p_rvectorFlux0)) then
+        if (not(associated(rafcstabDest%p_rvectorFlux0)))&
+            allocate(rafcstabDest%p_rvectorFlux0)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorFlux0,&
+            rafcstabDest%p_rvectorFlux0)
+      end if
+      ! Copy raw antidiffusive flux (if any)
+      if (associated(rafcstabSrc%p_rvectorFlux)) then
+        if (not(associated(rafcstabDest%p_rvectorFlux)))&
+            allocate(rafcstabDest%p_rvectorFlux)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorFlux,&
+            rafcstabDest%p_rvectorFlux)
+      end if
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADFLUXES))
+    end if
+
+    ! Copy antidiffusive increments
+    if (check(idupFlag, AFCSTAB_DUP_ADINCREMENTS) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)) then
+      ! Unlink pointers to vectors which are shared by the structure
+      if (check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS))&
+          nullify(rafcstabDest%p_rvectorPp, rafcstabDest%p_rvectorPm)
+      ! Reset ownership
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          not(AFCSTAB_SHARE_ADINCREMENTS))
+      ! Copy antidiffusive increment Pp
+      if (associated(rafcstabSrc%p_rvectorPp)) then
+        if (not(associated(rafcstabDest%p_rvectorPp)))&
+            allocate(rafcstabDest%p_rvectorPp)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorPp,&
+            rafcstabDest%p_rvectorPp)
+      end if
+      ! Copy antidiffusive increment Pm
+      if (associated(rafcstabSrc%p_rvectorPm)) then
+        if (not(associated(rafcstabDest%p_rvectorPm)))&
+            allocate(rafcstabDest%p_rvectorPm)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorPm,&
+            rafcstabDest%p_rvectorPm)
+      end if
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS))
+    end if
+    
+    ! Copy upper/lower bounds
+    if (check(idupFlag, AFCSTAB_DUP_BOUNDS) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS)) then
+      ! Unlink pointers to vectors which are shared by the structure
+      if (check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_BOUNDS))&
+          nullify(rafcstabDest%p_rvectorQp, rafcstabDest%p_rvectorQm)
+      ! Reset ownership
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          not(AFCSTAB_SHARE_BOUNDS))
+      ! Copy upper bounds Qp
+      if (associated(rafcstabSrc%p_rvectorQp)) then
+        if (not(associated(rafcstabDest%p_rvectorQp)))&
+            allocate(rafcstabDest%p_rvectorQp)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorQp,&
+            rafcstabDest%p_rvectorQp)
+      end if
+      ! Copy lower bounds Qm
+      if (associated(rafcstabSrc%p_rvectorQm)) then
+        if (not(associated(rafcstabDest%p_rvectorQm)))&
+            allocate(rafcstabDest%p_rvectorQm)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorQm,&
+            rafcstabDest%p_rvectorQm)
+      end if
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS))
+    end if
+
+    ! Copy nodal limiting coefficients
+    if (check(idupFlag, AFCSTAB_DUP_NODELIMITER) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)) then
+      ! Unlink pointers to vectors which are shared by the structure
+      if (check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER))&
+          nullify(rafcstabDest%p_rvectorRp, rafcstabDest%p_rvectorRm)
+      ! Reset ownership
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          not(AFCSTAB_SHARE_NODELIMITER))
+      ! Copy nodal limiting coefficients Rp
+      if (associated(rafcstabSrc%p_rvectorRp)) then
+        if (not(associated(rafcstabDest%p_rvectorRp)))&
+            allocate(rafcstabDest%p_rvectorRp)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorRp,&
+            rafcstabDest%p_rvectorRp)
+      end if
+      ! Copy nodal limiting coefficients Rm
+      if (associated(rafcstabSrc%p_rvectorRm)) then
+        if (not(associated(rafcstabDest%p_rvectorRm)))&
+            allocate(rafcstabDest%p_rvectorRm)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorRm,&
+            rafcstabDest%p_rvectorRm)
+      end if
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODELIMITER))
+    end if
+    
+    ! Copy edge-wise limiting coefficients
+    if (check(idupFlag, AFCSTAB_DUP_EDGELIMITER) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)) then
+      ! Unlink pointers to vectors which are shared by the structure
+      if (check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGELIMITER))&
+          nullify(rafcstabDest%p_rvectorAlpha)
+      ! Reset ownership
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          not(AFCSTAB_SHARE_EDGELIMITER))
+      ! Copy edge-wise limiting coefficients
+      if (associated(rafcstabSrc%p_rvectorAlpha)) then
+        if (not(associated(rafcstabDest%p_rvectorAlpha)))&
+            allocate(rafcstabDest%p_rvectorAlpha)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorAlpha,&
+            rafcstabDest%p_rvectorAlpha)
+      end if
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER))
+    end if
+    
+    ! Copy low-order predictor
+    if (check(idupFlag, AFCSTAB_DUP_PREDICTOR) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_PREDICTOR)) then
+      ! Unlink pointers to vectors which are shared by the structure
+      if (check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_PREDICTOR))&
+          nullify(rafcstabDest%p_rvectorPredictor)
+      ! Reset ownership
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          not(AFCSTAB_SHARE_PREDICTOR))
+      ! Copy edge-wise limiting coefficients
+      if (associated(rafcstabSrc%p_rvectorPredictor)) then
+        if (not(associated(rafcstabDest%p_rvectorPredictor)))&
+            allocate(rafcstabDest%p_rvectorPredictor)
+        call lsysbl_copyVector(rafcstabSrc%p_rvectorPredictor,&
+            rafcstabDest%p_rvectorPredictor)
+      end if
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_PREDICTOR))
+    end if
+
+  contains
+
+    !**************************************************************
+    ! Checks if idupFlag has all bits ibitfield set.
+
+    pure function check(idupFlag, ibitfield)
+      
+      integer(I32), intent(in) :: idupFlag,ibitfield
+      
+      logical :: check
+      
+      check = (iand(idupFlag,ibitfield) .eq. ibitfield)
+
+    end function check
+
+  end subroutine afcstab_copyStabilisation
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_duplicateStabilisation(rafcstabSrc, rafcstabDest, idupFlag)
+
+!<description>
+    ! This subroutine duplicated parts of the stabilisation structure
+    ! rafcstabScr in the stabilisation structure rsfcatsbDest. Note
+    ! that rafcstabScr is still the owner of the duplicated content.
+!</description>
+
+!<input>
+    ! Source stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstabSrc
+    
+    ! Duplication flag that decides on how to set up the structure
+    integer(I32), intent(in) :: idupFlag
+!</input>
+
+!<inputoutput>
+    ! Destination stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstabDest
+!</inputoutput>
+!</subroutine>
+
     ! Duplicate structural data
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
@@ -842,101 +1210,180 @@ contains
     ! Duplicate edge structre
     if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
-      call storage_copy(rafcstabSrc%h_IverticesAtEdge,&
-          rafcstabDest%h_IverticesAtEdge)
+      ! Remove existing data owned by the destination structure
+      if (not(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)))&
+          call storage_free(rafcstabDest%h_IverticesAtEdge)
+      ! Copy handle from source to destination structure
+      rafcstabDest%h_IverticesAtEdge = rafcstabSrc%h_IverticesAtEdge
+      ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE))
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_EDGESTRUCTURE)
     end if
 
     ! Duplicate edge values
     if (check(idupFlag, AFCSTAB_DUP_EDGEVALUES) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)) then
-      call storage_copy(rafcstabSrc%h_DcoefficientsAtEdge,&
-          rafcstabDest%h_DcoefficientsAtEdge)
+      ! Remove existing data owned by the destination structure
+      if (not(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES)))&
+          call storage_free(rafcstabDest%h_DcoefficientsAtEdge)
+      ! Copy handle from source to destination structure
+      rafcstabDest%h_DcoefficientsAtEdge = rafcstabSrc%h_DcoefficientsAtEdge
+      ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_EDGEVALUES)
     end if
 
     ! Duplicate off-diagonal edges
     if (check(idupFlag, AFCSTAB_DUP_OFFDIAGONALEDGES) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)) then
-      call storage_copy(rafcstabSrc%h_IsuperdiagEdgesIdx,&
-          rafcstabDest%h_IsuperdiagEdgesIdx)
-      call storage_copy(rafcstabSrc%h_IsubdiagEdgesIdx,&
-          rafcstabDest%h_IsubdiagEdgesIdx)
-      call storage_copy(rafcstabSrc%h_IsubdiagEdges,&
-          rafcstabDest%h_IsubdiagEdges)
+      ! Remove existing data owned by the destination structure
+      if (not(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES))) then
+        call storage_free(rafcstabDest%h_IsuperdiagEdgesIdx)
+        call storage_free(rafcstabDest%h_IsubdiagEdgesIdx)
+        call storage_free(rafcstabDest%h_IsubdiagEdges)
+      end if
+      ! Copy handles from source to destination structure
+      rafcstabDest%h_IsuperdiagEdgesIdx = rafcstabSrc%h_IsuperdiagEdgesIdx
+      rafcstabDest%h_IsubdiagEdgesIdx   = rafcstabSrc%h_IsubdiagEdgesIdx
+      rafcstabDest%h_IsubdiagEdges      = rafcstabSrc%h_IsubdiagEdges
+      ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_OFFDIAGONALEDGES)
     end if
 
     ! Duplicate antidiffusive fluxes
     if (check(idupFlag, AFCSTAB_DUP_ADFLUXES) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)) then
-      if (associated(rafcstabSrc%p_rvectorFlux0)) call lsyssc_copyVector(&
-          rafcstabSrc%p_rvectorFlux0, rafcstabDest%p_rvectorFlux0)
-      if (associated(rafcstabSrc%p_rvectorFlux)) call lsyssc_copyVector(&
-          rafcstabSrc%p_rvectorFlux, rafcstabDest%p_rvectorFlux)
+      ! Remove existing data owned by the destination structure
+      if (not(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES))) then
+        call lsyssc_releaseVector(rafcstabDest%p_rvectorFlux0)
+        call lsyssc_releaseVector(rafcstabDest%p_rvectorFlux)
+      end if
+      ! Copy pointers from source to destination structure
+      rafcstabDest%p_rvectorFlux0 => rafcstabSrc%p_rvectorFlux0
+      rafcstabDest%p_rvectorFlux  => rafcstabSrc%p_rvectorFlux
+      ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADFLUXES))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_ADFLUXES)
     end if
 
-    ! Duplicate antidiffusive increments
+    ! Duplicate antidiffusive incremens
     if (check(idupFlag, AFCSTAB_DUP_ADINCREMENTS) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)) then
-      if (associated(rafcstabSrc%p_rvectorPp)) call lsyssc_copyVector(&
-          rafcstabSrc%p_rvectorPp, rafcstabDest%p_rvectorPp)
-      if (associated(rafcstabSrc%p_rvectorPm)) call lsyssc_copyVector(&
-          rafcstabSrc%p_rvectorPm, rafcstabDest%p_rvectorPm)
+      ! Remove existing data owned by the destination structure
+      if (not(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS))) then
+        call lsyssc_releaseVector(rafcstabDest%p_rvectorPp)
+        call lsyssc_releaseVector(rafcstabDest%p_rvectorPm)
+      end if
+      ! Copy pointers from source to destination structure
+      rafcstabDest%p_rvectorPp => rafcstabSrc%p_rvectorPp
+      rafcstabDest%p_rvectorPm => rafcstabSrc%p_rvectorPm
+      ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_ADINCREMENTS)
     end if
 
     ! Duplicate upper/lower bounds
     if (check(idupFlag, AFCSTAB_DUP_BOUNDS) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS)) then
-      if (associated(rafcstabSrc%p_rvectorQp)) call lsyssc_copyVector(&
-          rafcstabSrc%p_rvectorQp, rafcstabDest%p_rvectorQp)
-      if (associated(rafcstabSrc%p_rvectorQm)) call lsyssc_copyVector(&
-          rafcstabSrc%p_rvectorQm, rafcstabDest%p_rvectorQm)
+      ! Remove existing data owned by the destination structure
+      if (not(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_BOUNDS))) then
+        call lsyssc_releaseVector(rafcstabDest%p_rvectorQp)
+        call lsyssc_releaseVector(rafcstabDest%p_rvectorQm)
+      end if
+      ! Copy pointers from source to destination structure
+      rafcstabDest%p_rvectorQp => rafcstabSrc%p_rvectorQp
+      rafcstabDest%p_rvectorQm => rafcstabSrc%p_rvectorQm
+      ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_BOUNDS)
     end if
 
     ! Duplicate nodal limiting coefficients
     if (check(idupFlag, AFCSTAB_DUP_NODELIMITER) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)) then
-      if (associated(rafcstabSrc%p_rvectorRp)) call lsyssc_copyVector(&
-          rafcstabSrc%p_rvectorRp, rafcstabDest%p_rvectorRp)
-      if (associated(rafcstabSrc%p_rvectorRm)) call lsyssc_copyVector(&
-          rafcstabSrc%p_rvectorRm, rafcstabDest%p_rvectorRm)
+      ! Remove existing data owned by the destination structure
+      if (not(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER))) then
+        call lsyssc_releaseVector(rafcstabDest%p_rvectorRp)
+        call lsyssc_releaseVector(rafcstabDest%p_rvectorRm)
+      end if
+      ! Copy pointers from source to destination structure
+      rafcstabDest%p_rvectorRp => rafcstabSrc%p_rvectorRp
+      rafcstabDest%p_rvectorRm => rafcstabSrc%p_rvectorRm
+      ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODELIMITER))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_NODELIMITER)
     end if
 
     ! Duplicate edge-wise limiting coefficients
     if (check(idupFlag, AFCSTAB_DUP_EDGELIMITER) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)) then
-      if (associated(rafcstabSrc%p_rvectorAlpha)) call lsyssc_copyVector(&
-          rafcstabSrc%p_rvectorAlpha, rafcstabDest%p_rvectorAlpha)
+      ! Remove existing data owned by the destination structure
+      if (not(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGELIMITER))) then
+        call lsyssc_releaseVector(rafcstabDest%p_rvectorAlpha)
+      end if
+      ! Copy pointers from source to destination structure
+      rafcstabDest%p_rvectorAlpha => rafcstabSrc%p_rvectorAlpha
+      ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_EDGELIMITER)
     end if
 
+    ! Duplicate low-order predictor
+    if (check(idupFlag, AFCSTAB_DUP_PREDICTOR) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_PREDICTOR)) then
+      ! Remove existing data owned by the destination structure
+      if (not(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_PREDICTOR))) then
+        call lsysbl_releaseVector(rafcstabDest%p_rvectorPredictor)
+      end if
+      ! Copy pointers from source to destination structure
+      rafcstabDest%p_rvectorPredictor => rafcstabSrc%p_rvectorPredictor
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_PREDICTOR))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_PREDICTOR)
+    end if
+    
   contains
 
     !**************************************************************
     ! Checks if idupFlag has all bits ibitfield set.
 
-    pure function check(iflag, ibitfield)
+    pure function check(idupFlag, ibitfield)
       
-      integer(I32), intent(in) :: iflag,ibitfield
+      integer(I32), intent(in) :: idupFlag,ibitfield
       
       logical :: check
       
-      check = (iand(iflag,ibitfield) .eq. ibitfield)
+      check = (iand(idupFlag,ibitfield) .eq. ibitfield)
 
     end function check
 
@@ -1412,7 +1859,8 @@ contains
     p_IsubdiagEdgesIdx(1) = 1
 
     ! Set specifier for extended edge structure
-    rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)
+    rafcstab%istabilisationSpec =&
+        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)
 
   end subroutine afcstab_generateOffdiagEdges
   

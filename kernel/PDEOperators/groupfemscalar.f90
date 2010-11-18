@@ -330,7 +330,7 @@ contains
           AFCSTAB_UPWIND,&
           AFCSTAB_DMP)
       
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
@@ -342,236 +342,195 @@ contains
           AFCSTAB_FEMFCT_IMPLICIT,&
           AFCSTAB_FEMFCT_ITERATIVE)
       
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
       call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
       
-      ! Handle for DcoefficientsAtEdge
+      ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
       Isize = (/3, rafcstab%NEDGE/)
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_DcoefficientsAtEdge)
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 6 nodal vectors for P`s, Q`s and R`s
-      allocate(rafcstab%RnodalVectors(6))
-      do i = 1, 6
-        call lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ, .false., ST_DOUBLE)
-      end do
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      allocate(rafcstab%p_rvectorPp)
+      allocate(rafcstab%p_rvectorPm)
+      allocate(rafcstab%p_rvectorQp)
+      allocate(rafcstab%p_rvectorQm)
+      allocate(rafcstab%p_rvectorRp)
+      allocate(rafcstab%p_rvectorRm)
 
-      ! Associate vectors
-      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
-      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
-      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
-      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
-      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
-      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ, .false., ST_DOUBLE)
 
-      ! We need 1 nodal vector for the predictor
-      allocate(rafcstab%RnodalBlockVectors(1))
+      ! We need the 3 edgewise vectors for the correction factors and the fluxes
+      allocate(rafcstab%p_rvectorAlpha)
+      allocate(rafcstab%p_rvectorFlux0)
+      allocate(rafcstab%p_rvectorFlux)
 
-      if (present(rblockDiscretisation)) then
-        call lsysbl_createVectorBlock(rblockDiscretisation,&
-            rafcstab%RnodalBlockVectors(1), .false., ST_DOUBLE)
-      else
-        call lsysbl_createVectorBlock(&
-            rafcstab%RnodalBlockVectors(1),&
-            rafcstab%NEQ, 1, .false., ST_DOUBLE)
-      end if
-      
-      ! Associate vector
-      rafcstab%p_rvectorPredictor => rafcstab%RnodalBlockVectors(1)
-      
+      call lsyssc_createVector(rafcstab%p_rvectorAlpha, rafcstab%NEDGE, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorFlux0, rafcstab%NEDGE, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE, .false., ST_DOUBLE)
+
+      ! We need the edgewise vector for the prelimited fluxes
       if (rafcstab%bprelimiting .or.&
           rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        ! We need 4 edgewise vectors for the correction factors and
-        ! for the raw antidiffusive fluxes and the constraints
-        allocate(rafcstab%RedgeVectors(4))
-        rafcstab%p_rvectorPrelimit  => rafcstab%RedgeVectors(4)
-        
-        do i = 1, 4
-          call lsyssc_createVector(rafcstab%RedgeVectors(i),&
-              rafcstab%NEDGE, .false., ST_DOUBLE)
-        end do
-      else
-        ! We need 3 edgewise vectors for the correction factors
-        ! and for the raw antidiffusive fluxes
-        allocate(rafcstab%RedgeVectors(3))
-        do i = 1, 3
-          call lsyssc_createVector(rafcstab%RedgeVectors(i),&
-              rafcstab%NEDGE, .false., ST_DOUBLE)
-        end do
+        allocate(rafcstab%p_rvectorPrelimit)
+        call lsyssc_createVector(rafcstab%p_rvectorPrelimit, rafcstab%NEDGE, .false., ST_DOUBLE)
       end if
 
-      ! Associate vectors
-      rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
-      rafcstab%p_rvectorFlux0 => rafcstab%RedgeVectors(2)
-      rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(3)
+      ! We need the nodal vector for the predictor
+      allocate(rafcstab%p_rvectorPredictor)
+      if (present(rblockDiscretisation)) then
+        call lsysbl_createVectorBlock(rblockDiscretisation,&
+            rafcstab%p_rvectorPredictor, .false., ST_DOUBLE)
+      else
+        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
+            rafcstab%NEQ, 1, .false., ST_DOUBLE)
+      end if
 
       
     case (AFCSTAB_FEMTVD,&
           AFCSTAB_FEMGP)
       
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
       call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
       
-      ! Handle for DcoefficientsAtEdge
+      ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
       Isize = (/3, rafcstab%NEDGE/)
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_DcoefficientsAtEdge)
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 6 nodal vectors for P`s, Q`s and R`s
-      allocate(rafcstab%RnodalVectors(6))
-      do i = 1, 6
-        call lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ, .false., ST_DOUBLE)
-      end do
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      allocate(rafcstab%p_rvectorPp)
+      allocate(rafcstab%p_rvectorPm)
+      allocate(rafcstab%p_rvectorQp)
+      allocate(rafcstab%p_rvectorQm)
+      allocate(rafcstab%p_rvectorRp)
+      allocate(rafcstab%p_rvectorRm)
+
+      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ, .false., ST_DOUBLE)
       
-      ! Associate vectors
-      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
-      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
-      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
-      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
-      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
-      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
-      
-      ! We need 3 edgewise vectors for the correction factors
-      ! and for the raw antidiffusive fluxes
-      allocate(rafcstab%RedgeVectors(3))
-      do i = 1, 3
-        call lsyssc_createVector(rafcstab%RedgeVectors(i),&
-            rafcstab%NEDGE, .false., ST_DOUBLE)
-      end do
-      
-      ! Associate vectors
-      rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
-      rafcstab%p_rvectorFlux0 => rafcstab%RedgeVectors(2)
-      rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(3)
+      ! We need the 3 edgewise vectors for the correction factors and the fluxes
+      allocate(rafcstab%p_rvectorAlpha)
+      allocate(rafcstab%p_rvectorFlux0)
+      allocate(rafcstab%p_rvectorFlux)
+
+      call lsyssc_createVector(rafcstab%p_rvectorAlpha, rafcstab%NEDGE, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorFlux0, rafcstab%NEDGE, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE, .false., ST_DOUBLE)
       
 
     case (AFCSTAB_FEMFCT_LINEARISED,&
           AFCSTAB_FEMFCT_MASS)
       
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
       call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
       
-      ! Handle for DcoefficientsAtEdge
+      ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
       Isize = (/3, rafcstab%NEDGE/)
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_DcoefficientsAtEdge)
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 6 nodal vectors for P`s, Q`s and R`s
-      allocate(rafcstab%RnodalVectors(6))
-      do i = 1, 6
-        call lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ, .false., ST_DOUBLE)
-      end do
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      allocate(rafcstab%p_rvectorPp)
+      allocate(rafcstab%p_rvectorPm)
+      allocate(rafcstab%p_rvectorQp)
+      allocate(rafcstab%p_rvectorQm)
+      allocate(rafcstab%p_rvectorRp)
+      allocate(rafcstab%p_rvectorRm)
 
-      ! Associate vectors
-      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
-      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
-      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
-      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
-      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
-      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
-      
-      ! We need 2-3 edgewise vectors at most
+      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ, .false., ST_DOUBLE)
+
+      ! We need the 2 edgewise vectors for the correction factors and the fluxes
+      allocate(rafcstab%p_rvectorAlpha)
+      allocate(rafcstab%p_rvectorFlux)
+
+      call lsyssc_createVector(rafcstab%p_rvectorAlpha, rafcstab%NEDGE, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE, .false., ST_DOUBLE)
+
+      ! We need the edgewise vector if raw antidiffusive fluxes should be prelimited
       if (rafcstab%bprelimiting) then
-        allocate(rafcstab%RedgeVectors(3))
-      else
-        allocate(rafcstab%RedgeVectors(2))
+        allocate(rafcstab%p_rvectorPrelimit)
+        call lsyssc_createVector(rafcstab%p_rvectorPrelimit, rafcstab%NEDGE, .false., ST_DOUBLE)
       end if
 
-      ! We need 2 edgewise vectors for the edgewise correction
-      ! factors and the raw antidiffusive fluxes
-      do i = 1, 2
-        call lsyssc_createVector(rafcstab%RedgeVectors(i),&
-            rafcstab%NEDGE, .false., ST_DOUBLE)
-      end do
-
-      ! Associate vectors
-      rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
-      rafcstab%p_rvectorFlux => rafcstab%RedgeVectors(2)
-
-      ! If the raw antidiffusive fluxes should be prelimited
-      ! then 1 additional edgewie vector is required
-      if (rafcstab%bprelimiting) then
-        call lsyssc_createVector(rafcstab%RedgeVectors(3),&
-            rafcstab%NEDGE, .false., ST_DOUBLE)
-        rafcstab%p_rvectorPrelimit  => rafcstab%RedgeVectors(3)
-      end if
-
-      ! We need 1 nodal block-vector for the 
-      ! approximation to the time derivative
-      allocate(rafcstab%RnodalBlockVectors(1))
-
+      ! We need the nodal vector for the low-order predictor
+      allocate(rafcstab%p_rvectorPredictor)
       if (present(rblockDiscretisation)) then
         call lsysbl_createVectorBlock(rblockDiscretisation,&
-            rafcstab%RnodalBlockVectors(1), .false., ST_DOUBLE)
+            rafcstab%p_rvectorPredictor, .false., ST_DOUBLE)
       else
-        call lsysbl_createVectorBlock(&
-            rafcstab%RnodalBlockVectors(1),&
+        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
             rafcstab%NEQ, 1, .false., ST_DOUBLE)
       end if
-
-      ! Associate vector
-      rafcstab%p_rvectorPredictor  => rafcstab%RnodalBlockVectors(1)
 
 
     case (AFCSTAB_SYMMETRIC)
 
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
       call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! Handle for DcoefficientsAtEdge
+      ! Handle for DcoefficientsAtEdge: (/d_ij,s_ij/)
       Isize = (/2, rafcstab%NEDGE/)
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_DcoefficientsAtEdge)
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 6 nodal vectors for P`s, Q`s and R`s
-      allocate(rafcstab%RnodalVectors(6))
-      do i = 1, 6
-        call lsyssc_createVector(rafcstab%RnodalVectors(i),&
-            rafcstab%NEQ, .false., ST_DOUBLE)
-      end do
-      
-      ! Associate vectors
-      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
-      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
-      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
-      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
-      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
-      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      allocate(rafcstab%p_rvectorPp)
+      allocate(rafcstab%p_rvectorPm)
+      allocate(rafcstab%p_rvectorQp)
+      allocate(rafcstab%p_rvectorQm)
+      allocate(rafcstab%p_rvectorRp)
+      allocate(rafcstab%p_rvectorRm)
 
-      ! We need 1 edgewise vector for the fluxes
-      allocate(rafcstab%RedgeVectors(1))
-      call lsyssc_createVector(rafcstab%RedgeVectors(1),&
-          rafcstab%NEDGE, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ, .false., ST_DOUBLE)
 
-      ! Associate vector
-      rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(1)
+      ! We need the edgewise vector for the fluxes
+      allocate(rafcstab%p_rvectorFlux)
+      call lsyssc_createVector(rafcstab%p_rvectorFlux, rafcstab%NEDGE, .false., ST_DOUBLE)
+
 
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&

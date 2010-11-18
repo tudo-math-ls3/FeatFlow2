@@ -1271,7 +1271,7 @@ contains
           AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
       
       ! Copy correction factor for hydrodynamic system to transport model
-      call afcstab_duplicateStabilisation(&
+      call afcstab_copyStabilisation(&
           rproblemLevel%Rafcstab(inviscidAFC),&
           rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
       
@@ -1282,7 +1282,7 @@ contains
           AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
       ! Copy final correction factor back to hydrodynamic system
-      call afcstab_duplicateStabilisation(&
+      call afcstab_copyStabilisation(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
       
@@ -1322,7 +1322,7 @@ contains
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
       ! Copy correction factor for transport model to hydrodynamic system
-      call afcstab_duplicateStabilisation(&
+      call afcstab_copyStabilisation(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
       
@@ -1333,7 +1333,7 @@ contains
           Rsolution(1), rcollection)
       
       ! Copy final correction factor back to transport model
-      call afcstab_duplicateStabilisation(&
+      call afcstab_copyStabilisation(&
           rproblemLevel%Rafcstab(inviscidAFC),&
           rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
 
@@ -1374,7 +1374,7 @@ contains
             AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
 
         ! Copy correction factor for hydrodynamic system to transport model
-        call afcstab_duplicateStabilisation(&
+        call afcstab_copyStabilisation(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
 
@@ -1397,7 +1397,7 @@ contains
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
         ! Copy correction factor for hydrodynamic system to transport model
-        call afcstab_duplicateStabilisation(&
+        call afcstab_copyStabilisation(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
         
@@ -1420,7 +1420,7 @@ contains
             AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
 
         ! Copy correction factor for transport model to hydrodynamic system
-        call afcstab_duplicateStabilisation(&
+        call afcstab_copyStabilisation(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
 
@@ -1444,7 +1444,7 @@ contains
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
         
         ! Copy correction factor for transport model to hydrodynamic system
-        call afcstab_duplicateStabilisation(&
+        call afcstab_copyStabilisation(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
         
