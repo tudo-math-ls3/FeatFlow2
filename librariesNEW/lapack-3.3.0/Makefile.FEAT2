@@ -78,7 +78,8 @@ purge:
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
 	-rm -rf BLAS INSTALL LICENSE Makefile README SRC TESTING make.inc.example \
 	 CMakeLists.txt CTestConfig.cmake CheckTimeFunction.cmake \
-	 lapack-config-version.cmake.in lapack-config.cmake.in lapack_build.cmake
+	 lapack-config-version.cmake.in lapack-config.cmake.in lapack_build.cmake \
+	 lapack-config-install.cmake.in
 
 #-------------------------------------------------------------------------------
 # Before creating any object file, first create the object directory.
