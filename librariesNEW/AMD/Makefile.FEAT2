@@ -276,4 +276,4 @@ purge:
 	-$(foreach file, $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
 	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source
-	-rm -rf ../UFconfig/UFconfig.h ../UFconfig/README.txt ../UFconfig/xerbla ../UFconfig/UFconfig.mk
+	-rm -rf ../UFconfig/UFconfig.h ../UFconfig/README.txt ../UFconfig/xerbla ../UFconfig/UFconfig.mk ../UFconfig
