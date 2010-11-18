@@ -282,7 +282,11 @@ module afcstabilisation
     integer :: ctypeAFCstabilisation = AFCSTAB_GALERKIN
 
     ! Format Tag: Specifies the stabilisation
-    integer(I32) :: iSpec = AFCSTAB_UNDEFINED
+    integer(I32) :: istabilisationSpec = AFCSTAB_UNDEFINED
+
+    ! Duplication Flag: Specifies which parts of the stabilisation are
+    ! shared with another stabilisation structure
+    integer(I32) :: iduplicationFlag = 0
 
     ! Number of equations of the sparsity pattern
     integer :: NEQ = 0
@@ -461,7 +465,7 @@ contains
 
     else
       ! Set type of stabilisation
-      rafcstab%iSpec                 = AFCSTAB_UNDEFINED
+      rafcstab%istabilisationSpec    = AFCSTAB_UNDEFINED
       rafcstab%ctypeAFCstabilisation = istabilisation
       
     end if
@@ -508,7 +512,7 @@ contains
     
     ! Reset atomic data
     rafcstab%ctypeAFCstabilisation = AFCSTAB_GALERKIN
-    rafcstab%iSpec                 = AFCSTAB_UNDEFINED
+    rafcstab%istabilisationSpec    = AFCSTAB_UNDEFINED
     rafcstab%NEQ                   = 0
     rafcstab%NVAR                  = 1
     rafcstab%NVARtransformed       = 1
@@ -668,10 +672,10 @@ contains
     end if
 
     ! Set state of stabilisation
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      rafcstab%iSpec = AFCSTAB_UNDEFINED
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
     else
-      rafcstab%iSpec = AFCSTAB_INITIALISED
+      rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
     end if
 
   end subroutine afcstab_resizeStabDirect
@@ -825,7 +829,7 @@ contains
    
     ! Duplicate structural data
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
-        check(rafcstabSrc%iSpec, AFCSTAB_INITIALISED)) then
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
       rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
       rafcstabDest%NEQ                   = rafcstabSrc%NEQ
       rafcstabDest%NVAR                  = rafcstabSrc%NVAR
@@ -837,88 +841,88 @@ contains
 
     ! Duplicate edge structre
     if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE) .and.&
-        check(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
       call storage_copy(rafcstabSrc%h_IverticesAtEdge,&
           rafcstabDest%h_IverticesAtEdge)
-      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
-          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGESTRUCTURE))
-      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
-          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGEORIENTATION))
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE))
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION))
     end if
 
     ! Duplicate edge values
     if (check(idupFlag, AFCSTAB_DUP_EDGEVALUES) .and.&
-        check(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGEVALUES)) then
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)) then
       call storage_copy(rafcstabSrc%h_DcoefficientsAtEdge,&
           rafcstabDest%h_DcoefficientsAtEdge)
-      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
-          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGEVALUES))
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES))
     end if
 
     ! Duplicate off-diagonal edges
     if (check(idupFlag, AFCSTAB_DUP_OFFDIAGONALEDGES) .and.&
-        check(rafcstabSrc%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)) then
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)) then
       call storage_copy(rafcstabSrc%h_IsuperdiagEdgesIdx,&
           rafcstabDest%h_IsuperdiagEdgesIdx)
       call storage_copy(rafcstabSrc%h_IsubdiagEdgesIdx,&
           rafcstabDest%h_IsubdiagEdgesIdx)
       call storage_copy(rafcstabSrc%h_IsubdiagEdges,&
           rafcstabDest%h_IsubdiagEdges)
-      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
-          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES))
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES))
     end if
 
     ! Duplicate antidiffusive fluxes
     if (check(idupFlag, AFCSTAB_DUP_ADFLUXES) .and.&
-        check(rafcstabSrc%iSpec, AFCSTAB_HAS_ADFLUXES)) then
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)) then
       if (associated(rafcstabSrc%p_rvectorFlux0)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorFlux0, rafcstabDest%p_rvectorFlux0)
       if (associated(rafcstabSrc%p_rvectorFlux)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorFlux, rafcstabDest%p_rvectorFlux)
-      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
-          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_ADFLUXES))
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADFLUXES))
     end if
 
     ! Duplicate antidiffusive increments
     if (check(idupFlag, AFCSTAB_DUP_ADINCREMENTS) .and.&
-        check(rafcstabSrc%iSpec, AFCSTAB_HAS_ADINCREMENTS)) then
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)) then
       if (associated(rafcstabSrc%p_rvectorPp)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorPp, rafcstabDest%p_rvectorPp)
       if (associated(rafcstabSrc%p_rvectorPm)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorPm, rafcstabDest%p_rvectorPm)
-      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
-          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_ADINCREMENTS))
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS))
     end if
 
     ! Duplicate upper/lower bounds
     if (check(idupFlag, AFCSTAB_DUP_BOUNDS) .and.&
-        check(rafcstabSrc%iSpec, AFCSTAB_HAS_BOUNDS)) then
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS)) then
       if (associated(rafcstabSrc%p_rvectorQp)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorQp, rafcstabDest%p_rvectorQp)
       if (associated(rafcstabSrc%p_rvectorQm)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorQm, rafcstabDest%p_rvectorQm)
-      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
-          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_BOUNDS))
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS))
     end if
 
     ! Duplicate nodal limiting coefficients
     if (check(idupFlag, AFCSTAB_DUP_NODELIMITER) .and.&
-        check(rafcstabSrc%iSpec, AFCSTAB_HAS_NODELIMITER)) then
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)) then
       if (associated(rafcstabSrc%p_rvectorRp)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorRp, rafcstabDest%p_rvectorRp)
       if (associated(rafcstabSrc%p_rvectorRm)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorRm, rafcstabDest%p_rvectorRm)
-      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
-          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_NODELIMITER))
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODELIMITER))
     end if
 
     ! Duplicate edge-wise limiting coefficients
     if (check(idupFlag, AFCSTAB_DUP_EDGELIMITER) .and.&
-        check(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGELIMITER)) then
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)) then
       if (associated(rafcstabSrc%p_rvectorAlpha)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorAlpha, rafcstabDest%p_rvectorAlpha)
-      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
-          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGELIMITER))
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER))
     end if
 
   contains
@@ -1110,7 +1114,7 @@ contains
 
 
     ! Check if stabilisation has been initialised
-    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
       call sys_halt()
@@ -1167,7 +1171,8 @@ contains
     end select
 
     ! Set state of stabiliation
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)
+    rafcstab%istabilisationSpec =&
+        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)
          
   contains
 
@@ -1289,7 +1294,7 @@ contains
     integer :: isize
 
     ! Check if edge-based data structure is prepared
-    if (iand(rafcstab%iSpec,AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
       call output_line('Discrete operator does not provide required ' // &
           'edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
           'afcstab_generateOffdiagEdge')
@@ -1407,7 +1412,7 @@ contains
     p_IsubdiagEdgesIdx(1) = 1
 
     ! Set specifier for extended edge structure
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)
+    rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)
 
   end subroutine afcstab_generateOffdiagEdges
   
