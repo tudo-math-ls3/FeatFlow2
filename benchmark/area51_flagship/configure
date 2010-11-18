@@ -102,10 +102,6 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 
 
 ######################################################
-# Some non-generic, i.e. application-specific options:
-date="`date +%y`"/"`date +%m`"
-build="`date +%Y%m%d`"
-
 # Include configuration file
 . ../../area51/flagship/flagship.conf
 

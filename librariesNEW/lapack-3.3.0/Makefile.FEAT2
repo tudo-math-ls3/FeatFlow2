@@ -76,7 +76,9 @@ purge:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(OBJ) $(LAPACKLIB), $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
-	-rm -rf BLAS INSTALL LICENSE Makefile README SRC TESTING make.inc.example
+	-rm -rf BLAS INSTALL LICENSE Makefile README SRC TESTING make.inc.example \
+	 CMakeLists.txt CTestConfig.cmake CheckTimeFunction.cmake \
+	 lapack-config-version.cmake.in lapack-config.cmake.in lapack_build.cmake
 
 #-------------------------------------------------------------------------------
 # Before creating any object file, first create the object directory.
@@ -117,10 +119,10 @@ $(OBJDIR):
 # This Makefile is potentially called simultaneously from multiple make processes,
 # e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent
 # attempts to create the archive should not happen. Try to avoid it with the
-# standard FEAT2 lock file mechanism.
+# usual FEAST lock file mechanism.
 include ../create_library.mk
 $(LAPACKLIB):  LOCKFILE = ../LOCK.creating.liblapack.a
-$(LAPACKLIB):  WAITTIME = 10
+$(LAPACKLIB):  WAITTIME = 15
 $(LAPACKLIB):  RETRIES  = 24
 $(LAPACKLIB): $(OBJ)
 	@$(CREATE_LIB)
@@ -177,20 +179,22 @@ SRC_LAPACK = $(SRCLIST)
 # existence indicates that the LAPACK tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_LAPACK_TARBALL = TESTING/ztest_rfp.in
+LAST_FILE_FROM_LAPACK_TARBALL = BLAS/SRC/ztrsv.f
 $(SRC_LAPACK): $(LAST_FILE_FROM_LAPACK_TARBALL)
 
 # To catch the case where several applications simultaneously
 # try to build the LAPACK library (e.g. parallel make of the
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
+# Note: When updating LAPACK, please do not forget to update the
+#       diff ignore option in benchmark/bin/runregressiontest !
 $(LAST_FILE_FROM_LAPACK_TARBALL):  NAME       = "LAPACK 3.3.0 reference implementation sources"
 $(LAST_FILE_FROM_LAPACK_TARBALL):  TARBALL    = $(LAPACK_TARBALL)
 $(LAST_FILE_FROM_LAPACK_TARBALL):  LOCKFILE   = ../LOCK.unpack.lapack-3.3.0.tar.gz
 # Wait 15 minutes at most
 $(LAST_FILE_FROM_LAPACK_TARBALL):  WAITTIME   = 30
 $(LAST_FILE_FROM_LAPACK_TARBALL):  RETRIES    = 30
-$(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHCMD   = cat ../lapack-3.3.0_pgi-6.x-10.x.patch | patch -p1
+$(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHCMD   = cat ../lapack-3.3.0_pgi-6.x-10.x.patch | patch -p0 -u
 $(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHTEXT1 = "\# Patching LAPACK 3.3.0 sources to get rid of non-Fortran 77 'exit' occurrences..."
 $(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHTEXT2 = "\# This prevents compile problems with PGI 6.x-10.x."
 $(LAST_FILE_FROM_LAPACK_TARBALL): | $(LAPACK_TARBALL)

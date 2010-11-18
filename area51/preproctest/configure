@@ -38,7 +38,6 @@ APPONLYFLAGS="-DUSE_PREPROC_F90CPP"
         --appname=preproctest \
         --programfile=src/preproctest.f90 \
         --header-files-to-copy=src/preproctest.h \
-        --srclist_app="`ls src/*.f90`" \
         --apponlyflags="$APPONLYFLAGS"\
 	--buildlib=""\
 	--libs=""\

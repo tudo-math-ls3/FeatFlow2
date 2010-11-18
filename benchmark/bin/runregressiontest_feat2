@@ -879,7 +879,7 @@ fb_checkWhetherToRun() {
 	    for string in \
 		'benchmark_*' .svn AMD BLAS UFconfig UMFPACK \
 		codefragments docs_* documentation \
-		incoming lapack-3.2.1 splib
+		incoming lapack-3.3.0 splib
 	    do
 		ignore="${ignore} -x ${string}"
 	    done

@@ -34,13 +34,13 @@ UMFCH = umf_assemble umf_blas3_update umf_build_tuples umf_create_element \
 	umf_report_vector umf_row_search umf_scale_column \
 	umf_set_stats umf_solve umf_symbolic_usage umf_transpose \
 	umf_tuple_lengths umf_usolve umf_utsolve umf_valid_numeric \
-	umf_valid_symbolic umf_grow_front umf_start_front umf_2by2 \
+	umf_valid_symbolic umf_grow_front umf_start_front \
 	umf_store_lu umf_scale
 
 # non-user-callable umf_*.[ch] files, int/UF_long versions only (no real/complex):
 UMFINT = umf_analyze umf_apply_order umf_colamd umf_free umf_fsize \
 	umf_is_permutation umf_malloc umf_realloc umf_report_perm \
-	umf_singletons
+	umf_singletons umf_cholmod
 
 # non-user-callable, created from umf_ltsolve.c, umf_utsolve.c,
 # umf_triplet.c, and umf_assemble.c , with int/UF_long and real/complex versions:
@@ -119,10 +119,10 @@ GN = $(addsuffix .o, $(subst umfpack_,$(OBJDIR)/umfpack_gn_,$(GENERIC)))
 #FEAST Substitution Rule# All object files got a '$(OBJDIR)/' prefix
 #FEAST Substitution Rule# All source files got the '../' stripped
 $(OBJDIR)/umf_i_%.o: Source/umf_%.c $(INC)
-	$(C) -DDINT -c $< -o $@
+	$(C) -DNCHOLMOD -DDINT -c $< -o $@
 
 $(OBJDIR)/umf_l_%.o: Source/umf_%.c $(INC)
-	$(C) -DDLONG -c $< -o $@
+	$(C) -DNCHOLMOD -DDLONG -c $< -o $@
 
 #-------------------------------------------------------------------------------
 # compile each routine in the DI version
@@ -331,10 +331,10 @@ endif
 # This Makefile is potentially called simultaneously from multiple make processes,
 # e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent
 # attempts to create the archive should not happen. Try to avoid it with the
-# standard FEAT2 lock file mechanism.
+# usual FEAT2 lock file mechanism.
 include ../create_library.mk
 $(OBJDIR)/libumfpack.a:  LOCKFILE = ../LOCK.creating.libumfpack.a
-$(OBJDIR)/libumfpack.a:  WAITTIME = 10
+$(OBJDIR)/libumfpack.a:  WAITTIME = 15
 $(OBJDIR)/libumfpack.a:  RETRIES  = 24
 $(OBJDIR)/libumfpack.a: $(II) $(LL) $(GN) $(DI) $(DL) $(ZI) $(ZL) $(OBJDIR)/umf4_f77wrapper_feast.o
 	@$(CREATE_LIB)
@@ -404,7 +404,7 @@ include ../unpack.mk
 # Automatically extract AMD tarball when required.
 #-------------------------------------------------------------------------------
 
-AMD_TARBALL = ../AMD-2.2.tar.gz
+AMD_TARBALL = ../AMD-2.2.1.tar.gz
 
 # List of required source files from AMD package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -415,26 +415,26 @@ SRC_AMD = ../AMD/Include/amd_internal.h ../AMD/Include/amd.h
 # existence indicates that the AMD tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_AMD_TARBALL = ../AMD/README.txt
+LAST_FILE_FROM_AMD_TARBALL = ../AMD/Doc/lesser.txt
 $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
 
 # To catch the case where several applications simultaneously
 # try to build the UMFPACK library (e.g. parallel make of the
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
-$(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2.0 sources"
+$(LAST_FILE_FROM_AMD_TARBALL):  NAME      = "AMD 2.2.1 sources"
 $(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.0.tar.gz
-$(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 10
+$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE  = ../LOCK.unpack.amd-2.2.1.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME  = 15
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD = echo
 $(LAST_FILE_FROM_AMD_TARBALL): | $(AMD_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.2.0.tar.gz
+$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.2.1.tar.gz
 $(AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.2.0.tar.gz
+$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.2.1.tar.gz
 $(AMD_TARBALL):  WAITTIME = 15
 $(AMD_TARBALL):  RETRIES  = 24
 $(AMD_TARBALL):
@@ -445,26 +445,26 @@ $(AMD_TARBALL):
 # Automatically extract UFconfig tarball when required.
 #-------------------------------------------------------------------------------
 
-UFCONFIG_TARBALL = ../UFconfig-3.4.0.tar.gz
+UFCONFIG_TARBALL = ../UFconfig-3.5.0.tar.gz
 
 # List of required source files from UFconfig package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
 SRC_UFCONFIG = $(UFCONFIG)
 
-$(UFCONFIG):  NAME     = "UFconfig 3.4.0 sources"
+$(UFCONFIG):  NAME      = "UFconfig 3.5.0 sources"
 $(UFCONFIG):  TARBALL  = $(UFCONFIG_TARBALL)
-$(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.4.0.tar.gz
-$(UFCONFIG):  WAITTIME = 10
+$(UFCONFIG):  LOCKFILE  = ../LOCK.unpack.ufconfig-3.5.0.tar.gz
+$(UFCONFIG):  WAITTIME  = 15
 $(UFCONFIG):  RETRIES  = 24
 $(UFCONFIG):  PATCHCMD = echo
 $(UFCONFIG): | $(UFCONFIG_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(UFCONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/UFconfig/UFconfig-3.4.0.tar.gz
+$(UFCONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/UFconfig/UFconfig-3.5.0.tar.gz
 $(UFCONFIG_TARBALL):  TARBALL  = $(UFCONFIG_TARBALL)
-$(UFCONFIG_TARBALL):  LOCKFILE = ../LOCK.download.ufconfig-3.4.0.tar.gz
+$(UFCONFIG_TARBALL):  LOCKFILE = ../LOCK.download.ufconfig-3.5.0.tar.gz
 $(UFCONFIG_TARBALL):  WAITTIME = 15
 $(UFCONFIG_TARBALL):  RETRIES  = 24
 $(UFCONFIG_TARBALL):
@@ -475,7 +475,7 @@ $(UFCONFIG_TARBALL):
 # Automatically extract UMFPACK tarball when required.
 #-------------------------------------------------------------------------------
 
-UMFPACK_TARBALL = ../UMFPACK-5.4.tar.gz
+UMFPACK_TARBALL = ../UMFPACK-5.5.0.tar.gz
 
 # List of required source files from UMFPACK package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -499,15 +499,15 @@ SRC_UMFPACK = Include/umfpack.h \
 LAST_FILE_FROM_UMFPACK_TARBALL = ../UMFPACK/Makefile
 $(SRC_UMFPACK): $(LAST_FILE_FROM_UMFPACK_TARBALL)
 
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.4 sources"
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.5.0 sources"
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.4.tar.gz
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  WAITTIME = 10
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.5.0.tar.gz
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  WAITTIME = 15
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
 ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*),yes)
 # Fortunately, sed on NEC's gateway is a sed that supports in place editing.
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = sed -i.orig -e "s/\#pragma ivdep/\#pragma cdir nodep/; s/\#pragma novector/\#pragma cdir novector/;" Source/*.c
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.4 sources for NEC..."
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.5 sources for NEC..."
 else
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = echo
 endif
@@ -515,9 +515,9 @@ $(LAST_FILE_FROM_UMFPACK_TARBALL): | $(UMFPACK_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(UMFPACK_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.4.0.tar.gz
+$(UMFPACK_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.5.0.tar.gz
 $(UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
-$(UMFPACK_TARBALL):  LOCKFILE = ../LOCK.download.umfpack-5.4.0.tar.gz
+$(UMFPACK_TARBALL):  LOCKFILE = ../LOCK.download.umfpack-5.5.0.tar.gz
 $(UMFPACK_TARBALL):  WAITTIME = 15
 $(UMFPACK_TARBALL):  RETRIES  = 24
 $(UMFPACK_TARBALL):
