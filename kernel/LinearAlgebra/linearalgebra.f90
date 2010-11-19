@@ -95,37 +95,26 @@ module linearalgebra
   
   public :: lalg_copyVectorInt2D
 
-  interface lalg_copyVectorReal
-    module procedure lalg_copyVectorSngl
-    module procedure lalg_copyVectorDble
-    module procedure lalg_copyVectorSnglDbl
-    module procedure lalg_copyVectorDblSngl
-#ifdef ENABLE_QUADPREC
-    module procedure lalg_copyVectorQuad
-    module procedure lalg_copyVectorSnglQuad
-    module procedure lalg_copyVectorDblQuad
-    module procedure lalg_copyVectorQuadSngl
-    module procedure lalg_copyVectorQuadDbl
-#endif
-  end interface
+    interface lalg_copyVectorInt3D
+    module procedure lalg_copyVectorI8_3D
+    module procedure lalg_copyVectorI8I16_3D
+    module procedure lalg_copyVectorI8I32_3D
+    module procedure lalg_copyVectorI8I64_3D
+    module procedure lalg_copyVectorI16_3D
+    module procedure lalg_copyVectorI16I8_3D
+    module procedure lalg_copyVectorI16I32_3D
+    module procedure lalg_copyVectorI16I64_3D
+    module procedure lalg_copyVectorI32_3D
+    module procedure lalg_copyVectorI32I8_3D
+    module procedure lalg_copyVectorI32I16_3D
+    module procedure lalg_copyVectorI32I64_3D
+    module procedure lalg_copyVectorI64_3D
+    module procedure lalg_copyVectorI64I8_3D
+    module procedure lalg_copyVectorI64I16_3D
+    module procedure lalg_copyVectorI64I32_3D
+  end interface  
   
-  public :: lalg_copyVectorReal
-
-  interface lalg_copyVectorReal2D
-    module procedure lalg_copyVectorSngl2D
-    module procedure lalg_copyVectorDble2D
-    module procedure lalg_copyVectorSnglDbl2D
-    module procedure lalg_copyVectorDblSngl2D
-#ifdef ENABLE_QUADPREC
-    module procedure lalg_copyVectorQuad2D
-    module procedure lalg_copyVectorSnglQuad2D
-    module procedure lalg_copyVectorDblQuad2D
-    module procedure lalg_copyVectorQuadSngl2D
-    module procedure lalg_copyVectorQuadDbl2D
-#endif
-  end interface
-  
-  public :: lalg_copyVectorReal2D
+  public :: lalg_copyVectorInt3D
 
   interface lalg_copyVector
     module procedure lalg_copyVectorSngl
@@ -172,6 +161,28 @@ module linearalgebra
     module procedure lalg_copyVectorI64I32_2D
     module procedure lalg_copyVectorLogical2D
     module procedure lalg_copyVectorChar2D
+    module procedure lalg_copyVectorSngl3D
+    module procedure lalg_copyVectorDble3D
+    module procedure lalg_copyVectorSnglDbl3D
+    module procedure lalg_copyVectorDblSngl3D
+    module procedure lalg_copyVectorI8_3D
+    module procedure lalg_copyVectorI8I16_3D
+    module procedure lalg_copyVectorI8I32_3D
+    module procedure lalg_copyVectorI8I64_3D
+    module procedure lalg_copyVectorI16_3D
+    module procedure lalg_copyVectorI16I8_3D
+    module procedure lalg_copyVectorI16I32_3D
+    module procedure lalg_copyVectorI16I64_3D
+    module procedure lalg_copyVectorI32_3D
+    module procedure lalg_copyVectorI32I8_3D
+    module procedure lalg_copyVectorI32I16_3D
+    module procedure lalg_copyVectorI32I64_3D
+    module procedure lalg_copyVectorI64_3D
+    module procedure lalg_copyVectorI64I8_3D
+    module procedure lalg_copyVectorI64I16_3D
+    module procedure lalg_copyVectorI64I32_3D
+    module procedure lalg_copyVectorLogical3D
+    module procedure lalg_copyVectorChar3D
 #ifdef ENABLE_QUADPREC
     module procedure lalg_copyVectorQuad
     module procedure lalg_copyVectorSnglQuad
@@ -183,10 +194,16 @@ module linearalgebra
     module procedure lalg_copyVectorDblQuad2D
     module procedure lalg_copyVectorQuadSngl2D
     module procedure lalg_copyVectorQuadDbl2D
+    module procedure lalg_copyVectorQuad3D
+    module procedure lalg_copyVectorSnglQuad3D
+    module procedure lalg_copyVectorDblQuad3D
+    module procedure lalg_copyVectorQuadSngl3D
+    module procedure lalg_copyVectorQuadDbl3D
 #endif
   end interface
   
   public :: lalg_copyVector
+
   public :: lalg_copyVectorSngl
   public :: lalg_copyVectorDble
   public :: lalg_copyVectorQuad
@@ -196,24 +213,9 @@ module linearalgebra
   public :: lalg_copyVectorDblQuad
   public :: lalg_copyVectorQuadSngl
   public :: lalg_copyVectorQuadDbl
-  public :: lalg_copyVectorI8
-  public :: lalg_copyVectorI8I16
-  public :: lalg_copyVectorI8I32
-  public :: lalg_copyVectorI8I64
-  public :: lalg_copyVectorI16
-  public :: lalg_copyVectorI16I8
-  public :: lalg_copyVectorI16I32
-  public :: lalg_copyVectorI16I64
-  public :: lalg_copyVectorI32
-  public :: lalg_copyVectorI32I8
-  public :: lalg_copyVectorI32I16
-  public :: lalg_copyVectorI32I64
-  public :: lalg_copyVectorI64
-  public :: lalg_copyVectorI64I8
-  public :: lalg_copyVectorI64I16
-  public :: lalg_copyVectorI64I32
   public :: lalg_copyVectorLogical
   public :: lalg_copyVectorChar
+
   public :: lalg_copyVectorSngl2D
   public :: lalg_copyVectorDble2D
   public :: lalg_copyVectorQuad2D
@@ -223,33 +225,32 @@ module linearalgebra
   public :: lalg_copyVectorDblQuad2D
   public :: lalg_copyVectorQuadSngl2D
   public :: lalg_copyVectorQuadDbl2D
-  public :: lalg_copyVectorI8_2D
-  public :: lalg_copyVectorI8I16_2D
-  public :: lalg_copyVectorI8I32_2D
-  public :: lalg_copyVectorI8I64_2D
-  public :: lalg_copyVectorI16_2D
-  public :: lalg_copyVectorI16I8_2D
-  public :: lalg_copyVectorI16I32_2D
-  public :: lalg_copyVectorI16I64_2D
-  public :: lalg_copyVectorI32_2D
-  public :: lalg_copyVectorI32I8_2D
-  public :: lalg_copyVectorI32I16_2D
-  public :: lalg_copyVectorI32I64_2D
-  public :: lalg_copyVectorI64_2D
-  public :: lalg_copyVectorI64I8_2D
-  public :: lalg_copyVectorI64I16_2D
-  public :: lalg_copyVectorI64I32_2D
   public :: lalg_copyVectorLogical2D
   public :: lalg_copyVectorChar2D
+
+  public :: lalg_copyVectorSngl3D
+  public :: lalg_copyVectorDble3D
+  public :: lalg_copyVectorQuad3D
+  public :: lalg_copyVectorSnglDbl3D
+  public :: lalg_copyVectorSnglQuad3D
+  public :: lalg_copyVectorDblSngl3D
+  public :: lalg_copyVectorDblQuad3D
+  public :: lalg_copyVectorQuadSngl3D
+  public :: lalg_copyVectorQuadDbl3D
+  public :: lalg_copyVectorLogical3D
+  public :: lalg_copyVectorChar3D
 
   interface lalg_scaleVector
     module procedure lalg_scaleVectorSngl
     module procedure lalg_scaleVectorDble
     module procedure lalg_scaleVectorSngl2D
     module procedure lalg_scaleVectorDble2D
+    module procedure lalg_scaleVectorSngl3D
+    module procedure lalg_scaleVectorDble3D
 #ifdef ENABLE_QUADPREC
     module procedure lalg_scaleVectorQuad
     module procedure lalg_scaleVectorQuad2D
+    module procedure lalg_scaleVectorQuad3D
 #endif
   end interface
   
@@ -260,6 +261,9 @@ module linearalgebra
   public :: lalg_scaleVectorSngl2D
   public :: lalg_scaleVectorDble2D
   public :: lalg_scaleVectorQuad2D
+  public :: lalg_scaleVectorSngl3D
+  public :: lalg_scaleVectorDble3D
+  public :: lalg_scaleVectorQuad3D
 
   interface lalg_clearVectorInt
     module procedure lalg_clearVectorI8
@@ -279,6 +283,15 @@ module linearalgebra
   
   public :: lalg_clearVectorInt2D
 
+  interface lalg_clearVectorInt3D
+    module procedure lalg_clearVectorI8_3D
+    module procedure lalg_clearVectorI16_3D
+    module procedure lalg_clearVectorI32_3D
+    module procedure lalg_clearVectorI64_3D
+  end interface
+  
+  public :: lalg_clearVectorInt3D
+
   interface lalg_clearVector
     module procedure lalg_clearVectorSngl
     module procedure lalg_clearVectorDble
@@ -292,9 +305,16 @@ module linearalgebra
     module procedure lalg_clearVectorI16_2D
     module procedure lalg_clearVectorI32_2D
     module procedure lalg_clearVectorI64_2D
+    module procedure lalg_clearVectorSngl3D
+    module procedure lalg_clearVectorDble3D
+    module procedure lalg_clearVectorI8_3D
+    module procedure lalg_clearVectorI16_3D
+    module procedure lalg_clearVectorI32_3D
+    module procedure lalg_clearVectorI64_3D
 #ifdef ENABLE_QUADPREC
     module procedure lalg_clearVectorQuad
     module procedure lalg_clearVectorQuad2D
+    module procedure lalg_clearVectorQuad3D
 #endif
   end interface
   
@@ -305,6 +325,9 @@ module linearalgebra
   public :: lalg_clearVectorSngl2D
   public :: lalg_clearVectorDble2D
   public :: lalg_clearVectorQuad2D
+  public :: lalg_clearVectorSngl3D
+  public :: lalg_clearVectorDble3D
+  public :: lalg_clearVectorQuad3D
 
   interface lalg_setVectorInt
     module procedure lalg_setVectorI8
@@ -324,6 +347,15 @@ module linearalgebra
   
   public :: lalg_setVectorInt2D
 
+   interface lalg_setVectorInt3D
+    module procedure lalg_setVectorI8_3D
+    module procedure lalg_setVectorI16_3D
+    module procedure lalg_setVectorI32_3D
+    module procedure lalg_setVectorI64_3D
+  end interface
+  
+  public :: lalg_setVectorInt3D
+
   interface lalg_setVector
     module procedure lalg_setVectorSngl
     module procedure lalg_setVectorDble
@@ -341,9 +373,18 @@ module linearalgebra
     module procedure lalg_setVectorI64_2D
     module procedure lalg_setVectorLogical2D
     module procedure lalg_setVectorChar2D
+    module procedure lalg_setVectorSngl3D
+    module procedure lalg_setVectorDble3D
+    module procedure lalg_setVectorI8_3D
+    module procedure lalg_setVectorI16_3D
+    module procedure lalg_setVectorI32_3D
+    module procedure lalg_setVectorI64_3D
+    module procedure lalg_setVectorLogical3D
+    module procedure lalg_setVectorChar3D
 #ifdef ENABLE_QUADPREC
     module procedure lalg_setVectorQuad
     module procedure lalg_setVectorQuad2D
+    module procedure lalg_setVectorQuad3D
 #endif
   end interface
   
@@ -351,14 +392,19 @@ module linearalgebra
 
   public :: lalg_setVectorQuad
   public :: lalg_setVectorQuad2D
+  public :: lalg_setVectorQuad3D
   public :: lalg_setVectorSngl
-  public :: lalg_setVectorDble
-  public :: lalg_setVectorLogical
-  public :: lalg_setVectorChar
   public :: lalg_setVectorSngl2D
+  public :: lalg_setVectorSngl3D
+  public :: lalg_setVectorDble
   public :: lalg_setVectorDble2D
+  public :: lalg_setVectorDble3D
+  public :: lalg_setVectorLogical
   public :: lalg_setVectorLogical2D
+  public :: lalg_setVectorLogical3D
+  public :: lalg_setVectorChar
   public :: lalg_setVectorChar2D
+  public :: lalg_setVectorChar3D
 
   interface lalg_vectorLinearComb
     module procedure lalg_vectorLinearCombSngl
@@ -697,7 +743,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i=1,size(Fx)
+      do i = 1, size(Fx)
         Dy(i) = real(Fx(i),DP)
       end do
       !$omp end parallel do
@@ -705,7 +751,7 @@ contains
     else
 
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Dy(i) = real(Fx(i),DP)
       end do
       !$omp end parallel do
@@ -747,7 +793,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i=1,size(Fx)
+      do i = 1, size(Fx)
         Qy(i) = real(Fx(i),QP)
       end do
       !$omp end parallel do
@@ -755,7 +801,7 @@ contains
     else
 
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Qy(i) = real(Fx(i),QP)
       end do
       !$omp end parallel do
@@ -797,7 +843,7 @@ contains
     if (.not. present(n)) then
 
       !$omp parallel do
-      do i=1,size(Dx)
+      do i = 1, size(Dx)
         Fy(i) = real(Dx(i),SP)
       end do
       !$omp end parallel do
@@ -805,7 +851,7 @@ contains
     else
     
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Fy(i) = real(Dx(i),SP)
       end do
       !$omp end parallel do
@@ -847,7 +893,7 @@ contains
     if (.not. present(n)) then
 
       !$omp parallel do
-      do i=1,size(Dx)
+      do i = 1, size(Dx)
         Qy(i) = real(Dx(i),QP)
       end do
       !$omp end parallel do
@@ -855,7 +901,7 @@ contains
     else
     
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Qy(i) = real(Dx(i),QP)
       end do
       !$omp end parallel do
@@ -897,7 +943,7 @@ contains
     if (.not. present(n)) then
 
       !$omp parallel do
-      do i=1,size(Qx)
+      do i = 1, size(Qx)
         Fy(i) = real(Qx(i),SP)
       end do
       !$omp end parallel do
@@ -905,7 +951,7 @@ contains
     else
     
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Fy(i) = real(Qx(i),SP)
       end do
       !$omp end parallel do
@@ -947,7 +993,7 @@ contains
     if (.not. present(n)) then
 
       !$omp parallel do
-      do i=1,size(Qx)
+      do i = 1, size(Qx)
         Dy(i) = real(Qx(i),DP)
       end do
       !$omp end parallel do
@@ -955,7 +1001,7 @@ contains
     else
     
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Dy(i) = real(Qx(i),DP)
       end do
       !$omp end parallel do
@@ -1813,7 +1859,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i=1,size(Lx)
+      do i = 1, size(Lx)
         Ly(i) = Lx(i)
       end do
       !$omp end parallel do
@@ -1821,7 +1867,7 @@ contains
     else
 
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Ly(i) = Lx(i)
       end do
       !$omp end parallel do
@@ -1863,7 +1909,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i=1,size(Sx)
+      do i = 1, size(Sx)
         Sy(i) = Sx(i)
       end do
       !$omp end parallel do
@@ -1871,7 +1917,7 @@ contains
     else
 
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Sy(i) = Sx(i)
       end do
       !$omp end parallel do
@@ -2046,8 +2092,8 @@ contains
     if (present(n) .and. present(m)) then
 
       !$omp parallel do private(i)
-      do j=1,m
-        do i=1,n
+      do j = 1, m
+        do i = 1, n
           Dy(i,j) = real(Fx(i,j),DP)
         end do
       end do
@@ -2056,8 +2102,8 @@ contains
     else
 
       !$omp parallel do private(i)
-      do j=1,size(Fx,2)
-        do i=1,size(Fx,1)
+      do j = 1, size(Fx,2)
+        do i = 1, size(Fx,1)
           Dy(i,j) = real(Fx(i,j),DP)
         end do
       end do
@@ -2100,8 +2146,8 @@ contains
     if (present(n) .and. present(m)) then
 
       !$omp parallel do private(i)
-      do j=1,m
-        do i=1,n
+      do j = 1, m
+        do i = 1, n
           Qy(i,j) = real(Fx(i,j),QP)
         end do
       end do
@@ -2110,8 +2156,8 @@ contains
     else
 
       !$omp parallel do private(i)
-      do j=1,size(Fx,2)
-        do i=1,size(Fx,1)
+      do j = 1, size(Fx,2)
+        do i = 1, size(Fx,1)
           Qy(i,j) = real(Fx(i,j),QP)
         end do
       end do
@@ -2154,8 +2200,8 @@ contains
     if (present(n) .and. present(m)) then
 
       !$omp parallel do private(i)
-      do j=1,m
-        do i=1,n
+      do j = 1, m
+        do i = 1, n
           Fy(i,j) = real(Dx(i,j),SP)
         end do
       end do
@@ -2164,8 +2210,8 @@ contains
     else
 
       !$omp parallel do private(i)
-      do j=1,size(Dx,2)
-        do i=1,size(Dx,1)
+      do j = 1, size(Dx,2)
+        do i = 1, size(Dx,1)
           Fy(i,j) = real(Dx(i,j),SP)
         end do
       end do
@@ -2208,8 +2254,8 @@ contains
     if (present(n) .and. present(m)) then
 
       !$omp parallel do private(i)
-      do j=1,m
-        do i=1,n
+      do j = 1, m
+        do i = 1, n
           Qy(i,j) = real(Dx(i,j),QP)
         end do
       end do
@@ -2218,8 +2264,8 @@ contains
     else
 
       !$omp parallel do private(i)
-      do j=1,size(Dx,2)
-        do i=1,size(Dx,1)
+      do j = 1, size(Dx,2)
+        do i = 1, size(Dx,1)
           Qy(i,j) = real(Dx(i,j),QP)
         end do
       end do
@@ -2262,8 +2308,8 @@ contains
     if (present(n) .and. present(m)) then
 
       !$omp parallel do private(i)
-      do j=1,m
-        do i=1,n
+      do j = 1, m
+        do i = 1, n
           Fy(i,j) = real(Qx(i,j),SP)
         end do
       end do
@@ -2272,8 +2318,8 @@ contains
     else
 
       !$omp parallel do private(i)
-      do j=1,size(Qx,2)
-        do i=1,size(Qx,1)
+      do j = 1, size(Qx,2)
+        do i = 1, size(Qx,1)
           Fy(i,j) = real(Qx(i,j),SP)
         end do
       end do
@@ -2316,8 +2362,8 @@ contains
     if (present(n) .and. present(m)) then
 
       !$omp parallel do private(i)
-      do j=1,m
-        do i=1,n
+      do j = 1, m
+        do i = 1, n
           Dy(i,j) = real(Qx(i,j),DP)
         end do
       end do
@@ -2326,8 +2372,8 @@ contains
     else
 
       !$omp parallel do private(i)
-      do j=1,size(Qx,2)
-        do i=1,size(Qx,1)
+      do j = 1, size(Qx,2)
+        do i = 1, size(Qx,1)
           Dy(i,j) = real(Qx(i,j),DP)
         end do
       end do
@@ -3251,8 +3297,8 @@ contains
     if (present(n) .and. present(m)) then
 
       !$omp parallel do private(i)
-      do j=1,m
-        do i=1,n
+      do j = 1, m
+        do i = 1, n
           Ly(i,j) = Lx(i,j)
         end do
       end do
@@ -3261,8 +3307,8 @@ contains
     else
       
       !$omp parallel do private(i)
-      do j=1,size(Lx,2)
-        do i=1,size(Lx,1)
+      do j = 1, size(Lx,2)
+        do i = 1, size(Lx,1)
           Ly(i,j) = Lx(i,j)
         end do
       end do
@@ -3306,8 +3352,8 @@ contains
     if (present(n) .and. present(m)) then
 
       !$omp parallel do private(i)
-      do j=1,m
-        do i=1,n
+      do j = 1, m
+        do i = 1, n
           Sy(i,j) = Sx(i,j)
         end do
       end do
@@ -3316,9 +3362,1556 @@ contains
     else
 
       !$omp parallel do private(i)
-      do j=1,size(Sx,2)
-        do i=1,size(Sx,1)
+      do j = 1, size(Sx,2)
+        do i = 1, size(Sx,1)
           Sy(i,j) = Sx(i,j)
+        end do
+      end do
+      !$omp end parallel do
+
+    end if
+  
+  end subroutine
+
+   ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorSngl3D (Fx,Fy,n,m,o)
+  
+!<description>
+  ! Copies a single precision vector: Fy = Fx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  real(SP), dimension(:,:,:), intent(in) :: Fx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  real(SP), dimension(:,:,:), intent(out) :: Fy
+  
+!</output>
+  
+!</subroutine>
+
+    if (present(n) .and. present(m) .and. present(o)) then
+      call SCOPY(n*m*o,Fx,1,Fy,1)
+    else
+      call SCOPY(size(Fx,1)*size(Fx,2)*size(Fx,3),Fx,1,Fy,1)
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorDble3D (Dx,Dy,n,m,o)
+  
+!<description>
+  ! Copies a double precision vector: Dy = Dx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  real(DP), dimension(:,:,:), intent(in) :: Dx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+  
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  real(DP), dimension(:,:,:), intent(out) :: Dy
+  
+!</output>
+  
+!</subroutine>
+
+    if (present(n) .and. present(m) .and. present(o)) then
+      call DCOPY(n*m*o,Dx,1,Dy,1)
+    else
+      call DCOPY(size(Dx,1)*size(Dx,2)*size(Dx,3),Dx,1,Dy,1)
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorQuad3D (Qx,Qy,n,m,o)
+  
+!<description>
+  ! Copies a quad precision vector: Qy = Qx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  real(QP), dimension(:,:,:), intent(in) :: Qx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+  
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  real(QP), dimension(:,:,:), intent(out) :: Qy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+
+    if (present(n) .and. present(m) .and. present(o)) then
+    
+      !$omp parallel do private(i,j
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Qy(i,j,k) = Qx(i,j,k)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+      
+      !call QCOPY(n*m*o,Qx,1,Qy,1)
+      
+    else
+
+      !$omp parallel do private(i,j)
+      do k = 1, size(Qx,3)
+        do j = 1, size(Qx,2)
+          do i = 1, size(Qx,1)
+            Qy(i,j,k) = Qx(i,j,k)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+
+      !call QCOPY(size(Qx,1)*size(Qx,2)*size(Qx,3),Qx,1,Qy,1)
+      
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorSnglDbl3D (Fx,Dy,n,m,o)
+  
+!<description>
+  ! Copies single precision vector to double precision vector: Dy = Fx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  real(SP), dimension(:,:,:), intent(in) :: Fx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  real(DP), dimension(:,:,:), intent(out) :: Dy
+  
+!</output>
+  
+!</subroutine>
+  integer :: i,j,k
+  
+    if (present(n) .and. present(m) .and. present(o)) then
+
+      !$omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Dy(i,j,k) = real(Fx(i,j,k),DP)
+          end do
+        end do
+      end do
+     !$omp end parallel do
+
+    else
+
+      !$omp parallel do private(i)
+      do k = 1, size(Fx,3)
+        do j = 1, size(Fx,2)
+          do i = 1, size(Fx,1)
+            Dy(i,j,k) = real(Fx(i,j,k),DP)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+      
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorSnglQuad3D (Fx,Qy,n,m,o)
+  
+!<description>
+  ! Copies single precision vector to quad precision vector: Qy = Fx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  real(SP), dimension(:,:,:), intent(in) :: Fx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  real(QP), dimension(:,:,:), intent(out) :: Qy
+  
+!</output>
+  
+!</subroutine>
+  integer :: i,j,k
+  
+    if (present(n) .and. present(m) .and. present(o)) then
+
+      !$omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Qy(i,j,k) = real(Fx(i,j,k),QP)
+          end do
+        end do
+      end do
+     !$omp end parallel do
+
+    else
+
+      !$omp parallel do private(i,j)
+      do k = 1, size(Fx,3)
+        do j = 1, size(Fx,2)
+          do i = 1, size(Fx,1)
+            Qy(i,j,k) = real(Fx(i,j,k),QP)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+      
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorDblSngl3D (Dx,Fy,n,m,o)
+  
+!<description>
+  ! Copies double precision vector to single precision vector: Fy = Dx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  real(DP), dimension(:,:,:), intent(in) :: Dx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  real(SP), dimension(:,:,:), intent(out) :: Fy
+  
+!</output>
+  
+!</subroutine>
+  integer :: i,j,k
+  
+    if (present(n) .and. present(m) .and. present(o)) then
+
+      !$omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Fy(i,j,k) = real(Dx(i,j,k),SP)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+
+    else
+
+      !$omp parallel do private(i,j)
+      do k = 1, size(Dx,3)
+        do j = 1, size(Dx,2)
+          do i = 1, size(Dx,1)
+            Fy(i,j,k) = real(Dx(i,j,k),SP)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+      
+    end if
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorDblQuad3D (Dx,Qy,n,m,o)
+  
+!<description>
+  ! Copies double precision vector to quad precision vector: Qy = Dx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  real(DP), dimension(:,:,:), intent(in) :: Dx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  real(QP), dimension(:,:,:), intent(out) :: Qy
+  
+!</output>
+  
+!</subroutine>
+  integer :: i,j,k
+  
+    if (present(n) .and. present(m) .and. present(o)) then
+
+      !$omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Qy(i,j,k) = real(Dx(i,j,k),QP)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+
+    else
+
+      !$omp parallel do private(i,j)
+      do k = 1, size(Dx,3)
+        do j = 1, size(Dx,2)
+          do i = 1, size(Dx,1)
+            Qy(i,j,k) = real(Dx(i,j,k),QP)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+      
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorQuadSngl3D (Qx,Fy,n,m,o)
+  
+!<description>
+  ! Copies quad precision vector to single precision vector: Fy = Qx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  real(QP), dimension(:,:,:), intent(in) :: Qx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  real(SP), dimension(:,:,:), intent(out) :: Fy
+  
+!</output>
+  
+!</subroutine>
+  integer :: i,j,k
+  
+    if (present(n) .and. present(m) .and. present(o)) then
+
+      !$omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Fy(i,j,k) = real(Qx(i,j,k),SP)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+
+    else
+
+      !$omp parallel do private(i,j)
+      do k = 1, size(Qx,3)
+        do j = 1, size(Qx,2)
+          do i = 1, size(Qx,1)
+            Fy(i,j,k) = real(Qx(i,j,k),SP)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+      
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorQuadDbl3D (Qx,Dy,n,m,o)
+  
+!<description>
+  ! Copies quad precision vector to double precision vector: Dy = Qx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  real(QP), dimension(:,:,:), intent(in) :: Qx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  real(DP), dimension(:,:,:), intent(out) :: Dy
+  
+!</output>
+  
+!</subroutine>
+  integer :: i,j,k
+  
+    if (present(n) .and. present(m) .and. present(o)) then
+
+      !$omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Dy(i,j,k) = real(Qx(i,j,k),DP)
+          end do
+        end do
+      end do
+     !$omp end parallel do
+
+    else
+
+      !$omp parallel do private(i,j)
+      do k = 1, size(Qx,3)
+        do j = 1, size(Qx,2)
+          do i = 1, size(Qx,1)
+            Dy(i,j,k) = real(Qx(i,j,k),DP)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+      
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI8_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I8), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I8), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = Ix(i,j,k)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = Ix(i,j,k)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI8I16_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I8), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I16), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I16)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I16)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI8I32_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I8), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I32), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I32)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I32)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI8I64_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I8), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I64), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I64)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I64)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI16_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I16), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I16), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = Ix(i,j,k)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = Ix(i,j,k)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI16I8_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I16), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I8), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I8)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I8)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI16I32_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I16), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I32), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I32)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I32)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI16I64_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I16), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I64), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I64)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I64)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI32_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I32), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I32), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = Ix(i,j,k)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = Ix(i,j,k)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI32I8_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I32), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I8), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I8)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I8)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI32I16_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I32), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I16), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I16)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I16)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI32I64_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I32), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I64), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I64)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I64)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI64_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I64), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I64), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = Ix(i,j,k)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = Ix(i,j,k)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI64I8_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I64), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I8), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I8)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I8)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI64I16_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I64), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I16), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I16)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I16)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorI64I32_3D (Ix,Iy,n,m,o)
+  
+!<description>
+  ! Copies an integer vector Ix: Iy = Ix
+!</description>
+
+!<input>
+  
+  ! Source vector
+  integer(I64), dimension(:,:,:), intent(in) :: Ix
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  integer(I32), dimension(:,:,:), intent(out) :: Iy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if(present(m) .and. present(n) .and. present(o)) then
+    
+      !%omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Iy(i,j,k) = int(Ix(i,j,k),I32)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+    
+    else
+    
+      !%omp parallel do private(i,j)
+      do k = 1, size(Ix,3)
+        do j = 1, size(Ix,2)
+          do i = 1, size(Ix,1)
+            Iy(i,j,k) = int(Ix(i,j,k),I32)
+          end do
+        end do
+      end do
+      !%omp end parallel do
+
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorLogical3D (Lx,Ly,n,m,o)
+  
+!<description>
+  ! Copies a logical vector Lx: Ly = Lx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  logical, dimension(:,:,:), intent(in) :: Lx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  logical, dimension(:,:,:), intent(out) :: Ly
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if (present(n) .and. present(m)) then
+
+      !$omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Ly(i,j,k) = Lx(i,j,k)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+
+    else
+      
+      !$omp parallel do private(i,j)
+      do k = 1, size(Lx,3)
+        do j = 1, size(Lx,2)
+          do i = 1, size(Lx,1)
+            Ly(i,j,k) = Lx(i,j,k)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+
+    end if
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_copyVectorChar3D (Sx,Sy,n,m,o)
+  
+!<description>
+  ! Copies a character vector Sx: Sy = Sx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  character, dimension(:,:,:), intent(in) :: Sx
+  
+  ! OPTIONAL: Size of the vector
+  integer, intent(in), optional :: n,m,o
+
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  character, dimension(:,:,:), intent(out) :: Sy
+  
+!</output>
+  
+!</subroutine>
+
+  integer :: i,j,k
+  
+    if (present(n) .and. present(m)) then
+
+      !$omp parallel do private(i,j)
+      do k = 1, o
+        do j = 1, m
+          do i = 1, n
+            Sy(i,j,k) = Sx(i,j,k)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+
+    else
+
+      !$omp parallel do private(i,j)
+      do k = 1, size(Sx,3)
+        do j = 1, size(Sx,2)
+          do i = 1, size(Sx,1)
+            Sy(i,j,k) = Sx(i,j,k)
+          end do
         end do
       end do
       !$omp end parallel do
@@ -3590,6 +5183,121 @@ contains
     end if
   
   end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine lalg_scaleVectorSngl3D (Fx,sc)
+  
+!<description>
+  ! Scales a single precision vector: Dx = sc * Dx
+!</description>
+
+!<inputoutput>
+  
+  ! Source and destination vector
+  real(SP), dimension(:,:,:), intent(inout) :: Fx
+  
+!</inputoutput>
+
+!<input>
+
+  ! Multiplication factor
+  real(SP), intent(in) :: sc
+
+!</input>
+  
+!</subroutine>
+
+    if(sc .eq. 0.0_DP) then
+      call lalg_clearVectorSngl3D(Fx)
+    else if(sc .ne. 1.0_SP) then
+      call SSCAL(size(Fx,1)*size(Fx,2)*size(Fx,3),sc,Fx,1)
+    end if
+  
+  end subroutine
+
+! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine lalg_scaleVectorDble3D (Dx,dc)
+  
+!<description>
+  ! Scales a double precision vector: Dx = dc * Dx
+!</description>
+
+!<inputoutput>
+  
+  ! Source and destination vector
+  real(DP), dimension(:,:,:), intent(inout) :: Dx
+  
+!</inputoutput>
+
+!<input>
+
+  ! Multiplication factor
+  real(DP), intent(in) :: dc
+
+!</input>
+  
+!</subroutine>
+
+    if(dc .eq. 0.0_DP) then
+      call lalg_clearVectorDble3D(Dx)
+    else if(dc .ne. 1.0_DP) then
+      call DSCAL(size(Dx,1)*size(Dx,2)*size(Dx,3),dc,Dx,1)
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine lalg_scaleVectorQuad3D (Qx,qc)
+  
+!<description>
+  ! Scales a quad precision vector: Qx = dc * Qx
+!</description>
+
+!<inputoutput>
+  
+  ! Source and destination vector
+  real(QP), dimension(:,:,:), intent(inout) :: Qx
+  
+!</inputoutput>
+
+!<input>
+
+  ! Multiplication factor
+  real(QP), intent(in) :: qc
+
+!</input>
+  
+!</subroutine>
+
+  integer :: i,j,k
+
+    if(qc .eq. 0.0_QP) then
+      call lalg_clearVectorQuad3D(Qx)
+    else if(qc .ne. 1.0_QP) then
+    
+      !$omp parallel do private(i,j)
+      do k = 1, size(Qx,3)
+        do j = 1, size(Qx,2)
+          do i = 1, size(Qx,1)
+            Qx(i,j,k) = qc*Qx(i,j,k)
+          end do
+        end do
+      end do
+      !$omp end parallel do
+    
+      !call QSCAL(size(Qx,1)*size(Qx,2)*size(Qx,3),qc,Qx,1)
+    end if
+  
+  end subroutine
   
   ! ***************************************************************************
 
@@ -3619,7 +5327,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i = 1,size(Fx)
+      do i = 1, size(Fx)
         Fx(i) = 0.0_SP
       end do
       !$omp end parallel do
@@ -3627,7 +5335,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,n
+      do i = 1, n
         Fx(i) = 0.0_SP
       end do
       !$omp end parallel do
@@ -3664,7 +5372,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i = 1,size(Dx)
+      do i = 1, size(Dx)
         Dx(i) = 0.0_DP
       end do
       !$omp end parallel do
@@ -3672,7 +5380,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,n
+      do i = 1, n
         Dx(i) = 0.0_DP
       end do
       !$omp end parallel do
@@ -3709,7 +5417,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i = 1,size(Qx)
+      do i = 1, size(Qx)
         Qx(i) = 0.0_QP
       end do
       !$omp end parallel do
@@ -3717,7 +5425,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,n
+      do i = 1, n
         Qx(i) = 0.0_QP
       end do
       !$omp end parallel do
@@ -3754,7 +5462,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = 0_I8
       end do
       !$omp end parallel do
@@ -3762,7 +5470,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = 0_I8
       end do
       !$omp end parallel do
@@ -3799,7 +5507,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = 0_I16
       end do
       !$omp end parallel do
@@ -3807,7 +5515,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = 0_I16
       end do
       !$omp end parallel do
@@ -3844,7 +5552,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = 0_I32
       end do
       !$omp end parallel do
@@ -3852,7 +5560,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = 0_I32
       end do
       !$omp end parallel do
@@ -3889,7 +5597,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = 0_I64
       end do
       !$omp end parallel do
@@ -3897,7 +5605,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = 0_I64
       end do
       !$omp end parallel do
@@ -3929,8 +5637,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)
-    do j = 1,size(Fx,2)
-      do i = 1,size(Fx,1)
+    do j = 1, size(Fx,2)
+      do i = 1, size(Fx,1)
         Fx(i,j) = 0.0_SP
       end do
     end do
@@ -3959,8 +5667,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Dx,2)
-      do i = 1,size(Dx,1)
+    do j = 1, size(Dx,2)
+      do i = 1, size(Dx,1)
         Dx(i,j) = 0.0_DP
       end do
     end do
@@ -3989,8 +5697,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Qx,2)
-      do i = 1,size(Qx,1)
+    do j = 1, size(Qx,2)
+      do i = 1, size(Qx,1)
         Qx(i,j) = 0.0_QP
       end do
     end do
@@ -4021,8 +5729,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Ix,2)
-      do i = 1,size(Ix,1)
+    do j = 1, size(Ix,2)
+      do i = 1, size(Ix,1)
         Ix(i,j) = 0_I8
       end do
     end do
@@ -4053,8 +5761,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Ix,2)
-      do i = 1,size(Ix,1)
+    do j = 1, size(Ix,2)
+      do i = 1, size(Ix,1)
         Ix(i,j) = 0_I16
       end do
     end do
@@ -4085,8 +5793,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Ix,2)
-      do i = 1,size(Ix,1)
+    do j = 1, size(Ix,2)
+      do i = 1, size(Ix,1)
         Ix(i,j) = 0_I32
       end do
     end do
@@ -4117,14 +5825,249 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Ix,2)
-      do i = 1,size(Ix,1)
+    do j = 1, size(Ix,2)
+      do i = 1, size(Ix,1)
         Ix(i,j) = 0_I32
       end do
     end do
     !$omp end parallel do
   
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_clearVectorSngl3D (Fx)
+  
+!<description>
+  ! Clears a single precision vector: Fx = 0
+!</description>
+
+!<output>
+  
+  ! Destination vector to be cleared
+  real(SP), dimension(:,:,:), intent(out) :: Fx
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Fx,3)
+      do j = 1, size(Fx,2)
+        do i = 1, size(Fx,1)
+          Fx(i,j,k) = 0.0_SP
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_clearVectorDble3D (Dx)
+  
+!<description>
+  ! Clears a double precision vector: Dx = 0
+!</description>
+
+!<output>
+  ! Destination vector to be cleared
+  real(DP), dimension(:,:,:), intent(out) :: Dx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Dx,3)
+      do j = 1, size(Dx,2)
+        do i = 1, size(Dx,1)
+          Dx(i,j,k) = 0.0_DP
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_clearVectorQuad3D (Qx)
+  
+!<description>
+  ! Clears a quad precision vector: Qx = 0
+!</description>
+
+!<output>
+  ! Destination vector to be cleared
+  real(QP), dimension(:,:,:), intent(out) :: Qx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,k)
+    do k = 1, size(Qx,3)
+      do j = 1, size(Qx,2)
+        do i = 1, size(Qx,1)
+          Qx(i,j,k) = 0.0_QP
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_clearVectorI8_3D (Ix)
+  
+!<description>
+  ! Clears an integer vector: Ix = 0
+!</description>
+
+!<output>
+  
+  ! Destination vector to be cleared
+  integer(I8), dimension(:,:,:), intent(out) :: Ix
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)  
+    do k = 1, size(Ix,3)
+      do j = 1, size(Ix,2)
+        do i = 1, size(Ix,1)
+          Ix(i,j,k) = 0_I8
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_clearVectorI16_3D (Ix)
+  
+!<description>
+  ! Clears an integer vector: Ix = 0
+!</description>
+
+!<output>
+  
+  ! Destination vector to be cleared
+  integer(I16), dimension(:,:,:), intent(out) :: Ix
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Ix,3)
+      do j = 1, size(Ix,2)
+        do i = 1, size(Ix,1)
+          Ix(i,j,k) = 0_I16
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_clearVectorI32_3D (Ix)
+  
+!<description>
+  ! Clears an integer vector: Ix = 0
+!</description>
+
+!<output>
+  
+  ! Destination vector to be cleared
+  integer(I32), dimension(:,:,:), intent(out) :: Ix
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Ix,3)
+      do j = 1, size(Ix,2)
+        do i = 1, size(Ix,1)
+          Ix(i,j,k) = 0_I32
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_clearVectorI64_3D (Ix)
+  
+!<description>
+  ! Clears an integer vector: Ix = 0
+!</description>
+
+!<output>
+  
+  ! Destination vector to be cleared
+  integer(I64), dimension(:,:,:), intent(out) :: Ix
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Ix,3)
+      do j = 1, size(Ix,2)
+        do i = 1, size(Ix,1)
+          Ix(i,j,k) = 0_I32
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+ 
   ! ***************************************************************************
 
 !<subroutine>
@@ -4156,7 +6099,7 @@ contains
     if (.not. present(n)) then
 
       !$omp parallel do
-      do i = 1,size(Fx)
+      do i = 1, size(Fx)
         Fx(i) = fvalue
       end do
       !$omp end parallel do
@@ -4164,7 +6107,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,n
+      do i = 1, n
         Fx(i) = fvalue
       end do
       !$omp end parallel do
@@ -4204,7 +6147,7 @@ contains
     if (.not. present(n)) then
 
       !$omp parallel do
-      do i = 1,size(Dx)
+      do i = 1, size(Dx)
         Dx(i) = dvalue
       end do
       !$omp end parallel do
@@ -4212,7 +6155,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,size(Dx)
+      do i = 1, size(Dx)
         Dx(i) = dvalue
       end do
       !$omp end parallel do
@@ -4252,7 +6195,7 @@ contains
     if (.not. present(n)) then
 
       !$omp parallel do
-      do i = 1,size(Qx)
+      do i = 1, size(Qx)
         Qx(i) = qvalue
       end do
       !$omp end parallel do
@@ -4260,7 +6203,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,size(Qx)
+      do i = 1, size(Qx)
         Qx(i) = qvalue
       end do
       !$omp end parallel do
@@ -4300,7 +6243,7 @@ contains
     if (.not. present(n)) then
    
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
       !$omp end parallel do
@@ -4308,7 +6251,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,n
+      do i = 1, n
         Ix(i) = ivalue
       end do
       !$omp end parallel do
@@ -4348,7 +6291,7 @@ contains
     if (.not. present(n)) then
    
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
       !$omp end parallel do
@@ -4356,7 +6299,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,n
+      do i = 1, n
         Ix(i) = ivalue
       end do
       !$omp end parallel do
@@ -4396,7 +6339,7 @@ contains
     if (.not. present(n)) then
    
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
       !$omp end parallel do
@@ -4404,7 +6347,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,n
+      do i = 1, n
         Ix(i) = ivalue
       end do
       !$omp end parallel do
@@ -4444,7 +6387,7 @@ contains
     if (.not. present(n)) then
    
       !$omp parallel do
-      do i = 1,size(Ix)
+      do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
       !$omp end parallel do
@@ -4452,7 +6395,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,n
+      do i = 1, n
         Ix(i) = ivalue
       end do
       !$omp end parallel do
@@ -4492,7 +6435,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i = 1,size(Lx)
+      do i = 1, size(Lx)
         Lx(i) = lvalue
       end do
       !$omp end parallel do
@@ -4500,7 +6443,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,n
+      do i = 1, n
         Lx(i) = lvalue
       end do
       !$omp end parallel do
@@ -4540,7 +6483,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i = 1,size(Sx)
+      do i = 1, size(Sx)
         Sx(i) = svalue
       end do
       !$omp end parallel do
@@ -4548,7 +6491,7 @@ contains
     else
     
       !$omp parallel do
-      do i = 1,n
+      do i = 1, n
         Sx(i) = svalue
       end do
       !$omp end parallel do
@@ -4583,8 +6526,8 @@ contains
   integer :: i,j
   
     !$omp parallel do private(i)
-    do j = 1,size(Fx,2)
-      do i = 1,size(Fx,1)
+    do j = 1, size(Fx,2)
+      do i = 1, size(Fx,1)
         Fx(i,j) = fvalue
       end do
     end do
@@ -4618,8 +6561,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Dx,2)
-      do i = 1,size(Dx,1)
+    do j = 1, size(Dx,2)
+      do i = 1, size(Dx,1)
         Dx(i,j) = dvalue
       end do
     end do
@@ -4653,8 +6596,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Qx,2)
-      do i = 1,size(Qx,1)
+    do j = 1, size(Qx,2)
+      do i = 1, size(Qx,1)
         Qx(i,j) = qvalue
       end do
     end do
@@ -4688,8 +6631,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Ix,2)
-      do i = 1,size(Ix,1)
+    do j = 1, size(Ix,2)
+      do i = 1, size(Ix,1)
         Ix(i,j) = ivalue
       end do
     end do
@@ -4723,8 +6666,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Ix,2)
-      do i = 1,size(Ix,1)
+    do j = 1, size(Ix,2)
+      do i = 1, size(Ix,1)
         Ix(i,j) = ivalue
       end do
     end do
@@ -4758,8 +6701,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Ix,2)
-      do i = 1,size(Ix,1)
+    do j = 1, size(Ix,2)
+      do i = 1, size(Ix,1)
         Ix(i,j) = ivalue
       end do
     end do
@@ -4793,8 +6736,8 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)  
-    do j = 1,size(Ix,2)
-      do i = 1,size(Ix,1)
+    do j = 1, size(Ix,2)
+      do i = 1, size(Ix,1)
         Ix(i,j) = ivalue
       end do
     end do
@@ -4828,8 +6771,8 @@ contains
   integer :: i,j
   
     !$omp parallel do private(i)
-    do j = 1,size(Lx,2)
-      do i = 1,size(Lx,1)
+    do j = 1, size(Lx,2)
+      do i = 1, size(Lx,1)
         Lx(i,j) = lvalue
       end do
     end do
@@ -4863,9 +6806,342 @@ contains
   integer :: i,j
 
     !$omp parallel do private(i)
-    do j = 1,size(Sx,2)
-      do i = 1,size(Sx,1)
+    do j = 1, size(Sx,2)
+      do i = 1, size(Sx,1)
         Sx(i,j) = svalue
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorSngl3D (Fx,fvalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Fx = fvalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  real(SP), intent(in) :: fvalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  real(SP), dimension(:,:,:), intent(out) :: Fx
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+  
+    !$omp parallel do private(i,j)
+    do k = 1, size(Fx,3)
+      do j = 1, size(Fx,2)
+        do i = 1, size(Fx,1)
+          Fx(i,j,k) = fvalue
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorDble3D (Dx,dvalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Dx = dvalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  real(DP), intent(in) :: dvalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  real(DP), dimension(:,:,:), intent(out) :: Dx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Dx,3)
+      do j = 1, size(Dx,2)
+        do i = 1, size(Dx,1)
+          Dx(i,j,k) = dvalue
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorQuad3D (Qx,qvalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Qx = qvalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  real(QP), intent(in) :: qvalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  real(QP), dimension(:,:,:), intent(out) :: Qx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,k)
+    do k = 1, size(Qx,3)
+      do j = 1, size(Qx,2)
+        do i = 1, size(Qx,1)
+          Qx(i,j,k) = qvalue
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorI8_3D (Ix,ivalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Ix = ivalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  integer(I8), intent(in) :: ivalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  integer(I8), dimension(:,:,:), intent(out) :: Ix
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Ix,3)
+      do j = 1, size(Ix,2)
+        do i = 1, size(Ix,1)
+          Ix(i,j,k) = ivalue
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorI16_3D (Ix,ivalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Ix = ivalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  integer(I16), intent(in) :: ivalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  integer(I16), dimension(:,:,:), intent(out) :: Ix
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Ix,3)
+      do j = 1, size(Ix,2)
+        do i = 1, size(Ix,1)
+          Ix(i,j,k) = ivalue
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorI32_3D (Ix,ivalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Ix = ivalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  integer(I32), intent(in) :: ivalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  integer(I32), dimension(:,:,:), intent(out) :: Ix
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Ix,3)
+      do j = 1, size(Ix,2)
+        do i = 1, size(Ix,1)
+          Ix(i,j,k) = ivalue
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorI64_3D (Ix,ivalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Ix = ivalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  integer(I64), intent(in) :: ivalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  integer(I64), dimension(:,:,:), intent(out) :: Ix
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Ix,3)
+      do j = 1, size(Ix,2)
+        do i = 1, size(Ix,1)
+          Ix(i,j,k) = ivalue
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorLogical3D (Lx,lvalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Lx = lvalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  logical, intent(in) :: lvalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  logical, dimension(:,:,:), intent(out) :: Lx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+  
+    !$omp parallel do private(i,j)
+    do k = 1, size(Lx,3)
+      do j = 1, size(Lx,2)
+        do i = 1, size(Lx,1)
+          Lx(i,j,k) = lvalue
+        end do
+      end do
+    end do
+    !$omp end parallel do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_setVectorChar3D (Sx,svalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Sx = svalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  character, intent(in) :: svalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  character, dimension(:,:,:), intent(out) :: Sx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j,k
+
+    !$omp parallel do private(i,j)
+    do k = 1, size(Sx,3)
+      do j = 1, size(Sx,2)
+        do i = 1, size(Sx,1)
+          Sx(i,j,k) = svalue
+        end do
       end do
     end do
     !$omp end parallel do
@@ -7303,7 +9579,7 @@ contains
     if (.not. present(n)) then
       
       !$omp parallel do
-      do i=1,size(Fx)
+      do i = 1, size(Fx)
         Fx(i) = Fx(i) + fvalue
       end do
       !$omp end parallel do
@@ -7311,7 +9587,7 @@ contains
     else
       
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Fx(i) = Fx(i) + fvalue
       end do
       !$omp end parallel do
@@ -7353,7 +9629,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i=1,size(Dx)
+      do i = 1, size(Dx)
         Dx(i) = Dx(i) + dvalue
       end do
       !$omp end parallel do
@@ -7361,7 +9637,7 @@ contains
     else
     
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Dx(i) = Dx(i) + dvalue
       end do
       !$omp end parallel do
@@ -7404,7 +9680,7 @@ contains
     if (.not. present(n)) then
     
       !$omp parallel do
-      do i=1,size(Qx)
+      do i = 1, size(Qx)
         Qx(i) = Qx(i) + qvalue
       end do
       !$omp end parallel do
@@ -7412,7 +9688,7 @@ contains
     else
     
       !$omp parallel do
-      do i=1,n
+      do i = 1, n
         Qx(i) = Qx(i) + qvalue
       end do
       !$omp end parallel do
@@ -7449,8 +9725,8 @@ contains
     if(fvalue .eq. 0.0_SP) return
     
     !$omp parallel do private(i)
-    do j=1,size(Fx,2)
-      do i=1,size(Fx,1)
+    do j = 1, size(Fx,2)
+      do i = 1, size(Fx,1)
         Fx(i,j) = Fx(i,j) + fvalue
       end do
     end do

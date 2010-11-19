@@ -40,7 +40,7 @@
 !#      -> Prints statistics about the heap to the terminal
 !#
 !#  4.) storage_new
-!#      -> Allocates a new 1D or 2D array
+!#      -> Allocates a new 1D, 2D or 3D array
 !#
 !#  5.) storage_free
 !#      -> Releases a handle and the associated memory
@@ -61,41 +61,49 @@
 !#      -> Determine pointer associated to a handle for singles, doubles,
 !#         integers, logicals or chars, 2D array
 !#
-!#  8.) storage_copy = storage_copy / storage_copy_explicit / storage_copy_explicit2D
+!#  8.) storage_getbase_single3D,
+!#      storage_getbase_double3D,
+!#      storage_getbase_int3D,
+!#      storage_getbase_logical3D,
+!#      storage_getbase_char3D,
+!#      -> Determine pointer associated to a handle for singles, doubles,
+!#         integers, logicals or chars, 3D array
+!#
+!#  9.) storage_copy = storage_copy / storage_copy_explicit / storage_copy_explicit1D
 !#      -> Copies the content of one array to another.
 !#
-!#  9.) storage_clear
+!# 10.) storage_clear
 !#      -> Clears an array by overwriting the entries with 0 (or .FALSE. for LOGICALs).
 !#
-!# 10.) storage_getsize = storage_getsize1d / storage_getsize2d
+!# 11.) storage_getsize = storage_getsize1d / storage_getsize
 !#      -> Get the length of an array on the heap.
 !#
-!# 11.) storage_getdatatype
+!# 12.) storage_getdatatype
 !#      -> Get the datatype of an array on the heap.
 !#
-!# 12.) storage_getdimension
+!# 13.) storage_getdimension
 !#      -> Get the dimension of an array on the heap.
 !#
-!# 13.) storage_realloc
-!#      -> Reallocate a 1D or 2D array (only 2nd dimension)
+!# 14.) storage_realloc
+!#      -> Reallocate an array (last dimension only)
 !#
-!# 14.) storage_initialiseBlock
+!# 15.) storage_initialiseBlock
 !#      -> Initialise a storage block with zero (like storage_clear)
 !#         or increasing number.
 !#
-!# 15.) storage_isEqual
+!# 16.) storage_isEqual
 !#      -> Checks if the content of two different handles is equal
 !#
-!# 16.) storage_createFpdbObject
+!# 17.) storage_createFpdbObject
 !#      -> Creates an ObjectItem representing the storage management
 !#
-!# 17.) storage_restoreFpdbObject
+!# 18.) storage_restoreFpdbObject
 !#      -> Restores the storage management from an ObjectItem
 !#
-!# 18.) storage_setdatatype
+!# 19.) storage_setdatatype
 !#      -> Change the data type of a memory block behind a handle
 !#
-!# 19.) storage_getblocktype
+!# 20.) storage_getblocktype
 !#      -> Get the type of the data type from a given string
 !#         representation or return ST_NOHANDLE if data type is not supported
 !# </purpose>
@@ -217,7 +225,8 @@ module storage
     ! ST_DOUBLE, ST_INT, ST_LOGICAL, ST_CHAR)
     integer :: idataType = ST_NOHANDLE
 
-    ! Dimension associated to the handle (0=not assigned, 1=1D, 2=2D array)
+    ! Dimension associated to the handle 
+    ! (0=not assigned, 1=1D, 2=2D array, 3=3D array)
     integer :: idimension = 0
 
     ! The name of the array that is associated to that handle
@@ -285,6 +294,36 @@ module storage
 
     ! Pointer to 2D character array or NULL() if not assigned
     character, dimension(:,:), pointer    :: p_Schar2D      => null()
+
+    ! Pointer to 3D real array or NULL() if not assigned
+    real(SP), dimension(:,:,:), pointer   :: p_Fsingle3D    => null()
+
+    ! Pointer to 3D double precision array or NULL() if not assigned
+    real(DP), dimension(:,:,:), pointer   :: p_Ddouble3D    => null()
+
+    ! Pointer to 3D quad precision array or NULL() if not assigned
+    real(QP), dimension(:,:,:), pointer   :: p_Qquad3D      => null()
+
+    ! Pointer to 3D integer array or NULL() if not assigned
+    integer, dimension(:,:,:), pointer    :: p_Iinteger3D   => null()
+    
+    ! Pointer to 3D integer(I8) array or NULL() if not assigned
+    integer(I8), dimension(:,:,:), pointer :: p_Iint8_3D     => null()
+    
+    ! Pointer to 3D integer(I12) array or NULL() if not assigned
+    integer(I16), dimension(:,:,:), pointer :: p_Iint16_3D    => null()
+    
+    ! Pointer to 3D integer(I32) array or NULL() if not assigned
+    integer(I32), dimension(:,:,:), pointer :: p_Iint32_3D    => null()
+
+    ! Pointer to 3D integer(I64) array or NULL() if not assigned
+    integer(I64), dimension(:,:,:), pointer :: p_Iint64_3D    => null()
+
+    ! Pointer to 3D logical array or NULL() if not assigned
+    logical, dimension(:,:,:), pointer    :: p_Blogical3D   => null()
+
+    ! Pointer to 3D character array or NULL() if not assigned
+    character, dimension(:,:,:), pointer  :: p_Schar3D      => null()
 
   end type t_storageNode
   
@@ -356,11 +395,11 @@ module storage
 !</publicvars>
 
   interface storage_new
+    module procedure storage_new
+    module procedure storage_newFixed
     module procedure storage_new1D
-    module procedure storage_new1DFixed
-    module procedure storage_new2D
-    module procedure storage_new2DFixed
-  end interface
+    module procedure storage_new1DFixed   
+  end interface storage_new
 
   public :: storage_new
 
@@ -531,6 +570,86 @@ module storage
 
   public :: storage_getbase_char2D
 
+  interface storage_getbase_int3D
+    module procedure storage_getbase_int3DDef
+    module procedure storage_getbase_int3DUBnd
+    module procedure storage_getbase_int3DLUBnd
+  end interface
+
+  public :: storage_getbase_int3D
+  
+  interface storage_getbase_int8_3D
+    module procedure storage_getbase_int8_3DDef
+    module procedure storage_getbase_int8_3DUBnd
+    module procedure storage_getbase_int8_3DLUBnd
+  end interface
+  
+  public :: storage_getbase_int8_3D
+  
+  interface storage_getbase_int16_3D
+    module procedure storage_getbase_int16_3DDef
+    module procedure storage_getbase_int16_3DUBnd
+    module procedure storage_getbase_int16_3DLUBnd
+  end interface
+  
+  public :: storage_getbase_int16_3D
+  
+  interface storage_getbase_int32_3D
+    module procedure storage_getbase_int32_3DDef
+    module procedure storage_getbase_int32_3DUBnd
+    module procedure storage_getbase_int32_3DLUBnd
+  end interface
+  
+  public :: storage_getbase_int32_3D
+  
+  interface storage_getbase_int64_3D
+    module procedure storage_getbase_int64_3DDef
+    module procedure storage_getbase_int64_3DUBnd
+    module procedure storage_getbase_int64_3DLUBnd
+  end interface
+  
+  public :: storage_getbase_int64_3D
+
+  interface storage_getbase_single3D
+    module procedure storage_getbase_single3DDef
+    module procedure storage_getbase_single3DUBnd
+    module procedure storage_getbase_single3DLUBnd
+  end interface
+
+  public :: storage_getbase_single3D
+
+  interface storage_getbase_double3D
+    module procedure storage_getbase_double3DDef
+    module procedure storage_getbase_double3DUBnd
+    module procedure storage_getbase_double3DLUBnd
+  end interface
+
+  public :: storage_getbase_double3D
+
+  interface storage_getbase_quad3D
+    module procedure storage_getbase_quad3DDef
+    module procedure storage_getbase_quad3DUBnd
+    module procedure storage_getbase_quad3DLUBnd
+  end interface
+
+  public :: storage_getbase_quad3D
+
+  interface storage_getbase_logical3D
+    module procedure storage_getbase_logical3DDef
+    module procedure storage_getbase_logical3DUBnd
+    module procedure storage_getbase_logical3DLUBnd
+  end interface
+
+  public :: storage_getbase_logical3D
+
+  interface storage_getbase_char3D
+    module procedure storage_getbase_char3DDef
+    module procedure storage_getbase_char3DUBnd
+    module procedure storage_getbase_char3DLUBnd
+  end interface
+
+  public :: storage_getbase_char3D
+
   interface storage_getbase
 !!$    module procedure storage_getbase_intDefault
 !!$    module procedure storage_getbase_intUBnd
@@ -615,13 +734,55 @@ module storage
     module procedure storage_getbase_char2DDef
     module procedure storage_getbase_char2DUBnd
     module procedure storage_getbase_char2DLUBnd
+
+!!$    module procedure storage_getbase_int3DDef
+!!$    module procedure storage_getbase_int3DUBnd
+!!$    module procedure storage_getbase_int3DLUBnd
+
+    module procedure storage_getbase_int8_3DDef
+    module procedure storage_getbase_int8_3DUBnd
+    module procedure storage_getbase_int8_3DLUBnd
+
+    module procedure storage_getbase_int16_3DDef
+    module procedure storage_getbase_int16_3DUBnd
+    module procedure storage_getbase_int16_3DLUBnd
+
+    module procedure storage_getbase_int32_3DDef
+    module procedure storage_getbase_int32_3DUBnd
+    module procedure storage_getbase_int32_3DLUBnd
+
+    module procedure storage_getbase_int64_3DDef
+    module procedure storage_getbase_int64_3DUBnd
+    module procedure storage_getbase_int64_3DLUBnd
+
+    module procedure storage_getbase_single3DDef
+    module procedure storage_getbase_single3DUBnd
+    module procedure storage_getbase_single3DLUBnd
+
+    module procedure storage_getbase_double3DDef
+    module procedure storage_getbase_double3DUBnd
+    module procedure storage_getbase_double3DLUBnd
+
+#ifdef ENABLE_QUADPREC
+    module procedure storage_getbase_quad3DDef
+    module procedure storage_getbase_quad3DUBnd
+    module procedure storage_getbase_quad3DLUBnd
+#endif
+
+    module procedure storage_getbase_logical3DDef
+    module procedure storage_getbase_logical3DUBnd
+    module procedure storage_getbase_logical3DLUBnd
+
+    module procedure storage_getbase_char3DDef
+    module procedure storage_getbase_char3DUBnd
+    module procedure storage_getbase_char3DLUBnd
   end interface
 
   public :: storage_getbase
 
   interface storage_getsize
+    module procedure storage_getsize
     module procedure storage_getsize1D
-    module procedure storage_getsize2D
   end interface
   
   public :: storage_getsize
@@ -629,7 +790,7 @@ module storage
   interface storage_copy
     module procedure storage_copyDefault
     module procedure storage_copy_explicit
-    module procedure storage_copy_explicit2D
+    module procedure storage_copy_explicit1D
   end interface
 
   public :: storage_copy
@@ -921,6 +1082,7 @@ contains
     nullify(p_rnode%p_Iint64_1D)
     nullify(p_rnode%p_Blogical1D)
     nullify(p_rnode%p_Schar1D)
+
     nullify(p_rnode%p_Fsingle2D)
     nullify(p_rnode%p_Ddouble2D)
     nullify(p_rnode%p_Qquad2D)
@@ -931,6 +1093,17 @@ contains
     nullify(p_rnode%p_Iint64_2D)
     nullify(p_rnode%p_Blogical2D)
     nullify(p_rnode%p_Schar2D)
+
+    nullify(p_rnode%p_Fsingle3D)
+    nullify(p_rnode%p_Ddouble3D)
+    nullify(p_rnode%p_Qquad3D)
+    nullify(p_rnode%p_Iinteger3D)
+    nullify(p_rnode%p_Iint8_3D)
+    nullify(p_rnode%p_Iint16_3D)
+    nullify(p_rnode%p_Iint32_3D)
+    nullify(p_rnode%p_Iint64_3D)
+    nullify(p_rnode%p_Blogical3D)
+    nullify(p_rnode%p_Schar3D)
     
     ! Handle ihandle is available now - put it to the list of available handles.
     rheap%p_ilastFreeHandle = mod(rheap%p_ilastFreeHandle,rheap%nhandlesTotal) + 1
@@ -1182,6 +1355,66 @@ contains
 
       end select
 
+    case (3)
+
+      select case (cinitNewBlock)
+      case (ST_NEWBLOCK_ZERO)
+        ! Clear the vector
+        if (present(istopIndex)) then
+          select case (rstorageNode%idataType)
+          case (ST_SINGLE)
+            rstorageNode%p_Fsingle3D(:,:,istartIndex:istopIndex) = 0.0_SP
+          case (ST_DOUBLE)
+            rstorageNode%p_Ddouble3D(:,:,istartIndex:istopIndex) = 0.0_DP
+          case (ST_QUAD)
+            rstorageNode%p_Qquad3D(:,:,istartIndex:istopIndex) = 0.0_QP
+          case (ST_INT)
+            rstorageNode%p_Iinteger3D(:,:,istartIndex:istopIndex) = 0
+          case (ST_INT8)
+            rstorageNode%p_Iint8_3D(:,:,istartIndex:istopIndex) = 0_I8
+          case (ST_INT16)
+            rstorageNode%p_Iint16_3D(:,:,istartIndex:istopIndex) = 0_I16
+          case (ST_INT32)
+            rstorageNode%p_Iint32_3D(:,:,istartIndex:istopIndex) = 0_I32
+          case (ST_INT64)
+            rstorageNode%p_Iint64_3D(:,:,istartIndex:istopIndex) = 0_I64
+          case (ST_LOGICAL)
+            rstorageNode%p_Blogical3D(:,:,istartIndex:istopIndex) = .false.
+          case (ST_CHAR)
+            rstorageNode%p_Schar3D(:,:,istartIndex:istopIndex) = achar(0)
+          end select
+        else
+          select case (rstorageNode%idataType)
+          case (ST_SINGLE)
+            rstorageNode%p_Fsingle3D(:,:,istartIndex:) = 0.0_SP
+          case (ST_DOUBLE)
+            rstorageNode%p_Ddouble3D(:,:,istartIndex:) = 0.0_DP
+          case (ST_QUAD)
+            rstorageNode%p_Qquad3D(:,:,istartIndex:) = 0.0_QP
+          case (ST_INT)
+            rstorageNode%p_Iinteger3D(:,:,istartIndex:) = 0
+          case (ST_INT8)
+            rstorageNode%p_Iint8_3D(:,:,istartIndex:) = 0_I8
+          case (ST_INT16)
+            rstorageNode%p_Iint16_3D(:,:,istartIndex:) = 0_I16
+          case (ST_INT32)
+            rstorageNode%p_Iint32_3D(:,:,istartIndex:) = 0_I32
+          case (ST_INT64)
+            rstorageNode%p_Iint64_3D(:,:,istartIndex:) = 0_I64
+          case (ST_LOGICAL)
+            rstorageNode%p_Blogical3D(:,:,istartIndex:) = .false.
+          case (ST_CHAR)
+            rstorageNode%p_Schar3D(:,:,istartIndex:) = achar(0)
+          end select
+        end if
+
+      case (ST_NEWBLOCK_ORDERED)
+        call output_line ('Ordering not available for multidimensional array!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_initialiseNode')
+        call sys_halt()
+
+      end select
+
     case default
       call output_line ('Unsupported dimension!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'storage_initialiseNode')
@@ -1246,6 +1479,148 @@ contains
     end if
 
   end subroutine storage_initialiseBlock
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_new (scall, sname, Isize, ctype, ihandle, &
+                          cinitNewBlock, rheap)
+
+!<description>
+  !This routine reserves a  memory block of desired size and type.
+  !It is actually a wrapper for subroutines 'storage_newxD'.
+!</description>
+
+!<input>
+
+  !name of the calling routine
+  character(LEN=*), intent(in) :: scall
+
+  !clear name of data field
+  character(LEN=*), intent(in) :: sname
+
+  !requested storage size
+  integer, dimension(:), intent(in) :: Isize
+
+  !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
+  integer, intent(in) :: ctype
+
+  !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
+  integer, intent(in) :: cinitNewBlock
+
+!</input>
+
+!<inputoutput>
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</inputoutput>
+
+!<output>
+
+  ! Handle of the memory block.
+  integer, intent(out) :: ihandle
+
+!</output>
+
+!</subroutine>
+
+    select case (size(Isize))
+    case (1)
+      call storage_new1D (scall, sname, Isize(1), ctype, ihandle, &
+                          cinitNewBlock, rheap)
+    case (2)
+      call storage_new2D (scall, sname, Isize, ctype, ihandle, &
+                          cinitNewBlock, rheap)
+    case (3)
+      call storage_new3D (scall, sname, Isize, ctype, ihandle, &
+                          cinitNewBlock, rheap)
+    case default
+      call output_line ('Memory blocks of dimension larger than 3 is not supported', &
+                        OU_CLASS_WARNING,OU_MODE_STD,'storage_new')
+      ihandle = 0
+    end select
+
+  end subroutine storage_new
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_newfixed (scall, sname, Ilbound, Iubound, ctype,&
+                               ihandle, cinitNewBlock, rheap)
+
+!<description>
+  !This routine reserves a memory block of desired bounds and type.
+  !It is actually a wrapper for subroutines 'storage_newxDfixed'.
+!</description>
+
+!<input>
+
+  !name of the calling routine
+  character(LEN=*), intent(in) :: scall
+
+  !clear name of data field
+  character(LEN=*), intent(in) :: sname
+
+  !requested lower bounds for each dimension
+  integer, dimension(:), intent(in) :: Ilbound
+
+  !requested upper bounds for each dimension
+  integer, dimension(:), intent(in) :: Iubound
+
+  !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
+  integer, intent(in) :: ctype
+
+  !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
+  integer, intent(in) :: cinitNewBlock
+
+!</input>
+
+!<inputoutput>
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</inputoutput>
+
+!<output>
+
+  ! Handle of the memory block.
+  integer, intent(out) :: ihandle
+
+!</output>
+
+!</subroutine>
+
+    if (size(Ilbound) .ne. size(Iubound)) then
+      call output_line ('dim(Ilbound) /= dim(Iubound)!', &
+                        OU_CLASS_WARNING,OU_MODE_STD,'storage_newfixed')
+      ihandle = 0
+      return
+    end if
+    
+    select case (size(Ilbound))
+    case (1)
+      call storage_new1Dfixed (scall, sname, Ilbound(1), Iubound(1),&
+                               ctype, ihandle, cinitNewBlock, rheap)
+    case (2)
+      call storage_new2Dfixed (scall, sname, Ilbound, Iubound,&
+                               ctype, ihandle, cinitNewBlock, rheap)
+    case (3)
+      call storage_new3Dfixed (scall, sname, Ilbound, Iubound,&
+                               ctype, ihandle, cinitNewBlock, rheap)
+    case default
+      call output_line ('Memory blocks of dimensions larger than 3 are not supported', &
+                        OU_CLASS_WARNING,OU_MODE_STD,'storage_newfixed')
+      ihandle = 0
+    end select
+
+  end subroutine storage_newfixed
 
 !************************************************************************
 
@@ -1795,6 +2170,309 @@ contains
 
 !<subroutine>
 
+  subroutine storage_new3D (scall, sname, Isize, ctype, ihandle, &
+                            cinitNewBlock, rheap)
+
+!<description>
+  !This routine reserves a 3D memory block of desired size and type.
+!</description>
+
+!<input>
+
+  !name of the calling routine
+  character(LEN=*), intent(in) :: scall
+
+  !clear name of data field
+  character(LEN=*), intent(in) :: sname
+
+  !requested storage size for 1st, 2nd and 3rd dimension
+  integer, dimension(3), intent(in) :: Isize
+
+  !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
+  integer, intent(in) :: ctype
+
+  !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
+  integer, intent(in) :: cinitNewBlock
+
+!</input>
+
+!<inputoutput>
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</inputoutput>
+
+!<output>
+
+  ! Handle of the memory block.
+  integer, intent(out) :: ihandle
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+  type(t_storageNode), pointer :: p_rnode
+  character(LEN=SYS_NAMELEN) :: snameBackup
+
+    if ((Isize(1) .eq. 0) .or. (Isize(2) .eq. 0) .or. (Isize(3) .eq. 0)) then
+      call output_line ('Isize=0!', &
+                        OU_CLASS_WARNING,OU_MODE_STD,'storage_new3D')
+      ihandle = 0
+      return
+    end if
+    
+    ! Get the heap to use - local or global one.
+    
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+    
+    ! Back up the array name. This is important for a very crual situation:
+    ! The storage_newhandle below may reallocate the p_Rdescriptors array.
+    ! If sname points to one of the old arrays, the pointer gets invalid
+    ! and the name cannot be accessed anymore. So make a backup of that 
+    ! before creating a new handle!
+    snameBackup = sname
+    
+    ! Get a new handle
+    ihandle = storage_newhandle (p_rheap)
+    
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    
+    ! Initialise the content
+    
+    p_rnode%idataType = ctype
+    p_rnode%idimension = 3
+    p_rnode%sname = snameBackup
+    
+    ! Allocate memory according to Isize:
+    
+    select case (ctype)
+    case (ST_SINGLE)
+      allocate(p_rnode%p_Fsingle3D(Isize(1),Isize(2),Isize(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_SINGLE_BYTES
+    case (ST_DOUBLE)
+      allocate(p_rnode%p_Ddouble3D(Isize(1),Isize(2),Isize(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_DOUBLE_BYTES
+    case (ST_QUAD)
+      allocate(p_rnode%p_Qquad3D(Isize(1),Isize(2),Isize(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_QUAD_BYTES
+    case (ST_INT)
+      allocate(p_rnode%p_Iinteger3D(Isize(1),Isize(2),Isize(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT_BYTES
+    case (ST_INT8)
+      allocate(p_rnode%p_Iint8_3D(Isize(1),Isize(2),Isize(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT8_BYTES
+    case (ST_INT16)
+      allocate(p_rnode%p_Iint16_3D(Isize(1),Isize(2),Isize(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT16_BYTES
+    case (ST_INT32)
+      allocate(p_rnode%p_Iint32_3D(Isize(1),Isize(2),Isize(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT32_BYTES
+    case (ST_INT64)
+      allocate(p_rnode%p_Iint64_3D(Isize(1),Isize(2),Isize(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT64_BYTES
+    case (ST_LOGICAL)
+      allocate(p_rnode%p_Blogical3D(Isize(1),Isize(2),Isize(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_LOGICAL_BYTES
+    case (ST_CHAR)
+      allocate(p_rnode%p_Schar3D(Isize(1),Isize(2),Isize(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_CHAR_BYTES
+    case default
+      call output_line ('Unsupported memory type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_new3D')
+      call sys_halt()
+    end select
+    
+    p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
+    if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
+        p_rheap%itotalMemMax = p_rheap%itotalMem
+    
+    ! Initialise the storage block
+    call storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
+    
+  end subroutine storage_new3D
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_new3Dfixed (scall, sname, Ilbound, Iubound, ctype,&
+                                 ihandle, cinitNewBlock, rheap)
+
+!<description>
+  !This routine reserves a 3D memory block of desired bounds and type.
+!</description>
+
+!<input>
+
+  !name of the calling routine
+  character(LEN=*), intent(in) :: scall
+
+  !clear name of data field
+  character(LEN=*), intent(in) :: sname
+
+  !requested lower bounds for 1st, 2nd and 3rd dimension
+  integer, dimension(3), intent(in) :: Ilbound
+
+  !requested upper bounds for 1st, 2nd and 3rd dimension
+  integer, dimension(3), intent(in) :: Iubound
+
+  !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
+  integer, intent(in) :: ctype
+
+  !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
+  integer, intent(in) :: cinitNewBlock
+
+!</input>
+
+!<inputoutput>
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</inputoutput>
+
+!<output>
+
+  ! Handle of the memory block.
+  integer, intent(out) :: ihandle
+
+!</output>
+
+!</subroutine>
+
+    ! Pointer to the heap
+    type(t_storageBlock), pointer :: p_rheap
+    type(t_storageNode), pointer :: p_rnode
+    integer, dimension(3) :: Isize
+    character(LEN=SYS_NAMELEN) :: snameBackup
+    
+    Isize=Iubound-Ilbound+1
+    if ((Isize(1) .eq. 0) .or. (Isize(2) .eq. 0) .or. (Isize(3) .eq. 0)) then
+      call output_line ('Isize=0!', &
+                        OU_CLASS_WARNING,OU_MODE_STD,'storage_new3Dfixed')
+      ihandle = 0
+      return
+    end if
+    
+    ! Get the heap to use - local or global one.
+    
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+    
+    ! Back up the array name. This is important for a very crual situation:
+    ! The storage_newhandle below may reallocate the p_Rdescriptors array.
+    ! If sname points to one of the old arrays, the pointer gets invalid
+    ! and the name cannot be accessed anymore. So make a backup of that 
+    ! before creating a new handle!
+    snameBackup = sname
+    
+    ! Get a new handle
+    ihandle = storage_newhandle (p_rheap)
+    
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    
+    ! Initialise the content
+    
+    p_rnode%idataType = ctype
+    p_rnode%idimension = 3
+    p_rnode%sname = snameBackup
+    
+    ! Allocate memory according to Isize:
+    
+    select case (ctype)
+    case (ST_SINGLE)
+      allocate(p_rnode%p_Fsingle3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
+                                   Ilbound(3):Iubound(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_SINGLE_BYTES
+    case (ST_DOUBLE)
+      allocate(p_rnode%p_Ddouble3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
+                                   Ilbound(3):Iubound(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_DOUBLE_BYTES
+    case (ST_QUAD)
+      allocate(p_rnode%p_Qquad3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
+                                   Ilbound(3):Iubound(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_QUAD_BYTES
+    case (ST_INT)
+      allocate(p_rnode%p_Iinteger3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
+                                   Ilbound(3):Iubound(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT_BYTES
+    case (ST_INT8)
+      allocate(p_rnode%p_Iint8_3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
+                                   Ilbound(3):Iubound(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT8_BYTES
+    case (ST_INT16)
+      allocate(p_rnode%p_Iint16_3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
+                                   Ilbound(3):Iubound(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT16_BYTES
+    case (ST_INT32)
+      allocate(p_rnode%p_Iint32_3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
+                                   Ilbound(3):Iubound(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT32_BYTES
+    case (ST_INT64)
+      allocate(p_rnode%p_Iint64_3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
+                                   Ilbound(3):Iubound(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT64_BYTES
+    case (ST_LOGICAL)
+      allocate(p_rnode%p_Blogical3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
+                                   Ilbound(3):Iubound(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_LOGICAL_BYTES
+    case (ST_CHAR)
+      allocate(p_rnode%p_Schar3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
+                                   Ilbound(3):Iubound(3)))
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_CHAR_BYTES
+    case default
+      call output_line ('Unsupported memory type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_new2Dfixed')
+      call sys_halt()
+    end select
+    
+    p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
+    if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
+        p_rheap%itotalMemMax = p_rheap%itotalMem
+    
+    ! Initialise the storage block
+    call storage_initialiseBlock (ihandle, cinitNewBlock, rheap, Ilbound(2))
+    
+  end subroutine storage_new3Dfixed
+
+!************************************************************************
+
+!<subroutine>
+
   subroutine storage_free (ihandle, rheap)
 
 !<description>
@@ -1855,6 +2533,7 @@ contains
     if (associated(p_rnode%p_Iint64_1D))  deallocate(p_rnode%p_Iint64_1D)
     if (associated(p_rnode%p_Blogical1D)) deallocate(p_rnode%p_Blogical1D)
     if (associated(p_rnode%p_Schar1D))    deallocate(p_rnode%p_Schar1D)
+
     if (associated(p_rnode%p_Fsingle2D))  deallocate(p_rnode%p_Fsingle2D)
     if (associated(p_rnode%p_Ddouble2D))  deallocate(p_rnode%p_Ddouble2D)
     if (associated(p_rnode%p_Qquad2D))    deallocate(p_rnode%p_Qquad2D)
@@ -1865,6 +2544,17 @@ contains
     if (associated(p_rnode%p_Iint64_2D))  deallocate(p_rnode%p_Iint64_2D)
     if (associated(p_rnode%p_Blogical2D)) deallocate(p_rnode%p_Blogical2D)
     if (associated(p_rnode%p_Schar2D))    deallocate(p_rnode%p_Schar2D)
+
+    if (associated(p_rnode%p_Fsingle3D))  deallocate(p_rnode%p_Fsingle3D)
+    if (associated(p_rnode%p_Ddouble3D))  deallocate(p_rnode%p_Ddouble3D)
+    if (associated(p_rnode%p_Qquad3D))    deallocate(p_rnode%p_Qquad3D)
+    if (associated(p_rnode%p_Iinteger3D)) deallocate(p_rnode%p_Iinteger3D)
+    if (associated(p_rnode%p_Iint8_3D))   deallocate(p_rnode%p_Iint8_3D)
+    if (associated(p_rnode%p_Iint16_3D))  deallocate(p_rnode%p_Iint16_3D)
+    if (associated(p_rnode%p_Iint32_3D))  deallocate(p_rnode%p_Iint32_3D)
+    if (associated(p_rnode%p_Iint64_3D))  deallocate(p_rnode%p_Iint64_3D)
+    if (associated(p_rnode%p_Blogical3D)) deallocate(p_rnode%p_Blogical3D)
+    if (associated(p_rnode%p_Schar3D))    deallocate(p_rnode%p_Schar3D)
     
     ! Release the handle itself.
     call storage_releasehandle (ihandle,p_rheap)
@@ -1952,6 +2642,7 @@ contains
       case (ST_CHAR)
         p_rnode%p_Schar1D = achar(0)
       end select
+
     case (2)
       select case (p_rnode%idataType)
       case (ST_SINGLE)
@@ -1975,6 +2666,31 @@ contains
       case (ST_CHAR)
         p_rnode%p_Schar2D = achar(0)
       end select
+
+    case (3)
+      select case (p_rnode%idataType)
+      case (ST_SINGLE)
+        p_rnode%p_Fsingle3D = 0.0_SP
+      case (ST_DOUBLE)
+        p_rnode%p_Ddouble3D = 0.0_DP
+      case (ST_QUAD)
+        p_rnode%p_Qquad3D = 0.0_QP
+      case (ST_INT)
+        p_rnode%p_Iinteger3D = 0
+      case (ST_INT8)
+        p_rnode%p_Iint8_3D = 0_I8
+      case (ST_INT16)
+        p_rnode%p_Iint16_3D = 0_I16
+      case (ST_INT32)
+        p_rnode%p_Iint32_3D = 0_I32
+      case (ST_INT64)
+        p_rnode%p_Iint64_3D = 0_I64
+      case (ST_LOGICAL)
+        p_rnode%p_Blogical3D = .false.
+      case (ST_CHAR)
+        p_rnode%p_Schar3D = achar(0)
+      end select
+
     case default
       call output_line ('Invalid dimension!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_clear')
@@ -1990,7 +2706,7 @@ contains
   subroutine storage_getsize1D (ihandle, isize, rheap)
 
 !<description>
-  ! Returns the length of an array identified by ihandle.
+  ! Returns the length of a 1-dimensional array identified by ihandle.
 !</description>
 
 !<input>
@@ -2078,10 +2794,10 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getsize2D (ihandle, isize, rheap)
+  subroutine storage_getsize (ihandle, Isize, rheap)
 
 !<description>
-  ! Returns the length of an array identified by ihandle.
+  ! Returns the length of a multidimensional array identified by ihandle.
 !</description>
 
 !<input>
@@ -2095,6 +2811,8 @@ contains
 
 !<output>
   ! Length of each dimension of the array identified by ihandle.
+  ! Note that if the dimension of Isize is not equal to the
+  ! dimension of the array an error is thrown.
   integer, dimension(:), intent(out) :: Isize
 !</output>
 
@@ -2113,7 +2831,7 @@ contains
     
     if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize2D')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
       call sys_halt()
     end if
     
@@ -2123,47 +2841,123 @@ contains
     ! Is the node associated at all?
     if (p_rnode%idataType .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize2D')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
       call output_line ('Handle number: '//trim(sys_siL(ihandle,11)), &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize2D')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
       call sys_halt()
     end if
     
     ! What are we?
-    if (p_rnode%idimension .ne. 2) then
-      call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is not 2-dimensional!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize2D')
-      call sys_halt()
-    end if
-    
-    select case (p_rnode%idataType)
-    case (ST_SINGLE)
-      Isize = shape(p_rnode%p_Fsingle2D)
-    case (ST_DOUBLE)
-      Isize = shape(p_rnode%p_Ddouble2D)
-    case (ST_QUAD)
-      Isize = shape(p_rnode%p_Qquad2D)
-    case (ST_INT)
-      Isize = shape(p_rnode%p_Iinteger2D)
-    case (ST_INT8)
-      Isize = shape(p_rnode%p_Iint8_2D)
-    case (ST_INT16)
-      Isize = shape(p_rnode%p_Iint16_2D)
-    case (ST_INT32)
-      Isize = shape(p_rnode%p_Iint32_2D)
-    case (ST_INT64)
-      Isize = shape(p_rnode%p_Iint64_2D)
-    case (ST_LOGICAL)
-      Isize = shape(p_rnode%p_Blogical2D)
-    case (ST_CHAR)
-      Isize = shape(p_rnode%p_Schar2D)
+    select case (p_rnode%idimension)
+    case (1)
+      if (size(Isize) .ne. 1) then
+        call output_line ('dim(Isize) /= 1!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+        call sys_halt()
+      end if
+
+      select case (p_rnode%idataType)
+      case (ST_SINGLE)
+        Isize = shape(p_rnode%p_Fsingle1D)
+      case (ST_DOUBLE)
+        Isize = shape(p_rnode%p_Ddouble1D)
+      case (ST_QUAD)
+        Isize = shape(p_rnode%p_Qquad1D)
+      case (ST_INT)
+        Isize = shape(p_rnode%p_Iinteger1D)
+      case (ST_INT8)
+        Isize = shape(p_rnode%p_Iint8_1D)
+      case (ST_INT16)
+        Isize = shape(p_rnode%p_Iint16_1D)
+      case (ST_INT32)
+        Isize = shape(p_rnode%p_Iint32_1D)
+      case (ST_INT64)
+        Isize = shape(p_rnode%p_Iint64_1D)
+      case (ST_LOGICAL)
+        Isize = shape(p_rnode%p_Blogical1D)
+      case (ST_CHAR)
+        Isize = shape(p_rnode%p_Schar1D)
+      case default
+        call output_line ('Invalid data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+        call sys_halt()
+      end select
+      
+    case (2)
+      if (size(Isize) .ne. 2) then
+        call output_line ('dim(Isize) /= 2!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+        call sys_halt()
+      end if
+
+      select case (p_rnode%idataType)
+      case (ST_SINGLE)
+        Isize = shape(p_rnode%p_Fsingle2D)
+      case (ST_DOUBLE)
+        Isize = shape(p_rnode%p_Ddouble2D)
+      case (ST_QUAD)
+        Isize = shape(p_rnode%p_Qquad2D)
+      case (ST_INT)
+        Isize = shape(p_rnode%p_Iinteger2D)
+      case (ST_INT8)
+        Isize = shape(p_rnode%p_Iint8_2D)
+      case (ST_INT16)
+        Isize = shape(p_rnode%p_Iint16_2D)
+      case (ST_INT32)
+        Isize = shape(p_rnode%p_Iint32_2D)
+      case (ST_INT64)
+        Isize = shape(p_rnode%p_Iint64_2D)
+      case (ST_LOGICAL)
+        Isize = shape(p_rnode%p_Blogical2D)
+      case (ST_CHAR)
+        Isize = shape(p_rnode%p_Schar2D)
+      case default
+        call output_line ('Invalid data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+        call sys_halt()
+      end select
+      
+    case (3)
+      if (size(Isize) .ne. 3) then
+        call output_line ('dim(Isize) /= 3!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+        call sys_halt()
+      end if
+
+      select case (p_rnode%idataType)
+      case (ST_SINGLE)
+        Isize = shape(p_rnode%p_Fsingle3D)
+      case (ST_DOUBLE)
+        Isize = shape(p_rnode%p_Ddouble3D)
+      case (ST_QUAD)
+        Isize = shape(p_rnode%p_Qquad3D)
+      case (ST_INT)
+        Isize = shape(p_rnode%p_Iinteger3D)
+      case (ST_INT8)
+        Isize = shape(p_rnode%p_Iint8_3D)
+      case (ST_INT16)
+        Isize = shape(p_rnode%p_Iint16_3D)
+      case (ST_INT32)
+        Isize = shape(p_rnode%p_Iint32_3D)
+      case (ST_INT64)
+        Isize = shape(p_rnode%p_Iint64_3D)
+      case (ST_LOGICAL)
+        Isize = shape(p_rnode%p_Blogical3D)
+      case (ST_CHAR)
+        Isize = shape(p_rnode%p_Schar3D)
+      case default
+        call output_line ('Invalid data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+        call sys_halt()
+      end select
+
     case default
-      call output_line ('Invalid data type!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize1D')
+      call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is not a valid handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
       call sys_halt()
     end select
-    
-  end subroutine storage_getsize2D
+        
+  end subroutine storage_getsize
 
 !************************************************************************
 
@@ -6276,6 +7070,2052 @@ contains
 
 !<subroutine>
 
+  subroutine storage_getbase_int3DDef (ihandle, p_Iarray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer, dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DDef')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DDef')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger3D
+
+  end subroutine storage_getbase_int3DDef
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int3DUBnd (ihandle, p_Iarray, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array and adopts the given upper bound for the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer, dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DUBnd')
+      call sys_halt()
+    end if
+
+    if ((ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger3D,3))) then
+      call output_line ('Upper bound invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger3D(:,:,:ubnd)
+
+  end subroutine storage_getbase_int3DUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int3DLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array and adopts the given lower and upper bounds for
+  ! the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The lower bound
+  integer, intent(in) :: lbnd
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer, dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DLUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DLUBnd')
+      call sys_halt()
+    end if
+
+    if ((lbnd .lt. 1) .or. &
+        (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger3D,3)) .or. &
+        (ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger3D,3)) .or. &
+        (lbnd .gt. ubnd)) then
+      call output_line ('Bounds invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger3D(:,:,lbnd:ubnd)
+
+  end subroutine storage_getbase_int3DLUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_single3DDef (ihandle, p_Sarray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! single precision array.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  real(SP), dimension(:,:,:), pointer :: p_Sarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DDef')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_SINGLE) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DDef')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle3D
+
+  end subroutine storage_getbase_single3DDef
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_single3DUBnd (ihandle, p_Sarray, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! single precision array and adopt the given upper bound for the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  real(SP), dimension(:,:,:), pointer :: p_Sarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_SINGLE) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DUBnd')
+      call sys_halt()
+    end if
+
+    if ((ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle3D,3))) then
+      call output_line ('Upper bound invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle3D(:,:,:ubnd)
+
+  end subroutine storage_getbase_single3DUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_single3DLUBnd (ihandle, p_Sarray, lbnd, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! single precision array and adopt the given lower and upper bounds
+  ! for the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The lower bound
+  integer, intent(in) :: lbnd
+  
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  real(SP), dimension(:,:,:), pointer :: p_Sarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DLUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_SINGLE) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DLUBnd')
+      call sys_halt()
+    end if
+
+    if ((lbnd .lt. 1) .or. &
+        (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle3D,3)) .or. &
+        (ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle3D,3)) .or. &
+        (lbnd .gt. ubnd)) then
+      call output_line ('Bounds invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle3D(:,:,lbnd:ubnd)
+
+  end subroutine storage_getbase_single3DLUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_double3DDef (ihandle, p_Darray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! double precision array.
+
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+!</input>
+
+!<output>
+  ! The pointer associated to the handle.
+  real(DP), dimension(:,:,:), pointer :: p_Darray
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DDef')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_DOUBLE) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DDef')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble3D
+
+  end subroutine storage_getbase_double3DDef
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_double3DUBnd (ihandle, p_Darray, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! double precision array and adopt the given upper bound for the third dimension.
+
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+!</input>
+
+!<output>
+  ! The pointer associated to the handle.
+  real(DP), dimension(:,:,:), pointer :: p_Darray
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_DOUBLE) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DUBnd')
+      call sys_halt()
+    end if
+
+    if ((ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble3D,3))) then
+       call output_line ('Upper bound invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble3D(:,:,:ubnd)
+
+  end subroutine storage_getbase_double3DUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_double3DLUBnd (ihandle, p_Darray, lbnd, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! double precision array and adopt the given lower and upper bounds
+  ! for the third dimension.
+
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The lower bound
+  integer, intent(in) :: lbnd
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+!</input>
+
+!<output>
+  ! The pointer associated to the handle.
+  real(DP), dimension(:,:,:), pointer :: p_Darray
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DLUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_DOUBLE) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DLUBnd')
+      call sys_halt()
+    end if
+
+    if ((lbnd .lt. 1) .or. &
+        (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble3D,3)) .or. &
+        (ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble3D,3)) .or. &
+        (lbnd .gt. ubnd)) then
+      call output_line ('Bounds invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble3D(:,:,lbnd:ubnd)
+
+  end subroutine storage_getbase_double3DLUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_quad3DDef (ihandle, p_Qarray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! quad precision array.
+
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+!</input>
+
+!<output>
+  ! The pointer associated to the handle.
+  real(QP), dimension(:,:,:), pointer :: p_Qarray
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DDef')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_QUAD) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DDef')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Qarray => p_rheap%p_Rdescriptors(ihandle)%p_Qquad3D
+
+  end subroutine storage_getbase_quad3DDef
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_quad3DUBnd (ihandle, p_Qarray, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! quad precision array and adopt the given upper bound for the third dimension.
+
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+!</input>
+
+!<output>
+  ! The pointer associated to the handle.
+  real(QP), dimension(:,:,:), pointer :: p_Qarray
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_QUAD) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DUBnd')
+      call sys_halt()
+    end if
+
+    if ((ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Qquad3D,3))) then
+       call output_line ('Upper bound invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Qarray => p_rheap%p_Rdescriptors(ihandle)%p_Qquad3D(:,:,:ubnd)
+
+  end subroutine storage_getbase_quad3DUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_quad3DLUBnd (ihandle, p_Qarray, lbnd, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! quad precision array and adopt the given lower and upper bounds
+  ! for the third dimension.
+
+!</description>
+
+!<input>
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The lower bound
+  integer, intent(in) :: lbnd
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+!</input>
+
+!<output>
+  ! The pointer associated to the handle.
+  real(QP), dimension(:,:,:), pointer :: p_Qarray
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DLUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_QUAD) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DLUBnd')
+      call sys_halt()
+    end if
+
+    if ((lbnd .lt. 1) .or. &
+        (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Qquad3D,3)) .or. &
+        (ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Qquad3D,3)) .or. &
+        (lbnd .gt. ubnd)) then
+      call output_line ('Bounds invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Qarray => p_rheap%p_Rdescriptors(ihandle)%p_Qquad3D(:,:,lbnd:ubnd)
+
+  end subroutine storage_getbase_quad3DLUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_logical3DDef (ihandle, p_Larray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! logical array.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  logical, dimension(:,:,:), pointer :: p_Larray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DDef')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_LOGICAL) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DDef')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical3D
+
+  end subroutine storage_getbase_logical3DDef
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_logical3DUBnd (ihandle, p_Larray, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! logical array and adopt the given upper bound for the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  logical, dimension(:,:,:), pointer :: p_Larray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_LOGICAL) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DUBnd')
+      call sys_halt()
+    end if
+
+    if ((ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical3D,3))) then
+      call output_line ('Upper bound invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical3D(:,:,:ubnd)
+
+  end subroutine storage_getbase_logical3DUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_logical3DLUBnd (ihandle, p_Larray, lbnd, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! logical array and adopt the given lower and upper bounds for
+  ! the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The lower bound
+  integer, intent(in) :: lbnd
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  logical, dimension(:,:,:), pointer :: p_Larray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DLUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_LOGICAL) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DLUBnd')
+      call sys_halt()
+    end if
+
+    if ((lbnd .lt. 1) .or. &
+        (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical3D,3)) .or. &
+        (ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Blogical3D,3)) .or. &
+        (lbnd .gt. ubnd)) then
+      call output_line ('Bounds invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical3D(:,:,lbnd:ubnd)
+
+  end subroutine storage_getbase_logical3DLUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_char3DDef (ihandle, p_Carray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! character array.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  character, dimension(:,:,:), pointer :: p_Carray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DDef')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_CHAR) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DDef')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar3D
+
+  end subroutine storage_getbase_char3DDef
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_char3DUBnd (ihandle, p_Carray, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! character array and adopt the given upper bound for the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  character, dimension(:,:,:), pointer :: p_Carray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_CHAR) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DUBnd')
+      call sys_halt()
+    end if
+
+    if ((ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar3D,3))) then
+      call output_line ('Upper bound invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar3D(:,:,:ubnd)
+
+  end subroutine storage_getbase_char3DUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_char3DLUBnd (ihandle, p_Carray, lbnd, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! character array and adopt the given lower and upper bounds for
+  ! the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The lower bound
+  integer, intent(in) :: lbnd
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  character, dimension(:,:,:), pointer :: p_Carray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DLUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_CHAR) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DLUBnd')
+      call sys_halt()
+    end if
+
+    if ((lbnd .lt. 1) .or. &
+        (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar3D,3)) .or. &
+        (ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Schar3D,3)) .or. &
+        (lbnd .gt. ubnd)) then
+      call output_line ('Bounds invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar3D(:,:,lbnd:ubnd)
+
+  end subroutine storage_getbase_char3DLUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int8_3DDef (ihandle, p_Iarray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I8), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DDef')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT8) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DDef')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint8_3D
+
+  end subroutine storage_getbase_int8_3DDef
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int8_3DUBnd (ihandle, p_Iarray, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array and adopts the given upper bound for the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I8), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT8) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DUBnd')
+      call sys_halt()
+    end if
+
+    if ((ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint8_3D,3))) then
+      call output_line ('Upper bound invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint8_3D(:,:,:ubnd)
+
+  end subroutine storage_getbase_int8_3DUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int8_3DLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array and adopts the given lower and upper bounds for
+  ! the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The lower bound
+  integer, intent(in) :: lbnd
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I8), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DLUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT8) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DLUBnd')
+      call sys_halt()
+    end if
+
+    if ((lbnd .lt. 1) .or. &
+        (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint8_3D,3)) .or. &
+        (ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint8_3D,3)) .or. &
+        (lbnd .gt. ubnd)) then
+      call output_line ('Bounds invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint8_3D(:,:,lbnd:ubnd)
+
+  end subroutine storage_getbase_int8_3DLUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int16_3DDef (ihandle, p_Iarray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I16), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DDef')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT16) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DDef')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint16_3D
+
+  end subroutine storage_getbase_int16_3DDef
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int16_3DUBnd (ihandle, p_Iarray, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array and adopts the given upper bound for the secondthird dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I16), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT16) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DUBnd')
+      call sys_halt()
+    end if
+
+    if ((ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint16_3D,3))) then
+      call output_line ('Upper bound invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint16_3D(:,:,:ubnd)
+
+  end subroutine storage_getbase_int16_3DUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int16_3DLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array and adopts the given lower and upper bounds for
+  ! the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The lower bound
+  integer, intent(in) :: lbnd
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I16), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DLUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT16) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DLUBnd')
+      call sys_halt()
+    end if
+
+    if ((lbnd .lt. 1) .or. &
+        (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint16_3D,3)) .or. &
+        (ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint16_3D,3)) .or. &
+        (lbnd .gt. ubnd)) then
+      call output_line ('Bounds invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint16_3D(:,:,lbnd:ubnd)
+
+  end subroutine storage_getbase_int16_3DLUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int32_3DDef (ihandle, p_Iarray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I32), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DDef')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT32) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DDef')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint32_3D
+
+  end subroutine storage_getbase_int32_3DDef
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int32_3DUBnd (ihandle, p_Iarray, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array and adopts the given upper bound for the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I32), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT32) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DUBnd')
+      call sys_halt()
+    end if
+
+    if ((ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint32_3D,3))) then
+      call output_line ('Upper bound invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint32_3D(:,:,:ubnd)
+
+  end subroutine storage_getbase_int32_3DUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int32_3DLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array and adopts the given lower and upper bounds for
+  ! the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The lower bound
+  integer, intent(in) :: lbnd
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I32), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DLUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT32) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DLUBnd')
+      call sys_halt()
+    end if
+
+    if ((lbnd .lt. 1) .or. &
+        (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint32_3D,3)) .or. &
+        (ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint32_3D,3)) .or. &
+        (lbnd .gt. ubnd)) then
+      call output_line ('Bounds invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint32_3D(:,:,lbnd:ubnd)
+
+  end subroutine storage_getbase_int32_3DLUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int64_3DDef (ihandle, p_Iarray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I64), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_3DDef')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT64) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_3DDef')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint64_3D
+
+  end subroutine storage_getbase_int64_3DDef
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int64_3DUBnd (ihandle, p_Iarray, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array and adopts the given upper bound for the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I64), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_3DUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT64) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_3DUBnd')
+      call sys_halt()
+    end if
+
+    if ((ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint64_3D,3))) then
+      call output_line ('Upper bound invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint64_3D(:,:,:ubnd)
+
+  end subroutine storage_getbase_int64_3DUBnd
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_getbase_int64_3DLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! integer array and adopts the given lower and upper bounds for
+  ! the third dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  integer, intent(in) :: ihandle
+
+  ! The lower bound
+  integer, intent(in) :: lbnd
+
+  ! The upper bound
+  integer, intent(in) :: ubnd
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  integer(I64), dimension(:,:,:), pointer :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_3DLUBnd')
+      call sys_halt()
+    end if
+
+    if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT64) then
+      call output_line ('Wrong data format!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DLUBnd')
+      call sys_halt()
+    end if
+
+    if ((lbnd .lt. 1) .or. &
+        (lbnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint64_3D,3)) .or. &
+        (ubnd .lt. 1) .or. &
+        (ubnd .gt. ubound(p_rheap%p_Rdescriptors(ihandle)%p_Iint64_3D,3)) .or. &
+        (lbnd .gt. ubnd)) then
+      call output_line ('Bounds invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_3DUBnd')
+      call sys_halt()
+    end if
+
+    ! Get the pointer
+    p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint64_3D(:,:,lbnd:ubnd)
+
+  end subroutine storage_getbase_int64_3DLUBnd
+
+!************************************************************************
+
+!<subroutine>
+
   subroutine storage_copyDefault (h_source, h_dest, rheap)
 
 !<description>
@@ -6308,8 +9148,10 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rsource, p_rdest
   integer :: isizeSource,isizeDest
-  integer, dimension(2) :: Ilbound, Iubound
+  integer, dimension(2) :: Ilbound2D, Iubound2D
+  integer, dimension(3) :: Ilbound3D, Iubound3D
   integer, dimension(2) :: Isize2DSource,Isize2DDest
+  integer, dimension(3) :: Isize3DSource,Isize3DDest
 
     ! Get the heap to use - local or global one.
     if(present(rheap)) then
@@ -6393,64 +9235,128 @@ contains
       case (2)
         select case (p_rsource%IdataType)
         case (ST_SINGLE)
-          Ilbound = lbound(p_rsource%p_Fsingle2D)
-          Iubound = ubound(p_rsource%p_Fsingle2D)
+          Ilbound2D = lbound(p_rsource%p_Fsingle2D)
+          Iubound2D = ubound(p_rsource%p_Fsingle2D)
           call storage_new ('storage_copyDefault', p_rsource%sname,&
-                            Ilbound,Iubound,&
+                            Ilbound2D,Iubound2D,&
                             ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_DOUBLE)
-          Ilbound = lbound(p_rsource%p_Ddouble2D)
-          Iubound = ubound(p_rsource%p_Ddouble2D)
+          Ilbound2D = lbound(p_rsource%p_Ddouble2D)
+          Iubound2D = ubound(p_rsource%p_Ddouble2D)
           call storage_new ('storage_copyDefault', p_rsource%sname,&
-                            Ilbound,Iubound,&
+                            Ilbound2D,Iubound2D,&
                             ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_QUAD)
-          Ilbound = lbound(p_rsource%p_Qquad2D)
-          Iubound = ubound(p_rsource%p_Qquad2D)
+          Ilbound2D = lbound(p_rsource%p_Qquad2D)
+          Iubound2D = ubound(p_rsource%p_Qquad2D)
           call storage_new ('storage_copyDefault', p_rsource%sname,&
-                            Ilbound,Iubound,&
+                            Ilbound2D,Iubound2D,&
                             ST_QUAD, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT)
-          Ilbound = lbound(p_rsource%p_Iinteger2D)
-          Iubound = ubound(p_rsource%p_Iinteger2D)
+          Ilbound2D = lbound(p_rsource%p_Iinteger2D)
+          Iubound2D = ubound(p_rsource%p_Iinteger2D)
           call storage_new ('storage_copyDefault', p_rsource%sname,&
-                            Ilbound,Iubound,&
+                            Ilbound2D,Iubound2D,&
                             ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT8)
-          Ilbound = lbound(p_rsource%p_Iint8_2D)
-          Iubound = ubound(p_rsource%p_Iint8_2D)
+          Ilbound2D = lbound(p_rsource%p_Iint8_2D)
+          Iubound2D = ubound(p_rsource%p_Iint8_2D)
           call storage_new ('storage_copyDefault', p_rsource%sname,&
-                            Ilbound,Iubound,&
+                            Ilbound2D,Iubound2D,&
                             ST_INT8, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT16)
-          Ilbound = lbound(p_rsource%p_Iint16_2D)
-          Iubound = ubound(p_rsource%p_Iint16_2D)
+          Ilbound2D = lbound(p_rsource%p_Iint16_2D)
+          Iubound2D = ubound(p_rsource%p_Iint16_2D)
           call storage_new ('storage_copyDefault', p_rsource%sname,&
-                            Ilbound,Iubound,&
+                            Ilbound2D,Iubound2D,&
                             ST_INT16, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT32)
-          Ilbound = lbound(p_rsource%p_Iint32_2D)
-          Iubound = ubound(p_rsource%p_Iint32_2D)
+          Ilbound2D = lbound(p_rsource%p_Iint32_2D)
+          Iubound2D = ubound(p_rsource%p_Iint32_2D)
           call storage_new ('storage_copyDefault', p_rsource%sname,&
-                            Ilbound,Iubound,&
+                            Ilbound2D,Iubound2D,&
                             ST_INT32, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_INT64)
-          Ilbound = lbound(p_rsource%p_Iint64_2D)
-          Iubound = ubound(p_rsource%p_Iint64_2D)
+          Ilbound2D = lbound(p_rsource%p_Iint64_2D)
+          Iubound2D = ubound(p_rsource%p_Iint64_2D)
           call storage_new ('storage_copyDefault', p_rsource%sname,&
-                            Ilbound,Iubound,&
+                            Ilbound2D,Iubound2D,&
                             ST_INT64, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_LOGICAL)
-          Ilbound = lbound(p_rsource%p_Blogical2D)
-          Iubound = ubound(p_rsource%p_Blogical2D)
+          Ilbound2D = lbound(p_rsource%p_Blogical2D)
+          Iubound2D = ubound(p_rsource%p_Blogical2D)
           call storage_new ('storage_copyDefault', p_rsource%sname,&
-                            Ilbound,Iubound,&
+                            Ilbound2D,Iubound2D,&
                             ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         case (ST_CHAR)
-          Ilbound = lbound(p_rsource%p_Schar2D)
-          Iubound = ubound(p_rsource%p_Schar2D)
+          Ilbound2D = lbound(p_rsource%p_Schar2D)
+          Iubound2D = ubound(p_rsource%p_Schar2D)
           call storage_new ('storage_copyDefault', p_rsource%sname,&
-                            Ilbound,Iubound,&
+                            Ilbound2D,Iubound2D,&
+                            ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        end select
+
+      case (3)
+        select case (p_rsource%IdataType)
+        case (ST_SINGLE)
+          Ilbound3D = lbound(p_rsource%p_Fsingle3D)
+          Iubound3D = ubound(p_rsource%p_Fsingle3D)
+          call storage_new ('storage_copyDefault', p_rsource%sname,&
+                            Ilbound3D,Iubound3D,&
+                            ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        case (ST_DOUBLE)
+          Ilbound3D = lbound(p_rsource%p_Ddouble3D)
+          Iubound3D = ubound(p_rsource%p_Ddouble3D)
+          call storage_new ('storage_copyDefault', p_rsource%sname,&
+                            Ilbound3D,Iubound3D,&
+                            ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        case (ST_QUAD)
+          Ilbound3D = lbound(p_rsource%p_Qquad3D)
+          Iubound3D = ubound(p_rsource%p_Qquad3D)
+          call storage_new ('storage_copyDefault', p_rsource%sname,&
+                            Ilbound3D,Iubound3D,&
+                            ST_QUAD, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        case (ST_INT)
+          Ilbound3D = lbound(p_rsource%p_Iinteger3D)
+          Iubound3D = ubound(p_rsource%p_Iinteger3D)
+          call storage_new ('storage_copyDefault', p_rsource%sname,&
+                            Ilbound3D,Iubound3D,&
+                            ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        case (ST_INT8)
+          Ilbound3D = lbound(p_rsource%p_Iint8_3D)
+          Iubound3D = ubound(p_rsource%p_Iint8_3D)
+          call storage_new ('storage_copyDefault', p_rsource%sname,&
+                            Ilbound3D,Iubound3D,&
+                            ST_INT8, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        case (ST_INT16)
+          Ilbound3D = lbound(p_rsource%p_Iint16_3D)
+          Iubound3D = ubound(p_rsource%p_Iint16_3D)
+          call storage_new ('storage_copyDefault', p_rsource%sname,&
+                            Ilbound3D,Iubound3D,&
+                            ST_INT16, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        case (ST_INT32)
+          Ilbound3D = lbound(p_rsource%p_Iint32_3D)
+          Iubound3D = ubound(p_rsource%p_Iint32_3D)
+          call storage_new ('storage_copyDefault', p_rsource%sname,&
+                            Ilbound3D,Iubound3D,&
+                            ST_INT32, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        case (ST_INT64)
+          Ilbound3D = lbound(p_rsource%p_Iint64_3D)
+          Iubound3D = ubound(p_rsource%p_Iint64_3D)
+          call storage_new ('storage_copyDefault', p_rsource%sname,&
+                            Ilbound3D,Iubound3D,&
+                            ST_INT64, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        case (ST_LOGICAL)
+          Ilbound3D = lbound(p_rsource%p_Blogical3D)
+          Iubound3D = ubound(p_rsource%p_Blogical3D)
+          call storage_new ('storage_copyDefault', p_rsource%sname,&
+                            Ilbound3D,Iubound3D,&
+                            ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        case (ST_CHAR)
+          Ilbound3D = lbound(p_rsource%p_Schar3D)
+          Iubound3D = ubound(p_rsource%p_Schar3D)
+          call storage_new ('storage_copyDefault', p_rsource%sname,&
+                            Ilbound3D,Iubound3D,&
                             ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         end select
       end select
@@ -6465,7 +9371,7 @@ contains
       ! Check if the given destination handle is compatible with the source handle
       p_rdest => p_rheap%p_Rdescriptors(h_dest)
 
-      ! 1D/2D the same?
+      ! Check if source and destination handle have the same dimension
       if (p_rsource%idimension .ne. p_rdest%idimension) then
         call output_line ('Dimension of source and destination handles are different!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -6487,6 +9393,16 @@ contains
         call storage_getsize(h_dest,   Isize2DDest,   rheap)
         if ((Isize2DSource(1) .ne. Isize2DDest(1)) .or.&
             (Isize2DSource(2) .ne. Isize2DDest(2))) then
+          call output_line ('Size of source and destination handles are different!', &
+                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+        end if
+
+      case (3)
+        call storage_getsize(h_source, Isize3DSource, rheap)
+        call storage_getsize(h_dest,   Isize3DDest,   rheap)
+        if ((Isize3DSource(1) .ne. Isize3DDest(1)) .or.&
+            (Isize3DSource(2) .ne. Isize3DDest(2)) .or.&
+            (Isize3DSource(3) .ne. Isize3DDest(3))) then
           call output_line ('Size of source and destination handles are different!', &
                              OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
         end if
@@ -6812,6 +9728,164 @@ contains
                           OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
         call sys_halt()
       end select
+
+    case (3)
+      select case (p_rsource%idataType)
+      case (ST_SINGLE)
+        select case (p_rdest%idataType)
+        case (ST_SINGLE)
+          call lalg_copyVectorSngl3D (p_rsource%p_Fsingle3D,p_rdest%p_Fsingle3D)
+        case (ST_DOUBLE)
+          call lalg_copyVectorSnglDbl3D (p_rsource%p_Fsingle3D,p_rdest%p_Ddouble3D)
+        case (ST_QUAD)
+          call lalg_copyVectorSnglQuad3D (p_rsource%p_Fsingle3D,p_rdest%p_Qquad3D)
+        case default
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+          call sys_halt()
+        end select
+        
+      case (ST_DOUBLE)
+        select case (p_rdest%idataType)
+        case (ST_SINGLE)
+          call lalg_copyVectorDblSngl3D (p_rsource%p_Ddouble3D,p_rdest%p_Fsingle3D)
+        case (ST_DOUBLE)
+          call lalg_copyVectorDble3D (p_rsource%p_Ddouble3D,p_rdest%p_Ddouble3D)
+        case (ST_QUAD)
+          call lalg_copyVectorDblQuad3D (p_rsource%p_Ddouble3D,p_rdest%p_Qquad3D)
+        case default
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+          call sys_halt()
+        end select
+        
+      case (ST_QUAD)
+        select case (p_rdest%idataType)
+        case (ST_SINGLE)
+          call lalg_copyVectorQuadSngl3D (p_rsource%p_Qquad3D,p_rdest%p_Fsingle3D)
+        case (ST_DOUBLE)
+          call lalg_copyVectorQuadDbl3D (p_rsource%p_Qquad3D,p_rdest%p_Ddouble3D)
+        case (ST_QUAD)
+          call lalg_copyVectorQuad3D (p_rsource%p_Qquad3D,p_rdest%p_Qquad3D)
+        case default
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+          call sys_halt()
+        end select
+
+      case (ST_INT)
+        select case (p_rdest%idataType)
+        case (ST_INT)
+          call lalg_copyVectorInt3D (p_rsource%p_Iinteger3D, p_rdest%p_Iinteger3D)
+        case (ST_INT8)
+          call lalg_copyVectorInt3D (p_rsource%p_Iinteger3D, p_rdest%p_Iint8_3D)
+        case (ST_INT16)
+          call lalg_copyVectorInt3D (p_rsource%p_Iinteger3D, p_rdest%p_Iint16_3D)
+        case (ST_INT32)
+          call lalg_copyVectorInt3D (p_rsource%p_Iinteger3D, p_rdest%p_Iint32_3D)
+        case (ST_INT64)
+          call lalg_copyVectorInt3D (p_rsource%p_Iinteger3D, p_rdest%p_Iint64_3D)
+        case default
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+          call sys_halt()
+        end select
+
+      case (ST_INT8)
+        select case (p_rdest%idataType)
+        case (ST_INT)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint8_3D, p_rdest%p_Iinteger3D)
+        case (ST_INT8)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint8_3D, p_rdest%p_Iint8_3D)
+        case (ST_INT16)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint8_3D, p_rdest%p_Iint16_3D)
+        case (ST_INT32)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint8_3D, p_rdest%p_Iint32_3D)
+        case (ST_INT64)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint8_3D, p_rdest%p_Iint64_3D)
+        case default
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+          call sys_halt()
+        end select
+
+      case (ST_INT16)
+        select case (p_rdest%idataType)
+        case (ST_INT)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint16_3D, p_rdest%p_Iinteger3D)
+        case (ST_INT8)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint16_3D, p_rdest%p_Iint8_3D)
+        case (ST_INT16)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint16_3D, p_rdest%p_Iint16_3D)
+        case (ST_INT32)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint16_3D, p_rdest%p_Iint32_3D)
+        case (ST_INT64)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint16_3D, p_rdest%p_Iint64_3D)
+        case default
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+          call sys_halt()
+        end select
+
+      case (ST_INT32)
+        select case (p_rdest%idataType)
+        case (ST_INT)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint32_3D, p_rdest%p_Iinteger3D)
+        case (ST_INT8)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint32_3D, p_rdest%p_Iint8_3D)
+        case (ST_INT16)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint32_3D, p_rdest%p_Iint16_3D)
+        case (ST_INT32)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint32_3D, p_rdest%p_Iint32_3D)
+        case (ST_INT64)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint32_3D, p_rdest%p_Iint64_3D)
+        case default
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+          call sys_halt()
+        end select
+
+      case (ST_INT64)
+        select case (p_rdest%idataType)
+        case (ST_INT)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint64_3D, p_rdest%p_Iinteger3D)
+        case (ST_INT8)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint64_3D, p_rdest%p_Iint8_3D)
+        case (ST_INT16)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint64_3D, p_rdest%p_Iint16_3D)
+        case (ST_INT32)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint64_3D, p_rdest%p_Iint32_3D)
+        case (ST_INT64)
+          call lalg_copyVectorInt3D (p_rsource%p_Iint64_3D, p_rdest%p_Iint64_3D)
+        case default
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+          call sys_halt()
+        end select
+
+      case (ST_LOGICAL)
+        if (p_rdest%idataType .eq. ST_LOGICAL) then
+          call lalg_copyVectorLogical3D (p_rsource%p_Blogical3D, p_rdest%p_Blogical3D)
+        else
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+          call sys_halt()
+        end if
+
+      case (ST_CHAR)
+        if (p_rdest%idataType .eq. ST_CHAR) then
+          call lalg_copyVectorChar3D (p_rsource%p_Schar3D, p_rdest%p_Schar3D)
+        else
+          call output_line ('Unsupported data type combination!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+          call sys_halt()
+        end if
+
+      case default
+        call output_line ('Unknown data type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
+        call sys_halt()
+      end select
       
     end select
 
@@ -6821,8 +9895,76 @@ contains
 
 !<subroutine>
 
-  subroutine storage_copy_explicit (h_source, h_dest, istart_source, &
-                                    istart_dest, ilength, rheap)
+  subroutine storage_copy_explicit (h_source, h_dest, Istart_source, &
+                                    Istart_dest, Ilength, rheap)
+
+!<description>
+  ! This routine copies the information of one array to another.
+  ! The structure of the arrays behind h_source and h_dest must be
+  ! "similar" in the following sense: Both datatypes and dimensions
+  ! must be the same. The routine allows for copying only parts of
+  ! of the arrays. Therefor the relevant parts of the arrays must
+  ! be the same!
+  ! It is actually a wrapper for subroutines 'storage_copy_explicitx"'.
+!</description>
+
+!<input>
+  ! Handle of the source array to copy
+  integer, intent(in) :: h_source
+  
+  ! First entry of the source array to copy
+  integer, dimension(:), intent(in) :: Istart_source
+
+  ! First entry of the destination array where to copy
+  integer, dimension(:), intent(in) :: Istart_dest
+
+  ! Length of the array to copy
+  integer, dimension(:), intent(in) :: Ilength
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(in), target, optional :: rheap
+!</input>
+
+!<inputoutput>
+  ! Handle of the destination array.
+  ! If =ST_NOHANDLE, a new handle is allocated in exactly the same size
+  ! and structure as h_source and data is copied to it.
+  integer, intent(inout) :: h_dest
+!</inputoutput>
+
+!</subroutine>
+
+    if (size(Istart_source) .ne. size(Istart_dest) .or.&
+        size(Istart_source) .ne. size(Ilength)) then
+      call output_line ('dim(Istart_source) /= dim(Istart_dest) /= dim(Ilength)!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+      call sys_halt()
+    end if
+    
+    select case (size(Ilength))
+    case (1)
+      call storage_copy_explicit1d (h_source, h_dest, Istart_source(1),&
+                                    Istart_dest(1), Ilength(1), rheap)
+    case (2)
+      call storage_copy_explicit2d (h_source, h_dest, Istart_source,&
+                                    Istart_dest, Ilength, rheap)
+    case (3)
+      call storage_copy_explicit3d (h_source, h_dest, Istart_source,&
+                                    Istart_dest, Ilength, rheap)
+    case default
+      call output_line ('Memory blocks of dimensions larger than 3 are not supported', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+    end select
+
+  end subroutine storage_copy_explicit
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_copy_explicit1d (h_source, h_dest, istart_source, &
+                                      istart_dest, ilength, rheap)
 
 !<description>
   ! This routine copies the information of one array to another.
@@ -6868,7 +10010,7 @@ contains
 !!$    ! Check if the start address is positive
 !!$    if (istart_source .le. 0 .or. istart_dest .le. 0) then
 !!$      call output_line ('Start address must be positive!', &
-!!$                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+!!$                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
 !!$      call sys_halt()
 !!$    end if
 
@@ -6881,12 +10023,12 @@ contains
 
     if (h_source .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
       call sys_halt()
     end if
     if (.not. associated(p_rheap%p_Rdescriptors)) then
       call output_line ('Heap not initialised!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
       call sys_halt()
     end if
 
@@ -6898,58 +10040,58 @@ contains
       ! as h_source.
       if (p_rsource%idimension .ne. 1) then
         call output_line ('Only 1D arrays are allowed!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end if
 
       select case (p_rsource%idataType)
       case (ST_SINGLE)
-        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+        call storage_new ('storage_copy_explicit1d',p_rsource%sname,&
                           lbound(p_rsource%p_Fsingle1D,1),&
                           ubound(p_rsource%p_Fsingle1D,1),&
                           ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_DOUBLE)
-        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+        call storage_new ('storage_copy_explicit1d',p_rsource%sname,&
                           lbound(p_rsource%p_Ddouble1D,1),&
                           ubound(p_rsource%p_Ddouble1D,1),&
                           ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_QUAD)
-        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+        call storage_new ('storage_copy_explicit1d',p_rsource%sname,&
                           lbound(p_rsource%p_Qquad1D,1),&
                           ubound(p_rsource%p_Qquad1D,1),&
                           ST_QUAD, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT)
-        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+        call storage_new ('storage_copy_explicit1d',p_rsource%sname,&
                           lbound(p_rsource%p_Iinteger1D,1),&
                           ubound(p_rsource%p_Iinteger1D,1),&
                           ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT8)
-        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+        call storage_new ('storage_copy_explicit1d',p_rsource%sname,&
                           lbound(p_rsource%p_Iint8_1D,1),&
                           ubound(p_rsource%p_Iint8_1D,1),&
                           ST_INT8, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT16)
-        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+        call storage_new ('storage_copy_explicit1d',p_rsource%sname,&
                           lbound(p_rsource%p_Iint16_1D,1),&
                           ubound(p_rsource%p_Iint16_1D,1),&
                           ST_INT16, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT32)
-        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+        call storage_new ('storage_copy_explicit1d',p_rsource%sname,&
                           lbound(p_rsource%p_Iint32_1D,1),&
                           ubound(p_rsource%p_Iint32_1D,1),&
                           ST_INT32, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT64)
-        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+        call storage_new ('storage_copy_explicit1d',p_rsource%sname,&
                           lbound(p_rsource%p_Iint64_1D,1),&
                           ubound(p_rsource%p_Iint64_1D,1),&
                           ST_INT64, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_LOGICAL)
-        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+        call storage_new ('storage_copy_explicit1d',p_rsource%sname,&
                           lbound(p_rsource%p_Blogical1D,1),&
                           ubound(p_rsource%p_Blogical1D,1),&
                           ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_CHAR)
-        call storage_new ('storage_copy_explicit',p_rsource%sname,&
+        call storage_new ('storage_copy_explicit1d',p_rsource%sname,&
                           lbound(p_rsource%p_Schar1D,1),&
                           ubound(p_rsource%p_Schar1D,1),&
                           ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
@@ -6968,7 +10110,7 @@ contains
       ! 1D/2D the same?
       if (p_rsource%idimension .ne. p_rdest%idimension) then
         call output_line ('Dimension of source and destination handles are different!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end if
 
@@ -6984,7 +10126,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Fsingle1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Fsingle1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -6999,7 +10141,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Fsingle1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Ddouble1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7014,7 +10156,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Fsingle1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Qquad1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7025,7 +10167,7 @@ contains
 
       case default
         call output_line ('Unsupported data type combination!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end select
       
@@ -7037,7 +10179,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Ddouble1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Fsingle1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7052,7 +10194,7 @@ contains
             istart_source+ilength-1 > ubound(p_rsource%p_Ddouble1D,1) .or. &
             istart_dest+ilength-1   > ubound(p_rdest%p_Ddouble1D,1)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7067,7 +10209,7 @@ contains
             istart_source+ilength-1 > ubound(p_rsource%p_Ddouble1D,1) .or. &
             istart_dest+ilength-1   > ubound(p_rdest%p_Qquad1D,1)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7078,7 +10220,7 @@ contains
         
       case default
         call output_line ('Unsupported data type combination!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end select
       
@@ -7090,7 +10232,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Qquad1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Fsingle1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7105,7 +10247,7 @@ contains
             istart_source+ilength-1 > ubound(p_rsource%p_Qquad1D,1) .or. &
             istart_dest+ilength-1   > ubound(p_rdest%p_Ddouble1D,1)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7120,7 +10262,7 @@ contains
             istart_source+ilength-1 > ubound(p_rsource%p_Qquad1D,1) .or. &
             istart_dest+ilength-1   > ubound(p_rdest%p_Qquad1D,1)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7131,7 +10273,7 @@ contains
         
       case default
         call output_line ('Unsupported data type combination!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end select
       
@@ -7143,7 +10285,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iinteger1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iinteger1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7158,7 +10300,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iinteger1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint8_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7173,7 +10315,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iinteger1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint16_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7188,7 +10330,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iinteger1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint32_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7203,7 +10345,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iinteger1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint64_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7214,7 +10356,7 @@ contains
 
       case default
         call output_line ('Unsupported data type combination!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end select
       
@@ -7226,7 +10368,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint8_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iinteger1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7241,7 +10383,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint8_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint8_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7256,7 +10398,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint8_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint16_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7271,7 +10413,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint8_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint32_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7286,7 +10428,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint8_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint64_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7297,7 +10439,7 @@ contains
 
       case default
         call output_line ('Unsupported data type combination!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end select
       
@@ -7309,7 +10451,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint16_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iinteger1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7324,7 +10466,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint16_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint8_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7339,7 +10481,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint16_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint16_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7354,7 +10496,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint16_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint32_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7369,7 +10511,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint16_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint64_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7380,7 +10522,7 @@ contains
 
       case default
         call output_line ('Unsupported data type combination!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end select
       
@@ -7392,7 +10534,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint32_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iinteger1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7407,7 +10549,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint32_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint8_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7422,7 +10564,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint32_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint16_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7437,7 +10579,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint32_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint32_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7452,7 +10594,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint32_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint64_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7463,7 +10605,7 @@ contains
 
       case default
         call output_line ('Unsupported data type combination!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end select
       
@@ -7475,7 +10617,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint64_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iinteger1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7490,7 +10632,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint64_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint8_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7505,7 +10647,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint64_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint16_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7520,7 +10662,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint64_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint32_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7535,7 +10677,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Iint64_1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Iint64_1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7546,7 +10688,7 @@ contains
 
       case default
         call output_line ('Unsupported data type combination!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end select
 
@@ -7557,7 +10699,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Blogical1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Blogical1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7567,7 +10709,7 @@ contains
         end do
       else
         call output_line ('Unsupported data type combination!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end if
       
@@ -7578,7 +10720,7 @@ contains
             istart_source+ilength-1 > size(p_rsource%p_Schar1D) .or. &
             istart_dest+ilength-1   > size(p_rdest%p_Schar1D)) then
           call output_line ('Subarrays incompatible!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
           call sys_halt()
         end if
         ! Copy by hand
@@ -7588,17 +10730,17 @@ contains
         end do
       else
         call output_line ('Unsupported data type combination!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
         call sys_halt()
       end if
       
     case default
       call output_line ('Unknown data type!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
       call sys_halt()
     end select
     
-  end subroutine storage_copy_explicit
+  end subroutine storage_copy_explicit1d
 
 !************************************************************************
 
@@ -8927,6 +12069,1635 @@ contains
 
 !<subroutine>
 
+  subroutine storage_copy_explicit3D (h_source, h_dest, Istart_source, &
+                                      Istart_dest, Ilength, rheap)
+
+!<description>
+  ! This routine copies the information of one array to another.
+  ! The structure of the arrays behind h_source and h_dest must be
+  ! "similar" in the following sense: Both datatypes and dimensions
+  ! must be the same. The routine allows for copying only parts of
+  ! of the arrays. Therefor the relevant parts of the arrays must
+  ! be the same!
+!</description>
+
+!<input>
+  ! Handle of the source array to copy
+  integer, intent(in) :: h_source
+
+  ! First entry of the source array to copy
+  integer, dimension(3), intent(in) :: Istart_source
+
+  ! First entry of the destination array where to copy
+  integer, dimension(3), intent(in) :: Istart_dest
+
+  ! Length of the array to copy
+  integer, dimension(3), intent(in) :: Ilength
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(in), target, optional :: rheap
+!</input>
+
+!<inputoutput>
+  ! Handle of the destination array.
+  ! If =ST_NOHANDLE, a new handle is allocated in exactly the same size
+  ! and structure as h_source and data is copied to it.
+  integer, intent(inout) :: h_dest
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+  type(t_storageNode), pointer :: p_rsource, p_rdest
+  integer :: i,j,k
+
+!!$    ! Check if the start address is positive
+!!$    if (any(istart_source .le. 0) .or. any(istart_dest .le. 0)) then
+!!$      call output_line ('Start address must be positive!', &
+!!$                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+!!$      call sys_halt()
+!!$    end if
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (h_source .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+      call sys_halt()
+    end if
+    if (.not. associated(p_rheap%p_Rdescriptors)) then
+      call output_line ('Heap not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+      call sys_halt()
+    end if
+
+    p_rsource => p_rheap%p_Rdescriptors(h_source)
+
+    ! Create a new array?
+    if (h_dest .eq. ST_NOHANDLE) then
+      ! Create a new array in the same size and structure
+      ! as h_source.
+      if (p_rsource%idimension .ne. 3) then
+        call output_line ('Only 3D arrays are allowed!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+      end if
+
+      select case (p_rsource%IdataType)
+      case (ST_SINGLE)
+        call storage_new ('storage_copy_explicit3D', p_rsource%sname,&
+                          lbound(p_rsource%p_Fsingle3D),&
+                          ubound(p_rsource%p_Fsingle3D),&
+                          ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_DOUBLE)
+        call storage_new ('storage_copy_explicit3D', p_rsource%sname,&
+                          lbound(p_rsource%p_Ddouble3D),&
+                          ubound(p_rsource%p_Ddouble3D),&
+                          ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_QUAD)
+        call storage_new ('storage_copy_explicit3D', p_rsource%sname,&
+                          lbound(p_rsource%p_Qquad3D),&
+                          ubound(p_rsource%p_Qquad3D),&
+                          ST_QUAD, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT)
+        call storage_new ('storage_copy_explicit3D', p_rsource%sname,&
+                          lbound(p_rsource%p_Iinteger3D),&
+                          ubound(p_rsource%p_Iinteger3D),&
+                          ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT8)
+        call storage_new ('storage_copy_explicit3D', p_rsource%sname,&
+                          lbound(p_rsource%p_Iint8_3D),&
+                          ubound(p_rsource%p_Iint8_3D),&
+                          ST_INT8, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT16)
+        call storage_new ('storage_copy_explicit3D', p_rsource%sname,&
+                          lbound(p_rsource%p_Iint16_3D),&
+                          ubound(p_rsource%p_Iint16_3D),&
+                          ST_INT16, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT32)
+        call storage_new ('storage_copy_explicit3D', p_rsource%sname,&
+                          lbound(p_rsource%p_Iint32_3D),&
+                          ubound(p_rsource%p_Iint32_3D),&
+                          ST_INT32, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT64)
+        call storage_new ('storage_copy_explicit3D', p_rsource%sname,&
+                          lbound(p_rsource%p_Iint64_3D),&
+                          ubound(p_rsource%p_Iint64_3D),&
+                          ST_INT64, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_LOGICAL)
+        call storage_new ('storage_copy_explicit3D', p_rsource%sname,&
+                          lbound(p_rsource%p_Blogical3D),&
+                          ubound(p_rsource%p_Blogical3D),&
+                          ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_CHAR)
+        call storage_new ('storage_copy_explicit3D', p_rsource%sname,&
+                          lbound(p_rsource%p_Schar3D),&
+                          ubound(p_rsource%p_Schar3D),&
+                          ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      end select
+
+      ! The storage_new may reallocate the p_Rdescriptors array, so get the
+      ! pointer again to be sure it is correct and not pointing to nowhere!
+      p_rsource => p_rheap%p_Rdescriptors(h_source)
+      p_rdest => p_rheap%p_Rdescriptors(h_dest)
+
+    else
+      
+      ! Check if the given destination handle is compatible with the source handle
+      p_rdest => p_rheap%p_Rdescriptors(h_dest)
+      
+      ! Check if source and destination handle have the same dimension
+      if (p_rsource%idimension .ne. p_rdest%idimension) then
+        call output_line ('Dimension of source and destination handles are different!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+      end if
+
+    end if
+
+    ! What is to copy
+    select case (p_rsource%idataType)
+    case (ST_SINGLE)
+      select case (p_rdest%idataType)
+      case (ST_SINGLE)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Fsingle3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Fsingle3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Fsingle3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Fsingle3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Fsingle3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Fsingle3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Fsingle3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Fsingle3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Fsingle3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Fsingle3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_DOUBLE)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Fsingle3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Ddouble3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Ddouble3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Ddouble3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Fsingle3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Ddouble3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Ddouble3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Ddouble3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Ddouble3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Fsingle3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_QUAD)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Fsingle3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Qquad3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Qquad3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Qquad3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Fsingle3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Qquad3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Qquad3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Qquad3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Qquad3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Fsingle3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+
+      case (ST_INT)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Fsingle3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iinteger3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Fsingle3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iinteger3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iinteger3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                p_rsource%p_Fsingle3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT8)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Fsingle3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint8_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Fsingle3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint8_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint8_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Fsingle3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT16)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Fsingle3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint16_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Fsingle3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint16_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint16_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Fsingle3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT32)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Fsingle3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint32_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Fsingle3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint32_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint32_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Fsingle3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT64)
+        if (Istart_source(1) < lbound(p_rsource%p_Fsingle3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Fsingle3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Fsingle3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint64_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Fsingle3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Fsingle3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Fsingle3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint64_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint64_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Fsingle3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case default
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+        
+      end select
+      
+    case (ST_DOUBLE)
+      select case (p_rdest%idataType)
+      case (ST_SINGLE)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Ddouble3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Fsingle3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Fsingle3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Fsingle3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Ddouble3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Fsingle3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Fsingle3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Fsingle3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Fsingle3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Ddouble3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_DOUBLE)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Ddouble3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Ddouble3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Ddouble3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Ddouble3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Ddouble3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Ddouble3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Ddouble3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Ddouble3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Ddouble3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Ddouble3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_QUAD)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Ddouble3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Qquad3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Qquad3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Qquad3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Ddouble3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Qquad3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Qquad3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Qquad3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Qquad3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Ddouble3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Ddouble3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iinteger3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Ddouble3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iinteger3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iinteger3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Ddouble3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT8)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Ddouble3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint8_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Ddouble3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint8_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint8_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Ddouble3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT16)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Ddouble3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint16_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Ddouble3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint16_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint16_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Ddouble3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT32)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Ddouble3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint32_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Ddouble3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint32_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint32_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Ddouble3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+
+      case (ST_INT64)
+        if (Istart_source(1) < lbound(p_rsource%p_Ddouble3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Ddouble3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Ddouble3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint64_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Ddouble3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Ddouble3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Ddouble3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint64_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint64_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Ddouble3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+
+      case default
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+        
+      end select
+      
+    case (ST_QUAD)
+      select case (p_rdest%idataType)
+      case (ST_SINGLE)
+        if (Istart_source(1) < lbound(p_rsource%p_Qquad3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Qquad3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Qquad3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Fsingle3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Fsingle3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Fsingle3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Qquad3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Qquad3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Qquad3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Fsingle3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Fsingle3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Fsingle3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Fsingle3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Qquad3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_DOUBLE)
+        if (Istart_source(1) < lbound(p_rsource%p_Qquad3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Qquad3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Qquad3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Ddouble3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Ddouble3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Ddouble3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Qquad3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Qquad3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Qquad3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Ddouble3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Ddouble3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Ddouble3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Ddouble3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Qquad3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_QUAD)
+        if (Istart_source(1) < lbound(p_rsource%p_Qquad3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Qquad3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Qquad3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Qquad3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Qquad3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Qquad3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Qquad3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Qquad3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Qquad3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Qquad3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Qquad3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Qquad3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Qquad3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Qquad3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT)
+        if (Istart_source(1) < lbound(p_rsource%p_Qquad3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Qquad3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Qquad3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iinteger3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Qquad3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Qquad3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Qquad3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iinteger3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iinteger3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Qquad3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT8)
+        if (Istart_source(1) < lbound(p_rsource%p_Qquad3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Qquad3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Qquad3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint8_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Qquad3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Qquad3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Qquad3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint8_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint8_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Qquad3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT16)
+        if (Istart_source(1) < lbound(p_rsource%p_Qquad3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Qquad3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Qquad3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint16_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Qquad3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Qquad3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Qquad3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint16_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint16_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Qquad3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT32)
+        if (Istart_source(1) < lbound(p_rsource%p_Qquad3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Qquad3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Qquad3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint32_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Qquad3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Qquad3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Qquad3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint32_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint32_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Qquad3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+
+      case (ST_INT64)
+        if (Istart_source(1) < lbound(p_rsource%p_Qquad3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Qquad3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Qquad3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint64_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Qquad3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Qquad3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Qquad3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint64_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint64_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Qquad3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+
+      case default
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+        
+      end select
+      
+    case (ST_INT)
+      select case(p_rdest%idataType)
+      case (ST_INT)
+        if (Istart_source(1) < lbound(p_rsource%p_Iinteger3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iinteger3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iinteger3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iinteger3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iinteger3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iinteger3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iinteger3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iinteger3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iinteger3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iinteger3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT8)
+        if (Istart_source(1) < lbound(p_rsource%p_Iinteger3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iinteger3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iinteger3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint8_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iinteger3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iinteger3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iinteger3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint8_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint8_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iinteger3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT16)
+        if (Istart_source(1) < lbound(p_rsource%p_Iinteger3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iinteger3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iinteger3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint16_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iinteger3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iinteger3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iinteger3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint16_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint16_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iinteger3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT32)
+        if (Istart_source(1) < lbound(p_rsource%p_Iinteger3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iinteger3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iinteger3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint32_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iinteger3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iinteger3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iinteger3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint32_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint32_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iinteger3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT64)
+        if (Istart_source(1) < lbound(p_rsource%p_Iinteger3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iinteger3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iinteger3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint64_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iinteger3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iinteger3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iinteger3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint64_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint64_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iinteger3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case default
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+        
+      end select
+      
+    case (ST_INT8)
+      select case(p_rdest%idataType)
+      case (ST_INT)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint8_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint8_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint8_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iinteger3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint8_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint8_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint8_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iinteger3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iinteger3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint8_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT8)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint8_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint8_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint8_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint8_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint8_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint8_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint8_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint8_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint8_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint8_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT16)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint8_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint8_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint8_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint16_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint8_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint8_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint8_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint16_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint16_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint8_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT32)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint8_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint8_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint8_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint32_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint8_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint8_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint8_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint32_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint32_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint8_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT64)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint8_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint8_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint8_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint64_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint8_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint8_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint8_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint64_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint64_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint8_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case default
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+        
+      end select
+      
+    case (ST_INT16)
+      select case(p_rdest%idataType)
+      case (ST_INT)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint16_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint16_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint16_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iinteger3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint16_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint16_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint16_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iinteger3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iinteger3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint16_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT8)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint16_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint16_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint16_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint8_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint16_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint16_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint16_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint8_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint8_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint16_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT16)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint16_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint16_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint16_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint16_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint16_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint16_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint16_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint16_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint16_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint16_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT32)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint16_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint16_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint16_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint32_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint16_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint16_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint16_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint32_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint32_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint16_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT64)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint16_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint16_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint16_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint64_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint16_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint16_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint16_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint64_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint64_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint16_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case default
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+        
+      end select
+      
+    case (ST_INT32)
+      select case(p_rdest%idataType)
+      case (ST_INT)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint32_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint32_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint32_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iinteger3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint32_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint32_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint32_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iinteger3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iinteger3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint32_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT8)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint32_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint32_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint32_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint8_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint32_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint32_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint32_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint8_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint8_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint32_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT16)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint32_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint32_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint32_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint16_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint32_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint32_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint32_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint16_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint16_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint32_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT32)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint32_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint32_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint32_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint32_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint32_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint32_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint32_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint32_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint32_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint32_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT64)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint32_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint32_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint32_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint64_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint32_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint32_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint32_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint64_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint64_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint32_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case default
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+        
+      end select
+      
+    case (ST_INT64)
+      select case(p_rdest%idataType)
+      case (ST_INT)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint64_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint64_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint64_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iinteger3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint64_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint64_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint64_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iinteger3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iinteger3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iinteger3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iinteger3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint64_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT8)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint64_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint64_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint64_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint8_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint64_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint64_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint64_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint8_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint8_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint8_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint8_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint64_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT16)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint64_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint64_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint64_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint16_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint64_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint64_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint64_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint16_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint16_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint16_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint16_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint64_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT32)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint64_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint64_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint64_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint32_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint64_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint64_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint64_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint32_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint32_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint32_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint32_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint64_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case (ST_INT64)
+        if (Istart_source(1) < lbound(p_rsource%p_Iint64_3D,1) .or.&
+            Istart_source(2) < lbound(p_rsource%p_Iint64_3D,2) .or.&
+            Istart_source(3) < lbound(p_rsource%p_Iint64_3D,3) .or.&
+            Istart_dest(1)   < lbound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)   < lbound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)   < lbound(p_rdest%p_Iint64_3D,3) .or. &
+            Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Iint64_3D,1) .or. &
+            Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Iint64_3D,2) .or. &
+            Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Iint64_3D,3) .or. &
+            Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Iint64_3D,1) .or. &
+            Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Iint64_3D,2) .or. &
+            Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Iint64_3D,3)) then
+          call output_line ('Subarrays incompatible!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+          call sys_halt()
+        end if      
+        ! Copy by hand
+        do k=1,Ilength(3)
+          do j=1,Ilength(2)
+            do i=1,Ilength(1)
+              p_rdest%p_Iint64_3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                  p_rsource%p_Iint64_3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+            end do
+          end do
+        end do
+        
+      case default
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+        
+      end select
+
+
+    case (ST_LOGICAL)
+      if (p_rdest%idataType .ne. ST_LOGICAL) then
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+      end if
+      if (Istart_source(1) < lbound(p_rsource%p_Blogical3D,1) .or.&
+          Istart_source(2) < lbound(p_rsource%p_Blogical3D,2) .or.&
+          Istart_source(3) < lbound(p_rsource%p_Blogical3D,3) .or.&
+          Istart_dest(1)   < lbound(p_rdest%p_Blogical3D,1) .or. &
+          Istart_dest(2)   < lbound(p_rdest%p_Blogical3D,2) .or. &
+          Istart_dest(3)   < lbound(p_rdest%p_Blogical3D,3) .or. &
+          Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Blogical3D,1) .or. &
+          Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Blogical3D,2) .or. &
+          Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Blogical3D,3) .or. &
+          Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Blogical3D,1) .or. &
+          Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Blogical3D,2) .or. &
+          Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Blogical3D,3)) then
+        call output_line ('Subarrays incompatible!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+      end if
+      ! Copy by hand
+      do k=1,Ilength(3)
+        do j=1,Ilength(2)
+          do i=1,Ilength(1)
+            p_rdest%p_Blogical3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                p_rsource%p_Blogical3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+          end do
+        end do
+      end do
+      
+    case (ST_CHAR)
+      if (p_rdest%idataType .ne. ST_CHAR) then
+        call output_line ('Unsupported data type combination!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+      end if
+      if (Istart_source(1) < lbound(p_rsource%p_Schar3D,1) .or.&
+          Istart_source(2) < lbound(p_rsource%p_Schar3D,2) .or.&
+          Istart_source(3) < lbound(p_rsource%p_Schar3D,3) .or.&
+          Istart_dest(1)   < lbound(p_rdest%p_Schar3D,1) .or. &
+          Istart_dest(2)   < lbound(p_rdest%p_Schar3D,2) .or. &
+          Istart_dest(3)   < lbound(p_rdest%p_Schar3D,3) .or. &
+          Istart_source(1)+Ilength(1)-1 > ubound(p_rsource%p_Schar3D,1) .or. &
+          Istart_source(2)+Ilength(2)-1 > ubound(p_rsource%p_Schar3D,2) .or. &
+          Istart_source(3)+Ilength(3)-1 > ubound(p_rsource%p_Schar3D,3) .or. &
+          Istart_dest(1)+Ilength(1)-1   > ubound(p_rdest%p_Schar3D,1) .or. &
+          Istart_dest(2)+Ilength(2)-1   > ubound(p_rdest%p_Schar3D,2) .or. &
+          Istart_dest(3)+Ilength(3)-1   > ubound(p_rdest%p_Schar3D,3)) then
+        call output_line ('Subarrays incompatible!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+        call sys_halt()
+      end if
+      ! Copy by hand
+      do k=1,Ilength(3)
+        do j=1,Ilength(2)
+          do i=1,Ilength(1)
+            p_rdest%p_Schar3D(Istart_dest(1)+i-1,Istart_dest(2)+j-1,Istart_dest(3)+k-1) = &
+                p_rsource%p_Schar3D(Istart_source(1)+i-1,Istart_source(2)+j-1,Istart_source(3)+k-1)
+          end do
+        end do
+      end do
+      
+    case default
+      call output_line ('Unknown data type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
+      call sys_halt()
+    end select
+
+  end subroutine storage_copy_explicit3D
+
+!************************************************************************
+
+!<subroutine>
+
   subroutine storage_info (bprintHandles, rheap)
 
 !<description>
@@ -9197,6 +13968,9 @@ contains
 
   ! size of the old 2-dimensional array
   integer, dimension(2) :: Isize2Dold
+
+  ! size of the old 3-dimensional array
+  integer, dimension(3) :: Isize3Dold
 
   logical :: bcopyData
 
@@ -9494,8 +14268,179 @@ contains
 
       end if
 
+    case (3)
+
+      ! Get the size of the old storage node.
+      select case (p_rnode%idataType)
+      case (ST_SINGLE)
+        Isize3Dold = shape(p_rnode%p_Fsingle3D)
+      case (ST_DOUBLE)
+        Isize3Dold = shape(p_rnode%p_Ddouble3D)
+      case (ST_QUAD)
+        Isize3Dold = shape(p_rnode%p_Qquad3D)
+      case (ST_INT)
+        Isize3Dold = shape(p_rnode%p_Iinteger3D)
+      case (ST_INT8)
+        Isize3Dold = shape(p_rnode%p_Iint8_3D)
+      case (ST_INT16)
+        Isize3Dold = shape(p_rnode%p_Iint16_3D)
+      case (ST_INT32)
+        Isize3Dold = shape(p_rnode%p_Iint32_3D)
+      case (ST_INT64)
+        Isize3Dold = shape(p_rnode%p_Iint64_3D)
+      case (ST_LOGICAL)
+        Isize3Dold = shape(p_rnode%p_Blogical3D)
+      case (ST_CHAR)
+        Isize3Dold = shape(p_rnode%p_Schar3D)
+      end select
+
+      ! Do we really have to change anything?
+      if (isize .eq. Isize3Dold(3)) return
+      
+      ! Allocate new memory and initialise it - if it is larger than the old
+      ! memory block.
+      select case (rstorageNode%idataType)
+      case (ST_SINGLE)
+        allocate(rstorageNode%p_Fsingle3D(Isize3Dold(1),Isize3Dold(2),isize))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_SINGLE_BYTES
+      case (ST_DOUBLE)
+        allocate(rstorageNode%p_Ddouble3D(Isize3Dold(1),Isize3Dold(2),isize))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_DOUBLE_BYTES
+      case (ST_QUAD)
+        allocate(rstorageNode%p_Qquad3D(Isize3Dold(1),Isize3Dold(2),isize))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_QUAD_BYTES
+      case (ST_INT)
+        allocate(rstorageNode%p_Iinteger3D(Isize3Dold(1),Isize3Dold(2),isize))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_INT_BYTES
+      case (ST_INT8)
+        allocate(rstorageNode%p_Iint8_3D(Isize3Dold(1),Isize3Dold(2),isize))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_INT8_BYTES
+      case (ST_INT16)
+        allocate(rstorageNode%p_Iint16_3D(Isize3Dold(1),Isize3Dold(2),isize))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_INT16_BYTES
+      case (ST_INT32)
+        allocate(rstorageNode%p_Iint32_3D(Isize3Dold(1),Isize3Dold(2),isize))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_INT32_BYTES
+      case (ST_INT64)
+        allocate(rstorageNode%p_Iint64_3D(Isize3Dold(1),Isize3Dold(2),isize))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_INT64_BYTES
+      case (ST_LOGICAL)
+        allocate(rstorageNode%p_Blogical3D(Isize3Dold(1),Isize3Dold(2),isize))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_LOGICAL_BYTES
+      case (ST_CHAR)
+        allocate(rstorageNode%p_Schar3D(Isize3Dold(1),Isize3Dold(2),isize))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_CHAR_BYTES
+      case default
+        call output_line ('Unsupported memory type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocDefault')
+        call sys_halt()
+      end select
+
+      if (isize > Isize3Dold(3)) &
+        call storage_initialiseNode (rstorageNode,cinitNewBlock,&
+                                     Isize3Dold(3)+1_I32)
+
+      ! Copy old data?
+      if (bcopyData) then
+
+        ! Here it is easier than in storage_copy as we can be sure, source and
+        ! destination array have the same type!
+        select case (rstorageNode%idataType)
+        case (ST_SINGLE)
+          isizeCopy = min(size(rstorageNode%p_Fsingle3D,3),Isize3DOld(3))
+          call lalg_copyVectorSngl3D(p_rnode%p_Fsingle3D,&
+                                     rstorageNode%p_Fsingle3D,&
+                                     size(rstorageNode%p_Fsingle3D,1),&
+                                     size(rstorageNode%p_Fsingle3D,2), isizeCopy)
+
+        case (ST_DOUBLE)
+          isizeCopy = min(size(rstorageNode%p_Ddouble3D,3),Isize3DOld(3))
+          call lalg_copyVectorDble3D(p_rnode%p_Ddouble3D,&
+                                     rstorageNode%p_Ddouble3D,&
+                                     size(rstorageNode%p_Ddouble3D,1),&
+                                     size(rstorageNode%p_Ddouble3D,2), isizeCopy)
+
+        case (ST_QUAD)
+          isizeCopy = min(size(rstorageNode%p_Qquad3D,3),Isize3DOld(3))
+          call lalg_copyVectorQuad3D(p_rnode%p_Qquad3D,&
+                                     rstorageNode%p_Qquad3D,&
+                                     size(rstorageNode%p_Qquad3D,1),&
+                                     size(rstorageNode%p_Qquad3D,2), isizeCopy)
+
+        case (ST_INT)
+          isizeCopy = min(size(rstorageNode%p_Iinteger3D,3),Isize3DOld(3))
+          call lalg_copyVectorInt3D(p_rnode%p_Iinteger3D,&
+                                     rstorageNode%p_Iinteger3D,&
+                                     size(rstorageNode%p_Iinteger3D,1),&
+                                     size(rstorageNode%p_Iinteger3D,2), isizeCopy)
+
+        case (ST_INT8)
+          isizeCopy = min(size(rstorageNode%p_Iint8_3D,3),Isize3DOld(3))
+          call lalg_copyVectorInt3D(p_rnode%p_Iint8_3D,&
+                                     rstorageNode%p_Iint8_3D,&
+                                     size(rstorageNode%p_Iint8_3D,1),&
+                                     size(rstorageNode%p_Iint8_3D,2), isizeCopy)
+
+        case (ST_INT16)
+          isizeCopy = min(size(rstorageNode%p_Iint16_3D,3),Isize3DOld(3))
+          call lalg_copyVectorInt3D(p_rnode%p_Iint16_3D,&
+                                     rstorageNode%p_Iint16_3D,&
+                                     size(rstorageNode%p_Iint16_3D,1),&
+                                     size(rstorageNode%p_Iint16_3D,2), isizeCopy)
+
+        case (ST_INT32)
+          isizeCopy = min(size(rstorageNode%p_Iint32_3D,3),Isize3DOld(3))
+          call lalg_copyVectorInt3D(p_rnode%p_Iint32_3D,&
+                                     rstorageNode%p_Iint32_3D,&
+                                     size(rstorageNode%p_Iint32_3D,1),&
+                                     size(rstorageNode%p_Iint32_3D,3), isizeCopy)
+
+        case (ST_INT64)
+          isizeCopy = min(size(rstorageNode%p_Iint64_3D,3),Isize3DOld(3))
+          call lalg_copyVectorInt3D(p_rnode%p_Iint64_3D,&
+                                     rstorageNode%p_Iint64_3D,&
+                                     size(rstorageNode%p_Iint64_3D,1),&
+                                     size(rstorageNode%p_Iint64_3D,2), isizeCopy)
+
+        case (ST_LOGICAL)
+          isizeCopy = min(size(rstorageNode%p_Blogical3D,3),Isize3DOld(3))
+          call lalg_copyVectorLogical3D(p_rnode%p_Blogical3D,&
+                                        rstorageNode%p_Blogical3D,&
+                                        size(rstorageNode%p_Blogical3D,1),&
+                                        size(rstorageNode%p_Blogical3D,2), isizeCopy)
+
+        case (ST_CHAR)
+          isizeCopy = min(size(rstorageNode%p_Schar3D,3),Isize3DOld(3))
+          call lalg_copyVectorChar3D(p_rnode%p_Schar3D,&
+                                     rstorageNode%p_Schar3D,&
+                                     size(rstorageNode%p_Schar3D,1),&
+                                     size(rstorageNode%p_Schar3D,2), isizeCopy)
+        end select
+
+      end if
+
     case default
-      call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is neither 1- nor 2-dimensional!', &
+      call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is neither 1-, 2- nor 3-dimensional!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocDefault')
       call sys_halt()
 
@@ -9516,6 +14461,7 @@ contains
     if (associated(p_rnode%p_Iint64_1D))  deallocate(p_rnode%p_Iint64_1D)
     if (associated(p_rnode%p_Blogical1D)) deallocate(p_rnode%p_Blogical1D)
     if (associated(p_rnode%p_Schar1D))    deallocate(p_rnode%p_Schar1D)
+
     if (associated(p_rnode%p_Fsingle2D))  deallocate(p_rnode%p_Fsingle2D)
     if (associated(p_rnode%p_Ddouble2D))  deallocate(p_rnode%p_Ddouble2D)
     if (associated(p_rnode%p_Qquad2D))    deallocate(p_rnode%p_Qquad2D)
@@ -9526,6 +14472,17 @@ contains
     if (associated(p_rnode%p_Iint64_2D))  deallocate(p_rnode%p_Iint64_2D)
     if (associated(p_rnode%p_Blogical2D)) deallocate(p_rnode%p_Blogical2D)
     if (associated(p_rnode%p_Schar2D))    deallocate(p_rnode%p_Schar2D)
+
+    if (associated(p_rnode%p_Fsingle3D))  deallocate(p_rnode%p_Fsingle3D)
+    if (associated(p_rnode%p_Ddouble3D))  deallocate(p_rnode%p_Ddouble3D)
+    if (associated(p_rnode%p_Qquad3D))    deallocate(p_rnode%p_Qquad3D)
+    if (associated(p_rnode%p_Iinteger3D)) deallocate(p_rnode%p_Iinteger3D)
+    if (associated(p_rnode%p_Iint8_3D))   deallocate(p_rnode%p_Iint8_3D)
+    if (associated(p_rnode%p_Iint16_3D))  deallocate(p_rnode%p_Iint16_3D)
+    if (associated(p_rnode%p_Iint32_3D))  deallocate(p_rnode%p_Iint32_3D)
+    if (associated(p_rnode%p_Iint64_3D))  deallocate(p_rnode%p_Iint64_3D)
+    if (associated(p_rnode%p_Blogical3D)) deallocate(p_rnode%p_Blogical3D)
+    if (associated(p_rnode%p_Schar3D))    deallocate(p_rnode%p_Schar3D)
 
     ! Correct the memory statistics
     p_rheap%itotalMem = p_rheap%itotalMem &
@@ -9628,7 +14585,16 @@ contains
   ! upper bound of the old 2-dimensional array
   integer, dimension(2) :: iubound2Dold
 
-  integer :: i,j
+  ! size of the old 3-dimensional array
+  integer, dimension(3) :: Isize3Dold
+
+  ! lower bound of the old 3-dimensional array
+  integer, dimension(3) :: ilbound3Dold
+
+  ! upper bound of the old 3-dimensional array
+  integer, dimension(3) :: iubound3Dold
+
+  integer :: i,j,k
 
   logical :: bcopyData
 
@@ -9859,7 +14825,7 @@ contains
       case (ST_SINGLE)
         allocate(rstorageNode%p_Fsingle2D(&
             Ilbound2Dold(1):Iubound2Dold(1),&
-            &ilbound:iubound))
+            ilbound:iubound))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_SINGLE_BYTES
       case (ST_DOUBLE)
@@ -10018,8 +14984,253 @@ contains
 
       end if
 
+    case (3)
+
+      ! Get the size of the old storage node.
+      select case (p_rnode%idataType)
+      case (ST_SINGLE)
+        Isize3Dold = shape(p_rnode%p_Fsingle3D)
+        ilbound3Dold = lbound(p_rnode%p_Fsingle3D)
+        iubound3Dold = ubound(p_rnode%p_Fsingle3D)
+      case (ST_DOUBLE)
+        Isize3Dold = shape(p_rnode%p_Ddouble3D)
+        ilbound3Dold = lbound(p_rnode%p_Ddouble3D)
+        iubound3Dold = ubound(p_rnode%p_Ddouble3D)
+      case (ST_QUAD)
+        Isize3Dold = shape(p_rnode%p_Qquad3D)
+        ilbound3Dold = lbound(p_rnode%p_Qquad3D)
+        iubound3Dold = ubound(p_rnode%p_Qquad3D)
+      case (ST_INT)
+        Isize3Dold = shape(p_rnode%p_Iinteger3D)
+        ilbound3Dold = lbound(p_rnode%p_Iinteger3D)
+        iubound3Dold = ubound(p_rnode%p_Iinteger3D)
+      case (ST_INT8)
+        Isize3Dold = shape(p_rnode%p_Iint8_3D)
+        ilbound3Dold = lbound(p_rnode%p_Iint8_3D)
+        iubound3Dold = ubound(p_rnode%p_Iint8_3D)
+      case (ST_INT16)
+        Isize3Dold = shape(p_rnode%p_Iint16_3D)
+        ilbound3Dold = lbound(p_rnode%p_Iint16_3D)
+        iubound3Dold = ubound(p_rnode%p_Iint16_3D)
+      case (ST_INT32)
+        Isize3Dold = shape(p_rnode%p_Iint32_3D)
+        ilbound3Dold = lbound(p_rnode%p_Iint32_3D)
+        iubound3Dold = ubound(p_rnode%p_Iint32_3D)
+      case (ST_INT64)
+        Isize3Dold = shape(p_rnode%p_Iint64_3D)
+        ilbound3Dold = lbound(p_rnode%p_Iint64_3D)
+        iubound3Dold = ubound(p_rnode%p_Iint64_3D)
+      case (ST_LOGICAL)
+        Isize3Dold = shape(p_rnode%p_Blogical3D)
+        ilbound3Dold = lbound(p_rnode%p_Blogical3D)
+        iubound3Dold = ubound(p_rnode%p_Blogical3D)
+      case (ST_CHAR)
+        Isize3Dold = shape(p_rnode%p_Schar3D)
+        ilbound3Dold = lbound(p_rnode%p_Schar3D)
+        iubound3Dold = ubound(p_rnode%p_Schar3D)
+      end select
+
+      ! Do we really have to change anything?
+      if ((ilbound .eq. ilbound3Dold(3)) .and. &
+          (iubound .eq. iubound3Dold(3))) return
+
+      ! Allocate new memory and initialise it - if it is larger than the old
+      ! memory block.
+      select case (rstorageNode%idataType)
+      case (ST_SINGLE)
+        allocate(rstorageNode%p_Fsingle3D(&
+            Ilbound3Dold(1):Iubound3Dold(1),&
+            Ilbound3Dold(2):Iubound3Dold(2),&
+            ilbound:iubound))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_SINGLE_BYTES
+      case (ST_DOUBLE)
+        allocate(rstorageNode%p_Ddouble3D(&
+            Ilbound3Dold(1):Iubound3Dold(1),&
+            Ilbound3Dold(2):Iubound3Dold(2),&
+            ilbound:iubound))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_DOUBLE_BYTES
+      case (ST_QUAD)
+        allocate(rstorageNode%p_Qquad3D(&
+            Ilbound3Dold(1):Iubound3Dold(1),&
+            Ilbound3Dold(2):Iubound3Dold(2),&
+            ilbound:iubound))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_QUAD_BYTES
+      case (ST_INT)
+        allocate(rstorageNode%p_Iinteger3D(&
+            Ilbound3Dold(1):Iubound3Dold(1),&
+            Ilbound3Dold(2):Iubound3Dold(2),&
+            ilbound:iubound))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_INT_BYTES
+      case (ST_INT8)
+        allocate(rstorageNode%p_Iint8_3D(&
+            Ilbound3Dold(1):Iubound3Dold(1),&
+            Ilbound3Dold(2):Iubound3Dold(2),&
+            ilbound:iubound))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_INT8_BYTES
+      case (ST_INT16)
+        allocate(rstorageNode%p_Iint16_3D(&
+            Ilbound3Dold(1):Iubound3Dold(1),&
+            Ilbound3Dold(2):Iubound3Dold(2),&
+            ilbound:iubound))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_INT16_BYTES
+      case (ST_INT32)
+        allocate(rstorageNode%p_Iint32_3D(&
+            Ilbound3Dold(1):Iubound3Dold(1),&
+            Ilbound3Dold(2):Iubound3Dold(2),&
+            ilbound:iubound))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_INT32_BYTES
+      case (ST_INT64)
+        allocate(rstorageNode%p_Iint64_3D(&
+            Ilbound3Dold(1):Iubound3Dold(1),&
+            Ilbound3Dold(2):Iubound3Dold(2),&
+            ilbound:iubound))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_INT64_BYTES
+      case (ST_LOGICAL)
+        allocate(rstorageNode%p_Blogical3D(&
+            Ilbound3Dold(1):Iubound3Dold(1),&
+            Ilbound3Dold(2):Iubound3Dold(2),&
+            ilbound:iubound))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_LOGICAL_BYTES
+      case (ST_CHAR)
+        allocate(rstorageNode%p_Schar3D(&
+            Ilbound3Dold(1):Iubound3Dold(1),&
+            Ilbound3Dold(2):Iubound3Dold(2),&
+            ilbound:iubound))
+        rstorageNode%imemBytes = &
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_CHAR_BYTES
+      case default
+        call output_line ('Unsupported memory type!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
+        call sys_halt()
+      end select
+
+      if (iubound > Iubound3Dold(3)) &
+        call storage_initialiseNode (rstorageNode,cinitNewBlock,&
+                                     Iubound3Dold(3)+1_I32)
+      if (ilbound < Ilbound3Dold(3)) &
+        call storage_initialiseNode (rstorageNode,cinitNewBlock,&
+                                     ilbound,Ilbound3Dold(3)-1_I32)
+
+      ! Copy old data?
+      if (bcopyData) then
+
+        ! Here it is easier than in storage_copy as we can be sure, source and
+        ! destination array have the same type!
+        select case (rstorageNode%idataType)
+        case (ST_SINGLE)
+          ! Copy by hand
+          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
+            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
+              do i=Ilbound3DOld(1),Iubound3Dold(1)
+                rstorageNode%p_Fsingle3D(i,j,k) = p_rnode%p_Fsingle3D(i,j,k)
+              end do
+            end do
+          end do
+
+        case (ST_DOUBLE)         
+          ! Copy by hand
+          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
+            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
+              do i=Ilbound3DOld(1),Iubound3Dold(1)
+                rstorageNode%p_Ddouble3D(i,j,k) = p_rnode%p_Ddouble3D(i,j,k)
+              end do
+            end do
+          end do
+
+        case (ST_QUAD)         
+          ! Copy by hand
+          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
+            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
+              do i=Ilbound3DOld(1),Iubound3Dold(1)
+                rstorageNode%p_Qquad3D(i,j,k) = p_rnode%p_Qquad3D(i,j,k)
+              end do
+            end do
+          end do
+
+        case (ST_INT)
+          ! Copy by hand
+          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
+            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
+              do i=Ilbound3DOld(1),Iubound3Dold(1)
+                rstorageNode%p_Iinteger3D(i,j,k) = p_rnode%p_Iinteger3D(i,j,k)
+              end do
+            end do
+          end do
+
+        case (ST_INT8)
+          ! Copy by hand
+          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
+            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
+              do i=Ilbound3DOld(1),Iubound3Dold(1)
+                rstorageNode%p_Iint8_3D(i,j,k) = p_rnode%p_Iint8_3D(i,j,k)
+              end do
+            end do
+          end do
+
+        case (ST_INT16)
+          ! Copy by hand
+          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
+            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
+              do i=Ilbound3DOld(1),Iubound3Dold(1)
+                rstorageNode%p_Iint16_3D(i,j,k) = p_rnode%p_Iint16_3D(i,j,k)
+              end do
+            end do
+          end do
+
+        case (ST_INT32)
+          ! Copy by hand
+          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
+            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
+              do i=Ilbound3DOld(1),Iubound3Dold(1)
+                rstorageNode%p_Iint32_3D(i,j,k) = p_rnode%p_Iint32_3D(i,j,k)
+              end do
+            end do
+          end do
+
+        case (ST_INT64)
+          ! Copy by hand
+          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
+            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
+              do i=Ilbound3DOld(1),Iubound3Dold(1)
+                rstorageNode%p_Iint64_3D(i,j,k) = p_rnode%p_Iint64_3D(i,j,k)
+              end do
+            end do
+          end do
+
+        case (ST_LOGICAL)
+          ! Copy by hand
+          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
+            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
+              do i=Ilbound3DOld(1),Iubound3Dold(1)
+                rstorageNode%p_Blogical3D(i,j,k) = p_rnode%p_Blogical3D(i,j,k)
+              end do
+            end do
+          end do
+
+        case (ST_CHAR)
+          ! Copy by hand
+          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
+            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
+              do i=Ilbound3DOld(1),Iubound3Dold(1)
+                rstorageNode%p_Schar3D(i,j,k) = p_rnode%p_Schar3D(i,j,k)
+              end do
+            end do
+          end do
+        end select
+
+      end if
+
     case default
-      call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is neither 1- nor 2-dimensional!', &
+      call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is neither 1-, 2- nor 3-dimensional!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
       call sys_halt()
 
@@ -10040,6 +15251,7 @@ contains
     if (associated(p_rnode%p_Iint64_1D))  deallocate(p_rnode%p_Iint64_1D)
     if (associated(p_rnode%p_Blogical1D)) deallocate(p_rnode%p_Blogical1D)
     if (associated(p_rnode%p_Schar1D))    deallocate(p_rnode%p_Schar1D)
+
     if (associated(p_rnode%p_Fsingle2D))  deallocate(p_rnode%p_Fsingle2D)
     if (associated(p_rnode%p_Ddouble2D))  deallocate(p_rnode%p_Ddouble2D)
     if (associated(p_rnode%p_Qquad2D))    deallocate(p_rnode%p_Qquad2D)
@@ -10050,6 +15262,17 @@ contains
     if (associated(p_rnode%p_Iint64_2D))  deallocate(p_rnode%p_Iint64_2D)
     if (associated(p_rnode%p_Blogical2D)) deallocate(p_rnode%p_Blogical2D)
     if (associated(p_rnode%p_Schar2D))    deallocate(p_rnode%p_Schar2D)
+
+    if (associated(p_rnode%p_Fsingle3D))  deallocate(p_rnode%p_Fsingle3D)
+    if (associated(p_rnode%p_Ddouble3D))  deallocate(p_rnode%p_Ddouble3D)
+    if (associated(p_rnode%p_Qquad3D))    deallocate(p_rnode%p_Qquad3D)
+    if (associated(p_rnode%p_Iinteger3D)) deallocate(p_rnode%p_Iinteger3D)
+    if (associated(p_rnode%p_Iint8_3D))   deallocate(p_rnode%p_Iint8_3D)
+    if (associated(p_rnode%p_Iint16_3D))  deallocate(p_rnode%p_Iint16_3D)
+    if (associated(p_rnode%p_Iint32_3D))  deallocate(p_rnode%p_Iint32_3D)
+    if (associated(p_rnode%p_Iint64_3D))  deallocate(p_rnode%p_Iint64_3D)
+    if (associated(p_rnode%p_Blogical3D)) deallocate(p_rnode%p_Blogical3D)
+    if (associated(p_rnode%p_Schar3D))    deallocate(p_rnode%p_Schar3D)
 
     ! Correct the memory statistics
     p_rheap%itotalMem = p_rheap%itotalMem &
@@ -10112,29 +15335,40 @@ contains
 
   ! Identifier for size
   integer :: isize1, isize2
-  integer :: Isize2D1(2), Isize2D2(2)
+  integer, dimension(2) :: Isize2D1, Isize2D2
+  integer, dimension(3) :: Isize3D1, Isize3D2
 
   ! Auxiliary arrays
-  real(SP), dimension(:,:), pointer     :: p_Fsingle2D1,p_Fsingle2D2
-  real(SP), dimension(:),   pointer     :: p_Fsingle1D1,p_Fsingle1D2
-  real(DP), dimension(:,:), pointer     :: p_Ddouble2D1,p_Ddouble2D2
-  real(DP), dimension(:),   pointer     :: p_Ddouble1D1,p_Ddouble1D2
-  real(QP), dimension(:,:), pointer     :: p_Qquad2D1,p_Qquad2D2
-  real(QP), dimension(:),   pointer     :: p_Qquad1D1,p_Qquad1D2
-  integer, dimension(:,:), pointer      :: p_Iinteger2D1,p_Iinteger2D2
-  integer, dimension(:),   pointer      :: p_Iinteger1D1,p_Iinteger1D2
-  integer(I8), dimension(:,:), pointer  :: p_Iint8_2D1,p_Iint8_2D2
-  integer(I8), dimension(:),   pointer  :: p_Iint8_1D1,p_Iint8_1D2
-  integer(I16), dimension(:,:), pointer :: p_Iint16_2D1,p_Iint16_2D2
-  integer(I16), dimension(:),   pointer :: p_Iint16_1D1,p_Iint16_1D2
-  integer(I32), dimension(:,:), pointer :: p_Iint32_2D1,p_Iint32_2D2
-  integer(I32), dimension(:),   pointer :: p_Iint32_1D1,p_Iint32_1D2
-  integer(I64), dimension(:,:), pointer :: p_Iint64_2D1,p_Iint64_2D2
-  integer(I64), dimension(:),   pointer :: p_Iint64_1D1,p_Iint64_1D2
-  logical, dimension(:,:), pointer      :: p_Blogical2D1,p_Blogical2D2
-  logical, dimension(:),   pointer      :: p_Blogical1D1,p_Blogical1D2
-  character, dimension(:,:), pointer    :: p_Schar2D1,p_Schar2D2
-  character, dimension(:),   pointer    :: p_Schar1D1,p_Schar1D2
+  real(SP), dimension(:,:,:), pointer     :: p_Fsingle3D1,p_Fsingle3D2
+  real(SP), dimension(:,:), pointer       :: p_Fsingle2D1,p_Fsingle2D2
+  real(SP), dimension(:),   pointer       :: p_Fsingle1D1,p_Fsingle1D2
+  real(DP), dimension(:,:,:), pointer     :: p_Ddouble3D1,p_Ddouble3D2
+  real(DP), dimension(:,:), pointer       :: p_Ddouble2D1,p_Ddouble2D2
+  real(DP), dimension(:),   pointer       :: p_Ddouble1D1,p_Ddouble1D2
+  real(QP), dimension(:,:,:), pointer     :: p_Qquad3D1,p_Qquad3D2
+  real(QP), dimension(:,:), pointer       :: p_Qquad2D1,p_Qquad2D2
+  real(QP), dimension(:),   pointer       :: p_Qquad1D1,p_Qquad1D2
+  integer, dimension(:,:,:), pointer      :: p_Iinteger3D1,p_Iinteger3D2
+  integer, dimension(:,:), pointer        :: p_Iinteger2D1,p_Iinteger2D2
+  integer, dimension(:),   pointer        :: p_Iinteger1D1,p_Iinteger1D2
+  integer(I8), dimension(:,:,:), pointer  :: p_Iint8_3D1,p_Iint8_3D2
+  integer(I8), dimension(:,:), pointer    :: p_Iint8_2D1,p_Iint8_2D2
+  integer(I8), dimension(:),   pointer    :: p_Iint8_1D1,p_Iint8_1D2
+  integer(I16), dimension(:,:,:), pointer :: p_Iint16_3D1,p_Iint16_3D2
+  integer(I16), dimension(:,:), pointer   :: p_Iint16_2D1,p_Iint16_2D2
+  integer(I16), dimension(:),   pointer   :: p_Iint16_1D1,p_Iint16_1D2
+  integer(I32), dimension(:,:,:), pointer :: p_Iint32_3D1,p_Iint32_3D2
+  integer(I32), dimension(:,:), pointer   :: p_Iint32_2D1,p_Iint32_2D2
+  integer(I32), dimension(:),   pointer   :: p_Iint32_1D1,p_Iint32_1D2
+  integer(I64), dimension(:,:,:), pointer :: p_Iint64_3D1,p_Iint64_3D2
+  integer(I64), dimension(:,:), pointer   :: p_Iint64_2D1,p_Iint64_2D2
+  integer(I64), dimension(:),   pointer   :: p_Iint64_1D1,p_Iint64_1D2
+  logical, dimension(:,:,:), pointer      :: p_Blogical3D1,p_Blogical3D2
+  logical, dimension(:,:), pointer        :: p_Blogical2D1,p_Blogical2D2
+  logical, dimension(:),   pointer        :: p_Blogical1D1,p_Blogical1D2
+  character, dimension(:,:,:), pointer    :: p_Schar3D1,p_Schar3D2
+  character, dimension(:,:), pointer      :: p_Schar2D1,p_Schar2D2
+  character, dimension(:),   pointer      :: p_Schar1D1,p_Schar1D2
   
     ! Get the heaps to use - local or global ones.
     if(present(rheap1)) then
@@ -10246,10 +15480,10 @@ contains
     case (2)
 
       ! Determine size
-      call storage_getsize2d(ihandle1, Isize2D1, p_rheap1)
-      call storage_getsize2d(ihandle2, Isize2D2, p_rheap2)
+      call storage_getsize(ihandle1, Isize2D1, p_rheap1)
+      call storage_getsize(ihandle2, Isize2D2, p_rheap2)
 
-      if (any(Isize2d1 .ne. Isize2D2)) then
+      if (any(Isize2D1 .ne. Isize2D2)) then
         bisequal = .false.
         return
       end if
@@ -10317,8 +15551,82 @@ contains
         bisequal = all(p_Schar2D1 .eq. p_Schar2D2)
       end select
 
+    case (3)
+
+      ! Determine size
+      call storage_getsize(ihandle1, Isize3D1, p_rheap1)
+      call storage_getsize(ihandle2, Isize3D2, p_rheap2)
+
+      if (any(Isize3D1 .ne. Isize3D2)) then
+        bisequal = .false.
+        return
+      end if
+
+      ! What data type do we have?
+      select case(idatatype1)
+      case (ST_SINGLE)
+        call storage_getbase_single3d(ihandle1, p_Fsingle3D1, p_rheap1)
+        call storage_getbase_single3d(ihandle2, p_Fsingle3D2, p_rheap2)
+        
+        bisequal = all(p_Fsingle3D1 .eq. p_Fsingle3D2)
+
+      case (ST_DOUBLE)
+        call storage_getbase_double3d(ihandle1, p_Ddouble3D1, p_rheap1)
+        call storage_getbase_double3d(ihandle2, p_Ddouble3D2, p_rheap2)
+
+        bisequal = all(p_Ddouble3D1 .eq. p_Ddouble3D2)
+
+      case (ST_QUAD)
+        call storage_getbase_quad3d(ihandle1, p_Qquad3D1, p_rheap1)
+        call storage_getbase_quad3d(ihandle2, p_Qquad3D2, p_rheap2)
+
+        bisequal = all(p_Qquad3D1 .eq. p_Qquad3D2)
+
+      case (ST_INT)
+        call storage_getbase_int3d(ihandle1, p_Iinteger3D1, p_rheap1)
+        call storage_getbase_int3d(ihandle2, p_Iinteger3D2, p_rheap2)
+
+        bisequal = all(p_Iinteger3D1 .eq. p_Iinteger3D2)
+
+      case (ST_INT8)
+        call storage_getbase_int8_3d(ihandle1, p_Iint8_3D1, p_rheap1)
+        call storage_getbase_int8_3d(ihandle2, p_Iint8_3D2, p_rheap2)
+
+        bisequal = all(p_Iint8_3D1 .eq. p_Iint8_3D2)
+
+      case (ST_INT16)
+        call storage_getbase_int16_3d(ihandle1, p_Iint16_3D1, p_rheap1)
+        call storage_getbase_int16_3d(ihandle2, p_Iint16_3D2, p_rheap2)
+
+        bisequal = all(p_Iint16_3D1 .eq. p_Iint16_3D2)
+
+      case (ST_INT32)
+        call storage_getbase_int32_3d(ihandle1, p_Iint32_3D1, p_rheap1)
+        call storage_getbase_int32_3d(ihandle2, p_Iint32_3D2, p_rheap2)
+
+        bisequal = all(p_Iint32_3D1 .eq. p_Iint32_3D2)
+
+      case (ST_INT64)
+        call storage_getbase_int64_3d(ihandle1, p_Iint64_3D1, p_rheap1)
+        call storage_getbase_int64_3d(ihandle2, p_Iint64_3D2, p_rheap2)
+
+        bisequal = all(p_Iint64_3D1 .eq. p_Iint64_3D2)
+        
+      case (ST_LOGICAL)
+        call storage_getbase_logical3d(ihandle1, p_Blogical3D1, p_rheap1)
+        call storage_getbase_logical3d(ihandle2, p_Blogical3D2, p_rheap2)
+
+        bisequal = all(p_Blogical3D1 .and. p_Blogical3D2)
+        
+      case (ST_CHAR)
+        call storage_getbase_char3d(ihandle1, p_Schar3D1, p_rheap1)
+        call storage_getbase_char3d(ihandle2, p_Schar3D2, p_rheap2)
+
+        bisequal = all(p_Schar3D1 .eq. p_Schar3D2)
+      end select
+
     case default
-      call output_line ('Handle '//trim(sys_siL(ihandle1,11))//' is neither 1- nor 2-dimensional!', &
+      call output_line ('Handle '//trim(sys_siL(ihandle1,11))//' is neither 1-, 2- nor 3-dimensional!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_isEqual')
       call sys_halt()
     end select
@@ -10611,6 +15919,54 @@ contains
         case (ST_CHAR)
           p_fpdbDataItem%ctype        =  FPDB_CHAR2D
           p_fpdbDataItem%p_Schar2D => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D
+
+        case default
+          call output_line ('Invalid data type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'createFpdbObjectHandle')
+          call sys_halt()
+        end select
+
+      case (3)
+          select case(p_rheap%p_Rdescriptors(ihandle)%idatatype)
+        case (ST_SINGLE)
+          p_fpdbDataItem%ctype       =  FPDB_SINGLE3D
+          p_fpdbDataItem%p_Fsingle3D => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle3D
+
+        case (ST_DOUBLE)
+          p_fpdbDataItem%ctype       =  FPDB_DOUBLE3D
+          p_fpdbDataItem%p_Ddouble3D => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble3D
+
+        case (ST_QUAD)
+          p_fpdbDataItem%ctype     =  FPDB_QUAD3D
+          p_fpdbDataItem%p_Qquad3D => p_rheap%p_Rdescriptors(ihandle)%p_Qquad3D
+
+        case (ST_INT)
+          p_fpdbDataItem%ctype        =  FPDB_INT3D
+          p_fpdbDataItem%p_Iinteger3D => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger3D
+
+        case (ST_INT8)
+          p_fpdbDataItem%ctype      =  FPDB_INT8_3D
+          p_fpdbDataItem%p_Iint8_3D => p_rheap%p_Rdescriptors(ihandle)%p_Iint8_3D
+
+        case (ST_INT16)
+          p_fpdbDataItem%ctype       =  FPDB_INT16_3D
+          p_fpdbDataItem%p_Iint16_3D => p_rheap%p_Rdescriptors(ihandle)%p_Iint16_3D
+
+        case (ST_INT32)
+          p_fpdbDataItem%ctype       =  FPDB_INT32_3D
+          p_fpdbDataItem%p_Iint32_3D => p_rheap%p_Rdescriptors(ihandle)%p_Iint32_3D
+
+        case (ST_INT64)
+          p_fpdbDataItem%ctype       =  FPDB_INT64_3D
+          p_fpdbDataItem%p_Iint64_3D => p_rheap%p_Rdescriptors(ihandle)%p_Iint64_3D
+
+        case (ST_LOGICAL)
+          p_fpdbDataItem%ctype        =  FPDB_LOGICAL3D
+          p_fpdbDataItem%p_Blogical3D => p_rheap%p_Rdescriptors(ihandle)%p_Blogical3D
+
+        case (ST_CHAR)
+          p_fpdbDataItem%ctype        =  FPDB_CHAR3D
+          p_fpdbDataItem%p_Schar3D => p_rheap%p_Rdescriptors(ihandle)%p_Schar3D
 
         case default
           call output_line ('Invalid data type!', &
@@ -11029,6 +16385,84 @@ contains
           call sys_halt()
         end select
 
+      case (3)
+        select case(p_rnode%idatatype)
+        case (ST_SINGLE)
+          allocate(p_rnode%p_Fsingle3D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2),&
+                   p_fpdbDataItem%Ilbounds(3):p_fpdbDataItem%Iubounds(3)))
+          call fpdb_getdata_single3d(p_fpdbDataItem, p_rnode%p_Fsingle3D)
+
+        case (ST_DOUBLE)
+          allocate(p_rnode%p_Ddouble3D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2),&
+                   p_fpdbDataItem%Ilbounds(3):p_fpdbDataItem%Iubounds(3)))
+          call fpdb_getdata_double3d(p_fpdbDataItem, p_rnode%p_Ddouble3D)
+
+        case (ST_QUAD)
+          allocate(p_rnode%p_Qquad3D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2),&
+                   p_fpdbDataItem%Ilbounds(3):p_fpdbDataItem%Iubounds(3)))
+          call fpdb_getdata_quad3d(p_fpdbDataItem, p_rnode%p_Qquad3D)
+
+        case (ST_INT)
+          allocate(p_rnode%p_Iinteger3D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2),&
+                   p_fpdbDataItem%Ilbounds(3):p_fpdbDataItem%Iubounds(3)))
+          call fpdb_getdata_int3d(p_fpdbDataItem, p_rnode%p_Iinteger3D)
+
+        case (ST_INT8)
+          allocate(p_rnode%p_Iint8_3D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2),&
+                   p_fpdbDataItem%Ilbounds(3):p_fpdbDataItem%Iubounds(3)))
+          call fpdb_getdata_int8_3d(p_fpdbDataItem, p_rnode%p_Iint8_3D)
+
+        case (ST_INT16)
+          allocate(p_rnode%p_Iint16_3D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2),&
+                   p_fpdbDataItem%Ilbounds(3):p_fpdbDataItem%Iubounds(3)))
+          call fpdb_getdata_int16_3d(p_fpdbDataItem, p_rnode%p_Iint16_3D)
+
+        case (ST_INT32)
+          allocate(p_rnode%p_Iint32_3D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2),&
+                   p_fpdbDataItem%Ilbounds(3):p_fpdbDataItem%Iubounds(3)))
+          call fpdb_getdata_int32_3d(p_fpdbDataItem, p_rnode%p_Iint32_3D)
+
+        case (ST_INT64)
+          allocate(p_rnode%p_Iint64_3D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2),&
+                   p_fpdbDataItem%Ilbounds(3):p_fpdbDataItem%Iubounds(3)))
+          call fpdb_getdata_int64_3d(p_fpdbDataItem, p_rnode%p_Iint64_3D)
+
+        case (ST_LOGICAL)
+          allocate(p_rnode%p_Blogical3D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2),&
+                   p_fpdbDataItem%Ilbounds(3):p_fpdbDataItem%Iubounds(3)))
+          call fpdb_getdata_logical3d(p_fpdbDataItem, p_rnode%p_Blogical3D)
+
+        case (ST_CHAR)
+          allocate(p_rnode%p_Schar3D(&
+                   p_fpdbDataItem%Ilbounds(1):p_fpdbDataItem%Iubounds(1),&
+                   p_fpdbDataItem%Ilbounds(2):p_fpdbDataItem%Iubounds(2),&
+                   p_fpdbDataItem%Ilbounds(3):p_fpdbDataItem%Iubounds(3)))
+          call fpdb_getdata_char3d(p_fpdbDataItem, p_rnode%p_Schar3D)
+
+        case default
+          call output_line ('Invalid data type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
+          call sys_halt()
+        end select
+
       case default
         call output_line ('Invalid dimension!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'restoreFpdbObjectHandle')
@@ -11071,7 +16505,7 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
   integer :: inewhandle,isize1d
-  integer, dimension(2) :: isize2d
+  integer, dimension(:), allocatable :: Isize
   type(t_storageNode) :: rtempnode
 
     ! Get the heap to use - local or global one.
@@ -11105,10 +16539,12 @@ contains
       call storage_getsize (ihandle,isize1d,rheap)
       call storage_new ('storage_setdatatype', p_rnode%sname, isize1d, &
           ctype, inewhandle, ST_NEWBLOCK_NOINIT, rheap)
-    case (2)
-      call storage_getsize (ihandle,Isize2d,rheap)
-      call storage_new ('storage_setdatatype', p_rnode%sname, isize2D, &
+    case default
+      allocate(Isize(p_rnode%idimension))
+      call storage_getsize (ihandle,Isize,rheap)
+      call storage_new ('storage_setdatatype', p_rnode%sname, Isize, &
           ctype, inewhandle, ST_NEWBLOCK_NOINIT, rheap)
+      deallocate(Isize)
     end select
     
     ! Copy the data. This will do the data conversion.
