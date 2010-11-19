@@ -6349,7 +6349,7 @@ end subroutine
 
 !</subroutine>
   ! local variables
-  real(dp) :: halfpi,dtheta,dphi,theta,phi,drad,dx,dy,dz
+  real(dp) :: halfpi,dtheta,dphi,theta,phi,dx,dy,dz
   integer  :: i,j,iverts,ive,itriangles,stacks2,index,ioffset
   real(dp), dimension(:,:), pointer :: p_Dvertices
   integer, dimension(:,:), pointer :: p_Itriangles

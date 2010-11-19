@@ -791,8 +791,6 @@ contains
     real(DP), dimension(3,8) :: DcornerCoords
     integer :: ive,nnae,iae
     logical :: bcheck
-    real(DP) :: dxmid,dymid
-    real(DP) :: dx1,dy1,dx2,dy2
     real(dp), dimension(3) :: Dmid
     real(dp), dimension(3,4) :: Dface
     integer, dimension(4,TRIA_NAEHEXA3D), parameter :: IverticesHexa =&

@@ -314,7 +314,6 @@ contains
 
     ! local variables
     integer, dimension(2) :: Isize
-    integer :: i
 
     
     ! Set atomic data

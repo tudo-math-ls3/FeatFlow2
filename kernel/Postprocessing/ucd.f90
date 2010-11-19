@@ -4932,9 +4932,7 @@ contains
 
 !</subroutine>
 
-    integer, dimension(:), pointer :: p_Hpolygons
     integer :: nsize
-    integer, dimension(2) :: Ilength
     integer, dimension(:), pointer :: p_HsurfTris
     integer, dimension(:), pointer :: p_HTriangles
     integer, dimension(:), pointer :: p_HsurfData

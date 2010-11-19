@@ -318,7 +318,6 @@ contains
 
     ! local variables
     integer, dimension(2) :: Isize
-    integer :: i
 
 
     ! Check if block matrix has only one block
@@ -577,7 +576,6 @@ contains
     ! local variables
     type(t_vectorScalar) :: rvectorTmp
     integer, dimension(2) :: Isize
-    integer :: i
 
 
     ! Set atomic data
