@@ -57,6 +57,9 @@
 !#                                 afcstab_failsafeLimitingArray
 !#      -> Perform failsafe flux correction
 !#
+!# 15.) afcstab_initMatrixCoeffs
+!#      -> Initialises the auxiliary matrix coefficients
+!#
 !# The following auxiliary routines are available:
 !#
 !# 1.) afcstab_limit = afcstab_limit_unbounded/
@@ -81,6 +84,7 @@ module afcstabilisation
   private
   public :: t_afcstab
   public :: afcstab_initFromParameterlist
+  public :: afcstab_initMatrixCoeffs
   public :: afcstab_releaseStabilisation
   public :: afcstab_resizeStabilisation
   public :: afcstab_copyStabilisation
@@ -181,8 +185,8 @@ module afcstabilisation
   ! Low-order predictor has been computed
   integer(I32), parameter, public :: AFCSTAB_HAS_PREDICTOR        = 2_I32**11
 
-  ! Matrix coefficients have been attached
-  integer(I32), parameter, public :: AFCSTAB_HAS_MATRIXDATA       = 2_I32**12
+  ! Auxiliary matrix coefficients have been attached
+  integer(I32), parameter, public :: AFCSTAB_HAS_MATRIXCOEFFS     = 2_I32**12
 
 !</constantblock>
 
@@ -219,8 +223,8 @@ module afcstabilisation
   ! Duplicate low-order predictor
   integer(I32), parameter, public :: AFCSTAB_DUP_PREDICTOR        = AFCSTAB_HAS_PREDICTOR
     
-  ! Duplicate matrix coefficients
-  integer(I32), parameter, public :: AFCSTAB_DUP_MATRIXDATA       = AFCSTAB_HAS_MATRIXDATA
+  ! Duplicate auxiliary matrix coefficients
+  integer(I32), parameter, public :: AFCSTAB_DUP_MATRIXCOEFFS     = AFCSTAB_HAS_MATRIXCOEFFS
 !</constantblock>
 
 !<constantblock description="Duplication flags. Specifies which information is shared \
@@ -256,8 +260,8 @@ module afcstabilisation
   ! Share low-order predictor
   integer(I32), parameter, public :: AFCSTAB_SHARE_PREDICTOR        = AFCSTAB_DUP_PREDICTOR
 
-  ! Share matrix coefficients
-  integer(I32), parameter, public :: AFCSTAB_SHARE_MATRIXDATA       = AFCSTAB_DUP_MATRIXDATA
+  ! Share auxiliary matrix coefficients
+  integer(I32), parameter, public :: AFCSTAB_SHARE_MATRIXCOEFFS     = AFCSTAB_DUP_MATRIXCOEFFS
   
 !</constantblock>
 
@@ -391,11 +395,11 @@ module afcstabilisation
     ! Handle to coefficient at edge structure
     integer :: h_DcoefficientsAtEdge = ST_NOHANDLE
 
-    ! Handle to matrix data at nodes (i.e. diagonal entries)
-    integer :: h_DdataAtNodes = ST_NOHANDLE
+    ! Handle to auxiliary matrix data at nodes (i.e. diagonal entries)
+    integer :: h_DmatrixCoeffsAtNode = ST_NOHANDLE
 
-    ! Handle to matrix data at edges (i.e. off-diagonal entries)
-    integer :: h_DdataAtEdges = ST_NOHANDLE
+    ! Handle to auxiliary matrix data at edges (i.e. off-diagonal entries)
+    integer :: h_DmatrixCoeffsAtEdge = ST_NOHANDLE
 
     ! Pointer to the vector of correction factors
     type(t_vectorScalar), pointer :: p_rvectorAlpha => null()
@@ -537,17 +541,17 @@ contains
 
 
     ! Release edge structure
-    if (checknot(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE) .and.&
+    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)) .and.&
         (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE))&
         call storage_free(rafcstab%h_IverticesAtEdge)
 
     ! Release edge values
-    if (checknot(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES) .and.&
+    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES)) .and.&
         (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE))&
         call storage_free(rafcstab%h_DcoefficientsAtEdge)
 
     ! Release off-diagonal edges
-    if (checknot(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
+    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES))) then
       if (rafcstab%h_IsuperdiagEdgesIdx .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IsuperdiagEdgesIdx)
       if (rafcstab%h_IsubdiagEdgesIdx .ne. ST_NOHANDLE)&
@@ -557,7 +561,7 @@ contains
     end if
         
     ! Release antidiffusive fluxes
-    if (checknot(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
+    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES))) then
       if (associated(rafcstab%p_rvectorFlux0)) then
         call lsyssc_releaseVector(rafcstab%p_rvectorFlux0)
         deallocate(rafcstab%p_rvectorFlux0)
@@ -569,15 +573,15 @@ contains
     end if
 
     ! Release matrix data
-    if (checknot(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXDATA)) then
-      if (rafcstab%h_DdataAtNodes .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_DdataAtNodes)
-      if (rafcstab%h_DdataAtEdges .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_DdataAtEdges)
+    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS))) then
+      if (rafcstab%h_DmatrixCoeffsAtNode .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_DmatrixCoeffsAtNode)
+      if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_DmatrixCoeffsAtEdge)
     end if
 
     ! Release antidiffusive increments
-    if (checknot(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS)) then
+    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS))) then
       if (associated(rafcstab%p_rvectorPp)) then
         call lsyssc_releaseVector(rafcstab%p_rvectorPp)
         deallocate(rafcstab%p_rvectorPp)
@@ -589,7 +593,7 @@ contains
     end if
 
     ! Release upper/lower bounds
-    if (checknot(rafcstab%iduplicationFlag, AFCSTAB_SHARE_BOUNDS)) then
+    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_BOUNDS))) then
       if (associated(rafcstab%p_rvectorQp)) then
         call lsyssc_releaseVector(rafcstab%p_rvectorQp)
         deallocate(rafcstab%p_rvectorQp)
@@ -601,7 +605,7 @@ contains
     end if
     
     ! Release nodal limiting factors
-    if (checknot(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER)) then
+    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER))) then
       if (associated(rafcstab%p_rvectorRp)) then
         call lsyssc_releaseVector(rafcstab%p_rvectorRp)
         deallocate(rafcstab%p_rvectorRp)
@@ -613,14 +617,14 @@ contains
     end if
 
     ! Release edge-wise limiting coefficients
-    if (checknot(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIMITER) .and.&
+    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIMITER)) .and.&
         (associated(rafcstab%p_rvectorAlpha))) then
       call lsyssc_releaseVector(rafcstab%p_rvectorAlpha)
       deallocate(rafcstab%p_rvectorAlpha)
     end if
 
     ! Release low-order predictor
-    if (checknot(rafcstab%iduplicationFlag, AFCSTAB_SHARE_PREDICTOR) .and.&
+    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_PREDICTOR)) .and.&
         (associated(rafcstab%p_rvectorPredictor))) then
       call lsysbl_releaseVector(rafcstab%p_rvectorPredictor)
       deallocate(rafcstab%p_rvectorPredictor)
@@ -653,15 +657,15 @@ contains
     !**************************************************************
     ! Checks if bitfield ibitfiled in idupFlag is not set.
 
-    pure function checknot(idupFlag, ibitfield)
+    pure function check(idupFlag, ibitfield)
 
       integer(I32), intent(in) :: idupFlag,ibitfield
       
-      logical :: checknot
+      logical :: check
       
-      checknot = (iand(idupFlag,ibitfield) .ne. ibitfield)
+      check = (iand(idupFlag,ibitfield) .ne. ibitfield)
 
-    end function checknot
+    end function check
 
   end subroutine afcstab_releaseStabilisation
 
@@ -714,9 +718,9 @@ contains
       end if
 
       ! Resize matrix data at nodes
-       if (rafcstab%h_DdataAtNodes .ne. ST_NOHANDLE) then
+       if (rafcstab%h_DmatrixCoeffsAtNode .ne. ST_NOHANDLE) then
         call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEQ, rafcstab%h_DdataAtNodes,&
+            rafcstab%NEQ, rafcstab%h_DmatrixCoeffsAtNode,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
 
@@ -775,9 +779,9 @@ contains
       end if
 
       ! Resize matrix data at edges
-       if (rafcstab%h_DdataAtEdges .ne. ST_NOHANDLE) then
+       if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE) then
         call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEDGE, rafcstab%h_DdataAtEdges,&
+            rafcstab%NEDGE, rafcstab%h_DmatrixCoeffsAtEdge,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
 
@@ -1013,19 +1017,19 @@ contains
     end if
 
     ! Copy matrix data at nodes and edges
-    if (check(idupFlag, AFCSTAB_DUP_MATRIXDATA) .and.&
-        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXDATA)) then
+    if (check(idupFlag, AFCSTAB_DUP_MATRIXCOEFFS) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)) then
       ! Copy content from source to destination structure
-      call storage_copy(rafcstabSrc%h_DdataAtNodes,&
-          rafcstabDest%h_DdataAtNodes)
-      call storage_copy(rafcstabSrc%h_DdataAtEdges,&
-          rafcstabDest%h_DdataAtEdges)
+      call storage_copy(rafcstabSrc%h_DmatrixCoeffsAtNode,&
+          rafcstabDest%h_DmatrixCoeffsAtNode)
+      call storage_copy(rafcstabSrc%h_DmatrixCoeffsAtEdge,&
+          rafcstabDest%h_DmatrixCoeffsAtEdge)
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
-          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXDATA))
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS))
       ! Reset ownership
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
-          not(AFCSTAB_SHARE_MATRIXDATA))
+          not(AFCSTAB_SHARE_MATRIXCOEFFS))
     end if
 
     ! Copy antidiffusive fluxes
@@ -1039,14 +1043,14 @@ contains
           not(AFCSTAB_SHARE_ADFLUXES))
       ! Copy explicit raw antidiffusive flux (if any)
       if (associated(rafcstabSrc%p_rvectorFlux0)) then
-        if (not(associated(rafcstabDest%p_rvectorFlux0)))&
+        if (.not.(associated(rafcstabDest%p_rvectorFlux0)))&
             allocate(rafcstabDest%p_rvectorFlux0)
         call lsyssc_copyVector(rafcstabSrc%p_rvectorFlux0,&
             rafcstabDest%p_rvectorFlux0)
       end if
       ! Copy raw antidiffusive flux (if any)
       if (associated(rafcstabSrc%p_rvectorFlux)) then
-        if (not(associated(rafcstabDest%p_rvectorFlux)))&
+        if (.not.(associated(rafcstabDest%p_rvectorFlux)))&
             allocate(rafcstabDest%p_rvectorFlux)
         call lsyssc_copyVector(rafcstabSrc%p_rvectorFlux,&
             rafcstabDest%p_rvectorFlux)
@@ -1067,14 +1071,14 @@ contains
           not(AFCSTAB_SHARE_ADINCREMENTS))
       ! Copy antidiffusive increment Pp
       if (associated(rafcstabSrc%p_rvectorPp)) then
-        if (not(associated(rafcstabDest%p_rvectorPp)))&
+        if (.not.(associated(rafcstabDest%p_rvectorPp)))&
             allocate(rafcstabDest%p_rvectorPp)
         call lsyssc_copyVector(rafcstabSrc%p_rvectorPp,&
             rafcstabDest%p_rvectorPp)
       end if
       ! Copy antidiffusive increment Pm
       if (associated(rafcstabSrc%p_rvectorPm)) then
-        if (not(associated(rafcstabDest%p_rvectorPm)))&
+        if (.not.(associated(rafcstabDest%p_rvectorPm)))&
             allocate(rafcstabDest%p_rvectorPm)
         call lsyssc_copyVector(rafcstabSrc%p_rvectorPm,&
             rafcstabDest%p_rvectorPm)
@@ -1095,14 +1099,14 @@ contains
           not(AFCSTAB_SHARE_BOUNDS))
       ! Copy upper bounds Qp
       if (associated(rafcstabSrc%p_rvectorQp)) then
-        if (not(associated(rafcstabDest%p_rvectorQp)))&
+        if (.not.(associated(rafcstabDest%p_rvectorQp)))&
             allocate(rafcstabDest%p_rvectorQp)
         call lsyssc_copyVector(rafcstabSrc%p_rvectorQp,&
             rafcstabDest%p_rvectorQp)
       end if
       ! Copy lower bounds Qm
       if (associated(rafcstabSrc%p_rvectorQm)) then
-        if (not(associated(rafcstabDest%p_rvectorQm)))&
+        if (.not.(associated(rafcstabDest%p_rvectorQm)))&
             allocate(rafcstabDest%p_rvectorQm)
         call lsyssc_copyVector(rafcstabSrc%p_rvectorQm,&
             rafcstabDest%p_rvectorQm)
@@ -1123,14 +1127,14 @@ contains
           not(AFCSTAB_SHARE_NODELIMITER))
       ! Copy nodal limiting coefficients Rp
       if (associated(rafcstabSrc%p_rvectorRp)) then
-        if (not(associated(rafcstabDest%p_rvectorRp)))&
+        if (.not.(associated(rafcstabDest%p_rvectorRp)))&
             allocate(rafcstabDest%p_rvectorRp)
         call lsyssc_copyVector(rafcstabSrc%p_rvectorRp,&
             rafcstabDest%p_rvectorRp)
       end if
       ! Copy nodal limiting coefficients Rm
       if (associated(rafcstabSrc%p_rvectorRm)) then
-        if (not(associated(rafcstabDest%p_rvectorRm)))&
+        if (.not.(associated(rafcstabDest%p_rvectorRm)))&
             allocate(rafcstabDest%p_rvectorRm)
         call lsyssc_copyVector(rafcstabSrc%p_rvectorRm,&
             rafcstabDest%p_rvectorRm)
@@ -1151,7 +1155,7 @@ contains
           not(AFCSTAB_SHARE_EDGELIMITER))
       ! Copy edge-wise limiting coefficients
       if (associated(rafcstabSrc%p_rvectorAlpha)) then
-        if (not(associated(rafcstabDest%p_rvectorAlpha)))&
+        if (.not.(associated(rafcstabDest%p_rvectorAlpha)))&
             allocate(rafcstabDest%p_rvectorAlpha)
         call lsyssc_copyVector(rafcstabSrc%p_rvectorAlpha,&
             rafcstabDest%p_rvectorAlpha)
@@ -1172,7 +1176,7 @@ contains
           not(AFCSTAB_SHARE_PREDICTOR))
       ! Copy edge-wise limiting coefficients
       if (associated(rafcstabSrc%p_rvectorPredictor)) then
-        if (not(associated(rafcstabDest%p_rvectorPredictor)))&
+        if (.not.(associated(rafcstabDest%p_rvectorPredictor)))&
             allocate(rafcstabDest%p_rvectorPredictor)
         call lsysbl_copyVector(rafcstabSrc%p_rvectorPredictor,&
             rafcstabDest%p_rvectorPredictor)
@@ -1241,7 +1245,7 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
       ! Remove existing data owned by the destination structure
-      if (checknot(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE))&
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)))&
           call storage_free(rafcstabDest%h_IverticesAtEdge)
       ! Copy handle from source to destination structure
       rafcstabDest%h_IverticesAtEdge = rafcstabSrc%h_IverticesAtEdge
@@ -1259,7 +1263,7 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_EDGEVALUES) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)) then
       ! Remove existing data owned by the destination structure
-      if (checknot(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES))&
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES)))&
           call storage_free(rafcstabDest%h_DcoefficientsAtEdge)
       ! Copy handle from source to destination structure
       rafcstabDest%h_DcoefficientsAtEdge = rafcstabSrc%h_DcoefficientsAtEdge
@@ -1275,7 +1279,7 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_OFFDIAGONALEDGES) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)) then
       ! Remove existing data owned by the destination structure
-      if (checknot(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES))) then
         call storage_free(rafcstabDest%h_IsuperdiagEdgesIdx)
         call storage_free(rafcstabDest%h_IsubdiagEdgesIdx)
         call storage_free(rafcstabDest%h_IsubdiagEdges)
@@ -1293,29 +1297,29 @@ contains
     end if
 
     ! Duplicate matrix data
-    if (check(idupFlag, AFCSTAB_DUP_MATRIXDATA) .and.&
-        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXDATA)) then
+    if (check(idupFlag, AFCSTAB_DUP_MATRIXCOEFFS) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)) then
       ! Remove existing data owned by the destination structure
-      if (checknot(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_MATRIXDATA)) then
-        call storage_free(rafcstabDest%h_DdataAtNodes)
-        call storage_free(rafcstabDest%h_DdataAtEdges)
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS))) then
+        call storage_free(rafcstabDest%h_DmatrixCoeffsAtNode)
+        call storage_free(rafcstabDest%h_DmatrixCoeffsAtEdge)
       end if
       ! Copy handles from source to destination structure
-      rafcstabDest%h_DdataAtNodes = rafcstabSrc%h_DdataAtNodes
-      rafcstabDest%h_DdataAtEdges = rafcstabSrc%h_DdataAtEdges
+      rafcstabDest%h_DmatrixCoeffsAtNode = rafcstabSrc%h_DmatrixCoeffsAtNode
+      rafcstabDest%h_DmatrixCoeffsAtEdge = rafcstabSrc%h_DmatrixCoeffsAtEdge
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
-          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXDATA))
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS))
       ! Set ownership to shared
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
-          AFCSTAB_SHARE_MATRIXDATA)
+          AFCSTAB_SHARE_MATRIXCOEFFS)
     end if
 
     ! Duplicate antidiffusive fluxes
     if (check(idupFlag, AFCSTAB_DUP_ADFLUXES) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)) then
       ! Remove existing data owned by the destination structure
-      if (checknot(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES))) then
         call lsyssc_releaseVector(rafcstabDest%p_rvectorFlux0)
         call lsyssc_releaseVector(rafcstabDest%p_rvectorFlux)
       end if
@@ -1334,7 +1338,7 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_ADINCREMENTS) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)) then
       ! Remove existing data owned by the destination structure
-      if (checknot(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS)) then
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS))) then
         call lsyssc_releaseVector(rafcstabDest%p_rvectorPp)
         call lsyssc_releaseVector(rafcstabDest%p_rvectorPm)
       end if
@@ -1353,7 +1357,7 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_BOUNDS) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS)) then
       ! Remove existing data owned by the destination structure
-      if (checknot(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_BOUNDS)) then
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_BOUNDS))) then
         call lsyssc_releaseVector(rafcstabDest%p_rvectorQp)
         call lsyssc_releaseVector(rafcstabDest%p_rvectorQm)
       end if
@@ -1435,19 +1439,6 @@ contains
       check = (iand(idupFlag,ibitfield) .eq. ibitfield)
 
     end function check
-
-    !**************************************************************
-    ! Checks if bitfield ibitfiled in idupFlag is not set.
-
-    pure function checknot(idupFlag, ibitfield)
-      
-      integer(I32), intent(in) :: idupFlag,ibitfield
-      
-      logical :: checknot
-      
-      checknot = (iand(idupFlag,ibitfield) .ne. ibitfield)
-
-    end function checknot
 
   end subroutine afcstab_duplicateStabilisation
 
@@ -2163,6 +2154,72 @@ contains
 !</subroutine>
 
   end subroutine afcstab_failsafeLimitingArray
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_initMatrixCoeffs(rafcstab, n)
+
+!<description>
+    ! This subroutine initialises the arrays DmatrixCoeffsAtNode and
+    ! DmatrixCoeffsAtEdge to store auxiliary data for n matrices.
+!</description>
+
+!<input>
+    ! Number of auxliary matrices to store at most
+    integer, intent(in) :: n
+!</input>
+
+!<inputoutpu>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    integer, dimension(2) :: Isize2D
+    integer, dimension(3) :: Isize3D
+
+    if (n .le. 0) then
+      call output_line('Number of matrices to be stored must be positive!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'afcstab_initMatrixCoeffs')
+      return
+    end if
+
+    ! Check if stabilisation has been initialised
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_initMatrixCoeffs')
+      call sys_halt()
+    end if
+
+    ! Remove auxiliary matrix data if present and not shared with others
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS) .ne. 0) then
+      if (iand(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS) .eq. 0) then
+        call storage_free(rafcstab%h_DmatrixCoeffsAtNode)
+        call storage_free(rafcstab%h_DmatrixCoeffsAtEdge)
+      end if
+    end if
+
+    ! Initialise auxiliary coefficients at nodes for n matrices
+    if (rafcstab%NEQ .gt. 0) then
+      Isize2D = (/n, rafcstab%NEQ/)   
+      call storage_new('afcstab_initMatrixCoeffs', 'DmatrixCoeffsAtNode', Isize2D,&
+          ST_DOUBLE, rafcstab%h_DmatrixCoeffsAtNode, ST_NEWBLOCK_ZERO)
+    end if
+
+    ! Initialise auxiliary coefficients at edges for n matrices
+    if (rafcstab%NEDGE .gt. 0) then
+      Isize3D = (/n, 2, rafcstab%NEDGE/)  
+      call storage_new('afcstab_initMatrixCoeffs', 'DmatrixCoeffsAtEdge', Isize3D,&
+          ST_DOUBLE, rafcstab%h_DmatrixCoeffsAtEdge, ST_NEWBLOCK_ZERO)
+    end if
+
+    ! Set specifiert for auxiliary matrix coefficients
+    rafcstab%istabilisationSpec =&
+        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)
+
+  end subroutine afcstab_initMatrixCoeffs
 
   !*****************************************************************************
 
