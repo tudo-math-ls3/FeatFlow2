@@ -72,51 +72,45 @@
 !# 1.) gfsc_initStabilisation
 !#     -> Initializes the stabilisation structure
 !#
-!# 2.) gfsc_isMatrixCompatible
-!#     -> Checks wether a matrix and a stabilisation structure are compatible
-!#
-!# 3.) gfsc_isVectorCompatible
-!#     -> Checks wether a vector and a stabilisation structure are compatible
-!#
-!# 4.) gfsc_buildConvectionOperator = gfsc_buildConvOperatorScalar /
+!# 2.) gfsc_buildConvectionOperator = gfsc_buildConvOperatorScalar /
 !#                                    gfsc_buildConvOperatorBlock
 !#     -> Assembles the convective part of the transport operator
 !#
-!# 5.) gfsc_buildDiffusionOperator = gfsc_buildDiffusionOperator
+!# 3.) gfsc_buildDiffusionOperator = gfsc_buildDiffusionOperator
 !#     -> Assembles the diffusive part of the transport operator
 !#
-!# 6.) gfsc_buildConvectionVectorFCT = gfsc_buildConvVecFCTScalar /
+!# 4.) gfsc_buildConvectionVectorFCT = gfsc_buildConvVecFCTScalar /
 !#                                     gfsc_buildConvVecFCTBlock
 !#     -> Assembles the convective vector for AFC stabilisation of FCT type
 !#
-!# 7.) gfsc_buildConvectionVectorTVD = gfsc_buildConvVecTVDScalar /
+!# 5.) gfsc_buildConvectionVectorTVD = gfsc_buildConvVecTVDScalar /
 !#                                     gfsc_buildConvVecTVDBlock
 !#     -> Assembles the convective vector for AFC stabilisation of TVD type
 !#
-!# 8.) gfsc_buildConvectionVectorGP = gfsc_buildConvVecGPScalar /
+!# 6.) gfsc_buildConvectionVectorGP = gfsc_buildConvVecGPScalar /
 !#                                    gfsc_buildConvVecGPBlock
 !#     -> Assembles the convective vector for AFC stabilisation of general-purpose type
 !#
-!# 9.) gfsc_buildConvectionVectorSymm = gfsc_buildConvVecSymmScalar /
+!# 7.) gfsc_buildConvectionVectorSymm = gfsc_buildConvVecSymmScalar /
 !#                                      gfsc_buildConvVecSymmBlock
 !#     -> Assembles the convective vector for stabilisation by means of
 !#        symmetric flux limiting for diffusion operators
 !#
-!# 10.) gfsc_buildConvectionJacobian = gfsc_buildConvJacobianScalar /
-!#                                     gfsc_buildConvJacobianBlock
+!# 8.) gfsc_buildConvectionJacobian = gfsc_buildConvJacobianScalar /
+!#                                    gfsc_buildConvJacobianBlock
 !#     -> Assembles the Jacobian matrix for the convective part of
 !#        the transport operator for a scalar convection equation
 !#
-!# 11.) gfsc_buildJacobianFCT = gfsc_buildJacLinearFCTScalar /
-!#                              gfsc_buildJacLinearFCTBlock /
-!#                              gfsc_buildJacobianFCTScalar /
-!#                              gfsc_buildJacobianFCTBlock
-!#      -> Assembles the Jacobian matrix for the stabilisation part of FCT type;
-!#         For the first two routines, the velocity is assumed to be linear which
-!#         simplifies the evaluation of the Jacobian matrix significantly.
-!#         For the second two routines, the velocity can be arbitrary.
+!# 9.) gfsc_buildJacobianFCT = gfsc_buildJacLinearFCTScalar /
+!#                             gfsc_buildJacLinearFCTBlock /
+!#                             gfsc_buildJacobianFCTScalar /
+!#                             gfsc_buildJacobianFCTBlock
+!#     -> Assembles the Jacobian matrix for the stabilisation part of FCT type;
+!#        For the first two routines, the velocity is assumed to be linear which
+!#        simplifies the evaluation of the Jacobian matrix significantly.
+!#        For the second two routines, the velocity can be arbitrary.
 !#
-!# 12.) gfsc_buildJacobianTVD = gfsc_buildJacLinearTVDScalar /
+!# 10.) gfsc_buildJacobianTVD = gfsc_buildJacLinearTVDScalar /
 !#                              gfsc_buildJacLinearTVDBlock /
 !#                              gfsc_buildJacobianTVDScalar /
 !#                              gfsc_buildJacobianTVDBlock
@@ -125,7 +119,7 @@
 !#         simplifies the evaluation of the Jacobian matrix significantly.
 !#         For the second two routines, the velocity can be arbitrary.
 !#
-!# 13.) gfsc_buildJacobianGP = gfsc_buildJacLinearGPScalar /
+!# 11.) gfsc_buildJacobianGP = gfsc_buildJacLinearGPScalar /
 !#                             gfsc_buildJacLinearGPBlock /
 !#                             gfsc_buildJacobianGPScalar /
 !#                             gfsc_buildJacobianGPBlock
@@ -134,12 +128,12 @@
 !#         to be linear which simplifies the evaluation of the Jacobian matrix
 !#         significantly. For the second two routines, the velocity can be arbitrary.
 !#
-!# 14.) gfsc_buildJacobianSymm = gfsc_buildJacobianSymmScalar /
+!# 12.) gfsc_buildJacobianSymm = gfsc_buildJacobianSymmScalar /
 !#                               gfsc_buildJacobianSymmBlock
 !#      -> Assembles the Jacobian matrix for the stabilisation part of symmetric
 !#         flux limiting for diffusion operators
 !#
-!# 15.) gfsc_buildFluxFCT = gfsc_buildFluxFCTScalar /
+!# 13.) gfsc_buildFluxFCT = gfsc_buildFluxFCTScalar /
 !#                          gfsc_buildFluxFCTBlock
 !#     -> Assembles the raw antidiffusive flux for the FEM-FCT stabilisation
 !#
@@ -171,8 +165,6 @@ module groupfemscalar
   private
   
   public :: gfsc_initStabilisation
-  public :: gfsc_isMatrixCompatible
-  public :: gfsc_isVectorCompatible
   public :: gfsc_buildConvectionOperator
   public :: gfsc_buildDiffusionOperator
   public :: gfsc_buildConvectionVectorFCT
@@ -541,94 +533,7 @@ contains
     rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
 
   end subroutine gfsc_initStabilisation
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsc_isMatrixCompatible(rafcstab, rmatrix, bcompatible)
-
-!<description>
-    ! This subroutine checks if a scalar matrix and a discrete 
-    ! stabilisation structure are compatible to each other, 
-    ! i.e. if they share the same structure, size and so on.
-!</description>
-
-!<input>
-    ! The scalar matrix
-    type(t_matrixScalar), intent(in) :: rmatrix
-
-    ! The stabilisation structure
-    type(t_afcstab), intent(in)      :: rafcstab
-!</input>
-
-!<output>
-    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE
-    ! depending on whether matrix and stabilisation are compatible or
-    ! not.  If not given, an error will inform the user if the
-    ! matrix/operator are not compatible and the program will halt.
-    logical, intent(out), optional :: bcompatible
-!</output>
-!</subroutine>
-
-    ! Matrix/operator must have the same size
-    if (rafcstab%NEQ   .ne. rmatrix%NEQ  .or.&
-        rafcstab%NVAR  .ne. rmatrix%NVAR .or.&
-        rafcstab%NEDGE .ne. int(0.5*(rmatrix%NA-rmatrix%NEQ),I32)) then
-      if (present(bcompatible)) then
-        bcompatible = .false.
-        return
-      else
-        call output_line('Matrix/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_isMatrixCompatible')
-        call sys_halt()
-      end if
-    end if
-  end subroutine gfsc_isMatrixCompatible
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsc_isVectorCompatible(rafcstab, rvector, bcompatible)
-
-!<description>
-    ! This subroutine checks if a vector and a stabilisation
-    ! structure are compatible to each other, i.e., share the
-    ! same structure, size and so on.
-!</description>
-
-!<input>
-    ! The scalar vector
-    type(t_vectorScalar), intent(in) :: rvector
-
-    ! Teh stabilisation structure
-    type(t_afcstab), intent(in)      :: rafcstab
-!</input>
-
-!<output>
-    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE
-    ! depending on whether matrix and stabilisation are compatible or
-    ! not. If not given, an error will inform the user if the
-    ! matrix/operator are not compatible and the program will halt.
-    logical, intent(out), optional :: bcompatible
-!</output>
-!</subroutine>
-
-    ! Matrix/operator must have the same size
-    if (rafcstab%NEQ   .ne. rvector%NEQ .or.&
-        rafcstab%NVAR  .ne. rvector%NVAR) then
-      if (present(bcompatible)) then
-        bcompatible = .false.
-        return
-      else
-        call output_line('Vector/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_isVectorCompatible')
-        call sys_halt()
-      end if
-    end if
-  end subroutine gfsc_isVectorCompatible
-
+ 
   !*****************************************************************************
 
 !<subroutine>
@@ -808,7 +713,6 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based structure
-    ! Let us check if the edge-based data structure has been generated
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
@@ -2197,7 +2101,6 @@ contains
     end if
     
     ! Check if stabilisation provides edge-based structure
-    ! Let us check if the edge-based data structure has been generated
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(rcoeffMatrix, rafcstab)
@@ -2214,7 +2117,7 @@ contains
     end if
 
     ! Set pointers
-     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call lsyssc_getbase_double(rcoeffMatrix, p_S)
     call lsyssc_getbase_double(rdiffMatrix, p_DiffOp)      
     

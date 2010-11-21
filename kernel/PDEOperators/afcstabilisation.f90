@@ -27,38 +27,53 @@
 !# 5.) afcstab_duplicateStabilisation
 !#     -> Duplicate (parts of) a stabilisation structure
 !#
-!# 6.) afcstab_getbase_IverticesAtEdge
-!#     -> Returns pointer to the vertices at edge structure
+!# 6.) afcstab_initMatrixCoeffs
+!#     -> Initialises the auxiliary matrix coefficients
 !#
-!# 7.) afcstab_getbase_IsupdiagEdgeIdx
-!#     -> Returns pointer to the index pointer for the
-!#        superdiagonal edge numbers
+!# 7.) afcstab_copyMatrixCoeffs
+!#     -> Copies auxiliary matrix coefficients into stabilisation structure
 !#
-!# 8.) afcstab_getbase_IsubdiagEdgeIdx
-!#     -> Returns pointer to the index pointer for the
-!#        subdiagonal edge numbers
+!# 8.) afcstab_isMatrixCompatible = afcstab_isMatrixCompatibleScalar /
+!#                                  afcstab_isMatrixCompatibleBlock
+!#     -> Checks wether a matrix and a stabilisation structure are compatible
 !#
-!# 9.) afcstab_getbase_IsubdiagEdge
-!#     -> Returns pointer to the subdiagonal edge numbers
+!# 9.) afcstab_isVectorCompatible = afcstab_isVectorCompatibleScalar /
+!#                                  afcstab_isVectorCompatibleBlock
+!#     -> Checks wether a vector and a stabilisation structure are compatible
 !#
-!# 10.) afcstab_getbase_DcoeffsAtEdge
+!# 10.) afcstab_getbase_array = afcstab_getbase_arrayScalar /
+!#                              afcstab_getbase_arrayBlock
+!#      -> Returns the array of pointers to a given block matrix
+!#
+!# 11.) afcstab_getbase_IverticesAtEdge
+!#      -> Returns pointer to the vertices at edge structure
+!#
+!# 12.) afcstab_getbase_IsupdiagEdgeIdx
+!#      -> Returns pointer to the index pointer for the
+!#         superdiagonal edge numbers
+!#
+!# 13.) afcstab_getbase_IsubdiagEdgeIdx
+!#      -> Returns pointer to the index pointer for the
+!#         subdiagonal edge numbers
+!#
+!# 14.) afcstab_getbase_IsubdiagEdge
+!#      -> Returns pointer to the subdiagonal edge numbers
+!#
+!# 15.) afcstab_getbase_DcoeffsAtEdge
 !#      -> Returns pointer to edge data
 !#
-!# 11.) afcstab_generateVerticesAtEdge
+!# 16.) afcstab_generateVerticesAtEdge
 !#      -> Generates the standard edge data structure
 !#
-!# 12.) afcstab_generateOffdiagEdges
+!# 17.) afcstab_generateOffdiagEdges
 !#      -> Generates the subdiagonal edge data structure
 !#
-!# 13.) afcstab_generateExtSparsity
+!# 18.) afcstab_generateExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 14.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
+!# 19.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
 !#                                 afcstab_failsafeLimitingArray
 !#      -> Perform failsafe flux correction
-!#
-!# 15.) afcstab_initMatrixCoeffs
-!#      -> Initialises the auxiliary matrix coefficients
 !#
 !# The following auxiliary routines are available:
 !#
@@ -82,13 +97,17 @@ module afcstabilisation
   implicit none
   
   private
-  public :: t_afcstab
+  public :: t_afcstab, t_array
   public :: afcstab_initFromParameterlist
-  public :: afcstab_initMatrixCoeffs
   public :: afcstab_releaseStabilisation
   public :: afcstab_resizeStabilisation
   public :: afcstab_copyStabilisation
   public :: afcstab_duplicateStabilisation
+  public :: afcstab_initMatrixCoeffs
+  public :: afcstab_copyMatrixCoeffs
+  public :: afcstab_isMatrixCompatible
+  public :: afcstab_isVectorCompatible
+  public :: afcstab_getbase_array
   public :: afcstab_getbase_IverticesAtEdge
   public :: afcstab_getbase_IsupdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdgeIdx
@@ -98,6 +117,7 @@ module afcstabilisation
   public :: afcstab_generateOffdiagEdges
   public :: afcstab_generateExtSparsity
   public :: afcstab_failsafeLimiting
+  
   public :: afcstab_limit
  
   ! *****************************************************************************
@@ -431,6 +451,26 @@ module afcstabilisation
   end type t_afcstab
 !</typeblock>
 
+!<typeblock>
+
+  ! This structure can be used to realise arrays-of-pointers which is
+  ! necessary to address the content of multiple scalar submatrices
+  ! simultaneously. 
+
+  type t_array
+
+    ! Type of data associated to the handle ST_DOUBLE, ST_SINGLE)
+    integer :: idataType = 0
+
+    ! Pointer to the double-valued matrix data
+    real(DP), dimension(:), pointer :: p_Ddata
+
+    ! Pointer to the single-valued matrix data
+    real(SP), dimension(:), pointer :: p_Fdata
+
+  end type t_array
+!</typeblock>
+
 !</types>
 
   ! *****************************************************************************
@@ -443,6 +483,16 @@ module afcstabilisation
     module procedure afcstab_resizeStabIndBlock
   end interface
 
+  interface afcstab_isMatrixCompatible
+    module procedure afcstab_isMatrixCompatibleScalar
+    module procedure afcstab_isMatrixCompatibleBlock
+  end interface
+  
+  interface afcstab_isVectorCompatible
+    module procedure afcstab_isVectorCompatibleScalar
+    module procedure afcstab_isVectorCompatibleBlock
+  end interface
+
   interface afcstab_failsafeLimiting
     module procedure afcstab_failsafeLimitingBlock
     module procedure afcstab_failsafeLimitingArray
@@ -451,6 +501,11 @@ module afcstabilisation
   interface afcstab_limit
     module procedure afcstab_limit_unbounded
     module procedure afcstab_limit_bounded
+  end interface
+
+  interface afcstab_getbase_array
+    module procedure afcstab_getbase_arrayScalar
+    module procedure afcstab_getbase_arrayBlock
   end interface
 
 contains
@@ -1442,6 +1497,429 @@ contains
 
   end subroutine afcstab_duplicateStabilisation
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_initMatrixCoeffs(rafcstab, n)
+
+!<description>
+    ! This subroutine initialises the arrays DmatrixCoeffsAtNode and
+    ! DmatrixCoeffsAtEdge to store auxiliary data for n matrices.
+!</description>
+
+!<input>
+    ! Number of auxliary matrices to store at most
+    integer, intent(in) :: n
+!</input>
+
+!<inputoutpu>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    integer, dimension(2) :: Isize2D
+    integer, dimension(3) :: Isize3D
+
+    if (n .le. 0) then
+      call output_line('Number of matrices to be stored must be positive!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'afcstab_initMatrixCoeffs')
+      return
+    end if
+
+    ! Check if stabilisation has been initialised
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_initMatrixCoeffs')
+      call sys_halt()
+    end if
+
+    ! Remove auxiliary matrix data if present and not shared with others
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS) .ne. 0) then
+      if (iand(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS) .eq. 0) then
+        call storage_free(rafcstab%h_DmatrixCoeffsAtNode)
+        call storage_free(rafcstab%h_DmatrixCoeffsAtEdge)
+      end if
+    end if
+
+    ! Initialise auxiliary coefficients at nodes for n matrices
+    if (rafcstab%NEQ .gt. 0) then
+      Isize2D = (/n, rafcstab%NEQ/)   
+      call storage_new('afcstab_initMatrixCoeffs', 'DmatrixCoeffsAtNode', Isize2D,&
+          ST_DOUBLE, rafcstab%h_DmatrixCoeffsAtNode, ST_NEWBLOCK_ZERO)
+    end if
+
+    ! Initialise auxiliary coefficients at edges for n matrices
+    if (rafcstab%NEDGE .gt. 0) then
+      Isize3D = (/n, 2, rafcstab%NEDGE/)  
+      call storage_new('afcstab_initMatrixCoeffs', 'DmatrixCoeffsAtEdge', Isize3D,&
+          ST_DOUBLE, rafcstab%h_DmatrixCoeffsAtEdge, ST_NEWBLOCK_ZERO)
+    end if
+
+  end subroutine afcstab_initMatrixCoeffs
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_CopyMatrixCoeffs(rafcstab, Rmatrices, Iposition)
+
+!<description>
+    ! This subroutine copies the data of the given matrices into the
+    ! arrays DmatrixCoeffsAtNode and DmatrixCoeffsAtEdge of the
+    ! stabilisation structure. If these arrays are not allocated then
+    ! they are allocated by this routine in correct size.
+!</description>
+
+!<input>
+    ! Array of scalar coefficient matrices
+    type(t_matrixScalar), dimension(:), intent(in) :: Rmatrices
+
+    ! OPTIOANL: Array of integers which indicate the positions of the
+    ! given matrices. If this parameter is not given, then the
+    ! matrices are stored starting at position one.
+    integer, dimension(:), intent(in), optional, target :: Iposition
+!</input>
+
+!<inputoutpu>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_Iposition, p_Kdiagonal
+    integer, dimension(2) :: Isize2D
+    integer, dimension(3) :: Isize3D
+    integer :: i,ij,ji,iedge,ipos,imatrix,nmatrices,nmaxpos
+
+    ! Set number of matrices
+    nmatrices = size(Rmatrices)
+
+    ! Set pointer to matrix positions
+    if (present(Iposition)) then
+      p_Iposition => Iposition
+    else
+      allocate(p_Iposition(size(Rmatrices)))
+      do imatrix = 1, nmatrices
+        p_Iposition(imatrix) = imatrix
+      end do
+    end if
+
+    ! Set maximum position
+    nmaxpos = maxval(p_Iposition)
+
+    ! Check if array Rmatrices and Iposition have the same size
+    if (nmatrices .ne. size(p_Iposition)) then
+      call output_line('size(Rmatrices) /= size(Iposition)!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
+      call sys_halt()
+    end if
+
+    ! Check if first matrix is compatible with the stabilisationn
+    ! structure. Note that only double precision matrices are supported
+    call afcstab_isMatrixCompatible(rafcstab, Rmatrices(1))
+    if (Rmatrices(1)%cdataType .ne. ST_DOUBLE) then
+      call output_line('Only double precision matrices are supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
+      call sys_halt()
+    end if
+    
+    ! Check if all matrices are compatible to the first one
+    do imatrix = 2, nmatrices
+      call lsyssc_isMatrixCompatible(Rmatrices(1), Rmatrices(imatrix))
+    end do
+
+    ! Check if stabilisation provides edge-based structure
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      call afcstab_generateVerticesAtEdge(Rmatrices(1), rafcstab)
+    end if
+    
+    ! Check if auxiliary data arrays for matrix coefficients are initialised
+    if ((rafcstab%h_DmatrixCoeffsAtNode .eq. ST_NOHANDLE) .or.&
+        (rafcstab%h_DmatrixCoeffsAtEdge .eq. ST_NOHANDLE)) then
+      call afcstab_initMatrixCoeffs(rafcstab, nmaxpos)
+    else
+      call storage_getsize(rafcstab%h_DmatrixCoeffsAtNode, Isize2D)
+      call storage_getsize(rafcstab%h_DmatrixCoeffsAtEdge, Isize3D)
+      if ((nmaxpos .gt. Isize2D(2)) .or. (nmaxpos .gt. Isize3D(3))) then
+        call output_line('Number of matrices exceeds pre-initialised arrays!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
+        call sys_halt()
+      end if
+    end if
+    
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call storage_getbase_double2D(rafcstab%h_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtNode)
+    call storage_getbase_double3D(rafcstab%h_DmatrixCoeffsAtEdge, p_DmatrixCoeffsAtEdge)
+
+    ! Associate data of each matrix separateky
+    do imatrix = 1, nmatrices
+      
+      ! Get matrix position
+      ipos = p_Iposition(imatrix)
+
+      ! What kind of matrix are we?
+      select case(Rmatrices(imatrix)%cmatrixFormat)
+      case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+        !-------------------------------------------------------------------------
+        ! Matrix format 7 and 9
+        !-------------------------------------------------------------------------
+        
+        ! Set pointer to matrix data
+        call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
+        
+        ! Set diagonal pointer
+        if (Rmatrices(imatrix)%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+          call lsyssc_getbase_Kld(Rmatrices(imatrix), p_Kdiagonal)
+        else
+          call lsyssc_getbase_Kdiagonal(Rmatrices(imatrix), p_Kdiagonal)
+        end if
+
+        ! Loop over all rows and copy diagonal entries
+        do i = 1, rafcstab%NEQ
+          p_DmatrixCoeffsAtNode(ipos,i) = p_Ddata(p_Kdiagonal(i))
+        end do
+        
+        ! Loop over all edges and copy off-diagonal entries
+        do iedge = 1, rafcstab%NEDGE
+          ij = p_IverticesAtEdge(3,iedge)
+          ji = p_IverticesAtEdge(4,iedge)
+          p_DmatrixCoeffsAtEdge(1,ipos,iedge) = p_Ddata(ij)
+          p_DmatrixCoeffsAtEdge(2,ipos,iedge) = p_Ddata(ji)
+        end do
+
+      end select
+    end do
+
+    ! Set specifiert for auxiliary matrix coefficients
+    rafcstab%istabilisationSpec =&
+        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)
+  end subroutine afcstab_CopyMatrixCoeffs
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_isMatrixCompatibleScalar(rafcstab, rmatrix, bcompatible)
+
+!<description>
+    ! This subroutine checks if a scalar matrix and a discrete 
+    ! stabilisation structure are compatible to each other, 
+    ! i.e. if they share the same structure, size and so on.
+!</description>
+
+!<input>
+    ! The scalar matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! The stabilisation structure
+    type(t_afcstab), intent(in)      :: rafcstab
+!</input>
+
+!<output>
+    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE
+    ! depending on whether matrix and stabilisation are compatible or
+    ! not.  If not given, an error will inform the user if the
+    ! matrix/operator are not compatible and the program will halt.
+    logical, intent(out), optional :: bcompatible
+!</output>
+!</subroutine>
+
+    ! Matrix/operator must have the same size
+    if (rafcstab%NEQ   .ne. rmatrix%NEQ  .or.&
+        rafcstab%NVAR  .ne. rmatrix%NVAR .or.&
+        rafcstab%NEDGE .ne. int(0.5*(rmatrix%NA-rmatrix%NEQ),I32)) then
+      if (present(bcompatible)) then
+        bcompatible = .false.
+        return
+      else
+        call output_line('Matrix/Operator not compatible, different structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleScalar')
+        call sys_halt()
+      end if
+    end if
+  end subroutine afcstab_isMatrixCompatibleScalar
+  
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_isMatrixCompatibleBlock(rafcstab, rmatrixBlock, bcompatible)
+
+!<description>
+    ! This subroutine checks whether a block matrix and a discrete
+    ! stabilisation structure are compatible to each other,
+    ! i.e. if they share the same structure, size and so on.
+    !
+    ! If the matrix has only one block, then the scalar counterpart of this
+    ! subroutine is called with the corresponding scalar submatrix.
+    ! Otherwise, the matrix is required to possess group structure.
+!</description>
+
+!<input>
+    ! block matrix
+    type(t_matrixBlock), intent(in) :: rmatrixBlock
+
+    ! stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
+    ! whether matrix and stabilisation are compatible or not.
+    ! If not given, an error will inform the user if the matrix/operator are
+    ! not compatible and the program will halt.
+    logical, intent(out), optional :: bcompatible
+!</output>
+!</subroutine>
+
+
+    ! Check if matrix has only one block
+    if ((rmatrixBlock%nblocksPerCol .eq. 1) .and. &
+        (rmatrixBlock%nblocksPerRow .eq. 1)) then
+      call afcstab_isMatrixCompatible(rafcstab,&
+          rmatrixBlock%RmatrixBlock(1,1), bcompatible)
+      return
+    end if
+
+    ! Check if number of columns equans number of rows
+    if (rmatrixBlock%nblocksPerCol .ne. &
+        rmatrixBlock%nblocksPerRow) then
+      call output_line('Block matrix must have equal number of columns and rows!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleBlock')
+      call sys_halt()
+    end if
+
+    ! Check if matrix exhibits group structure
+    if (rmatrixBlock%imatrixSpec .ne. LSYSBS_MSPEC_GROUPMATRIX) then
+      if (present(bcompatible)) then
+        bcompatible = .false.
+        return
+      else
+        call output_line('Block matrix must have group structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleBlock')
+        call sys_halt()
+      end if
+    end if
+
+    ! Matrix/operator must have the same size
+    if (rafcstab%NVAR  .ne. rmatrixBlock%nblocksPerCol .or.&
+        rafcstab%NEQ   .ne. rmatrixBlock%RmatrixBlock(1,1)%NEQ  .or.&
+        rafcstab%NEDGE .ne. int(0.5*(rmatrixBlock%RmatrixBlock(1,1)%NA-&
+                                     rmatrixBlock%RmatrixBlock(1,1)%NEQ))) then
+      if (present(bcompatible)) then
+        bcompatible = .false.
+        return
+      else
+        call output_line('Matrix/Operator not compatible, different structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleBlock')
+        call sys_halt()
+      end if
+    end if
+  end subroutine afcstab_isMatrixCompatibleBlock
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_isVectorCompatibleScalar(rafcstab, rvector, bcompatible)
+
+!<description>
+    ! This subroutine checks if a vector and a stabilisation
+    ! structure are compatible to each other, i.e., share the
+    ! same structure, size and so on.
+!</description>
+
+!<input>
+    ! The scalar vector
+    type(t_vectorScalar), intent(in) :: rvector
+
+    ! Teh stabilisation structure
+    type(t_afcstab), intent(in)      :: rafcstab
+!</input>
+
+!<output>
+    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE
+    ! depending on whether matrix and stabilisation are compatible or
+    ! not. If not given, an error will inform the user if the
+    ! matrix/operator are not compatible and the program will halt.
+    logical, intent(out), optional :: bcompatible
+!</output>
+!</subroutine>
+
+    ! Matrix/operator must have the same size
+    if (rafcstab%NEQ   .ne. rvector%NEQ .or.&
+        rafcstab%NVAR  .ne. rvector%NVAR) then
+      if (present(bcompatible)) then
+        bcompatible = .false.
+        return
+      else
+        call output_line('Vector/Operator not compatible, different structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isVectorCompatibleScalar')
+        call sys_halt()
+      end if
+    end if
+  end subroutine afcstab_isVectorCompatibleScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_isVectorCompatibleBlock(rafcstab, rvectorBlock, bcompatible)
+
+!<description>
+    ! This subroutine checks whether a block vector and a stabilisation
+    ! structure are compatible to each other, i.e., share the same
+    ! structure, size and so on.
+    !
+    ! If the vectors has only one block, then the scalar counterpart of
+    ! this subroutine is called with the corresponding scalar subvector.
+!</description>
+
+!<input>
+    ! block vector
+    type(t_vectorBlock), intent(in) :: rvectorBlock
+
+    ! stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
+    ! whether matrix and stabilisation are compatible or not.
+    ! If not given, an error will inform the user if the matrix/operator are
+    ! not compatible and the program will halt.
+    logical, intent(out), optional :: bcompatible
+!</output>
+!</subroutine>
+
+    ! Check if block vectors has just one block
+    if (rvectorBlock%nblocks .eq. 1) then
+      call afcstab_isVectorCompatible(rafcstab,&
+          rvectorBlock%RvectorBlock(1), bcompatible)
+      return
+    end if
+
+    ! Vector/operator must have the same size
+    if (rafcstab%NEQ*rafcstab%NVAR .ne. rvectorBlock%NEQ) then
+      if (present(bcompatible)) then
+        bcompatible = .false.
+        return
+      else
+        call output_line('Vector/Operator not compatible, different structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isVectorCompatibleBlock')
+        call sys_halt()
+      end if
+    end if
+  end subroutine afcstab_isVectorCompatibleBlock
+
   !*****************************************************************************
 
 !<subroutine>
@@ -2154,73 +2632,7 @@ contains
 !</subroutine>
 
   end subroutine afcstab_failsafeLimitingArray
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_initMatrixCoeffs(rafcstab, n)
-
-!<description>
-    ! This subroutine initialises the arrays DmatrixCoeffsAtNode and
-    ! DmatrixCoeffsAtEdge to store auxiliary data for n matrices.
-!</description>
-
-!<input>
-    ! Number of auxliary matrices to store at most
-    integer, intent(in) :: n
-!</input>
-
-!<inputoutpu>
-    ! Stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-!</inputoutput>
-!</subroutine>
-
-    integer, dimension(2) :: Isize2D
-    integer, dimension(3) :: Isize3D
-
-    if (n .le. 0) then
-      call output_line('Number of matrices to be stored must be positive!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'afcstab_initMatrixCoeffs')
-      return
-    end if
-
-    ! Check if stabilisation has been initialised
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_initMatrixCoeffs')
-      call sys_halt()
-    end if
-
-    ! Remove auxiliary matrix data if present and not shared with others
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS) .ne. 0) then
-      if (iand(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS) .eq. 0) then
-        call storage_free(rafcstab%h_DmatrixCoeffsAtNode)
-        call storage_free(rafcstab%h_DmatrixCoeffsAtEdge)
-      end if
-    end if
-
-    ! Initialise auxiliary coefficients at nodes for n matrices
-    if (rafcstab%NEQ .gt. 0) then
-      Isize2D = (/n, rafcstab%NEQ/)   
-      call storage_new('afcstab_initMatrixCoeffs', 'DmatrixCoeffsAtNode', Isize2D,&
-          ST_DOUBLE, rafcstab%h_DmatrixCoeffsAtNode, ST_NEWBLOCK_ZERO)
-    end if
-
-    ! Initialise auxiliary coefficients at edges for n matrices
-    if (rafcstab%NEDGE .gt. 0) then
-      Isize3D = (/n, 2, rafcstab%NEDGE/)  
-      call storage_new('afcstab_initMatrixCoeffs', 'DmatrixCoeffsAtEdge', Isize3D,&
-          ST_DOUBLE, rafcstab%h_DmatrixCoeffsAtEdge, ST_NEWBLOCK_ZERO)
-    end if
-
-    ! Set specifiert for auxiliary matrix coefficients
-    rafcstab%istabilisationSpec =&
-        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)
-
-  end subroutine afcstab_initMatrixCoeffs
-
+  
   !*****************************************************************************
 
 !<function>
@@ -2541,4 +2953,133 @@ contains
 
   end subroutine afcstab_applyCorrectionDim2
 
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_getbase_arrayBlock(rmatrix, rarray, bisFullMatrix)
+
+!<description>
+    ! This subroutine assigns the pointers of the array to the scalar
+    ! submatrices of the given block matrix rmatrix.
+    ! If the optional parameter bisFullMatrix is given, then this routine
+    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
+    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
+    ! blocks of the block matrix are associated.
+!</description>
+
+!<input>
+    ! The block matrix
+    type(t_matrixBlock), intent(in) :: rmatrix
+!</input>
+
+!<output>
+    ! The array
+    type(t_array), dimension(:,:), intent(out) :: rarray
+
+    ! OPTIONAL: indicator for full block matrix
+    logical, intent(out), optional :: bisFullMatrix
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: iblock,jblock
+    logical :: bisFull
+
+    ! Check if array is compatible
+    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
+        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
+      call output_line('Block matrix and array are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayBlock')
+      call sys_halt()
+    end if
+
+    ! Assign pointers
+    bisFull = .true.
+    do iblock = 1, rmatrix%nblocksPerCol
+      do jblock = 1, rmatrix%nblocksPerRow
+        if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
+          select case(rmatrix%RmatrixBlock(iblock,jblock)%cdataType)
+          case (ST_DOUBLE)
+            rarray(iblock,jblock)%idataType = ST_DOUBLE
+            call lsyssc_getbase_double(&
+                rmatrix%RmatrixBlock(iblock,jblock), rarray(iblock,jblock)%p_Ddata)
+          case (ST_SINGLE)
+            rarray(iblock,jblock)%idataType = ST_SINGLE
+            call lsyssc_getbase_single(&
+                rmatrix%RmatrixBlock(iblock,jblock), rarray(iblock,jblock)%p_Fdata)
+          case default
+            call output_line('Unsupported data type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayBlock')
+            call sys_halt()
+          end select
+        else
+          nullify(rarray(iblock,jblock)%p_Ddata)
+          nullify(rarray(iblock,jblock)%p_Fdata)
+          bisFull = .false.
+        end if
+      end do
+    end do
+
+    if (present(bisFullMatrix)) bisFullMatrix = bisFull
+
+  end subroutine afcstab_getbase_arrayBlock
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_getbase_arrayScalar(Rmatrices, rarray)
+
+!<description>
+    ! This subroutine assigns the pointers of the array to the array
+    ! of scalar matrices.
+!</description>
+
+!<input>
+    ! The array of scalar matrices
+    type(t_matrixScalar), dimension(:), intent(in) :: Rmatrices
+!</input>
+
+!<output>
+    ! The array
+    type(t_array), dimension(:), intent(out) :: rarray
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: i
+
+    ! Check if array is compatible
+    if (size(Rmatrices) .ne. size(rarray)) then
+      call output_line('Array of matrices and array are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayScalar')
+      call sys_halt()
+    end if
+
+    ! Assing pointers
+    do i = 1, size(Rmatrices)
+      if (lsyssc_isExplicitMatrix1D(Rmatrices(i))) then
+        select case(Rmatrices(i)%cdataType)
+        case (ST_DOUBLE)
+          rarray(i)%idataType = ST_DOUBLE
+          call lsyssc_getbase_double(&
+              Rmatrices(i), rarray(i)%p_Ddata)
+        case (ST_SINGLE)
+          rarray(i)%idataType = ST_SINGLE
+          call lsyssc_getbase_single(&
+              Rmatrices(i), rarray(i)%p_Fdata)
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayScalar')
+          call sys_halt()
+        end select
+      else
+        nullify(rarray(i)%p_Ddata)
+        nullify(rarray(i)%p_Fdata)
+      end if
+    end do
+
+  end subroutine afcstab_getbase_arrayScalar
+  
 end module afcstabilisation

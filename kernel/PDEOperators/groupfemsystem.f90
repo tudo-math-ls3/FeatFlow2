@@ -70,46 +70,27 @@
 !#                               gfsys_initStabilisationBlock
 !#     -> initialize the stabilisation structure
 !#
-!# 2.) gfsys_isMatrixCompatible = gfsys_isMatrixCompatibleScalar /
-!#                                gfsys_isMatrixCompatibleBlock
-!#     -> checks wether a matrix and a stabilisation structure are compatible
-!#
-!# 3.) gfsys_isVectorCompatible = gfsys_isVectorCompatibleScalar /
-!#                                gfsys_isVectorCompatibleBlock
-!#     -> checks wether a vector and a stabilisation structure are compatible
-!#
-!# 4.) gfsys_buildDivOperator = gfsys_buildDivOperatorScalar /
+!# 2.) gfsys_buildDivOperator = gfsys_buildDivOperatorScalar /
 !#                              gfsys_buildDivOperatorBlock
 !#     -> assembles the global operator that results from the discretisation
 !#        of the divergence term $div(F)$ by means of the Galerkin method
 !#        and some sort of artificial dissipation (if required)
 !#
-!# 5.) gfsys_buildDivVector = gfsys_buildDivVectorScalar /
+!# 3.) gfsys_buildDivVector = gfsys_buildDivVectorScalar /
 !#                            gfsys_buildDivVectorBlock
 !#     -> assembles the divergence vector
 !#
-!# 6.) gfsys_buildDivVectorTVD = gfsys_buildDivVecTVDScalar /
+!# 4.) gfsys_buildDivVectorTVD = gfsys_buildDivVecTVDScalar /
 !#                               gfsys_buildDivVecTVDBlock
 !#     -> assembles the divergence term for FEM-TVD stabilisation
 !#
-!# 7.) gfsys_buildDivVectorFCT = gfsys_buildDivVecFCTScalar /
+!# 5.) gfsys_buildDivVectorFCT = gfsys_buildDivVecFCTScalar /
 !#                               gfsys_buildDivVecFCTBlock
 !#     -> assembles the divergence term for FEM-FCT stabilisation
 !#
-!# 8.) gfsys_buildFluxFCT = gfsys_buildFluxFCTScalar /
+!# 6.) gfsys_buildFluxFCT = gfsys_buildFluxFCTScalar /
 !#                          gfsys_buildFluxFCTBlock
 !#     -> assembles the raw antidiffusive flux for FEM-FCT stabilisation
-!#
-!# The following internal routines are available:
-!#
-!# 1.) gfsys_getbase_double
-!#     -> assigns the pointers of an array to a given block matrix
-!#
-!# 2.) gfsys_getbase_single
-!#     -> assigns the pointers of an array to a given block matrix
-!#
-!# 3.) gfsys_getbase_int
-!#     -> assigns the pointers of an array to a given block matrix
 !#
 !#
 !# Remark: The general internal data layout is as follows:
@@ -146,8 +127,6 @@ module groupfemsystem
   private
 
   public :: gfsys_initStabilisation
-  public :: gfsys_isMatrixCompatible
-  public :: gfsys_isVectorCompatible
   public :: gfsys_buildDivOperator
   public :: gfsys_buildDivVector
   public :: gfsys_buildDivVectorTVD
@@ -208,44 +187,9 @@ module groupfemsystem
   ! *****************************************************************************
   ! *****************************************************************************
 
-!<types>
-!<typeblock>
-
-  ! An auxiliary array that is used to store the content of all
-  ! scalar submatrices simultaneously. Note that this derived type
-  ! is PRIVATE and cannot be accessed from outside of this module.
-  private :: t_array
-  type t_array
-
-    ! Pointer to the double-valued matrix data
-    real(DP), dimension(:), pointer :: Da
-
-    ! Pointer to the single-valued matrix data
-    real(SP), dimension(:), pointer :: Fa
-
-    ! Pointer to the integer-valued matrix data
-    integer, dimension(:), pointer :: Ia
-  end type t_array
-!</typeblock>
-!</types>
-
-  ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
-
   interface gfsys_initStabilisation
     module procedure gfsys_initStabilisationScalar
     module procedure gfsys_initStabilisationBlock
-  end interface
-
-  interface gfsys_isMatrixCompatible
-    module procedure gfsys_isMatrixCompatibleScalar
-    module procedure gfsys_isMatrixCompatibleBlock
-  end interface
-
-  interface gfsys_isVectorCompatible
-    module procedure gfsys_isVectorCompatibleScalar
-    module procedure gfsys_isVectorCompatibleBlock
   end interface
 
   interface gfsys_buildDivOperator
@@ -774,229 +718,6 @@ contains
 
   end subroutine gfsys_initStabilisationScalar
 
-  ! *****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsys_isMatrixCompatibleBlock(rafcstab, rmatrixBlock, bcompatible)
-
-!<description>
-    ! This subroutine checks whether a block matrix and a discrete
-    ! stabilisation structure are compatible to each other,
-    ! i.e. if they share the same structure, size and so on.
-    !
-    ! If the matrix has only one block, then the scalar counterpart of this
-    ! subroutine is called with the corresponding scalar submatrix.
-    ! Otherwise, the matrix is required to possess group structure.
-!</description>
-
-!<input>
-    ! block matrix
-    type(t_matrixBlock), intent(in) :: rmatrixBlock
-
-    ! stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-!</input>
-
-!<output>
-    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
-    ! whether matrix and stabilisation are compatible or not.
-    ! If not given, an error will inform the user if the matrix/operator are
-    ! not compatible and the program will halt.
-    logical, intent(out), optional :: bcompatible
-!</output>
-!</subroutine>
-
-
-    ! Check if matrix has only one block
-    if ((rmatrixBlock%nblocksPerCol .eq. 1) .and. &
-        (rmatrixBlock%nblocksPerRow .eq. 1)) then
-      call gfsys_isMatrixCompatibleScalar(rafcstab,&
-          rmatrixBlock%RmatrixBlock(1,1), bcompatible)
-      return
-    end if
-
-    ! Check that number of columns equans number of rows
-    if (rmatrixBlock%nblocksPerCol .ne. &
-        rmatrixBlock%nblocksPerRow) then
-      call output_line('Block matrix must have equal number of columns and rows!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_isMatrixCompatibleBlock')
-      call sys_halt()
-    end if
-
-    ! Check if matrix exhibits group structure
-    if (rmatrixBlock%imatrixSpec .ne. LSYSBS_MSPEC_GROUPMATRIX) then
-      if (present(bcompatible)) then
-        bcompatible = .false.
-        return
-      else
-        call output_line('Block matrix must have group structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_isMatrixCompatibleBlock')
-        call sys_halt()
-      end if
-    end if
-
-    ! Matrix/operator must have the same size
-    if (rafcstab%NVAR  .ne. rmatrixBlock%nblocksPerCol .or.&
-        rafcstab%NEQ   .ne. rmatrixBlock%RmatrixBlock(1,1)%NEQ  .or.&
-        rafcstab%NEDGE .ne. int(0.5*(rmatrixBlock%RmatrixBlock(1,1)%NA-&
-                                     rmatrixBlock%RmatrixBlock(1,1)%NEQ))) then
-      if (present(bcompatible)) then
-        bcompatible = .false.
-        return
-      else
-        call output_line('Matrix/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfssy_isMatrixCompatibleBlock')
-        call sys_halt()
-      end if
-    end if
-  end subroutine gfsys_isMatrixCompatibleBlock
-
-  ! *****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsys_isMatrixCompatibleScalar(rafcstab, rmatrix, bcompatible)
-
-!<description>
-    ! This subroutine checks whether a scalar matrix and a discrete
-    ! stabilisation structure are compatible to each other,
-    ! i.e. if they share the same structure, size and so on.
-    !
-    ! Note that the matrix is required as scalar matrix. It can be
-    ! stored in interleave format.
-!</description>
-
-!<input>
-    ! scalar matrix
-    type(t_matrixScalar), intent(in) :: rmatrix
-
-    ! stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-!</input>
-
-!<output>
-    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
-    ! whether matrix and stabilisation are compatible or not.
-    ! If not given, an error will inform the user if the matrix/operator are
-    ! not compatible and the program will halt.
-    logical, intent(out), optional :: bcompatible
-!</output>
-!</subroutine>
-
-    ! Matrix/operator must have the same size
-    if (rafcstab%NEQ   .ne. rmatrix%NEQ  .or.&
-        rafcstab%NVAR  .ne. rmatrix%NVAR .or.&
-        rafcstab%NEDGE .ne. int(0.5*(rmatrix%NA-rmatrix%NEQ))) then
-      if (present(bcompatible)) then
-        bcompatible = .false.
-        return
-      else
-        call output_line('Matrix/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfssy_isMatrixCompatibleScalar')
-        call sys_halt()
-      end if
-    end if
-  end subroutine gfsys_isMatrixCompatibleScalar
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsys_isVectorCompatibleBlock(rafcstab, rvectorBlock, bcompatible)
-
-!<description>
-    ! This subroutine checks whether a block vector and a stabilisation
-    ! structure are compatible to each other, i.e., share the same
-    ! structure, size and so on.
-    !
-    ! If the vectors has only one block, then the scalar counterpart of
-    ! this subroutine is called with the corresponding scalar subvector.
-!</description>
-
-!<input>
-    ! block vector
-    type(t_vectorBlock), intent(in) :: rvectorBlock
-
-    ! stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-!</input>
-
-!<output>
-    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
-    ! whether matrix and stabilisation are compatible or not.
-    ! If not given, an error will inform the user if the matrix/operator are
-    ! not compatible and the program will halt.
-    logical, intent(out), optional :: bcompatible
-!</output>
-!</subroutine>
-
-    ! Check if block vectors has just one block
-    if (rvectorBlock%nblocks .eq. 1) then
-      call gfsys_isVectorCompatibleScalar(rafcstab,&
-          rvectorBlock%RvectorBlock(1), bcompatible)
-      return
-    end if
-
-    ! Vector/operator must have the same size
-    if (rafcstab%NEQ*rafcstab%NVAR .ne. rvectorBlock%NEQ) then
-      if (present(bcompatible)) then
-        bcompatible = .false.
-        return
-      else
-        call output_line('Vector/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_isVectorCompatibleBlock')
-        call sys_halt()
-      end if
-    end if
-  end subroutine gfsys_isVectorCompatibleBlock
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsys_isVectorCompatibleScalar(rafcstab, rvector, bcompatible)
-
-!<description>
-    ! This subroutine checks whether a vector and a stabilisation
-    ! structure are compatible to each other, i.e., share the same
-    ! structure, size and so on.
-    !
-    ! Note that the vector is required as scalar vector. It can be
-    ! stored in interleave format.
-!</description>
-
-!<input>
-    ! scalar vector
-    type(t_vectorScalar), intent(in) :: rvector
-
-    ! stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-!</input>
-
-!<output>
-    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
-    ! whether matrix and stabilisation are compatible or not.
-    ! If not given, an error will inform the user if the matrix/operator are
-    ! not compatible and the program will halt.
-    logical, intent(out), optional :: bcompatible
-!</output>
-!</subroutine>
-
-    ! Matrix/operator must have the same size
-    if (rafcstab%NEQ   .ne. rvector%NEQ .or.&
-        rafcstab%NVAR  .ne. rvector%NVAR) then
-      if (present(bcompatible)) then
-        bcompatible = .false.
-        return
-      else
-        call output_line('Vector/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_isVectorCompatibleScalar')
-        call sys_halt()
-      end if
-    end if
-  end subroutine gfsys_isVectorCompatibleScalar
-
   !*****************************************************************************
 
 !<subroutine>
@@ -1112,7 +833,7 @@ contains
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call gfsys_getbase_double(rdivMatrix, rarray, bisFullMatrix)
+    call afcstab_getbase_array(rdivMatrix, rarray, bisFullMatrix)
     call lsysbl_getbase_double(rx, p_Dx)
 
     ! How many dimensions do we have?
@@ -1284,7 +1005,7 @@ contains
 
           ! Update the diagonal coefficient
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+&
+            K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)+&
                 DcoefficientsAtNode(ivar,1,idx)
           end do
         end do
@@ -1365,13 +1086,13 @@ contains
 
           ! Update the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)-&
+            K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)-&
                 DcoefficientsAtEdge(ivar,1,idx)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-&
+            K(ivar,ivar)%p_Ddata(jj) = K(ivar,ivar)%p_Ddata(jj)-&
                 DcoefficientsAtEdge(ivar,1,idx)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)+&
+            K(ivar,ivar)%p_Ddata(ij) = K(ivar,ivar)%p_Ddata(ij)+&
                 DcoefficientsAtEdge(ivar,2,idx) + DcoefficientsAtEdge(ivar,1,idx) 
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+&
+            K(ivar,ivar)%p_Ddata(ji) = K(ivar,ivar)%p_Ddata(ji)+&
                 DcoefficientsAtEdge(ivar,3,idx) + DcoefficientsAtEdge(ivar,1,idx) 
           end do
         end do
@@ -1479,7 +1200,7 @@ contains
 
           ! Update the diagonal coefficient
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+&
+            K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)+&
                 DcoefficientsAtNode(ivar,1,idx)
           end do
         end do
@@ -1562,13 +1283,13 @@ contains
 
           ! Update the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)-&
+            K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)-&
                 DcoefficientsAtEdge(ivar,1,idx)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-&
+            K(ivar,ivar)%p_Ddata(jj) = K(ivar,ivar)%p_Ddata(jj)-&
                 DcoefficientsAtEdge(ivar,1,idx)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)+&
+            K(ivar,ivar)%p_Ddata(ij) = K(ivar,ivar)%p_Ddata(ij)+&
                 DcoefficientsAtEdge(ivar,2,idx) + DcoefficientsAtEdge(ivar,1,idx) 
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+&
+            K(ivar,ivar)%p_Ddata(ji) = K(ivar,ivar)%p_Ddata(ji)+&
                 DcoefficientsAtEdge(ivar,3,idx) + DcoefficientsAtEdge(ivar,1,idx) 
           end do
         end do
@@ -1677,7 +1398,7 @@ contains
 
           ! Update the diagonal coefficient
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)+&
+            K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)+&
                 DcoefficientsAtNode(ivar,1,idx)
           end do
         end do
@@ -1762,13 +1483,13 @@ contains
 
           ! Update the global operator
           do ivar = 1, NVAR
-            K(ivar,ivar)%DA(ii) = K(ivar,ivar)%DA(ii)-&
+            K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)-&
                 DcoefficientsAtEdge(ivar,1,idx)
-            K(ivar,ivar)%DA(jj) = K(ivar,ivar)%DA(jj)-&
+            K(ivar,ivar)%p_Ddata(jj) = K(ivar,ivar)%p_Ddata(jj)-&
                 DcoefficientsAtEdge(ivar,1,idx)
-            K(ivar,ivar)%DA(ij) = K(ivar,ivar)%DA(ij)+&
+            K(ivar,ivar)%p_Ddata(ij) = K(ivar,ivar)%p_Ddata(ij)+&
                 DcoefficientsAtEdge(ivar,2,idx) + DcoefficientsAtEdge(ivar,1,idx) 
-            K(ivar,ivar)%DA(ji) = K(ivar,ivar)%DA(ji)+&
+            K(ivar,ivar)%p_Ddata(ji) = K(ivar,ivar)%p_Ddata(ji)+&
                 DcoefficientsAtEdge(ivar,3,idx) + DcoefficientsAtEdge(ivar,1,idx) 
           end do
         end do
@@ -1877,7 +1598,7 @@ contains
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               ijpos = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+&
+              K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)+&
                   DcoefficientsAtNode(ijpos,1,idx)
             end do
           end do
@@ -1961,13 +1682,13 @@ contains
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               ijpos = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)-&
+              K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)-&
                   DcoefficientsAtEdge(ijpos,1,idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-&
+              K(jvar,ivar)%p_Ddata(jj) = K(jvar,ivar)%p_Ddata(jj)-&
                   DcoefficientsAtEdge(ijpos,1,idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)+&
+              K(jvar,ivar)%p_Ddata(ij) = K(jvar,ivar)%p_Ddata(ij)+&
                   DcoefficientsAtEdge(ijpos,2,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+&
+              K(jvar,ivar)%p_Ddata(ji) = K(jvar,ivar)%p_Ddata(ji)+&
                   DcoefficientsAtEdge(ijpos,3,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
             end do
           end do
@@ -2078,7 +1799,7 @@ contains
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               ijpos = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+&
+              K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)+&
                   DcoefficientsAtNode(ijpos,1,idx)
             end do
           end do
@@ -2164,13 +1885,13 @@ contains
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               ijpos = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)-&
+              K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)-&
                   DcoefficientsAtEdge(ijpos,1,idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-&
+              K(jvar,ivar)%p_Ddata(jj) = K(jvar,ivar)%p_Ddata(jj)-&
                   DcoefficientsAtEdge(ijpos,1,idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)+&
+              K(jvar,ivar)%p_Ddata(ij) = K(jvar,ivar)%p_Ddata(ij)+&
                   DcoefficientsAtEdge(ijpos,2,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+&
+              K(jvar,ivar)%p_Ddata(ji) = K(jvar,ivar)%p_Ddata(ji)+&
                   DcoefficientsAtEdge(ijpos,3,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
             end do
           end do
@@ -2282,7 +2003,7 @@ contains
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               ijpos = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)+&
+              K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)+&
                   DcoefficientsAtNode(ijpos,1,idx)
             end do
           end do
@@ -2370,13 +2091,13 @@ contains
           do ivar = 1, NVAR
             do jvar = 1, NVAR
               ijpos = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%DA(ii) = K(jvar,ivar)%DA(ii)-&
+              K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)-&
                   DcoefficientsAtEdge(ijpos,1,idx)
-              K(jvar,ivar)%DA(jj) = K(jvar,ivar)%DA(jj)-&
+              K(jvar,ivar)%p_Ddata(jj) = K(jvar,ivar)%p_Ddata(jj)-&
                   DcoefficientsAtEdge(ijpos,1,idx)
-              K(jvar,ivar)%DA(ij) = K(jvar,ivar)%DA(ij)+&
+              K(jvar,ivar)%p_Ddata(ij) = K(jvar,ivar)%p_Ddata(ij)+&
                   DcoefficientsAtEdge(ijpos,2,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
-              K(jvar,ivar)%DA(ji) = K(jvar,ivar)%DA(ji)+&
+              K(jvar,ivar)%p_Ddata(ji) = K(jvar,ivar)%p_Ddata(ji)+&
                   DcoefficientsAtEdge(ijpos,3,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
             end do
           end do
@@ -10566,181 +10287,5 @@ contains
     end subroutine doFluxesMat79NoMass_3D
 
   end subroutine gfsys_buildFluxFCTScalar
-
-  !*****************************************************************************
-  !*****************************************************************************
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsys_getbase_double(rmatrix, rarray, bisFullMatrix)
-
-!<description>
-    ! This subroutine assigns the pointers of the array to the scalar
-    ! submatrices of the block matrix.
-    ! If the optional parameter bisFullMatrix is given, then this routine
-    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
-    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
-    ! blocks of the block matrix are associated.
-!</description>
-
-!<input>
-    ! The block matrix
-    type(t_matrixBlock), intent(in) :: rmatrix
-!</input>
-
-!<output>
-    ! The array
-    type(t_array), dimension(:,:), intent(out) :: rarray
-
-    ! OPTIONAL: indicator for full block matrix
-    logical, intent(out), optional :: bisFullMatrix
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: iblock,jblock
-    logical :: bisFull
-
-    ! Check if array is compatible
-    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
-        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
-      call output_line('Block matrix and array are not compatible!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'gfsys_getbase_double')
-      call sys_halt()
-    end if
-
-    ! Assign pointers
-    bisFull = .true.
-    do iblock = 1, rmatrix%nblocksPerCol
-      do jblock = 1, rmatrix%nblocksPerRow
-        if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
-          call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),&
-                                     rarray(iblock,jblock)%Da)
-        else
-          nullify(rarray(iblock,jblock)%Da)
-          bisFull = .false.
-        end if
-      end do
-    end do
-
-    if (present(bisFullMatrix)) bisFullMatrix = bisFull
-  end subroutine gfsys_getbase_double
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsys_getbase_single(rmatrix, rarray, bisFullMatrix)
-
-!<description>
-    ! This subroutine assigns the pointers of the array to the scalar
-    ! submatrices of the block matrix.
-    ! If the optional parameter bisFullMatrix is given, then this routine
-    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
-    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
-    ! blocks of the block matrix are associated.
-!</description>
-
-!<input>
-    ! The block matrix
-    type(t_matrixBlock), intent(in) :: rmatrix
-!</input>
-
-!<output>
-    ! The array
-    type(t_array), dimension(:,:), intent(out) :: rarray
-
-    ! OPTIONAL: indicator for full block matrix
-    logical, intent(out), optional :: bisFullMatrix
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: iblock,jblock
-    logical :: bisFull
-
-    ! Check if array is compatible
-    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
-        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
-      call output_line('Block matrix and array are not compatible!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'gfsys_getbase_single')
-      call sys_halt()
-    end if
-
-    ! Assign pointers
-    bisFull = .true.
-    do iblock = 1, rmatrix%nblocksPerCol
-      do jblock = 1, rmatrix%nblocksPerRow
-        if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
-          call lsyssc_getbase_single(rmatrix%RmatrixBlock(iblock,jblock),&
-                                     rarray(iblock,jblock)%Fa)
-        else
-          nullify(rarray(iblock,jblock)%Fa)
-          bisFull = .false.
-        end if
-      end do
-    end do
-
-    if (present(bisFullMatrix)) bisFullMatrix = bisFull
-  end subroutine gfsys_getbase_single
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsys_getbase_int(rmatrix, rarray, bisFullMatrix)
-
-!<description>
-    ! This subroutine assigns the pointers of the array to the scalar
-    ! submatrices of the block matrix.
-    ! If the optional parameter bisFullMatrix is given, then this routine
-    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
-    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
-    ! blocks of the block matrix are associated.
-!</description>
-
-!<input>
-    ! The block matrix
-    type(t_matrixBlock), intent(in) :: rmatrix
-!</input>
-
-!<output>
-    ! The array
-    type(t_array), dimension(:,:), intent(out) :: rarray
-
-    ! OPTIONAL: indicator for full block matrix
-    logical, intent(out), optional :: bisFullMatrix
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: iblock,jblock
-    logical :: bisFull
-
-    ! Check if array is compatible
-    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
-        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
-      call output_line('Block matrix and array are not compatible!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'gfsys_getbase_int')
-      call sys_halt()
-    end if
-
-    ! Assign pointers
-    bisFull = .true.
-    do iblock = 1, rmatrix%nblocksPerCol
-      do jblock = 1, rmatrix%nblocksPerRow
-        if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
-          call lsyssc_getbase_int(rmatrix%RmatrixBlock(iblock,jblock),&
-                                  rarray(iblock,jblock)%Ia)
-        else
-          nullify(rarray(iblock,jblock)%Da)
-          bisFull = .false.
-        end if
-      end do
-    end do
-
-    if (present(bisFullMatrix)) bisFullMatrix = bisFull
-  end subroutine gfsys_getbase_int
 
 end module groupfemsystem
