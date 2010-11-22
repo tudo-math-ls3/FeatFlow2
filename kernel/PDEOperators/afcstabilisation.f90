@@ -607,17 +607,17 @@ contains
 
 
     ! Release edge structure
-    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)) .and.&
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE) .and.&
         (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE))&
         call storage_free(rafcstab%h_IverticesAtEdge)
 
     ! Release edge values
-    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES)) .and.&
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES) .and.&
         (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE))&
         call storage_free(rafcstab%h_DcoefficientsAtEdge)
 
     ! Release off-diagonal edges
-    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES))) then
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
       if (rafcstab%h_IsuperdiagEdgesIdx .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IsuperdiagEdgesIdx)
       if (rafcstab%h_IsubdiagEdgesIdx .ne. ST_NOHANDLE)&
@@ -627,7 +627,7 @@ contains
     end if
         
     ! Release antidiffusive fluxes
-    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES))) then
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
       if (associated(rafcstab%p_rvectorFlux0)) then
         call lsyssc_releaseVector(rafcstab%p_rvectorFlux0)
         deallocate(rafcstab%p_rvectorFlux0)
@@ -639,7 +639,7 @@ contains
     end if
 
     ! Release matrix data
-    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS))) then
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS)) then
       if (rafcstab%h_DmatrixCoeffsAtNode .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_DmatrixCoeffsAtNode)
       if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
@@ -647,7 +647,7 @@ contains
     end if
 
     ! Release antidiffusive increments
-    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS))) then
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS)) then
       if (associated(rafcstab%p_rvectorPp)) then
         call lsyssc_releaseVector(rafcstab%p_rvectorPp)
         deallocate(rafcstab%p_rvectorPp)
@@ -659,7 +659,7 @@ contains
     end if
 
     ! Release upper/lower bounds
-    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_BOUNDS))) then
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_BOUNDS)) then
       if (associated(rafcstab%p_rvectorQp)) then
         call lsyssc_releaseVector(rafcstab%p_rvectorQp)
         deallocate(rafcstab%p_rvectorQp)
@@ -671,7 +671,7 @@ contains
     end if
     
     ! Release nodal limiting factors
-    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER))) then
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER)) then
       if (associated(rafcstab%p_rvectorRp)) then
         call lsyssc_releaseVector(rafcstab%p_rvectorRp)
         deallocate(rafcstab%p_rvectorRp)
@@ -683,14 +683,14 @@ contains
     end if
 
     ! Release edge-wise limiting coefficients
-    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIMITER)) .and.&
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIMITER) .and.&
         (associated(rafcstab%p_rvectorAlpha))) then
       call lsyssc_releaseVector(rafcstab%p_rvectorAlpha)
       deallocate(rafcstab%p_rvectorAlpha)
     end if
 
     ! Release low-order predictor
-    if (.not.(check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_PREDICTOR)) .and.&
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_PREDICTOR) .and.&
         (associated(rafcstab%p_rvectorPredictor))) then
       call lsysbl_releaseVector(rafcstab%p_rvectorPredictor)
       deallocate(rafcstab%p_rvectorPredictor)
@@ -1652,8 +1652,7 @@ contains
     end do
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
       call afcstab_generateVerticesAtEdge(Rmatrices(1), rafcstab)
     end if
     
@@ -1708,8 +1707,8 @@ contains
         do iedge = 1, rafcstab%NEDGE
           ij = p_IverticesAtEdge(3,iedge)
           ji = p_IverticesAtEdge(4,iedge)
-          p_DmatrixCoeffsAtEdge(1,ipos,iedge) = p_Ddata(ij)
-          p_DmatrixCoeffsAtEdge(2,ipos,iedge) = p_Ddata(ji)
+          p_DmatrixCoeffsAtEdge(ipos,1,iedge) = p_Ddata(ij)
+          p_DmatrixCoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
         end do
 
       end select
@@ -1718,6 +1717,7 @@ contains
     ! Set specifiert for auxiliary matrix coefficients
     rafcstab%istabilisationSpec =&
         ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)
+
   end subroutine afcstab_CopyMatrixCoeffs
 
   !*****************************************************************************
