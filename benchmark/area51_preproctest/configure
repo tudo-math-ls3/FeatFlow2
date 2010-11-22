@@ -103,7 +103,7 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 
 ######################################################
 
-PPONLYFLAGS="-DUSE_PREPROC_F90CPP"
+APPONLYFLAGS="-DUSE_PREPROC_F90CPP"
 
 ../../bin/configure \
         --appname=preproctest \
