@@ -1620,9 +1620,15 @@ contains
       call sys_halt()
     end if
 
-    ! Check if first matrix is compatible with the stabilisationn
-    ! structure. Note that only double precision matrices are supported
-    call afcstab_isMatrixCompatible(rafcstab, Rmatrices(1))
+    ! Check if first matrix is compatible with the stabilisation structure
+    if ((Rmatrices(1)%NEQ .ne. rafcstab%NEQ) .or.&
+        int(0.5*(Rmatrices(1)%NA-Rmatrices(1)%NEQ),I32)) then
+      call output_line('Matrix is not compatible with stabilisation structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
+      call sys_halt()
+    end if
+
+    ! Note that only double precision matrices are supported
     if (Rmatrices(1)%cdataType .ne. ST_DOUBLE) then
       call output_line('Only double precision matrices are supported!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
