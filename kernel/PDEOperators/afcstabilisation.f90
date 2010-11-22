@@ -62,16 +62,24 @@
 !# 15.) afcstab_getbase_DcoeffsAtEdge
 !#      -> Returns pointer to edge data
 !#
-!# 16.) afcstab_generateVerticesAtEdge
+!# 16.) afcstab_getbase_DmatCoeffAtNode
+!#      -> Returns pointer to the diagonal entries
+!#         of the auxiiliary constant matrix coefficients
+!#
+!# 17.) afcstab_getbase_DmatCoeffAtEdge
+!#      -> Returns pointer to the off-diagonal entries
+!#         of the auxiiliary constant matrix coefficients
+!#
+!# 18.) afcstab_generateVerticesAtEdge
 !#      -> Generates the standard edge data structure
 !#
-!# 17.) afcstab_generateOffdiagEdges
+!# 19.) afcstab_generateOffdiagEdges
 !#      -> Generates the subdiagonal edge data structure
 !#
-!# 18.) afcstab_generateExtSparsity
+!# 20.) afcstab_generateExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 19.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
+!# 21.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
 !#                                 afcstab_failsafeLimitingArray
 !#      -> Perform failsafe flux correction
 !#
@@ -113,6 +121,8 @@ module afcstabilisation
   public :: afcstab_getbase_IsubdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdge
   public :: afcstab_getbase_DcoeffsAtEdge
+  public :: afcstab_getbase_DmatCoeffAtNode
+  public :: afcstab_getbase_DmatCoeffAtEdge
   public :: afcstab_generateVerticesAtEdge
   public :: afcstab_generateOffdiagEdges
   public :: afcstab_generateExtSparsity
@@ -246,6 +256,7 @@ module afcstabilisation
   ! Duplicate auxiliary matrix coefficients
   integer(I32), parameter, public :: AFCSTAB_DUP_MATRIXCOEFFS     = AFCSTAB_HAS_MATRIXCOEFFS
 !</constantblock>
+
 
 !<constantblock description="Duplication flags. Specifies which information is shared \
 !                            between stabilisation structures">
@@ -2066,6 +2077,76 @@ contains
         p_DcoefficientsAtEdge,rafcstab%NEDGE)
 
   end subroutine afcstab_getbase_DcoeffsAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_getbase_DmatCoeffAtNode(rafcstab,p_DmatrixCoeffsAtNode)
+
+!<description>
+    ! Returns a pointer to the matrix coefficients at nodes
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the matrix coefficients at nodes
+    ! NULL() if the stabilisation structure does not provide it.
+    real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
+!</output>
+!</subroutine>
+
+    ! Do we have matrix coefficients at nodes data at all?
+    if ((rafcstab%h_DmatrixCoeffsAtNode .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEQ                   .eq. 0)) then
+      nullify(p_DmatrixCoeffsAtNode)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_double2D(rafcstab%h_DmatrixCoeffsAtNode,&
+        p_DmatrixCoeffsAtNode,rafcstab%NEQ)
+
+  end subroutine afcstab_getbase_DmatCoeffAtNode
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_getbase_DmatCoeffAtEdge(rafcstab,p_DmatrixCoeffsAtEdge)
+
+!<description>
+    ! Returns a pointer to the matrix coefficients at edges
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the matrix coefficients at edges
+    ! NULL() if the stabilisation structure does not provide it.
+    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
+!</output>
+!</subroutine>
+
+    ! Do we have matrix coefficients at edges data at all?
+    if ((rafcstab%h_DmatrixCoeffsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE                 .eq. 0)) then
+      nullify(p_DmatrixCoeffsAtEdge)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_double3D(rafcstab%h_DmatrixCoeffsAtEdge,&
+        p_DmatrixCoeffsAtEdge,rafcstab%NEDGE)
+
+  end subroutine afcstab_getbase_DmatCoeffAtEdge
  
   !*****************************************************************************
 
