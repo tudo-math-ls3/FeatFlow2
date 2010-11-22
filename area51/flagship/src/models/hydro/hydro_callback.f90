@@ -445,21 +445,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatGalMatD1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatGalMatD2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatGalMatD3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -478,21 +475,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatScDissMatD1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatScDissMatD2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatScDissMatD3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -511,21 +505,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatRoeDissMatD1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatRoeDissMatD2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatRoeDissMatD3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -544,21 +535,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatRusDissMatD1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatRusDissMatD2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatRusDissMatD3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -592,21 +580,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatGal1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatGal2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatGal3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -625,21 +610,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatScDiss1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatScDiss2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatScDiss3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -658,21 +640,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatRoeDiss1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatRoeDiss2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatRoeDiss3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -691,21 +670,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatRusDiss1d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatRusDiss2d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatRusDiss3d_sim,&
               -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -1063,19 +1039,16 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildDivVector(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 hydro_calcFluxGal1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
             call gfsys_buildDivVector(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 hydro_calcFluxGal2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
             call gfsys_buildDivVector(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxGal3d_sim, dscale, .true., rrhs)
           end select
@@ -1102,19 +1075,16 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxGal1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxGal2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxGal3d_sim, dscale, .true., rrhs)
             end select
@@ -1126,19 +1096,16 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDiss1d_sim, dscale, .true. , rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDiss3d_sim, dscale, .true., rrhs)
             end select
@@ -1151,19 +1118,16 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDissDiSp3d_sim, dscale, .true., rrhs)
             end select
@@ -1175,19 +1139,16 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDiss3d_sim, dscale, .true., rrhs)
             end select
@@ -1200,19 +1161,16 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
               
             case (NDIM2D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDissDiSp3d_sim, dscale, .true., rrhs)
             end select
@@ -1224,19 +1182,16 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDiss3d_sim, dscale, .true., rrhs)
             end select
@@ -1249,19 +1204,16 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDissDiSp3d_sim, dscale, .true., rrhs)
             end select
@@ -1543,19 +1495,16 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
         call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
         call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal3d_sim, dscale, .false., rres)
       end select
@@ -1584,19 +1533,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal3d_sim, dscale, .false., rres)
         end select
@@ -1608,19 +1554,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss3d_sim, dscale, .false., rres)
         end select
@@ -1633,19 +1576,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDissDiSp3d_sim, dscale, .false., rres)
         end select
@@ -1657,19 +1597,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss3d_sim, dscale, .false., rres)
         end select
@@ -1682,19 +1619,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDissDiSp3d_sim, dscale, .false., rres)
         end select
@@ -1706,19 +1640,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss3d_sim, dscale, .false., rres)
         end select
@@ -1731,19 +1662,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDissDiSp3d_sim, dscale, .false., rres)
         end select
@@ -2031,19 +1959,16 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
         call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
         call gfsys_buildDivVector(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal3d_sim, dscale, .false., rrhs)
       end select
@@ -2070,19 +1995,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal3d_sim, dscale, .false., rrhs)
         end select
@@ -2094,19 +2016,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss3d_sim, dscale, .false., rrhs)
         end select
@@ -2118,19 +2037,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss3d_sim, dscale, .false., rrhs)
         end select
@@ -2142,19 +2058,16 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss3d_sim, dscale, .false., rrhs)
         end select
