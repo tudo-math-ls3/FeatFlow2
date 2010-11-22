@@ -32,11 +32,29 @@ ConsistentMassMatrix = 4
 # Position of the lumped mass matrix in the scalar matrix structure
 LumpedMassMatrix = 5
 
-# Position of the constant coefficient matrix S in the scalar matrix structure
+# Position of the constant coefficient matrix CX in the scalar matrix structure
 CoeffMatrix_CX = 6
 
-# Position of the constant coefficient matrix S in the scalar matrix structure
+# Position of the constant coefficient matrix CY in the scalar matrix structure
 CoeffMatrix_CY = 7
 
-# Position of the constant coefficient matrix S in the scalar matrix structure
+# Position of the constant coefficient matrix CZ in the scalar matrix structure
 CoeffMatrix_CZ = 0
+
+# Position of the constant coefficient matrix CXX in the scalar matrix structure
+CoeffMatrix_CXX = 0 #8
+
+# Position of the constant coefficient matrix CYY in the scalar matrix structure
+CoeffMatrix_CYY = 0 #9
+
+# Position of the constant coefficient matrix CZZ in the scalar matrix structure
+CoeffMatrix_CZZ = 0
+
+# Position of the constant coefficient matrix CXY in the scalar matrix structure
+CoeffMatrix_CXY = 0 #10
+
+# Position of the constant coefficient matrix CXZ in the scalar matrix structure
+CoeffMatrix_CXZ = 0
+
+# Position of the constant coefficient matrix CYZ in the scalar matrix structure
+CoeffMatrix_CYZ = 0

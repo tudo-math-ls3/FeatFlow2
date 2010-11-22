@@ -616,6 +616,12 @@ contains
     integer :: coeffMatrix_CX
     integer :: coeffMatrix_CY
     integer :: coeffMatrix_CZ
+    integer :: coeffMatrix_CXX
+    integer :: coeffMatrix_CYY
+    integer :: coeffMatrix_CZZ
+    integer :: coeffMatrix_CXY
+    integer :: coeffMatrix_CXZ
+    integer :: coeffMatrix_CYZ
     integer :: inviscidAFC
     integer :: discretisation
     integer :: celement
@@ -623,7 +629,7 @@ contains
     integer :: isystemCoupling
     integer :: imatrixFormat
 
-    integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed
+    integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed,nmatrices
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
 
     ! Retrieve application specific parameters from the collection
@@ -643,6 +649,18 @@ contains
         ssectionName, 'coeffmatrix_cy', coeffMatrix_CY)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cxx', coeffMatrix_CXX)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cyy', coeffMatrix_CYY)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_czz', coeffMatrix_CZZ)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cxy', coeffMatrix_CXY)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cxz', coeffMatrix_CXZ)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cyz', coeffMatrix_CYZ)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'inviscidAFC', inviscidAFC)
     call parlst_getvalue_int(rparlist,&
@@ -1112,6 +1130,156 @@ contains
     end if
 
 
+    ! Create coefficient matrix (dphi/dx, dphi/dx) as duplicate of the
+    ! template matrix
+    if (coeffMatrix_CXX > 0) then
+      if (lsyssc_isMatrixStructureShared(&
+          rproblemLevel%Rmatrix(coeffMatrix_CXX),&
+          rproblemLevel%Rmatrix(templateMatrix))) then
+
+        call lsyssc_resizeMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CXX),&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            .false., .false., .true.)
+
+      else
+        call lsyssc_duplicateMatrix(&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            rproblemLevel%Rmatrix(coeffMatrix_CXX),&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+      end if
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CXX),&
+          DER_DERIV3D_X, DER_DERIV3D_X)
+    end if
+
+    
+    ! Create coefficient matrix (dphi/dy, dphi/dy) as duplicate of the
+    ! template matrix
+    if (coeffMatrix_CYY > 0) then
+      if (lsyssc_isMatrixStructureShared(&
+          rproblemLevel%Rmatrix(coeffMatrix_CYY),&
+          rproblemLevel%Rmatrix(templateMatrix))) then
+
+        call lsyssc_resizeMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CYY),&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            .false., .false., .true.)
+
+      else
+        call lsyssc_duplicateMatrix(&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            rproblemLevel%Rmatrix(coeffMatrix_CYY),&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+      end if
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CYY),&
+          DER_DERIV3D_Y, DER_DERIV3D_Y)
+    end if
+
+
+    ! Create coefficient matrix (dphi/dz, dphi/dz) as duplicate of the
+    ! template matrix
+    if (coeffMatrix_CZZ > 0) then
+      if (lsyssc_isMatrixStructureShared(&
+          rproblemLevel%Rmatrix(coeffMatrix_CZZ),&
+          rproblemLevel%Rmatrix(templateMatrix))) then
+
+        call lsyssc_resizeMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CZZ),&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            .false., .false., .true.)
+
+      else
+        call lsyssc_duplicateMatrix(&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            rproblemLevel%Rmatrix(coeffMatrix_CZZ),&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+      end if
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CZZ),&
+          DER_DERIV3D_Z, DER_DERIV3D_Z)
+    end if
+
+
+    ! Create coefficient matrix (dphi/dx, dphi/dy) as duplicate of the
+    ! template matrix
+    if (coeffMatrix_CXY > 0) then
+      if (lsyssc_isMatrixStructureShared(&
+          rproblemLevel%Rmatrix(coeffMatrix_CXY),&
+          rproblemLevel%Rmatrix(templateMatrix))) then
+
+        call lsyssc_resizeMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CXY),&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            .false., .false., .true.)
+
+      else
+        call lsyssc_duplicateMatrix(&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            rproblemLevel%Rmatrix(coeffMatrix_CXY),&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+      end if
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CXY),&
+          DER_DERIV3D_X, DER_DERIV3D_Y)
+    end if
+
+    
+    ! Create coefficient matrix (dphi/dx, dphi/dz) as duplicate of the
+    ! template matrix
+    if (coeffMatrix_CXZ > 0) then
+      if (lsyssc_isMatrixStructureShared(&
+          rproblemLevel%Rmatrix(coeffMatrix_CXZ),&
+          rproblemLevel%Rmatrix(templateMatrix))) then
+
+        call lsyssc_resizeMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CXZ),&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            .false., .false., .true.)
+
+      else
+        call lsyssc_duplicateMatrix(&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            rproblemLevel%Rmatrix(coeffMatrix_CXZ),&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+      end if
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CXZ),&
+          DER_DERIV3D_X, DER_DERIV3D_Z)
+    end if
+    
+
+    ! Create coefficient matrix (dphi/dy, dphi/dz) as duplicate of the
+    ! template matrix
+    if (coeffMatrix_CYZ > 0) then
+      if (lsyssc_isMatrixStructureShared(&
+          rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
+          rproblemLevel%Rmatrix(templateMatrix))) then
+
+        call lsyssc_resizeMatrix(&
+            rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            .false., .false., .true.)
+
+      else
+        call lsyssc_duplicateMatrix(&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+      end if
+      call stdop_assembleSimpleMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
+          DER_DERIV3D_Y, DER_DERIV3D_Z)
+    end if
+    
+    
     ! Resize stabilisation structures if necessary and remove the
     ! indicator for the subdiagonal edge structure. If they are
     ! needed, then they are re-generated on-the-fly.
@@ -1142,6 +1310,21 @@ contains
             rproblemLevel%Rafcstab(inviscidAFC),&
             nvartransformed, p_rdiscretisation)
 
+        ! Compute number of matrices to by copied
+        nmatrices = 0
+        if (coeffMatrix_CX   > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CY   > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZ   > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CXX  > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CYY  > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZZ  > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CXY  > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CXZ  > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CYZ  > 0) nmatrices = nmatrices+1
+
+        ! Initialise memory for constant coefficient matrices
+        call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(inviscidAFC), nmatrices)
+
       else
         ! Resize stabilisation structure
         call afcstab_resizeStabilisation(&
@@ -1152,6 +1335,64 @@ contains
             iand(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
             not(AFCSTAB_HAS_OFFDIAGONALEDGES))
       end if
+
+      ! Copy constant coefficient matrices to stabilisation structure
+      nmatrices = 0
+      if (coeffMatrix_CX > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), (/nmatrices/))
+      end if
+      if (coeffMatrix_CY > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CY:coeffMatrix_CY), (/nmatrices/))
+      end if
+      if (coeffMatrix_CZ > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CZ:coeffMatrix_CZ), (/nmatrices/))
+      end if
+      if (coeffMatrix_CXX > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CXX:coeffMatrix_CXX), (/nmatrices/))
+      end if
+      if (coeffMatrix_CYY > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CYY:coeffMatrix_CYY), (/nmatrices/))
+      end if
+      if (coeffMatrix_CZZ > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CZZ:coeffMatrix_CZZ), (/nmatrices/))
+      end if
+      if (coeffMatrix_CXY > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CXY:coeffMatrix_CXY), (/nmatrices/))
+      end if
+      if (coeffMatrix_CXZ > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CXZ:coeffMatrix_CXZ), (/nmatrices/))
+      end if
+      if (coeffMatrix_CYZ > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CYZ:coeffMatrix_CYZ), (/nmatrices/))
+      end if
+
     end if
 
   end subroutine mhd_initProblemLevel
