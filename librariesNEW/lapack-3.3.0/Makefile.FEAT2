@@ -90,22 +90,24 @@ purge:
 # rebuilt every time you invoke make!
 $(OBJ): | $(OBJDIR)
 
-$(OBJDIR)/%.o: SRC/%.f
-	$(F77) $(OPTS) -c $< -o $@
+# Lapack is a Fortran 90 Library which merely uses the F77 fixed
+# format, but some Fortran 90/95 intrinsics:
+# * xerba.f contains LEN_TRIM which is not a Fortran77 intrinsic.
+# * dlarft.f contains Fortran90 style comment markers
+# * dlamch.f contains Fortran95 intrinsics: DIGITS, EPSILON, HUGE,
+#   MAXEXPONENT, MINEXPONENT, RADIX, TINY
 
-# xerba.f contains LEN_TRIM which is not a Fortran77 intrinsic, though
-# the only compiler to complain about this fact so far is SunStudio.
-$(OBJDIR)/xerbla.o: SRC/xerbla.f
-	$(F90) $(OPTS) -c $< -o $@
+$(OBJDIR)/%.o: SRC/%.f
+	$(F95) $(OPTS) -c $< -o $@
 
 $(OBJDIR)/%.o: INSTALL/%.f
-	$(F77) $(OPTS) -c $< -o $@
+	$(F95) $(OPTS) -c $< -o $@
 
 #$(OBJDIR)/dlamch.o: INSTALL/dlamch.f
-#	$(F77) $(OPTS) -c $< -o $@
+#	$(F95) $(OPTS) -c $< -o $@
 #
 #$(OBJDIR)/lsame.o: INSTALL/lsame.f
-#	$(F77) $(OPTS) -c $< -o $@
+#	$(F95) $(OPTS) -c $< -o $@
 
 $(OBJDIR):
 	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
@@ -173,7 +175,6 @@ LAPACK_TARBALL  = ../lapack-3.3.0.tgz
 # List of required source files from LAPACK package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
-
 SRC_LAPACK = $(SRCLIST)
 
 # Choose the last file that is extracted from the LAPACK tarball. It's
@@ -195,9 +196,7 @@ $(LAST_FILE_FROM_LAPACK_TARBALL):  LOCKFILE   = ../LOCK.unpack.lapack-3.3.0.tar.
 # Wait 15 minutes at most
 $(LAST_FILE_FROM_LAPACK_TARBALL):  WAITTIME   = 30
 $(LAST_FILE_FROM_LAPACK_TARBALL):  RETRIES    = 30
-$(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHCMD   = cat ../lapack-3.3.0_pgi-6.x-10.x.patch | patch -p0 -u
-$(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHTEXT1 = "\# Patching LAPACK 3.3.0 sources to get rid of non-Fortran 77 'exit' occurrences..."
-$(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHTEXT2 = "\# This prevents compile problems with PGI 6.x-10.x."
+$(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHCMD   = echo
 $(LAST_FILE_FROM_LAPACK_TARBALL): | $(LAPACK_TARBALL)
 	@$(call UNPACK)
 

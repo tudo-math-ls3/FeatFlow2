@@ -2641,7 +2641,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building lapack library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tF77=\"\$(F77)\" F90=\"\$(F90)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+	"\t\tF95=\"\$(F90)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" GOTOBLAS_PATCH_FOR_LAPACK=\"\$(GOTOBLAS_PATCH_FOR_LAPACK)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
