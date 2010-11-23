@@ -1633,7 +1633,7 @@ contains
 
     ! Check if first matrix is compatible with the stabilisation structure
     if ((Rmatrices(1)%NEQ .ne. rafcstab%NEQ) .or.&
-        int(0.5*(Rmatrices(1)%NA-Rmatrices(1)%NEQ),I32)) then
+        int(0.5*(Rmatrices(1)%NA-Rmatrices(1)%NEQ),I32) .ne. rafcstab%NEDGE) then
       call output_line('Matrix is not compatible with stabilisation structure!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
       call sys_halt()
