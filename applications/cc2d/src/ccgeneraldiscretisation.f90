@@ -2059,9 +2059,10 @@ contains
       ! Now prepare a linear solver for solving with the mass matrix.
       ! This is just a simple 1-level Jacobi solver as the mass matrix
       ! is usually well conditioned.
-      call linsol_initJacobi (p_rpreconditioner, 0.8_DP)
+      call linsol_initJacobi (p_rpreconditioner)
       call linsol_initDefCorr (p_rsolverNode, p_rpreconditioner)
       
+      p_rpreconditioner%domega = 0.8_DP
       p_rsolverNode%depsRel = SYS_EPSREAL * 100.0_DP
       p_rsolverNode%nmaxiterations = 1000
       p_rsolverNode%ioutputLevel = 1
