@@ -2560,13 +2560,13 @@ MESSAGE  := $(MESSAGE) \
 	    echo '*** Error: No generic rule available for NEC systems';
 endif
 
-# End of generic architecture rules
+# End of generic compiler rules
 endif
 
 
 
 ##############################################################################
-# Libraries
+# BLAS/LAPACK implementations
 #
 ##############################################################################
 
@@ -2589,7 +2589,7 @@ ifeq ($(call match,$(ID),.*-.*-.*-.*-blas.*),yes)
 include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
-ifeq ($(call match,$(ID),.*-.*-.*-.*-goto.*),yes)
+ifeq ($(call match,$(ID),.*-.*-.*-.*-goto\(\$\|-.*\))),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
