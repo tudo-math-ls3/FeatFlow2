@@ -92,6 +92,12 @@ dstartTime = %{TIME-DISCRETISATION.dtimeInit}
 
 dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
 
+# File format in case the solution is given as file on disc.
+# =0: unformatted file.
+# =1: formatted file (default)
+
+ifileformat = 1
+
 # =======================================================================================
 # Section that defines the RHS in the optimal control problem.
 
@@ -221,6 +227,12 @@ dstartTime = %{TIME-DISCRETISATION.dtimeInit}
 
 dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
 
+# File format in case the solution is given as file on disc.
+# =0: unformatted file.
+# =1: formatted file (default)
+
+ifileformat = 1
+
 # If ctype=4, this defines the Time-stepping scheme of the forward simulation.
 # 0=one step scheme,
 # 1=FS-Theta 3-step scheme
@@ -335,6 +347,12 @@ dstartTime = %{TIME-DISCRETISATION.dtimeInit}
 
 dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
 
+# File format in case the solution is given as file on disc.
+# =0: unformatted file.
+# =1: formatted file (default)
+
+ifileformat = 1
+
 
 # =======================================================================================
 # Section defining a reference solution for error calculation
@@ -432,3 +450,9 @@ dstartTime = %{TIME-DISCRETISATION.dtimeInit}
 # Default coincides with the end time of the nonstationary simulation.
 
 dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
+
+# File format in case the solution is given as file on disc.
+# =0: unformatted file.
+# =1: formatted file (default)
+
+ifileformat = 1

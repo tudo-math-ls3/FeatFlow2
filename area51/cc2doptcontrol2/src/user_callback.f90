@@ -601,6 +601,9 @@ contains
         ! primal X-velocity
         
         select case (iid)
+        case (7)
+          DvaluesAct(:,:) = fct_stokesF7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case default
           ! Analytically given. =0.
           DvaluesAct(:,:) = 0.0_DP
@@ -611,6 +614,9 @@ contains
         ! primal Y-velocity
 
         select case (iid)
+        case (7)
+          DvaluesAct(:,:) = fct_stokesF7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case default
           ! Analytically given. =0.
           DvaluesAct(:,:) = 0.0_DP
@@ -750,8 +756,17 @@ contains
         ! target X-velocity
         
         select case (iid)
+        case (1)
+          Dvalues(:,:) = fct_stokesZ1_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (2)
+          Dvalues(:,:) = fct_stokesZ2_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case (4)
           Dvalues(:,:) = fct_stokesZ4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (7)
+          Dvalues(:,:) = fct_stokesZ7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
           
         case default
           ! Analytically given. =0.
@@ -763,8 +778,17 @@ contains
         ! target Y-velocity
 
         select case (iid)
+        case (1)
+          Dvalues(:,:) = fct_stokesZ1_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (2)
+          Dvalues(:,:) = fct_stokesZ2_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case (4)
           Dvalues(:,:) = fct_stokesZ4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (7)
+          Dvalues(:,:) = fct_stokesZ7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
@@ -884,8 +908,17 @@ contains
         ! target X-velocity
         
         select case (iid)
+        case (1)
+          DvaluesAct(:,:) = fct_stokesZ1_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (2)
+          DvaluesAct(:,:) = fct_stokesZ2_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case (4)
           DvaluesAct(:,:) = fct_stokesZ4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
+        case (7)
+          DvaluesAct(:,:) = fct_stokesZ7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
           
         case default
           ! Analytically given. =0.
@@ -897,8 +930,17 @@ contains
         ! target Y-velocity
 
         select case (iid)
+        case (1)
+          DvaluesAct(:,:) = fct_stokesZ1_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (2)
+          DvaluesAct(:,:) = fct_stokesZ2_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case (4)
           DvaluesAct(:,:) = fct_stokesZ4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (7)
+          DvaluesAct(:,:) = fct_stokesZ7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
@@ -1021,8 +1063,17 @@ contains
         ! primal X-velocity
         
         select case (iid)
+        case (1)
+          Dvalues(:,:) = fct_stokesY1_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (2)
+          Dvalues(:,:) = fct_stokesY2_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case (4)
           Dvalues(:,:) = fct_stokesY4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (7)
+          Dvalues(:,:) = fct_stokesY7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
@@ -1034,8 +1085,17 @@ contains
         ! primal Y-velocity
 
         select case (iid)
+        case (1)
+          Dvalues(:,:) = fct_stokesY1_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (2)
+          Dvalues(:,:) = fct_stokesY2_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case (4)
           Dvalues(:,:) = fct_stokesY4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (7)
+          Dvalues(:,:) = fct_stokesY7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
@@ -1047,8 +1107,17 @@ contains
         ! primal pressure
 
         select case (iid)
+        case (1)
+          Dvalues(:,:) = fct_stokesP1(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (2)
+          Dvalues(:,:) = fct_stokesP2(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case (4)
           Dvalues(:,:) = fct_stokesP4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (7)
+          Dvalues(:,:) = fct_stokesP7(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
@@ -1059,8 +1128,17 @@ contains
       case (4)
         ! dual X-velocity
         select case (iid)
+        case (1)
+          Dvalues(:,:) = fct_stokesLambda1_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (2)
+          Dvalues(:,:) = fct_stokesLambda2_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case (4)
           Dvalues(:,:) = fct_stokesLambda4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (7)
+          Dvalues(:,:) = fct_stokesLambda7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
@@ -1071,8 +1149,17 @@ contains
       case (5)
         ! dual Y-velocity
         select case (iid)
+        case (1)
+          Dvalues(:,:) = fct_stokesLambda1_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (2)
+          Dvalues(:,:) = fct_stokesLambda2_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case (4)
           Dvalues(:,:) = fct_stokesLambda4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (7)
+          Dvalues(:,:) = fct_stokesLambda7_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
@@ -1083,8 +1170,17 @@ contains
       case (6)
         ! dual pressure
         select case (iid)
+        case (1)
+          Dvalues(:,:) = fct_stokesXi1(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (2)
+          Dvalues(:,:) = fct_stokesXi2(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
         case (4)
           Dvalues(:,:) = fct_stokesXi4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case (7)
+          Dvalues(:,:) = fct_stokesXi7(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
@@ -2023,6 +2119,30 @@ contains
       select case (cequation)
       case (0,1)
         select case (iid)
+        case (1)
+          select case (icomponent)
+          case (1)
+            dvalue = fct_stokesY1_x (dx,dy,dtime,dalpha)
+          case (2)
+            dvalue = fct_stokesY1_y (dx,dy,dtime,dalpha)
+          case (4)
+            dvalue = fct_stokesLambda1_x (dx,dy,dtime,dalpha)
+          case (5)
+            dvalue = fct_stokesLambda1_y (dx,dy,dtime,dalpha)
+          end select
+
+        case (2)
+          select case (icomponent)
+          case (1)
+            dvalue = fct_stokesY2_x (dx,dy,dtime,dalpha)
+          case (2)
+            dvalue = fct_stokesY2_y (dx,dy,dtime,dalpha)
+          case (4)
+            dvalue = fct_stokesLambda2_x (dx,dy,dtime,dalpha)
+          case (5)
+            dvalue = fct_stokesLambda2_y (dx,dy,dtime,dalpha)
+          end select
+
         case (4)
           select case (icomponent)
           case (1)
@@ -2034,7 +2154,21 @@ contains
           case (5)
             dvalue = fct_stokesLambda4_y (dx,dy,dtime,dalpha)
           end select
+
+        case (7)
+          select case (icomponent)
+          case (1)
+            dvalue = fct_stokesY7_x (dx,dy,dtime,dalpha)
+          case (2)
+            dvalue = fct_stokesY7_y (dx,dy,dtime,dalpha)
+          case (4)
+            dvalue = fct_stokesLambda7_x (dx,dy,dtime,dalpha)
+          case (5)
+            dvalue = fct_stokesLambda7_y (dx,dy,dtime,dalpha)
+          end select
+
         end select
+
       end select
 
     end if

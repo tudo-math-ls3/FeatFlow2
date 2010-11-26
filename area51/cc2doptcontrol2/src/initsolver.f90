@@ -1684,7 +1684,7 @@ contains
     character(len=PARLST_LENLINEBUF), dimension(:), allocatable :: Sexpressions
     character(len=SYS_STRLEN) :: smesh,sfunctionFile
     integer :: ilevel,ielementType,idelta
-    integer :: ntimesteps,ncomponents
+    integer :: ntimesteps,ncomponents,ifileformat
     type(t_parlstSection), pointer :: p_rsection
     
     ! Is the section available?
@@ -1737,6 +1737,11 @@ contains
 
     call parlst_getvalue_int (rparlist,ssection,&
         "ielementType",ielementType,-1)
+
+    ! File format. Formatted or unformatted.
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "ifileformat",ifileformat,1)
 
     ! Mesh, the function defining files
 
@@ -1793,7 +1798,7 @@ contains
     case (1)
     
       ! Read stationary function from hard disc
-      call ansol_configStationaryFile (rfunction,sfunctionFile,.true.)
+      call ansol_configStationaryFile (rfunction,sfunctionFile,ifileformat .eq. 1)
       
     case (2)
     
@@ -1811,7 +1816,7 @@ contains
       call ansol_configNonstationaryFile (rfunction, &
           dstartTime,dtimeMax,ntimesteps,&
           "("""//trim(sfunctionFile)//"."",I5.5)",&
-          0,idelta,.true.)
+          0,idelta,ifileformat .eq. 1)
           
     end select
 
