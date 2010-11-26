@@ -2308,7 +2308,7 @@ endif
 
 
 ##############################################################################
-# x86 / x_86_64 generic
+# x86 / x86_64 generic
 #
 # This rule tries to find the optimal compiler settings for 
 # x86- and x86_64-based systems.
@@ -2366,7 +2366,7 @@ CFLAGSCXX     := -xHOST $(CFLAGSCXX)
 LDFLAGS       := -xHOST $(LDFLAGS)
 else
 MESSAGE  := $(MESSAGE) \
-	    echo '*** Warning: No auto-tuning for Intel compiler below 11.1 available!';
+	    echo '*** Warning: No auto-tuning for Intel compiler below 11.0 available!';
 endif
 endif
 endif
@@ -2500,7 +2500,7 @@ CFLAGSCXX     := -xHOST $(CFLAGSCXX)
 LDFLAGS       := -xHOST $(LDFLAGS)
 else
 MESSAGE  := $(MESSAGE) \
-	    echo '*** Warning: No auto-tuning for Intel compiler below 11.1 available!';
+	    echo '*** Warning: No auto-tuning for Intel compiler below 11.0 available!';
 endif
 endif
 endif
@@ -2609,9 +2609,15 @@ ifeq ($(call match,$(ID),.*-.*-.*-.*-perf.*),yes)
 include $(TEMPLATESDIR)/sunperf-generic.mk
 endif
 
+# End of generic BLAS/LAPACK rules
 endif
 
 
+
+##############################################################################
+# MPI environments
+#
+##############################################################################
 
 ifeq ($(TOKEN6), 0)
 
@@ -2679,6 +2685,7 @@ SRCEXTRA      := $(SRCEXTRA) mpir_iargc.f
 # #MPILIBS   = -lpmpich -lfmpich -lmpich -lpthread -lrt
 endif
 
+# End of generic MPI rules
 endif
 
 
