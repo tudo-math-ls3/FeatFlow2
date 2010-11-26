@@ -3422,7 +3422,10 @@ contains
           
       call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
           rsimsolver%rpreconditioner,dtimePrimal,dtimeDual)
-      
+
+      ! Get the start vector      
+      call sptivec_getVectorFromPool(rsolAccess, ifirstinterval, p_rcurrentsol)
+     
       ! Initial postprocessing
       call stat_startTimer (rtimerPostProc)
       call fbsim_postprocessing (rsimSolver%rpostprocessing,p_rcurrentsol,ifirstinterval,&
