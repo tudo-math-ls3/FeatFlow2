@@ -1158,6 +1158,7 @@ fb_runBenchmarkOnLiDO() {
     attemptpbsserverquery=0
     maxattemptpbsserverquery=3
     pbserrors=`mktemp`
+    echo "Waiting for running jobs, iteration "$iteration" ..." >> $GLOBALLOG
     while test $iteration -le $maxwaitcycles; do
 	attemptpbsserverquery=`expr $attemptpbsserverquery + 1`;
 	runningsjobs=`qstat -u $USER 2>${pbserrors} | grep $LIDOJOBNAMEPREFIX | wc -l`
@@ -1181,7 +1182,7 @@ fb_runBenchmarkOnLiDO() {
 	attemptpbsserverquery=0;
 	test $runningsjobs -eq 0 && break;
 	iteration=`expr $iteration + 1`
-	echo "Waiting for running jobs, iteration "$iteration" ..." 1>>$AUXILIARYLOG 2>&1
+	echo "Waiting for running jobs, iteration "$iteration" ..." 1>>$GLOBALLOG 2>&1
 	sleep $sleeptime
     done
     rm -f ${pbserrors}
