@@ -2589,7 +2589,10 @@ ifeq ($(call match,$(ID),.*-.*-.*-.*-blas.*),yes)
 include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
-ifeq ($(call match,$(ID),.*-.*-.*-.*-goto\(\$\|-.*\))),yes)
+# sed syntax for match variant 1:
+ifeq ($(call match,$(ID),.*-.*-.*-.*-goto($$|-.*)),yes)
+# sed syntax for match variant 2:
+# ifeq ($(call match,$(ID),.*-.*-.*-.*-goto\(\$\|-.*\))),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
