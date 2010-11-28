@@ -92,7 +92,7 @@
 #endif
 
 #if 0
-! Flux in x-direction for 
+! Flux in x-direction for inviscid hydrodynamics in 1D
 #endif
 #define FLUX_HYDRO_2T_XDIR_1D(F,U,i,idx,ui,pi)\
   F(1) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR1D,i,idx);MYNEWLINE\
