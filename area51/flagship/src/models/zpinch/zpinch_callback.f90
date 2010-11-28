@@ -1093,8 +1093,9 @@ contains
         p_rpredictorHydro, 1.0_DP, p_rpredictorHydro)
 
     ! Compute the raw antidiffusive fluxes
-    call hydro_calcFluxFCT(rproblemLevel, p_rpredictorHydro,&
-        Rsolution(1), 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
+    call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
+        1.0_DP, 1.0_DP, .true., p_rpredictorHydro, rcollection)
+        
 
     !--- transport model -------------------------------------------------------
 
