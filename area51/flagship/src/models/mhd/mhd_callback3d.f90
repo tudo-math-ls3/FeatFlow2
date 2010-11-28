@@ -81,15 +81,15 @@
 !# 19.) mhd_calcCharacteristics3d_sim
 !#      -> Computes characteristic variables
 !#
-!# 20.) mhd_calcFluxFCTScalarDiss3d
+!# 20.) mhd_calcFluxFCTScDiss3d_sim
 !#      -> Computes fluxes for FCT algorithm
 !#         adopting scalar artificial viscosities
 !#
-!# 21.) mhd_calcFluxFCTRoeDiss3d
+!# 21.) mhd_calcFluxFCTRoeDiss3d_sim
 !#      -> Computes fluxes for FCT algorithm
 !#         adopting tensorial artificial viscosities
 !#
-!# 22.) mhd_calcFluxFCTRusanov3d
+!# 22.) mhd_calcFluxFCTRusDiss3d_sim
 !#      -> Computes fluxes for FCT algorithm
 !#         adopting the Rusanov artificial viscosities
 !#
@@ -258,9 +258,9 @@ module mhd_callback3d
   public :: mhd_calcMatRusDissMatD3d_sim
   public :: mhd_calcMatRusDiss3d_sim
   public :: mhd_calcCharacteristics3d_sim
-  public :: mhd_calcFluxFCTScalarDiss3d
-  public :: mhd_calcFluxFCTRoeDiss3d
-  public :: mhd_calcFluxFCTRusanov3d
+  public :: mhd_calcFluxFCTScDiss3d_sim
+  public :: mhd_calcFluxFCTRoeDiss3d_sim
+  public :: mhd_calcFluxFCTRusDiss3d_sim
   public :: mhd_trafoFluxDensity3d_sim
   public :: mhd_trafoFluxEnergy3d_sim
   public :: mhd_trafoFluxPressure3d_sim
@@ -293,8 +293,8 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the fluxes for the standard
-    ! Galerkin discretisation in 3D.
+    ! This subroutine computes the fluxes for the standard Galerkin
+    ! discretisation in 3D.
 !</description>
 
 !<input>
@@ -332,7 +332,7 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
+    real(DP), dimension(NVAR3D) :: Fxi,Fxj,Fyi,Fyj,Fzi,Fzj
 #else
     real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
@@ -344,35 +344,6 @@ contains
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      !      /   rho*w             \
-      !      | rho*u*w - Bz*Bx     |
-      !      | rho*v*w + Bz*By     |
-      ! Fz = | rho*w*w + pT -Bz^2  |
-      !      |    Bx*w - Bz*u      |
-      !      |    By*w - Bz*v      |
-      !      |         0           |
-      !      \ (rho*E+pT)*u -Bz*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -446,11 +417,11 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the  for the TVD
-    ! discretisation in 3D. The symmetric boundary contributions
-    ! are neglected and incorporated in the antidiffusive flux.
-    ! Hence, this is simply the standard Galerkin flux for the
-    ! skew-symmetric internal contributions.
+    ! This subroutine computes the fluxes for the TVD discretisation
+    ! in 3D. The symmetric boundary contributions are neglected and
+    ! incorporated in the antidiffusive flux.  Hence, this is simply
+    ! the standard Galerkin flux for the skew-symmetric internal
+    ! contributions.
 !</description>
 
 !<input>
@@ -488,7 +459,7 @@ contains
 
   ! local variables
   real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
-  real(DP) :: pi,pj,qi,qj,ui,vi,uj,vj,wi,wj
+  real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
   integer :: idx
   
     
@@ -496,35 +467,6 @@ contains
 
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      !      /   rho*w             \
-      !      | rho*u*w - Bz*Bx     |
-      !      | rho*v*w + Bz*By     |
-      ! Fz = | rho*w*w + pT -Bz^2  |
-      !      |    Bx*w - Bz*u      |
-      !      |    By*w - Bz*v      |
-      !      |         0           |
-      !      \ (rho*E+pT)*u -Bz*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -574,8 +516,9 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 3D using scalar dissipation.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using scalar artificial viscosities proportional to the
+    ! spectral radius (largest eigenvalue) of the Roe-matrix.
 !</description>
 
 !<input>
@@ -613,14 +556,13 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
+    real(DP), dimension(NVAR3D) :: Fxi,Fxj,Fyi,Fyj,Fzi,Fzj
 #else
     real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
     real(DP), dimension(NVAR3D) :: Diff
     real(DP), dimension(NDIM3D) :: a
     real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
-    real(DP) :: d_ij,H_ij,q_ij,u_ij,v_ij,w_ij,anorm,vel_ij,c_ij,aux
     integer :: idx
 
     
@@ -628,35 +570,6 @@ contains
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      !      /   rho*w             \
-      !      | rho*u*w - Bz*Bx     |
-      !      | rho*v*w + Bz*By     |
-      ! Fz = | rho*w*w + pT -Bz^2  |
-      !      |    Bx*w - Bz*u      |
-      !      |    By*w - Bz*v      |
-      !      |         0           |
-      !      \ (rho*E+pT)*u -Bz*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -703,42 +616,13 @@ contains
 #endif
 
       !-------------------------------------------------------------------------
-      ! Evaluate the scalar dissipation proportional to the spectral radius
+      ! Evaluate the scalar artificial dissipation proportional to the spectral
+      ! radius (largest eigenvalue) of the Roe-matrix
       !-------------------------------------------------------------------------
-      
-      ! Compute skew-symmetric coefficient
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
-      anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
-      ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
-      u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-      w_ij = ROE_MEAN_VALUE(wi,wj,aux)
-      H_ij = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)+pi)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)+pj)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx), aux)
+      Diff = 0
 
-      ! Compute auxiliary variables
-      vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
-      q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
-
-      ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      c_ij   = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-
-      ! Scalar dissipation
-      d_ij = abs(vel_ij) + anorm*c_ij
-
-      ! Multiply the solution difference by the artificial diffusion factor
-      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+      !!! TODO !!!
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
@@ -773,9 +657,10 @@ contains
     
 
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 3D using scalar dissipation,
-    ! whereby dimensional splitting is employed.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using scalar artificial viscosities proportional to the
+    ! spectral radius (largest eigenvalue) of the Roe-matrix, whereby
+    ! dimensional splitting is employed.
 !</description>
 
 !<input>
@@ -813,14 +698,14 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
+    real(DP), dimension(NVAR3D) :: Fxi,Fxj,Fyi,Fyj,Fzi,Fzj
 #else
     real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
     real(DP), dimension(NVAR3D) :: Diff
     real(DP), dimension(NDIM3D) :: a
     real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
-    real(DP) :: d_ij,H_ij,q_ij,u_ij,v_ij,w_ij,aux,c_ij
+    real(DP) :: anorm
     integer :: idx
 
     
@@ -828,35 +713,6 @@ contains
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      !      /   rho*w             \
-      !      | rho*u*w - Bz*Bx     |
-      !      | rho*v*w + Bz*By     |
-      ! Fz = | rho*w*w + pT -Bz^2  |
-      !      |    Bx*w - Bz*u      |
-      !      |    By*w - Bz*v      |
-      !      |         0           |
-      !      \ (rho*E+pT)*u -Bz*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -903,42 +759,17 @@ contains
 #endif
 
       !-------------------------------------------------------------------------
-      ! Evaluate the scalar dissipation proportional to the spectral radius
+      ! Evaluate the scalar artificial dissipation proportional to the spectral
+      ! radius (largest eigenvalue) of the Roe-matrix
       !-------------------------------------------------------------------------
 
-      ! Compute skew-symmetric coefficient
+      ! Compute the skew-symmetric coefficient and its norm
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
-      
-      ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
-      u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-      w_ij = ROE_MEAN_VALUE(vi,vj,aux)
-      H_ij = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)+pi)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)+pj)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx), aux)
+      anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
-      ! Compute auxiliary variable
-      q_ij = 0.5*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
+      Diff = 0
 
-      ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-      
-      ! Scalar dissipation for x- and y-direction
-      d_ij = ( abs(a(1)*u_ij) + abs(a(1))*c_ij +&
-               abs(a(2)*v_ij) + abs(a(2))*c_ij +&
-               abs(a(3)*w_ij) + abs(a(3))*c_ij )
-
-      ! Multiply the solution difference by the artificial diffusion factor
-      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+      !!! TODO !!!
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
@@ -972,8 +803,8 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 3D using tensorial dissipation.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using tensorial artificial viscosities of Roe-type.
 !</description>
 
 !<input>
@@ -1011,16 +842,14 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
+    real(DP), dimension(NVAR3D) :: Fxi,Fxj,Fyi,Fyj,Fzi,Fzj
 #else
     real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
     real(DP), dimension(NVAR3D) :: Diff
     real(DP), dimension(NDIM3D) :: a
     real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
-    real(DP) :: u_ij,v_ij,w_ij,H_ij,q_ij,c_ij,c2_ij,vel_ij
-    real(DP) :: aux,aux1,aux2,anorm
-    real(DP) :: l1,l2,l3,l4,l5,w1,w2,w3,w4,w5
+    real(DP) :: anorm
     integer :: idx
 
     
@@ -1028,35 +857,6 @@ contains
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      !      /   rho*w             \
-      !      | rho*u*w - Bz*Bx     |
-      !      | rho*v*w + Bz*By     |
-      ! Fz = | rho*w*w + pT -Bz^2  |
-      !      |    Bx*w - Bz*u      |
-      !      |    By*w - Bz*v      |
-      !      |         0           |
-      !      \ (rho*E+pT)*u -Bz*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -1103,114 +903,21 @@ contains
 #endif
 
       !-------------------------------------------------------------------------
-      ! Evaluate the dissipation tensor by Roe
+      ! Evaluate the dissipation tensor of Roe-type
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
-      anorm = sqrt(a(1)*a(1)+a(2)*a(2))
+      anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
         
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        w_ij = ROE_MEAN_VALUE(wi,wj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)+pi)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)+pj)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx), aux)
+        Diff = 0
 
-        ! Compute auxiliary variables
-        vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
-
-        ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        c2_ij  = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        c_ij   = sqrt(c2_ij)
-
-        ! Compute eigenvalues
-        l1 = abs(vel_ij-c_ij)
-        l2 = abs(vel_ij)
-        l3 = abs(vel_ij+c_ij)
-        l4 = abs(vel_ij)
-        l5 = abs(vel_ij)
-
-        ! Compute solution difference U_j-U_i
-        Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
-        
-        ! Compute auxiliary quantities for characteristic variables
-        aux1 = (GAMMA-1.0)/2.0/c2_ij*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)-w_ij*Diff(4)+Diff(5))
-        aux2 = 0.5*(vel_ij*Diff(1)-a(1)*Diff(2)-a(2)*Diff(3)-a(3)*Diff(4))/c_ij
-
-        ! Get the dimension with largest coefficient
-        select case(maxloc(a,1))
-        case(1)
-          ! Compute characteristic variables multiplied by the corresponding eigenvalue
-          w1 = l1 * (aux1 + aux2)
-          w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*Diff(1)+&
-                     (GAMMA-1.0)*(u_ij*Diff(2)+v_ij*Diff(3)+w_ij*Diff(4)-Diff(5))/c2_ij)
-          w3 = l3 * (aux1 - aux2)
-          w4 = l4 * ( (v_ij-vel_ij*a(2))*Diff(1)+a(1)*a(2)*Diff(2)+&
-                      (a(2)*a(2)-1.0)*Diff(3)+a(2)*a(3)*Diff(4) )/a(1)
-          w5 = l5 * ( (vel_ij*a(3)-w_ij)*Diff(1)-a(1)*a(3)*Diff(2)-&
-                      a(2)*a(3)*Diff(3)+(1.0-a(3)*a(3))*Diff(4) )/a(1)
-
-          ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-          Diff(1) = anorm * ( w1 + w2 + w3 + w4 )
-          Diff(2) = anorm * ( (u_ij-c_ij*a(1))*w1 + u_ij*w2 + (u_ij+c_ij*a(1))*w3 + a(2)*w4 - a(3)*w5 )
-          Diff(3) = anorm * ( (v_ij-c_ij*a(1))*w1 + v_ij*w2 + (v_ij+c_ij*a(1))*w3 - a(1)*w4 )
-          Diff(4) = anorm * ( (w_ij-c_ij*a(1))*w1 + w_ij*w2 + (w_ij+c_ij*a(1))*w3 + a(2)*w5)
-          Diff(5) = anorm * ( (H_ij-c_ij*vel_ij)*w1 + q_ij*w2 + (H_ij+c_ij*vel_ij)*w3&
-                              + (u_ij*a(2)-v_ij*a(1))*w4 + (w_ij*a(1)-u_ij*a(3))*w5 )
-        case(2)
-          ! Compute characteristic variables multiplied by the corresponding eigenvalue
-          w1 = l1 * (aux1 + aux2)
-          w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*Diff(1)+&
-                     (GAMMA-1.0)*(u_ij*Diff(2)+v_ij*Diff(3)+w_ij*Diff(4)-Diff(5))/c2_ij)
-          w3 = l3 * (aux1 - aux2)
-          w4 = l4 * ( (vel_ij*a(1)-u_ij)*Diff(1)+(1.0-a(1)*a(1))*Diff(2)-&
-                      a(1)*a(2)*Diff(3)-a(1)*a(3)*Diff(4) )/a(2)
-          w5 = l5 * ( (w_ij-vel_ij*a(3))*Diff(1)+a(1)*a(3)*Diff(2)+&
-                      a(2)*a(3)*Diff(3)+(a(3)*a(3)-1.0)*Diff(4) )/a(2)
-
-          ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-          Diff(1) = anorm * ( w1 + w2 + w3 + w4 )
-          Diff(2) = anorm * ( (u_ij-c_ij*a(1))*w1 + u_ij*w2 + (u_ij+c_ij*a(1))*w3 + a(2)*w4 )
-          Diff(3) = anorm * ( (v_ij-c_ij*a(1))*w1 + v_ij*w2 + (v_ij+c_ij*a(1))*w3 - a(1)*w4 + a(3)*w5 )
-          Diff(4) = anorm * ( (w_ij-c_ij*a(1))*w1 + w_ij*w2 + (w_ij+c_ij*a(1))*w3 - a(2)*w5)
-          Diff(5) = anorm * ( (H_ij-c_ij*vel_ij)*w1 + q_ij*w2 + (H_ij+c_ij*vel_ij)*w3&
-                              + (u_ij*a(2)-v_ij*a(1))*w4 + (v_ij*a(3)-w_ij*a(2))*w5 )
-        case(3)
-          ! Compute characteristic variables multiplied by the corresponding eigenvalue
-          w1 = l1 * (aux1 + aux2)
-          w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*Diff(1)+&
-                     (GAMMA-1.0)*(u_ij*Diff(2)+v_ij*Diff(3)+w_ij*Diff(4)-Diff(5))/c2_ij)
-          w3 = l3 * (aux1 - aux2)
-          w4 = l4 * ( (u_ij-vel_ij*a(1))*Diff(1)+(a(1)*a(1)-11.0)*Diff(2)+&
-                      a(1)*a(2)*Diff(3)+a(1)*a(3)*Diff(4) )/a(3)
-          w5 = l5 * ( (vel_ij*a(2)-v_ij)*Diff(1)-a(1)*a(2)*Diff(2)+&
-                      (1.0-a(2)*a(2))*Diff(3)-a(2)*a(3)*Diff(4) )/a(3)
-
-          ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-          Diff(1) = anorm * ( w1 + w2 + w3 + w4 )
-          Diff(2) = anorm * ( (u_ij-c_ij*a(1))*w1 + u_ij*w2 + (u_ij+c_ij*a(1))*w3 - a(3)*w4 )
-          Diff(3) = anorm * ( (v_ij-c_ij*a(1))*w1 + v_ij*w2 + (v_ij+c_ij*a(1))*w3 + a(3)*w5 )
-          Diff(4) = anorm * ( (w_ij-c_ij*a(1))*w1 + w_ij*w2 + (w_ij+c_ij*a(1))*w3 + a(1)*w4 - a(2)*w5)
-          Diff(5) = anorm * ( (H_ij-c_ij*vel_ij)*w1 + q_ij*w2 + (H_ij+c_ij*vel_ij)*w3&
-                              + (w_ij*a(1)-u_ij*a(3))*w4 + (v_ij*a(3)-w_ij*a(2))*w5 )
-        end select
+        !! TODO !!
 
         !-----------------------------------------------------------------------
         ! Build both contributions into the fluxes
@@ -1264,9 +971,9 @@ contains
     
 
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 3D using tensorial dissipation,
-    ! whereby dimensional splitting is employed.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using tensorial artificial viscosities of Roe-type, whereby
+    ! dimensional splitting is employed.
 !</description>
 
 !<input>
@@ -1304,51 +1011,21 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
+    real(DP), dimension(NVAR3D) :: Fxi,Fxj,Fyi,Fyj,Fzi,Fzj
 #else
     real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
     real(DP), dimension(NVAR3D) :: DiffX,DiffY,DiffZ
     real(DP), dimension(NDIM3D) :: a
     real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
-    real(DP) :: u_ij,v_ij,w_ij,H_ij,q_ij,c_ij,c2_ij,vel_ij
-    real(DP) :: aux,aux1,aux2,anorm
-    real(DP) :: l1,l2,l3,l4,l5,w1,w2,w3,w4,w5
+    real(DP) :: anorm
     integer :: idx
     
+
     do idx = 1, size(DfluxesAtEdge,3)
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      !      /   rho*w             \
-      !      | rho*u*w - Bz*Bx     |
-      !      | rho*v*w + Bz*By     |
-      ! Fz = | rho*w*w + pT -Bz^2  |
-      !      |    Bx*w - Bz*u      |
-      !      |    By*w - Bz*v      |
-      !      |         0           |
-      !      \ (rho*E+pT)*u -Bz*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -1395,46 +1072,21 @@ contains
 #endif
       
       !-------------------------------------------------------------------------
-      ! Evaluate the dissipation tensor by Roe
+      ! Evaluate the dissipation tensor of Roe-type
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
-      anorm = sqrt(a(1)*a(1)+a(2)*a(2))
+      anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
         
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        w_ij = ROE_MEAN_VALUE(wi,wj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)+pi)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)+pj)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx), aux)
+        DiffX = 0; DiffY = 0; DiffZ = 0
 
-        ! Compute auxiliary variables
-        vel_ij = u_ij*a(1) + v_ij*a(2) + w_ij*a(3)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij+w_ij*w_ij)
-
-        ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        c2_ij  = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        c_ij   = sqrt(c2_ij)
-
-        ! ***      ***
-        ! *** TODO ***
-        ! ***      ***
+        !!! TODO !!!
 
         !-----------------------------------------------------------------------
         ! Build both contributions into the fluxes
@@ -1490,8 +1142,8 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 3D using the Rusanov dissipation.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using scalar artificial viscosities of Rusanov-type.
 !</description>
 
 !<input>
@@ -1529,7 +1181,7 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
+    real(DP), dimension(NVAR3D) :: Fxi,Fxj,Fyi,Fyj,Fzi,Fzj
 #else
     real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
@@ -1543,36 +1195,7 @@ contains
     do idx = 1, size(DfluxesAtEdge,3)
       
       !-------------------------------------------------------------------------
-      ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      !      /   rho*w             \
-      !      | rho*u*w - Bz*Bx     |
-      !      | rho*v*w + Bz*By     |
-      ! Fz = | rho*w*w + pT -Bz^2  |
-      !      |    Bx*w - Bz*u      |
-      !      |    By*w - Bz*v      |
-      !      |         0           |
-      !      \ (rho*E+pT)*u -Bz*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
+      ! Evaluate the Galerkin fluxes      
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -1677,7 +1300,7 @@ contains
       cf3i = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*ca3i**2)))
       cf3j = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*ca3j**2)))
 
-      ! Scalar dissipation for the Rusanov flux
+      ! Compute scalar dissipation for the Rusanov flux
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
                       DmatrixCoeffsAtEdge(2,1,idx)*vj+&
                       DmatrixCoeffsAtEdge(3,1,idx)*wj)+&
@@ -1726,9 +1349,9 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 3D using the Rusanov dissipation,
-    ! whereby dimensional splitting is employed.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using scalar artificial viscosities of Rusanov-type, whereby
+    ! dimensional splitting is employed.
 !</description>
 
 !<input>
@@ -1766,7 +1389,7 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR3D) :: Fxi,Fyi,Fxj,Fyj,Fzi,Fzj
+    real(DP), dimension(NVAR3D) :: Fxi,Fxj,Fyi,Fyj,Fzi,Fzj
 #else
     real(DP), dimension(NVAR3D) :: Fx_ij,Fy_ij,Fz_ij
 #endif
@@ -1781,35 +1404,6 @@ contains
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      !      /   rho*w             \
-      !      | rho*u*w - Bz*Bx     |
-      !      | rho*v*w + Bz*By     |
-      ! Fz = | rho*w*w + pT -Bz^2  |
-      !      |    Bx*w - Bz*u      |
-      !      |    By*w - Bz*v      |
-      !      |         0           |
-      !      \ (rho*E+pT)*u -Bz*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -1914,7 +1508,7 @@ contains
       cf3i = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*ca3i**2)))
       cf3j = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*ca3j**2)))
       
-      ! Scalar dissipation
+      ! Compute calar dissipation with dimensional splitting
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
                   abs(DmatrixCoeffsAtEdge(1,1,idx))*cf1j,&
                   abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
@@ -1964,7 +1558,7 @@ contains
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
-    ! for the diagonal block of the global operator in 3D
+    ! for the diagonal block of the global operator in 3D.
 !</description>
 
 !<input>
@@ -1991,6 +1585,7 @@ contains
   real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtNode
 !</output>
 !</subroutine>
+
 
   end subroutine mhd_calcMatDiagMatD3d_sim
 
@@ -2004,7 +1599,7 @@ contains
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
-    ! block of the global operator in 3D
+    ! block of the global operator in 3D.
 !</description>
 
 !<input>
@@ -2032,6 +1627,7 @@ contains
 !</output>
 !</subroutine>
 
+
   end subroutine mhd_calcMatDiag3d_sim
 
   !*****************************************************************************
@@ -2043,7 +1639,7 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the diagonal of the Galerkin matrices in 3D
+    ! This subroutine computes the diagonal of the Galerkin matrices in 3D.
 !</description>
 
 !<input>
@@ -2071,6 +1667,7 @@ contains
 !</output>
 !</subroutine>
 
+
   end subroutine mhd_calcMatGalMatD3d_sim
 
   !*****************************************************************************
@@ -2082,7 +1679,7 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the Galerkin matrices in 3D
+    ! This subroutine computes the Galerkin matrices in 3D.
 !</description>
 
 !<input>
@@ -2122,7 +1719,8 @@ contains
     
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
-    ! and applies scalar artificial viscosities in 3D
+    ! in 3D and applies scalar artificial viscosities proportional to
+    ! the spectral radius (largest eigenvalue) of the Roe-matrix.
 !</description>
 
 !<input>
@@ -2149,6 +1747,7 @@ contains
   real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
+
 
   end subroutine mhd_calcMatScDissMatD3d_sim
 
@@ -2161,8 +1760,9 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the Galerkin matrices
-    ! and applies scalar artificial viscosities in 3D
+    ! This subroutine computes the Galerkin matrices in 3D and applies
+    ! scalar artificial viscosities proportional to the spectral
+    ! radius (largest eigenvalue) of the Roe-matrix.
 !</description>
 
 !<input>
@@ -2189,6 +1789,7 @@ contains
   real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
+
 
   end subroutine mhd_calcMatScDiss3d_sim
 
@@ -2201,8 +1802,8 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the Galerkin matrices
-    ! and applies tensorial artificial viscosities in 3D
+    ! This subroutine computes the Galerkin matrices in 3D and applies
+    ! tensorial artificial viscosities of Roe-type.
 !</description>
 
 !<input>
@@ -2229,6 +1830,7 @@ contains
   real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
+
 
   end subroutine mhd_calcMatRoeDissMatD3d_sim
 
@@ -2241,8 +1843,8 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the Galerkin matrices
-    ! and applies tensorial artificial viscosities in 3D
+    ! This subroutine computes the Galerkin matrices in 3D and applies
+    ! tensorial artificial viscosities of Roe-type.
 !</description>
 
 !<input>
@@ -2269,6 +1871,7 @@ contains
   real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
+
 
   end subroutine mhd_calcMatRoeDiss3d_sim
 
@@ -2282,7 +1885,7 @@ contains
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
-    ! and applies the Rusanov artificial viscosities in 3D
+    ! in 3D and applies the scalar artificial viscosities of Rusanov-type.
 !</description>
 
 !<input>
@@ -2309,6 +1912,7 @@ contains
   real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
+
 
   end subroutine mhd_calcMatRusDissMatD3d_sim
 
@@ -2321,8 +1925,8 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the Galerkin matrices
-    ! and applies the Rusanov artificial viscosities in 3D
+    ! This subroutine computes the Galerkin matrices in 3D applies
+    ! scalar artificial viscosities of Rusanov-type.
 !</description>
 
 !<input>
@@ -2350,6 +1954,7 @@ contains
 !</output>
 !</subroutine>
 
+
   end subroutine mhd_calcMatRusDiss3d_sim
 
   !*****************************************************************************
@@ -2361,7 +1966,7 @@ contains
       DrightEigenvectorsAtEdge, DleftEigenvectorsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the characteristic variables in 3D
+    ! This subroutine computes the characteristic variables in 3D.
 !</description>
 
 !<input>
@@ -2402,112 +2007,226 @@ contains
 !</output>
 !</subroutine>
 
+
   end subroutine mhd_calcCharacteristics3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxFCTScalarDiss3d(&
-      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
-      i, j, dscale1, dscale2, F_ij)
+  pure subroutine mhd_calcFluxFCTScDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for
-    ! FCT algorithms in 3D using scalar dissipation.
+    ! This subroutine computes the raw antidiffusive fluxes for FCT
+    ! algorithms in 3D using scalar dissipation proportional to the
+    ! spectral radius of the Roe-matrix.
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficients
-    real(DP), intent(in) :: dscale1,dscale2
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! raw antidiffusive flux
-    real(DP), dimension(:), intent(out) :: F_ij
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine mhd_calcFluxFCTScalarDiss3d
+
+  end subroutine mhd_calcFluxFCTScDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxFCTRoeDiss3d(&
-      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
-      i, j, dscale1, dscale2, F_ij)
+  pure subroutine mhd_calcFluxFCTRoeDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for
-    ! FCT algorithms in 3D using tensorial dissipation.
+    ! This subroutine computes the raw antidiffusive fluxes forFCT
+    ! algorithms in 3D using tensorial dissipation of Roe-type.
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficients
-    real(DP), intent(in) :: dscale1,dscale2
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! raw antidiffusive flux
-    real(DP), dimension(:), intent(out) :: F_ij
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine mhd_calcFluxFCTRoeDiss3d
+  end subroutine mhd_calcFluxFCTRoeDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxFCTRusanov3d(&
-      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
-      i, j, dscale1, dscale2, F_ij)
+  pure subroutine mhd_calcFluxFCTRusDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for
-    ! FCT algorithms in 3D using the Rusanov dissipation.
+    ! This subroutine computes the raw antidiffusive fluxes for FCT
+    ! algorithms in 3D using scalar dissipation of Rusanov-type.
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficients
-    real(DP), intent(in) :: dscale1,dscale2
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! raw antidiffusive flux
-    real(DP), dimension(:), intent(out) :: F_ij
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine mhd_calcFluxFCTRusanov3d
+    ! local variables
+    real(DP) :: ui,uj,vi,vj,wi,wj
+    real(DP) :: ca1i,ca1j,ca2i,ca2j,ca3i,ca3j,cf1i,cf1j,cf2i,cf2j,cf3i,cf3j,d_ij
+    real(DP) :: aPow2i,aPow2j,astPow2i,astPow2j
+    integer :: idx
+    
+
+    do idx = 1, size(DfluxesAtEdge,2)
+
+      ! Compute velocities
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+
+      ! Compute the speed of the Alfven waves in x-direction
+      ca1i = abs(X_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx))
+      ca1j = abs(X_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
+
+      ! Compute the speed of the Alfven waves in y-direction
+      ca2i = abs(Y_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx))
+      ca2j = abs(Y_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
+
+      ! Compute the speed of the Alfven waves in z-direction
+      ca3i = abs(Z_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx))
+      ca3j = abs(Z_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx))
+      
+! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+      aPow2i = GAMMA*PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      aPow2j = GAMMA*PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+#else
+#error "Speed of sound must be implemented!"
+#endif
+
+      ! Compute auxiliary quantities
+      astPow2i = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)/\
+                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx) + aPow2i
+      astPow2j = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)/\
+                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx) + aPow2j
+
+      ! Compute the speed of the fast waves in x-direction
+      cf1i = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*ca1i**2)))
+      cf1j = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*ca1j**2)))
+
+      ! Compute the speed of the fast waves in y-direction
+      cf2i = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*ca2i**2)))
+      cf2j = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*ca2j**2)))
+
+      ! Compute the speed of the fast waves in z-direction
+      cf3i = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*ca3i**2)))
+      cf3j = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*ca3j**2)))
+
+      ! Compute scalar dissipation for the Rusanov flux
+      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
+                      DmatrixCoeffsAtEdge(2,1,idx)*vj+&
+                      DmatrixCoeffsAtEdge(3,1,idx)*wj)+&
+                 sqrt((DmatrixCoeffsAtEdge(1,1,idx)**2)*cf1j+&
+                      (DmatrixCoeffsAtEdge(2,1,idx)**2)*cf2j+&
+                      (DmatrixCoeffsAtEdge(3,1,idx)**2)*cf3j),&
+                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui+&
+                      DmatrixCoeffsAtEdge(2,2,idx)*vi+&
+                      DmatrixCoeffsAtEdge(3,2,idx)*wi)+&
+                 sqrt((DmatrixCoeffsAtEdge(1,2,idx)**2)*cf1i+&
+                      (DmatrixCoeffsAtEdge(2,2,idx)**2)*cf2i+&
+                      (DmatrixCoeffsAtEdge(3,2,idx)**2)*cf3i) )
+
+      ! Compute conservative fluxes
+      DfluxesAtEdge(:,idx) = dscale*d_ij*(DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx))
+    end do
+
+  end subroutine mhd_calcFluxFCTRusDiss3d_sim
  
   !*****************************************************************************
 
@@ -2517,7 +2236,7 @@ contains
       DbdrValue, ibdrCondType, Du, Du0, istatus)
 
 !<description>
-    ! This subroutine computes the boundary values for a given node in 3D
+    ! This subroutine computes the boundary values for a given node in 3D.
 !</description>
 
 !<input>

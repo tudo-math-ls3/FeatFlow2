@@ -1,3 +1,4 @@
+
 !##############################################################################
 !# ****************************************************************************
 !# <name> mhd_callback2d </name>
@@ -82,15 +83,15 @@
 !# 19.) mhd_calcCharacteristics2d_sim
 !#      -> Computes characteristic variables
 !#
-!# 20.) mhd_calcFluxFCTScalarDiss2d
+!# 20.) mhd_calcFluxFCTScDiss2d_sim
 !#      -> Computes fluxes for FCT algorithm
 !#         adopting scalar artificial viscosities
 !#
-!# 21.) mhd_calcFluxFCTRoeDiss2d
+!# 21.) mhd_calcFluxFCTRoeDiss2d_sim
 !#      -> Computes fluxes for FCT algorithm
 !#         adopting tensorial artificial viscosities
 !#
-!# 22.) mhd_calcFluxFCTRusanov2d
+!# 22.) mhd_calcFluxFCTRusDiss2d_sim
 !#      -> Computes fluxes for FCT algorithm
 !#         adopting the Rusanov artificial viscosities
 !#
@@ -228,9 +229,9 @@ module mhd_callback2d
   public :: mhd_calcMatRusDissMatD2d_sim
   public :: mhd_calcMatRusDiss2d_sim
   public :: mhd_calcCharacteristics2d_sim
-  public :: mhd_calcFluxFCTScalarDiss2d
-  public :: mhd_calcFluxFCTRoeDiss2d
-  public :: mhd_calcFluxFCTRusanov2d
+  public :: mhd_calcFluxFCTScDiss2d_sim
+  public :: mhd_calcFluxFCTRoeDiss2d_sim
+  public :: mhd_calcFluxFCTRusDiss2d_sim
   public :: mhd_trafoFluxDensity2d_sim
   public :: mhd_trafoFluxEnergy2d_sim
   public :: mhd_trafoFluxPressure2d_sim
@@ -264,8 +265,8 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the fluxes for the standard
-    ! Galerkin discretisation in 2D.
+    ! This subroutine computes the fluxes for the standard Galerkin
+    ! discretisation in 2D.
 !</description>
 
 !<input>
@@ -303,7 +304,7 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR2D) :: Fxi,Fyi,Fxj,Fyj
+    real(DP), dimension(NVAR2D) :: Fxi,Fxj,Fyi,Fyj
 #else
     real(DP), dimension(NVAR2D) :: Fx_ij,Fy_ij
 #endif
@@ -315,26 +316,6 @@ contains
 
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -397,11 +378,11 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the fluxes for the TVD
-    ! discretisation in 2D. The symmetric boundary contributions
-    ! are neglected and incorporated in the antidiffusive flux.
-    ! Hence, this is simply the standard Galerkin flux for the
-    ! skew-symmetric internal contributions.
+    ! This subroutine computes the fluxes for the TVD discretisation
+    ! in 2D. The symmetric boundary contributions are neglected and
+    ! incorporated in the antidiffusive flux.  Hence, this is simply
+    ! the standard Galerkin flux for the skew-symmetric internal
+    ! contributions.
 !</description>
 
 !<input>
@@ -446,26 +427,6 @@ contains
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -511,8 +472,9 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 2D using scalar dissipation.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 2D using scalar artificial viscosities proportional to the
+    ! spectral radius (largest eigenvalue) of the Roe-matrix.
 !</description>
 
 !<input>
@@ -550,14 +512,13 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR2D) :: Fxi,Fyi,Fxj,Fyj
+    real(DP), dimension(NVAR2D) :: Fxi,Fxj,Fyi,Fyj
 #else
     real(DP), dimension(NVAR2D) :: Fx_ij,Fy_ij
 #endif
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
-    real(DP) :: d_ij,H_ij,q_ij,u_ij,v_ij,anorm,vel_ij,c_ij,aux
     integer :: idx
 
     
@@ -565,26 +526,6 @@ contains
 
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -624,41 +565,13 @@ contains
 #endif
 
       !-------------------------------------------------------------------------
-      ! Evaluate the scalar dissipation proportional to the spectral radius
+      ! Evaluate the scalar artificial dissipation proportional to the spectral
+      ! radius (largest eigenvalue) of the Roe-matrix
       !-------------------------------------------------------------------------
-      
-      ! Compute skew-symmetric coefficient
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
-      anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
-      ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-      u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-      H_ij = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+pi)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+pj)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
-      
-      ! Compute auxiliary variables
-      vel_ij = u_ij*a(1) + v_ij*a(2)
-      q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
+      Diff = 0
 
-      ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      c_ij   = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-      
-      ! Scalar dissipation
-      d_ij = abs(vel_ij) + anorm*c_ij
-
-      ! Multiply the solution difference by the artificial diffusion factor
-      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+      !!! TODO !!!
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
@@ -689,9 +602,10 @@ contains
     
 
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 2D using scalar dissipation,
-    ! whereby dimensional splitting is employed.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 2D using scalar artificial viscosities proportional to the
+    ! spectral radius (largest eigenvalue) of the Roe-matrix, whereby
+    ! dimensional splitting is employed.
 !</description>
 
 !<input>
@@ -729,14 +643,14 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR2D) :: Fxi,Fyi,Fxj,Fyj
+    real(DP), dimension(NVAR2D) :: Fxi,Fxj,Fyi,Fyj
 #else
     real(DP), dimension(NVAR2D) :: Fx_ij,Fy_ij
 #endif
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
-    real(DP) :: d_ij,H_ij,q_ij,u_ij,v_ij,aux,c_ij
+    real(DP) :: anorm
     integer :: idx
     
     
@@ -744,26 +658,6 @@ contains
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -803,40 +697,17 @@ contains
 #endif
       
       !-------------------------------------------------------------------------
-      ! Evaluate the scalar dissipation proportional to the spectral radius
+      ! Evaluate the scalar artificial dissipation proportional to the spectral
+      ! radius (largest eigenvalue) of the Roe-matrix
       !-------------------------------------------------------------------------
 
-      ! Compute skew-symmetric coefficient
+      ! Compute the skew-symmetric coefficient and its norm
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
-      
-      ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-      u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-      H_ij = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+pi)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+pj)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
-      
-      ! Compute auxiliary variable
-      q_ij = 0.5*(u_ij*u_ij+v_ij*v_ij)
+      anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
-! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-      
-      ! Scalar dissipation for x- and y-direction
-      d_ij = ( abs(a(1)*u_ij) + abs(a(1))*c_ij +&
-               abs(a(2)*v_ij) + abs(a(2))*c_ij )
+      Diff = 0
 
-      ! Multiply the solution difference by the artificial diffusion factor
-      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+      !!! TODO !!!
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
@@ -866,8 +737,8 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 2D using tensorial dissipation.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 2D using tensorial artificial viscosities of Roe-type.
 !</description>
 
 !<input>
@@ -905,16 +776,14 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR2D) :: Fxi,Fyi,Fxj,Fyj
+    real(DP), dimension(NVAR2D) :: Fxi,Fxj,Fyi,Fyj
 #else
     real(DP), dimension(NVAR2D) :: Fx_ij,Fy_ij
 #endif
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
-    real(DP) :: u_ij,v_ij,H_ij,q_ij,c_ij,c2_ij,vel_ij
-    real(DP) :: aux,aux1,aux2,anorm
-    real(DP) :: l1,l2,l3,l4,w1,w2,w3,w4
+    real(DP) :: anorm
     integer :: idx
 
 
@@ -922,26 +791,6 @@ contains
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -981,7 +830,7 @@ contains
 #endif
 
       !-------------------------------------------------------------------------
-      ! Evaluate the dissipation tensor by Roe
+      ! Evaluate the dissipation tensor of Roe-type
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
@@ -993,55 +842,9 @@ contains
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
         
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+pi)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+pj)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
+        Diff = 0
 
-        ! Compute auxiliary variables
-        vel_ij = u_ij*a(1) + v_ij*a(2)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
-
-        ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        c2_ij  = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        c_ij   = sqrt(c2_ij)
-        
-        ! Compute eigenvalues
-        l1 = abs(vel_ij-c_ij)
-        l2 = abs(vel_ij)
-        l3 = abs(vel_ij+c_ij)
-        l4 = abs(vel_ij)
-        
-        ! Compute solution difference U_j-U_i
-        Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
-        
-        ! Compute auxiliary quantities for characteristic variables
-        aux1 = (GAMMA-1.0)/2.0/c2_ij*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
-        aux2 = 0.5*(vel_ij*Diff(1)-a(1)*Diff(2)-a(2)*Diff(3))/c_ij
-        
-        ! Compute characteristic variables multiplied by the corresponding eigenvalue
-        w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*Diff(1)+(GAMMA-1.0)*(u_ij*Diff(2)+v_ij*Diff(3)-Diff(4))/c2_ij)
-        w3 = l3 * (aux1 - aux2)
-        w4 = l4 * ((a(1)*v_ij-a(2)*u_ij)*Diff(1)+a(2)*Diff(2)-a(1)*Diff(3))
-        
-        ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-        Diff(1) = anorm * ( w1 + w2 + w3 )
-        Diff(2) = anorm * ( (u_ij-c_ij*a(1))*w1 + u_ij*w2 + (u_ij+c_ij*a(1))*w3 + a(2)*w4 )
-        Diff(3) = anorm * ( (v_ij-c_ij*a(2))*w1 + v_ij*w2 + (v_ij+c_ij*a(2))*w3 - a(1)*w4 )
-        Diff(4) = anorm * ( (H_ij-c_ij*vel_ij)*w1 + q_ij*w2 + (H_ij+c_ij*vel_ij)*w3&
-                            + (u_ij*a(2)-v_ij*a(1))*w4 )
+        !! TODO !!
 
         !-----------------------------------------------------------------------
         ! Build both contributions into the fluxes
@@ -1087,9 +890,9 @@ contains
     
 
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 2D using tensorial dissipation,
-    ! whereby dimensional splitting is employed.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 2D using tensorial artificial viscosities of Roe-type, whereby
+    ! dimensional splitting is employed.
 !</description>
 
 !<input>
@@ -1127,42 +930,21 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR2D) :: Fxi,Fyi,Fxj,Fyj
+    real(DP), dimension(NVAR2D) :: Fxi,Fxj,Fyi,Fyj
 #else
     real(DP), dimension(NVAR2D) :: Fx_ij,Fy_ij
 #endif
     real(DP), dimension(NVAR2D) :: DiffX,DiffY
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
-    real(DP) :: u_ij,v_ij,H_ij,q_ij,c_ij,c2_ij
-    real(DP) :: aux,aux1,aux2,anorm
-    real(DP) :: l1,l2,l3,l4,w1,w2,w3,w4
+    real(DP) :: anorm
     integer :: idx
+
 
     do idx = 1, size(DfluxesAtEdge,3)
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -1202,7 +984,7 @@ contains
 #endif
 
       !-------------------------------------------------------------------------
-      ! Evaluate the dissipation tensor by Roe
+      ! Evaluate the dissipation tensor of Roe-type
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
@@ -1211,91 +993,9 @@ contains
 
       if (anorm .gt. SYS_EPSREAL) then
 
-        ! Compute the absolute value
-        a = abs(a)
-        
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+pi)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+pj)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
+        DiffX = 0; DiffY = 0
 
-        ! Compute auxiliary variables
-        q_ij = 0.5*(u_ij*u_ij+v_ij*v_ij)
-
-        ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        c2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        c_ij = sqrt(c2_ij)
-
-        !-----------------------------------------------------------------------
-        ! Dimensional splitting: x-direction
-        !-----------------------------------------------------------------------
-        
-        ! Compute eigenvalues
-        l1 = abs(u_ij-c_ij)
-        l2 = abs(u_ij)
-        l3 = abs(u_ij+c_ij)
-        l4 = abs(u_ij)
-        
-        ! Compute solution difference U_j-U_i
-        DiffX = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
-        
-        ! Compute auxiliary quantities for characteristic variables
-        aux1 = (GAMMA-1.0)/2.0/c2_ij*(q_ij*DiffX(1)-u_ij*DiffX(2)-v_ij*DiffX(3)+DiffX(4))
-        aux2 = 0.5*(u_ij*DiffX(1)-DiffX(2))/c_ij
-        
-        ! Compute characteristic variables multiplied by the corresponding eigenvalue
-        w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*DiffX(1)+&
-                   (GAMMA-1.0)*(u_ij*DiffX(2)+v_ij*DiffX(3)-DiffX(4))/c2_ij)
-        w3 = l3 * (aux1 - aux2)
-        w4 = l4 * (v_ij*DiffX(1)-DiffX(3))
-        
-        ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-        DiffX(1) = a(1) * ( w1 + w2 + w3 )
-        DiffX(2) = a(1) * ( (u_ij-c_ij)*w1 + u_ij*w2 + (u_ij+c_ij)*w3 )
-        DiffX(3) = a(1) * ( v_ij*w1 + v_ij*w2 + v_ij*w3 - w4 )
-        DiffX(4) = a(1) * ( (H_ij-c_ij*u_ij)*w1 + q_ij*w2 + (H_ij+c_ij*u_ij)*w3 - v_ij*w4 )
-        
-        !-----------------------------------------------------------------------
-        ! Dimensional splitting: y-direction
-        !-----------------------------------------------------------------------
-
-        ! Compute eigenvalues
-        l1 = abs(v_ij-c_ij)
-        l2 = abs(v_ij)
-        l3 = abs(v_ij+c_ij)
-        l4 = abs(v_ij)
-        
-        ! Compute solution difference U_j-U_i
-        DiffY = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
-        
-        ! Compute auxiliary quantities for characteristic variables
-        aux1 = (GAMMA-1.0)/2.0/c2_ij*(q_ij*DiffY(1)-u_ij*DiffY(2)-v_ij*DiffY(3)+DiffY(4))
-        aux2 = 0.5*(v_ij*DiffY(1)-DiffY(3))/c_ij
-
-        ! Compute characteristic variables multiplied by the corresponding eigenvalue
-        w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*DiffY(1)+&
-                   (GAMMA-1.0)*(u_ij*DiffY(2)+v_ij*DiffY(3)-DiffY(4))/c2_ij)
-        w3 = l3 * (aux1 - aux2)
-        w4 = l4 * (-u_ij*DiffY(1)+DiffY(2))
-        
-        ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-        DiffY(1) = a(2) * ( w1 + w2 + w3 )
-        DiffY(2) = a(2) * ( u_ij*w1 + u_ij*w2 + u_ij*w3 + w4 )
-        DiffY(3) = a(2) * ( (v_ij-c_ij)*w1 + v_ij*w2 + (v_ij+c_ij)*w3 )
-        DiffY(4) = a(2) * ( (H_ij-c_ij*v_ij)*w1 + q_ij*w2 + (H_ij+c_ij*v_ij)*w3 + u_ij*w4 )
+        !!! TODO !!!
 
         !-----------------------------------------------------------------------
         ! Build both contributions into the fluxes
@@ -1343,8 +1043,8 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 !<description>
-    ! This subroutine computes the fluxes for the
-    ! low-order scheme in 2D using the Rusanov dissipation.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 2D using scalar artificial viscosities of Rusanov-type.
 !</description>
 
 !<input>
@@ -1382,7 +1082,7 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR2D) :: Fxi,Fyi,Fxj,Fyj
+    real(DP), dimension(NVAR2D) :: Fxi,Fxj,Fyi,Fyj
 #else
     real(DP), dimension(NVAR2D) :: Fx_ij,Fy_ij
 #endif
@@ -1392,30 +1092,11 @@ contains
     real(DP) :: aPow2i,aPow2j,astPow2i,astPow2j
     integer :: idx
 
+
     do idx = 1, size(DfluxesAtEdge,3)
 
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -1505,7 +1186,7 @@ contains
       cf2i = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*ca2i**2)))
       cf2j = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*ca2j**2)))
       
-      ! Scalar dissipation for the Rusanov flux
+      ! Compute scalar dissipation for the Rusanov flux
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
                       DmatrixCoeffsAtEdge(2,1,idx)*vj)+&
                  sqrt((DmatrixCoeffsAtEdge(1,1,idx)**2)*cf1j+&
@@ -1546,9 +1227,9 @@ contains
       IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the viscid fluxes for the
-    ! low-order scheme in 2D using the Rusanov dissipation,
-    ! whereby dimensional splitting is employed.
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 2D using scalar artificial viscosities of Rusanov-type, whereby
+    ! dimensional splitting is employed.
 !</description>
 
 !<input>
@@ -1586,7 +1267,7 @@ contains
 
     ! local variables
 #ifdef MHD_USE_IBP
-    real(DP), dimension(NVAR2D) :: Fxi,Fyi,Fxj,Fyj
+    real(DP), dimension(NVAR2D) :: Fxi,Fxj,Fyi,Fyj
 #else
     real(DP), dimension(NVAR2D) :: Fx_ij,Fy_ij
 #endif
@@ -1595,31 +1276,12 @@ contains
     real(DP) :: ca1i,ca1j,ca2i,ca2j,cf1i,cf1j,cf2i,cf2j,d_ij
     real(DP) :: aPow2i,aPow2j,astPow2i,astPow2j
     integer :: idx
+
     
     do idx = 1, size(DfluxesAtEdge,3)
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
-      !
-      !      /   rho*u             \
-      !      | rho*u*u + pT - Bx^2 |
-      !      | rho*v*u - Bx*By     |
-      ! Fx = | rho*w*u - Bx*Bz     |
-      !      |         0           |
-      !      |    By*u - Bx*v      |
-      !      |    Bz*u - Bx*w      |
-      !      \ (rho*E+pT)*u -Bx*q  /
-      !
-      !      /   rho*v             \
-      !      | rho*u*v - By*Bx     |
-      !      | rho*v*v + pT - By^2 |
-      ! Fy = | rho*w*v - By*Bz     |
-      !      |    Bx*v - By*u      |
-      !      |         0           |
-      !      |    Bz*v - By*w      |
-      !      \ (rho*E+pT)*u -By*q  /
-      !
-      ! pT = p + q, q = 1/(2*nu)*|B|^2
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -1709,7 +1371,7 @@ contains
       cf2i = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*ca2i**2)))
       cf2j = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*ca2j**2)))
 
-      ! Scalar dissipation
+      ! Compute scalar dissipation with dimensional splitting
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
                   abs(DmatrixCoeffsAtEdge(1,1,idx))*cf1j,&
                   abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
@@ -1751,7 +1413,7 @@ contains
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
-    ! for the diagonal block of the global operator in 2D
+    ! for the diagonal block of the global operator in 2D.
 !</description>
 
 !<input>
@@ -1779,36 +1441,6 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variable
-    real(DP) :: ui,vi
-    integer :: inode
-
-    do inode = 1, size(DcoefficientsAtNode,3)
-      
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR2D,inode)
-      vi = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR2D,inode)
-      
-#ifdef MHD_USE_IBP
-      ! Compute Galerkin coefficient $K_ii = diag(A_i)*C_{ii}$
-      DcoefficientsAtNode(1,1,inode) = 0.0
-      DcoefficientsAtNode(2,1,inode) = dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                             vi*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode(3,1,inode) = dscale * (            ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                 (3.0-GAMMA)*vi*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode(4,1,inode) = dscale * (GAMMA*(ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                        vi*DmatrixCoeffsAtNode(2,inode)))
-#else
-      ! Compute Galerkin coefficient $K_ii = -diag(A_i)*C_{ii}$
-      DcoefficientsAtNode(1,1,inode) = 0.0
-      DcoefficientsAtNode(2,1,inode) = -dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                              vi*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode(3,1,inode) = -dscale * (            ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                  (3.0-GAMMA)*vi*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode(4,1,inode) = -dscale * (GAMMA*(ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                         vi*DmatrixCoeffsAtNode(2,inode)))
-#endif
-    end do
 
   end subroutine mhd_calcMatDiagMatD2d_sim
 
@@ -1822,7 +1454,7 @@ contains
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
-    ! block of the global operator in 2D
+    ! block of the global operator in 2D.
 !</description>
 
 !<input>
@@ -1850,81 +1482,6 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variable
-    real(DP) :: ui,vi,qi,Ei,uvi,uPow2i,vPow2i,aux
-    integer :: inode
-
-    do inode = 1, size(DcoefficientsAtNode,3)
-      
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR2D,inode)
-      vi = Y_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR2D,inode)
-      Ei = TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR2D,inode)
-      uvi = ui*vi; qi = ui*ui+vi*vi; uPow2i = ui*ui; vPow2i = vi*vi
-      aux = ui*DmatrixCoeffsAtNode(1,inode)+vi*DmatrixCoeffsAtNode(2,inode)
-
-#ifdef MHD_USE_IBP      
-      ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
-      DcoefficientsAtNode( 1,1,inode) = 0.0
-      DcoefficientsAtNode( 2,1,inode) = dscale * (((GAMMA-1.0)/2.0*qi-uPow2i)*DmatrixCoeffsAtNode(1,inode)-&
-                                                                          uvi*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode( 3,1,inode) = dscale * (((GAMMA-1.0)/2.0*qi-vPow2i)*DmatrixCoeffsAtNode(2,inode)-&
-                                                                          uvi*DmatrixCoeffsAtNode(1,inode))
-      DcoefficientsAtNode( 4,1,inode) = dscale * ((GAMMA-1.0)*qi-GAMMA*Ei)*aux
-      
-      DcoefficientsAtNode( 5,1,inode) = dscale * DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode( 6,1,inode) = dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                              vi*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode( 7,1,inode) = dscale * (            vi*DmatrixCoeffsAtNode(1,inode)-&
-                                                  (GAMMA-1.0)*ui*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode( 8,1,inode) = dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtNode(1,inode)-&
-                                                  (GAMMA-1.0)*ui*aux)
-      
-      DcoefficientsAtNode( 9,1,inode) = dscale * DmatrixCoeffsAtNode(2,inode)
-      DcoefficientsAtNode(10,1,inode) = dscale * (            ui*DmatrixCoeffsAtNode(2,inode)-&
-                                                  (GAMMA-1.0)*vi*DmatrixCoeffsAtNode(1,inode))
-      DcoefficientsAtNode(11,1,inode) = dscale * (            ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                  (3.0-GAMMA)*vi*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode(12,1,inode) = dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtNode(2,inode)-&
-                                                  (GAMMA-1.0)*vi*aux)
-      
-      DcoefficientsAtNode(13,1,inode) = 0.0
-      DcoefficientsAtNode(14,1,inode) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(15,1,inode) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtNode(2,inode)
-      DcoefficientsAtNode(16,1,inode) = dscale * (GAMMA*(ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                         vi*DmatrixCoeffsAtNode(2,inode)))
-#else
-      ! Compute Galerkin coefficient $K_ii = -A_i*C_{ii}$
-      DcoefficientsAtNode( 1,1,inode) = 0.0
-      DcoefficientsAtNode( 2,1,inode) =-dscale * (((GAMMA-1.0)/2.0*qi-uPow2i)*DmatrixCoeffsAtNode(1,inode)-&
-                                                                          uvi*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode( 3,1,inode) =-dscale * (((GAMMA-1.0)/2.0*qi-vPow2i)*DmatrixCoeffsAtNode(2,inode)-&
-                                                                          uvi*DmatrixCoeffsAtNode(1,inode))
-      DcoefficientsAtNode( 4,1,inode) =-dscale * ((GAMMA-1.0)*qi-GAMMA*Ei)*aux
-      
-      DcoefficientsAtNode( 5,1,inode) =-dscale * DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode( 6,1,inode) =-dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                              vi*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode( 7,1,inode) =-dscale * (            vi*DmatrixCoeffsAtNode(1,inode)-&
-                                                  (GAMMA-1.0)*ui*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode( 8,1,inode) =-dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtNode(1,inode)-&
-                                                  (GAMMA-1.0)*ui*aux)
-      
-      DcoefficientsAtNode( 9,1,inode) =-dscale * DmatrixCoeffsAtNode(2,inode)
-      DcoefficientsAtNode(10,1,inode) =-dscale * (            ui*DmatrixCoeffsAtNode(2,inode)-&
-                                                  (GAMMA-1.0)*vi*DmatrixCoeffsAtNode(1,inode))
-      DcoefficientsAtNode(11,1,inode) =-dscale * (            ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                  (3.0-GAMMA)*vi*DmatrixCoeffsAtNode(2,inode))
-      DcoefficientsAtNode(12,1,inode) =-dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtNode(2,inode)-&
-                                                  (GAMMA-1.0)*vi*aux)
-      
-      DcoefficientsAtNode(13,1,inode) = 0.0
-      DcoefficientsAtNode(14,1,inode) =-dscale * (GAMMA-1.0)*DmatrixCoeffsAtNode(1,inode)
-      DcoefficientsAtNode(15,1,inode) =-dscale * (GAMMA-1.0)*DmatrixCoeffsAtNode(2,inode)
-      DcoefficientsAtNode(16,1,inode) =-dscale * (GAMMA*(ui*DmatrixCoeffsAtNode(1,inode)+&
-                                                         vi*DmatrixCoeffsAtNode(2,inode)))
-#endif
-    end do
 
   end subroutine mhd_calcMatDiag2d_sim
 
@@ -1937,7 +1494,7 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the diagonal of the Galerkin matrices in 2D
+    ! This subroutine computes the diagonal of the Galerkin matrices in 2D.
 !</description>
 
 !<input>
@@ -1965,59 +1522,6 @@ contains
 !</output>
 !</subroutine>
   
-    ! local variable
-    real(DP) :: ui,uj,vi,vj
-    integer :: idx
-
-    do idx = 1, size(DcoefficientsAtEdge,3)
-      
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-
-      ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
-
-#ifdef MHD_USE_IBP      
-      ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                           vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(3,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                               (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(4,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                      vj*DmatrixCoeffsAtEdge(2,2,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                           vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(3,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                               (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(4,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                      vi*DmatrixCoeffsAtEdge(2,1,idx)))
-#else
-      ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                            vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(3,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(4,2,idx) = -dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                       vj*DmatrixCoeffsAtEdge(2,1,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                            vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(3,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(4,3,idx) = -dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                       vi*DmatrixCoeffsAtEdge(2,2,idx)))
-#endif
-    end do
 
   end subroutine mhd_calcMatGalMatD2d_sim
 
@@ -2030,7 +1534,7 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the Galerkin matrices in 2D
+    ! This subroutine computes the Galerkin matrices in 2D.
 !</description>
 
 !<input>
@@ -2058,154 +1562,6 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variable
-    real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-    integer :: idx
-
-    do idx = 1, size(DcoefficientsAtEdge,3)
-      
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      uvi = ui*vi; qi = ui*ui+vi*vi; uPow2i = ui*ui; vPow2i = vi*vi
-
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      uvj = uj*vj; qj = uj*uj+vj*vj; uPow2j = uj*uj; vPow2j = vj*vj
-      
-      ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
-
-#ifdef MHD_USE_IBP
-      aux1 = uj*DmatrixCoeffsAtEdge(1,2,idx)+vj*DmatrixCoeffsAtEdge(2,2,idx)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,1,idx)+vi*DmatrixCoeffsAtEdge(2,1,idx)
-
-      ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      DcoefficientsAtEdge( 1,2,idx) = 0.0
-      DcoefficientsAtEdge( 2,2,idx) = dscale * (((GAMMA-1.0)/2.0*qj-uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                                        uvj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 3,2,idx) = dscale * (((GAMMA-1.0)/2.0*qj-vPow2j)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                                        uvj*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge( 4,2,idx) = dscale * ((GAMMA-1.0)*qj-GAMMA*Ej)*aux1
-      
-      DcoefficientsAtEdge( 5,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge( 6,2,idx) = dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                            vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 7,2,idx) = dscale * (            vj*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                (GAMMA-1.0)*uj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 8,2,idx) = dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                (GAMMA-1.0)*uj*aux1)
-      
-      DcoefficientsAtEdge( 9,2,idx) = dscale * DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(10,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                (GAMMA-1.0)*vj*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge(11,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(12,2,idx) = dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                (GAMMA-1.0)*vj*aux1)
-      
-      DcoefficientsAtEdge(13,2,idx) = 0.0
-      DcoefficientsAtEdge(14,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(15,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(16,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                       vj*DmatrixCoeffsAtEdge(2,2,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      DcoefficientsAtEdge( 1,3,idx) = 0.0
-      DcoefficientsAtEdge( 2,3,idx) = dscale * (((GAMMA-1.0)*qi-uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                                    uvi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 3,3,idx) = dscale * (((GAMMA-1.0)*qi-vPow2i)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                                    uvi*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge( 4,3,idx) = dscale * ((GAMMA-1.0)*qi-GAMMA*Ei)*aux2
-      
-      DcoefficientsAtEdge( 5,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge( 6,3,idx) = dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                            vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 7,3,idx) = dscale * (            vi*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                (GAMMA-1.0)*ui*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 8,3,idx) = dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                (GAMMA-1.0)*ui*aux2)
-      
-      DcoefficientsAtEdge( 9,3,idx) = dscale * DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(10,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                (GAMMA-1.0)*vi*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge(11,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(12,3,idx) = dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                (GAMMA-1.0)*vi*aux2)
-      
-      DcoefficientsAtEdge(13,3,idx) = 0.0
-      DcoefficientsAtEdge(14,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(15,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(16,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                       vi*DmatrixCoeffsAtEdge(2,1,idx)))
-#else
-      aux1 = uj*DmatrixCoeffsAtEdge(1,1,idx)+vj*DmatrixCoeffsAtEdge(2,1,idx)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,2,idx)+vi*DmatrixCoeffsAtEdge(2,2,idx)
-
-      ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      DcoefficientsAtEdge( 1,2,idx) = 0.0
-      DcoefficientsAtEdge( 2,2,idx) = -dscale * (((GAMMA-1.0)/2.0*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                                         uvj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 3,2,idx) = -dscale * (((GAMMA-1.0)/2.0*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                                         uvj*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge( 4,2,idx) = -dscale * ((GAMMA-1.0)*qj-GAMMA*Ej)*aux1
-      
-      DcoefficientsAtEdge( 5,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge( 6,2,idx) = -dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                             vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 7,2,idx) = -dscale * (            vj*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                 (GAMMA-1.0)*uj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 8,2,idx) = -dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                 (GAMMA-1.0)*uj*aux1)
-      
-      DcoefficientsAtEdge( 9,2,idx) = -dscale * DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(10,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                 (GAMMA-1.0)*vj*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge(11,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                 (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(12,2,idx) = -dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                 (GAMMA-1.0)*vj*aux1)
-      
-      DcoefficientsAtEdge(13,2,idx) = 0.0
-      DcoefficientsAtEdge(14,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(15,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(16,2,idx) = -dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                        vj*DmatrixCoeffsAtEdge(2,1,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      DcoefficientsAtEdge( 1,3,idx) = 0.0
-      DcoefficientsAtEdge( 2,3,idx) = -dscale * (((GAMMA-1.0)*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                                     uvi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 3,3,idx) = -dscale * (((GAMMA-1.0)*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                                     uvi*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge( 4,3,idx) = -dscale * ((GAMMA-1.0)*qi-GAMMA*Ei)*aux2
-      
-      DcoefficientsAtEdge( 5,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge( 6,3,idx) = -dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                             vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 7,3,idx) = -dscale * (            vi*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                 (GAMMA-1.0)*ui*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 8,3,idx) = -dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                 (GAMMA-1.0)*ui*aux2)
-      
-      DcoefficientsAtEdge( 9,3,idx) = -dscale * DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(10,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                 (GAMMA-1.0)*vi*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge(11,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                 (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(12,3,idx) = -dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                 (GAMMA-1.0)*vi*aux2)
-      
-      DcoefficientsAtEdge(13,3,idx) = 0.0
-      DcoefficientsAtEdge(14,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(15,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(16,3,idx) = -dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                        vi*DmatrixCoeffsAtEdge(2,2,idx)))
-#endif
-    end do
       
   end subroutine mhd_calcMatGal2d_sim
 
@@ -2219,7 +1575,8 @@ contains
     
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
-    ! and applies scalar artificial viscosities in 2D
+    ! in 2D and applies scalar artificial viscosities proportional to
+    ! the spectral radius (largest eigenvalue) of the Roe-matrix.
 !</description>
 
 !<input>
@@ -2247,102 +1604,6 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variable
-    real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij,c_ij,vel_ij
-    integer :: idx
-
-    do idx = 1, size(DcoefficientsAtEdge,3)
-
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-
-#ifdef MHD_USE_IBP      
-      ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                           vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(3,2,idx) = dscale * (           uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                               (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(4,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                      vj*DmatrixCoeffsAtEdge(2,2,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                           vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(3,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                               (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(4,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                      vi*DmatrixCoeffsAtEdge(2,1,idx)))
-#else
-      ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                            vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(3,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(4,2,idx) = -dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                       vj*DmatrixCoeffsAtEdge(2,1,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                            vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(3,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(4,3,idx) = -dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                       vi*DmatrixCoeffsAtEdge(2,2,idx)))
-#endif
-
-      !---------------------------------------------------------------------------
-      ! Evaluate the dissipation
-      !---------------------------------------------------------------------------
-      
-      ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
-      anorm = sqrt(a(1)*a(1)+a(2)*a(2))
-      
-      if (anorm .gt. SYS_EPSREAL) then
-        
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
-               
-        ! Compute auxiliary variables
-        vel_ij = u_ij*a(1) + v_ij*a(2)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
-
-        ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-
-        ! Compute scalar dissipation
-        DcoefficientsAtEdge(:,1,idx) = dscale * (abs(vel_ij) + anorm*c_ij)
-
-      else
-        
-        ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,idx) = 0.0
-
-      end if
-    end do
 
   end subroutine mhd_calcMatScDissMatD2d_sim
 
@@ -2355,8 +1616,9 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the Galerkin matrices
-    ! and applies scalar artificial viscosities in 2D
+    ! This subroutine computes the Galerkin matrices in 2D and applies
+    ! scalar artificial viscosities proportional to the spectral
+    ! radius (largest eigenvalue) of the Roe-matrix.
 !</description>
 
 !<input>
@@ -2384,203 +1646,7 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variable
-    real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,aux1,aux2,H_ij,q_ij,u_ij,v_ij,vel_ij,c_ij
-    real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j
-    integer :: idx
-
-    do idx = 1, size(DcoefficientsAtEdge,3)
-      
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      uvi = ui*vi; qi = ui*ui+vi*vi; uPow2i = ui*ui; vPow2i = vi*vi
-
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      uvj = uj*vj; qj = uj*uj+vj*vj; uPow2j = uj*uj; vPow2j = vj*vj
-      
-      ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
-
-#ifdef MHD_USE_IBP
-      aux1 = uj*DmatrixCoeffsAtEdge(1,2,idx)+vj*DmatrixCoeffsAtEdge(2,2,idx)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,1,idx)+vi*DmatrixCoeffsAtEdge(2,1,idx)
-      
-      ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      DcoefficientsAtEdge( 1,2,idx) = 0.0
-      DcoefficientsAtEdge( 2,2,idx) = dscale * (((GAMMA-1.0)/2.0*qj-uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                                        uvj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 3,2,idx) = dscale * (((GAMMA-1.0)/2.0*qj-vPow2j)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                                        uvj*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge( 4,2,idx) = dscale * ((GAMMA-1.0)*qj-GAMMA*Ej)*aux1
-      
-      DcoefficientsAtEdge( 5,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge( 6,2,idx) = dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                            vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 7,2,idx) = dscale * (            vj*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                (GAMMA-1.0)*uj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 8,2,idx) = dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                (GAMMA-1.0)*uj*aux1)
-      
-      DcoefficientsAtEdge( 9,2,idx) = dscale * DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(10,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                (GAMMA-1.0)*vj*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge(11,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(12,2,idx) = dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                (GAMMA-1.0)*vj*aux1)
-      
-      DcoefficientsAtEdge(13,2,idx) = 0.0
-      DcoefficientsAtEdge(14,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(15,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(16,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                       vj*DmatrixCoeffsAtEdge(2,2,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      DcoefficientsAtEdge( 1,3,idx) = 0.0
-      DcoefficientsAtEdge( 2,3,idx) = dscale * (((GAMMA-1.0)*qi-uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                                    uvi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 3,3,idx) = dscale * (((GAMMA-1.0)*qi-vPow2i)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                                    uvi*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge( 4,3,idx) = dscale * ((GAMMA-1.0)*qi-GAMMA*Ei)*aux2
-      
-      DcoefficientsAtEdge( 5,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge( 6,3,idx) = dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                            vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 7,3,idx) = dscale * (            vi*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                (GAMMA-1.0)*ui*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 8,3,idx) = dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                (GAMMA-1.0)*ui*aux2)
-      
-      DcoefficientsAtEdge( 9,3,idx) = dscale * DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(10,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                (GAMMA-1.0)*vi*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge(11,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(12,3,idx) = dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                (GAMMA-1.0)*vi*aux2)
-      
-      DcoefficientsAtEdge(13,3,idx) = 0.0
-      DcoefficientsAtEdge(14,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(15,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(16,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                       vi*DmatrixCoeffsAtEdge(2,1,idx)))
-#else
-      aux1 = uj*DmatrixCoeffsAtEdge(1,1,idx)+vj*DmatrixCoeffsAtEdge(2,1,idx)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,2,idx)+vi*DmatrixCoeffsAtEdge(2,2,idx)
-      
-      ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      DcoefficientsAtEdge( 1,2,idx) = 0.0
-      DcoefficientsAtEdge( 2,2,idx) = -dscale * (((GAMMA-1.0)/2.0*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                                         uvj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 3,2,idx) = -dscale * (((GAMMA-1.0)/2.0*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                                         uvj*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge( 4,2,idx) = -dscale * ((GAMMA-1.0)*qj-GAMMA*Ej)*aux1
-      
-      DcoefficientsAtEdge( 5,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge( 6,2,idx) = -dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                             vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 7,2,idx) = -dscale * (            vj*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                 (GAMMA-1.0)*uj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 8,2,idx) = -dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                 (GAMMA-1.0)*uj*aux1)
-      
-      DcoefficientsAtEdge( 9,2,idx) = -dscale * DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(10,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                 (GAMMA-1.0)*vj*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge(11,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                 (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(12,2,idx) = -dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                 (GAMMA-1.0)*vj*aux1)
-      
-      DcoefficientsAtEdge(13,2,idx) = 0.0
-      DcoefficientsAtEdge(14,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(15,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(16,2,idx) = -dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                        vj*DmatrixCoeffsAtEdge(2,1,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      DcoefficientsAtEdge( 1,3,idx) = 0.0
-      DcoefficientsAtEdge( 2,3,idx) = -dscale * (((GAMMA-1.0)*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                                     uvi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 3,3,idx) = -dscale * (((GAMMA-1.0)*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                                     uvi*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge( 4,3,idx) = -dscale * ((GAMMA-1.0)*qi-GAMMA*Ei)*aux2
-      
-      DcoefficientsAtEdge( 5,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge( 6,3,idx) = -dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                             vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 7,3,idx) = -dscale * (            vi*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                 (GAMMA-1.0)*ui*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 8,3,idx) = -dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                 (GAMMA-1.0)*ui*aux2)
-      
-      DcoefficientsAtEdge( 9,3,idx) = -dscale * DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(10,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                 (GAMMA-1.0)*vi*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge(11,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                 (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(12,3,idx) = -dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                 (GAMMA-1.0)*vi*aux2)
-      
-      DcoefficientsAtEdge(13,3,idx) = 0.0
-      DcoefficientsAtEdge(14,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(15,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(16,3,idx) = -dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                        vi*DmatrixCoeffsAtEdge(2,2,idx)))
-#endif
-
-      !---------------------------------------------------------------------------
-      ! Evaluate the dissipation
-      !---------------------------------------------------------------------------
-      
-      ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
-      anorm = sqrt(a(1)*a(1)+a(2)*a(2))
-      
-      if (anorm .gt. SYS_EPSREAL) then
-        
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
-        
-        ! Compute auxiliary variables
-        vel_ij = u_ij*a(1) + v_ij*a(2)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
-
-
-! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-
-        ! Compute scalar dissipation
-        aux = dscale * (abs(vel_ij) + anorm*c_ij)
-              
-        DcoefficientsAtEdge( 1,1,idx) = aux
-        DcoefficientsAtEdge( 6,1,idx) = aux
-        DcoefficientsAtEdge(11,1,idx) = aux
-        DcoefficientsAtEdge(16,1,idx) = aux
-
-      end if
-    end do
-
+   
   end subroutine mhd_calcMatScDiss2d_sim
 
   !*****************************************************************************
@@ -2592,8 +1658,8 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the Galerkin matrices
-    ! and applies tensorial artificial viscosities in 2D
+    ! This subroutine computes the Galerkin matrices in 2D and applies
+    ! tensorial artificial viscosities of Roe-type.
 !</description>
 
 !<input>
@@ -2621,166 +1687,7 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variable
-    real(DP), dimension(NVAR2D,NVAR2D) :: R_ij,L_ij
-    real(DP), dimension(NDIM2D) :: a
-    real(DP) :: aux,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij
-    real(DP) :: l1,l2,l3,l4,anorm,c1,c2,c_ij,cPow2_ij,vel
-    integer :: idx
-
-    do idx = 1, size(DcoefficientsAtEdge,3)
-
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-
-      ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
-
-#ifdef MHD_USE_IBP      
-      ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                           vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(3,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                               (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(4,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                      vj*DmatrixCoeffsAtEdge(2,2,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                           vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(3,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                               (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(4,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                      vi*DmatrixCoeffsAtEdge(2,1,idx)))
-#else
-      ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                            vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(3,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(4,2,idx) = -dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                       vj*DmatrixCoeffsAtEdge(2,1,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                            vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(3,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(4,3,idx) = -dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                       vi*DmatrixCoeffsAtEdge(2,2,idx)))
-#endif
-
-      !---------------------------------------------------------------------------
-      ! Evaluate the dissipation
-      !---------------------------------------------------------------------------
-
-      ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
-      anorm = sqrt(a(1)*a(1)+a(2)*a(2))
-      
-      if (anorm .gt. SYS_EPSREAL) then
-
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
-        
-        ! Compute auxiliary values
-        c1    = a(1)/anorm
-        c2    = a(2)/anorm
-        vel   = c1*u_ij+c2*v_ij
-        q_ij  = 0.5*(u_ij*u_ij+v_ij*v_ij)
-#ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        c_ij= sqrt(cPow2_ij)
-        
-        ! Diagonal matrix of eigenvalues
-        l1 = abs(vel-c_ij)
-        l2 = abs(vel)
-        l3 = abs(vel+c_ij)
-        l4 = abs(vel)
-
-        ! Matrix of right eigenvectors
-        R_ij(1,1) =  l1
-        R_ij(2,1) =  l1*(u_ij-c_ij*c1)
-        R_ij(3,1) =  l1*(v_ij-c_ij*c2)
-        R_ij(4,1) =  l1*(H_ij-c_ij*vel)
-        
-        R_ij(1,2) =  l2
-        R_ij(2,2) =  l2*u_ij
-        R_ij(3,2) =  l2*v_ij
-        R_ij(4,2) =  l2*q_ij
-        
-        R_ij(1,3) =  l3
-        R_ij(2,3) =  l3*(u_ij+c_ij*c1)
-        R_ij(3,3) =  l3*(v_ij+c_ij*c2)
-        R_ij(4,3) =  l3*(H_ij+c_ij*vel)
-        
-        R_ij(1,4) =  0.0
-        R_ij(2,4) =  l4*c2
-        R_ij(3,4) = -l4*c1
-        R_ij(4,4) =  l4*(u_ij*c2-v_ij*c1)
-        
-        ! Matrix of left eigenvectors
-        L_ij(1,1) = 0.5*((GAMMA-1.0)*q_ij+c_ij*vel)/cPow2_ij
-        L_ij(2,1) = (cPow2_ij-(GAMMA-1.0)*q_ij)/cPow2_ij
-        L_ij(3,1) = 0.5*((GAMMA-1.0)*q_ij-c_ij*vel)/cPow2_ij
-        L_ij(4,1) = v_ij*c1-u_ij*c2
-        
-        L_ij(1,2) = 0.5*(-(GAMMA-1.0)*u_ij-c_ij*c1)/cPow2_ij
-        L_ij(2,2) = (GAMMA-1.0)*u_ij/cPow2_ij
-        L_ij(3,2) = 0.5*(-(GAMMA-1.0)*u_ij+c_ij*c1)/cPow2_ij
-        L_ij(4,2) = c2
-
-        L_ij(1,3) = 0.5*(-(GAMMA-1.0)*v_ij-c_ij*c2)/cPow2_ij
-        L_ij(2,3) = (GAMMA-1.0)*v_ij/cPow2_ij
-        L_ij(3,3) = 0.5*(-(GAMMA-1.0)*v_ij+c_ij*c2)/cPow2_ij
-        L_ij(4,3) = -c1
-        
-        L_ij(1,4) =  (GAMMA-1.0)/2.0/cPow2_ij
-        L_ij(2,4) = -(GAMMA-1.0)/cPow2_ij
-        L_ij(3,4) =  (GAMMA-1.0)/2.0/cPow2_ij
-        L_ij(4,4) =  0.0
-        
-        ! Include scaling parameter
-        anorm = dscale*anorm
-        
-        ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
-        DcoefficientsAtEdge(1,1,idx) = anorm*( R_ij(1,1)*L_ij(1,1)+&
-            R_ij(1,2)*L_ij(2,1)+R_ij(1,3)*L_ij(3,1)+R_ij(1,4)*L_ij(4,1)  )
-        DcoefficientsAtEdge(2,1,idx) = anorm*( R_ij(2,1)*L_ij(1,2)+&
-            R_ij(2,2)*L_ij(2,2)+R_ij(2,3)*L_ij(3,2)+R_ij(2,4)*L_ij(4,2)  )
-        DcoefficientsAtEdge(3,1,idx) = anorm*( R_ij(3,1)*L_ij(1,3)+&
-            R_ij(3,2)*L_ij(2,3)+R_ij(3,3)*L_ij(3,3)+R_ij(3,4)*L_ij(4,3)  )
-        DcoefficientsAtEdge(4,1,idx) = anorm*( R_ij(4,1)*L_ij(1,4)+&
-            R_ij(4,2)*L_ij(2,4)+R_ij(4,3)*L_ij(3,4)+R_ij(4,4)*L_ij(4,4)  )
-      else
-        
-        ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,idx) = 0.0
-        
-      end if
-    end do
-
+  
   end subroutine mhd_calcMatRoeDissMatD2d_sim
   
   !*****************************************************************************
@@ -2792,8 +1699,8 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the Galerkin matrices
-    ! and applies tensorial artificial viscosities in 2D
+    ! This subroutine computes the Galerkin matrices in 2D and applies
+    ! tensorial artificial viscosities of Roe-type.
 !</description>
 
 !<input>
@@ -2821,259 +1728,6 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variable
-    real(DP), dimension(NVAR2D,NVAR2D) :: R_ij,L_ij
-    real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,H_ij,q_ij,u_ij,v_ij,vel,c1,c2,cPow2_ij,c_ij,l1,l2,l3,l4
-    real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-    integer :: idx,i,j,k
-
-    do idx = 1, size(DcoefficientsAtEdge,3)
-
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      uvi = ui*vi; qi = ui*ui+vi*vi; uPow2i = ui*ui; vPow2i = vi*vi
-
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      uvj = uj*vj; qj = uj*uj+vj*vj; uPow2j = uj*uj; vPow2j = vj*vj
-      
-#ifdef MHD_USE_IBP
-      aux1 = uj*DmatrixCoeffsAtEdge(1,2,idx)+vj*DmatrixCoeffsAtEdge(2,2,idx)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,1,idx)+vi*DmatrixCoeffsAtEdge(2,1,idx)
-
-      ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      DcoefficientsAtEdge( 1,2,idx) = 0.0
-      DcoefficientsAtEdge( 2,2,idx) = dscale * (((GAMMA-1.0)/2.0*qj-uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                                        uvj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 3,2,idx) = dscale * (((GAMMA-1.0)/2.0*qj-vPow2j)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                                        uvj*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge( 4,2,idx) = dscale * ((GAMMA-1.0)*qj-GAMMA*Ej)*aux1
-      
-      DcoefficientsAtEdge( 5,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge( 6,2,idx) = dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                            vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 7,2,idx) = dscale * (            vj*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                (GAMMA-1.0)*uj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 8,2,idx) = dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                (GAMMA-1.0)*uj*aux1)
-      
-      DcoefficientsAtEdge( 9,2,idx) = dscale * DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(10,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                (GAMMA-1.0)*vj*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge(11,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(12,2,idx) = dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                (GAMMA-1.0)*vj*aux1)
-      
-      DcoefficientsAtEdge(13,2,idx) = 0.0
-      DcoefficientsAtEdge(14,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(15,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(16,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                       vj*DmatrixCoeffsAtEdge(2,2,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      DcoefficientsAtEdge( 1,3,idx) = 0.0
-      DcoefficientsAtEdge( 2,3,idx) = dscale * (((GAMMA-1.0)*qi-uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                                    uvi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 3,3,idx) = dscale * (((GAMMA-1.0)*qi-vPow2i)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                                    uvi*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge( 4,3,idx) = dscale * ((GAMMA-1.0)*qi-GAMMA*Ei)*aux2
-      
-      DcoefficientsAtEdge( 5,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge( 6,3,idx) = dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                            vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 7,3,idx) = dscale * (            vi*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                (GAMMA-1.0)*ui*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 8,3,idx) = dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                (GAMMA-1.0)*ui*aux2)
-      
-      DcoefficientsAtEdge( 9,3,idx) = dscale * DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(10,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                (GAMMA-1.0)*vi*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge(11,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(12,3,idx) = dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                (GAMMA-1.0)*vi*aux2)
-      
-      DcoefficientsAtEdge(13,3,idx) = 0.0
-      DcoefficientsAtEdge(14,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(15,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(16,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                       vi*DmatrixCoeffsAtEdge(2,1,idx)))
-#else
-      aux1 = uj*DmatrixCoeffsAtEdge(1,1,idx)+vj*DmatrixCoeffsAtEdge(2,1,idx)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,2,idx)+vi*DmatrixCoeffsAtEdge(2,2,idx)
-
-      ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      DcoefficientsAtEdge( 1,2,idx) = 0.0
-      DcoefficientsAtEdge( 2,2,idx) = -dscale * (((GAMMA-1.0)/2.0*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                                         uvj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 3,2,idx) = -dscale * (((GAMMA-1.0)/2.0*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                                         uvj*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge( 4,2,idx) = -dscale * ((GAMMA-1.0)*qj-GAMMA*Ej)*aux1
-      
-      DcoefficientsAtEdge( 5,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge( 6,2,idx) = -dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                             vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 7,2,idx) = -dscale * (            vj*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                 (GAMMA-1.0)*uj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 8,2,idx) = -dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                 (GAMMA-1.0)*uj*aux1)
-      
-      DcoefficientsAtEdge( 9,2,idx) = -dscale * DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(10,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                 (GAMMA-1.0)*vj*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge(11,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                 (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(12,2,idx) = -dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                 (GAMMA-1.0)*vj*aux1)
-      
-      DcoefficientsAtEdge(13,2,idx) = 0.0
-      DcoefficientsAtEdge(14,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(15,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(16,2,idx) = -dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                        vj*DmatrixCoeffsAtEdge(2,1,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      DcoefficientsAtEdge( 1,3,idx) = 0.0
-      DcoefficientsAtEdge( 2,3,idx) = -dscale * (((GAMMA-1.0)*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                                     uvi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 3,3,idx) = -dscale * (((GAMMA-1.0)*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                                     uvi*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge( 4,3,idx) = -dscale * ((GAMMA-1.0)*qi-GAMMA*Ei)*aux2
-      
-      DcoefficientsAtEdge( 5,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge( 6,3,idx) = -dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                             vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 7,3,idx) = -dscale * (            vi*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                 (GAMMA-1.0)*ui*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 8,3,idx) = -dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                 (GAMMA-1.0)*ui*aux2)
-      
-      DcoefficientsAtEdge( 9,3,idx) = -dscale * DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(10,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                 (GAMMA-1.0)*vi*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge(11,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                 (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(12,3,idx) = -dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                 (GAMMA-1.0)*vi*aux2)
-      
-      DcoefficientsAtEdge(13,3,idx) = 0.0
-      DcoefficientsAtEdge(14,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(15,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(16,3,idx) = -dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                        vi*DmatrixCoeffsAtEdge(2,2,idx)))
-#endif
-
-      !---------------------------------------------------------------------------
-      ! Evaluate the dissipation
-      !---------------------------------------------------------------------------
-      
-      ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
-      anorm = sqrt(a(1)*a(1)+a(2)*a(2))
-      
-      if (anorm .gt. SYS_EPSREAL) then
-        
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
-        
-        ! Compute auxiliary variables
-        c1    = a(1)/anorm
-        c2    = a(2)/anorm
-        vel   = c1*u_ij+c2*v_ij
-        q_ij  = 0.5*(u_ij*u_ij+v_ij*v_ij)
-#ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        c_ij = sqrt(cPow2_ij)
-        
-        ! Diagonal matrix of eigenvalues
-        l1 = abs(vel-c_ij)
-        l2 = abs(vel)
-        l3 = abs(vel+c_ij)
-        l4 = abs(vel)
-        
-        ! Matrix of right eigenvectors
-        R_ij(1,1) =  l1
-        R_ij(2,1) =  l1*(u_ij-c_ij*c1)
-        R_ij(3,1) =  l1*(v_ij-c_ij*c2)
-        R_ij(4,1) =  l1*(H_ij-c_ij*vel)
-        
-        R_ij(1,2) =  l2
-        R_ij(2,2) =  l2*u_ij
-        R_ij(3,2) =  l2*v_ij
-        R_ij(4,2) =  l2*q_ij
-        
-        R_ij(1,3) =  l3
-        R_ij(2,3) =  l3*(u_ij+c_ij*c1)
-        R_ij(3,3) =  l3*(v_ij+c_ij*c2)
-        R_ij(4,3) =  l3*(H_ij+c_ij*vel)
-        
-        R_ij(1,4) =  0.0
-        R_ij(2,4) =  l4*c2
-        R_ij(3,4) = -l4*c1
-        R_ij(4,4) =  l4*(u_ij*c2-v_ij*c1)
-        
-        ! Matrix of left eigenvectors
-        L_ij(1,1) = 0.5*((GAMMA-1.0)*q_ij+c_ij*vel)/cPow2_ij
-        L_ij(2,1) = (cPow2_ij-(GAMMA-1.0)*q_ij)/cPow2_ij
-        L_ij(3,1) = 0.5*((GAMMA-1.0)*q_ij-c_ij*vel)/cPow2_ij
-        L_ij(4,1) = v_ij*c1-u_ij*c2
-        
-        L_ij(1,2) = 0.5*(-(GAMMA-1.0)*u_ij-c_ij*c1)/cPow2_ij
-        L_ij(2,2) = (GAMMA-1.0)*u_ij/cPow2_ij
-        L_ij(3,2) = 0.5*(-(GAMMA-1.0)*u_ij+c_ij*c1)/cPow2_ij
-        L_ij(4,2) = c2
-        
-        L_ij(1,3) = 0.5*(-(GAMMA-1.0)*v_ij-c_ij*c2)/cPow2_ij
-        L_ij(2,3) = (GAMMA-1.0)*v_ij/cPow2_ij
-        L_ij(3,3) = 0.5*(-(GAMMA-1.0)*v_ij+c_ij*c2)/cPow2_ij
-        L_ij(4,3) = -c1
-        
-        L_ij(1,4) =  (GAMMA-1.0)/2.0/cPow2_ij
-        L_ij(2,4) = -(GAMMA-1.0)/cPow2_ij
-        L_ij(3,4) =  (GAMMA-1.0)/2.0/cPow2_ij
-        L_ij(4,4) =  0.0
-        
-        ! Include scaling parameter
-        anorm = dscale*anorm
-
-        ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
-        do i = 1, NVAR2D
-          do j = 1, NVAR2D
-            aux = 0.0
-            do k = 1, NVAR2D
-              aux = aux + R_ij(i,k)*L_ij(k,j)
-            end do
-            DcoefficientsAtEdge(NVAR2D*(j-1)+i,1,idx) = anorm*aux
-          end do
-        end do
-        
-      else
-        
-        ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,idx) = 0.0
-        
-      end if
-    end do
 
   end subroutine mhd_calcMatRoeDiss2d_sim
 
@@ -3087,7 +1741,7 @@ contains
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
-    ! and applies the Rusanov artificial viscosities in 2D
+    ! in 2D and applies the scalar artificial viscosities of Rusanov-type.
 !</description>
 
 !<input>
@@ -3115,82 +1769,6 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variable
-    real(DP) :: ui,uj,vi,vj,ci,cj,Ei,Ej
-    integer :: idx
-
-    do idx = 1, size(DcoefficientsAtEdge,3)
-      
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-
-#ifdef MHD_USE_IBP
-      ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                           vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(3,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                               (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(4,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                      vj*DmatrixCoeffsAtEdge(2,2,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                           vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(3,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                               (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(4,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                      vi*DmatrixCoeffsAtEdge(2,1,idx)))
-#else
-      ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      DcoefficientsAtEdge(1,2,idx) = 0.0
-      DcoefficientsAtEdge(2,2,idx) = -dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                            vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(3,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(4,2,idx) = -dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                       vj*DmatrixCoeffsAtEdge(2,1,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      DcoefficientsAtEdge(1,3,idx) = 0.0
-      DcoefficientsAtEdge(2,3,idx) = -dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                            vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(3,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(4,3,idx) = -dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                       vi*DmatrixCoeffsAtEdge(2,2,idx)))
-#endif
-
-      !---------------------------------------------------------------------------
-      ! Evaluate the dissipation
-      !---------------------------------------------------------------------------
-      
-      ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj)), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-      
-      ! Compute dissipation tensor D_ij
-      DcoefficientsAtEdge(:,1,idx) = dscale *&
-          max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
-                   DmatrixCoeffsAtEdge(2,1,idx)*vj) +&
-                   sqrt(DmatrixCoeffsAtEdge(1,1,idx)**2+&
-                        DmatrixCoeffsAtEdge(2,1,idx)**2)*cj,&
-               abs(DmatrixCoeffsAtEdge(1,2,idx)*ui+&
-                   DmatrixCoeffsAtEdge(2,2,idx)*vi) +&
-                   sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
-                        DmatrixCoeffsAtEdge(2,2,idx)**2)*ci )
-    end do
 
   end subroutine mhd_calcMatRusDissMatD2d_sim
 
@@ -3203,8 +1781,8 @@ contains
       DcoefficientsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the Galerkin matrices
-    ! and applies the Rusanov artificial viscosities in 2D
+    ! This subroutine computes the Galerkin matrices in 2D applies
+    ! scalar artificial viscosities of Rusanov-type.
 !</description>
 
 !<input>
@@ -3232,182 +1810,7 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variable
-    real(DP) :: ci,cj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj
-    real(DP) :: uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-    integer :: idx
-
-    do idx = 1, size(DcoefficientsAtEdge,3)
-
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-      uvi = ui*vi; qi = ui*ui+vi*vi; uPow2i = ui*ui; vPow2i = vi*vi
-
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-      uvj = uj*vj; qj = uj*uj+vj*vj; uPow2j = uj*uj; vPow2j = vj*vj
-
-#ifdef MHD_USE_IBP      
-      aux1 = uj*DmatrixCoeffsAtEdge(1,2,idx)+vj*DmatrixCoeffsAtEdge(2,2,idx)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,1,idx)+vi*DmatrixCoeffsAtEdge(2,1,idx)
-
-      ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      DcoefficientsAtEdge( 1,2,idx) = 0.0
-      DcoefficientsAtEdge( 2,2,idx) = dscale * (((GAMMA-1.0)/2.0*qj-uPow2j)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                                        uvj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 3,2,idx) = dscale * (((GAMMA-1.0)/2.0*qj-vPow2j)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                                        uvj*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge( 4,2,idx) = dscale * ((GAMMA-1.0)*qj-GAMMA*Ej)*aux1
-      
-      DcoefficientsAtEdge( 5,2,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge( 6,2,idx) = dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                            vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 7,2,idx) = dscale * (            vj*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                (GAMMA-1.0)*uj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 8,2,idx) = dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                (GAMMA-1.0)*uj*aux1)
-      
-      DcoefficientsAtEdge( 9,2,idx) = dscale * DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(10,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                (GAMMA-1.0)*vj*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge(11,2,idx) = dscale * (            uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(12,2,idx) = dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                (GAMMA-1.0)*vj*aux1)
-      
-      DcoefficientsAtEdge(13,2,idx) = 0.0
-      DcoefficientsAtEdge(14,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(15,2,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(16,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                       vj*DmatrixCoeffsAtEdge(2,2,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      DcoefficientsAtEdge( 1,3,idx) = 0.0
-      DcoefficientsAtEdge( 2,3,idx) = dscale * (((GAMMA-1.0)*qi-uPow2i)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                                    uvi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 3,3,idx) = dscale * (((GAMMA-1.0)*qi-vPow2i)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                                    uvi*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge( 4,3,idx) = dscale * ((GAMMA-1.0)*qi-GAMMA*Ei)*aux2
-      
-      DcoefficientsAtEdge( 5,3,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge( 6,3,idx) = dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                            vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 7,3,idx) = dscale * (            vi*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                (GAMMA-1.0)*ui*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 8,3,idx) = dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                (GAMMA-1.0)*ui*aux2)
-      
-      DcoefficientsAtEdge( 9,3,idx) = dscale * DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(10,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                (GAMMA-1.0)*vi*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge(11,3,idx) = dscale * (            ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(12,3,idx) = dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                (GAMMA-1.0)*vi*aux2)
-      
-      DcoefficientsAtEdge(13,3,idx) = 0.0
-      DcoefficientsAtEdge(14,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(15,3,idx) = dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(16,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                       vi*DmatrixCoeffsAtEdge(2,1,idx)))
-#else
-      aux1 = uj*DmatrixCoeffsAtEdge(1,1,idx)+vj*DmatrixCoeffsAtEdge(2,1,idx)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,2,idx)+vi*DmatrixCoeffsAtEdge(2,2,idx)
-
-      ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      DcoefficientsAtEdge( 1,2,idx) = 0.0
-      DcoefficientsAtEdge( 2,2,idx) = -dscale * (((GAMMA-1.0)/2.0*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                                         uvj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 3,2,idx) = -dscale * (((GAMMA-1.0)/2.0*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                                         uvj*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge( 4,2,idx) = -dscale * ((GAMMA-1.0)*qj-GAMMA*Ej)*aux1
-      
-      DcoefficientsAtEdge( 5,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge( 6,2,idx) = -dscale * ((3.0-GAMMA)*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                             vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 7,2,idx) = -dscale * (            vj*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                 (GAMMA-1.0)*uj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge( 8,2,idx) = -dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(1,1,idx)-&
-                                                 (GAMMA-1.0)*uj*aux1)
-      
-      DcoefficientsAtEdge( 9,2,idx) = -dscale * DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(10,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                 (GAMMA-1.0)*vj*DmatrixCoeffsAtEdge(1,1,idx))
-      DcoefficientsAtEdge(11,2,idx) = -dscale * (            uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                 (3.0-GAMMA)*vj*DmatrixCoeffsAtEdge(2,1,idx))
-      DcoefficientsAtEdge(12,2,idx) = -dscale * ((GAMMA*Ej-(GAMMA-1.0)/2.0*qj)*DmatrixCoeffsAtEdge(2,1,idx)-&
-                                                 (GAMMA-1.0)*vj*aux1)
-      
-      DcoefficientsAtEdge(13,2,idx) = 0.0
-      DcoefficientsAtEdge(14,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,1,idx)
-      DcoefficientsAtEdge(15,2,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,1,idx)
-      DcoefficientsAtEdge(16,2,idx) = -dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
-                                                        vj*DmatrixCoeffsAtEdge(2,1,idx)))
-      
-      ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      DcoefficientsAtEdge( 1,3,idx) = 0.0
-      DcoefficientsAtEdge( 2,3,idx) = -dscale * (((GAMMA-1.0)*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                                     uvi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 3,3,idx) = -dscale * (((GAMMA-1.0)*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                                     uvi*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge( 4,3,idx) = -dscale * ((GAMMA-1.0)*qi-GAMMA*Ei)*aux2
-      
-      DcoefficientsAtEdge( 5,3,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge( 6,3,idx) = -dscale * ((3.0-GAMMA)*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                             vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 7,3,idx) = -dscale * (            vi*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                 (GAMMA-1.0)*ui*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge( 8,3,idx) = -dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(1,2,idx)-&
-                                                 (GAMMA-1.0)*ui*aux2)
-      
-      DcoefficientsAtEdge( 9,3,idx) = -dscale * DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(10,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                 (GAMMA-1.0)*vi*DmatrixCoeffsAtEdge(1,2,idx))
-      DcoefficientsAtEdge(11,3,idx) = -dscale * (            ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                 (3.0-GAMMA)*vi*DmatrixCoeffsAtEdge(2,2,idx))
-      DcoefficientsAtEdge(12,3,idx) = -dscale * ((GAMMA*Ei-(GAMMA-1.0)/2.0*qi)*DmatrixCoeffsAtEdge(2,2,idx)-&
-                                                 (GAMMA-1.0)*vi*aux2)
-      
-      DcoefficientsAtEdge(13,3,idx) = 0.0
-      DcoefficientsAtEdge(14,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(1,2,idx)
-      DcoefficientsAtEdge(15,3,idx) = -dscale * (GAMMA-1.0)*DmatrixCoeffsAtEdge(2,2,idx)
-      DcoefficientsAtEdge(16,3,idx) = -dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
-                                                        vi*DmatrixCoeffsAtEdge(2,2,idx)))
-#endif
-
-      !---------------------------------------------------------------------------
-      ! Evaluate the dissipation
-      !---------------------------------------------------------------------------
-
-      ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj)), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-      
-      ! Compute dissipation tensor D_ij
-      aux1 = dscale *&
-          max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
-                   DmatrixCoeffsAtEdge(2,1,idx)*vj) +&
-                   sqrt(DmatrixCoeffsAtEdge(1,1,idx)**2+&
-                        DmatrixCoeffsAtEdge(2,1,idx)**2)*cj,&
-               abs(DmatrixCoeffsAtEdge(1,2,idx)*ui+&
-                   DmatrixCoeffsAtEdge(2,2,idx)*vi) +&
-                   sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
-                        DmatrixCoeffsAtEdge(2,2,idx)**2)*ci )
-
-      DcoefficientsAtEdge(:,1,idx) = 0.0
-      DcoefficientsAtEdge( 1,1,idx) = aux1
-      DcoefficientsAtEdge( 6,1,idx) = aux1
-      DcoefficientsAtEdge(11,1,idx) = aux1
-      DcoefficientsAtEdge(16,1,idx) = aux1
-    end do
-
+  
   end subroutine mhd_calcMatRusDiss2d_sim
 
   !*****************************************************************************
@@ -3459,237 +1862,7 @@ contains
     real(DP), dimension(:,:), intent(out), optional :: DrightEigenvectorsAtEdge
 !</output>
 !</subroutine>
-
-    ! local variables
-    real(DP), dimension(NVAR2D) :: Diff
-    real(DP) :: u_ij,v_ij,H_ij,q_ij,c_ij,aux,aux1,aux2,ui,uj,vi,vj,cPow2_ij,a1,a2,anorm
-    integer :: idx
-
-    ! Compute norm of weighting coefficient
-    anorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
-
-    ! Check if weighting coefficient is zero
-    if (anorm .le. SYS_EPSREAL) then
-      if (present(DcharVariablesAtEdge))     DcharVariablesAtEdge     = 0.0
-      if (present(DeigenvaluesAtEdge))       DeigenvaluesAtEdge       = 0.0
-      if (present(DrightEigenvectorsAtEdge)) DrightEigenvectorsAtEdge = 0.0
-      if (present(DleftEigenvectorsAtEdge))  DleftEigenvectorsAtEdge  = 0.0
-
-      ! That`s it
-      return
-    end if
-
-    ! Compute normalised weighting coefficient
-    a1  = Dweight(1)/anorm
-    a2  = Dweight(2)/anorm
-
-    ! Do we have to compute characteristic variables
-    if (present(DcharVariablesAtEdge)) then
-      do idx = 1, size(DdataAtEdge,3)
-        
-        ! Compute velocities
-        ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-        vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-        uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-        vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-        
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
-        
-        ! Compute auxiliary variables
-        q_ij  = 0.5*(u_ij*u_ij+v_ij*v_ij)
-#ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        c_ij = sqrt(cPow2_ij)
-        aux  = a1*u_ij+a2*v_ij
-
-        ! Compute solution difference U_j-U_i
-        Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
-        
-        ! Compute auxiliary quantities for characteristic variables
-        aux1 = (GAMMA-1.0)/2.0/cPow2_ij*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4) )
-        aux2 = 0.5*(aux*Diff(1)-a1*Diff(2)-a2*Diff(3) )/c_ij
-
-        ! Compute characteristic variables
-        DcharVariablesAtEdge(1,idx) = anorm * (aux1 + aux2)
-        DcharVariablesAtEdge(2,idx) = anorm * ((1.0-(GAMMA-1.0)*q_ij/cPow2_ij)*Diff(1)+&
-                                                             (GAMMA-1.0)*(u_ij*Diff(2)+&
-                                                                          v_ij*Diff(3)-&
-                                                                      Diff(4))/cPow2_ij)
-        DcharVariablesAtEdge(3,idx) = anorm * (aux1 - aux2)
-        DcharVariablesAtEdge(4,idx) = anorm * ((a1*v_ij-a2*u_ij)*Diff(1)+&
-                                                              a2*Diff(2)-&
-                                                              a1*Diff(3))
-      end do
-    end if
-
-    ! Do we have to compute eigenvalues
-    if (present(DeigenvaluesAtEdge)) then
-      do idx = 1, size(DdataAtEdge,3)
-
-        ! Compute velocities
-        ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-        vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-        uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-        vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-        
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
-        
-        ! Compute auxiliary variables
-        q_ij  = 0.5*(u_ij*u_ij+v_ij*v_ij)
-#ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        aux  = a1*u_ij+a2*v_ij
-
-        ! Compute eigenvalues
-        DeigenvaluesAtEdge(1,idx) = aux-c_ij
-        DeigenvaluesAtEdge(2,idx) = aux
-        DeigenvaluesAtEdge(3,idx) = aux+c_ij
-        DeigenvaluesAtEdge(4,idx) = aux
-      end do
-    end if
-
-    ! Do we have to compute right eigenvectors
-    if (present(DrightEigenvectorsAtEdge)) then
-      do idx = 1, size(DdataAtEdge,3)
-
-        ! Compute velocities
-        ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-        vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-        uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-        vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-        
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
-        
-        ! Compute auxiliary variables
-        q_ij  = 0.5*(u_ij*u_ij+v_ij*v_ij)
-#ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        aux  = a1*u_ij+a2*v_ij
-
-        ! Compute right eigenvectors
-        DrightEigenvectorsAtEdge( 1,idx) =  1.0
-        DrightEigenvectorsAtEdge( 2,idx) =  u_ij-c_ij*a1
-        DrightEigenvectorsAtEdge( 3,idx) =  v_ij-c_ij*a2
-        DrightEigenvectorsAtEdge( 4,idx) =  H_ij-c_ij*aux
-
-        DrightEigenvectorsAtEdge( 5,idx) =  1.0
-        DrightEigenvectorsAtEdge( 6,idx) =  u_ij
-        DrightEigenvectorsAtEdge( 7,idx) =  v_ij
-        DrightEigenvectorsAtEdge( 8,idx) =  q_ij
-
-        DrightEigenvectorsAtEdge( 9,idx) =  1.0
-        DrightEigenvectorsAtEdge(10,idx) =  u_ij+c_ij*a1
-        DrightEigenvectorsAtEdge(11,idx) =  v_ij+c_ij*a2
-        DrightEigenvectorsAtEdge(12,idx) =  H_ij+c_ij*aux
-
-        DrightEigenvectorsAtEdge(13,idx) =  0.0
-        DrightEigenvectorsAtEdge(14,idx) =  a2
-        DrightEigenvectorsAtEdge(15,idx) = -a1
-        DrightEigenvectorsAtEdge(16,idx) =  u_ij*a2-v_ij*a1
-      end do
-    end if
-
-    ! Do we have to compute left eigenvectors
-    if (present(DleftEigenvectorsAtEdge)) then
-      do idx = 1, size(DdataAtEdge,3)
-
-        ! Compute velocities
-        ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-        vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
-        uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-        vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
-        
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx), aux)
-        
-        ! Compute auxiliary variables
-        q_ij  = 0.5*(u_ij*u_ij+v_ij*v_ij)
-#ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        c_ij = sqrt(cPow2_ij)
-        aux  = a1*u_ij+a2*v_ij
-
-        ! Compute left eigenvectors
-        DleftEigenvectorsAtEdge( 1,idx) =  0.5*((GAMMA-1.0)*q_ij+c_ij*aux)/cPow2_ij
-        DleftEigenvectorsAtEdge( 2,idx) = (cPow2_ij-(GAMMA-1.0)*q_ij)/cPow2_ij
-        DleftEigenvectorsAtEdge( 3,idx) =  0.5*((GAMMA-1.0)*q_ij-c_ij*aux)/cPow2_ij
-        DleftEigenvectorsAtEdge( 4,idx) =  v_ij*a1-u_ij*a2
-
-        DleftEigenvectorsAtEdge( 5,idx) =  0.5*(-(GAMMA-1.0)*u_ij-c_ij*a1)/cPow2_ij
-        DleftEigenvectorsAtEdge( 6,idx) =  (GAMMA-1.0)*u_ij/cPow2_ij
-        DleftEigenvectorsAtEdge( 7,idx) =  0.5*(-(GAMMA-1.0)*u_ij+c_ij*a1)/cPow2_ij
-        DleftEigenvectorsAtEdge( 8,idx) =  a2
-
-        DleftEigenvectorsAtEdge( 9,idx) =  0.5*(-(GAMMA-1.0)*v_ij-c_ij*a2)/cPow2_ij
-        DleftEigenvectorsAtEdge(10,idx) =  (GAMMA-1.0)*v_ij/cPow2_ij
-        DleftEigenvectorsAtEdge(11,idx) =  0.5*(-(GAMMA-1.0)*v_ij+c_ij*a2)/cPow2_ij
-        DleftEigenvectorsAtEdge(12,idx) = -a1
-
-        DleftEigenvectorsAtEdge(13,idx) =  (GAMMA-1.0)/2.0/cPow2_ij
-        DleftEigenvectorsAtEdge(14,idx) = -(GAMMA-1.0)/cPow2_ij
-        DleftEigenvectorsAtEdge(15,idx) =  (GAMMA-1.0)/2.0/cPow2_ij
-        DleftEigenvectorsAtEdge(16,idx) =  0.0
-      end do
-    end if
+    
 
   end subroutine mhd_calcCharacteristics2d_sim
 
@@ -3697,257 +1870,208 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxFCTScalarDiss2d(&
-      U1_i, U1_j, U2_i, U2_j, Coeff_ij, Coeff_ji,&
-      i, j, dscale1, dscale2, F_ij)
+  pure subroutine mhd_calcFluxFCTScDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for
-    ! FCT algorithms in 2D using scalar dissipation.
+    ! This subroutine computes the raw antidiffusive fluxes for FCT
+    ! algorithms in 2D using scalar dissipation proportional to the
+    ! spectral radius of the Roe-matrix.
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: Coeff_ij,Coeff_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficients
-    real(DP), intent(in) :: dscale1,dscale2
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
 
 !<output>
-    ! raw antidiffusive flux
-    real(DP), dimension(:), intent(out) :: F_ij
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
+  
 
-    ! local variables
-    real(DP), dimension(NDIM2D) :: a
-    real(DP) :: ui,vi,uj,vj
-    real(DP) :: d_ij,H_ij,q_ij,u_ij,v_ij,aux,vel_ij,c_ij,anorm
-
-    ! Compute velocities
-    ui = X_VELOCITY_FROM_CONSVAR(U2_i,NVAR2D)
-    vi = Y_VELOCITY_FROM_CONSVAR(U2_i,NVAR2D)
-
-    uj = X_VELOCITY_FROM_CONSVAR(U2_j,NVAR2D)
-    vj = Y_VELOCITY_FROM_CONSVAR(U2_j,NVAR2D)
-
-    ! Compute skew-symmetric coefficient
-    a = 0.5*(Coeff_ij-Coeff_ji); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
-
-    ! Compute Roe mean values
-    aux  = ROE_MEAN_RATIO(\
-           DENSITY_FROM_CONSVAR(U2_i,NVAR2D), DENSITY_FROM_CONSVAR(U2_j,NVAR2D))
-    u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-    v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-    H_ij = ROE_MEAN_VALUE(\
-           (TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR2D)+\
-            PRESSURE_FROM_CONSVAR(U2_i,NVAR2D))/DENSITY_FROM_CONSVAR(U2_i,NVAR2D),\
-           (TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR2D)+\
-            PRESSURE_FROM_CONSVAR(U2_j,NVAR2D))/DENSITY_FROM_CONSVAR(U2_j,NVAR2D), aux)
-            
-    ! Compute auxiliary variables
-    vel_ij = u_ij*a(1) + v_ij*a(2)
-    q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
-#ifdef THERMALLY_IDEAL_GAS
-    c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
-#else
-#error "Speed of sound must be implemented!"
-#endif
-
-    ! Scalar dissipation
-    d_ij = abs(vel_ij) + anorm*c_ij
-
-    ! Compute conservative fluxes
-    F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
-
-  end subroutine mhd_calcFluxFCTScalarDiss2d
+  end subroutine mhd_calcFluxFCTScDiss2d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxFCTRoeDiss2d(&
-      U1_i, U1_j, U2_i, U2_j, Coeff_ij, Coeff_ji,&
-      i, j, dscale1, dscale2, F_ij)
+  pure subroutine mhd_calcFluxFCTRoeDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for
-    ! FCT algorithms in 2D using tensorial dissipation.
+    ! This subroutine computes the raw antidiffusive fluxes forFCT
+    ! algorithms in 2D using tensorial dissipation of Roe-type.
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: Coeff_ij,Coeff_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficients
-    real(DP), intent(in) :: dscale1,dscale2
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! raw antidiffusive flux
-    real(DP), dimension(:), intent(out) :: F_ij
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
+!</subroutine>
+
+
+  end subroutine mhd_calcFluxFCTRoeDiss2d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine mhd_calcFluxFCTRusDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the raw antidiffusive fluxes for FCT
+    ! algorithms in 2D using scalar dissipation of Rusanov-type.
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:), intent(out) :: DfluxesAtEdge
+!</output>
+
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(NVAR2D) :: Diff
-    real(DP), dimension(NDIM2D) :: a
-    real(DP) :: ui,vi,uj,vj
-    real(DP) :: aux,aux1,aux2,uPow2,vPow2,H_ij,q_ij,u_ij,v_ij
-    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2_ij,c_ij,vel_ij
-
-    ! Compute velocities
-    ui = X_VELOCITY_FROM_CONSVAR(U2_i,NVAR2D)
-    vi = Y_VELOCITY_FROM_CONSVAR(U2_i,NVAR2D)
-
-    uj = X_VELOCITY_FROM_CONSVAR(U2_j,NVAR2D)
-    vj = Y_VELOCITY_FROM_CONSVAR(U2_j,NVAR2D)
+    real(DP) :: ui,uj,vi,vj,wi,wj
+    real(DP) :: ca1i,ca1j,ca2i,ca2j,cf1i,cf1j,cf2i,cf2j,d_ij
+    real(DP) :: aPow2i,aPow2j,astPow2i,astPow2j
+    integer :: idx
     
-    ! Compute the skew-symmetric coefficient
-    a = 0.5*(Coeff_ij-Coeff_ji); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
-    if (anorm .gt. SYS_EPSREAL) then
+    do idx = 1, size(DfluxesAtEdge,2)
 
-      ! Normalize the skew-symmetric coefficient
-      a = a/anorm
+      ! Compute velocities
+      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
+      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
+      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
+      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
+      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
+      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
 
-      ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-             DENSITY_FROM_CONSVAR(U2_i,NVAR2D), DENSITY_FROM_CONSVAR(U2_j,NVAR2D))
-      u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      v_ij = ROE_MEAN_VALUE(vi,vj,aux)
-      H_ij = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR2D)+\
-              PRESSURE_FROM_CONSVAR(U2_i,NVAR2D))/DENSITY_FROM_CONSVAR(U2_i,NVAR2D),\
-             (TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR2D)+\
-              PRESSURE_FROM_CONSVAR(U2_j,NVAR2D))/DENSITY_FROM_CONSVAR(U2_j,NVAR2D), aux)
+      ! Compute the speed of the Alfven waves in x-direction
+      ca1i = abs(X_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx))
+      ca1j = abs(X_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
 
-      ! Compute auxiliary variables
-      vel_ij = u_ij*a(1) + v_ij*a(2)
-      uPow2  = u_ij*u_ij
-      vPow2  = v_ij*v_ij
-      q_ij   = 0.5*(uPow2+vPow2)
+      ! Compute the speed of the Alfven waves in y-direction
+      ca2i = abs(Y_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx))
+      ca2j = abs(Y_MAGNETICFIELD_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx))
+
+! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
-#else
-#error "Speed of sound must be implemented!"
-#endif
-      c_ij  = sqrt(cPow2_ij)
-
-      ! Compute eigenvalues
-      l1 = abs(vel_ij-c_ij)
-      l2 = abs(vel_ij)
-      l3 = abs(vel_ij+c_ij)
-      l4 = abs(vel_ij)
-
-      ! Compute solution difference U2_i-U2_j
-      Diff = U2_i-U2_j
-
-      ! Compute auxiliary quantities for characteristic variables
-      aux1 = (GAMMA-1.0)/2.0/cPow2_ij*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
-      aux2 = 0.5*(vel_ij*Diff(1)-a(1)*Diff(2)-a(2)*Diff(3))/c_ij
-
-      ! Compute characteristic variables multiplied by the corresponding eigenvalue
-      w1 = l1 * (aux1 + aux2)
-      w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/cPow2_ij)*Diff(1)+(GAMMA-1.0)*(u_ij*Diff(2)+v_ij*Diff(3)-Diff(4))/cPow2_ij)
-      w3 = l3 * (aux1 - aux2)
-      w4 = l4 * ((a(1)*v_ij-a(2)*u_ij)*Diff(1)+a(2)*Diff(2)-a(1)*Diff(3))
-
-      ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-      Diff(1) = w1 + w2 + w3
-      Diff(2) = (u_ij-c_ij*a(1))*w1 + u_ij*w2 + (u_ij+c_ij*a(1))*w3 + a(2)*w4
-      Diff(3) = (v_ij-c_ij*a(2))*w1 + v_ij*w2 + (v_ij+c_ij*a(2))*w3 - a(1)*w4
-      Diff(4) = (H_ij-c_ij*vel_ij)*w1 + q_ij*w2 + (H_ij+c_ij*vel_ij)*w3 + (u_ij*a(2)-v_ij*a(1))*w4
-
-      ! Compute conservative flux
-      F_ij = dscale1*(U1_i-U1_j) + dscale2*anorm*Diff
-
-    else
-
-      ! Compute conservative flux without spatial contribution
-      F_ij = dscale1*(U1_i-U1_j)
-
-    end if
-  end subroutine mhd_calcFluxFCTRoeDiss2d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine mhd_calcFluxFCTRusanov2d(&
-      U1_i, U1_j, U2_i, U2_j, Coeff_ij, Coeff_ji,&
-      i, j, dscale1, dscale2, F_ij)
-
-!<description>
-    ! This subroutine computes the raw antidiffusive fluxes for
-    ! FCT algorithms in 2D using the Rusanov dissipation.
-!</description>
-
-!<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: Coeff_ij,Coeff_ji
-
-    ! scaling coefficients
-    real(DP), intent(in) :: dscale1,dscale2
-
-    ! node numbers
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! raw antidiffusive flux
-    real(DP), dimension(:), intent(out) :: F_ij
-!</output>
-!</subroutine>
-
-    ! local variables
-    real(DP) :: ui,vi,uj,vj
-    real(DP) :: d_ij,ci,cj,Ei,Ej
-
-    ! Compute velocities and energy
-    ui = X_VELOCITY_FROM_CONSVAR(U2_i,NVAR2D)
-    vi = Y_VELOCITY_FROM_CONSVAR(U2_i,NVAR2D)
-    Ei = TOTAL_ENERGY_FROM_CONSVAR(U2_i,NVAR2D)
-
-    uj = X_VELOCITY_FROM_CONSVAR(U2_j,NVAR2D)
-    vj = Y_VELOCITY_FROM_CONSVAR(U2_j,NVAR2D)
-    Ej = TOTAL_ENERGY_FROM_CONSVAR(U2_j,NVAR2D)
-
-    ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-    ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi)), SYS_EPSREAL))
-    cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj)), SYS_EPSREAL))
+      aPow2i = GAMMA*PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)
+      aPow2j = GAMMA*PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)/\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
 #else
 #error "Speed of sound must be implemented!"
 #endif
 
-    ! Scalar dissipation for the Rusanov flux
-    d_ij = max( abs(Coeff_ij(1)*uj+Coeff_ij(2)*vj) +&
-                sqrt(Coeff_ij(1)*Coeff_ij(1)+Coeff_ij(2)*Coeff_ij(2))*cj,&
-                abs(Coeff_ji(1)*ui+Coeff_ji(2)*vi) +&
-                sqrt(Coeff_ji(1)*Coeff_ji(1)+Coeff_ji(2)*Coeff_ji(2))*ci )
+      ! Compute auxiliary quantities
+      astPow2i = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)/\
+                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx) + aPow2i
+      astPow2j = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)/\
+                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx) + aPow2j
 
-    ! Compute conservative fluxes
-    F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
+      ! Compute the speed of the fast waves in x-direction
+      cf1i = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*ca1i**2)))
+      cf1j = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*ca1j**2)))
 
-  end subroutine mhd_calcFluxFCTRusanov2d
+      ! Compute the speed of the fast waves in y-direction
+      cf2i = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*ca2i**2)))
+      cf2j = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*ca2j**2)))
+      
+      ! Compute scalar dissipation for the Rusanov flux
+      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
+                      DmatrixCoeffsAtEdge(2,1,idx)*vj)+&
+                 sqrt((DmatrixCoeffsAtEdge(1,1,idx)**2)*cf1j+&
+                      (DmatrixCoeffsAtEdge(2,1,idx)**2)*cf2j),&
+                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui+&
+                      DmatrixCoeffsAtEdge(2,2,idx)*vi)+&
+                 sqrt((DmatrixCoeffsAtEdge(1,2,idx)**2)*cf1i+&
+                      (DmatrixCoeffsAtEdge(2,2,idx)**2)*cf2i) )
+
+      ! Compute conservative fluxes
+      DfluxesAtEdge(:,idx) = dscale*d_ij*(DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx))
+    end do
+
+  end subroutine mhd_calcFluxFCTRusDiss2d_sim
 
   !*****************************************************************************
 

@@ -1794,13 +1794,15 @@ contains
         rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
-        
+        call afcstab_generateVerticesAtEdge(&
+            p_rconsistentMassMatrix, rafcstab)
+
         ! Compute the raw antidiffusive mass fluxes. Note that we may supply any
         ! callback function for assembling the antidiffusive fluxes since it 
         ! will not be used for assembling antidiffusive mass fluxes !!!
-        call gfsys_buildFluxFCT((/p_rconsistentMassMatrix/),&
-            rafcstab, rvectorHigh, rvectorHigh, mhd_calcFluxFCTScalarDiss1d,&
-            0.0_DP, 0.0_DP, 1.0_DP, .true., p_rconsistentMassMatrix)
+        call gfsys_buildFluxFCT(rafcstab, rvectorHigh,&
+            mhd_calcFluxFCTScDiss1d_sim, 0.0_DP, 0.0_DP, 1.0_DP, .true.,&
+            p_rconsistentMassMatrix, rcollection=rcollection)
         
         ! Attach section name to collection structure
         rcollection%SquickAccess(1) = ssectionName
@@ -3152,9 +3154,7 @@ contains
       call lsyssc_getbase_double(rvector, p_Ddata)
       dmass2 = sum(p_Ddata)
       call lsyssc_releaseVector(rvector)
-      
-      print *, "Density mass", dmass1, dmass2
-      
+            
       ! Release matrices
       call lsyssc_releaseMatrix(rmatrix1)
       call lsyssc_releaseMatrix(rmatrix2)
