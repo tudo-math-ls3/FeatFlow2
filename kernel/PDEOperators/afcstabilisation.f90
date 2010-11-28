@@ -1711,6 +1711,27 @@ contains
           p_DmatrixCoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
         end do
 
+      case(LSYSSC_MATRIX1)
+        !-------------------------------------------------------------------------
+        ! Matrix format 1
+        !-------------------------------------------------------------------------
+        
+        ! Set pointer to matrix data
+        call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
+
+        ! Loop over all rows and copy diagonal entries
+        do i = 1, rafcstab%NEQ
+          p_DmatrixCoeffsAtNode(ipos,i) = p_Ddata(rafcstab%NEQ*(i-1)+i)
+        end do
+        
+        ! Loop over all edges and copy off-diagonal entries
+        do iedge = 1, rafcstab%NEDGE
+          ij = p_IverticesAtEdge(3,iedge)
+          ji = p_IverticesAtEdge(4,iedge)
+          p_DmatrixCoeffsAtEdge(ipos,1,iedge) = p_Ddata(ij)
+          p_DmatrixCoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
+        end do
+
       end select
     end do
 
@@ -2228,6 +2249,18 @@ contains
       call storage_free(h_Ksep)
 
 
+    case(LSYSSC_MATRIXD)
+      call output_line('Edge-bases data structure cannot be generated &
+          &from diagonal matrix!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
+      call sys_halt()
+
+
+    case(LSYSSC_MATRIX1)
+      ! Generate edge structure for dense matrix
+      call genEdgesMat1(rmatrixTemplate%NEQ+1, p_IverticesAtEdge)
+
+
     case DEFAULT
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
@@ -2328,6 +2361,44 @@ contains
 
     end subroutine genEdgesMat9
     
+    !**************************************************************
+    ! Generate edge data structure for dense matrices in format 1
+
+    subroutine genEdgesMat1(neq, IverticesAtEdge)
+
+      integer, intent(in) :: neq
+      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
+
+      ! local variables
+      integer :: i,j,iedge
+      
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, neq
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do j = i+1, neq
+
+          ! Increatse edge counter
+          iedge = iedge+1
+          
+          ! Set node numbers i and j
+          IverticesAtEdge(1, iedge) = i
+          IverticesAtEdge(2, iedge) = j
+          
+          ! Set matrix positions ij and ji
+          IverticesAtEdge(3, iedge) = neq*(i-1)+j
+          IverticesAtEdge(4, iedge) = neq*(j-1)+i
+          
+        end do
+      end do
+
+    end subroutine genEdgesMat1
+
   end subroutine afcstab_generateVerticesAtEdge
 
   !*****************************************************************************
