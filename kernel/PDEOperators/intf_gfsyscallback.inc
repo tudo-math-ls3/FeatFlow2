@@ -30,8 +30,8 @@
   real(DP), dimension(:,:), intent(in) :: DdataAtNode
 
   ! Entries of the coefficient matrices for all nodes under consideration
-  !   DIMENSION(ndim,nnodes)
-  ! with ndim the number of spatial dimensions
+  !   DIMENSION(nmatrices,nnodes)
+  ! with nmatrices the number of coefficient matrices
   real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
@@ -91,8 +91,8 @@
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  !   DIMENSION(ndim,2,nedges)
-  ! with ndim the number of spatial dimensions
+  !   DIMENSION(nmatrices,2,nedges)
+  ! with nmatrices the number of coefficient matrices
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
@@ -154,8 +154,8 @@
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  !   DIMENSION(ndim,2,nedges)
-  ! with ndim the number of spatial dimensions
+  !   DIMENSION(nmatrices,2,nedges)
+  ! with nmatrices the number of coefficient matrices
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
@@ -189,42 +189,56 @@
   interface
 
 !<subroutine>
-
-  subroutine fcb_calcFluxFCT(U1_i, U1_j, U2_i, U2_j,&
-      C_ij, C_ji, i, j, dscale1, dscale2, F_ij)
+    
+  subroutine fcb_calcFlux2_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
     use fsystem
+    use collection
 
 !<description>
-    ! This subroutine computes the internodal fluxes for the FCT algorithm.
-    ! Given the variables at the two states $i$ and $j$ this routine computes:
-    !
-    ! The internodal flux from node $j$ into node $i$: $F_{ij}=-F_{ji}$
+    ! This subroutine computes the internodal fluxes. Given the
+    ! conservative variables at the two states $i$ and $j$ and the
+    ! multi-component weighting coefficients $C_{ij}$ and $C_{ji}$,
+    ! this subroutine computes the internodal fluxes from node
+    ! $j$ into node $i$ $F_{ij}$ and the internodal flux from node
+    ! $i$ into node $j$ $F_{ji}=-F_{ij}$.
 !</description>
 
 !<input>
-  ! Variables at states $i$ and $j$
-  real(DP), dimension(:), intent(in) :: U1_i, U1_j
-  real(DP), dimension(:), intent(in) :: U2_i, U2_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-  ! Multi-component weighting coefficients
-  real(DP), dimension(:), intent(in) :: C_ij, C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(nmatrices,2,nedges)
+  ! with nmatrices the number of coefficient matrices
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-  ! Scaling parameters
-  real(DP), intent(in) :: dscale1, dscale2
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-  ! States $i$ and $j$
-  integer, intent(in) :: i,j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-  ! raw antidiffusive flux from node $j$ into node $i$
-  real(DP), dimension(:), intent(out) :: F_ij
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:), intent(out) :: DfluxesAtEdge
 !</output>
 
 !</subroutine>
 
-  end subroutine fcb_calcFluxFCT
+  end subroutine fcb_calcFlux2_sim
 
   end interface
 
