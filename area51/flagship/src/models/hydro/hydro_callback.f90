@@ -1755,8 +1755,8 @@ contains
       end if
 
       ! Assemble the raw antidiffusive fluxes
-      call hydro_calcFluxFCT(rproblemLevel, rsolution, rsolution,&
-          rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0), rcollection)
+      call hydro_calcFluxFCT(rproblemLevel, rsolution, rtimestep%theta,&
+          rtimestep%dStep, 1.0_DP, (ite .eq. 0), rsolution, rcollection)
 
       !-------------------------------------------------------------------------
       ! Set operation specifier
@@ -2309,8 +2309,8 @@ contains
         p_rpredictor, 1.0_DP, p_rpredictor)
 
     ! Compute the raw antidiffusive fluxes
-    call hydro_calcFluxFCT(rproblemLevel, p_rpredictor,&
-        rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
+    call hydro_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
+        1.0_DP, 1.0_DP, .true., p_rpredictor, rcollection)
     
     !---------------------------------------------------------------------------
     ! Perform failsafe flux correction (if required)
@@ -2381,8 +2381,8 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcFluxFCT(rproblemLevel, rsolution1, rsolution2,&
-      theta, tstep, dscale, binit, rcollection)
+  subroutine hydro_calcFluxFCT(rproblemLevel, rsolution1,&
+      theta, tstep, dscale, binit, rsolution2, rcollection)
 
 !<description>
     ! This subroutine calculates the raw antidiffusive fluxes for
@@ -2390,8 +2390,8 @@ contains
 !</description>
 
 !<input>
-    ! solution vectors
-    type(t_vectorBlock), intent(in) :: rsolution1, rsolution2
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution1
 
     ! implicitness parameter
     real(DP), intent(in) :: theta
@@ -2406,6 +2406,9 @@ contains
     ! TRUE  : assemble the initial antidiffusive flux
     ! FALSE : assemble the antidiffusive flux using some initial values
     logical, intent(in) :: binit
+
+    ! OPTIONAL: second solution vector
+    type(t_vectorBlock), intent(in) :: rsolution2
 !</input>
 
 !<inputoutput>
@@ -2420,7 +2423,6 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     integer :: inviscidAFC, lumpedMassMatrix, consistentMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: idissipationtype, imassantidiffusiontype
 
     ! Get parameters from parameter list
@@ -2430,15 +2432,6 @@ contains
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'inviscidAFC', inviscidAFC)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CZ', coeffMatrix_CZ)
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'lumpedmassmatrix', lumpedmassmatrix)
@@ -2465,51 +2458,48 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss1d,&
+              rsolution1, hydro_calcFluxFCTScDiss1d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rsolution2, rcollection)
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss1d,&
-              theta, tstep, dscale, binit)
+              rsolution1, hydro_calcFluxFCTScDiss1d_sim,&
+              theta, tstep, dscale, binit, rcollection=rcollection)
         end if
 
       case (NDIM2D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss2d,&
+              rsolution1, hydro_calcFluxFCTScDiss2d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rsolution2, rcollection)
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss2d,&
-              theta, tstep, dscale, binit)
+              rsolution1, hydro_calcFluxFCTScDiss2d_sim,&
+              theta, tstep, dscale, binit, rcollection=rcollection)
         end if
 
       case (NDIM3D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss3d,&
+              rsolution1, hydro_calcFluxFCTScDiss3d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rsolution2, rcollection)
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTScalarDiss3d,&
-              theta, tstep, dscale, binit)
+              rsolution1, hydro_calcFluxFCTScDiss3d_sim,&
+              theta, tstep, dscale, binit, rcollection=rcollection)
         end if
       end select
 
@@ -2523,51 +2513,48 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss1d,&
+              rsolution1, hydro_calcFluxFCTRoeDiss1d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rsolution2, rcollection)
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss1d,&
-              theta, tstep, dscale, binit)
+              rsolution1, hydro_calcFluxFCTRoeDiss1d_sim,&
+              theta, tstep, dscale, binit, rcollection=rcollection)
         end if
 
       case (NDIM2D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss2d,&
+              rsolution1, hydro_calcFluxFCTRoeDiss2d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rsolution2, rcollection)
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss2d,&
-              theta, tstep, dscale, binit)
+              rsolution1, hydro_calcFluxFCTRoeDiss2d_sim,&
+              theta, tstep, dscale, binit, rcollection=rcollection)
         end if
 
       case (NDIM3D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss3d,&
+              rsolution1, hydro_calcFluxFCTRoeDiss3d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rsolution2, rcollection)
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRoeDiss3d,&
-              theta, tstep, dscale, binit)
+              rsolution1, hydro_calcFluxFCTRoeDiss3d_sim,&
+              theta, tstep, dscale, binit, rcollection=rcollection)
         end if
       end select
 
@@ -2581,51 +2568,48 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRusanov1d,&
+              rsolution1, hydro_calcFluxFCTRusDiss1d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rsolution2, rcollection)
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRusanov1d,&
-              theta, tstep, dscale, binit)
+              rsolution1, hydro_calcFluxFCTRusDiss1d_sim,&
+              theta, tstep, dscale, binit, rcollection=rcollection)
         end if
 
       case (NDIM2D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRusanov2d,&
+              rsolution1, hydro_calcFluxFCTRusDiss2d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rsolution2, rcollection)
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRusanov2d,&
-              theta, tstep, dscale, binit)
+              rsolution1, hydro_calcFluxFCTRusDiss2d_sim,&
+              theta, tstep, dscale, binit, rcollection=rcollection)
         end if
 
       case (NDIM3D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRusanov3d,&
+              rsolution1, hydro_calcFluxFCTRusDiss3d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rsolution2, rcollection)
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, rsolution2, hydro_calcFluxFCTRusanov3d,&
-              theta, tstep, dscale, binit)
+              rsolution1, hydro_calcFluxFCTRusDiss3d_sim,&
+              theta, tstep, dscale, binit, rcollection=rcollection)
         end if
       end select
 
@@ -3723,44 +3707,6 @@ contains
     
   end subroutine hydro_coeffVectorAnalytic
 
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine hydro_calcMassFluxFCT(&
-      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
-      i, j, dscale1, dscale2, F_ij)
-
-!<description>
-    ! This subroutine computes the raw antidiffusive mass fluxes
-    ! for FCT algorithms in arbitrary dimension
-!</description>
-
-!<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
-
-    ! scaling coefficients
-    real(DP), intent(in) :: dscale1,dscale2
-
-    ! node numbers
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! raw antidiffusive flux
-    real(DP), dimension(:), intent(out) :: F_ij
-!</output>
-!</subroutine>
-  
-    ! Compute raw antidiffusive mass fluxes
-    F_ij = dscale1*(U1_i-U1_j)
-    
-  end subroutine hydro_calcMassFluxFCT
-
   ! *****************************************************************************
 
 !<subroutine>
@@ -3999,7 +3945,6 @@ contains
     
     ! local variables
     type(t_boundaryCondition), pointer :: p_rboundaryCondition
-    type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_linearForm) :: rform
