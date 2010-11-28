@@ -366,10 +366,14 @@ module afcstabilisation
   
   type t_afcstab
     
-    ! Format Tag. Identifies the type of stabilisation
+    ! Format Tag: Identifies the type of stabilisation
     integer :: ctypeAFCstabilisation = AFCSTAB_GALERKIN
 
-    ! Format Tag: Specifies the stabilisation
+    ! Format Tag: Identifies the format of the scalar template matrix
+    ! underlying the edge-based sparsity structure (if any)
+    integer :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
+
+    ! Specification Flag: Specifies the stabilisation
     integer(I32) :: istabilisationSpec = AFCSTAB_UNDEFINED
 
     ! Duplication Flag: Specifies which parts of the stabilisation are
@@ -710,6 +714,7 @@ contains
     
     ! Reset atomic data
     rafcstab%ctypeAFCstabilisation = AFCSTAB_GALERKIN
+    rafcstab%cmatrixFormat         = LSYSSC_MATRIXUNDEFINED
     rafcstab%istabilisationSpec    = AFCSTAB_UNDEFINED
     rafcstab%iduplicationFlag      = 0
     rafcstab%NEQ                   = 0
@@ -1026,6 +1031,7 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
       rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
+      rafcstabDest%cmatrixFormat         = rafcstabSrc%cmatrixFormat
       rafcstabDest%NEQ                   = rafcstabSrc%NEQ
       rafcstabDest%NVAR                  = rafcstabSrc%NVAR
       rafcstabDest%NVARtransformed       = rafcstabSrc%NVARtransformed
@@ -1299,6 +1305,7 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
       rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
+      rafcstabDest%cmatrixFormat         = rafcstabSrc%cmatrixFormat
       rafcstabDest%NEQ                   = rafcstabSrc%NEQ
       rafcstabDest%NVAR                  = rafcstabSrc%NVAR
       rafcstabDest%NVARtransformed       = rafcstabSrc%NVARtransformed
@@ -1608,6 +1615,19 @@ contains
     integer, dimension(3) :: Isize3D
     integer :: i,ij,ji,iedge,ipos,imatrix,nmatrices,nmaxpos
 
+
+    ! Check if stabilisation has been initialised
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
+      call sys_halt()
+    end if
+
+    ! Check if stabilisation provides edge-based structure
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
+      call afcstab_generateVerticesAtEdge(Rmatrices(1), rafcstab)
+    end if
+
     ! Set number of matrices
     nmatrices = size(Rmatrices)
 
@@ -1631,14 +1651,6 @@ contains
       call sys_halt()
     end if
 
-    ! Check if first matrix is compatible with the stabilisation structure
-    if ((Rmatrices(1)%NEQ .ne. rafcstab%NEQ) .or.&
-        int(0.5*(Rmatrices(1)%NA-Rmatrices(1)%NEQ),I32) .ne. rafcstab%NEDGE) then
-      call output_line('Matrix is not compatible with stabilisation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
-      call sys_halt()
-    end if
-
     ! Note that only double precision matrices are supported
     if (Rmatrices(1)%cdataType .ne. ST_DOUBLE) then
       call output_line('Only double precision matrices are supported!',&
@@ -1646,15 +1658,19 @@ contains
       call sys_halt()
     end if
     
+    ! Check if first matrix is compatible with the stabilisation structure
+    if ((Rmatrices(1)%NEQ .ne. rafcstab%NEQ) .or.&
+        (int(0.5*(Rmatrices(1)%NA-Rmatrices(1)%NEQ),I32) .ne. rafcstab%NEDGE) .or.&
+        (Rmatrices(1)%cmatrixFormat .ne. rafcstab%cmatrixFormat)) then
+      call output_line('Matrix is not compatible with stabilisation structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
+      call sys_halt()
+    end if
+
     ! Check if all matrices are compatible to the first one
     do imatrix = 2, nmatrices
       call lsyssc_isMatrixCompatible(Rmatrices(1), Rmatrices(imatrix))
     end do
-
-    ! Check if stabilisation provides edge-based structure
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
-      call afcstab_generateVerticesAtEdge(Rmatrices(1), rafcstab)
-    end if
     
     ! Check if auxiliary data arrays for matrix coefficients are initialised
     if ((rafcstab%h_DmatrixCoeffsAtNode .eq. ST_NOHANDLE) .or.&
@@ -2210,6 +2226,13 @@ contains
 
     ! What kind of matrix are we?
     select case(rmatrixTemplate%cmatrixFormat)
+    case(LSYSSC_MATRIX1)
+      ! Generate edge structure for dense matrix
+      call genEdgesMat1(rmatrixTemplate%NEQ+1, p_IverticesAtEdge)
+
+      ! Set matrix format
+      rafcstab%cmatrixFormat = LSYSSC_MATRIX1
+
     case(LSYSSC_MATRIX7,&
          LSYSSC_MATRIX7INTL)
 
@@ -2227,7 +2250,10 @@ contains
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
-      
+
+      ! Set matrix format
+      rafcstab%cmatrixFormat = LSYSSC_MATRIX7
+
       
     case(LSYSSC_MATRIX9,&
          LSYSSC_MATRIX9INTL)
@@ -2248,17 +2274,15 @@ contains
       ! Release diagonal separator
       call storage_free(h_Ksep)
 
+      ! Set matrix format
+      rafcstab%cmatrixFormat = LSYSSC_MATRIX9
+
 
     case(LSYSSC_MATRIXD)
       call output_line('Edge-bases data structure cannot be generated &
           &from diagonal matrix!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
       call sys_halt()
-
-
-    case(LSYSSC_MATRIX1)
-      ! Generate edge structure for dense matrix
-      call genEdgesMat1(rmatrixTemplate%NEQ+1, p_IverticesAtEdge)
 
 
     case DEFAULT
@@ -2274,6 +2298,44 @@ contains
   contains
 
     ! Here, the working routines follow
+
+    !**************************************************************
+    ! Generate edge data structure for dense matrices in format 1
+
+    subroutine genEdgesMat1(neq, IverticesAtEdge)
+
+      integer, intent(in) :: neq
+      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
+
+      ! local variables
+      integer :: i,j,iedge
+      
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, neq
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do j = i+1, neq
+
+          ! Increatse edge counter
+          iedge = iedge+1
+          
+          ! Set node numbers i and j
+          IverticesAtEdge(1, iedge) = i
+          IverticesAtEdge(2, iedge) = j
+          
+          ! Set matrix positions ij and ji
+          IverticesAtEdge(3, iedge) = neq*(i-1)+j
+          IverticesAtEdge(4, iedge) = neq*(j-1)+i
+          
+        end do
+      end do
+
+    end subroutine genEdgesMat1
 
     !**************************************************************
     ! Generate edge data structure for matrices in format 7
@@ -2361,44 +2423,6 @@ contains
 
     end subroutine genEdgesMat9
     
-    !**************************************************************
-    ! Generate edge data structure for dense matrices in format 1
-
-    subroutine genEdgesMat1(neq, IverticesAtEdge)
-
-      integer, intent(in) :: neq
-      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
-
-      ! local variables
-      integer :: i,j,iedge
-      
-      ! Initialize edge counter
-      iedge = 0
-      
-      ! Loop over all rows
-      do i = 1, neq
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do j = i+1, neq
-
-          ! Increatse edge counter
-          iedge = iedge+1
-          
-          ! Set node numbers i and j
-          IverticesAtEdge(1, iedge) = i
-          IverticesAtEdge(2, iedge) = j
-          
-          ! Set matrix positions ij and ji
-          IverticesAtEdge(3, iedge) = neq*(i-1)+j
-          IverticesAtEdge(4, iedge) = neq*(j-1)+i
-          
-        end do
-      end do
-
-    end subroutine genEdgesMat1
-
   end subroutine afcstab_generateVerticesAtEdge
 
   !*****************************************************************************
