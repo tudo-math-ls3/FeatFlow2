@@ -23,6 +23,14 @@ module commandparser
   
   use multilevelprojection
   
+  use derivatives
+  use scalarpde
+  use domainintegration
+  use bilinearformevaluation
+  use stdoperators
+  use feevaluation
+  use analyticprojection
+  
   use vectorio
 
   implicit none
@@ -631,6 +639,11 @@ contains
       return
     end if
     
+    if (scmd .eq. "L2PROJECTION") then
+      call cmdprs_do_l2projection (rcmdStatus,Sargs)
+      return
+    end if
+    
     if (scmd .ne. "") then
       call output_line ("Unknown command!")
     end if
@@ -686,6 +699,7 @@ contains
       call output_line ("  copyvector         - Copy a vector to another.");
       call output_line ("  copysubvector      - Copy a subvector to another.");
       call output_line ("  interpolatevector  - Interpolate a vector to another level.");
+      call output_line ("  l2projection       - Appies an L2 projection to a vector.");
     
     else
     
@@ -1075,6 +1089,26 @@ contains
         call output_line ("      Defines the underlying FE hierarchy.");
         call output_line ("      Mandatory argument if source and destination level differ");
         call output_line ("      by more than one level.");
+      
+        return
+      end if
+
+      if (sargformatted .eq. "L2PROJECTION") then
+        call output_line ("L2PROJECTION - Applies an L2 projection to a vector.");
+        call output_lbrk ()
+        call output_line ("Usage:")
+        call output_line ("   l2projection [varsource] [vardest] [...options...]")
+        call output_lbrk ()
+        call output_line ("Interpolates vector [varsource] to [vardest] using an")
+        call output_line ("L2-projection.")
+        call output_lbrk ()
+        call output_line ("Example:")
+        call output_line ("    interpolatevector source dest")
+        call output_lbrk ()
+        call output_line ("The following options are possible in [...options...]:")
+        call output_lbrk ()
+        call output_line ("  ... --VERBOSE ...")
+        call output_line ("      Activate verbose output.")
       
         return
       end if
@@ -2999,17 +3033,8 @@ contains
         end if
 
       else if (stoken .eq. "--UNFORMATTED") then
+
         bformatted = .false.
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          sfilename = trim(stoken)
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
 
       end if      
 
@@ -3471,6 +3496,146 @@ contains
       end if
       
     end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+    subroutine fcoeff_analytPrj (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, &
+                  IdofsTest, rdomainIntSubset, &
+                  Dcoefficients, rcollection)
+    
+    ! Returns values of an FE function in cubature points.
+    
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    type(t_linearForm), intent(in) :: rform
+    integer, intent(in) :: nelements
+    integer, intent(in) :: npointsPerElement
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset    
+    type(t_collection), intent(inout), optional :: rcollection
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+
+      ! local variables
+      integer :: icomponent
+      type(t_vectorBlock), pointer :: p_rvectorBlock
+      
+      ! Get the component and the FE function
+      p_rvectorBlock => rcollection%p_rvectorQuickAccess1
+      icomponent = rcollection%IquickAccess(1)
+
+      ! Evaluate the FE function      
+      call fevl_evaluate_sim (p_rvectorBlock%RvectorBlock(icomponent), &
+          rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
+  
+    end subroutine
+
+  ! ***************************************************************************
+
+  subroutine cmdprs_do_l2projection (rcmdStatus,Sargs)
+  
+  !<description>
+    ! Command: INTERPOLATEVECTOR.
+  !</description>
+  
+  !<inputoutput>
+    ! Current status block.
+    type(t_commandstatus), intent(inout) :: rcmdStatus
+  !</inputoutput>
+
+  !<input>
+    ! Command line arguments.
+    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
+  !</input>
+  
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvectorBlock1,p_rvectorBlock2
+    character(len=COLLCT_MLNAME) :: ssource, sdest, stoken
+    type(t_matrixScalar) :: rmatrixMass
+    integer :: i
+    logical :: bverbose
+    type(t_collection) :: rcollection
+    type(t_configL2ProjectionByMass) :: rL2ProjectionConfig
+    
+    if (size(Sargs) .lt. 3) then
+      call output_line ("Not enough arguments.")
+      return
+    end if
+    
+    ! Source vector and destination
+    call cmdprs_getparam (Sargs,2,ssource,.true.,.false.)
+    call cmdprs_getparam (Sargs,3,sdest,.true.,.false.)
+
+    p_rvectorBlock1 => collct_getvalue_vec (rcmdStatus%rcollection, ssource)
+    if (.not. associated(p_rvectorBlock1)) then
+      call output_line ("Invalid source vector!")
+      return
+    end if
+
+    p_rvectorBlock2 => collct_getvalue_vec (rcmdStatus%rcollection, sdest)
+    if (.not. associated(p_rvectorBlock2)) then
+      call output_line ("Invalid destination vector!")
+      return
+    end if
+
+    i = 4
+    do 
+      if (i .gt. size(Sargs)) exit
+      
+      ! Get the next token.
+      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
+      i = i+1
+      
+      if (stoken .eq. "--VERBOSE") then
+      
+        bverbose = .true.
+
+      end if      
+
+    end do
+
+    ! Clear the destination
+    call lsysbl_clearVector (p_rvectorBlock2)
+
+    ! Loop through the components
+    do i=1,min(p_rvectorBlock1%nblocks,p_rvectorBlock2%nblocks)
+      if (bverbose) then
+        call output_lbrk ()
+        call output_line ("Component : "//trim(sys_siL(i,10)))
+        call output_line ("Creating mass matrix - structure...")
+      end if
+
+      ! Create a mass matrix in that space
+      call bilf_createMatrixStructure (p_rvectorBlock2%p_rblockDiscr%RspatialDiscr(i),&
+          LSYSSC_MATRIX9,rmatrixMass)
+
+      if (bverbose) then
+        call output_line ("Creating mass matrix - content...")
+      end if
+
+      call stdop_assembleSimpleMatrix (rmatrixMass,DER_FUNC,DER_FUNC,1.0_DP,.true.)
+      
+      if (bverbose) then
+        call output_line ("Projecting...")
+      end if
+
+      ! Do the L2 projection
+      rcollection%p_rvectorQuickAccess1 => p_rvectorBlock1
+      rcollection%IquickAccess(1) = i
+      call anprj_analytL2projectionByMass (p_rvectorBlock2%RvectorBlock(i), rmatrixMass,&
+          fcoeff_analytPrj, rcollection, rL2ProjectionConfig)
+
+      if (bverbose) then
+        call output_line ("Rel. error: "//trim(sys_sdEL(rL2ProjectionConfig%drelError,10)))
+        call output_line ("Abs. error: "//trim(sys_sdEL(rL2ProjectionConfig%dabsError,10)))
+        call output_line ("Iteraions : "//trim(sys_siL(rL2ProjectionConfig%iiterations,10)))
+      end if
+          
+      ! Release the mass matrix
+      call lsyssc_releaseMatrix (rmatrixMass)
+    end do
 
   end subroutine
 
