@@ -3480,7 +3480,7 @@ contains
 
     if (present(n) .and. present(m) .and. present(o)) then
     
-      !$omp parallel do private(i,j
+      !$omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
