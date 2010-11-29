@@ -2000,7 +2000,6 @@ contains
       integer :: iedge,iaux
       
       ! Impose edge orientation a posteriori
-      !$omp parallel do default(shared) private(daux,iaux)
       do iedge = 1, size(DcoefficientsAtEdge,2)
         if (DcoefficientsAtEdge(2,iedge) > DcoefficientsAtEdge(3,iedge)) then
           daux = DcoefficientsAtEdge(2,iedge)
@@ -2016,7 +2015,6 @@ contains
           IverticesAtEdge(4,iedge) = iaux
         end if
       end do
-      !$omp end parallel do
 
     end subroutine doUpwindOrientation
     
@@ -2835,7 +2833,6 @@ contains
       integer :: ieq
 
       ! Loop over all vertices
-      !$omp parallel do
       do ieq = 1, NEQ
 !!$        Drp(ieq) = ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)+AFCSTAB_EPSABS)
         if (dscale*Dpp(ieq) .gt. AFCSTAB_EPSABS) then
@@ -2844,10 +2841,8 @@ contains
           Drp(ieq) = 1.0_DP
         end if
       end do
-      !$omp end parallel do
 
       ! Loop over all vertices
-      !$omp parallel do
       do ieq = 1, NEQ
 !!$        Drm(ieq) = ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)-AFCSTAB_EPSABS)
         if (dscale*Dpm(ieq) .lt. -AFCSTAB_EPSABS) then
@@ -2856,7 +2851,6 @@ contains
           Drm(ieq) = 1.0_DP
         end if
       end do
-      !$omp end parallel do
     end subroutine doLimitNodal
 
     !**************************************************************
@@ -2876,7 +2870,6 @@ contains
       integer :: ieq
 
       ! Loop over all vertices
-      !$omp parallel do
       do ieq = 1, NEQ
 !!$        Drp(ieq) = min(1.0_DP, ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)+AFCSTAB_EPSABS))
         if (dscale*Dpp(ieq) .gt. AFCSTAB_EPSABS) then
@@ -2885,10 +2878,8 @@ contains
           Drp(ieq) = 1.0_DP
         end if
       end do
-      !$omp end parallel do
 
       ! Loop over all vertices
-      !$omp parallel do
       do ieq = 1, NEQ
 !!$        Drm(ieq) = min(1.0_DP, ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)-AFCSTAB_EPSABS))
         if (dscale*Dpm(ieq) .lt. -AFCSTAB_EPSABS) then
@@ -2897,7 +2888,6 @@ contains
           Drm(ieq) = 1.0_DP
         end if
       end do
-      !$omp end parallel do
     end subroutine doLimitNodalConstrained    
 
     !**************************************************************
@@ -2919,7 +2909,6 @@ contains
       integer :: iedge,i,j
       
       ! Loop over all edges
-      !$omp parallel do private(i,j,f_ij,r_ij)
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
@@ -2941,7 +2930,6 @@ contains
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * r_ij
       end do
-      !$omp end parallel do
     end subroutine doLimitEdgewise
 
     !**************************************************************
@@ -2964,7 +2952,6 @@ contains
       integer :: iedge,i,j
       
       ! Loop over all edges
-      !$omp parallel do private(i,j,f1_ij,f2_ij,r_ij)
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
@@ -2989,7 +2976,6 @@ contains
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * r_ij
       end do
-      !$omp end parallel do
     end subroutine doLimitEdgewiseConstrained
 
     !**************************************************************
@@ -11884,12 +11870,10 @@ contains
       ! local variables
       integer :: iedge
 
-      !$omp parallel do
       do iedge = 1, NEDGE
         Dflux2(iedge) = Dflux2(iedge) +&
             dscale * Dalpha(iedge) * Dflux1(iedge)
       end do
-      !$omp end parallel do
       
     end subroutine doCombineFluxes
 
@@ -11929,7 +11913,6 @@ contains
         
         if (dscale2 .eq. 0.0_DP) then
           
-          !$omp parallel do private(i,j)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -11940,11 +11923,9 @@ contains
             ! Compute raw antidiffusive flux
             Dflux(iedge) = dscale1*MC(ij)*(Dx1(i)-Dx1(j))
           end do
-          !$omp end parallel do
 
         else
 
-          !$omp parallel do private(i,j)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -11956,7 +11937,6 @@ contains
             Dflux(iedge) = dscale1*MC(ij)*(Dx1(i)-Dx1(j))+&
                 dscale2*DcoefficientsAtEdge(1,iedge)*(Dx2(i)-Dx2(j))
           end do
-          !$omp end parallel do
           
         end if
 
@@ -11987,7 +11967,6 @@ contains
 
       else
 
-        !$omp parallel do private(i,j)
         do iedge = 1, NEDGE
           
           ! Determine indices
@@ -11997,7 +11976,6 @@ contains
           ! Compute raw antidiffusive flux
           Dflux(iedge) = dscale*DcoefficientsAtEdge(1,iedge)*(Dx(i)-Dx(j))
         end do
-        !$omp end parallel do
         
       end if
     end subroutine doFluxesNoMass

@@ -4970,7 +4970,6 @@ contains
 
 
       ! Loop over all vertices
-      !$omp parallel do default(shared)
       do ieq = 1, NEQ
         where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
           Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq))
@@ -4978,10 +4977,8 @@ contains
           Drp(:,ieq) = 1.0_DP
         end where
       end do
-      !$omp end parallel do
 
       ! Loop over all vertices
-      !$omp parallel do default(shared)
       do ieq = 1, NEQ
         where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
           Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq))
@@ -4989,7 +4986,6 @@ contains
           Drm(:,ieq) = 1.0_DP
         end where
       end do
-      !$omp end parallel do
 
     end subroutine doLimitNodal
 
@@ -5013,7 +5009,6 @@ contains
 
 
       ! Loop over all vertices
-      !$omp parallel do default shared
       do ieq = 1, NEQ
         where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
           Drp(:,ieq) = min(1.0_DP, ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)))
@@ -5021,10 +5016,8 @@ contains
           Drp(:,ieq) = 1.0_DP
         end where
       end do
-      !$omp end parallel do
 
       ! Loop over all vertices
-      !$omp parallel do default shared
       do ieq = 1, NEQ
         where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
           Drm(:,ieq) = min(1.0_DP, ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)))
@@ -5032,7 +5025,6 @@ contains
           Drm(:,ieq) = 1.0_DP
         end where
       end do
-      !$omp end parallel do
 
     end subroutine doLimitNodalConstrained
 
@@ -6393,7 +6385,6 @@ contains
 
 
       ! Loop over all vertices
-      !$omp parallel do default(shared)
       do ieq = 1, NEQ
         where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
           Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq))
@@ -6401,10 +6392,8 @@ contains
           Drp(:,ieq) = 1.0_DP
         end where
       end do
-      !$omp end parallel do
 
       ! Loop over all vertices
-      !$omp parallel do default(shared)
       do ieq = 1, NEQ
         where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
           Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq))
@@ -6412,7 +6401,6 @@ contains
           Drm(:,ieq) = 1.0_DP
         end where
       end do
-      !$omp end parallel do
 
     end subroutine doLimitNodal
 
@@ -6436,7 +6424,6 @@ contains
 
 
       ! Loop over all vertices
-      !$omp parallel do default shared
       do ieq = 1, NEQ
         where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
           Drp(:,ieq) = min(1.0_DP, ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)))
@@ -6444,10 +6431,8 @@ contains
           Drp(:,ieq) = 1.0_DP
         end where
       end do
-      !$omp end parallel do
 
       ! Loop over all vertices
-      !$omp parallel do default shared
       do ieq = 1, NEQ
         where (dscale*Dpm(:,ieq) .lt. -AFCSTAB_EPSABS)
           Drm(:,ieq) = min(1.0_DP, ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)))
@@ -6455,7 +6440,6 @@ contains
           Drm(:,ieq) = 1.0_DP
         end where
       end do
-      !$omp end parallel do
 
     end subroutine doLimitNodalConstrained
 
@@ -7273,7 +7257,6 @@ contains
       integer :: iedge,ij,i,j
       
       ! Loop over all edges
-      !$omp parallel do private(i,j,ij)
       do iedge = 1, NEDGE
 
         ! Get node numbers and matrix positions
@@ -7284,7 +7267,6 @@ contains
         ! Compute the raw antidiffusives fluxes
         Dflux(:,iedge) = Dflux(:,iedge) + dscale*DmatrixData(ij)*(Dx(i,:)-Dx(j,:))
       end do
-      !$omp end parallel do
 
     end subroutine doMassFluxes
 
@@ -7307,12 +7289,10 @@ contains
       ! local variables
       integer :: iedge
 
-      !$omp parallel do
       do iedge = 1, NEDGE
         Dflux2(:,iedge) = Dflux2(:,iedge) +&
             dscale * Dalpha(iedge) * Dflux1(:,iedge)
       end do
-      !$omp end parallel do
 
     end subroutine doCombineFluxes
 
@@ -7712,7 +7692,6 @@ contains
       integer :: iedge,ij,i,j
       
       ! Loop over all edges
-      !$omp parallel do private(i,j,ij)
       do iedge = 1, NEDGE
 
         ! Get node numbers and matrix positions
@@ -7723,7 +7702,6 @@ contains
         ! Compute the raw antidiffusives fluxes
         Dflux(:,iedge) = Dflux(:,iedge) + dscale*DmatrixData(ij)*(Dx(:,i)-Dx(:,j))
       end do
-      !$omp end parallel do
 
     end subroutine doMassFluxes
 
@@ -7746,12 +7724,10 @@ contains
       ! local variables
       integer :: iedge
 
-      !$omp parallel do
       do iedge = 1, NEDGE
         Dflux2(:,iedge) = Dflux2(:,iedge) +&
             dscale * Dalpha(iedge) * Dflux1(:,iedge)
       end do
-      !$omp end parallel do
 
     end subroutine doCombineFluxes
 
