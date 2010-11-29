@@ -192,7 +192,8 @@ use constant SRCLIST_KERNEL =>
     "ElementCubature/element_tri2d.f90 ElementCubature/elementbase.f90 " .
     "ElementCubature/elementpreprocessing.f90 ElementCubature/transformation.f90 " .
 
-    "Hierarchies/fespacehierarchy.f90 Hierarchies/meshhierarchy.f90 Hierarchies/timescalehierarchy.f90 " .
+    "Hierarchies/fespacehierarchybase.f90 Hierarchies/fespacehierarchy.f90 " .
+    "Hierarchies/meshhierarchy.f90 Hierarchies/timescalehierarchy.f90 " .
 
     "LinearAlgebra/linearalgebra.f90 " .
 
