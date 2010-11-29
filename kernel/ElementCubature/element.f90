@@ -690,7 +690,7 @@ contains
 
 !<function>  
 
-  integer(I32) function elem_igetID(selemName)
+  integer(I32) function elem_igetID(selemName, bcheck)
   
 !<description>
   ! This routine returns the element id to a given element name.
@@ -705,12 +705,17 @@ contains
 
   ! Element name - one of the EL_xxxx constants.
   character (LEN=*) :: selemName
+  
+  ! Check the element type. If set to TRUE and the element
+  ! name is invalid, the program is not stopped, but 0 is returned.
+  logical, intent(in), optional :: bcheck
 
   !</input>
   
 !</function>
 
     character(len=len(selemName)+1) :: selem
+    logical :: bchk
     
     ! SELECT CASE is not allowed for strings (although supported by a majority
     ! of compilers), therefore we have to use a couple of if-commands :(
@@ -853,9 +858,15 @@ contains
 
     ! Unknown element
     else
-      call output_line('Error: Unknown element: ' // selemName, &
-                       OU_CLASS_ERROR,OU_MODE_STD,'elem_igetID')
-      call sys_halt()
+      bchk = .false.
+      if (present(bcheck)) bchk = bcheck
+      if (.not. bcheck) then
+        call output_line('Error: Unknown element: ' // selemName, &
+                        OU_CLASS_ERROR,OU_MODE_STD,'elem_igetID')
+        call sys_halt()
+      else
+        elem_igetID = 0
+      end if
       
     end if
   

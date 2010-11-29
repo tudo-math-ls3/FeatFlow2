@@ -652,7 +652,7 @@ contains
   
 !<function>
 
-  integer(I32) function spdiscr_getStdCubature (celement,iopertype) result (ccubType)
+  elemental integer(I32) function spdiscr_getStdCubature (celement,iopertype) result (ccubType)
   
 !<description>
   ! This routine returns a standard cubature formula for an element which

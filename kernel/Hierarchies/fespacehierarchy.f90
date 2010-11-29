@@ -27,7 +27,8 @@
 !# has to provide the functionality to create the discretisation as it is
 !# needed.
 !#
-!# The following routines can be found here:
+!# The following routines can be found here. These add functionality
+!# to the module fespacehierarchybase.f90:
 !#
 !# 1.) fesph_createFEspace
 !#     -> Creates a FE space based on a triangulation, discretisation, TRI file,
@@ -56,7 +57,10 @@
 !#     -> Extracts a set of FE spaces from an FE space on every level of 
 !#        a hierarchy
 !#
-!# 9.) fesph_printHierStatistics
+!# 9.) fesph_infoStatistics
+!#     -> Print statistics about an FE space
+!#
+!# 10.) fesph_printHierStatistics
 !#     -> Print statistics about an FE space hierarchy
 !# </purpose>
 !##############################################################################
@@ -73,12 +77,12 @@ module fespacehierarchy
   use collection
   use dofmapping
   
+  use fespacehierarchybase
+  
   implicit none
   
   private
   
-  public :: t_feSpaceLevel
-  public :: t_feHierarchy
   public :: fesph_createFEspace
   public :: fesph_releaseFEspace
   public :: fesph_concatFeSpaces
@@ -87,86 +91,9 @@ module fespacehierarchy
   public :: fesph_releaseHierarchy
   public :: fesph_concatFeHierarchies
   public :: fesph_deriveFeHierarchy
+  public :: fesph_infoStatistics
   public :: fesph_printHierStatistics
   
-!<constants>
-
-!<constantblock description = "Constants defining shared information">
-
-  ! Triangulation is shared.
-  integer(I32), parameter :: FESPH_SHAREDTRIA = 2_I32**0
-
-  ! Discretisation is shared.
-  integer(I32), parameter :: FESPH_SHAREDDISCR = 2_I32**1
-
-!</constantblock>
-
-!</constants>
-
-
-!<types>
-
-!<typeblock>
-
-  ! A structure that specifies a FE space which can be used to create
-  ! FE vectors/matrices.
-  type t_feSpaceLevel
-  
-    ! A shared flag that specifies which information in this structure
-    ! is shared with information from outside and which information
-    ! belongs to this structure.
-    integer(I32) :: cflags = 0
-    
-    ! Reference to the underlying domain or NULL() if no domain is attached.
-    type(t_boundary), pointer :: p_rboundary => null()
-    
-    ! Reference to the underlying triangulation.
-    ! This is either a direct reference or refers to allocated memory
-    ! on the heap if the triangulation had been created by refinement
-    ! in the create routines.
-    type(t_triangulation), pointer :: p_rtriangulation => null()
-    
-    ! Reference to the underlying discretisation.
-    ! This is either a direct reference or refers to allocated memory
-    ! on the heap if the discretisation had been created by 
-    ! the create routines.
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
-    
-  end type
-
-!</typeblock>
-
-!<typeblock>
-
-  ! A FE hierarchy that describes a hierarchy of FE spaces.
-  type t_feHierarchy
-  
-    ! A shared flag that specifies which information in this structure
-    ! is shared with information from outside and which information
-    ! belongs to this structure.
-    integer(I32) :: cflags = 0
-
-    ! Reference to the underlying domain or NULL() if no domain is attached.
-    type(t_boundary), pointer :: p_rboundary => null()
-
-    ! An underlying mesh hierarchy.
-    type(t_meshHierarchy) :: rmeshHierarchy 
-    
-    ! Number of levels available in this structure.
-    integer :: nlevels = 0
-    
-    ! Maximum number of available levels available in this structure.
-    integer :: nmaxLevels = 0
-    
-    ! Level information.
-    type(t_feSpaceLevel), dimension(:), pointer :: p_rfeSpaces => null()
-    
-  end type
-
-!</typeblock>
-
-!</types>
-
   interface fesph_createFEspace
     module procedure fesph_createFEspaceTria
     module procedure fesph_createFEspaceDiscr
@@ -1426,6 +1353,74 @@ contains
 
 !<subroutine>
 
+  subroutine fesph_infoStatistics (rfeSpaceLevel,bheadline,ilevel)
+  
+!<description>
+  ! Prints out statistical information of the given FE space to the
+  ! terminal. The output is formatted as a table with an optional headline
+  ! and an optional level identifier.
+!</description>
+
+!<input>
+  ! Triangulation structure.
+  type(t_feSpaceLevel), intent(in) :: rfeSpaceLevel
+  
+  ! OPTIONAL: Print out a headline above the statistical data.
+  ! =FALSE: do not print = standard.
+  ! =TRUE: print a headline.
+  logical, intent(in), optional :: bheadline
+  
+  ! OPTIONAL: Level identifier.
+  ! If specified, an additional column 'Level' is added to the front of
+  ! the statistics table. ilevel is printed to this column.
+  integer, intent(in), optional :: ilevel
+!</input>
+
+!</subroutine>
+
+    integer :: j
+
+    if (bheadline) then
+      ! Print a headline
+      if (present(ilevel)) then
+        call output_line("Lv.",bnoLineBreak=.true.)
+      else
+        call output_line ("",bnoLineBreak=.true.)
+      end if
+      do j=1,rfeSpaceLevel%p_rdiscretisation%ncomponents
+        call output_line("    #dof(x"//trim(sys_si(j,1))//")",bnoLineBreak=.true.,&
+            cdateTimeLogPolicy=OU_DTP_NONE)
+      end do
+      call output_line(" #dof(total)",cdateTimeLogPolicy=OU_DTP_NONE)
+      call output_line("---",bnoLineBreak=.true.)
+      do j=1,rfeSpaceLevel%p_rdiscretisation%ncomponents
+        call output_line("------------",bnoLineBreak=.true.,cdateTimeLogPolicy=OU_DTP_NONE)
+      end do
+      call output_line("------------",cdateTimeLogPolicy=OU_DTP_NONE)
+    end if
+    
+    ! Print statistics about that level
+    if (present(ilevel)) then
+      call output_line (trim(sys_si(ilevel,3)),bnoLineBreak=.true.)
+    else
+      call output_line ("",bnoLineBreak=.true.)
+    end if
+    do j=1,rfeSpaceLevel%p_rdiscretisation%ncomponents
+      call output_line(&
+          trim(sys_si(dof_igetNDofGlob(&
+              rfeSpaceLevel%p_rdiscretisation%RspatialDiscr(j)),12)),&
+              bnoLineBreak=.true.,cdateTimeLogPolicy=OU_DTP_NONE)
+    end do
+
+    call output_line(trim(sys_si(dof_igetNDofGlobBlock(&
+        rfeSpaceLevel%p_rdiscretisation),12)),cdateTimeLogPolicy=OU_DTP_NONE)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine fesph_printHierStatistics (rhierarchy)
 
 !<description>
@@ -1439,35 +1434,10 @@ contains
   
 !</subroutine>
   
-    integer :: i,j
+    integer :: i
   
     do i=1,rhierarchy%nlevels
-      if (i .eq. 1) then
-        ! Print a headline
-        call output_line("Lv.",bnoLineBreak=.true.)
-        do j=1,rhierarchy%p_rfeSpaces(i)%p_rdiscretisation%ncomponents
-          call output_line("    #dof(x"//trim(sys_si(j,1))//")",bnoLineBreak=.true.,&
-              cdateTimeLogPolicy=OU_DTP_NONE)
-        end do
-        call output_line(" #dof(total)",cdateTimeLogPolicy=OU_DTP_NONE)
-        call output_line("---",bnoLineBreak=.true.)
-        do j=1,rhierarchy%p_rfeSpaces(i)%p_rdiscretisation%ncomponents
-          call output_line("------------",bnoLineBreak=.true.,cdateTimeLogPolicy=OU_DTP_NONE)
-        end do
-        call output_line("------------",cdateTimeLogPolicy=OU_DTP_NONE)
-      end if
-      
-      ! Print statistics about that level
-      call output_line (trim(sys_si(i,3)),bnoLineBreak=.true.)
-      do j=1,rhierarchy%p_rfeSpaces(i)%p_rdiscretisation%ncomponents
-        call output_line(&
-            trim(sys_si(dof_igetNDofGlob(&
-                rhierarchy%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr(j)),12)),&
-                bnoLineBreak=.true.,cdateTimeLogPolicy=OU_DTP_NONE)
-      end do
-
-      call output_line(trim(sys_si(dof_igetNDofGlobBlock(&
-          rhierarchy%p_rfeSpaces(i)%p_rdiscretisation),12)),cdateTimeLogPolicy=OU_DTP_NONE)
+      call fesph_infoStatistics (rhierarchy%p_rfeSpaces(i),(i .eq. 1),i)
     end do
     
   end subroutine

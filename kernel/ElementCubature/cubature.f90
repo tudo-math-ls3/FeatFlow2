@@ -384,7 +384,7 @@ contains
   !****************************************************************************
 
 !<function>  
-  integer(I32) function cub_igetID(scubName)
+  integer(I32) function cub_igetID(scubName, bcheck)
   
 !<description>
   ! This routine returns the cubature id to a given cubature formula name. It is 
@@ -400,11 +400,16 @@ contains
   !cubature formula name - one of the CUB_xxxx constants.
   character (LEN=*) :: scubName
 
+  ! Check the cubature type. If set to TRUE and the cubature
+  ! name is invalid, the program is not stopped, but 0 is returned.
+  logical, intent(in), optional :: bcheck
+
   !</input>
   
 !</function>
 
   character(len=len(scubName)+1) :: scub
+  logical :: bchk
   
   ! SELECT CASE is not allowed for strings (although supported by a majority
   ! of compilers), therefore we have to use a couple of IF-commands :(
@@ -523,9 +528,15 @@ contains
     cub_igetID=CUB_G2_3D_R
 
   else
-    call output_line('Unknown cubature formula: '//scubname,&
-                     OU_CLASS_ERROR,OU_MODE_STD,'cub_igetID')
-    call sys_halt()
+    bchk = .false.
+    if (present(bcheck)) bchk = bcheck
+    if (.not. bcheck) then
+      call output_line('Unknown cubature formula: '//scubname,&
+                      OU_CLASS_ERROR,OU_MODE_STD,'cub_igetID')
+      call sys_halt()
+    else
+      cub_igetID = 0
+    end if
   end if
     
   end function cub_igetID

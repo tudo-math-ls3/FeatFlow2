@@ -282,6 +282,10 @@ module collection
   use arraylist, only: t_arraylist
   use binarytree, only: t_btree
   use graph, only: t_graph
+  use meshhierarchy, only: t_meshHierarchy
+  use timescalehierarchy, only: t_timescaleHierarchy
+  use fespacehierarchybase, only: t_feHierarchy, t_feSpaceLevel
+  use multilevelprojection, only: t_interlevelProjectionHier
   
   implicit none
   
@@ -429,6 +433,20 @@ module collection
   ! Particles structure3D
   integer, parameter, public :: COLLCT_PARTICLES3D    = 35
   
+  ! Mesh hierarchy
+  integer, parameter, public :: COLLCT_MSHHIERARCHY   = 36
+
+  ! FE space
+  integer, parameter, public :: COLLCT_FESPACE        = 37
+
+  ! FE space hierarchy
+  integer, parameter, public :: COLLCT_FEHIERARCHY    = 38
+
+  ! time scale hierarchy
+  integer, parameter, public :: COLLCT_TSHIERARCHY    = 39
+
+  ! multilevel projection hierarchy
+  integer, parameter, public :: COLLCT_MLPRJHIERARCHY = 40
 
 !</constantblock>
 
@@ -552,6 +570,21 @@ module collection
 
     ! Pointer to a graph structure
     type(t_graph), pointer                      :: p_rgraph => null()
+
+    ! Pointer to a mesh hierarchy structure
+    type(t_meshHierarchy), pointer              :: p_rmeshHierarchy => null()
+
+    ! Pointer to a FE space hierarchy structure
+    type(t_feHierarchy), pointer                :: p_rfeHierarchy => null()
+
+    ! Pointer to a FE space hierarchy structure
+    type(t_feSpaceLevel), pointer               :: p_rfeSpace => null()
+
+    ! Pointer to a time scale hierarchy structure
+    type(t_timescaleHierarchy), pointer         :: p_rtsHierarchy => null()
+
+    ! Pointer to a multilevel projection hierarchy structure
+    type(t_interlevelProjectionHier), pointer   :: p_rmlprjHierarchy => null()
   end type
   
   public :: t_collctValue
@@ -757,6 +790,11 @@ module collection
   public :: collct_setvalue_arraylist 
   public :: collct_setvalue_btree 
   public :: collct_setvalue_graph 
+  public :: collct_setvalue_mshh
+  public :: collct_setvalue_fesp
+  public :: collct_setvalue_feh
+  public :: collct_setvalue_tsh
+  public :: collct_setvalue_mlprjh
   public :: collct_queryvalue
 
   public :: collct_getmaxlevel_direct 
@@ -794,6 +832,11 @@ module collection
   public :: collct_getvalue_arraylist 
   public :: collct_getvalue_btree 
   public :: collct_getvalue_graph
+  public :: collct_getvalue_mshh
+  public :: collct_getvalue_fesp
+  public :: collct_getvalue_feh
+  public :: collct_getvalue_tsh
+  public :: collct_getvalue_mlprjh
   public :: collct_setvalue_particles 
   public :: collct_setvalue_particles3D 
 
@@ -4539,6 +4582,321 @@ contains
 
   ! ***************************************************************************
   
+!<function>
+
+  function collct_getvalue_mshh (rcollection, sparameter, &
+                                  ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_meshHierarchy), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_MSHHIERARCHY,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rmeshhierarchy
+    else
+      nullify(value)
+    end if
+    
+  end function
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_fesp (rcollection, sparameter, &
+                                  ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_feSpaceLevel), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_FESPACE,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rfeSpace
+    else
+      nullify(value)
+    end if
+    
+  end function
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_feh (rcollection, sparameter, &
+                                  ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_feHierarchy), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_FEHIERARCHY,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rfeHierarchy
+    else
+      nullify(value)
+    end if
+    
+  end function
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_tsh (rcollection, sparameter, &
+                                  ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_timescaleHierarchy), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_TSHIERARCHY,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rtsHierarchy
+    else
+      nullify(value)
+    end if
+    
+  end function
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_mlprjh (rcollection, sparameter, &
+                                  ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_interlevelProjectionHier), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_MLPRJHIERARCHY,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rmlprjHierarchy
+    else
+      nullify(value)
+    end if
+    
+  end function
+
+  ! ***************************************************************************
+  
 !<subroutine>
 
   subroutine collct_setvalue_char (rcollection, sparameter, value, badd, &
@@ -6454,6 +6812,311 @@ contains
     
   end subroutine collct_setvalue_btree
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_mshh (rcollection, sparameter, value, badd, &
+                                    ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_meshHierarchy), intent(in), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: do not add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(in) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_MSHHIERARCHY,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rmeshHierarchy => value
+    
+  end subroutine 
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_fesp (rcollection, sparameter, value, badd, &
+                                    ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_feSpaceLevel), intent(in), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: do not add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(in) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_FESPACE,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rfeSpace => value
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_feh (rcollection, sparameter, value, badd, &
+                                    ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_feHierarchy), intent(in), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: do not add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(in) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_FEHIERARCHY,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rfeHierarchy => value
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_tsh (rcollection, sparameter, value, badd, &
+                                    ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_timescaleHierarchy), intent(in), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: do not add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(in) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_TSHIERARCHY,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rtsHierarchy => value
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_mlprjh (rcollection, sparameter, value, badd, &
+                                    ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_interlevelProjectionHier), intent(in), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: do not add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(in) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_MLPRJHIERARCHY,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rmlprjHierarchy => value
+    
+  end subroutine
+  
   ! ***************************************************************************
   
 !<subroutine>
