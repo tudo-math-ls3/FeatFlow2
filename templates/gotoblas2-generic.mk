@@ -22,6 +22,15 @@ ifneq (,$(findstring -DENABLE_SERIAL_BUILD ,$(APPONLYFLAGS) $(CFLAGSF90) ))
 LIBS     := $(LIBS) -lpthread
 endif
 
+# When compiling with the Intel compiler, it is more than likely that the
+# GotoBLAS2 library has been compiled with that compiler, too. Simply
+# due to the fact that if otherwise, one gets linker errors because of
+# undefined symbols that stem from the compiler used for the GotoBLAS2
+# library. A GotoBLAS2 library compiled with the Intel compiler, though,
+# contains a reference to symbol __svml_cosf4 from libsvml.
+ifeq ($(call match,$(ID),.*-.*-.*-intel.*),yes)
+LIBS     := $(LIBS) -lsvml
+endif
 
 
 
