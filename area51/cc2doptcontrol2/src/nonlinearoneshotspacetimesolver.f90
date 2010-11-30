@@ -56,6 +56,7 @@ module nonlinearoneshotspacetimesolver
   
   use analyticsolution
   use meshhierarchy
+  use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy
   
@@ -152,7 +153,7 @@ contains
   
 !<subroutine>
 
-  subroutine nlstslv_initPrecMatrices (rsettings,rnlstsolver,rmatrix,&
+  subroutine nlstslv_initPrecMatrices (rsettings,ctypeNonlinearIteration,rmatrix,&
       RprecMatrices,Rsolutions)
   
 !<description>
@@ -164,8 +165,8 @@ contains
   ! Settings structure with global parametes.
   type(t_settings_optflow), intent(inout) :: rsettings
 
-  ! Nonlinear solve structure representing the solver.
-  type(t_nlstsolver), intent(in) :: rnlstsolver
+  ! Type of the nonlinear iteration.
+  integer, intent(in) :: ctypeNonlinearIteration
   
   ! Space-time matrix on the finest space-time mesh.
   type(t_ccoptspaceTimeMatrix), intent(in) :: rmatrix
@@ -191,7 +192,7 @@ contains
     
     ! Which type on nonlinear solver do we have. Should we assemble the Newton part?
     cmatrixType = MATT_OPTCONTROL
-    select case (rnlstsolver%ctypeNonlinearIteration)
+    select case (ctypeNonlinearIteration)
     case (2:)
       ! Assemble Newton
       cmatrixType = MATT_LINOPTCONTROL
@@ -304,6 +305,7 @@ contains
     integer :: nlevels, ierror, ilev
     real(dp) :: dinitDefNorm,ddefNorm,dlastDefNorm,dtempdef,delapsedReal
     real(DP), dimension(4) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
+    logical :: bnewtonAllowed, breassembleStructure
     
     ! Some statistical data
     type(t_timer) :: rtimeFactorisationStep,rtimerMGstep,rtimerIterate,rtimerPostproc
@@ -359,11 +361,27 @@ contains
       call output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
 
     ! ---------------------------------------------------------------
+    ! Check if the Newton is allowed. This is the case if the
+    ! max. number of fixed point iterations is > 0 => 1st iteration is
+    ! fixed point.
+    
+    bnewtonAllowed = rnlstsolver%nmaxFixedPointIterations .eq. 0
+
+    ! ---------------------------------------------------------------
     ! Start the nonlinear iteration
     
     ! Initialise the nonlinear matrices on all levels for the first iteration
-    call nlstslv_initPrecMatrices (rsettings,rnlstsolver,rmatrix,&
-        rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+    if (bnewtonAllowed .or. (rnlstsolver%ctypeNonlinearIteration .eq. 1)) then
+      call nlstslv_initPrecMatrices (rsettings,rnlstsolver%ctypeNonlinearIteration,&
+          rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+    else
+      ! Newton not allowed. Select fixed point.
+      !if (rnlstsolver%ioutputLevel .ge. 1) then
+      !  call output_line ("Adaptive Newton: Selecting fixed point iteration.")
+      !end if
+      call nlstslv_initPrecMatrices (rsettings,1,&
+          rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+    end if
     
     ! Pass the matrices to the linear solver.
     call sptils_setMatrix(rnlstsolver%p_rspaceTimePrec,&
@@ -525,13 +543,83 @@ contains
       ! Preconditioning of the defect: d=C^{-1}d
       !
       ! Re-initialise the preconditioner matrices on all levels.
-      ! for iteration >= 2. The structure of the matrices does not change,
-      ! so we don't have to call sptils_initStructure again.
-      if (rnlstsolver%nnonlinearIterations .gt. 0) then
+!      ! for iteration >= 2. 
+!      if (rnlstsolver%nnonlinearIterations .gt. 1) then
+
+      breassembleStructure = .false.
+
+      select case (rnlstsolver%ctypeNonlinearIteration)
+      case (1)
+        ! Standard fixed point iteraion
         call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
-        call nlstslv_initPrecMatrices (rsettings,rnlstsolver,rmatrix,&
-            rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+        call nlstslv_initPrecMatrices (rsettings,rnlstsolver%ctypeNonlinearIteration,&
+            rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+
+        ! The structure of the matrices does not change,
+        ! so we don't have to call sptils_initStructure again.
+
+      case (2:)
+        ! Newton iteration, probably fallback to fixed point iteration.
+        ! Newton allowed -> initialisation as above
+        
+        ! 2.) Is Newton to be allowed?
+        if ((rnlstsolver%nnonlinearIterations .gt. rnlstsolver%nmaxFixedPointIterations) .or. &
+            (ddefNorm .le. rnlstsolver%depsRelFixedPoint*dinitDefNorm)) then
+          
+          ! Yep, has to be activated.
+
+          call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
+          call nlstslv_initPrecMatrices (rsettings,rnlstsolver%ctypeNonlinearIteration,&
+              rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+
+          ! Is Newton already active?
+          if (.not. bnewtonAllowed) then
+          
+            ! Activate Newton, reasseble matrix structure.
+            bnewtonAllowed = .true.
+            breassembleStructure = .true.
+          
+          end if
+          
+        else
+        
+          ! No, select fixed point iteration
+          if (rnlstsolver%ioutputLevel .ge. 1) then
+            call output_line ("Adaptive Newton: Selecting fixed point iteration.")
+          end if
+          
+          call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
+          call nlstslv_initPrecMatrices (rsettings,1,&
+              rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+
+          ! Is Newton currently active?
+          if (.not. bnewtonAllowed) then
+          
+            ! Dectivate Newton, reasseble matrix structure.
+            bnewtonAllowed = .false.
+            breassembleStructure = .true.
+          
+          end if
+        
+        end if
+        
+      end select
+
+      if (breassembleStructure) then
+      
+        call stat_startTimer (rnlstsolver%rtimeFactorisation)
+        call sptils_doneStructure (rnlstsolver%p_rspaceTimePrec)
+        call sptils_initStructure (rnlstsolver%p_rspaceTimePrec,ierror)
+        call stat_stopTimer (rnlstsolver%rtimeFactorisation)
+        if (ierror .gt. 0) then
+          call output_line ('sptils_initStructure failed! Matrix structure invalid!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'nlstslv_solve')
+          call sys_halt()
+        end if
+
       end if
+        
+!      end if
 
       call stat_clearTimer (rtimeFactorisationStep)
       call stat_startTimer (rtimeFactorisationStep)

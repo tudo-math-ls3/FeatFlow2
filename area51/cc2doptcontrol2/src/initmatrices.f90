@@ -51,6 +51,7 @@ module initmatrices
   use linearsystemblock
   use convection
 
+  use fespacehierarchybase
   use fespacehierarchy
   
   use constantsoptc

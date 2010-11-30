@@ -189,6 +189,7 @@ module spacetimelinearsystem
   use spacediscretisation
   !use spacetimediscretisation
   use spacematvecassembly
+  use fespacehierarchybase
   use fespacehierarchy
   
   use spacetimehierarchy

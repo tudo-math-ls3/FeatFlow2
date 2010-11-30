@@ -28,6 +28,7 @@ module structuresoptflow
   use timescalehierarchy
 
   use meshhierarchy  
+  use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy
 

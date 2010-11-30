@@ -55,6 +55,16 @@ domega             = 1.0
 
 ioutputLevel       = 2
 
+# Maximum number of defect correction iterations before starting Newton.
+# Standard=0=use Newton / inexact Newton immediately.
+
+nmaxFixedPointIterations = 0
+
+# Relative convergence criterion to use for defect correction
+# before Newton is started.
+
+depsRelFixedPoint = 1E-1
+
 # Stopping criterion for the linear solver in the inexact Newton iteration.
 # Controls the minimum number of digits to gain in the linear solver
 # per Newton iteration. Only used if ctypePreconditioner = 3.

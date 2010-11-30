@@ -84,6 +84,7 @@ module forwardbackwardsimulation
   use collection
   use statistics
   
+  use fespacehierarchybase
   use fespacehierarchy
 
   ! Include main structures; used for matrix assembly!
@@ -780,6 +781,7 @@ contains
       call parlst_getvalue_double (rparamList, snewton, &
           'dinexactNewtonExponent', rnonlinearIteration% &
           radaptiveNewton%dinexactNewtonExponent, 2.0_DP)
+
     end if
 
   end subroutine

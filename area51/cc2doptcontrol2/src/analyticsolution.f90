@@ -77,6 +77,7 @@ module analyticsolution
   use timeevaluation
 
   use meshhierarchy  
+  use fespacehierarchybase
   use fespacehierarchy
 
   use spacetimevectors

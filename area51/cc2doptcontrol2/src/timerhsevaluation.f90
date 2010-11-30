@@ -52,6 +52,7 @@ module timerhsevaluation
   
   use analyticsolution
   use meshhierarchy
+  use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy
   

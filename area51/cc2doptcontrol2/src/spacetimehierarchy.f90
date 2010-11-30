@@ -37,6 +37,7 @@ module spacetimehierarchy
   use dofmapping
 
   use spatialdiscretisation
+  use fespacehierarchybase
   use fespacehierarchy
   
   use timediscretisation

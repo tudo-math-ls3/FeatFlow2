@@ -34,6 +34,7 @@ module structuresoptcspacetimenlsol
   use collection
   
   use timediscretisation
+  use fespacehierarchybase
   use fespacehierarchy
   use spacetimevectors
   use spacetimehierarchy
@@ -118,6 +119,16 @@ module structuresoptcspacetimenlsol
     ! Output level of the solver
 
     integer :: ioutputLevel       = 2 
+
+    ! Maximum number of defect correction iterations before starting Newton.
+    ! Standard=0=use Newton / inexact Newton immediately.
+
+    integer :: nmaxFixedPointIterations = 0
+
+    ! Relative convergence criterion to use for defect correction
+    ! before Newton is started.
+
+    real(DP) :: depsRelFixedPoint = 1E-1
 
     ! Stopping criterion for the linear solver in the inexact Newton iteration.
     ! Controls the minimum number of digits to gain in the linear solver

@@ -60,6 +60,7 @@ module initsolver
   
   use analyticsolution
   use meshhierarchy
+  use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy
   
@@ -2373,6 +2374,12 @@ contains
     
     call parlst_getvalue_double (rparlist, ssection, &
         'dinexactNewtonExponent', rnlstsolver%dinexactNewtonExponent, 2.0_DP)
+
+    call parlst_getvalue_int (rparlist, ssection, &
+        'nmaxFixedPointIterations', rnlstsolver%nmaxFixedPointIterations, 0)
+
+    call parlst_getvalue_double (rparlist, ssection, &
+        'depsRelFixedPoint', rnlstsolver%depsRelFixedPoint, 1.0E-1_DP)
 
   end subroutine
 
