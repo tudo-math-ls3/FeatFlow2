@@ -393,6 +393,7 @@ contains
       sin2 = adjustl(sin)
       sinput = trim(sin2)
       
+      
       if (rcmdStatus%becho) then
         call output_line (CHAR(sinput))
       end if
@@ -403,19 +404,25 @@ contains
         exit
         
       else
-        ! Parse the line.
-        call cmdprs_splitline (sinput,p_Sargs)
-        
-        ! A command involved?
-        if (ubound(p_Sargs,1) .ne. 0) then
-        
-          ! Execute the command
-          call cmdprs_docommand (rcmdStatus,p_Sargs)
-        
+        if (len(sinput) .ne. 0) then
+          ! Ignore comments
+          if (getchar (sinput,1) .ne. "#") then
+      
+            ! Parse the line.
+            call cmdprs_splitline (sinput,p_Sargs)
+            
+            ! A command involved?
+            if (ubound(p_Sargs,1) .ne. 0) then
+            
+              ! Execute the command
+              call cmdprs_docommand (rcmdStatus,p_Sargs)
+            
+            end if
+            
+            ! Release memory
+            call cmdprs_releaseargs(p_Sargs)
+          end if
         end if
-        
-        ! Release memory
-        call cmdprs_releaseargs(p_Sargs)
       end if
     end do
 
@@ -455,19 +462,28 @@ contains
         call output_line (CHAR(sinput))
       end if
       
-      ! Parse the line.
-      call cmdprs_splitline (sinput,p_Sargs)
+      if (len(sinput) .ne. 0) then
       
-      ! A command involved?
-      if (associated(p_Sargs)) then
-      
-        ! Execute the command
-        call cmdprs_docommand (rcmdStatus,p_Sargs)
+        ! Ignore comments
+        if (getchar (sinput,1) .ne. "#") then
+
+          ! Parse the line.
+          call cmdprs_splitline (sinput,p_Sargs)
+          
+          ! A command involved?
+          if (associated(p_Sargs)) then
+          
+            ! Execute the command
+            call cmdprs_docommand (rcmdStatus,p_Sargs)
+          
+          end if
+          
+          ! Release memory
+          call cmdprs_releaseargs(p_Sargs)
+          
+        end if
       
       end if
-      
-      ! Release memory
-      call cmdprs_releaseargs(p_Sargs)
       
       call output_lbrk()
      
