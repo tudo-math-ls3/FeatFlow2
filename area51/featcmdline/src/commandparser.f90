@@ -1109,6 +1109,9 @@ contains
         call output_lbrk ()
         call output_line ("  ... --VERBOSE ...")
         call output_line ("      Activate verbose output.")
+        call output_lbrk ()
+        call output_line ("  ... --RELERROR [error} ...")
+        call output_line ("      Defines the relative accuracy of the projection.")
       
         return
       end if
@@ -3125,17 +3128,8 @@ contains
         end if
 
       else if (stoken .eq. "--UNFORMATTED") then
+
         bformatted = .false.
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          sfilename = trim(stoken)
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
 
       else if (stoken .eq. "--FORMAT") then
         if (i .le. size(Sargs)) then
@@ -3589,9 +3583,18 @@ contains
       i = i+1
       
       if (stoken .eq. "--VERBOSE") then
-      
         bverbose = .true.
+      end if      
 
+      if (stoken .eq. "--RELERROR") then
+        if (i .le. size(Sargs)) then
+          call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
+          i = i+1
+          read (stoken,*) rL2ProjectionConfig%depsrel
+        else
+          call output_line("Error. Invalid parameters!")
+          return
+        end if
       end if      
 
     end do
