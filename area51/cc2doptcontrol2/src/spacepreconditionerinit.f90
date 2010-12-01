@@ -409,7 +409,7 @@ contains
         rpreconditioner%rprecSpecials%bneedVirtTransposedDonCoarse = .true.
 
       case (5)
-        ! BiCGStab with full VANKA preconditioning.
+        ! BiCGStab with general VANKA preconditioning.
         !
         ! Create VANKA and initialise it with the parameters from the DAT file.
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
@@ -469,7 +469,7 @@ contains
         ! Initialise the smoothers.
         select case (ismootherType)
         
-        case (0:9)
+        case (0:10)
 
           nullify(p_rsmoother)
         
@@ -527,6 +527,11 @@ contains
           case (9)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
 
+          case (10)
+            call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+            call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+                rpreconditioner%RfilterChain)
+
           end select
           
           ! Initialise the parameters -- if there are any.
@@ -574,7 +579,7 @@ contains
       ! ismootherType defines the type of smoother to use.
       select case (ismootherType)
       
-      case (0:9)
+      case (0:10)
 
         nullify(p_rsmoother)
       
@@ -631,6 +636,11 @@ contains
 
         case (9)
           call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
+
+        case (10)
+          call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+          call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+              rpreconditioner%RfilterChain)
 
         end select
         

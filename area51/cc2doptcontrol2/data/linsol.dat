@@ -31,6 +31,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # 7=BiCGStab with Diagonal VANKA preconditioning
 # 8=BiCGStab with Diagonal VANKA preconditioning, all element types
 # 9=Diagonal VANKA preconditioning, all element types
+# 10=BiCGStab with general VANKA preconditioning
 
 ismootherType = 9
 
