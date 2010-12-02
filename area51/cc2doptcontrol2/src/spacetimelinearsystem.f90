@@ -11,8 +11,8 @@
 !#
 !# The routines in this module form the basic set of routines:
 !#
-!# 1.) stlin_getSpaceAssembly
-!#     -> Create a space assembly structure for space-time matrices
+!# 1.) stlin_initSpaceAssembly / stlin_donreSpaceAssembly
+!#     -> Create/release a space assembly structure for space-time matrices
 !#
 !# 2.) stlin_initSpaceTimeMatrix
 !#     -> Create a space-time matrix
@@ -151,6 +151,7 @@ module spacetimelinearsystem
   use storage
   use genoutput
   use linearsolver
+  use basicgeometry
   use boundary
   use linearalgebra
   use bilinearformevaluation
@@ -173,6 +174,8 @@ module spacetimelinearsystem
   use timestepping
   use discretebc
   use discretefbc
+  use domainintegration
+  use analyticprojection
   
   use collection
   use convection
@@ -182,6 +185,7 @@ module spacetimelinearsystem
   use assemblytemplatesoptc
   use structuresoptc
 
+  use analyticsolution
   use spatialbcdef
   use spacetimevectors
   use timediscretisation
@@ -333,25 +337,217 @@ module spacetimelinearsystem
   public :: stlin_setupMatrixWeights
   public :: stlin_disableSubmatrix
   public :: stlin_getFullMatrixDummy
-  public :: stlin_getSpaceAssembly
+  public :: stlin_initSpaceConstraints
+  public :: stlin_doneSpaceConstraints
+  public :: stlin_initSpaceAssembly
+  public :: stlin_doneSpaceAssembly
   public :: stlin_spaceTimeMatVec
 
 contains
 
   ! ***************************************************************************
+
+    subroutine ffunctionConstraint (cderivative, rdiscretisation, &
+                                   nelements, npointsPerElement, Dpoints, &
+                                   IdofsTest, rdomainIntSubset, &
+                                   Dvalues, rcollection)
+    
+  !<description>
+    ! Reference function used for the L2 projetion of analytically given
+    ! constraints.
+  !</description>
+    
+    integer, intent(in) :: cderivative
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    integer, intent(in) :: nelements
+    integer, intent(in) :: npointsPerElement
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+    type(t_collection), intent(inout), optional :: rcollection
+    
+    real(DP), dimension(:,:), intent(out) :: Dvalues
+  
+      integer :: ierror, idim
+  
+      idim = rcollection%IquickAccess(1)
+  
+      ! Evaluate the function "SOL" from the collection
+      call ansol_evaluate (rcollection,"SOL",idim,Dvalues,&
+          npointsPerElement,nelements,Dpoints,ierror=ierror)
+          
+      if (ierror .ne. 0) then
+        call output_line ("Error evaluating constraint for projection!");
+      end if
+  
+    end subroutine
+    
+  ! ***************************************************************************
   
 !<subroutine>
 
-  subroutine stlin_getSpaceAssembly (rspaceTimeDiscr,rspaceDiscr)
+  subroutine stlin_initSpaceConstraints (rspaceTimeConstr,dconstrainsTime,rspaceDiscrPrimal,rspaceConstr)
+
+!<description>
+  ! Creates a discrete version of the constraints at a specific point in time.
+!</description>
+
+!<input>
+  ! Space-time assembly structure.
+  type(t_optcconstraintsSpaceTime), intent(in) :: rspaceTimeConstr
+  
+  ! Current time where the constraints should be applied
+  real(DP), intent(in) :: dconstrainsTime
+  
+  ! Spatial discretisation structure of the primal space.
+  type(t_blockDiscretisation), intent(in) :: rspaceDiscrPrimal
+!</input>
+
+!<output>
+  ! Space constraints structure.
+  type(t_optcconstraintsSpace), intent(out) :: rspaceConstr
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_collection), target :: rcollection
+    integer :: idim
+
+    ! Transfer all possible parameters.
+    rspaceConstr%dumin1 = rspaceTimeConstr%dumin1
+    rspaceConstr%dumax1 = rspaceTimeConstr%dumax1
+    rspaceConstr%dumin2 = rspaceTimeConstr%dumin2
+    rspaceConstr%dumax2 = rspaceTimeConstr%dumax2
+    rspaceConstr%ccontrolConstraints = &
+        rspaceTimeConstr%ccontrolConstraints
+
+    rspaceConstr%p_rumin1 => rspaceTimeConstr%p_rumin1
+    rspaceConstr%p_rumax1 => rspaceTimeConstr%p_rumax1
+    rspaceConstr%p_rumin2 => rspaceTimeConstr%p_rumin2
+    rspaceConstr%p_rumax2 => rspaceTimeConstr%p_rumax2
+    rspaceConstr%cconstraintsType = &
+        rspaceTimeConstr%cconstraintsType
+    rspaceConstr%dconstrainsTime = dconstrainsTime
+
+    select case (rspaceConstr%ccontrolConstraints)
+    case (1:)
+      select case (rspaceConstr%cconstraintsType)
+      case (1)
+        allocate(rspaceConstr%p_rvectorumin)
+        allocate(rspaceConstr%p_rvectorumax)
+
+        call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorumin,.true.)
+        call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorumax,.true.)
+      
+        call collct_init (rcollection)
+
+        ! -----
+        ! U1-min
+        call ansol_prepareEval (rspaceConstr%p_rumin1,rcollection,"SOL",dconstrainsTime)
+
+        ! Set current dimension for the callback routine
+        rcollection%IquickAccess(1) = 1
+      
+        ! Prepare a projection to a vector and evaluate.
+        call anprj_discrDirect (rspaceConstr%p_rvectorumin%RvectorBlock(1),&
+            ffunctionConstraint, rcollection)
+
+        call ansol_doneEval (rcollection,"SOL")
+
+        ! -----
+        ! U1-max
+        call ansol_prepareEval (rspaceConstr%p_rumax1,rcollection,"SOL",dconstrainsTime)
+
+        ! Set current dimension for the callback routine
+        rcollection%IquickAccess(1) = 1
+      
+        ! Prepare a projection to a vector and evaluate.
+        call anprj_discrDirect (rspaceConstr%p_rvectorumax%RvectorBlock(1),&
+            ffunctionConstraint, rcollection)
+
+        call ansol_doneEval (rcollection,"SOL")
+
+        ! -----
+        ! U2-min
+        call ansol_prepareEval (rspaceConstr%p_rumin2,rcollection,"SOL",dconstrainsTime)
+
+        ! Set current dimension for the callback routine
+        rcollection%IquickAccess(1) = 2
+      
+        ! Prepare a projection to a vector and evaluate.
+        call anprj_discrDirect (rspaceConstr%p_rvectorumin%RvectorBlock(2),&
+            ffunctionConstraint, rcollection)
+
+        call ansol_doneEval (rcollection,"SOL")
+
+        ! -----
+        ! U2-max
+        call ansol_prepareEval (rspaceConstr%p_rumax2,rcollection,"SOL",dconstrainsTime)
+
+        ! Set current dimension for the callback routine
+        rcollection%IquickAccess(1) = 2
+      
+        ! Prepare a projection to a vector and evaluate.
+        call anprj_discrDirect (rspaceConstr%p_rvectorumin%RvectorBlock(2),&
+            ffunctionConstraint, rcollection)
+
+        call ansol_doneEval (rcollection,"SOL")
+
+        call collct_done (rcollection)
+        
+      end select
+    end select
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine stlin_doneSpaceConstraints (rspaceConstr)
+
+!<description>
+  ! Releases memory allocated by stlin_initSpaceAssembly.
+!</description>
+
+!<inputoutput>
+  ! Space constraints structure.
+  type(t_optcconstraintsSpace), intent(inout) :: rspaceConstr
+!</inputoutput>
+
+!</subroutine>
+
+    if (associated(rspaceConstr%p_rvectorumin)) then
+      
+      ! Analytical constraints active. Release the discrete constraints.
+      call lsysbl_releaseVector(rspaceConstr%p_rvectorumin)
+      call lsysbl_releaseVector(rspaceConstr%p_rvectorumax)
+      
+      deallocate(rspaceConstr%p_rvectorumin)
+      deallocate(rspaceConstr%p_rvectorumax)
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine stlin_initSpaceAssembly (rspaceTimeDiscr,dconstrainsTime,rspaceDiscr)
 
 !<description>
   ! Creates a space-assembly data structure from the space-time assembly
-  ! data structure.
+  ! data structure. If analytical constraints are actuve, the routine
+  ! invokes an L2 projection to discretise the comnstraints!
 !</description>
 
 !<input>
   ! Space-time assembly structure.
   type(t_spaceTimeMatrixDiscrData), intent(in) :: rspaceTimeDiscr
+  
+  ! Current time where the constraints should be applied
+  real(DP), intent(in) :: dconstrainsTime
 !</input>
 
 !<output>
@@ -361,24 +557,46 @@ contains
 
 !</subroutine>
 
+    ! local variables
+    type(t_collection), target :: rcollection
+    integer :: idim
+
     ! Transfer all possible parameters.
     rspaceDiscr%rphysicsPrimal = rspaceTimeDiscr%p_rphysicsPrimal
     rspaceDiscr%rstabilPrimal = rspaceTimeDiscr%p_rstabilPrimal
     rspaceDiscr%rstabilDual = rspaceTimeDiscr%p_rstabilDual
     
-    rspaceDiscr%rconstraints%dumin1 = rspaceTimeDiscr%p_rconstraints%dumin1
-    rspaceDiscr%rconstraints%dumax1 = rspaceTimeDiscr%p_rconstraints%dumax1
-    rspaceDiscr%rconstraints%dumin2 = rspaceTimeDiscr%p_rconstraints%dumin2
-    rspaceDiscr%rconstraints%dumax2 = rspaceTimeDiscr%p_rconstraints%dumax2
-    rspaceDiscr%rconstraints%ccontrolConstraints = &
-        rspaceTimeDiscr%p_rconstraints%ccontrolConstraints
-
     rspaceDiscr%p_rdiscrPrimal => rspaceTimeDiscr%p_rdiscrPrimal
     rspaceDiscr%p_rdiscrPrimalDual => rspaceTimeDiscr%p_rdiscrPrimalDual
     
     rspaceDiscr%p_rstaticAsmTemplates => rspaceTimeDiscr%p_rstaticSpaceAsmTempl
     rspaceDiscr%p_rstaticAsmTemplatesOptC => rspaceTimeDiscr%p_rstaticSpaceAsmTemplOptC
 
+    ! Initialise the constraints.
+    call stlin_initSpaceConstraints (rspaceTimeDiscr%p_rconstraints,dconstrainsTime,&
+        rspaceTimeDiscr%p_rdiscrPrimal,rspaceDiscr%rconstraints)
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine stlin_doneSpaceAssembly (rspaceDiscr)
+
+!<description>
+  ! Releases memory allocated by stlin_initSpaceAssembly.
+!</description>
+
+!<inputoutput>
+  ! Space-assembly structure.
+  type(t_spatialMatrixDiscrData), intent(out) :: rspaceDiscr
+!</inputoutput>
+
+!</subroutine>
+
+    call stlin_doneSpaceConstraints (rspaceDiscr%rconstraints)
+  
   end subroutine
 
   ! ***************************************************************************
@@ -899,6 +1117,17 @@ contains
           rspaceTimeMatrix%rdiscrData%p_rconstraints%dumax2
       rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints = &
           rspaceTimeMatrix%rdiscrData%p_rconstraints%ccontrolConstraints
+
+      rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumin1 => &
+          rspaceTimeMatrix%rdiscrData%p_rconstraints%p_rumin1
+      rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax1 => &
+          rspaceTimeMatrix%rdiscrData%p_rconstraints%p_rumax1
+      rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumin2 => &
+          rspaceTimeMatrix%rdiscrData%p_rconstraints%p_rumin2
+      rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax2 => &
+          rspaceTimeMatrix%rdiscrData%p_rconstraints%p_rumax2
+      rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType = &
+          rspaceTimeMatrix%rdiscrData%p_rconstraints%cconstraintsType
     
     end select
     
@@ -1173,18 +1402,18 @@ contains
       dnorm = 0.0_DP
     end if
     
-    ! Get a space-assembly structure from our space-time assembly structure.
-    ! Necessary for assembling matrices.
-    call stlin_getSpaceAssembly (rspaceTimeMatrix%rdiscrData,rspaceDiscr)
-    
     ! Loop through the substeps
     neqTime = tdiscr_igetNDofGlob(p_rtimeDiscr)
     
     do ieqTime = 1,neqTime
-      
+            
       ! Get the current time.
       call tdiscr_getTimestep(p_rtimeDiscr,ieqTime-1,dtimePrimal,dtstep)
       dtimeDual = dtimePrimal - (1.0_DP-p_rtimeDiscr%dtheta)*dtstep
+      
+      ! Get a space-assembly structure from our space-time assembly structure.
+      ! Necessary for assembling matrices.
+      call stlin_initSpaceAssembly (rspaceTimeMatrix%rdiscrData,dtimeDual,rspaceDiscr)
       
       ! Get the part of rd which is to be modified.
       if (cy .ne. 0.0_DP) then
@@ -1435,8 +1664,11 @@ contains
         call lsysbl_copyVector (rtempVectorEval(2),rtempVectorEval(1))
         call lsysbl_copyVector (rtempVectorEval(3),rtempVectorEval(2))
       end if
-      
+            
       ! Now, the 3rd subvector is again free to take the next vector.
+      
+      ! Release the space assembly structure again.
+      call stlin_doneSpaceAssembly (rspaceDiscr)
       
     end do
     

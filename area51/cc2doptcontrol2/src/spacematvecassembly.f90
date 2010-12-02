@@ -224,7 +224,8 @@ module spacematvecassembly
   public :: smva_initNonlinMatrix
   public :: smva_assembleMatrix
   public :: smva_assembleDefect
-  public :: smva_projectControlTimestep
+  public :: smva_projectControlTstepConst
+  public :: smva_projectControlTstepVec
   public :: smva_getDiscrData
   public :: smva_initNonlinearData
 
@@ -938,6 +939,64 @@ contains
 
   ! -----------------------------------------------------
 
+  subroutine massmatfilterVar (rmatrix, rvector, dalphaC, rvectorMin, rvectorMax)
+      
+  ! Filters a mass matrix. The lines in the matrix rmatrix corresponding
+  ! to all entries in the (control-)vector violating the constraints
+  ! of the problem.
+  ! Non-constant variant.
+  
+  ! Matrix to be filtered
+  type(t_matrixScalar), intent(inout) :: rmatrix
+
+  ! Vector containing a dial solution lambda. Whereever -1/alpha*lambda
+  ! violates the control constraints given by rnonlinearSpatialMatrix, the corresponding
+  ! lines are set to 0.
+  type(t_vectorScalar), intent(in) :: rvector
+  
+  ! ALPHA regularisation parameter from the space-time matrix
+  real(dp), intent(in) :: dalphaC
+  
+  ! minimum bound for the control
+  type(t_vectorScalar), intent(in) :: rvectorMin
+
+  ! maximum bound for the control
+  type(t_vectorScalar), intent(in) :: rvectorMax
+  
+    ! local variables
+    real(dp), dimension(:), pointer :: p_Ddata,p_DdataMin,p_DdataMax
+    integer, dimension(:), allocatable :: p_Idofs
+    integer :: i,nviolate
+    real(dp) :: du
+    
+    ! Get the vector data
+    call lsyssc_getbase_double (rvector,p_Ddata)
+    call lsyssc_getbase_double (rvectorMin,p_DdataMin)
+    call lsyssc_getbase_double (rvectorMax,p_DdataMax)
+    
+    ! Figure out the DOF's violating the constraints
+    allocate(p_Idofs(rvector%NEQ))
+    
+    nviolate = 0
+    do i=1,rvector%NEQ
+      du = -p_Ddata(i)/dalphaC
+      if ((du .le. p_DdataMin(i)) .or. (du .ge. p_DdataMax(i))) then
+        nviolate = nviolate + 1
+        p_Idofs(nviolate) = i
+      end if
+    end do
+    
+    if (nviolate .gt. 0) then
+      ! Filter the matrix
+      call mmod_replaceLinesByZero (rmatrix,p_Idofs(1:nviolate))
+    end if
+    
+    deallocate(p_Idofs)
+
+  end subroutine    
+
+  ! -----------------------------------------------------
+
   subroutine approxProjectionDerivative (rmatrix, rvector, dalphaC, dmin, dmax, dh)
       
   ! Calculates the approximative Newton matrix of the projection operator
@@ -1588,12 +1647,25 @@ contains
         !end if
         
         if (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints .ne. 0) then
+
           roptcoperator%ccontrolProjection = &
               rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints
+
+          roptcoperator%cconstraintsType = &
+              rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType
+              
           roptcoperator%dmin1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1
           roptcoperator%dmax1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1
           roptcoperator%dmin2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
           roptcoperator%dmax2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
+
+          roptcoperator%p_rumin1 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumin1
+          roptcoperator%p_rumax1 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax1
+          roptcoperator%p_rumin2 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumin2
+          roptcoperator%p_rumax2 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax2
+
+          roptcoperator%p_rvectorumin => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin
+          roptcoperator%p_rvectorumax => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax
         end if
         
         select case (rnonlinearSpatialMatrix%iprimalSol)
@@ -2397,8 +2469,8 @@ contains
           
         ! Calculate the usual mass matrix if conrol constraints are deactivated
         ! or if Newton is not active.
-          if ((ccontrolConstraints .eq. 0) .or. &
-              (rnonlinearSpatialMatrix%cmatrixType .eq. 0)) then
+        if ((ccontrolConstraints .eq. 0) .or. &
+            (rnonlinearSpatialMatrix%cmatrixType .eq. 0)) then
       
           ! Copy the entries of the mass matrix. Share the structure.
           ! We must not share the entries as these might be changed by the caller
@@ -2444,15 +2516,32 @@ contains
 
             ! Filter the matrix. All the rows corresponding to DOF's that violate
             ! the bounds must be set to zero.
-            call massmatfilter (rmatrix%RmatrixBlock(1,1),rvector%RvectorBlock(4),&
-                rnonlinearSpatialMatrix%dalphaC,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
-            call massmatfilter (rmatrix%RmatrixBlock(2,2),rvector%RvectorBlock(5),&
-                rnonlinearSpatialMatrix%dalphaC,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
-                
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            case (0)
+              ! Constant bounds
+              call massmatfilter (rmatrix%RmatrixBlock(1,1),rvector%RvectorBlock(4),&
+                  rnonlinearSpatialMatrix%dalphaC,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+              call massmatfilter (rmatrix%RmatrixBlock(2,2),rvector%RvectorBlock(5),&
+                  rnonlinearSpatialMatrix%dalphaC,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+            case (1)
+              ! Variable bounds
+              call massmatfilterVar (rmatrix%RmatrixBlock(1,1),rvector%RvectorBlock(4),&
+                  rnonlinearSpatialMatrix%dalphaC,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+              call massmatfilterVar (rmatrix%RmatrixBlock(2,2),rvector%RvectorBlock(5),&
+                  rnonlinearSpatialMatrix%dalphaC,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+            case default
+              ! Not implemented.
+              call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+              call sys_halt()
+            end select
           case (2)
           
             ! Exact reassembly of the mass matrices.
@@ -2522,16 +2611,23 @@ contains
                 rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
                 rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
-            ! Create the matrix
-            call approxProjectionDerivative (rmatrix%RmatrixBlock(1,1), &
-                rvector%RvectorBlock(4), rnonlinearSpatialMatrix%dalphaC,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1,0.001_DP)
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            case (0)
+              ! Create the matrix
+              call approxProjectionDerivative (rmatrix%RmatrixBlock(1,1), &
+                  rvector%RvectorBlock(4), rnonlinearSpatialMatrix%dalphaC,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1,0.001_DP)
 
-            call approxProjectionDerivative (rmatrix%RmatrixBlock(2,2), &
-                rvector%RvectorBlock(5), rnonlinearSpatialMatrix%dalphaC,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2,0.001_DP)
+              call approxProjectionDerivative (rmatrix%RmatrixBlock(2,2), &
+                  rvector%RvectorBlock(5), rnonlinearSpatialMatrix%dalphaC,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2,0.001_DP)
+            case default
+              ! Not implemented.
+              call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+              call sys_halt()
+            end select
           
             ! Scale the entries by the weight if necessary
             if (dweight .ne. 1.0_DP) then
@@ -2623,19 +2719,26 @@ contains
             call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(2,2),&
                 coeff_ProjMassCollect,rcollection)
             
-            ! Assemble a submesh matrix on the elements in the list
-            ! with a summed cubature formula.
-            ! Note: Up to now, this works only for uniform meshes!
-            if (rcollection%IquickAccess(3) .gt. 0) then
-              celement = rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%celement
-              ccubType = rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
-              call storage_getbase_int(ielemhandle,p_IelementList)
-              call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,&
-                  cub_getSummedCubType(ccubType,1))
-              call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix%RmatrixBlock(2,2),&
-                  p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
-              call bilf_doneAssembly(rmatrixAssembly)
-            end if            
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            case (0)
+              ! Assemble a submesh matrix on the elements in the list
+              ! with a summed cubature formula.
+              ! Note: Up to now, this works only for uniform meshes!
+              if (rcollection%IquickAccess(3) .gt. 0) then
+                celement = rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%celement
+                ccubType = rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
+                call storage_getbase_int(ielemhandle,p_IelementList)
+                call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,&
+                    cub_getSummedCubType(ccubType,1))
+                call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix%RmatrixBlock(2,2),&
+                    p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
+                call bilf_doneAssembly(rmatrixAssembly)
+              end if
+            case default
+              ! Not implemented.
+              call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+              call sys_halt()
+            end select
 
             ! Now we can forget about the collection again.
             call collct_done (rcollection)
@@ -3106,12 +3209,28 @@ contains
         
         ! Project that to the allowed range.
         if (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints .ne. 0) then
-          call smva_projectControlTimestep (rtempVectorX%RvectorBlock(1),&
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
-          call smva_projectControlTimestep (rtempVectorX%RvectorBlock(2),&
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+
+          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+          case (0)
+            call smva_projectControlTstepConst (rtempVectorX%RvectorBlock(1),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+            call smva_projectControlTstepConst (rtempVectorX%RvectorBlock(2),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+          case (1)
+            call smva_projectControlTstepVec (rtempVectorX%RvectorBlock(1),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+            call smva_projectControlTstepVec (rtempVectorX%RvectorBlock(2),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+          case default
+            ! Not implemented.
+            call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+            call sys_halt()
+          end select
+          
         end if
 
         ! Now carry out MV and include it to the defect.
@@ -3273,10 +3392,22 @@ contains
       if (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints .ne. 0) then
         roptcoperator%ccontrolProjection = &
             rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints
+
+        roptcoperator%cconstraintsType = &
+            rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType
+
         roptcoperator%dmin1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1
         roptcoperator%dmax1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1
         roptcoperator%dmin2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
         roptcoperator%dmax2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
+
+        roptcoperator%p_rumin1 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumin1
+        roptcoperator%p_rumax1 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax1
+        roptcoperator%p_rumin2 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumin2
+        roptcoperator%p_rumax2 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax2
+
+        roptcoperator%p_rvectorumin => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin
+        roptcoperator%p_rvectorumax => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax
       end if
       
       select case (rnonlinearSpatialMatrix%iprimalSol)
@@ -3724,12 +3855,30 @@ contains
           ! In the case when we have constraints, filter the matrix. 
           ! All the rows corresponding to DOF's that violate
           ! the bounds must be set to zero.
-          call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(4),&
-              rnonlinearSpatialMatrix%dalphaC,rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
-          call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(5),&
-              rnonlinearSpatialMatrix%dalphaC,rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+          case (0)
+            ! Constant bounds
+            call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(4),&
+                rnonlinearSpatialMatrix%dalphaC,rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+            call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(5),&
+                rnonlinearSpatialMatrix%dalphaC,rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+          case (1)
+            ! Variable bounds
+            call massmatfilterVar (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(4),&
+                rnonlinearSpatialMatrix%dalphaC,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+            call massmatfilterVar (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(5),&
+                rnonlinearSpatialMatrix%dalphaC,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+          case default
+            ! Not implemented.
+            call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+            call sys_halt()
+          end select
             
         case (2) 
 
@@ -3972,7 +4121,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_projectControlTimestep (rdualSolution,dumin,dumax)
+  subroutine smva_projectControlTstepConst (rdualSolution,dumin,dumax)
 
 !<description>
   ! Projects a dual solution vector u in such a way, that
@@ -4008,6 +4157,48 @@ contains
 
   end subroutine   
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine smva_projectControlTstepVec (rdualSolution,rvectorumin,rvectorumax)
+
+!<description>
+  ! Projects a dual solution vector u in such a way, that
+  ! dumin <= u <= dumax holds.
+!</description>
+
+!<input>
+  ! Vector specifying the minimum value for u in each DOF
+  type(t_vectorScalar), intent(in) :: rvectorumin
+
+  ! Vector specifying the maximum value for u in each DOF
+  type(t_vectorScalar), intent(in) :: rvectorumax
+!</input>
+
+!<inputoutput>
+  ! Vector to be restricted
+  type(t_vectorScalar), intent(inout) :: rdualSolution
+!</inputoutput>
+
+!</subroutine>
+ 
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata, p_DdataMin, p_DdataMax
+    integer :: i
+    
+    ! Get the vector array
+    call lsyssc_getbase_double (rdualSolution,p_Ddata)
+    call lsyssc_getbase_double (rvectorumin,p_DdataMin)
+    call lsyssc_getbase_double (rvectorumax,p_DdataMax)
+    
+    ! Restrict the vector
+    do i=1,rdualSolution%NEQ
+      p_Ddata(i) = min(max(p_Ddata(i),p_DdataMin(i)),p_DdataMax(i))
+    end do
+
+  end subroutine   
+ 
   ! ***************************************************************************
   
 !<subroutine>

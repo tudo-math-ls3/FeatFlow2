@@ -49,6 +49,7 @@ module optcanalysis
   use spacetimevectors
   use user_callback
   use spacematvecassembly
+  use spacetimelinearsystem
   
   use structuresoptc
     
@@ -287,6 +288,7 @@ contains
     type(t_collection) :: rcollection
     type(t_vectorBlock) :: rtempVector
     real(dp), dimension(:), pointer :: p_Dx
+    type(t_optcconstraintsSpace) :: rconstrSpace
     
     ! Create a temp vector
     call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rtempVector,.true.)
@@ -381,10 +383,28 @@ contains
         call lsyssc_scaleVector (rtempVector%RvectorBlock(5),-1.0_DP/dalpha)
         
         if (rconstraints%ccontrolConstraints .ne. 0) then
-          call smva_projectControlTimestep (rtempVector%RvectorBlock(4),&
-              rconstraints%dumin1,rconstraints%dumax1)
-          call smva_projectControlTimestep (rtempVector%RvectorBlock(5),&
-              rconstraints%dumin2,rconstraints%dumax2)
+          select case (rconstraints%cconstraintsType)
+          case (0)
+            call smva_projectControlTstepConst (rtempVector%RvectorBlock(4),&
+                rconstraints%dumin1,rconstraints%dumax1)
+            call smva_projectControlTstepConst (rtempVector%RvectorBlock(5),&
+                rconstraints%dumin2,rconstraints%dumax2)
+          case (1)
+            ! Initialise the space constraints.
+            call stlin_initSpaceConstraints (rconstraints,dtime,&
+                rsolution%p_rspaceDiscr,rconstrSpace)
+            
+            ! Implement the constraints
+            call smva_projectControlTstepVec (rtempVector%RvectorBlock(4),&
+                rconstrSpace%p_rvectorumin%RvectorBlock(1),&
+                rconstrSpace%p_rvectorumax%RvectorBlock(1))
+            call smva_projectControlTstepVec (rtempVector%RvectorBlock(5),&
+                rconstrSpace%p_rvectorumin%RvectorBlock(2),&
+                rconstrSpace%p_rvectorumax%RvectorBlock(2))
+            
+            ! Done.    
+            call stlin_doneSpaceConstraints (rconstrSpace)
+          end select
         end if
         
         !das hier gibt ein falsches Ergebnis1!

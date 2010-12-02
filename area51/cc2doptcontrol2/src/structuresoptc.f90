@@ -21,6 +21,7 @@ module structuresoptc
   
   use collection
   use paramlist
+  use linearsystemblock
 
   use analyticsolution
   
@@ -47,13 +48,34 @@ module structuresoptc
     !     Implementation by DOF.
     integer :: ccontrolConstraints = 0
 
+    ! Type of definition of the constraints if ccontrolConstraints <> 0.
+    ! =0: constants specified in dumin1/2, dumax1/2.
+    ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
+    integer :: cconstraintsType = 0
+
     ! Constraints on u_1
     real(DP) :: dumin1 = -1.0E10
     real(DP) :: dumax1 = 1.0E10
-
+    
     ! Constraints in u_2
     real(DP) :: dumin2 = -1.0E10
     real(DP) :: dumax2 = 1.0E10
+
+    ! Analytical constraints for u_1
+    type(t_anSolution), pointer :: p_rumin1 => null()
+    type(t_anSolution), pointer :: p_rumax1 => null()
+    
+    ! Analytical constraints for u_2
+    type(t_anSolution), pointer :: p_rumin2 => null()
+    type(t_anSolution), pointer :: p_rumax2 => null()
+    
+    ! Discrete constraints for u_1
+    type(t_vectorBlock), pointer :: p_rvectorumin => null()
+    type(t_vectorBlock), pointer :: p_rvectorumax => null()
+    
+    ! Time used for the evaluation of the analytical constraints
+    ! p_rumin1/2, p_rumax1/2.
+    real(DP) :: dconstrainsTime = 0.0_DP
   
   end type
   
@@ -76,13 +98,26 @@ module structuresoptc
     !     Implementation by DOF.
     integer :: ccontrolConstraints = 0
 
+    ! Type of definition of the constraints if ccontrolConstraints <> 0.
+    ! =0: constants specified in dumin1/2, dumax1/2.
+    ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
+    integer :: cconstraintsType = 0
+
     ! Constraints on u_1
     real(DP) :: dumin1 = -1.0E10
     real(DP) :: dumax1 = 1.0E10
 
+    ! Analytical constraints for u_1.
+    type(t_anSolution), pointer :: p_rumin1 => null()
+    type(t_anSolution), pointer :: p_rumax1 => null()
+
     ! Constraints in u_2
     real(DP) :: dumin2 = -1.0E10
     real(DP) :: dumax2 = 1.0E10
+  
+    ! Analytical constraints for u_2
+    type(t_anSolution), pointer :: p_rumin2 => null()
+    type(t_anSolution), pointer :: p_rumax2 => null()
   
   end type
 
