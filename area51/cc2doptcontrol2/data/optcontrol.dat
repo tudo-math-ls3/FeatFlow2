@@ -51,10 +51,21 @@ iconvectionExplicit = 0
 #     Implemented by cubature point (more exact). Adaptive integration.
 ccontrolConstraints = 0
 
+# Type of definition of the constraints if ccontrolConstraints <> 0.
+# =0: constants specified in dumin1/2, dumax1/2.
+# =1: functions defined in the sections ssectionumin1/2, ssectionumax1/2.
+cconstraintsType = 0
+
 # Constraints on u_1
 dumin1 = -0.5 #5 #-1E10 #-0.01
 dumax1 = 0.5 #2 #1E10 #0.01
 
+ssectionumin1 = 
+ssectionumax1 = 
+
 # Constraints in u_2
 dumin2 = -0.5 #2 #-1E10 #-0.01
 dumax2 = 0.5 #5 #1E10 #0.01
+
+ssectionumin2 = 
+ssectionumax2 = 
