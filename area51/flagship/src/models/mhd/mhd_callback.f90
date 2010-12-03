@@ -36,7 +36,7 @@
 !#     -> Calculates the right-hand side vector
 !#        used in the explicit Runge-Kutta scheme
 !#
-!# 6.) mhd_setBoundaryConditions
+!# 6.) mhd_setBoundaryCondition
 !#     -> Imposes boundary conditions for nonlinear solver
 !#        by filtering the system matrix and the solution/residual
 !#        vector explicitly (i.e. strong boundary conditions)
@@ -71,11 +71,11 @@
 !# 15.) mhd_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
-!# 16.) mhd_calcBilfBoundaryConditions
+!# 16.) mhd_calcBilfBdrCond
 !#      -> Calculates the bilinear form arising from the weak
 !#        imposition of boundary conditions
 !#
-!# 17.) mhd_calcLinfBoundaryConditions
+!# 17.) mhd_calcLinfBdrCond
 !#      -> Calculates the linear form arising from the weak
 !#         imposition of boundary conditions
 !#
@@ -108,6 +108,9 @@ module mhd_callback
   use cubature
   use collection
   use derivatives
+  use domainintegration
+  use feevaluation
+  use fparser
   use mhd_basic
   use mhd_callback1d
   use mhd_callback2d
@@ -124,9 +127,11 @@ module mhd_callback
   use problem
   use scalarpde
   use solveraux
+  use spatialdiscretisation
   use statistics
   use storage
   use timestepaux
+  use triangulation
 
   implicit none
 
@@ -137,7 +142,7 @@ module mhd_callback
   public :: mhd_calcResidualThetaScheme
   public :: mhd_calcRhsThetaScheme
   public :: mhd_calcRhsRungeKuttaScheme
-  public :: mhd_setBoundaryConditions
+  public :: mhd_setBoundaryCondition
   public :: mhd_calcLinearisedFCT
   public :: mhd_calcFluxFCT
   public :: mhd_calcCorrectionFCT
@@ -147,8 +152,8 @@ module mhd_callback
   public :: mhd_coeffVectorFE
   public :: mhd_coeffVectorAnalytic
   public :: mhd_parseBoundaryCondition
-  public :: mhd_calcBilfBoundaryConditions
-  public :: mhd_calcLinfBoundaryConditions
+  public :: mhd_calcBilfBdrCond
+  public :: mhd_calcLinfBdrCond
 
 contains
 
@@ -250,7 +255,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
       ! Impose boundary conditions
-      call mhd_setBoundaryConditions(rproblemLevel, rtimestep,&
+      call mhd_setBoundaryCondition(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rres, rcollection)
     end if
 
@@ -1268,14 +1273,14 @@ contains
         !-----------------------------------------------------------------------
 
         ! --- explicit part ---
-        call mhd_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+        call mhd_calcLinfBdrCond(rproblemLevel, rsolver,&
             rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
             mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
 
         dscale = rtimestep%theta*rtimestep%dStep
         
         ! --- implicit part ---
-        call mhd_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+        call mhd_calcLinfBdrCond(rproblemLevel, rsolver,&
             rsolution, rtimestep%dTime, -dscale,&
             mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
 
@@ -1318,7 +1323,7 @@ contains
         dscale = rtimestep%theta*rtimestep%dStep
 
         ! --- implicit part ---
-        call mhd_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+        call mhd_calcLinfBdrCond(rproblemLevel, rsolver,&
             rsolution, rtimestep%dTime, -dscale,&
             mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
 
@@ -1336,7 +1341,7 @@ contains
       call lsysbl_clearVector(rrhs)
 
       ! Evaluate linear form for boundary integral (if any)
-      call mhd_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+      call mhd_calcLinfBdrCond(rproblemLevel, rsolver,&
           rsolution, rtimestep%dTime, -1.0_DP,&
           mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
 
@@ -2127,7 +2132,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_setBoundaryConditions(rproblemLevel, rtimestep,&
+  subroutine mhd_setBoundaryCondition(rproblemLevel, rtimestep,&
       rsolver, rsolution, rsolution0, rres, rcollection)
 
 !<description>
@@ -2185,7 +2190,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_setBoundaryConditions')
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_setBoundaryCondition')
       call sys_halt()
     end select
 
@@ -2218,11 +2223,11 @@ contains
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_setBoundaryConditions')
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_setBoundaryCondition')
       call sys_halt()
     end select
 
-  end subroutine mhd_setBoundaryConditions
+  end subroutine mhd_setBoundaryCondition
 
   !*****************************************************************************
 
@@ -3710,16 +3715,6 @@ contains
       nelements, npointsPerElement, Dpoints, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
 
-    use basicgeometry
-    use collection
-    use derivatives
-    use domainintegration
-    use feevaluation
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-
 !<description>
     ! This subroutine is called during the vector assembly. It has to compute
     ! the coefficients in front of the terms of the linear form.
@@ -3840,14 +3835,6 @@ contains
   subroutine mhd_coeffVectorAnalytic(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
-
-    use basicgeometry
-    use collection
-    use domainintegration
-    use fparser
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
 
 !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -4122,7 +4109,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+  subroutine mhd_calcBilfBdrCond(rproblemLevel, rsolver,&
       rsolution, dtime, dscale, fcoeff_buildMatrixScBdr2D_sim,&
       rmatrix, rcollection, cconstrType)
 
@@ -4170,13 +4157,13 @@ contains
     ! not be called. It may be necessary to assemble some bilinear
     ! forms at the boundary in future.
 
-  end subroutine mhd_calcBilfBoundaryConditions
+  end subroutine mhd_calcBilfBdrCond
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_calcLinfBoundaryConditions(rproblemLevel, rsolver, rsolution,&
+  subroutine mhd_calcLinfBdrCond(rproblemLevel, rsolver, rsolution,&
       dtime, dscale, fcoeff_buildVectorBlBdr2D_sim, rvector, rcollection)
 
 !<description>
@@ -4291,13 +4278,13 @@ contains
       
     case default
       call output_line('Unsupported spatial dimension !',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcLinfBoundaryConditions')
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcLinfBdrCond')
       call sys_halt()
     end select
     
     ! Release temporal collection structure
     call collct_done(rcollectionTmp)
 
-  end subroutine mhd_calcLinfBoundaryConditions
+  end subroutine mhd_calcLinfBdrCond
 
 end module mhd_callback

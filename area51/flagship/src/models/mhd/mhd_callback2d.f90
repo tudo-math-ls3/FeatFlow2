@@ -3312,7 +3312,7 @@ contains
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
