@@ -12,13 +12,13 @@
                   IdofsTest, rdomainIntSubset, &
                   Dcoefficients, rcollection)
     
-    use fsystem
     use basicgeometry
-    use triangulation
-    use scalarpde
-    use domainintegration
-    use spatialdiscretisation
     use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute

@@ -11,13 +11,13 @@
                   nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
                   IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
     
-    use fsystem
     use basicgeometry
-    use triangulation
-    use scalarpde
-    use domainintegration
-    use spatialdiscretisation
     use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -61,7 +61,7 @@
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements test in the test space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -69,12 +69,13 @@
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
 
+  !<inputoutput>
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional :: rcollection
-    
-  !</input>
+  !</inputoutput>
   
   !<output>
     ! A list of all coefficients in front of all terms in the linear form -

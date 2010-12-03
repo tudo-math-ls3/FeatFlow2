@@ -12,13 +12,13 @@
                   Dpoints, IdofsTrial, IdofsTest, rdomainIntSubset,&
                   Dcoefficients, rcollection)
     
-    use fsystem
     use basicgeometry
-    use triangulation
-    use scalarpde
-    use domainintegration
-    use spatialdiscretisation
     use collection
+    use domainintegration
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    use fsystem
     
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -69,12 +69,13 @@
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
 
+  !<inputoutput>
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional :: rcollection
-    
-  !</input>
+  !</inputoutput>
   
   !<output>
     ! A list of all coefficients in front of all terms in the bilinear form -

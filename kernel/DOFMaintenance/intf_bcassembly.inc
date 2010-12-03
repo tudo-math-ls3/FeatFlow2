@@ -70,7 +70,7 @@
     !            should be computed
     ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
     !   iwhere = Number of the edge where the normal stress should be computed.
-    integer, intent(in)                                         :: iwhere
+    integer, intent(in) :: iwhere
 
     ! A reference to a geometric object where information should be computed.
     ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -82,13 +82,14 @@
     ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
     !   dwhere = parameter value of the point on edge iwhere where the normal
     !            stress should be computed.
-    real(DP), intent(in)                                        :: dwhere
-     
+    real(DP), intent(in) :: dwhere
+  !</input>
+
+  !<inputoutput>     
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional      :: rcollection
-
-  !</input>
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
   
   !<output>
     ! This array receives the calculated information. If the caller
@@ -99,7 +100,7 @@
     ! The function may return SYS_INFINITY as a value. This indicates the
     ! framework to ignore the node and treat it as 'natural boundary condition'
     ! node.
-    real(DP), dimension(:), intent(out)                         :: Dvalues
+    real(DP), dimension(:), intent(out) :: Dvalues
   !</output>
     
   !</subroutine>

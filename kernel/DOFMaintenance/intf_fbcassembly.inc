@@ -39,16 +39,16 @@
     !         3=3rd solution component, e.g. pressure)
     !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
     !     (1=x, 2=y component)
-    integer, dimension(:), intent(in)                           :: Icomponents
+    integer, dimension(:), intent(in) :: Icomponents
   
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_blockDiscretisation), intent(in)                     :: rdiscretisation
+    type(t_blockDiscretisation), intent(in) :: rdiscretisation
     
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional      :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
 
   !</input>
   
