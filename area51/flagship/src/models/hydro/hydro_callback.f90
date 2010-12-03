@@ -36,7 +36,7 @@
 !#     -> Calculates the right-hand side vector
 !#        used in the explicit Runge-Kutta scheme
 !#
-!# 6.) hydro_setBoundaryConditions
+!# 6.) hydro_setBoundaryCondition
 !#     -> Imposes boundary conditions for nonlinear solver
 !#        by filtering the system matrix and the solution/residual
 !#        vector explicitly (i.e. strong boundary conditions)
@@ -68,11 +68,13 @@
 !# 14.) hydro_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
-!# 15.) hydro_calcBilfBoundaryConditions
+!# 15.) hydro_calcBilfBdrCond = hydro_calcBilfBdrCond1D /
+!#                              hydro_calcBilfBdrCond2D
 !#      -> Calculates the bilinear form arising from the weak
 !#        imposition of boundary conditions
 !#
-!# 16.) hydro_calcLinfBoundaryConditions
+!# 16.) hydro_calcLinfBdrCond = hydro_calcLinfBdrCond1D /
+!#                              hydro_calcLinfBdrCond2D
 !#      -> Calculates the linear form arising from the weak
 !#         imposition of boundary conditions
 !#
@@ -105,6 +107,9 @@ module hydro_callback
   use cubature
   use collection
   use derivatives
+  use domainintegration
+  use feevaluation
+  use fparser
   use hydro_basic
   use hydro_callback1d
   use hydro_callback2d
@@ -121,9 +126,11 @@ module hydro_callback
   use problem
   use scalarpde
   use solveraux
+  use spatialdiscretisation
   use statistics
   use storage
   use timestepaux
+  use triangulation
 
   implicit none
 
@@ -134,7 +141,7 @@ module hydro_callback
   public :: hydro_calcResidualThetaScheme
   public :: hydro_calcRhsThetaScheme
   public :: hydro_calcRhsRungeKuttaScheme
-  public :: hydro_setBoundaryConditions
+  public :: hydro_setBoundaryCondition
   public :: hydro_calcLinearisedFCT
   public :: hydro_calcFluxFCT
   public :: hydro_calcCorrectionFCT
@@ -143,8 +150,10 @@ module hydro_callback
   public :: hydro_coeffVectorFE
   public :: hydro_coeffVectorAnalytic
   public :: hydro_parseBoundaryCondition
-  public :: hydro_calcBilfBoundaryConditions
-  public :: hydro_calcLinfBoundaryConditions
+  public :: hydro_calcBilfBdrCond1D
+  public :: hydro_calcBilfBdrCond2D
+  public :: hydro_calcLinfBdrCond1D
+  public :: hydro_calcLinfBdrCond2D
 
 contains
 
@@ -248,7 +257,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
       ! Impose boundary conditions
-      call hydro_setBoundaryConditions(rproblemLevel, rtimestep,&
+      call hydro_setBoundaryCondition(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rres, rcollection)
     end if
 
@@ -1265,17 +1274,39 @@ contains
         ! Evaluate linear form for boundary integral (if any)
         !-----------------------------------------------------------------------
 
-        ! --- explicit part ---
-        call hydro_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
-            hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          ! --- explicit part ---
+          call hydro_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
+              hydro_coeffVectorBdr1d_sim, rrhs, rcollection)
+          
+          dscale = rtimestep%theta*rtimestep%dStep
+          
+          ! --- implicit part ---
+          call hydro_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime, -dscale,&
+              hydro_coeffVectorBdr1d_sim, rrhs, rcollection)
 
-        dscale = rtimestep%theta*rtimestep%dStep
-        
-        ! --- implicit part ---
-        call hydro_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            rsolution, rtimestep%dTime, -dscale,&
-            hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
+        case (NDIM2D)
+
+          ! --- explicit part ---
+          call hydro_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
+              hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
+          
+          dscale = rtimestep%theta*rtimestep%dStep
+          
+          ! --- implicit part ---
+          call hydro_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime, -dscale,&
+              hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
+
+        case (NDIM3D)
+          print *, "Not implemented yet"
+          stop
+
+        end select
 
         !-----------------------------------------------------------------------
         ! Compute the transient term
@@ -1315,10 +1346,24 @@ contains
         
         dscale = rtimestep%theta*rtimestep%dStep
 
-        ! --- implicit part ---
-        call hydro_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            rsolution, rtimestep%dTime, -dscale,&
-            hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          ! --- implicit part ---
+          call hydro_calcLinfBdrCond1d(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime, -dscale,&
+              hydro_coeffVectorBdr1d_sim, rrhs, rcollection)
+
+        case (NDIM2D)
+          ! --- implicit part ---
+          call hydro_calcLinfBdrCond2d(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime, -dscale,&
+              hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
+
+        case (NDIM3D)
+          print *, "Not implemented yet!"
+          stop
+          
+        end select
 
       end if ! theta
 
@@ -1334,9 +1379,21 @@ contains
       call lsysbl_clearVector(rrhs)
 
       ! Evaluate linear form for boundary integral (if any)
-      call hydro_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-          rsolution, rtimestep%dTime, -1.0_DP,&
-          hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        call hydro_calcLinfBdrCond1D(rproblemLevel,&
+            rsolver, rsolution, rtimestep%dTime, -1.0_DP,&
+            hydro_coeffVectorBdr1d_sim, rrhs, rcollection)
+
+      case (NDIM2D)
+        call hydro_calcLinfBdrCond2D(rproblemLevel,&
+            rsolver, rsolution, rtimestep%dTime, -1.0_DP,&
+            hydro_coeffVectorBdr2d_sim, rrhs, rcollection)
+
+      case (NDIM3D)
+        print *, "Not implemented yet!"
+        stop
+      end select
 
     end select
 
@@ -2125,7 +2182,7 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_setBoundaryConditions(rproblemLevel, rtimestep,&
+  subroutine hydro_setBoundaryCondition(rproblemLevel, rtimestep,&
       rsolver, rsolution, rsolution0, rres, rcollection)
 
 !<description>
@@ -2183,7 +2240,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setBoundaryConditions')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setBoundaryCondition')
       call sys_halt()
     end select
 
@@ -2216,12 +2273,12 @@ contains
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setBoundaryConditions')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_setBoundaryCondition')
       call sys_halt()
     end select
 
-  end subroutine hydro_setBoundaryConditions
-
+  end subroutine hydro_setBoundaryCondition
+  
   !*****************************************************************************
 
 !<subroutine>
@@ -3449,16 +3506,6 @@ contains
       nelements, npointsPerElement, Dpoints, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
 
-    use basicgeometry
-    use collection
-    use derivatives
-    use domainintegration
-    use feevaluation
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-
 !<description>
     ! This subroutine is called during the vector assembly. It has to compute
     ! the coefficients in front of the terms of the linear form.
@@ -3579,14 +3626,6 @@ contains
   subroutine hydro_coeffVectorAnalytic(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
-
-    use basicgeometry
-    use collection
-    use domainintegration
-    use fparser
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
 
 !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -3851,14 +3890,61 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+  subroutine hydro_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+      rsolution, dtime, dscale, fcoeff_buildMatrixScBdr1D_sim,&
+      rmatrix, rcollection)
+
+!<description>
+    ! This subroutine computes the bilinear form arising from the weak
+    ! imposition of boundary conditions in 1D.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! callback routine for nonconstant coefficient matrices.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr1D.inc'
+!</intput>
+
+!<inputoutput>
+    ! matrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! At the moment, nothing is done in this subroutine and it should
+    ! not be called. It may be necessary to assemble some bilinear
+    ! forms at the boundary in future.
+
+  end subroutine hydro_calcBilfBdrCond1D
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcBilfBdrCond2D(rproblemLevel, rsolver,&
       rsolution, dtime, dscale, fcoeff_buildMatrixScBdr2D_sim,&
       rmatrix, rcollection, cconstrType)
 
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
-    ! imposition of boundary conditions. The following types of boundary
-    ! conditions are supported for this application
+    ! imposition of boundary conditions in 2D.
 !</description>
 
 !<input>
@@ -3899,19 +3985,128 @@ contains
     ! not be called. It may be necessary to assemble some bilinear
     ! forms at the boundary in future.
 
-  end subroutine hydro_calcBilfBoundaryConditions
+  end subroutine hydro_calcBilfBdrCond2D
+
+!*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcLinfBdrCond1D(rproblemLevel, rsolver, rsolution,&
+      dtime, dscale, fcoeff_buildVectorBlBdr1D_sim, rvector, rcollection)
+
+!<description>
+    ! This subroutine computes the linear form arising from the weak
+    ! imposition of boundary conditions in 1D.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! callback routine for nonconstant coefficient vectors.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorBlBdr1D.inc'
+!</intput>
+
+!<inputoutput>
+    ! residual/right-hand side vector
+    type(t_vectorBlock), intent(inout) :: rvector
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+     ! local variables
+    type(t_boundaryCondition), pointer :: p_rboundaryCondition
+    type(t_collection) :: rcollectionTmp
+        type(t_linearForm) :: rform
+    integer, dimension(:), pointer :: p_IbdrCondType
+    integer :: ibct
+
+    ! Evaluate linear form for boundary integral and return if
+    ! there are no weak boundary conditions available
+    p_rboundaryCondition => rsolver%rboundaryCondition
+    if (.not.p_rboundaryCondition%bWeakBdrCond) return
+
+    ! Check if we are in 1D
+    if (rproblemLevel%rtriangulation%ndim .ne. NDIM1D) then
+      call output_line('Spatial dimension must be 1D!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcLinfBdrCond1D')
+      call sys_halt()
+    end if
+
+    ! Initialize temporal collection structure
+    call collct_init(rcollectionTmp)
+
+    ! Attach function parser from boundary conditions to collection
+    ! structure and specify its name in quick access string array
+    call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
+        p_rboundaryCondition%rfparser, .true.)
+    rcollectionTmp%SquickAccess(1) = 'rfparser'
+
+    ! Attach solution vector to temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+    
+    ! Set pointers
+    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
+    
+    ! Loop over all boundary components
+    do ibct = 1, p_rboundaryCondition%iboundarycount
+      
+      ! Check if this component has weak boundary conditions
+      if (iand(p_IbdrCondType(ibct), BDRC_WEAK) .ne. BDRC_WEAK) cycle
+
+      ! Prepare quick access array of temporal collection structure
+      rcollectionTmp%DquickAccess(1) = dtime
+      rcollectionTmp%DquickAccess(2) = dscale
+      rcollectionTmp%IquickAccess(1) = p_IbdrCondType(ibct)
+      rcollectionTmp%IquickAccess(2) = ibct
+      rcollectionTmp%IquickAccess(3) = p_rboundaryCondition%nmaxExpressions
+      
+      ! Initialize the linear form
+      rform%itermCount = 1
+      rform%Idescriptors(1) = DER_FUNC
+      
+      ! Assemble the linear form
+      if (rvector%nblocks .eq. 1) then
+        call linf_buildVecIntlScalarBdr1d(rform, .false.,&
+            rvector%RvectorBlock(1), fcoeff_buildVectorBlBdr1D_sim,&
+            ibct, rcollectionTmp)
+      else
+        call linf_buildVectorBlockBdr1d(rform, .false.,&
+            rvector, fcoeff_buildVectorBlBdr1D_sim,&
+            ibct, rcollectionTmp)
+      end if
+      
+    end do ! ibct
+    
+    ! Release temporal collection structure
+    call collct_done(rcollectionTmp)
+
+  end subroutine hydro_calcLinfBdrCond1D
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine hydro_calcLinfBoundaryConditions(rproblemLevel, rsolver, rsolution,&
+  subroutine hydro_calcLinfBdrCond2D(rproblemLevel, rsolver, rsolution,&
       dtime, dscale, fcoeff_buildVectorBlBdr2D_sim, rvector, rcollection)
 
 !<description>
     ! This subroutine computes the linear form arising from the weak
-    ! imposition of boundary conditions. The following types of boundary
-    ! conditions are supported for this application
+    ! imposition of boundary conditions in 2D.
 !</description>
 
 !<input>
@@ -3956,6 +4151,13 @@ contains
     p_rboundaryCondition => rsolver%rboundaryCondition
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
 
+    ! Check if we are in 2D
+    if (rproblemLevel%rtriangulation%ndim .ne. NDIM2D) then
+      call output_line('Spatial dimension must be 2D!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcLinfBdrCond2D')
+      call sys_halt()
+    end if
+
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
 
@@ -3967,65 +4169,52 @@ contains
 
     ! Attach solution vector to temporal collection structure
     rcollectionTmp%p_rvectorQuickAccess1 => rsolution
-
-    ! How many spatial dimensions are we?
-    select case(rproblemLevel%rtriangulation%ndim)
-    case(NDIM2D)
-      ! Set pointers
-      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
-          p_IbdrCondCpIdx)
-      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
-          p_IbdrCondType)
-
-      ! Loop over all boundary components
-      do ibct = 1, p_rboundaryCondition%iboundarycount
-
-        ! Loop over all boundary segments
-        do isegment = p_IbdrCondCpIdx(ibct),&
-                      p_IbdrCondCpIdx(ibct+1)-1
-
-          ! Check if this segment has weak boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
-                   BDRC_WEAK) .ne. BDRC_WEAK) cycle
-
-          ! Prepare quick access array of temporal collection structure
-          rcollectionTmp%DquickAccess(1) = dtime
-          rcollectionTmp%DquickAccess(2) = dscale
-          rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
-          rcollectionTmp%IquickAccess(2) = isegment
-          rcollectionTmp%IquickAccess(3) = p_rboundaryCondition%nmaxExpressions
-
-          ! Initialize the linear form
-          rform%itermCount = 1
-          rform%Idescriptors(1) = DER_FUNC
-          
-          ! Create boundary segment
-          call bdrc_createRegion(p_rboundaryCondition, ibct,&
-              isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
-
-          ! Assemble the linear form
-          if (rvector%nblocks .eq. 1) then
-            call linf_buildVecIntlScalarBdr2d(rform, CUB_G3_1D, .false.,&
-                rvector%RvectorBlock(1), fcoeff_buildVectorBlBdr2D_sim,&
-                rboundaryRegion, rcollectionTmp)
-          else
-            call linf_buildVectorBlockBdr2d(rform, CUB_G3_1D, .false.,&
-                rvector, fcoeff_buildVectorBlBdr2D_sim,&
-                rboundaryRegion, rcollectionTmp)
-          end if
-
-        end do ! isegment
-      end do ! ibct
+    
+    ! Set pointers
+    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
+    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
+    
+    ! Loop over all boundary components
+    do ibct = 1, p_rboundaryCondition%iboundarycount
       
-    case default
-      call output_line('Unsupported spatial dimension !',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcLinfBoundaryConditions')
-      call sys_halt()
-    end select
+      ! Loop over all boundary segments
+      do isegment = p_IbdrCondCpIdx(ibct), p_IbdrCondCpIdx(ibct+1)-1
+        
+        ! Check if this segment has weak boundary conditions
+        if (iand(p_IbdrCondType(isegment), BDRC_WEAK) .ne. BDRC_WEAK) cycle
+        
+        ! Prepare quick access array of temporal collection structure
+        rcollectionTmp%DquickAccess(1) = dtime
+        rcollectionTmp%DquickAccess(2) = dscale
+        rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
+        rcollectionTmp%IquickAccess(2) = isegment
+        rcollectionTmp%IquickAccess(3) = p_rboundaryCondition%nmaxExpressions
+        
+        ! Initialize the linear form
+        rform%itermCount = 1
+        rform%Idescriptors(1) = DER_FUNC
+        
+        ! Create boundary segment
+        call bdrc_createRegion(p_rboundaryCondition, ibct,&
+            isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
+        
+        ! Assemble the linear form
+        if (rvector%nblocks .eq. 1) then
+          call linf_buildVecIntlScalarBdr2d(rform, CUB_G3_1D, .false.,&
+              rvector%RvectorBlock(1), fcoeff_buildVectorBlBdr2D_sim,&
+              rboundaryRegion, rcollectionTmp)
+        else
+          call linf_buildVectorBlockBdr2d(rform, CUB_G3_1D, .false.,&
+              rvector, fcoeff_buildVectorBlBdr2D_sim,&
+              rboundaryRegion, rcollectionTmp)
+        end if
+        
+      end do ! isegment
+    end do ! ibct
     
     ! Release temporal collection structure
     call collct_done(rcollectionTmp)
-
-  end subroutine hydro_calcLinfBoundaryConditions
+    
+  end subroutine hydro_calcLinfBdrCond2D
 
 end module hydro_callback

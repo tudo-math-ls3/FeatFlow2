@@ -683,7 +683,6 @@ contains
     p_rtriangulation  => rproblemLevel%rtriangulation
     p_rboundary       => rproblemLevel%p_rproblem%rboundary
 
-
     ! Create discretisation structure
     if (discretisation > 0) then
 

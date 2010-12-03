@@ -173,8 +173,6 @@
 !# 42.) hydro_coeffVectorBdr2d_sim
 !#      -> Calculates the coefficients for the linear form in 2D
 !#
-!# 43.) hydro_coeffMatrixBdr2d_sim
-!#      -> Calculates the coefficients for the bilinear form in 2D
 !# </purpose>
 !##############################################################################
 
@@ -182,10 +180,14 @@ module hydro_callback2d
 
 #include "hydro.h"
 
+  use boundary
   use boundarycondaux
   use collection
   use derivatives
+  use domainintegration
+  use feevaluation
   use flagship_callback
+  use fparser
   use fsystem
   use genoutput
   use graph
@@ -195,7 +197,9 @@ module hydro_callback2d
   use linearsystemblock
   use linearsystemscalar
   use problem
+  use scalarpde
   use solveraux
+  use spatialdiscretisation
   use storage
 
   implicit none
@@ -4583,17 +4587,6 @@ contains
       nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
-    use basicgeometry
-    use boundary
-    use boundarycondaux
-    use collection
-    use domainintegration
-    use feevaluation
-    use fparser
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-
 !<description>
     ! This subroutine is called during the vector assembly. It has to
     ! compute the coefficients in front of the terms of the linear
@@ -4606,8 +4599,6 @@ contains
     ! According to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points and all the terms in the linear form
     ! the corresponding coefficients in front of the terms.
-    !
-    ! This routine handles the constant velocities in the primal problem.
 !</description>
 
 !<input>
@@ -4641,7 +4632,7 @@ contains
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -4719,7 +4710,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Allocate temporal memory
-      allocate(Daux1(ubound(Dpoints,2)*nvar, ubound(Dpoints,3)))
+      allocate(Daux1(npointsPerElement*nvar, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
       call fevl_evaluate_sim(DER_FUNC, Daux1, p_rsolution%RvectorBlock(1),&
@@ -4744,8 +4735,8 @@ contains
         ! Set number of spatial dimensions
         ndim = size(Dpoints, 1)
 
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -4770,8 +4761,8 @@ contains
             
             ! Compute auxiliary quantities based on internal state vector
             pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-0.5*&
-                     (Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
-                      Daux1((ipoint-1)*NVAR2D+3,iel)**2))/&
+                (Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
+                Daux1((ipoint-1)*NVAR2D+3,iel)**2))/&
                  Daux1((ipoint-1)*NVAR2D+1,iel)
             cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
 
@@ -4841,8 +4832,8 @@ contains
         ! Compute the mirrored state vector based on the values of the
         ! computed state vector and use an approximate Riemann solver
         
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -4891,8 +4882,8 @@ contains
         ! Set number of spatial dimensions
         ndim = size(Dpoints, 1)
 
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -4935,8 +4926,8 @@ contains
         !
         ! Evaluate the boundary fluxes based on the computed state vector
 
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -4970,8 +4961,8 @@ contains
         ! Set number of spatial dimensions
         ndim = size(Dpoints, 1)
 
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -4981,7 +4972,7 @@ contains
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
             ! Compute boundary values from function parser given in
-            ! term of the density, pressure and tangential velocity
+            ! terms of the density, pressure and tangential velocity
             do iexpr = 1, 3
               call fparser_evalFunction(p_rfparser,&
                   nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
@@ -5004,7 +4995,7 @@ contains
             ! Compute fourth Riemann invariant based on the internal state vector
             w4 = dvnI+(2.0/(GAMMA-1.0))*cI
 
-            ! Compute the first Riemann invariant based on the first Riemann
+            ! Compute the first Riemann invariant based on the fourth Riemann
             ! invariant and the prescribed boundary values
             w1 = w4-2*(2.0/(GAMMA-1.0))*cM
 
@@ -5043,8 +5034,8 @@ contains
         ! Set number of spatial dimensions
         ndim = size(Dpoints, 1)
 
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -5127,7 +5118,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Allocate temporal memory
-      allocate(Daux2(ubound(Dpoints,2), ubound(Dpoints,3), nvar))
+      allocate(Daux2(npointsPerElement, nelements, nvar))
       
       ! Evaluate the solution in the cubature points on the boundary
       do ivar = 1, nvar
@@ -5155,8 +5146,8 @@ contains
         ! Set number of spatial dimensions
         ndim = size(Dpoints, 1)
 
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -5243,15 +5234,14 @@ contains
 
 
       case (BDRC_FREESLIP)
-       
         !-----------------------------------------------------------------------
         ! Free-slip boundary condition:
         !
         ! Compute the mirrored state vector based on the values of the
         ! computed state vector and use an approximate Riemann solver
         
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -5298,8 +5288,8 @@ contains
         ! Set number of spatial dimensions
         ndim = size(Dpoints, 1)
 
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -5342,8 +5332,8 @@ contains
         !
         ! Evaluate the boundary fluxes based on the computed state vector
 
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -5377,8 +5367,8 @@ contains
         ! Set number of spatial dimensions
         ndim = size(Dpoints, 1)
 
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -5449,8 +5439,8 @@ contains
         ! Set number of spatial dimensions
         ndim = size(Dpoints, 1)
 
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -5543,51 +5533,51 @@ contains
       real(DP), dimension(NVAR2D), intent(out) :: Dflux, Diff
 
       ! local variables
-      real(DP) :: uI,vI,ru2I,rv2I,uM,vM,ru2M,rv2M,hI,hM
-      real(DP) :: cPow2,uPow2,vPow2,c_IM,h_IM,q_IM,u_IM,v_IM
+      real(DP) :: uI,vI,pI,uM,vM,pM
+      real(DP) :: cPow2,c_IM,H_IM,q_IM,u_IM,v_IM
       real(DP) :: l1,l2,l3,l4,w1,w2,w3,w4,aux,aux1,aux2,dveln
       
       ! Compute auxiliary quantities
-      uI = DstateI(2)/DstateI(1)
-      vI = DstateI(3)/DstateI(1)
-      ru2I = uI*DstateI(2)
-      rv2I = vI*DstateI(3)
+      uI = X_VELOCITY_FROM_CONSVAR(DstateI, NVAR2D)
+      vI = Y_VELOCITY_FROM_CONSVAR(DstateI, NVAR2D)
+      pI = PRESSURE_FROM_CONSVAR_2D(DstateI, NVAR2D)
       
       ! Compute auxiliary quantities
-      uM = DstateM(2)/DstateM(1)
-      vM = DstateM(3)/DstateM(1)
-      ru2M = uM*DstateM(2)
-      rv2M = vM*DstateM(3)
+      uM = X_VELOCITY_FROM_CONSVAR(DstateM, NVAR2D)
+      vM = Y_VELOCITY_FROM_CONSVAR(DstateM, NVAR2D)
+      pM = PRESSURE_FROM_CONSVAR_2D(DstateM, NVAR2D)
 
       ! Calculate $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
-      Dflux(1) = dnx*(DstateI(2)+DstateM(2))+&
-                 dny*(DstateI(3)+DstateM(3))
-      Dflux(2) = dnx*((GAMMA-1.0)*(DstateI(4)+DstateM(4))-&
-                      (GAMMA-3.0)/2.0*(ru2I+ru2M)-&
-                      (GAMMA-1.0)/2.0*(rv2I+rv2M))+&
-                 dny*(DstateI(2)*vI+DstateM(2)*vM)
-      Dflux(3) = dnx*(DstateI(3)*uI+DstateM(3)*uM)+&
-                 dny*((GAMMA-1.0)*(DstateI(4)+DstateM(4))-&
-                      (GAMMA-3.0)/2.0*(rv2I+rv2M)-&
-                      (GAMMA-1.0)/2.0*(ru2I+ru2M))
-      Dflux(4) = dnx*((GAMMA*DstateI(4)-(GAMMA-1.0)/2.0*(ru2I+rv2I))*uI+&
-                      (GAMMA*DstateM(4)-(GAMMA-1.0)/2.0*(ru2M+rv2M))*uM)+&
-                 dny*((GAMMA*DstateI(4)-(GAMMA-1.0)/2.0*(ru2I+rv2I))*vI+&
-                      (GAMMA*DstateM(4)-(GAMMA-1.0)/2.0*(ru2M+rv2M))*vM)
+      Dflux(1) = dnx*(DstateI(2)+DstateM(2))&
+               + dny*(DstateI(3)+DstateM(3))
+      Dflux(2) = dnx*(DstateI(2)*uI+pI + DstateM(2)*uM+pM)&
+               + dny*(DstateI(2)*vI + DstateM(2)*vM)
+      Dflux(3) = dnx*(DstateI(3)*vI + DstateM(3)*vM)&
+               + dny*(DstateI(3)*vI+pI + DstateM(3)*vM+pM)
+      Dflux(4) = dnx*((DstateI(4)+pI)*uI + (DstateM(4)+pM)*uM)&
+               + dny*((DstateI(4)+pI)*vI + (DstateM(4)+pM)*vM)
       
       ! Compute Roe mean values
-      aux  = sqrt(max(DstateI(1)/DstateM(1), SYS_EPSREAL))
-      u_IM = (aux*uI+uM)/(aux+1.0)
-      v_IM = (aux*vI+vM)/(aux+1.0)
-      hI   = GAMMA*DstateI(4)/DstateI(1)-(GAMMA-1.0)/2.0*(uI**2+vI**2)
-      hM   = GAMMA*DstateM(4)/DstateM(1)-(GAMMA-1.0)/2.0*(uM**2+vM**2)
-      h_IM =(aux*hI+hM)/(aux+1.0)
+      aux  = ROE_MEAN_RATIO(\
+             DENSITY_FROM_CONSVAR(DstateI,NVAR2D),\
+             DENSITY_FROM_CONSVAR(DstateM,NVAR2D))
+      u_IM = ROE_MEAN_VALUE(uI,uM,aux)
+      v_IM = ROE_MEAN_VALUE(vI,vM,aux)
+      H_IM = ROE_MEAN_VALUE(\
+             (TOTAL_ENERGY_FROM_CONSVAR(DstateI,NVAR2D)+pI)/\
+             DENSITY_FROM_CONSVAR(DstateI,NVAR2D),\
+             (TOTAL_ENERGY_FROM_CONSVAR(DstateM,NVAR2D)+pM)/\
+             DENSITY_FROM_CONSVAR(DstateM,NVAR2D),aux)
       
       ! Compute auxiliary variables
-      uPow2 = u_IM*u_IM
-      vPow2 = v_IM*v_IM
-      q_IM  = 0.5*(uPow2+vPow2)
+      q_IM  = 0.5*(u_IM*u_IM+v_IM*v_IM)
+
+      ! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
       cPow2 = max((GAMMA-1.0)*(H_IM-q_IM), SYS_EPSREAL)
+#else
+#error "Speed of sound must be implemented!"
+#endif
       c_IM  = sqrt(cPow2)
 
       ! Compute normal velocity
@@ -5611,7 +5601,8 @@ contains
                  -dnx*Diff(2)&
                  -dny*Diff(3))/c_IM
       
-      ! Compute characteristic variables multiplied by the corresponding eigenvalue
+      ! Compute characteristic variables multiplied by the
+      ! corresponding eigenvalue
       w1 = l1 * (aux1 + aux2)
       w2 = l2 * ((1.0-(GAMMA-1.0)*q_IM/cPow2)*Diff(1)&
                            +(GAMMA-1.0)*(u_IM*Diff(2)&
@@ -5634,7 +5625,7 @@ contains
     end subroutine doRiemannSolver
 
     !***************************************************************************
-    ! Compute the Galerkin flux (ued for supersonic outflow)
+    ! Compute the Galerkin flux (used for supersonic outflow)
     !***************************************************************************
 
     subroutine doGalerkinFlux(Dstate, dnx, dny, Dflux)
@@ -5647,23 +5638,19 @@ contains
       real(DP), dimension(NVAR2D), intent(out) :: Dflux
 
       ! local variables
-      real(DP) :: u,v,ru2,rv2
+      real(DP) :: u,v,p
       
       
       ! Compute auxiliary quantities
-      u = Dstate(2)/Dstate(1)
-      v = Dstate(3)/Dstate(1)
-      ru2 = u*Dstate(2)
-      rv2 = v*Dstate(3)
+      u = X_VELOCITY_FROM_CONSVAR(Dstate, NVAR2D)
+      v = Y_VELOCITY_FROM_CONSVAR(Dstate, NVAR2D)
+      p = PRESSURE_FROM_CONSVAR_2D(Dstate, NVAR2D)
       
       ! Calculate ${\bf n}\cdot{\bf F}(U)$
-      Dflux(1) = dnx*Dstate(2)+dny*Dstate(3)
-      Dflux(2) = dnx*((GAMMA-1.0)*Dstate(4)-(GAMMA-3.0)/2.0*ru2-&
-                      (GAMMA-1.0)/2.0*rv2)+dny*Dstate(2)*v
-      Dflux(3) = dnx*Dstate(3)*u+dny*((GAMMA-1.0)*Dstate(4)-&
-                     (GAMMA-3.0)/2.0*rv2-(GAMMA-1.0)/2.0*ru2)
-      Dflux(4) = dnx*(GAMMA*Dstate(4)-(GAMMA-1.0)/2.0*(ru2+rv2))*u+&
-                 dny*(GAMMA*Dstate(4)-(GAMMA-1.0)/2.0*(ru2+rv2))*v
+      Dflux(1) = dnx*Dstate(2)       + dny*Dstate(3)
+      Dflux(2) = dnx*(Dstate(2)*u+p) + dny*Dstate(2)*v
+      Dflux(3) = dnx*Dstate(3)*v     + dny*(Dstate(3)*v+p)
+      Dflux(4) = dnx*(Dstate(4)+p)*u + dny*(Dstate(4)+p)*v
 
     end subroutine doGalerkinFlux
     

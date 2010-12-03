@@ -155,6 +155,9 @@
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in block format
 !#
+!# 39.) hydro_coeffVectorBdr1d_sim
+!#      -> Calculates the coefficients for the linear form in 1D
+!#
 !# </purpose>
 !##############################################################################
 
@@ -164,7 +167,11 @@ module hydro_callback1d
 
   use boundarycondaux
   use collection
+  use derivatives
+  use domainintegration
+  use feevaluation
   use flagship_callback
+  use fparser
   use fsystem
   use genoutput
   use graph
@@ -174,7 +181,9 @@ module hydro_callback1d
   use linearsystemblock
   use linearsystemscalar
   use problem
+  use scalarpde
   use solveraux
+  use spatialdiscretisation
   use storage
 
   implicit none
@@ -216,6 +225,7 @@ module hydro_callback1d
   public :: hydro_trafoDiffDenPre1d_sim
   public :: hydro_trafoDiffDenPreVel1d_sim
   public :: hydro_calcBoundaryvalues1d
+  public :: hydro_coeffVectorBdr1d_sim
   public :: hydro_hadaptCallbackScalar1d
   public :: hydro_hadaptCallbackBlock1d
 
@@ -3639,6 +3649,968 @@ contains
     end select
 
   end subroutine hydro_calcBoundaryvalues1d
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_coeffVectorBdr1d_sim(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, ibct, IdofsTest,&
+      rdomainIntSubset, Dcoefficients, rcollection)
+
+!<description>
+    ! This subroutine is called during the vector assembly. It has to
+    ! compute the coefficients in front of the terms of the linear
+    ! form. This routine can be used universaly for arbitrary linear
+    ! forms for which the coefficients are evaluated analytically
+    ! using a function parser which is passed using the collection.
+    !
+    ! The routine accepts a set of points (cubature points) in real
+    ! coordinates.  According to the terms in the linear form, the
+    ! routine has to compute simultaneously for all these points and
+    ! all the terms in the linear form the corresponding coefficients
+    ! in front of the terms.
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(nbocks,itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:,:), intent(out) :: Dcoefficients
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    type(t_vectorBlock), pointer :: p_rsolution
+    real(DP), dimension(:,:), pointer :: Daux1
+    real(DP), dimension(:,:,:), pointer :: Daux2
+    real(DP), dimension(NVAR1D) :: DstateI,DstateM,Dflux,Diff
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dnx,dtime,dscale,pI,cI,rM,pM,cM,dvnI,dvnM,w1,w3
+    integer :: ibdrtype,isegment,iel,ipoint,ndim,ivar,nvar,iexpr,nmaxExpr
+
+#ifndef HYDRO_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DHYDRO_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'hydro_coeffVectorBdr1d_sim')
+    call sys_halt()
+#endif
+
+    ! This subroutine assumes that the first quick access string
+    ! value holds the name of the function parser in the collection.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        trim(rcollection%SquickAccess(1)))
+
+    ! This subroutine assumes that the first quick access vector
+    ! points to the solution vector
+    p_rsolution => rcollection%p_rvectorQuickAccess1
+
+    ! Check if the solution is given in block or interleaved format
+    if (p_rsolution%nblocks .eq. 1) then
+      nvar = p_rsolution%RvectorBlock(1)%NVAR
+    else
+      nvar = p_rsolution%nblocks
+    end if
+    
+    ! The first two quick access double values hold the simulation
+    ! time and the scaling parameter
+    dtime  = rcollection%DquickAccess(1)
+    dscale = rcollection%DquickAccess(2)
+
+    ! The first three quick access integer values hold:
+    ! - the type of boundary condition
+    ! - the segment number
+    ! - the maximum number of expressions
+    ibdrtype = rcollection%IquickAccess(1)
+    isegment = rcollection%IquickAccess(2)
+    nmaxExpr = rcollection%IquickAccess(3)
+
+    if (p_rsolution%nblocks .eq. 1) then
+
+      !-------------------------------------------------------------------------
+      ! Solution is stored in interleaved format
+      !-------------------------------------------------------------------------
+
+      ! Allocate temporal memory
+      allocate(Daux1(npointsPerElement*nvar, nelements))
+      
+      ! Evaluate the solution in the cubature points on the boundary
+      call fevl_evaluate_sim(DER_FUNC, Daux1, p_rsolution%RvectorBlock(1),&
+          Dpoints, rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+      
+      ! What type of boundary conditions are we?
+      select case(iand(ibdrtype, BDRC_TYPEMASK))
+        
+      case (BDRC_FREESTREAM)
+        !-----------------------------------------------------------------------
+        ! Free-stream boundary conditions:
+        !
+        ! Compute the Riemann invariants based on the computed (internal)
+        ! state vector and the given freestream state vector and select
+        ! the Riemman invariant for each characteristic fields based on 
+        ! the sign of the corresponding eigenvalue.
+        
+        ! Initialize values for function parser
+        Dvalue = 0.0
+        Dvalue(NDIM3D+1) = dtime
+
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+            
+            ! Compute free stream values from function parser given in
+            ! term of the primitive variables [rho,v1,p]
+            do iexpr = 1, 3
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
+            end do
+            
+            ! Compute auxiliary quantities based on free stream state vector
+            rM = DstateM(1)
+            pM = DstateM(3)
+            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
+            dvnM = dnx*DstateM(2)
+            
+            ! Compute auxiliary quantities based on internal state vector
+            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR1D+3,iel)-0.5*&
+                (Daux1((ipoint-1)*NVAR1D+2,iel)**2))/Daux1((ipoint-1)*NVAR1D+1,iel)
+            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL))
+
+            ! Compute the normal velocity based on internal state vector
+            dvnI = dnx*Daux1((ipoint-1)*NVAR1D+2,iel)/Daux1((ipoint-1)*NVAR1D+1,iel)
+
+            ! Select free stream or computed Riemann invariant depending
+            ! on the sign of the corresponding eigenvalue
+            if (dvnI .lt. cI) then
+              DstateM(1) = dvnM-(2.0/(GAMMA-1.0))*cM
+            else
+              DstateM(1) = dvnI-(2.0/(GAMMA-1.0))*cI
+            end if
+
+            if (dvnI .lt. SYS_EPSREAL) then
+              DstateM(2) = pM/(rM**GAMMA)
+            else
+              DstateM(2) = pI/(Daux1((ipoint-1)*NVAR1D+1,iel)**GAMMA)
+            end if
+
+            if (dvnI .lt. -cI) then
+              DstateM(3) = dvnM+(2.0/(GAMMA-1.0))*cM
+            else
+              DstateM(3) = dvnI+(2.0/(GAMMA-1.0))*cI
+            end if
+            
+            ! Convert Riemann invariants into conservative state variables
+            cM = 0.25*(GAMMA-1.0)*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
+            pM = rM*cM*cM/GAMMA
+            dvnM = 0.5*(DstateM(1)+DstateM(3))
+            
+            ! Setup the state vector based on Riemann invariants
+            DstateM(1) = rM
+            DstateM(2) = rM*dnx*dvnM
+            DstateM(3) = pM/(GAMMA-1.0)+0.5*dvnM*dvnM
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR1D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+
+        
+      case (BDRC_FREESLIP)
+        !-----------------------------------------------------------------------
+        ! Free-slip boundary condition:
+        !
+        ! Compute the mirrored state vector based on the values of the
+        ! computed state vector and use an approximate Riemann solver
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR1D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
+
+            ! Compute the normal velocity based on the internal state vector
+            dvnI = dnx*Daux1((ipoint-1)*NVAR1D+2,iel)/Daux1((ipoint-1)*NVAR1D+1,iel)
+
+            ! Compute the mirrored state vector
+            DstateM(1) = DstateI(1)
+            DstateM(2) = DstateM(1)*(-dvnI*dnx)
+            DstateM(3) = DstateI(3)
+
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+
+        
+      case (BDRC_SUPERINLET)
+        !-----------------------------------------------------------------------
+        ! Supersonic inlet boundary conditions:
+        !
+        ! Prescribe the state vector in conservative variables
+        
+        ! Initialize values for function parser
+        Dvalue = 0.0
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+            ! Compute boundary values from function parser given in
+            ! term of the primitive variables [rho,v,p]
+            do iexpr = 1, 3
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
+            end do
+
+            ! Compute convervative variables
+            DstateM(3) = DstateM(3)*(1.0/(GAMMA-1.0))&
+                       + DstateM(1)*0.5*(DstateM(2)**2)
+            DstateM(2) = DstateM(1)*DstateM(2)
+
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR1D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
+
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+
+
+      case (BDRC_SUPEROUTLET)
+        !-----------------------------------------------------------------------
+        ! Supersonic outlet boundary conditions:
+        !
+        ! Evaluate the boundary fluxes based on the computed state vector
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+        
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR1D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
+
+            ! Assemble Galerkin fluxes at the boundary
+            call doGalerkinFlux(DstateI, dnx, Dflux)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*Dflux
+          end do
+        end do
+
+
+      case (BDRC_SUBINLET)
+        !-----------------------------------------------------------------------
+        ! Subsonic pressure-density inlet boundary conditions:
+        !
+        ! Prescribe the density, pressure and tangential velocity at the inlet
+        
+        ! Initialize values for function parser
+        Dvalue = 0.0
+        Dvalue(NDIM3D+1) = dtime
+
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+            ! Compute boundary values from function parser given in
+            ! terms of the density and pressure
+            do iexpr = 1, 2
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
+            end do
+
+            ! Compute auxiliary quantities based on prescribed boundary values
+            rM = DstateM(1)
+            pM = DstateM(2)
+            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
+
+            ! Compute the normal velocity based on the internal state vector
+            dvnI = dnx*Daux1((ipoint-1)*NVAR1D+2,iel)/Daux1((ipoint-1)*NVAR1D+1,iel)
+
+            ! Compute the speed of sound based on the internal state vector
+            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL))
+
+            ! Compute fourth Riemann invariant based on the internal state vector
+            w3 = dvnI+(2.0/(GAMMA-1.0))*cI
+
+            ! Compute the first Riemann invariant based on the third Riemann
+            ! invariant and the prescribed boundary values
+            w1 = w3-2*(2.0/(GAMMA-1.0))*cM
+
+            ! Setup the state vector based on Rimann invariants
+            DstateM(1) = rM
+            DstateM(2) = rM*dnx*0.5*(w1+w3)
+            DstateM(3) = (1.0/(GAMMA-1.0))*pM+0.5*rM*((dnx*0.5*(w1+w3))**2)
+
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR1D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+
+      case (BDRC_SUBOUTLET)
+        !-----------------------------------------------------------------------
+        ! Subsonic pressure outlet boundary condition:
+        !
+        ! Prescribe the pressure at the outlet
+
+        ! Initialize values for function parser
+        Dvalue = 0.0
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+            ! Compute pressure value from function parser
+            call fparser_evalFunction(p_rfparser,&
+                nmaxExpr*(isegment-1)+1, Dvalue, pM)
+
+            ! Compute auxiliary quantities based on internal state vector
+            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR1D+3,iel)-0.5*&
+                (Daux1((ipoint-1)*NVAR1D+2,iel)**2)/Daux1((ipoint-1)*NVAR1D+1,iel))
+            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL))
+
+            ! Compute the normal velocity based on internal state vector
+            dvnI = dnx*Daux1((ipoint-1)*NVAR1D+2,iel)/Daux1((ipoint-1)*NVAR1D+1,iel)
+            
+            ! Compute three Riemann invariants based on internal state vector
+            DstateM(2) = pI/(Daux1((ipoint-1)*NVAR1D+1,iel)**GAMMA)
+            DstateM(3) = dvnI+(2.0/(GAMMA-1.0))*cI
+            
+            ! Compute first Riemann invariant based on third Riemann invariant,
+            ! the computed density and pressure and the prescribed exit pressure
+            DstateM(1) = DstateM(3)-2*(2.0/(GAMMA-1.0))*sqrt(max(SYS_EPSREAL,&
+                GAMMA*pM/Daux1((ipoint-1)*NVAR1D+1,iel)*(pI/pM)**(1.0/GAMMA)))
+
+            ! Convert Riemann invariants into conservative state variables
+            cM = 0.25*(GAMMA-1.0)*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
+            pM = rM*cM*cM/GAMMA
+            dvnM = 0.5*(DstateM(1)+DstateM(3))
+
+            ! Setup the state vector based on Riemann invariants
+            DstateM(1) = rM
+            DstateM(2) = rM*dnx*dvnM
+            DstateM(3) = pM/(GAMMA-1.0)+0.5*dvnM*dvnM
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR1D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+                
+      case default
+        call output_line('Invalid type of boundary conditions!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr1d_sim')
+        call sys_halt()
+        
+      end select
+
+      ! Deallocate temporal memory
+      deallocate(Daux1)
+
+    else
+
+      !-------------------------------------------------------------------------
+      ! Solution is stored in block format
+      !-------------------------------------------------------------------------
+
+      ! Allocate temporal memory
+      allocate(Daux2(npointsPerElement*nvar, nelements, nvar))
+      
+      ! Evaluate the solution in the cubature points on the boundary
+      do ivar = 1, nvar
+        call fevl_evaluate_sim(DER_FUNC, Daux2(:,:,ivar),&
+            p_rsolution%RvectorBlock(ivar), Dpoints,&
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+      end do
+      
+      ! What type of boundary conditions are we?
+      select case(iand(ibdrtype, BDRC_TYPEMASK))
+        
+      case (BDRC_FREESTREAM)
+        !-----------------------------------------------------------------------
+        ! Free-stream boundary conditions:
+        !
+        ! Compute the Riemann invariants based on the computed (internal)
+        ! state vector and the given freestream state vector and select
+        ! the Riemman invariant for each characteristic fields based on 
+        ! the sign of the corresponding eigenvalue.
+        
+        ! Initialize values for function parser
+        Dvalue = 0.0
+        Dvalue(NDIM3D+1) = dtime
+
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+            
+            ! Compute free stream values from function parser given in
+            ! term of the primitive variables [rho,v1,p]
+            do iexpr = 1, 3
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
+            end do
+            
+            ! Compute auxiliary quantities based on free stream state vector
+            rM = DstateM(1)
+            pM = DstateM(3)
+            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
+            dvnM = dnx*DstateM(2)
+            
+            ! Compute auxiliary quantities based on internal state vector
+            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,3)-0.5*&
+                (Daux2(ipoint,iel,2)**2))/Daux2(ipoint,iel,1)
+            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
+
+            ! Compute the normal velocity based on internal state vector
+            dvnI = dnx*Daux2(ipoint,iel,2)/Daux2(ipoint,iel,1)
+
+            ! Select free stream or computed Riemann invariant depending
+            ! on the sign of the corresponding eigenvalue
+            if (dvnI .lt. cI) then
+              DstateM(1) = dvnM-(2.0/(GAMMA-1.0))*cM
+            else
+              DstateM(1) = dvnI-(2.0/(GAMMA-1.0))*cI
+            end if
+
+            if (dvnI .lt. SYS_EPSREAL) then
+              DstateM(2) = pM/(rM**GAMMA)
+            else
+              DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
+            end if
+
+            if (dvnI .lt. -cI) then
+              DstateM(3) = dvnM+(2.0/(GAMMA-1.0))*cM
+            else
+              DstateM(3) = dvnI+(2.0/(GAMMA-1.0))*cI
+            end if
+            
+            ! Convert Riemann invariants into conservative state variables
+            cM = 0.25*(GAMMA-1.0)*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
+            pM = rM*cM*cM/GAMMA
+            dvnM = 0.5*(DstateM(1)+DstateM(3))
+            
+            ! Setup the state vector based on Riemann invariants
+            DstateM(1) = rM
+            DstateM(2) = rM*dnx*dvnM
+            DstateM(3) = pM/(GAMMA-1.0)+0.5*dvnM*dvnM
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,3)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+
+        
+      case (BDRC_FREESLIP)
+        !-----------------------------------------------------------------------
+        ! Free-slip boundary condition:
+        !
+        ! Compute the mirrored state vector based on the values of the
+        ! computed state vector and use an approximate Riemann solver
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,3)
+
+            ! Compute the normal velocity based on the internal state vector
+            dvnI = dnx*Daux2(ipoint,iel,2)/Daux2(ipoint,iel,1)
+
+            ! Compute the mirrored state vector
+            DstateM(1) = DstateI(1)
+            DstateM(2) = DstateM(1)*(-dvnI*dnx)
+            DstateM(3) = DstateI(3)
+
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+
+        
+      case (BDRC_SUPERINLET)
+        !-----------------------------------------------------------------------
+        ! Supersonic inlet boundary conditions:
+        !
+        ! Prescribe the state vector in conservative variables
+        
+        ! Initialize values for function parser
+        Dvalue = 0.0
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+            ! Compute boundary values from function parser given in
+            ! term of the primitive variables [rho,v,p]
+            do iexpr = 1, 3
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
+            end do
+
+            ! Compute convervative variables
+            DstateM(3) = DstateM(3)*(1.0/(GAMMA-1.0))&
+                       + DstateM(1)*0.5*(DstateM(2)**2)
+            DstateM(2) = DstateM(1)*DstateM(2)
+
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,33)
+
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+
+
+      case (BDRC_SUPEROUTLET)
+        !-----------------------------------------------------------------------
+        ! Supersonic outlet boundary conditions:
+        !
+        ! Evaluate the boundary fluxes based on the computed state vector
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+        
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,3)
+
+            ! Assemble Galerkin fluxes at the boundary
+            call doGalerkinFlux(DstateI, dnx, Dflux)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*Dflux
+          end do
+        end do
+
+
+      case (BDRC_SUBINLET)
+        !-----------------------------------------------------------------------
+        ! Subsonic pressure-density inlet boundary conditions:
+        !
+        ! Prescribe the density, pressure and tangential velocity at the inlet
+        
+        ! Initialize values for function parser
+        Dvalue = 0.0
+        Dvalue(NDIM3D+1) = dtime
+
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+            ! Compute boundary values from function parser given in
+            ! terms of the density and pressure
+            do iexpr = 1, 2
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
+            end do
+
+            ! Compute auxiliary quantities based on prescribed boundary values
+            rM = DstateM(1)
+            pM = DstateM(2)
+            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
+
+            ! Compute the normal velocity based on the internal state vector
+            dvnI = dnx*Daux2(ipoint,iel,2)/Daux2(ipoint,iel,1)
+
+            ! Compute the speed of sound based on the internal state vector
+            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
+
+            ! Compute fourth Riemann invariant based on the internal state vector
+            w3 = dvnI+(2.0/(GAMMA-1.0))*cI
+
+            ! Compute the first Riemann invariant based on the third Riemann
+            ! invariant and the prescribed boundary values
+            w1 = w3-2*(2.0/(GAMMA-1.0))*cM
+
+            ! Setup the state vector based on Rimann invariants
+            DstateM(1) = rM
+            DstateM(2) = rM*dnx*0.5*(w1+w3)
+            DstateM(3) = (1.0/(GAMMA-1.0))*pM+0.5*rM*((dnx*0.5*(w1+w3))**2)
+
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,3)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+
+      case (BDRC_SUBOUTLET)
+        !-----------------------------------------------------------------------
+        ! Subsonic pressure outlet boundary condition:
+        !
+        ! Prescribe the pressure at the outlet
+
+        ! Initialize values for function parser
+        Dvalue = 0.0
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+            ! Compute pressure value from function parser
+            call fparser_evalFunction(p_rfparser,&
+                nmaxExpr*(isegment-1)+1, Dvalue, pM)
+
+            ! Compute auxiliary quantities based on internal state vector
+            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,3)-0.5*&
+                (Daux2(ipoint,iel,2)**2)/Daux2(ipoint,iel,1))
+            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
+
+            ! Compute the normal velocity based on internal state vector
+            dvnI = dnx*Daux2(ipoint,iel,2)/Daux2(ipoint,iel,11)
+            
+            ! Compute three Riemann invariants based on internal state vector
+            DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
+            DstateM(3) = dvnI+(2.0/(GAMMA-1.0))*cI
+            
+            ! Compute first Riemann invariant based on third Riemann invariant,
+            ! the computed density and pressure and the prescribed exit pressure
+            DstateM(1) = DstateM(3)-2*(2.0/(GAMMA-1.0))*sqrt(max(SYS_EPSREAL,&
+                GAMMA*pM/Daux2(ipoint,iel,1)*(pI/pM)**(1.0/GAMMA)))
+
+            ! Convert Riemann invariants into conservative state variables
+            cM = 0.25*(GAMMA-1.0)*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
+            pM = rM*cM*cM/GAMMA
+            dvnM = 0.5*(DstateM(1)+DstateM(3))
+
+            ! Setup the state vector based on Riemann invariants
+            DstateM(1) = rM
+            DstateM(2) = rM*dnx*dvnM
+            DstateM(3) = pM/(GAMMA-1.0)+0.5*dvnM*dvnM
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,3)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+                
+      case default
+        call output_line('Invalid type of boundary conditions!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr1d_sim')
+        call sys_halt()
+        
+      end select
+
+      ! Deallocate temporal memory
+      deallocate(Daux2)
+
+    end if
+
+  contains
+
+    ! Here come the working routines
+
+    !***************************************************************************
+    ! Approximate Riemann solver along the outward unit normal
+    !***************************************************************************
+    
+    subroutine doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+
+      ! input parameters
+      real(DP), dimension(NVAR1D), intent(in) :: DstateI, DstateM
+      real(DP), intent(in) :: dnx
+
+      ! output parameters
+      real(DP), dimension(NVAR1D), intent(out) :: Dflux, Diff
+
+      ! local variables
+      real(DP) :: uI,pI,uM,pM
+      real(DP) :: cPow2,c_IM,H_IM,q_IM,u_IM
+      real(DP) :: l1,l2,l3,w1,w2,w3,aux,b1,b2,dveln
+      
+      ! Compute auxiliary quantities
+      uI = X_VELOCITY_FROM_CONSVAR(DstateI, NVAR1D)
+      pI = PRESSURE_FROM_CONSVAR_1D(DstateI, NVAR1D)
+      
+      ! Compute auxiliary quantities
+      uM = X_VELOCITY_FROM_CONSVAR(DstateM, NVAR1D)
+      pM = PRESSURE_FROM_CONSVAR_1D(DstateM, NVAR1D)
+
+      ! Calculate $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+      Dflux(1) = dnx*(DstateI(2) + DstateM(2))
+      Dflux(2) = dnx*(DstateI(2)*uI+pI + DstateM(2)*uM+pM)
+      Dflux(3) = dnx*((DstateI(3)+pI)*uI + (DstateM(3)+pM)*uM)
+
+      
+      ! Compute Roe mean values
+      aux  = ROE_MEAN_RATIO(\
+             DENSITY_FROM_CONSVAR(DstateI,NVAR1D),\
+             DENSITY_FROM_CONSVAR(DstateM,NVAR1D))
+      u_IM = ROE_MEAN_VALUE(uI,uM,aux)
+      H_IM = ROE_MEAN_VALUE(\
+             (TOTAL_ENERGY_FROM_CONSVAR(DstateI,NVAR1D)+pI)/\
+             DENSITY_FROM_CONSVAR(DstateI,NVAR1D),\
+             (TOTAL_ENERGY_FROM_CONSVAR(DstateM,NVAR1D)+pM)/\
+             DENSITY_FROM_CONSVAR(DstateM,NVAR1D),aux)
+      
+      ! Compute auxiliary variable
+      q_IM  = 0.5*u_IM**2
+
+      ! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+      cPow2 = max((GAMMA-1.0)*(H_IM-q_IM), SYS_EPSREAL)
+#else
+#error "Speed of sound must be implemented!"
+#endif
+      c_IM  = sqrt(cPow2)
+
+      ! Compute normal velocity
+      dveln = dnx*uI
+
+      ! Compute eigenvalues
+      l1 = abs(dveln-c_IM)
+      l2 = abs(dveln)
+      l3 = abs(dveln+c_IM)
+      
+      ! Compute solution difference U_M-U_I
+      Diff = DstateM-DstateI
+      
+      ! Compute auxiliary quantities for characteristic variables
+      b2 = (GAMMA-1.0)/cPow2; b1 = b2*q_IM
+      
+      ! Compute characteristic variables multiplied by the
+      ! corresponding eigenvalue
+      w1 = l1 * 0.5 * (   (b1+dveln/c_IM)*Diff(1) -&
+                       (b2*u_IM+dnx/c_IM)*Diff(2) +&
+                                       b2*Diff(3) )
+      w2 = l2 * (                  (1-b1)*Diff(1) +&
+                                  b2*u_IM*Diff(2) -&
+                                       b2*Diff(3) )
+      w3 = l3 * 0.5 * (   (b1-dveln/c_IM)*Diff(1) -&
+                       (b2*u_IM-dnx/c_IM)*Diff(2) +&
+                                       b2*Diff(3) )
+            
+      ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+      Diff(1) = w1 + w2 + w3 
+      Diff(2) = (u_IM-c_IM*dnx)*w1 + u_IM*w2 +&
+                (u_IM+c_IM*dnx)*w3
+      Diff(3) = (H_IM-c_IM*dveln)*w1 + q_IM*w2 +&
+                (H_IM+c_IM*dveln)*w3
+
+    end subroutine doRiemannSolver
+
+    !***************************************************************************
+    ! Compute the Galerkin flux (used for supersonic outflow)
+    !***************************************************************************
+
+    subroutine doGalerkinFlux(Dstate, dnx, Dflux)
+
+      ! input parameters
+      real(DP), dimension(NVAR1D), intent(in) :: Dstate
+      real(DP), intent(in) :: dnx
+
+      ! output parameters
+      real(DP), dimension(NVAR1D), intent(out) :: Dflux
+
+      ! local variables
+      real(DP) :: u,p
+      
+      
+      ! Compute auxiliary quantities
+      u = X_VELOCITY_FROM_CONSVAR(Dstate, NVAR1D)
+      p = PRESSURE_FROM_CONSVAR_1D(Dstate, NVAR1D)
+      
+      ! Calculate ${\bf n}\cdot{\bf F}(U)$
+      Dflux(1) = dnx*Dstate(2)
+      Dflux(2) = dnx*(Dstate(2)*u+p)
+      Dflux(3) = dnx*(Dstate(3)+p)*u
+
+    end subroutine doGalerkinFlux
+
+  end subroutine hydro_coeffVectorBdr1d_sim
 
   !*****************************************************************************
 
