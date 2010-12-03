@@ -224,7 +224,7 @@ contains
       if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
         ! Impose boundary conditions
-        call hydro_setBoundaryConditions(rproblemLevel, rtimestep,&
+        call hydro_setBoundaryCondition(rproblemLevel, rtimestep,&
             rsolver, rsolution, rsolution0, rres, rcollection)
       end if
 
@@ -490,7 +490,7 @@ contains
       if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
         ! Impose boundary conditions
-        call transp_setBoundaryConditions(rproblemLevel, rtimestep,&
+        call transp_setBoundaryCondition(rproblemLevel, rtimestep,&
             rsolver, rsolution, rsolution0, rres, rcollection)
       end if
 
