@@ -275,14 +275,14 @@ contains
     
     ! The structure of A(1,3) must be identical to A(3,1) and
     ! that of A(2,3) must be identical to A(3,2).
-    if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(2,3)%NA) .OR. &
+    if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(2,3)%NA) .or. &
         (rmatrix%RmatrixBlock(1,3)%NEQ .ne. rmatrix%RmatrixBlock(2,3)%NEQ)) then
       call output_line ('Structure of B1 and B2 different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavStOptC2D')
       call sys_halt()
     end if
 
-    if ((rmatrix%RmatrixBlock(3,1)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
+    if ((rmatrix%RmatrixBlock(3,1)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .or. &
         (rmatrix%RmatrixBlock(3,1)%NEQ .ne. rmatrix%RmatrixBlock(3,2)%NEQ)) then
       call output_line ('Structure of D1 and D2 different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavStOptC2D')
@@ -292,7 +292,7 @@ contains
     ! Get the block discretisation structure from the matrix.
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
     
-    if (.NOT. associated(p_rblockDiscr)) then
+    if (.not. associated(p_rblockDiscr)) then
       call output_line ('No block discretisation assigned to matrix!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavStOptC2D')
       call sys_halt()

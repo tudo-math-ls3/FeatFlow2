@@ -716,88 +716,88 @@ contains
 !</subroutine>
 
   ! deallocate memory
-  if (rgriddefInfo%h_Dql2 .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_Dql2 .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_Dql2)
   end if
   
   ! deallocate memory
-  if (rgriddefInfo%h_Dqlinfty .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_Dqlinfty .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_Dqlinfty)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_calcAdapSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_calcAdapSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_calcAdapSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_nadapSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_nadapSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_nadapSteps)
   end if
 
 
   ! deallocate memory
-  if (rgriddefInfo%h_nadapStepsReally .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_nadapStepsReally .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_nadapStepsReally)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_nmaxCorrSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_nmaxCorrSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_nmaxCorrSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_ncorrSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_ncorrSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_ncorrSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_ilevelODE .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_ilevelODE .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_ilevelODE)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_ilevelODECorr .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_ilevelODECorr .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_ilevelODECorr)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_npreSmoothSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_npreSmoothSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_npreSmoothSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_npostSmoothSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_npostSmoothSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_npostSmoothSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_nintSmoothSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_nintSmoothSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_nintSmoothSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_nmonSmoothsteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_nmonSmoothsteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_nmonSmoothsteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_cpreSmoothMthd .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_cpreSmoothMthd .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_cpreSmoothMthd)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_cpostSmoothMthd .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_cpostSmoothMthd .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_cpostSmoothMthd)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_cintSmoothMthd .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_cintSmoothMthd .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_cintSmoothMthd)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_DblendPar .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_DblendPar .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_DblendPar)
   end if
   
@@ -957,88 +957,88 @@ contains
 !</subroutine>
 
   ! deallocate memory
-  if (rgriddefInfo%h_Dql2 .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_Dql2 .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_Dql2)
   end if
   
   ! deallocate memory
-  if (rgriddefInfo%h_Dqlinfty .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_Dqlinfty .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_Dqlinfty)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_calcAdapSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_calcAdapSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_calcAdapSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_nadapSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_nadapSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_nadapSteps)
   end if
 
 
   ! deallocate memory
-  if (rgriddefInfo%h_nadapStepsReally .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_nadapStepsReally .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_nadapStepsReally)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_nmaxCorrSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_nmaxCorrSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_nmaxCorrSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_ncorrSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_ncorrSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_ncorrSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_ilevelODE .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_ilevelODE .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_ilevelODE)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_ilevelODECorr .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_ilevelODECorr .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_ilevelODECorr)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_npreSmoothSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_npreSmoothSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_npreSmoothSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_npostSmoothSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_npostSmoothSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_npostSmoothSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_nintSmoothSteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_nintSmoothSteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_nintSmoothSteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_nmonSmoothsteps .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_nmonSmoothsteps .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_nmonSmoothsteps)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_cpreSmoothMthd .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_cpreSmoothMthd .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_cpreSmoothMthd)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_cpostSmoothMthd .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_cpostSmoothMthd .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_cpostSmoothMthd)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_cintSmoothMthd .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_cintSmoothMthd .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_cintSmoothMthd)
   end if
 
   ! deallocate memory
-  if (rgriddefInfo%h_DblendPar .NE. ST_NOHANDLE) then
+  if (rgriddefInfo%h_DblendPar .ne. ST_NOHANDLE) then
     call storage_free(rgriddefInfo%h_DblendPar)
   end if
   
@@ -1089,7 +1089,7 @@ contains
     
   ! Set up an empty block vector    
   call lsysbl_createVecBlockByDiscr(rdiscretisation,&
-       rgriddefInfo%p_rhLevels(iLevel)%rvectorMonFuncQ1,.TRUE.) 
+       rgriddefInfo%p_rhLevels(iLevel)%rvectorMonFuncQ1,.true.) 
   
   ! Get a pointer just not to write such a long name  
   p_rvectorMonFuncQ1 => rgriddefInfo%p_rhLevels(iLevel)%rvectorMonFuncQ1%RvectorBlock(1)
@@ -1386,10 +1386,10 @@ contains
     NLMAX=rgriddefInfo%NLMAX
     
     ! initialise Dresults
-    Dresults  => NULL()
+    Dresults  => null()
 
     ! no blending
-    bBlending = .TRUE.
+    bBlending = .true.
     
     !---------------------------------------------------------------------------------
     !                                 FOR EVERY LEVEL
@@ -1499,9 +1499,9 @@ contains
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
     call linsol_initStructure (p_rsolverNode, ierror)
-    if (ierror .NE. LINSOL_ERR_NOERROR) stop
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
     call linsol_initData (p_rsolverNode, ierror)
-    if (ierror .NE. LINSOL_ERR_NOERROR) stop
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
@@ -1530,7 +1530,7 @@ contains
                  
     ! initialise the block vector that should hold the solution
     call lsysbl_createVecBlockByDiscr(rDubDiscretisation,&
-                                      rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock,.TRUE.)
+                                      rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock,.true.)
     
     ! get the recovered gradient of the solution
     call ppgrd_calcGradient(rgriddefInfo%p_rhLevels(NLMAX)%rSolBlock%RvectorBlock(1),&
@@ -1592,20 +1592,20 @@ contains
     type(t_blockDiscretisation), pointer :: rdiscretisation    
     
     ! Is everything here we need?
-    if (rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%h_DvertexCoords .EQ. ST_NOHANDLE) then
+    if (rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%h_DvertexCoords .eq. ST_NOHANDLE) then
       call output_line ('h_DvertexCoords not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
       call sys_halt()
     end if
 
-    if (rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) then
+    if (rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%h_IverticesAtElement .eq. ST_NOHANDLE) then
       call output_line ('IverticesAtElement  not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
       call sys_halt()
     end if
     
     ! Do we have (enough) memory for that array?
-    if (rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%h_DelementVolume .EQ. ST_NOHANDLE) then
+    if (rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%h_DelementVolume .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementVolume2D', 'DAREA', &
           int(rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%NEL+1,I32), ST_doUBLE, &
           rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%h_DelementVolume, ST_NEWBLOCK_NOINIT)
@@ -1621,7 +1621,7 @@ contains
     
     ! Set up an empty block vector    
     call lsysbl_createVecBlockByDiscr(rdiscretisation,&
-         rgriddefInfo%p_rhLevels(iLevel)%rvectorAreaBlockQ1,.TRUE.)        
+         rgriddefInfo%p_rhLevels(iLevel)%rvectorAreaBlockQ1,.true.)        
         
     ! Create a discretisation structure for Q0, based on our
     ! previous discretisation structure:
@@ -1641,7 +1641,7 @@ contains
     ! and save it in our vector
     do iel=1,rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%NEL
       
-      if (p_IverticesAtElement(4,iel) .EQ. 0) then
+      if (p_IverticesAtElement(4,iel) .eq. 0) then
         ! triangular element
         do ive=1,TRIA_NVETRI2D
           Dpoints(1,ive) = p_DvertexCoords(1,p_IverticesAtElement(ive,iel))
@@ -1710,7 +1710,7 @@ contains
     
     ! Set up an empty block vector    
     call lsysbl_createVecBlockByDiscr(rdiscretisation,&
-         rgriddefInfo%p_rhLevels(iLevel)%rvectorAreaBlockQ1,.TRUE.)        
+         rgriddefInfo%p_rhLevels(iLevel)%rvectorAreaBlockQ1,.true.)        
         
     ! Create a discretisation structure for Q0, based on our
     ! previous discretisation structure:
@@ -1789,7 +1789,7 @@ contains
     
   ! Set up an empty block vector    
   call lsysbl_createVecBlockByDiscr(rdiscretisation,&
-       rgriddefInfo%p_rhLevels(iLevel)%rvectorMonFuncQ1,.TRUE.) 
+       rgriddefInfo%p_rhLevels(iLevel)%rvectorMonFuncQ1,.true.) 
 
   ! Get a pointer just not to write such a long name  
   p_rvectorMonFuncQ1 => rgriddefInfo%p_rhLevels(iLevel)%rvectorMonFuncQ1%RvectorBlock(1)
@@ -2073,8 +2073,8 @@ contains
   !-------------------------------------------------------------  
 
 
-    Bder = .FALSE.
-    Bder(DER_FUNC) = .TRUE.
+    Bder = .false.
+    Bder(DER_FUNC) = .true.
     
     ! Get a pointer to the triangulation - for easier access.
     p_rtriangulation => rdiscretisation%p_rtriangulation
@@ -2083,7 +2083,7 @@ contains
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = MIN(PPERR_NELEMSIM,p_rtriangulation%NEL)
+    nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
     
     dValue1 = 0.0_DP
     dValue2 = 0.0_DP
@@ -2098,7 +2098,7 @@ contains
       p_relementDistribution => rdiscretisation%RspatialDiscr(1)%RelementDistr(icurrentElementDistr)
     
       ! Cancel if this element distribution is empty.
-      if (p_relementDistribution%NEL .EQ. 0) cycle
+      if (p_relementDistribution%NEL .eq. 0) cycle
 
       ! Get the number of local doF`s for trial functions
       indofTest = elem_igetNDofLoc(p_relementDistribution%celement)
@@ -2119,7 +2119,7 @@ contains
 
       ! Reformat the cubature points; they are in the wrong shape!
       do i=1,ncubp
-        do k=1,UBOUND(p_DcubPtsRef,1)
+        do k=1,ubound(p_DcubPtsRef,1)
           p_DcubPtsRef(k,i) = Dxi(i,k)
         end do
       end do
@@ -2141,7 +2141,7 @@ contains
                
                       
       ! Make sure that we have determinants.
-      cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_DETJ)
+      cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
 
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that combination of trial functions
@@ -2159,7 +2159,7 @@ contains
         ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
         ! elements simultaneously.
         
-        IELmax = MIN(NEL,IELset-1+PPERR_NELEMSIM)
+        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
       
         ! Calculate the global doF`s into IdofsTrial.
         !
@@ -2179,7 +2179,7 @@ contains
 
         ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
+        cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
         ! Calculate the values of the basis functions.
         call elem_generic_sim2 (p_relementDistribution%celement, &
@@ -2316,7 +2316,7 @@ contains
                                    LSYSSC_MATRIX9,&
                                    rgriddefInfo%p_rhLevels(iLevel)%rmatrix)    
 
-  call stdop_assembleLaplaceMatrix(rgriddefInfo%p_rhLevels(iLevel)%rmatrix,.TRUE.,1.0_dp)
+  call stdop_assembleLaplaceMatrix(rgriddefInfo%p_rhLevels(iLevel)%rmatrix,.true.,1.0_dp)
 
   ! The linear solver only works for block matrices/vectors - so make the
   ! the matrix for the deformation problem a block matrix
@@ -2325,16 +2325,16 @@ contains
                                    rdiscretisation)
      
   call lsysbl_createVecBlockIndMat(rgriddefInfo%p_rhLevels(iLevel)%rmatDeform,&
-                                   rgriddefInfo%p_rhLevels(iLevel)%rrhsBlock,.TRUE.)     
+                                   rgriddefInfo%p_rhLevels(iLevel)%rrhsBlock,.true.)     
   
   ! Now we have block vectors for the RHS and the matrix. What we
   ! need additionally is a block vector for the solution and
   ! temporary data. Create them using the RHS as template.
   ! Fill the solution vector with 0:
   call lsysbl_createVecBlockIndirect (rgriddefInfo%p_rhLevels(iLevel)%rrhsBlock,&
-                                      rgriddefInfo%p_rhLevels(iLevel)%rSolBlock, .TRUE.)
+                                      rgriddefInfo%p_rhLevels(iLevel)%rSolBlock, .true.)
   call lsysbl_createVecBlockIndirect (rgriddefInfo%p_rhLevels(iLevel)%rrhsBlock,&
-                                      rgriddefInfo%p_rhLevels(iLevel)%rtempBlock, .TRUE.)
+                                      rgriddefInfo%p_rhLevels(iLevel)%rtempBlock, .true.)
 
   end subroutine  
 
@@ -2468,7 +2468,7 @@ contains
   ! Which derivatives of basis functions are needed?
   ! Check the descriptors of the bilinear form and set BDER
   ! according to these.
-  Bder(:) = .FALSE.
+  Bder(:) = .false.
   Bder(DER_FUNC) = .true.
   
   ! Get information about the vector:
@@ -2503,7 +2503,7 @@ contains
         rvectorMon%p_rspatialDiscr%RelementDistr(icurrentElementDistr)
   
     ! Cancel if this element distribution is empty.
-    if (p_elementDistribution%NEL .EQ. 0) cycle
+    if (p_elementDistribution%NEL .eq. 0) cycle
 
     ! Get the number of local doF`s for trial and test functions
     indofTest = elem_igetNDofLoc(p_elementDistribution%celement)
@@ -2566,7 +2566,7 @@ contains
       ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
       ! elements simultaneously.
       
-      IELmax = MIN(NEL,IELset-1+LINF_NELEMSIM)
+      IELmax = min(NEL,IELset-1+LINF_NELEMSIM)
     
       ! Calculate the global doF`s into IdofsTest.
       !
@@ -2591,7 +2591,7 @@ contains
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
       cevaluationTag = elem_getEvaluationTag(p_elementDistribution%celement)
-      cevaluationTag = IOR(elem_getEvaluationTag(p_elementDistributionFunc%celement),&
+      cevaluationTag = ior(elem_getEvaluationTag(p_elementDistributionFunc%celement),&
       cevaluationTag)
                       
       ! In the first loop, calculate the coordinates on the reference element.
@@ -2603,11 +2603,11 @@ contains
       ! Because the if-command does not work with OpenMP! bcubPtsInitialised
       ! is a local variable and will therefore ensure that every thread
       ! is initialising its local set of cubature points!
-      if (.NOT. bcubPtsInitialised) then
+      if (.not. bcubPtsInitialised) then
         bcubPtsInitialised = .true.
-        cevaluationTag = IOR(cevaluationTag,EL_EVLTAG_REFPOINTS)
+        cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
       else
-        cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
+        cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
       end if
 
       ! Calculate all information that is necessary to evaluate the finite element
@@ -2646,7 +2646,7 @@ contains
           ! In 2D, the determinant is always positive, whereas in 3D,
           ! the determinant might be negative -- that is normal!
 
-          OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
+          OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
           
           ! Calculate 1/f-1/g in our cubature point
           dcoeff = 0.0_DP
@@ -2947,7 +2947,7 @@ contains
       dtime = 0.0_DP
 
       ! initialise flag for failed search
-      bsearchFailed = .FALSE.
+      bsearchFailed = .false.
       ! initial coordinates of the vertex
       dx = p_DvertexCoords(1,ive)
       dy = p_DvertexCoords(2,ive)
@@ -3016,7 +3016,7 @@ contains
 
           ! if the point is outside the domain, stop moving it
           if (bsearchFailed) then
-            bsearchFailed = .FALSE.
+            bsearchFailed = .false.
             exit calculationloopEE_inner
           endif
 
@@ -3156,7 +3156,7 @@ contains
     dtime = 0.0_DP
 
     ! initialise flag for failed search
-    bsearchFailed = .FALSE.
+    bsearchFailed = .false.
     ! initial coordinates of the vertex
     dx_old1 = p_DvertexCoords(1,ive)
     dy_old1 = p_DvertexCoords(2,ive)
@@ -3241,7 +3241,7 @@ contains
         ! if the point is outside the domain, stop moving it
         if (bsearchFailed) then
           !print *,Dpoint(:)
-          bsearchFailed = .FALSE.
+          bsearchFailed = .false.
           exit calculationloopEE_inner
         endif
 
@@ -3827,7 +3827,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
   
   ! for uniform discretisations, we get the element type in advance...
-  if(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNifORM) then
+  if(rvecMon%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNifORM) then
   
     ! Element type
     ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
@@ -3844,7 +3844,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     ! Get the element evaluation tag; neccessary for preparation
     cevaluationTag = elem_getEvaluationTag(ieltype)
     
-    NULLifY(p_IelementDistr)
+    nullify(p_IelementDistr)
   else
      call storage_getbase_int (&
           rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)    
@@ -3862,20 +3862,20 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     call output_line ('Unsupported vector precision!',&
         OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
     call sys_halt()
-  end SELECT  
+  end select  
 
   ! What to evaluate
-  Bder = .FALSE.
-  Bder(iderType) = .TRUE.
+  Bder = .false.
+  Bder(iderType) = .true.
   
   cnonmesh = FEVL_NONMESHPTS_NONE
-  if (PRESENT(cnonmeshPoints)) cnonmesh = cnonmeshPoints
+  if (present(cnonmeshPoints)) cnonmesh = cnonmeshPoints
   
   ! We loop over all points
   iel = 1
   
   ! Get the element number that contains the point
-  if(PRESENT(Ielements))then
+  if(present(Ielements))then
     ! we have it...
     iel = Ielements
   end if
@@ -3910,7 +3910,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
        
   ! Now calculate everything else what is necessary for the element
   call elprep_prepareForEvaluation (revalElement, &
-      IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
+      iand(cevaluationTag,not(EL_EVLTAG_COORDS)), &
       rvecMon%p_rspatialDiscr%p_rtriangulation, iel, &
       ctrafoType, DparPoint, Dpoint(:))    
   
@@ -4028,7 +4028,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
   
   ! for uniform discretisations, we get the element type in advance...
-  if(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNifORM) then
+  if(rvecMon%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNifORM) then
   
     ! Element type
     ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
@@ -4045,7 +4045,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     ! Get the element evaluation tag; neccessary for preparation
     cevaluationTag = elem_getEvaluationTag(ieltype)
     
-    NULLifY(p_IelementDistr)
+    nullify(p_IelementDistr)
   else
      call storage_getbase_int (&
           rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)    
@@ -4064,20 +4064,20 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     call output_line ('Unsupported vector precision!',&
         OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
     call sys_halt()
-  end SELECT  
+  end select  
 
   ! What to evaluate
-  Bder = .FALSE.
-  Bder(iderType) = .TRUE.
+  Bder = .false.
+  Bder(iderType) = .true.
   
   cnonmesh = FEVL_NONMESHPTS_NONE
-  if (PRESENT(cnonmeshPoints)) cnonmesh = cnonmeshPoints
+  if (present(cnonmeshPoints)) cnonmesh = cnonmeshPoints
   
   ! We loop over all points
   iel = 1
   
   ! Get the element number that contains the point
-  if(PRESENT(Ielements))then
+  if(present(Ielements))then
     ! we have it...
     iel = Ielements
   end if
@@ -4112,7 +4112,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
        
   ! Now calculate everything else what is necessary for the element
   call elprep_prepareForEvaluation (revalElement, &
-      IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
+      iand(cevaluationTag,not(EL_EVLTAG_COORDS)), &
       rvecMon%p_rspatialDiscr%p_rtriangulation, iel, &
       ctrafoType, DparPoint, Dpoint(:))    
   
@@ -4218,7 +4218,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
   
   ! for uniform discretisations, we get the element type in advance...
-  if(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNifORM) then
+  if(rvecMon%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNifORM) then
   
     ! Element type
     ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
@@ -4256,8 +4256,8 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   end select  
 
   ! What to evaluate
-  Bder = .FALSE.
-  Bder(iderType) = .TRUE.
+  Bder = .false.
+  Bder(iderType) = .true.
   
   ! We loop over all points
   iel = ielement
@@ -4282,7 +4282,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   end if  
   
   ! get the type of the element iel
-  if(ASSOCIATED(p_IelementDistr))then
+  if(associated(p_IelementDistr))then
     ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
     
     ! Get the number of local doF`s for trial and test functions
@@ -4311,7 +4311,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
        
   ! Now calculate everything else what is necessary for the element
   call elprep_prepareForEvaluation (revalElement, &
-      IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
+      iand(cevaluationTag,not(EL_EVLTAG_COORDS)), &
       rvecMon%p_rspatialDiscr%p_rtriangulation, iel, &
       ctrafoType, DparPoint, Dpoint(:))    
   
@@ -4418,7 +4418,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
   
   ! for uniform discretisations, we get the element type in advance...
-  if(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNifORM) then
+  if(rvecMon%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNifORM) then
   
     ! Element type
     ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
@@ -4457,8 +4457,8 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   end select  
 
   ! What to evaluate
-  Bder = .FALSE.
-  Bder(iderType) = .TRUE.
+  Bder = .false.
+  Bder(iderType) = .true.
   
   ! We loop over all points
   iel = ielement
@@ -4485,7 +4485,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   end if  
   
   ! get the type of the element iel
-  if(ASSOCIATED(p_IelementDistr))then
+  if(associated(p_IelementDistr))then
     ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
     
     ! Get the number of local doF`s for trial and test functions
@@ -4514,7 +4514,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
        
   ! Now calculate everything else what is necessary for the element
   call elprep_prepareForEvaluation (revalElement, &
-      IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
+      iand(cevaluationTag,not(EL_EVLTAG_COORDS)), &
       rvecMon%p_rspatialDiscr%p_rtriangulation, iel, &
       ctrafoType, DparPoint, Dpoint(:))    
   
@@ -4613,7 +4613,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
   
   ! for uniform discretisations, we get the element type in advance...
-  if(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNifORM) then
+  if(rvecMon%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNifORM) then
   
     ! Element type
     ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
@@ -4630,7 +4630,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     ! Get the element evaluation tag; neccessary for preparation
     cevaluationTag = elem_getEvaluationTag(ieltype)
     
-    NULLifY(p_IelementDistr)
+    nullify(p_IelementDistr)
   else
      call storage_getbase_int (&
           rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)    
@@ -4648,17 +4648,17 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     call output_line ('Unsupported vector precision!',&
         OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
     call sys_halt()
-  end SELECT  
+  end select  
 
   ! What to evaluate
-  Bder = .FALSE.
-  Bder(iderType) = .TRUE.
+  Bder = .false.
+  Bder(iderType) = .true.
   
   ! We loop over all points
   iel = iinelement
   
   ! get the type of the element iel
-  if(ASSOCIATED(p_IelementDistr))then
+  if(associated(p_IelementDistr))then
     ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
     
     ! Get the number of local doF`s for trial and test functions
@@ -4687,7 +4687,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
        
   ! Now calculate everything else what is necessary for the element
   call elprep_prepareForEvaluation (revalElement, &
-      IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
+      iand(cevaluationTag,not(EL_EVLTAG_COORDS)), &
       rvecMon%p_rspatialDiscr%p_rtriangulation, iel, &
       ctrafoType, DparPoint, Dpoint(:))    
   
@@ -4754,22 +4754,22 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     NLMAX=rgriddefInfo%NLMAX   
         
     ! Is everything here we need?
-    if (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DvertexCoords .EQ. ST_NOHANDLE) then
+    if (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DvertexCoords .eq. ST_NOHANDLE) then
       call output_line ('h_DvertexCoords not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
       call sys_halt()
     end if
 
-    if (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) then
+    if (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IverticesAtElement .eq. ST_NOHANDLE) then
       call output_line ('IverticesAtElement  not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
       call sys_halt()
     end if
     
     ! Do we have (enough) memory for that array?
-    if (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DelementVolume .EQ. ST_NOHANDLE) then
+    if (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DelementVolume .eq. ST_NOHANDLE) then
       call storage_new ('tria_genElementVolume2D', 'DAREA', &
-          INT(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %NEL+1,I32), ST_doUBLE, &
+          int(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation   %NEL+1,I32), ST_doUBLE, &
           rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DelementVolume, ST_NEWBLOCK_NOINIT)
     end if
     
@@ -4787,7 +4787,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
         p_IverticesAtElement)
     
     ! Set up an empty block vector    
-    call lsysbl_createVecBlockByDiscr(rdiscretisation,rvectorAreaBlockQ1,.TRUE.)        
+    call lsysbl_createVecBlockByDiscr(rdiscretisation,rvectorAreaBlockQ1,.true.)        
         
     ! Create a discretisation structure for Q0, based on our
     ! previous discretisation structure:
@@ -4807,7 +4807,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     ! and save it in our vector
     do iel=1,rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%NEL
       
-      if (p_IverticesAtElement(4,iel) .EQ. 0) then
+      if (p_IverticesAtElement(4,iel) .eq. 0) then
         ! triangular element
         do ive=1,TRIA_NVETRI2D
           Dpoints(1,ive) = p_DvertexCoords(1,p_IverticesAtElement(ive,iel))
@@ -5323,10 +5323,10 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     NLMAX=rgriddefInfo%NLMAX
     
     ! initialise Dresults
-    Dresults  => NULL()
+    Dresults  => null()
 
     ! no blending
-    bBlending = .TRUE.
+    bBlending = .true.
     
     !---------------------------------------------------------------------------------
     !                                 FOR EVERY LEVEL
@@ -5438,9 +5438,9 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
     call linsol_initStructure (p_rsolverNode, ierror)
-    if (ierror .NE. LINSOL_ERR_NOERROR) stop
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
     call linsol_initData (p_rsolverNode, ierror)
-    if (ierror .NE. LINSOL_ERR_NOERROR) stop
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
@@ -5472,7 +5472,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
                  
     ! initialise the block vector that should hold the solution
     call lsysbl_createVecBlockByDiscr(rDubDiscretisation,&
-                                      rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock,.TRUE.)
+                                      rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock,.true.)
     
     ! get the recovered gradient of the solution
     call ppgrd_calcGradient(rgriddefInfo%p_rhLevels(NLMAX)%rSolBlock%RvectorBlock(1),&

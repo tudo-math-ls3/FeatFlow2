@@ -692,7 +692,7 @@ contains
     end if
     
     ! Discretisation is new. Triangulation is old -- in any case.
-    rfeSpace%cflags = iand(rfeSpace%cflags,NOT(FESPH_SHAREDDISCR))
+    rfeSpace%cflags = iand(rfeSpace%cflags,not(FESPH_SHAREDDISCR))
     rfeSpace%cflags = ior(rfeSpace%cflags,FESPH_SHAREDTRIA)
     
     ! Create a new discretisation
@@ -747,7 +747,7 @@ contains
     end if
     
     ! Discretisation is new. Triangulation is old -- in any case.
-    rfeSpaceDest%cflags = iand(rfeSpaceDest%cflags,NOT(FESPH_SHAREDDISCR))
+    rfeSpaceDest%cflags = iand(rfeSpaceDest%cflags,not(FESPH_SHAREDDISCR))
     rfeSpaceDest%cflags = ior(rfeSpaceDest%cflags,FESPH_SHAREDTRIA)
     
     ! Create a new discretisation

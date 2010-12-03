@@ -324,7 +324,7 @@ contains
     integer :: i
     
     do i=1,size(rset%p_Idata)
-      rset%p_Idata(i) = NOT(rset%p_Idata(i))
+      rset%p_Idata(i) = not(rset%p_Idata(i))
     end do
   
   end subroutine
@@ -347,7 +347,7 @@ contains
     integer :: i
     
     do i=1,size(rset%p_Idata)
-      rset%p_Idata(i) = NOT(0)
+      rset%p_Idata(i) = not(0)
     end do
   
   end subroutine

@@ -328,16 +328,16 @@ module vanka
     ! Number of local DOF`s in the element distributions of all blocks.
     ! Note that this VANKA supports only uniform discretisations, so
     ! each entry corresponds to one block in the solution vector.
-    integer, dimension(:), pointer :: p_InDofsLocal => NULL()
+    integer, dimension(:), pointer :: p_InDofsLocal => null()
     
     ! Offset indices of the blocks in the solution vector. IblockOffset(i)
     ! points to the beginning of the i-th block of the solution vector.
-    integer, dimension(:), pointer :: p_IblockOffset => NULL()
+    integer, dimension(:), pointer :: p_IblockOffset => null()
     
     ! Temporary array that saves the DOF`s that are in processing when
     ! looping over an element set.
     ! DIMENSION(nmaxLocalDOFs,VANKA_NELEMSIM,nblocks)
-    integer, dimension(:,:,:), pointer :: p_IelementDOFs => NULL()
+    integer, dimension(:,:,:), pointer :: p_IelementDOFs => null()
 
   end type
   
@@ -351,72 +351,72 @@ module vanka
   type t_vankaPointer2DNavSt
     ! Pointer to the column structure of the velocity matrix A11 and A22
     ! A11 and A22 must have the same structure.
-    integer, dimension(:), pointer :: p_KcolA => NULL()
+    integer, dimension(:), pointer :: p_KcolA => null()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22.
     ! They must have the same structure.
-    integer, dimension(:), pointer :: p_KldA => NULL()
+    integer, dimension(:), pointer :: p_KldA => null()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    integer, dimension(:), pointer :: p_KdiagonalA => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA => null()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    real(DP), dimension(:), pointer :: p_DA => NULL()
+    real(DP), dimension(:), pointer :: p_DA => null()
 
     ! Pointer to the matrix entries of the velocity matrix A22 or NULL
     ! A11=A22.
-    real(DP), dimension(:), pointer :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer :: p_DA22 => null()
 
     ! Pointer to the column structure of the velocity matrix A11 and A22
-    integer, dimension(:), pointer :: p_KcolA12 => NULL()
+    integer, dimension(:), pointer :: p_KcolA12 => null()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22
-    integer, dimension(:), pointer :: p_KldA12 => NULL()
+    integer, dimension(:), pointer :: p_KldA12 => null()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    integer, dimension(:), pointer :: p_KdiagonalA12 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA12 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A12 or NULL
     ! if not present
-    real(DP), dimension(:), pointer :: p_DA12 => NULL()
+    real(DP), dimension(:), pointer :: p_DA12 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A21 or NULL
     ! if not present
-    real(DP), dimension(:), pointer :: p_DA21 => NULL()
+    real(DP), dimension(:), pointer :: p_DA21 => null()
 
     ! Pointer to the column structure of the B/D-matrices.
-    integer, dimension(:), pointer :: p_KcolB => NULL()
+    integer, dimension(:), pointer :: p_KcolB => null()
     
     ! Pointer to the row structure of the B/D-matrices
-    integer, dimension(:), pointer :: p_KldB => NULL()
+    integer, dimension(:), pointer :: p_KldB => null()
     
     ! Pointer to the entries of the B1-matrix
-    real(DP), dimension(:), pointer :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer :: p_DB1 => null()
 
     ! Pointer to the entries of the B2-matrix
-    real(DP), dimension(:), pointer :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer :: p_DB2 => null()
     
     ! Pointer to the entries of the D1-matrix
-    real(DP), dimension(:), pointer :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer :: p_DD1 => null()
 
     ! Pointer to the entries of the D2-matrix
-    real(DP), dimension(:), pointer :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer :: p_DD2 => null()
 
     ! Pointer to the matrix entries of the pressure identity matrix A33
     ! (if it exists).
-    real(DP), dimension(:), pointer :: p_DA33 => NULL()
+    real(DP), dimension(:), pointer :: p_DA33 => null()
     
     ! Pointer to diagonal entries of A33
-    integer, dimension(:), pointer :: p_KdiagonalA33 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA33 => null()
 
     ! Spatial discretisation structure for X-velocity
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => null()
     
     ! Spatial discretisation structure for Y-velocity
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => null()
     
     ! Spatial discretisation structure for pressure
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => null()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
     ! (-> Not used in the current implementation! Although it is easy to include
@@ -439,144 +439,144 @@ module vanka
   
   type t_vankaPointer2DNavStOptC
     ! Pointer to the column structure of the velocity matrix A11 and A22
-    integer, dimension(:), pointer :: p_KcolA11 => NULL()
+    integer, dimension(:), pointer :: p_KcolA11 => null()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22
-    integer, dimension(:), pointer :: p_KldA11 => NULL()
+    integer, dimension(:), pointer :: p_KldA11 => null()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    integer, dimension(:), pointer :: p_KdiagonalA11 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA11 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    real(DP), dimension(:), pointer :: p_DA11 => NULL()
+    real(DP), dimension(:), pointer :: p_DA11 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A22 or NULL
     ! if not present
-    real(DP), dimension(:), pointer :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer :: p_DA22 => null()
 
     ! Pointer to the column structure of the velocity matrix A11 and A22
-    integer, dimension(:), pointer :: p_KcolA12 => NULL()
+    integer, dimension(:), pointer :: p_KcolA12 => null()
     
     ! Pointer to the row structure of the velocity matrix A11 and A22
-    integer, dimension(:), pointer :: p_KldA12 => NULL()
+    integer, dimension(:), pointer :: p_KldA12 => null()
     
     ! Pointer to diagonal entries in the velocity matrix A11 and A22
-    integer, dimension(:), pointer :: p_KdiagonalA12 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA12 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A12 or NULL
     ! if not present
-    real(DP), dimension(:), pointer :: p_DA12 => NULL()
+    real(DP), dimension(:), pointer :: p_DA12 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A21 or NULL
     ! if not present
-    real(DP), dimension(:), pointer :: p_DA21 => NULL()
+    real(DP), dimension(:), pointer :: p_DA21 => null()
 
 
     ! Pointer to the matrix entries of the velocity matrix A44
-    real(DP), dimension(:), pointer :: p_DA44 => NULL()
+    real(DP), dimension(:), pointer :: p_DA44 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A55
-    real(DP), dimension(:), pointer :: p_DA55 => NULL()
+    real(DP), dimension(:), pointer :: p_DA55 => null()
 
 
     ! Pointer to the matrix entries of the pressure identity matrix A33
     ! (if it exists).
-    real(DP), dimension(:), pointer :: p_DA33 => NULL()
+    real(DP), dimension(:), pointer :: p_DA33 => null()
 
     ! Pointer to diagonal entries of A33
-    integer, dimension(:), pointer :: p_KdiagonalA33 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA33 => null()
 
     ! Pointer to the matrix entries of the pressure identity matrix A66
     ! (if it exists).
-    real(DP), dimension(:), pointer :: p_DA66 => NULL()
+    real(DP), dimension(:), pointer :: p_DA66 => null()
 
     ! Pointer to diagonal entries of A66
-    integer, dimension(:), pointer :: p_KdiagonalA66 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA66 => null()
 
 
     ! Pointer to the column structure of the matrix A45 and A54
-    integer, dimension(:), pointer :: p_KcolA45 => NULL()
+    integer, dimension(:), pointer :: p_KcolA45 => null()
     
     ! Pointer to the row structure of the matrix A45 and A54
-    integer, dimension(:), pointer :: p_KldA45 => NULL()
+    integer, dimension(:), pointer :: p_KldA45 => null()
     
     ! Pointer to diagonal entries in the matrix A45 and A54
-    integer, dimension(:), pointer :: p_KdiagonalA45 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA45 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A45 or NULL
     ! if not present
-    real(DP), dimension(:), pointer :: p_DA45 => NULL()
+    real(DP), dimension(:), pointer :: p_DA45 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A54 or NULL
     ! if not present
-    real(DP), dimension(:), pointer :: p_DA54 => NULL()
+    real(DP), dimension(:), pointer :: p_DA54 => null()
 
 
     ! Pointer to the column structure of the mass matrix
-    integer, dimension(:), pointer :: p_KcolM => NULL()
+    integer, dimension(:), pointer :: p_KcolM => null()
     
     ! Pointer to the row structure of the mass matrix
-    integer, dimension(:), pointer :: p_KldM => NULL()
+    integer, dimension(:), pointer :: p_KldM => null()
     
     ! Pointer to diagonal entries in the mass matrix
-    integer, dimension(:), pointer :: p_KdiagonalM => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalM => null()
 
     ! Pointer to the matrix entries of the mass matrix at position
     ! (1,4) and (2,5) in the primal system, or NULL if not present.
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer :: p_DM14 => NULL()
-    real(DP), dimension(:), pointer :: p_DM25 => NULL()
+    real(DP), dimension(:), pointer :: p_DM14 => null()
+    real(DP), dimension(:), pointer :: p_DM25 => null()
 
     ! Pointer to the matrix entries of the mass matrix at position
     ! (1,5) and (2,4) in the primal system, or NULL if not present.
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer :: p_DM15 => NULL()
-    real(DP), dimension(:), pointer :: p_DM24 => NULL()
+    real(DP), dimension(:), pointer :: p_DM15 => null()
+    real(DP), dimension(:), pointer :: p_DM24 => null()
 
     ! Pointer to the coupling system at position (4,1), or NULL if not present
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer :: p_DR41 => NULL()
+    real(DP), dimension(:), pointer :: p_DR41 => null()
 
     ! Pointer to the coupling system at position (5,2), or NULL if not present
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer :: p_DR52 => NULL()
+    real(DP), dimension(:), pointer :: p_DR52 => null()
 
     ! Pointer to the coupling system at position (4,2), or NULL if not present
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer :: p_DR42 => NULL()
+    real(DP), dimension(:), pointer :: p_DR42 => null()
 
     ! Pointer to the coupling system at position (5,1), or NULL if not present
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer :: p_DR51 => NULL()
+    real(DP), dimension(:), pointer :: p_DR51 => null()
 
 
     ! Pointer to the column structure of the B/D-matrices.
-    integer, dimension(:), pointer :: p_KcolB => NULL()
+    integer, dimension(:), pointer :: p_KcolB => null()
     
     ! Pointer to the row structure of the B/D-matrices
-    integer, dimension(:), pointer :: p_KldB => NULL()
+    integer, dimension(:), pointer :: p_KldB => null()
     
     ! Pointer to the entries of the B1-matrix
-    real(DP), dimension(:), pointer :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer :: p_DB1 => null()
 
     ! Pointer to the entries of the B2-matrix
-    real(DP), dimension(:), pointer :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer :: p_DB2 => null()
     
     ! Pointer to the entries of the D1-matrix
-    real(DP), dimension(:), pointer :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer :: p_DD1 => null()
 
     ! Pointer to the entries of the D2-matrix
-    real(DP), dimension(:), pointer :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer :: p_DD2 => null()
     
 
     ! Spatial discretisation structure for X-velocity
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => null()
     
     ! Spatial discretisation structure for Y-velocity
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => null()
     
     ! Spatial discretisation structure for pressure
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => null()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
     ! (-> Not used in the current implementation! Although it is easy to include
@@ -596,25 +596,25 @@ module vanka
   type t_vankaPointer3DNavSt
     ! Pointer to the column structure of the velocity matrix A11, A22 and A33
     ! A11, A22 and A33 must have the same structure.
-    integer, dimension(:), pointer :: p_KcolA => NULL()
+    integer, dimension(:), pointer :: p_KcolA => null()
     
     ! Pointer to the row structure of the velocity matrix A11, A22 and A33.
     ! They must have the same structure.
-    integer, dimension(:), pointer :: p_KldA => NULL()
+    integer, dimension(:), pointer :: p_KldA => null()
     
     ! Pointer to diagonal entries in the velocity matrix A11, A22 and A33
-    integer, dimension(:), pointer :: p_KdiagonalA => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA => null()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    real(DP), dimension(:), pointer :: p_DA => NULL()
+    real(DP), dimension(:), pointer :: p_DA => null()
 
     ! Pointer to the matrix entries of the velocity matrix A22 or NULL
     ! if A11=A22.
-    real(DP), dimension(:), pointer :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer :: p_DA22 => null()
 
     ! Pointer to the matrix entries of the velocity matrix A33 or NULL
     ! if A11=A33.
-    real(DP), dimension(:), pointer :: p_DA33 => NULL()
+    real(DP), dimension(:), pointer :: p_DA33 => null()
 
 !    ! Pointer to the column structure of the velocity matrix A12 and A21
 !    INTEGER, DIMENSION(:), POINTER :: p_KcolA12 => NULL()
@@ -634,47 +634,47 @@ module vanka
 !    REAL(DP), DIMENSION(:), POINTER :: p_DA21 => NULL()
 
     ! Pointer to the column structure of the B/D-matrices.
-    integer, dimension(:), pointer :: p_KcolB => NULL()
+    integer, dimension(:), pointer :: p_KcolB => null()
     
     ! Pointer to the row structure of the B/D-matrices
-    integer, dimension(:), pointer :: p_KldB => NULL()
+    integer, dimension(:), pointer :: p_KldB => null()
     
     ! Pointer to the entries of the B1-matrix
-    real(DP), dimension(:), pointer :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer :: p_DB1 => null()
 
     ! Pointer to the entries of the B2-matrix
-    real(DP), dimension(:), pointer :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer :: p_DB2 => null()
     
     ! Pointer to the entries of the B3-matrix
-    real(DP), dimension(:), pointer :: p_DB3 => NULL()
+    real(DP), dimension(:), pointer :: p_DB3 => null()
 
     ! Pointer to the entries of the D1-matrix
-    real(DP), dimension(:), pointer :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer :: p_DD1 => null()
 
     ! Pointer to the entries of the D2-matrix
-    real(DP), dimension(:), pointer :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer :: p_DD2 => null()
 
     ! Pointer to the entries of the D3-matrix
-    real(DP), dimension(:), pointer :: p_DD3 => NULL()
+    real(DP), dimension(:), pointer :: p_DD3 => null()
 
     ! Pointer to the matrix entries of the pressure identity matrix A44
     ! (if it exists).
-    real(DP), dimension(:), pointer :: p_DA44 => NULL()
+    real(DP), dimension(:), pointer :: p_DA44 => null()
 
     ! Pointer to diagonal entries of A33
-    integer, dimension(:), pointer :: p_KdiagonalA44 => NULL()
+    integer, dimension(:), pointer :: p_KdiagonalA44 => null()
 
     ! Spatial discretisation structure for X-velocity
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrU => null()
     
     ! Spatial discretisation structure for Y-velocity
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => null()
     
     ! Spatial discretisation structure for Z-velocity
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrW => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrW => null()
 
     ! Spatial discretisation structure for pressure
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => null()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
     ! (-> Not used in the current implementation! Although it is easy to include
@@ -998,11 +998,11 @@ contains
     type(t_spatialDiscretisation), pointer            :: p_rdiscretisation
     
     ! Make sure the block matrix is not rectangular!
-    IF (rmatrix%nblocksPerCol .ne. rmatrix%nblocksPerRow) THEN
-      CALL output_line ('System matrix is rectangular!',&
+    if (rmatrix%nblocksPerCol .ne. rmatrix%nblocksPerRow) then
+      call output_line ('System matrix is rectangular!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initGeneralVanka')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     nblocks = rmatrix%nblocksPerCol
     nmaxLocalDOFs = 0
@@ -1687,11 +1687,11 @@ contains
     bextended = .false.
     
     ! Matrix must be 3x3.
-    IF ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) THEN
-      CALL output_line ('System matrix is not 3x3.',&
+    if ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) then
+      call output_line ('System matrix is not 3x3.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(3,:) must be (virtually) transposed. All matrices must be double precision.
@@ -2255,11 +2255,11 @@ contains
     integer :: i,j
 
     ! Matrix must be 3x3.
-    IF ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) THEN
-      CALL output_line ('System matrix is not 3x3.',&
+    if ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) then
+      call output_line ('System matrix is not 3x3.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DSPQ1TQ0simple')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(3,:) must be (virtually) transposed. All matrices must be double precision.
@@ -8855,11 +8855,11 @@ contains
     type(t_blockDiscretisation), pointer :: p_rblockDiscr
     
     ! Matrix must be 6x6.
-    IF ((rmatrix%nblocksPerCol .ne. 6) .or. (rmatrix%nblocksPerRow .ne. 6)) THEN
-      CALL output_line ('System matrix is not 6x6.',&
+    if ((rmatrix%nblocksPerCol .ne. 6) .or. (rmatrix%nblocksPerRow .ne. 6)) then
+      call output_line ('System matrix is not 6x6.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! A(1:2,1:3), A(4:5,4:6) must not be virtually transposed and of format 9.
     ! A(3,:),A(6,:) must be (virtually) transposed. All matrices must be double precision.
@@ -12372,11 +12372,11 @@ contains
     bextended = .false.
     
     ! Matrix must be 4x4.
-    IF ((rmatrix%nblocksPerCol .ne. 4) .or. (rmatrix%nblocksPerRow .ne. 4)) THEN
-      CALL output_line ('System matrix is not 4x4.',&
+    if ((rmatrix%nblocksPerCol .ne. 4) .or. (rmatrix%nblocksPerRow .ne. 4)) then
+      call output_line ('System matrix is not 4x4.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(4,:) must be (virtually) transposed. All matrices must be double precision.
@@ -12803,11 +12803,11 @@ contains
     integer :: i,j
 
     ! Matrix must be 4x4.
-    IF ((rmatrix%nblocksPerCol .ne. 4) .or. (rmatrix%nblocksPerRow .ne. 4)) THEN
-      CALL output_line ('System matrix is not 4x4.',&
+    if ((rmatrix%nblocksPerCol .ne. 4) .or. (rmatrix%nblocksPerRow .ne. 4)) then
+      call output_line ('System matrix is not 4x4.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DSPQ1TQ0simple')
-      CALL sys_halt()
-    END IF
+      call sys_halt()
+    end if
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
     ! A(4,:) must be (virtually) transposed. All matrices must be double precision.

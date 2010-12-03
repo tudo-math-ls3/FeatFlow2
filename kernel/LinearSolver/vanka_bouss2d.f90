@@ -713,8 +713,8 @@ contains
   integer :: idofp,idofu,i,j1,j2,k,id1,id2,nmaxdofV,ndofV,info
 
     ! Let us assume we do not have the optional matrices
-    bHaveA12 = .FALSE.
-    bHaveC = .FALSE.
+    bHaveA12 = .false.
+    bHaveC = .false.
     
     ! Get the pointers from the vanka structure
     p_KldA => rvanka%p_KldA
@@ -732,7 +732,7 @@ contains
     p_DD2 => rvanka%p_DD2
     
     if(associated(rvanka%p_DA12)) then
-      bHaveA12 = .TRUE.
+      bHaveA12 = .true.
       p_KldA12 => rvanka%p_KldA12
       p_KcolA12 => rvanka%p_KcolA12
       p_DA12 => rvanka%p_DA12
@@ -740,7 +740,7 @@ contains
     end if
     
     if(associated(rvanka%p_DC)) then
-      bHaveC = .TRUE.
+      bHaveC = .true.
       p_KldC => rvanka%p_KldC
       p_KcolC => rvanka%p_KcolC
       p_KdiagC => rvanka%p_KdiagonalC

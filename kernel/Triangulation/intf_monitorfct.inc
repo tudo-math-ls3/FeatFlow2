@@ -7,24 +7,24 @@
   interface
 
 !<subroutine>  
-  SUBROUTINE def_monitorfct(DvertexCoords,Dentries)
+  subroutine def_monitorfct(DvertexCoords,Dentries)
   
-  USE triangulation
-  USE linearformevaluation
-  USE spdiscprojection
-  USE pprocerror
-  USE element
-  USE elementpreprocessing
-  USE pprocgradients
-  USE fsystem
+  use triangulation
+  use linearformevaluation
+  use spdiscprojection
+  use pprocerror
+  use element
+  use elementpreprocessing
+  use pprocgradients
+  use fsystem
   !<description>
     ! In this function we build the nodewise area distribution out 
     ! of an elementwise distribution
   !</description>
 
   !<inputoutput>
-   REAL(DP), DIMENSION(:,:) :: DvertexCoords
-   REAL(DP), DIMENSION(:) :: Dentries
+   real(DP), dimension(:,:) :: DvertexCoords
+   real(DP), dimension(:) :: Dentries
   !</inputoutput>
 
 !</subroutine>

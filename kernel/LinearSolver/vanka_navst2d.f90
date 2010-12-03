@@ -261,14 +261,14 @@ contains
     
     ! The structure of A(1,3) must be identical to A(3,1) and
     ! that of A(2,3) must be identical to A(3,2).
-    if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(2,3)%NA) .OR. &
+    if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(2,3)%NA) .or. &
         (rmatrix%RmatrixBlock(1,3)%NEQ .ne. rmatrix%RmatrixBlock(2,3)%NEQ)) then
       call output_line ('Structure of B1 and B2 different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavSt2D')
       call sys_halt()
     end if
 
-    if ((rmatrix%RmatrixBlock(3,1)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
+    if ((rmatrix%RmatrixBlock(3,1)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .or. &
         (rmatrix%RmatrixBlock(3,1)%NEQ .ne. rmatrix%RmatrixBlock(3,2)%NEQ)) then
       call output_line ('Structure of D1 and D2 different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavSt2D')
@@ -352,7 +352,7 @@ contains
     ! Get the block discretisation structure from the matrix.
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
     
-    if (.NOT. associated(p_rblockDiscr)) then
+    if (.not. associated(p_rblockDiscr)) then
       call output_line ('No block discretisation assigned to matrix!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavSt2D')
       call sys_halt()
@@ -371,7 +371,7 @@ contains
       call sys_halt()
     end if
 
-    if ((rvanka%p_rspatialDiscrP%inumFESpaces .ne. 1) .AND. &
+    if ((rvanka%p_rspatialDiscrP%inumFESpaces .ne. 1) .and. &
         (rvanka%p_rspatialDiscrP%inumFESpaces .ne. &
           rvanka%p_rspatialDiscrV%inumFESpaces)) then
       ! Either there must be only one element type for the pressure, or there one
@@ -394,7 +394,7 @@ contains
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka%p_rspatialDiscrP%inumFESpaces .GT. 1) then
+      if (rvanka%p_rspatialDiscrP%inumFESpaces .gt. 1) then
         p_relementDistrP => &
             rvanka%p_rspatialDiscrP%RelementDistr(i)
       else
@@ -473,7 +473,7 @@ contains
       
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
-      if (rvanka%p_rspatialDiscrP%inumFESpaces .GT. 1) then
+      if (rvanka%p_rspatialDiscrP%inumFESpaces .gt. 1) then
         p_relementDistrP => &
             rvanka%p_rspatialDiscrP%RelementDistr(ielementdist)
       else
@@ -502,7 +502,7 @@ contains
                                    domega, p_IelementList)
 
         case (VANKATP_NAVST2D_FULL)
-          if (.NOT. associated(rvanka%p_DA12)) then
+          if (.not. associated(rvanka%p_DA12)) then
             ! Call the block-diagonal vanka
             call vanka_NS2D_Q1TQ0_bd(rvanka, rsol, rrhs, niterations, &
                                      domega, p_IelementList)
@@ -614,8 +614,8 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
     
     ! Let us assume we do not have the optional matrices
-    bHaveA12 = .FALSE.
-    bHaveC = .FALSE.
+    bHaveA12 = .false.
+    bHaveC = .false.
     
     ! Get the pointers from the vanka structure
     p_KldA => rvanka%p_KldA
@@ -633,7 +633,7 @@ contains
     p_DD2 => rvanka%p_DD2
     
     if(associated(rvanka%p_DA12)) then
-      bHaveA12 = .TRUE.
+      bHaveA12 = .true.
       p_KldA12 => rvanka%p_KldA12
       p_KcolA12 => rvanka%p_KcolA12
       p_DA12 => rvanka%p_DA12
@@ -641,7 +641,7 @@ contains
     end if
     
     if(associated(rvanka%p_DC)) then
-      bHaveC = .TRUE.
+      bHaveC = .true.
       p_KldC => rvanka%p_KldC
       p_KcolC => rvanka%p_KcolC
       p_KdiagC => rvanka%p_KdiagonalC
@@ -1101,7 +1101,7 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
     
     ! Let us assume we do not have the optional matrices
-    bHaveC = .FALSE.
+    bHaveC = .false.
     
     ! Get the pointers from the vanka structure
     p_KldA => rvanka%p_KldA
@@ -1119,7 +1119,7 @@ contains
     p_DD2 => rvanka%p_DD2
     
     if(associated(rvanka%p_DC)) then
-      bHaveC = .TRUE.
+      bHaveC = .true.
       p_KldC => rvanka%p_KldC
       p_KcolC => rvanka%p_KcolC
       p_KdiagC => rvanka%p_KdiagonalC
@@ -1573,7 +1573,7 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
     
     ! Let us assume we do not have the optional matrices
-    bHaveC = .FALSE.
+    bHaveC = .false.
     
     ! Get the pointers from the vanka structure
     p_KldA => rvanka%p_KldA
@@ -1594,7 +1594,7 @@ contains
     p_DD2 => rvanka%p_DD2
     
     if(associated(rvanka%p_DC)) then
-      bHaveC = .TRUE.
+      bHaveC = .true.
       p_KldC => rvanka%p_KldC
       p_KcolC => rvanka%p_KcolC
       p_DC => rvanka%p_DC
