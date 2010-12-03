@@ -13,52 +13,73 @@
 !#     -> Assembles the entries of a vector according to a linear form
 !#        defined in terms of a volume integral.
 !#
-!# 2.) linf_buildVectorScalarBdr2d
+!# 2.) linf_buildVectorScalarBdr1D
 !#     -> Assembles the entries of a vector according to a linear form
-!#        defined in terms of a boundary integral.
+!#        defined in terms of a boundary integral in 1D.
 !#
-!# 3.) linf_buildVecIntlScalarBdr2d
+!# 3.) linf_buildVectorScalarBdr2D
 !#     -> Assembles the entries of a vector according to a linear form
-!#        defined in terms of a boundary integral.
+!#        defined in terms of a boundary integral in 2D.
 !#
-!# 4.) linf_buildVectorBlockBdr2d
+!# 3.) linf_buildVecIntlScalarBdr1D
 !#     -> Assembles the entries of a vector according to a linear form
-!#        defined in terms of a boundary integral.
+!#        defined in terms of a boundary integral in 1D.
 !#
-!# 5.) linf_initAssembly
+!# 4.) linf_buildVecIntlScalarBdr2D
+!#     -> Assembles the entries of a vector according to a linear form
+!#        defined in terms of a boundary integral in 2D.
+!#
+!# 5.) linf_buildVectorBlockBdr1D
+!#     -> Assembles the entries of a vector according to a linear form
+!#        defined in terms of a boundary integral in 1D.
+!#
+!# 6.) linf_buildVectorBlockBdr2D
+!#     -> Assembles the entries of a vector according to a linear form
+!#        defined in terms of a boundary integral in 2D.
+!#
+!# 7.) linf_initAssembly
 !#     -> Initialise a vector assembly structure for assembling a linear form
 !#
-!# 6.) linf_doneAssembly
+!# 8.) linf_doneAssembly
 !#     -> Clean up a vector assembly structure.
 !#
-!# 7.) linf_assembleSubmeshVector
+!# 9.) linf_assembleSubmeshVector
 !#     -> Assembles the vector entries for a submesh.
 !#
-!# 8.) linf_assembleSubmeshVectorBdr2D
-!#     -> Assembles the vector entries for a submesh.
+!# 10.) linf_assembleSubmeshVectorBdr1D
+!#      -> Assembles the vector entries for a submesh in 1D.
 !#
-!# 9.) linf_assembleSubmeshVecIntl
-!#     -> Assembles the vector entries for a submesh.
+!# 11.) linf_assembleSubmeshVectorBdr2D
+!#      -> Assembles the vector entries for a submesh in 2D.
 !#
-!# 10.) linf_assembleSubmeshVecIntlBdr2D
+!# 12.) linf_assembleSubmeshVecIntl
 !#      -> Assembles the vector entries for a submesh.
 !#
-!# 11.) linf_assembleSubmeshVectorBlock
+!# 13.) linf_assembleSubmeshVecIntlBdr1D
+!#      -> Assembles the vector entries for a submesh in 1D.
+!#
+!# 14.) linf_assembleSubmeshVecIntlBdr2D
+!#      -> Assembles the vector entries for a submesh in 2D.
+!#
+!# 15.) linf_assembleSubmeshVectorBlock
 !#     -> Assembles the vector entries for a submesh.
 !#
-!# 12.) linf_assembleSubmeshVectorBlockBdr2D
-!#     -> Assembles the vector entries for a submesh.
+!# 16.) linf_assembleSubmeshVectorBlockBdr1D
+!#     -> Assembles the vector entries for a submesh in 1D.
 !#
-!# 13.) linf_buildVectorScalar2
+!# 17.) linf_assembleSubmeshVectorBlockBdr2D
+!#     -> Assembles the vector entries for a submesh in 2D.
+!#
+!# 18.) linf_buildVectorScalar2
 !#      -> Assembles the entries of a vector according to a linear form
 !#         defined in terms of a volume integral. This subroutine is a 
 !#         replacement of the previous version linf_buildVectorScalar.
 !#
-!# 12.) linf_buildVecIntlScalar2
+!# 19.) linf_buildVecIntlScalar2
 !#      -> Assembles the entries of a vector according to a linear form
 !#         defined in terms of a volume integral.
 !#
-!# 13.) linf_buildVectorBlock2
+!# 20.) linf_buildVectorBlock2
 !#      -> Assembles the entries of a vector according to a linear form
 !#         defined in terms of a volume integral.
 !#
@@ -289,18 +310,24 @@ module linearformevaluation
 
   public :: linf_buildVectorScalar
   public :: linf_buildVectorScalar2
+  public :: linf_buildVectorScalarBdr1D
   public :: linf_buildVectorScalarBdr2D
   public :: linf_buildVecIntlScalar2
+  public :: linf_buildVecIntlScalarBdr1D
   public :: linf_buildVecIntlScalarBdr2D
   public :: linf_buildVectorBlock2
+  public :: linf_buildVectorBlockBdr1D
   public :: linf_buildVectorBlockBdr2D
   public :: linf_initAssembly
   public :: linf_doneAssembly
   public :: linf_assembleSubmeshVector
   public :: linf_assembleSubmeshVectorBdr2D
+  public :: linf_assembleSubmeshVectorBdr1D
   public :: linf_assembleSubmeshVecIntl
   public :: linf_assembleSubmeshVecIntlBdr2D
+  public :: linf_assembleSubmeshVecIntlBdr1D
   public :: linf_assembleSubmeshVectorBlock
+  public :: linf_assembleSubmeshVectorBlockBdr1D
   public :: linf_assembleSubmeshVectorBlockBdr2D
   public :: linf_allocAssemblyData
   public :: linf_releaseAssemblyData
@@ -854,13 +881,344 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVectorScalarBdr2d (rform, ccubType, bclear, rvectorScalar,&
+  subroutine linf_buildVectorScalarBdr1D (rform, bclear, rvectorScalar,&
+                                          fcoeff_buildVectorScBdr1D_sim,&
+                                          iboundaryComp, rcollection)
+
+!<description>
+  ! This routine assembles the entries of a vector according to a linear form
+  ! (typically used for assembling RHS vectors) in 1D.
+  !
+  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! sorting of the entries is switched off - the vector is set up unsorted.
+  !
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! otherwise an error is thrown.
+!</description>
+
+!<input>
+  ! The linear form specifying the underlying PDE of the discretisation.
+  type(t_linearForm), intent(in) :: rform
+
+  ! Whether to clear the vector before calculating the entries.
+  ! If .FALSE., the new entries are added to the existing entries.
+  logical, intent(in) :: bclear
+  
+  ! OPTIONAL: An integer specifying the boundary component where
+  ! to calculate. If not specified, the computation is done over
+  ! the whole boundary
+  integer, intent(in), optional :: iboundaryComp
+  
+  ! A callback routine for the function to be discretised.
+  include 'intf_coefficientVectorScBdr1D.inc'
+  optional :: fcoeff_buildVectorScBdr1D_sim
+!</input>
+
+!<inputoutput>
+  ! The FE vector. Calculated entries are imposed to this vector.
+  type(t_vectorScalar), intent(inout) :: rvectorScalar
+  
+  ! OPTIONAL: A collection structure. This structure is 
+  ! given to the callback function for calculating the function
+  ! which should be discretised in the linear form.
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistr
+    type(t_linfVectorAssembly) :: rvectorAssembly
+    type(t_triangulation), pointer :: p_rtriangulation
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelementsAtBoundary
+    integer, dimension(:), pointer :: p_InodalProperty
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    integer, dimension(:), pointer :: IelementList, IelementOrientation
+    integer :: ibdc,idx,iel,NELbdc
+
+    ! If the vector does not exist, stop here.
+    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+      call output_line('Vector not available!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+    end if
+    
+    ! The vector must be unsorted, otherwise we can not set up the vector.
+    if (rvectorScalar%isortStrategy .gt. 0) then
+      call output_line('Vector must be unsorted!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+      call sys_halt()
+    end if
+    
+    ! Clear the vector if necessary.
+    if (bclear) call lsyssc_clearVector (rvectorScalar)
+    
+    ! The vector must provide a discretisation structure
+    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+      call output_line('No discretisation associated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+      call sys_halt()
+    end if
+    
+    ! The discretisation must provide a triangulation structure
+    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
+      call output_line('No triangulation associated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+      call sys_halt()
+    end if
+    
+    ! Set pointer for quicker access
+    p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
+
+    ! Set pointers
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+    call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary,&
+        p_IelementsAtBoundary)
+    call storage_getbase_int (p_rtriangulation%h_InodalProperty,&
+        p_InodalProperty)
+    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+    
+    ! Do we have a uniform triangulation? Would simplify a lot...
+    if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      
+      select case(rvectorScalar%cdataType)
+        
+      case(ST_DOUBLE)
+        
+        if (present(iboundaryComp)) then
+
+          ! Number of elements on that boundary component?
+          NELbdc = p_IboundaryCpIdx(iboundaryComp+1)-p_IboundaryCpIdx(iboundaryComp)
+          
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+
+          ! Initialise a vector assembly structure for all elements
+          call linf_initAssembly(rvectorAssembly, rform,&
+              rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
+              CUB_G1_1D, NELbdc)
+          call linf_allocAssemblyData(rvectorAssembly)
+          
+          ! Determine the element numbers and their orientation at the boundary
+          iel = 0
+          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
+
+            iel = iel+1
+
+            ! Element number
+            IelementList(iel) = p_IelementsAtBoundary(idx)
+
+            ! Element orientation, i.e. the local number of the boundary vertex
+            if (p_InodalProperty(&
+                p_IverticesAtElement(1,IelementList(iel))).eq. iboundaryComp) then
+              IelementOrientation(iel) = 1
+            elseif (p_InodalProperty(&
+                p_IverticesAtElement(2,IelementList(iel))).eq. iboundaryComp) then
+              IelementOrientation(iel) = 2
+            else
+              call output_line('Unable to determine element orientation!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+            end if
+          end do
+
+          ! Assemble the data all elements
+          call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
+              rvectorScalar, iboundaryComp, IelementList, IelementOrientation,&
+              fcoeff_buildVectorScBdr1D_sim, rcollection)
+
+          ! Release the assembly structure.
+          call linf_doneAssembly(rvectorAssembly)
+
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+          
+        else
+          
+          ! Loop over all boundary components and call 
+          ! the calculation routines for that
+          do ibdc = 1, p_rtriangulation%nbct
+            
+            ! Number of elements on that boundary component?
+            NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
+
+            ! Allocate memory for element list and element orientation
+            allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+            
+            ! Initialise a vector assembly structure for all elements
+            call linf_initAssembly(rvectorAssembly, rform,&
+                rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
+                CUB_G1_1D, NELbdc)
+            call linf_allocAssemblyData(rvectorAssembly)
+
+            ! Determine the element numbers and their orientation at the boundary
+            iel = 0
+            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+
+              iel = iel+1
+
+              ! Element number
+              IelementList(iel) = p_IelementsAtBoundary(idx)
+
+              ! Element orientation, i.e. the local number of the boundary vertex
+              if (p_InodalProperty(&
+                  p_IverticesAtElement(1,IelementList(iel))).eq. ibdc) then
+                IelementOrientation(iel) = 1
+              elseif (p_InodalProperty(&
+                  p_IverticesAtElement(2,IelementList(iel))).eq. ibdc) then
+                IelementOrientation(iel) = 2
+              else
+                call output_line('Unable to determine element orientation!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+              end if
+            end do
+            
+            ! Assemble the data for all elements
+            call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
+                rvectorScalar, ibdc, IelementList, IelementOrientation,&
+                fcoeff_buildVectorScBdr1D_sim, rcollection)
+            
+            ! Release the assembly structure.
+            call linf_doneAssembly(rvectorAssembly)
+            
+            ! Release memory
+            deallocate(IelementList, IelementOrientation)
+            
+          end do
+
+        end if
+        
+      case DEFAULT
+        call output_line('Single precision vectors currently not supported!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+      end select
+      
+    else
+      
+      ! Set pointers
+      p_RelementDistr => rvectorScalar%p_rspatialDiscr%RelementDistr
+      call storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
+          p_IelementDistr)
+
+      select case(rvectorScalar%cdataType)
+        
+      case(ST_DOUBLE)
+        
+        if (present(iboundaryComp)) then
+          
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(1), IelementOrientation(1))
+
+          ! Process each element separately; this is not the most
+          ! efficient way but in general there is exactly one element
+          ! per boundary so that a more efficient/complicated
+          ! implementatio n will not pay-off in practice
+          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
+
+            ! Determine the element number and its orientation at the boundary
+            IelementList(1) = p_IelementsAtBoundary(idx)
+            if (p_InodalProperty(&
+                p_IverticesAtElement(1,IelementList(1))) .eq. iboundaryComp) then
+              IelementOrientation(1) = 1
+            elseif (p_InodalProperty(&
+                p_IverticesAtElement(2,IelementList(1))) .eq. iboundaryComp) then
+              IelementOrientation(1) = 2
+            else
+              call output_line('Unable to determine element orientation!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+            end if
+            
+            ! Initialise a vector assembly structure for one element
+            call linf_initAssembly(rvectorAssembly, rform,&
+                p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
+                CUB_G1_1D, 1)
+            call linf_allocAssemblyData(rvectorAssembly)
+          
+            ! Assemble the data for one element
+            call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
+                rvectorScalar, iboundaryComp, IelementList, IelementOrientation,&
+                fcoeff_buildVectorScBdr1D_sim, rcollection)
+            
+            ! Release the assembly structure.
+            call linf_doneAssembly(rvectorAssembly)
+
+          end do
+
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+
+        else
+
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(1), IelementOrientation(1))
+          
+          ! Loop over all boundary components and call 
+          ! the calculation routines for that
+          do ibdc = 1, p_rtriangulation%nbct
+            
+            ! Process each element separately; this is not the most
+            ! efficient way but in general there is exactly one element
+            ! per boundary so that a more efficient/complicated
+            ! implementatio n will not pay-off in practice
+            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+              
+              ! Determine the element number and its orientation at the boundary
+              IelementList(1) = p_IelementsAtBoundary(idx)
+              if (p_InodalProperty(&
+                  p_IverticesAtElement(1,IelementList(1))) .eq. ibdc) then
+                IelementOrientation(1) = 1
+              elseif (p_InodalProperty(&
+                  p_IverticesAtElement(2,IelementList(1))) .eq. ibdc) then
+                IelementOrientation(1) = 2
+              else
+                call output_line('Unable to determine element orientation!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+              end if
+              
+              ! Initialise a vector assembly structure for one element
+              call linf_initAssembly(rvectorAssembly, rform,&
+                  p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
+                  CUB_G1_1D, 1)
+              call linf_allocAssemblyData(rvectorAssembly)
+              
+              ! Assemble the data for one element
+              call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
+                  rvectorScalar, ibdc, IelementList, IelementOrientation,&
+                  fcoeff_buildVectorScBdr1D_sim, rcollection)
+              
+              ! Release the assembly structure.
+              call linf_doneAssembly(rvectorAssembly)
+
+            end do
+            
+          end do
+
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+          
+        end if
+        
+      case DEFAULT
+        call output_line('Single precision vectors currently not supported!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+      end select
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine linf_buildVectorScalarBdr2D (rform, ccubType, bclear, rvectorScalar,&
                                           fcoeff_buildVectorScBdr2D_sim,&
                                           rboundaryRegion, rcollection)
   
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
-  ! (typically used for assembling RHS vectors).
+  ! (typically used for assembling RHS vectors) in 1D.
   !
   ! If bclear=TRUE, the vector is cleared before the assembly and any 
   ! sorting of the entries is switched off - the vector is set up unsorted.
@@ -943,14 +1301,14 @@ contains
     ! The discretisation must provide a triangulation structure
     if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
       call output_line('No triangulation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2d')
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
       call sys_halt()
     end if
     
     ! The discretisation must provide a boundary structure
     if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rboundary)) then
       call output_line('No boundary associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2d')
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
       call sys_halt()
     end if
     
@@ -1079,13 +1437,344 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVecIntlScalarBdr2d (rform, ccubType, bclear, rvectorScalar,&
+  subroutine linf_buildVecIntlScalarBdr1D (rform, bclear, rvectorScalar,&
+                                           fcoeff_buildVectorBlBdr1D_sim,&
+                                           iboundaryComp, rcollection)
+
+!<description>
+  ! This routine assembles the entries of a vector according to a linear form
+  ! (typically used for assembling RHS vectors) in 1D.
+  !
+  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! sorting of the entries is switched off - the vector is set up unsorted.
+  !
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! otherwise an error is thrown.
+!</description>
+
+!<input>
+  ! The linear form specifying the underlying PDE of the discretisation.
+  type(t_linearForm), intent(in) :: rform
+
+  ! Whether to clear the vector before calculating the entries.
+  ! If .FALSE., the new entries are added to the existing entries.
+  logical, intent(in) :: bclear
+  
+  ! OPTIONAL: An integer specifying the boundary component where
+  ! to calculate. If not specified, the computation is done over
+  ! the whole boundary
+  integer, intent(in), optional :: iboundaryComp
+  
+  ! A callback routine for the function to be discretised.
+  include 'intf_coefficientVectorBlBdr1D.inc'
+  optional :: fcoeff_buildVectorBlBdr1D_sim
+!</input>
+
+!<inputoutput>
+  ! The FE vector. Calculated entries are imposed to this vector.
+  type(t_vectorScalar), intent(inout) :: rvectorScalar
+  
+  ! OPTIONAL: A collection structure. This structure is 
+  ! given to the callback function for calculating the function
+  ! which should be discretised in the linear form.
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistr
+    type(t_linfVectorAssembly) :: rvectorAssembly
+    type(t_triangulation), pointer :: p_rtriangulation
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelementsAtBoundary
+    integer, dimension(:), pointer :: p_InodalProperty
+    integer, dimension(:), pointer :: IelementList, IelementOrientation
+    integer :: ibdc,idx,iel,NELbdc
+
+    ! If the vector does not exist, stop here.
+    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+      call output_line('Vector not available!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+    end if
+    
+    ! The vector must be unsorted, otherwise we can not set up the vector.
+    if (rvectorScalar%isortStrategy .gt. 0) then
+      call output_line('Vector must be unsorted!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+      call sys_halt()
+    end if
+    
+    ! Clear the vector if necessary.
+    if (bclear) call lsyssc_clearVector (rvectorScalar)
+    
+    ! The vector must provide a discretisation structure
+    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+      call output_line('No discretisation associated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+      call sys_halt()
+    end if
+    
+    ! The discretisation must provide a triangulation structure
+    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
+      call output_line('No triangulation associated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+      call sys_halt()
+    end if
+    
+    ! Set pointer for quicker access
+    p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
+
+    ! Set pointers
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+    call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary,&
+        p_IelementsAtBoundary)
+    call storage_getbase_int (p_rtriangulation%h_InodalProperty,&
+        p_InodalProperty)
+    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+
+    ! Do we have a uniform triangulation? Would simplify a lot...
+    if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      
+      select case(rvectorScalar%cdataType)
+        
+      case(ST_DOUBLE)
+        
+        if (present(iboundaryComp)) then
+          
+          ! Number of elements on that boundary component?
+          NELbdc = p_IboundaryCpIdx(iboundaryComp+1)-p_IboundaryCpIdx(iboundaryComp)
+          
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+          
+          ! Initialise a vector assembly structure for all elements
+          call linf_initAssembly(rvectorAssembly, rform,&
+              rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
+              CUB_G1_1D, NELbdc)
+          call linf_allocAssemblyData(rvectorAssembly, rvectorScalar%NVAR)
+          
+          ! Determine the element numbers and their orientation at the boundary
+          iel = 0
+          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
+
+            iel = iel+1
+
+            ! Element number
+            IelementList(iel) = p_IelementsAtBoundary(idx)
+
+            ! Element orientation, i.e. the local number of the boundary vertex
+            if (p_InodalProperty(&
+                p_IverticesAtElement(1,IelementList(iel))).eq. iboundaryComp) then
+              IelementOrientation(iel) = 1
+            elseif (p_InodalProperty(&
+                p_IverticesAtElement(2,IelementList(iel))).eq. iboundaryComp) then
+              IelementOrientation(iel) = 2
+            else
+              call output_line('Unable to determine element orientation!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+            end if
+          end do
+          
+          ! Assemble the data for all elements
+          call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvectorScalar,&
+              iboundaryComp, IelementList, IelementOrientation,&
+              fcoeff_buildVectorBlBdr1D_sim, rcollection)
+
+          ! Release the assembly structure.
+          call linf_doneAssembly(rvectorAssembly)
+
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+
+        else
+          
+          ! Loop over all boundary components and call 
+          ! the calculation routines for that
+          do ibdc = 1, p_rtriangulation%nbct
+            
+            ! Number of elements on that boundary component?
+            NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
+
+            ! Allocate memory for element list and element orientation
+            allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+            
+            ! Initialise a vector assembly structure for all element
+            call linf_initAssembly(rvectorAssembly, rform,&
+                rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
+                CUB_G1_1D, NELbdc)
+            call linf_allocAssemblyData(rvectorAssembly, rvectorScalar%NVAR)
+
+            ! Determine the element numbers and their orientation at the boundary
+            iel = 0
+            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+
+              iel = iel+1
+
+              ! Element number
+              IelementList(iel) = p_IelementsAtBoundary(idx)
+
+              ! Element orientation, i.e. the local number of the boundary vertex
+              if (p_InodalProperty(&
+                  p_IverticesAtElement(1,IelementList(iel))).eq. ibdc) then
+                IelementOrientation(iel) = 1
+              elseif (p_InodalProperty(&
+                  p_IverticesAtElement(2,IelementList(iel))).eq. ibdc) then
+                IelementOrientation(iel) = 2
+              else
+                call output_line('Unable to determine element orientation!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+              end if
+            end do
+            
+            ! Assemble the data for all element
+            call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvectorScalar,&
+                ibdc, IelementList, IelementOrientation,&
+                fcoeff_buildVectorBlBdr1D_sim, rcollection)
+
+            ! Release the assembly structure.
+            call linf_doneAssembly(rvectorAssembly)
+            
+            ! Release memory
+            deallocate(IelementList, IelementOrientation)
+
+          end do
+
+        end if
+        
+      case DEFAULT
+        call output_line('Single precision vectors currently not supported!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+      end select
+      
+    else
+      
+      ! Set pointers
+      p_RelementDistr => rvectorScalar%p_rspatialDiscr%RelementDistr
+      call storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
+          p_IelementDistr)
+
+      select case(rvectorScalar%cdataType)
+        
+      case(ST_DOUBLE)
+        
+        if (present(iboundaryComp)) then
+          
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(1), IelementOrientation(1))
+
+          ! Process each element separately; this is not the most
+          ! efficient way but in general there is exactly one element
+          ! per boundary so that a more efficient/complicated
+          ! implementatio n will not pay-off in practice
+          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
+
+            ! Determine the element number and its orientation at the boundary
+            IelementList(1) = p_IelementsAtBoundary(idx)
+            if (p_InodalProperty(&
+                p_IverticesAtElement(1,IelementList(1))) .eq. iboundaryComp) then
+              IelementOrientation(1) = 1
+            elseif (p_InodalProperty(&
+                p_IverticesAtElement(2,IelementList(1))) .eq. iboundaryComp) then
+              IelementOrientation(1) = 2
+            else
+              call output_line('Unable to determine element orientation!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+            end if
+            
+            ! Initialise a vector assembly structure for one element
+            call linf_initAssembly(rvectorAssembly, rform,&
+                p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
+                CUB_G1_1D, 1)
+            call linf_allocAssemblyData(rvectorAssembly, rvectorScalar%NVAR)
+            
+            ! Assemble the data for one element
+            call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvectorScalar,&
+                iboundaryComp, IelementList, IelementOrientation,&
+                fcoeff_buildVectorBlBdr1D_sim, rcollection)
+            
+            ! Release the assembly structure.
+            call linf_doneAssembly(rvectorAssembly)
+
+          end do
+
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+          
+        else
+
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(1), IelementOrientation(1))
+
+          ! Loop over all boundary components and call 
+          ! the calculation routines for that
+          do ibdc = 1, p_rtriangulation%nbct
+            
+            ! Process each element separately; this is not the most
+            ! efficient way but in general there is exactly one element
+            ! per boundary so that a more efficient/complicated
+            ! implementatio n will not pay-off in practice
+            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+              
+              ! Determine the element number and its orientation at the boundary
+              IelementList(1) = p_IelementsAtBoundary(idx)
+              if (p_InodalProperty(&
+                  p_IverticesAtElement(1,IelementList(1))) .eq. ibdc) then
+                IelementOrientation(1) = 1
+              elseif (p_InodalProperty(&
+                  p_IverticesAtElement(2,IelementList(1))) .eq. ibdc) then
+                IelementOrientation(1) = 2
+              else
+                call output_line('Unable to determine element orientation!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+              end if
+              
+              ! Initialise a vector assembly structure for one element
+              call linf_initAssembly(rvectorAssembly, rform,&
+                  p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
+                  CUB_G1_1D, 1)
+              call linf_allocAssemblyData(rvectorAssembly, rvectorScalar%NVAR)
+              
+              ! Assemble the data for one element
+              call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvectorScalar,&
+                  ibdc, IelementList, IelementOrientation,&
+                  fcoeff_buildVectorBlBdr1D_sim, rcollection)
+              
+              ! Release the assembly structure.
+              call linf_doneAssembly(rvectorAssembly)
+
+            end do
+          
+          end do
+          
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+          
+        end if
+        
+      case DEFAULT
+        call output_line('Single precision vectors currently not supported!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+      end select
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine linf_buildVecIntlScalarBdr2D (rform, ccubType, bclear, rvectorScalar,&
                                            fcoeff_buildVectorBlBdr2D_sim,&
                                            rboundaryRegion, rcollection)
   
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
-  ! (typically used for assembling RHS vectors).
+  ! (typically used for assembling RHS vectors) in 2D.
   !
   ! If bclear=TRUE, the vector is cleared before the assembly and any 
   ! sorting of the entries is switched off - the vector is set up unsorted.
@@ -1162,14 +1851,14 @@ contains
     ! The discretisation must provide a triangulation structure
     if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
       call output_line('No triangulation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2d')
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
       call sys_halt()
     end if
     
     ! The discretisation must provide a boundary structure
     if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rboundary)) then
       call output_line('No boundary associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2d')
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
       call sys_halt()
     end if
     
@@ -2087,6 +2776,236 @@ contains
   end subroutine
 
   !****************************************************************************
+
+!<subroutine>  
+  
+  subroutine linf_assembleSubmeshVectorBdr1D (rvectorAssembly, rvector,&
+      iboundaryComp, IelementList, IelementOrientation, &
+      fcoeff_buildVectorScBdr1D_sim, rcollection)
+
+!<description>
+
+  ! Assembles the vector entries for a submesh by integration over the
+  ! boundary component in 1D.
+
+!</description>
+
+!<input>
+  
+  ! A boundary component where to assemble the contribution
+  integer, intent(in) :: iboundaryComp
+
+  ! List of elements where to assemble the linear form.
+  integer, dimension(:), intent(in), target :: IelementList
+  
+  ! List of element orientations where to assemble the linear form.
+  integer, dimension(:), intent(in) :: IelementOrientation
+
+  ! A callback routine which is able to calculate the values of the
+  ! function $f$ which is to be discretised.
+  include 'intf_coefficientVectorScBdr1D.inc'
+  optional :: fcoeff_buildVectorScBdr1D_sim
+  
+!</input>
+
+!<inputoutput>
+  
+  ! A vector assembly structure prepared with linf_initAssembly.
+  type(t_linfVectorAssembly), intent(inout), target :: rvectorAssembly
+  
+  ! A vector where to assemble the contributions to.
+  type(t_vectorScalar), intent(inout) :: rvector  
+  
+  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information. 
+  type(t_collection), intent(inout), target, optional :: rcollection
+
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables, used by all processors
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: indof,ncubp,iel
+    
+    ! local data of every processor when using OpenMP
+    integer :: ialbet,ia,idofe
+    integer(I32) :: cevaluationTag
+    real(DP) :: daux
+    type(t_domainIntSubset) :: rintSubset
+    real(DP), dimension(:), pointer :: p_Domega
+    real(DP), dimension(:,:,:,:), pointer :: p_Dbas
+    real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
+    integer, dimension(:),pointer :: p_Idescriptors
+    integer, dimension(:,:), pointer :: p_Idofs
+    type(t_evalElementSet), pointer :: p_revalElementSet
+
+    ! A small vector holding only the additive contributions of one element
+    real(DP), dimension(EL_MAXNBAS) :: DlocalData
+    
+    ! Arrays for cubature points
+    real(DP), dimension(:,:,:), allocatable :: DpointsRef
+    
+    ! Get some pointers for faster access
+    call lsyssc_getbase_double (rvector, p_Ddata)
+    indof = rvectorAssembly%indof
+    ncubp = rvectorAssembly%ncubp
+
+    ! We only need to evaluate the test functions in a single boundary
+    ! node. Therefore, the use of a one-point cubature rule is mandatory.
+    if (ncubp .ne. 1) then
+      call output_line('Assembly structure must be initialised for 1-point cubature rule!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_assembleSubmeshVectorBdr1D')
+      call sys_halt()
+    end if
+   
+    ! Get some more pointers for faster access
+    p_Domega => rvectorAssembly%p_Domega
+    p_Dbas => rvectorAssembly%p_Dbas
+    p_Dcoefficients => rvectorAssembly%p_Dcoefficients(1,:,:,:)
+    p_Idescriptors => rvectorAssembly%rform%Idescriptors
+    p_Idofs => rvectorAssembly%p_Idofs
+    p_revalElementSet => rvectorAssembly%revalElementSet
+
+    ! Allocate memory for the coordinates of the reference points
+    allocate(DpointsRef(NDIM1D+2,ncubp,rvectorAssembly%nelementsPerBlock))
+
+    ! Either the left or the right endpoint of the 1D-element (=line)
+    ! is located at the current boundary component. Therefore, the
+    ! coordinate of the cubature point on the reference is either -1
+    ! or 1 depending on the orientation of the element
+    DpointsRef = 0.0
+
+    do iel = 1, rvectorAssembly%nelementsPerBlock
+      if (IelementOrientation(iel) .eq. 1) then
+        DpointsRef(1,:,iel) = -1.0
+      else
+        DpointsRef(1,:,iel) = 1.0
+      end if
+    end do
+    
+    ! --------------------- DOF SEARCH PHASE ------------------------
+
+    ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
+    call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, IelementList, p_Idofs)
+
+    ! -------------------- ELEMENT EVALUATION PHASE ----------------------
+
+    ! To calculate the element contributions, we have to evaluate
+    ! the elements to give us the values of the basis functions
+    ! in all the DOF`s in all the elements in our set.
+    
+    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+    ! the elements later. All of them can be combined with OR, what will give
+    ! a combined evaluation tag. 
+    cevaluationTag = rvectorAssembly%cevaluationTag
+
+    ! The cubature points are already initialised.
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+
+    ! Calculate all information that is necessary to evaluate the
+    ! finite element on all cells of our subset. This includes the
+    ! coordinates of the points on the cells.
+    call elprep_prepareSetForEvaluation (p_revalElementSet,&
+        cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
+        IelementList, rvectorAssembly%ctrafoType, DpointsRef=DpointsRef)
+    
+    ! Now it is time to call our coefficient function to calculate the
+    ! function values in the cubature points:
+    if (present(fcoeff_buildVectorScBdr1D_sim)) then
+      call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+      rintSubset%ielementDistribution = 0
+      rintSubset%ielementStartIdx = 1
+      rintSubset%p_Ielements => IelementList
+      rintSubset%p_IdofsTrial => p_Idofs
+      rintSubset%celement = rvectorAssembly%celement
+      call fcoeff_buildVectorScBdr1D_sim (rvector%p_rspatialDiscr,&
+          rvectorAssembly%rform, rvectorAssembly%nelementsPerBlock,&
+          ncubp, p_revalElementSet%p_DpointsReal, iboundaryComp, p_Idofs,&
+          rintSubset, p_Dcoefficients, rcollection)
+      call domint_doneIntegration (rintSubset)
+    else
+      p_Dcoefficients = 1.0_DP
+    end if
+    
+    ! Calculate the values of the basis functions.
+    call elem_generic_sim2 (rvectorAssembly%celement, &
+        p_revalElementSet, rvectorAssembly%Bder, rvectorAssembly%p_Dbas)
+    
+    ! --------------------- DOF COMBINATION PHASE ------------------------
+      
+    ! Values of all basis functions calculated. Now we can start 
+    ! to integrate!
+    !
+    ! Loop over the elements.
+
+    do iel = 1, rvectorAssembly%nelementsPerBlock
+
+      ! Clear the output vector.
+      DlocalData(1:indof) = 0.0_DP
+      
+      ! Loop over the additive factors in the bilinear form.
+      do ialbet = 1,rvectorAssembly%rform%itermcount
+        
+        ! Get from Idescriptors the type of the derivatives for the 
+        ! test and trial functions. The summand we calculate
+        ! here will be:
+        !
+        ! int_...  f * ( phi_i )_IA
+        !
+        ! -> IA=0: function value, 
+        !      =1: first derivative, 
+        !      =2: 2nd derivative,...
+        !    as defined in the module 'derivative'.
+        
+        ia = p_Idescriptors(ialbet)
+        
+        ! Multiply the weighting factor in the cubature formula with the
+        ! coefficient of the form. 
+        ! This gives the actual value to multiply the function value
+        ! with before summing up to the integral.  Get the precalculated
+        ! coefficient from the coefficient array.
+        daux = 0.5_DP * p_Domega(1) * p_Dcoefficients(ialbet,1,iel)
+        
+        ! Now loop through all possible combinations of DOF`s
+        ! in the current cubature point. 
+        
+        do idofe = 1,indof
+        
+          ! Get the value of the basis function 
+          ! phi_o in the cubature point. 
+          ! Them multiply:
+          !    DBAS(..) * AUX
+          ! ~= phi_i * coefficient * cub.weight
+          ! Summing this up gives the integral, so the contribution
+          ! to the vector. 
+          !
+          ! Simply summing up DBAS(..) * AUX would give
+          ! the additive contribution for the vector. We save this
+          ! contribution in the local array.
+          
+          DlocalData(idofe) = DlocalData(idofe)+p_Dbas(idofe,ia,1,iel)*daux
+          
+        end do ! idofe
+        
+      end do ! ialbet
+      
+      ! Incorporate the local vector into the global one.
+      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! the IdofsTest array.
+      do idofe = 1,indof
+        p_Ddata(p_Idofs(idofe,iel)) = p_Ddata(p_Idofs(idofe,iel)) + DlocalData(idofe)
+      end do
+
+    end do ! iel
+
+    ! Deallocate memory
+    deallocate(DpointsRef)
+
+  end subroutine
+
+  !****************************************************************************
   
 !<subroutine>  
   
@@ -2096,7 +3015,8 @@ contains
 
 !<description>
 
-  ! Assembles the vector entries for a submesh by integration over the boundary region.
+  ! Assembles the vector entries for a submesh by integration over the
+  ! boundary region in 2D.
 
 !</description>
 
@@ -2440,6 +3360,243 @@ contains
   end subroutine
 
   !****************************************************************************
+
+!<subroutine>  
+  
+  subroutine linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvector,&
+      iboundaryComp, IelementList, IelementOrientation, &
+      fcoeff_buildVectorBlBdr1D_sim, rcollection)
+
+!<description>
+
+  ! Assembles the vector entries for a submesh by integration over the
+  ! boundary region in 1D.
+
+!</description>
+
+!<input>
+  
+  ! A boundary component where to assemble the contribution
+  integer, intent(in) :: iboundaryComp
+
+  ! List of elements where to assemble the linear form.
+  integer, dimension(:), intent(in), target :: IelementList
+  
+  ! List of element orientations where to assemble the linear form.
+  integer, dimension(:), intent(in) :: IelementOrientation
+
+  ! A callback routine which is able to calculate the values of the
+  ! function $f$ which is to be discretised.
+  include 'intf_coefficientVectorBlBdr1D.inc'
+  optional :: fcoeff_buildVectorBlBdr1D_sim 
+  
+!</input>
+
+!<inputoutput>
+  
+  ! A vector assembly structure prepared with linf_initAssembly.
+  type(t_linfVectorAssembly), intent(inout), target :: rvectorAssembly
+  
+  ! A vector where to assemble the contributions to.
+  type(t_vectorScalar), intent(inout) :: rvector  
+  
+  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information. 
+  type(t_collection), intent(inout), target, optional :: rcollection
+
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables, used by all processors
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: indof,ncubp
+    
+    ! local data of every processor when using OpenMP
+    integer :: ialbet,ia,idofe,ivar,iel
+    integer(I32) :: cevaluationTag
+    type(t_domainIntSubset) :: rintSubset
+    real(DP), dimension(:), pointer :: p_Domega
+    real(DP), dimension(:,:,:,:), pointer :: p_Dbas
+    real(DP), dimension(:,:,:,:), pointer :: p_Dcoefficients
+    integer, dimension(:),pointer :: p_Idescriptors
+    integer, dimension(:,:), pointer :: p_Idofs
+    type(t_evalElementSet), pointer :: p_revalElementSet
+
+    ! A small vector holding only the additive contributions of one element
+    real(DP), dimension(:,:), allocatable :: DlocalData
+    real(DP), dimension(:), allocatable :: Daux
+    
+    ! Arrays for cubature points
+    real(DP), dimension(:,:,:), allocatable :: DpointsRef
+    
+    ! Get some pointers for faster access
+    call lsyssc_getbase_double (rvector, p_Ddata)
+    indof = rvectorAssembly%indof
+    ncubp = rvectorAssembly%ncubp
+
+    ! We only need to evaluate the test functions in a single boundary
+    ! node. Therefore, the use of a one-point cubature rule is mandatory.
+    if (ncubp .ne. 1) then
+      call output_line('Assembly structure must be initialised for 1-point cubature rule!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_assembleSubmeshVecIntlBdr1D')
+      call sys_halt()
+    end if
+   
+    ! Get some more pointers for faster access
+    p_Domega => rvectorAssembly%p_Domega
+    p_Dbas => rvectorAssembly%p_Dbas
+    p_Dcoefficients => rvectorAssembly%p_Dcoefficients
+    p_Idescriptors => rvectorAssembly%rform%Idescriptors
+    p_Idofs => rvectorAssembly%p_Idofs
+    p_revalElementSet => rvectorAssembly%revalElementSet
+
+    ! Allocate temporal array
+    allocate(DlocalData(rvector%NVAR,EL_MAXNBAS), Daux(rvector%NVAR))
+
+    ! Allocate memory for the coordinates of the reference points
+    allocate(DpointsRef(NDIM1D+2,ncubp,rvectorAssembly%nelementsPerBlock))
+
+    ! Either the left or the right endpoint of the 1D-element (=line)
+    ! is located at the current boundary component. Therefore, the
+    ! coordinate of the cubature point on the reference is either -1
+    ! or 1 depending on the orientation of the element
+    DpointsRef = 0.0
+
+    do iel = 1, rvectorAssembly%nelementsPerBlock
+      if (IelementOrientation(iel) .eq. 1) then
+        DpointsRef(1,:,iel) = -1.0
+      else
+        DpointsRef(1,:,iel) = 1.0
+      end if
+    end do
+    
+    ! --------------------- DOF SEARCH PHASE ------------------------
+
+    ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
+    call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, IelementList, p_Idofs)
+
+    ! -------------------- ELEMENT EVALUATION PHASE ----------------------
+
+    ! To calculate the element contributions, we have to evaluate
+    ! the elements to give us the values of the basis functions
+    ! in all the DOF`s in all the elements in our set.
+    
+    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+    ! the elements later. All of them can be combined with OR, what will give
+    ! a combined evaluation tag. 
+    cevaluationTag = rvectorAssembly%cevaluationTag
+
+    ! The cubature points are already initialised.
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+
+    ! Calculate all information that is necessary to evaluate the
+    ! finite element on all cells of our subset. This includes the
+    ! coordinates of the points on the cells.
+    call elprep_prepareSetForEvaluation (p_revalElementSet,&
+        cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
+        IelementList, rvectorAssembly%ctrafoType, &
+        DpointsRef=DpointsRef)
+    
+    ! Now it is time to call our coefficient function to calculate the
+    ! function values in the cubature points:
+    if (present(fcoeff_buildVectorBlBdr1D_sim)) then
+      call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+      rintSubset%ielementDistribution = 0
+      rintSubset%ielementStartIdx = 1
+      rintSubset%p_Ielements => IelementList
+      rintSubset%p_IdofsTrial => p_Idofs
+      rintSubset%celement = rvectorAssembly%celement
+      call fcoeff_buildVectorBlBdr1D_sim (rvector%p_rspatialDiscr,&
+          rvectorAssembly%rform, rvectorAssembly%nelementsPerBlock,&
+          ncubp, p_revalElementSet%p_DpointsReal, iboundaryComp, p_Idofs,&
+          rintSubset, p_Dcoefficients, rcollection)
+      call domint_doneIntegration (rintSubset)
+    else
+      p_Dcoefficients = 1.0_DP
+    end if
+    
+    ! Calculate the values of the basis functions.
+    call elem_generic_sim2 (rvectorAssembly%celement, &
+        p_revalElementSet, rvectorAssembly%Bder, rvectorAssembly%p_Dbas)
+    
+    ! --------------------- DOF COMBINATION PHASE ------------------------
+      
+    ! Values of all basis functions calculated. Now we can start 
+    ! to integrate!
+    ! Loop through the DOF`s and cubature points to calculate the
+    ! integral:
+
+    do iel = 1, rvectorAssembly%nelementsPerBlock
+      
+      ! Clear the output vector.
+      DlocalData(:,1:indof) = 0.0_DP
+      
+      ! Loop over the additive factors in the bilinear form.
+      do ialbet = 1,rvectorAssembly%rform%itermcount
+        
+        ! Get from Idescriptors the type of the derivatives for the 
+        ! test and trial functions. The summand we calculate
+        ! here will be:
+        !
+        ! int_...  f * ( phi_i )_IA
+        !
+        ! -> IA=0: function value, 
+        !      =1: first derivative, 
+        !      =2: 2nd derivative,...
+        !    as defined in the module 'derivative'.
+        
+        ia = p_Idescriptors(ialbet)
+        
+        ! Multiply the weighting factor in the cubature formula with the
+        ! coefficient of the form. 
+        ! This gives the actual value to multiply the function value
+        ! with before summing up to the integral.  Get the precalculated
+        ! coefficient from the coefficient array.
+        Daux = 0.5_DP * p_Domega(1) * p_Dcoefficients(:,ialbet,1,iel)
+        
+        ! Now loop through all possible combinations of DOF`s
+        ! in the current cubature point. 
+        
+        do idofe = 1,indof
+          
+          ! Get the value of the basis function 
+          ! phi_o in the cubature point. 
+          ! Them multiply:
+          !    DBAS(..) * AUX
+          ! ~= phi_i * coefficient * cub.weight
+          ! Summing this up gives the integral, so the contribution
+          ! to the vector. 
+          !
+          ! Simply summing up DBAS(..) * AUX would give
+          ! the additive contribution for the vector. We save this
+          ! contribution in the local array.
+          
+          DlocalData(:,idofe) = DlocalData(:,idofe)+p_Dbas(idofe,ia,1,iel)*Daux
+          
+        end do ! idofe
+        
+      end do ! ialbet
+      
+      ! Incorporate the local vector into the global one.
+      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! the IdofsTest array.
+      do idofe = 1,indof
+        do ivar = 1, rvector%NVAR
+          p_Ddata(rvector%NVAR*(p_Idofs(idofe,iel)-1)+ivar) =&
+              p_Ddata(rvector%NVAR*(p_Idofs(idofe,iel)-1)+ivar) + DlocalData(ivar,idofe)
+        end do
+      end do
+
+    end do ! iel
+
+    ! Deallocate memory
+    deallocate(DpointsRef)
+    
+  end subroutine
+
+  !****************************************************************************
   
 !<subroutine>  
   
@@ -2449,7 +3606,8 @@ contains
 
 !<description>
 
-  ! Assembles the vector entries for a submesh by integration over the boundary region.
+  ! Assembles the vector entries for a submesh by integration over the
+  ! boundary region in 2D.
 
 !</description>
 
@@ -3100,6 +4258,245 @@ contains
   end subroutine
 
   !****************************************************************************
+
+!<subroutine>  
+  
+  subroutine linf_assembleSubmeshVectorBlockBdr1D (rvectorAssembly, rvector,&
+      iboundaryComp, IelementList, IelementOrientation, &
+      fcoeff_buildVectorBlBdr1D_sim, rcollection)
+
+!<description>
+
+  ! Assembles the vector entries for a submesh by integration over the
+  ! boundary region in 1D.
+
+!</description>
+
+!<input>
+  
+  ! A boundary component where to assemble the contribution
+  integer, intent(in) :: iboundaryComp
+
+  ! List of elements where to assemble the linear form.
+  integer, dimension(:), intent(in), target :: IelementList
+  
+  ! List of element orientations where to assemble the linear form.
+  integer, dimension(:), intent(in) :: IelementOrientation
+
+  ! A callback routine which is able to calculate the values of the
+  ! function $f$ which is to be discretised.
+  include 'intf_coefficientVectorBlBdr1D.inc'
+  optional :: fcoeff_buildVectorBlBdr1D_sim 
+  
+!</input>
+
+!<inputoutput>
+  
+  ! A vector assembly structure prepared with linf_initAssembly.
+  type(t_linfVectorAssembly), intent(inout), target :: rvectorAssembly
+  
+  ! A vector where to assemble the contributions to.
+  type(t_vectorBlock), intent(inout) :: rvector
+  
+  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information. 
+  type(t_collection), intent(inout), target, optional :: rcollection
+
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables, used by all processors
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: indof,ncubp
+    
+    ! local data of every processor when using OpenMP
+    integer :: ialbet,ia,idofe,iblock,iel
+    integer(I32) :: cevaluationTag
+    type(t_domainIntSubset) :: rintSubset
+    real(DP), dimension(:), pointer :: p_Domega
+    real(DP), dimension(:,:,:,:), pointer :: p_Dbas
+    real(DP), dimension(:,:,:,:), pointer :: p_Dcoefficients
+    integer, dimension(:),pointer :: p_Idescriptors
+    integer, dimension(:,:), pointer :: p_Idofs
+    type(t_evalElementSet), pointer :: p_revalElementSet
+
+    ! A small vector holding only the additive contributions of one element
+    real(DP), dimension(:,:), allocatable :: DlocalData
+    real(DP), dimension(:), allocatable :: Daux
+
+    ! Arrays for cubature points
+    real(DP), dimension(:,:,:), allocatable :: DpointsRef
+    
+    ! Get some pointers for faster access
+    call lsysbl_getbase_double (rvector, p_Ddata)
+    indof = rvectorAssembly%indof
+    ncubp = rvectorAssembly%ncubp
+
+    ! We only need to evaluate the test functions in a single boundary
+    ! node. Therefore, the use of a one-point cubature rule is mandatory.
+    if (ncubp .ne. 1) then
+      call output_line('Assembly structure must be initialised for 1-point cubature rule!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_assembleSubmeshVectorBlockBdr1D')
+      call sys_halt()
+    end if
+   
+    ! Get some more pointers for faster access
+    p_Domega => rvectorAssembly%p_Domega
+    p_Dbas => rvectorAssembly%p_Dbas
+    p_Dcoefficients => rvectorAssembly%p_Dcoefficients
+    p_Idescriptors => rvectorAssembly%rform%Idescriptors
+    p_Idofs => rvectorAssembly%p_Idofs
+    p_revalElementSet => rvectorAssembly%revalElementSet
+
+    ! Allocate temporal array
+    allocate(DlocalData(rvector%nblocks,EL_MAXNBAS), Daux(rvector%nblocks))
+
+    ! Allocate memory for the coordinates of the reference points
+    allocate(DpointsRef(NDIM1D+2,ncubp,rvectorAssembly%nelementsPerBlock))
+
+    ! Either the left or the right endpoint of the 1D-element (=line)
+    ! is located at the current boundary component. Therefore, the
+    ! coordinate of the cubature point on the reference is either -1
+    ! or 1 depending on the orientation of the element
+    DpointsRef = 0.0
+
+    do iel = 1, rvectorAssembly%nelementsPerBlock
+      if (IelementOrientation(iel) .eq. 1) then
+        DpointsRef(1,:,iel) = -1.0
+      else
+        DpointsRef(1,:,iel) = 1.0
+      end if
+    end do
+    
+    ! --------------------- DOF SEARCH PHASE ------------------------
+
+    ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
+    call dof_locGlobMapping_mult(rvector%p_rblockDiscr%RspatialDiscr(1), &
+        IelementList, p_Idofs)
+
+    ! -------------------- ELEMENT EVALUATION PHASE ----------------------
+
+    ! To calculate the element contributions, we have to evaluate
+    ! the elements to give us the values of the basis functions
+    ! in all the DOF`s in all the elements in our set.
+    
+    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+    ! the elements later. All of them can be combined with OR, what will give
+    ! a combined evaluation tag. 
+    cevaluationTag = rvectorAssembly%cevaluationTag
+
+    ! The cubature points are already initialised.
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+
+    ! Calculate all information that is necessary to evaluate the
+    ! finite element on all cells of our subset. This includes the
+    ! coordinates of the points on the cells.
+    call elprep_prepareSetForEvaluation (p_revalElementSet,&
+        cevaluationTag, rvector%p_rblockDiscr%RspatialDiscr(1)%p_rtriangulation, &
+        IelementList, rvectorAssembly%ctrafoType, &
+        DpointsRef=DpointsRef)
+    
+    ! Now it is time to call our coefficient function to calculate the
+    ! function values in the cubature points:
+    if (present(fcoeff_buildVectorBlBdr1D_sim)) then
+      call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+      rintSubset%ielementDistribution = 0
+      rintSubset%ielementStartIdx = 1
+      rintSubset%p_Ielements => IelementList
+      rintSubset%p_IdofsTrial => p_Idofs
+      rintSubset%celement = rvectorAssembly%celement
+      call fcoeff_buildVectorBlBdr1D_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
+          rvectorAssembly%rform, rvectorAssembly%nelementsPerBlock,&
+          ncubp, p_revalElementSet%p_DpointsReal, iboundaryComp, p_Idofs,&
+          rintSubset, p_Dcoefficients, rcollection)
+      call domint_doneIntegration (rintSubset)
+    else
+      p_Dcoefficients = 1.0_DP
+    end if
+    
+    ! Calculate the values of the basis functions.
+    call elem_generic_sim2 (rvectorAssembly%celement, &
+        p_revalElementSet, rvectorAssembly%Bder, rvectorAssembly%p_Dbas)
+    
+    ! --------------------- DOF COMBINATION PHASE ------------------------
+      
+    ! Values of all basis functions calculated. Now we can start 
+    ! to integrate!
+    ! Loop through the DOF`s and cubature points to calculate the
+    ! integral:
+
+    do iel = 1, rvectorAssembly%nelementsPerBlock
+
+      ! Clear the output vector.
+      DlocalData(:,1:indof) = 0.0_DP
+      
+      ! Loop over the additive factors in the bilinear form.
+      do ialbet = 1,rvectorAssembly%rform%itermcount
+        
+        ! Get from Idescriptors the type of the derivatives for the 
+        ! test and trial functions. The summand we calculate
+        ! here will be:
+        !
+        ! int_...  f * ( phi_i )_IA
+        !
+        ! -> IA=0: function value, 
+        !      =1: first derivative, 
+        !      =2: 2nd derivative,...
+        !    as defined in the module 'derivative'.
+        
+        ia = p_Idescriptors(ialbet)
+        
+        ! Multiply the weighting factor in the cubature formula with the
+        ! coefficient of the form. 
+        ! This gives the actual value to multiply the function value
+        ! with before summing up to the integral.  Get the precalculated
+        ! coefficient from the coefficient array.
+        Daux = 0.5_DP * p_Domega(1) * p_Dcoefficients(:,ialbet,1,iel)
+
+        ! Now loop through all possible combinations of DOF`s
+        ! in the current cubature point. 
+        
+        do idofe = 1,indof
+          
+          ! Get the value of the basis function 
+          ! phi_o in the cubature point. 
+          ! Them multiply:
+          !    DBAS(..) * AUX
+          ! ~= phi_i * coefficient * cub.weight
+          ! Summing this up gives the integral, so the contribution
+          ! to the vector. 
+          !
+          ! Simply summing up DBAS(..) * AUX would give
+          ! the additive contribution for the vector. We save this
+          ! contribution in the local array.
+          
+          DlocalData(:,idofe) = DlocalData(:,idofe)+p_Dbas(idofe,ia,1,iel)*Daux
+          
+        end do ! idofe
+        
+      end do ! ialbet
+      
+      ! Incorporate the local vector into the global one.
+      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! the IdofsTest array.
+      do iblock =1,rvector%nblocks
+        do idofe = 1,indof
+          p_Ddata(rvector%RvectorBlock(iblock)%iidxFirstEntry+p_Idofs(idofe,iel)-1)=&
+              p_Ddata(rvector%RvectorBlock(iblock)%iidxFirstEntry+p_Idofs(idofe,iel)-1)+&
+              DlocalData(iblock,idofe)
+        end do
+      end do
+
+    end do ! iel
+
+    ! Deallocate memory
+    deallocate(DpointsRef)
+    
+  end subroutine
+
+  !****************************************************************************
   
 !<subroutine>  
   
@@ -3109,7 +4506,8 @@ contains
 
 !<description>
 
-  ! Assembles the vector entries for a submesh by integration over the boundary region.
+  ! Assembles the vector entries for a submesh by integration over the
+  ! boundary region in 2D.
 
 !</description>
 
@@ -3578,6 +4976,7 @@ contains
           
           ! Release the assembly structure.
           call linf_doneAssembly(rvectorAssembly)
+
         end do
         
       case DEFAULT
@@ -3705,6 +5104,7 @@ contains
           
           ! Release the assembly structure.
           call linf_doneAssembly(rvectorAssembly)
+
         end do
         
       case DEFAULT
@@ -3850,6 +5250,7 @@ contains
           
           ! Release the assembly structure.
           call linf_doneAssembly(rvectorAssembly)
+
         end do
 
       case DEFAULT
@@ -3869,13 +5270,359 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVectorBlockBdr2d (rform, ccubType, bclear, rvectorBlock,&
+  subroutine linf_buildVectorBlockBdr1D (rform, bclear, rvectorBlock,&
+                                         fcoeff_buildVectorBlBdr1D_sim,&
+                                         iboundaryComp, rcollection)
+
+!<description>
+  ! This routine assembles the entries of a vector according to a linear form
+  ! (typically used for assembling RHS vectors) in 1D.
+  !
+  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! sorting of the entries is switched off - the vector is set up unsorted.
+  !
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! otherwise an error is thrown.
+!</description>
+
+!<input>
+  ! The linear form specifying the underlying PDE of the discretisation.
+  type(t_linearForm), intent(in) :: rform
+
+  ! Whether to clear the vector before calculating the entries.
+  ! If .FALSE., the new entries are added to the existing entries.
+  logical, intent(in) :: bclear
+  
+  ! OPTIONAL: An integer specifying the boundary component where
+  ! to calculate. If not specified, the computation is done over
+  ! the whole boundary
+  integer, intent(in), optional :: iboundaryComp
+  
+  ! A callback routine for the function to be discretised.
+  include 'intf_coefficientVectorBlBdr1D.inc'
+  optional :: fcoeff_buildVectorBlBdr1D_sim
+!</input>
+
+!<inputoutput>
+  ! The FE vector. Calculated entries are imposed to this vector.
+  type(t_vectorBlock), intent(inout) :: rvectorBlock
+  
+  ! OPTIONAL: A collection structure. This structure is 
+  ! given to the callback function for calculating the function
+  ! which should be discretised in the linear form.
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistr
+    type(t_linfVectorAssembly) :: rvectorAssembly
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:), pointer :: p_IelementsAtBoundary
+    integer, dimension(:), pointer :: p_InodalProperty
+    integer, dimension(:), pointer :: IelementList, IelementOrientation
+    integer :: ibdc,idx,iel,iblock,NELbdc
+    logical :: bcompatible
+
+    ! If the vector does not exist, stop here.
+    if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then  
+      call output_line('Vector not available!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+    end if
+    
+    ! The vector must be unsorted, otherwise we can not set up the vector.
+    do iblock = 1, rvectorBlock%nblocks
+      if (rvectorBlock%RvectorBlock(iblock)%isortStrategy .gt. 0) then
+        call output_line('Vector must be unsorted!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+        call sys_halt()
+      end if
+    end do
+    
+    ! Clear the vector if necessary.
+    if (bclear) call lsysbl_clearVector (rvectorBlock)
+    
+    ! The vector must provide a block discretisation structure
+    if (.not. associated(rvectorBlock%p_rblockDiscr)) then
+      call output_line('No block discretisation associated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+      call sys_halt()
+    end if
+    
+    ! The discretisation of all scalar subvectors must be the same
+    do iblock = 2, rvectorBlock%nblocks
+      call spdiscr_isDiscrCompatible(rvectorBlock%p_rblockDiscr%RspatialDiscr(1),&
+          rvectorBlock%p_rblockDiscr%RspatialDiscr(iblock), bcompatible)
+      if (.not.bcompatible) then
+        call output_line('All scalar subvectors must have the same spatial discretisation!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+        call sys_halt()
+      end if
+    end do
+    
+    ! Set pointer to first spatial discretisation which is used as template
+    p_rspatialDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(1)
+
+    ! The discretisation must provide a triangulation structure
+    if (.not. associated(p_rspatialDiscr%p_rtriangulation)) then
+      call output_line('No triangulation associated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+      call sys_halt()
+    end if
+
+    ! Set pointer for quicker access
+    p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+
+    ! Set pointers
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+    call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary,&
+        p_IelementsAtBoundary)
+    call storage_getbase_int (p_rtriangulation%h_InodalProperty,&
+        p_InodalProperty)
+    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+    
+    ! Do we have a uniform triangulation? Would simplify a lot...
+    if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      
+      select case(rvectorBlock%cdataType)
+        
+      case(ST_DOUBLE)
+        
+        if (present(iboundaryComp)) then
+          
+          ! Number of elements on that boundary component?
+          NELbdc = p_IboundaryCpIdx(iboundaryComp+1)-p_IboundaryCpIdx(iboundaryComp)
+          
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+
+          ! Initialise a vector assembly structure for all elements
+          call linf_initAssembly(rvectorAssembly, rform,&
+              p_rspatialDiscr%RelementDistr(1)%celement, CUB_G1_1D, NELbdc)
+          call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
+
+          ! Determine the element numbers and their orientation
+          iel = 0
+          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
+
+            iel = iel+1
+
+            ! Element number
+            IelementList(iel) = p_IelementsAtBoundary(idx)
+
+            ! Element orientation, i.e. the local number of the boundary vertex
+            if (p_InodalProperty(&
+                p_IverticesAtElement(1,IelementList(iel))).eq. iboundaryComp) then
+              IelementOrientation(iel) = 1
+            elseif (p_InodalProperty(&
+                p_IverticesAtElement(2,IelementList(iel))).eq. iboundaryComp) then
+              IelementOrientation(iel) = 2
+            else
+              call output_line('Unable to determine element orientation!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+            end if
+          end do
+          
+          ! Assemble the data for all elements
+          call linf_assembleSubmeshVectorBlockBdr1D (rvectorAssembly,&
+              rvectorBlock, iboundaryComp, IelementList, IelementOrientation,&
+              fcoeff_buildVectorBlBdr1D_sim, rcollection)
+
+          ! Release the assembly structure.
+          call linf_doneAssembly(rvectorAssembly)
+
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+
+        else
+          
+          ! Loop over all boundary components and call 
+          ! the calculation routines for that
+          do ibdc = 1, p_rtriangulation%nbct
+
+            ! Number of elements on that boundary component?
+            NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
+
+            ! Allocate memory for element list and element orientation
+            allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+
+            ! Initialise a vector assembly structure for all elements
+            call linf_initAssembly(rvectorAssembly, rform,&
+                p_rspatialDiscr%RelementDistr(1)%celement, CUB_G1_1D, NELbdc)
+            call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
+
+            ! Determine the element numbers and their orientation at the boundary
+            iel = 0
+            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+
+              iel = iel+1
+
+              ! Element number
+              IelementList(iel) = p_IelementsAtBoundary(idx)
+
+              ! Element orientation, i.e. the local number of the boundary vertex
+              if (p_InodalProperty(&
+                  p_IverticesAtElement(1,IelementList(iel))).eq. ibdc) then
+                IelementOrientation(iel) = 1
+              elseif (p_InodalProperty(&
+                  p_IverticesAtElement(2,IelementList(iel))).eq. ibdc) then
+                IelementOrientation(iel) = 2
+              else
+                call output_line('Unable to determine element orientation!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+              end if
+            end do
+            
+            ! Assemble the data for all element
+            call linf_assembleSubmeshVectorBlockBdr1D (rvectorAssembly,&
+                rvectorBlock, ibdc, IelementList, IelementOrientation,&
+                fcoeff_buildVectorBlBdr1D_sim, rcollection)
+
+            ! Release the assembly structure.
+            call linf_doneAssembly(rvectorAssembly)
+            
+            ! Release memory
+            deallocate(IelementList, IelementOrientation)
+
+          end do
+
+        end if
+        
+      case DEFAULT
+        call output_line('Single precision vectors currently not supported!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+      end select
+      
+    else
+      
+      ! Set pointers
+      p_RelementDistr => p_rspatialDiscr%RelementDistr
+      call storage_getbase_int (p_rspatialDiscr%h_IelementDistr, p_IelementDistr)
+
+      select case(rvectorBlock%cdataType)
+        
+      case(ST_DOUBLE)
+        
+        if (present(iboundaryComp)) then
+      
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(1), IelementOrientation(1))
+
+          ! Process each element separately; this is not the most
+          ! efficient way but in general there is exactly one element
+          ! per boundary so that a more efficient/complicated
+          ! implementatio n will not pay-off in practice
+          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
+
+            ! Determine the element number and its orientation at the boundary
+            IelementList(1) = p_IelementsAtBoundary(idx)
+            if (p_InodalProperty(&
+                p_IverticesAtElement(1,IelementList(1))) .eq. iboundaryComp) then
+              IelementOrientation(1) = 1
+            elseif (p_InodalProperty(&
+                p_IverticesAtElement(2,IelementList(1))) .eq. iboundaryComp) then
+              IelementOrientation(1) = 2
+            else
+              call output_line('Unable to determine element orientation!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+            end if
+            
+            ! Initialise a vector assembly structure for one element
+            call linf_initAssembly(rvectorAssembly, rform,&
+                p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
+                CUB_G1_1D, 1)
+            call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
+            
+            ! Assemble the data for one element
+            call linf_assembleSubmeshVectorBlockBdr1D (rvectorAssembly,&
+                rvectorBlock, iboundaryComp, IelementList, IelementOrientation,&
+                fcoeff_buildVectorBlBdr1D_sim, rcollection)
+
+            ! Release the assembly structure.
+            call linf_doneAssembly(rvectorAssembly)
+
+          end do
+
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+          
+        else
+          
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(1), IelementOrientation(1))
+
+          ! Loop over all boundary components and call 
+          ! the calculation routines for that
+          do ibdc = 1, p_rtriangulation%nbct
+            
+            ! Process each element separately; this is not the most
+            ! efficient way but in general there is exactly one element
+            ! per boundary so that a more efficient/complicated
+            ! implementatio n will not pay-off in practice
+            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+              
+              ! Determine the element number and its orientation at the boundary
+              IelementList(1) = p_IelementsAtBoundary(idx)
+              if (p_InodalProperty(&
+                  p_IverticesAtElement(1,IelementList(1))) .eq. ibdc) then
+                IelementOrientation(1) = 1
+              elseif (p_InodalProperty(&
+                  p_IverticesAtElement(2,IelementList(1))) .eq. ibdc) then
+                IelementOrientation(1) = 2
+              else
+                call output_line('Unable to determine element orientation!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+              end if
+              
+              ! Initialise a vector assembly structure for one element
+              call linf_initAssembly(rvectorAssembly, rform,&
+                  p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
+                  CUB_G1_1D, 1)
+              call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
+              
+              ! Assemble the data for one element
+              call linf_assembleSubmeshVectorBlockBdr1D (rvectorAssembly,&
+                  rvectorBlock, ibdc, IelementList, IelementOrientation,&
+                  fcoeff_buildVectorBlBdr1D_sim, rcollection)
+
+              ! Release the assembly structure.
+              call linf_doneAssembly(rvectorAssembly)
+
+            end do
+
+          end do
+
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+          
+        end if
+
+      case DEFAULT
+        call output_line('Single precision vectors currently not supported!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+      end select
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine linf_buildVectorBlockBdr2D (rform, ccubType, bclear, rvectorBlock,&
                                          fcoeff_buildVectorBlBdr2D_sim,&
                                          rboundaryRegion, rcollection)
   
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
-  ! (typically used for assembling RHS vectors).
+  ! (typically used for assembling RHS vectors) in 2D.
   !
   ! If bclear=TRUE, the vector is cleared before the assembly and any 
   ! sorting of the entries is switched off - the vector is set up unsorted.
@@ -3970,14 +5717,14 @@ contains
     ! The discretisation must provide a triangulation structure
     if (.not. associated(p_rspatialDiscr%p_rtriangulation)) then
       call output_line('No triangulation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2d')
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
       call sys_halt()
     end if
     
     ! The discretisation must provide a boundary structure
     if (.not. associated(p_rspatialDiscr%p_rboundary)) then
       call output_line('No boundary associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2d')
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
       call sys_halt()
     end if
     

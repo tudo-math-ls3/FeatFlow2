@@ -14,31 +14,41 @@
 !#        format according to a discretisation.
 !#
 !# 2.) bilf_buildMatrixScalar
-!#     -> Assembles the entries of a matrix, which structure was build
-!#        with bilf_createMatrixStructure before.
+!#     -> Assembles the entries of a matrix according to a bilinear form
+!#        defined in terms of a volume integral. The matrix structure
+!#        must be build before via bilf_createMatrixStructure.
 !#
-!# 3.) bilf_buildMatrixScalarBdr2d
-!#     -> Assembles the entries of a matrix, which structure was build
-!#        with bilf_createMatrixStructure before.
+!# 3.) bilf_buildMatrixScalarBdr1D
+!#     -> Assembles the entries of a matrix according to a bilinear form
+!#        defined in terms of a boundary integral in 1D. The matrix structure
+!#        must be build before via bilf_createMatrixStructure.
 !#
-!# 4.) bilf_initAssembly
-!#     -> Manual matrix assembly. Initialise a matrix assembly structure.
+!# 4.) bilf_buildMatrixScalarBdr2D
+!#     -> Assembles the entries of a matrix according to a bilinear form
+!#        defined in terms of a boundary integral in 2D. The matrix structure
+!#        must be build before via bilf_createMatrixStructure.
+!#
+!# 5.) bilf_initAssembly
+!#     -> Initialise a matrix assembly structure for assembling a bilinear form
 !# 
-!# 5.) bilf_doneAssembly
-!#     -> Manual matrix assembly. Clean up a matrix assembly structure.
+!# 6.) bilf_doneAssembly
+!#     -> Clean up a matrix assembly structure.
 !#
-!# 6.) bilf_assembleSubmeshMatrix9
-!#     -> Manual matrix assembly. Assemble parts of a matrix given in 
-!#        matrix  format 9.
+!# 7.) bilf_assembleSubmeshMatrix9
+!#     -> Assemble parts of a matrix given in matrix format 9.
 !#
-!# 7.)  bilf_assembleSubmeshMat9Bdr2D
-!#     -> Manual matrix assembly. Assemble parts of a matrix given in 
-!#        matrix  format 9.
+!# 8.)  bilf_assembleSubmeshMat9Bdr1D
+!#     -> Assemble parts of a matrix in 1D given in matrix format 9.
 !#
-!# 8.) bilf_buildMatrixScalar2
-!#     -> Assembles the entries of a matrix, which structure was build
-!#        with bilf_createMatrixStructure before. This subroutine is a 
-!#        replacement of the previous version bilf_buildMatrixScalar.
+!# 9.)  bilf_assembleSubmeshMat9Bdr2D
+!#     -> Assemble parts of a matrix in 2D given in matrix format 9.
+!#
+!# 10.) bilf_buildMatrixScalar2
+!#     -> Assembles the entries of a matrix according to a bilinear form
+!#        defined in terms of a volume integral. The matrix structure
+!#        must be build before via bilf_createMatrixStructure. This 
+!#        subroutine is a replacement of the previous version
+!#        bilf_buildMatrixScalar.
 !#
 !# It contains the following set of auxiliary routines:
 !#
@@ -403,11 +413,13 @@ module bilinearformevaluation
   public :: bilf_createMatrixStructure
   public :: bilf_buildMatrixScalar
   public :: bilf_buildMatrixScalar2
+  public :: bilf_buildMatrixScalarBdr1D
   public :: bilf_buildMatrixScalarBdr2D
   public :: bilf_getLocalMatrixIndices
   public :: bilf_initAssembly
   public :: bilf_doneAssembly
   public :: bilf_assembleSubmeshMatrix9
+  public :: bilf_assembleSubmeshMat9Bdr1D
   public :: bilf_assembleSubmeshMat9Bdr2D
   
 contains
@@ -5744,6 +5756,423 @@ contains
   end subroutine
 
   !****************************************************************************
+
+!<subroutine>  
+  
+  subroutine bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
+      iboundaryComp, IelementList, IelementOrientation, cconstrType,&
+      fcoeff_buildMatrixScBdr1D_sim, rcollection)
+  
+!<description>
+
+  ! Assembles the matrix entries for a submesh by integrating over the
+  ! boundary component in 1D.
+
+!</description>
+
+!<input>
+
+  ! A boundary component where to assemble the contribution
+  integer, intent(in) :: iboundaryComp
+
+  ! List of elements where to assemble the bilinear form.
+  integer, dimension(:), intent(in), target :: IelementList
+  
+  ! List of element orientations where to assemble the bilinear form.
+  integer, dimension(:), intent(in) :: IelementOrientation
+
+  ! One of the BILF_MATC_xxxx constants that allow to specify the
+  ! matrix construction method.
+  integer, intent(in) :: cconstrType
+
+  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
+  ! Must be present if the matrix has nonconstant coefficients!
+  include 'intf_coefficientMatrixScBdr1D.inc'
+  optional :: fcoeff_buildMatrixScBdr1D_sim
+  
+!</input>
+
+!<inputoutput>
+  
+  ! A matrix assembly structure prepared with bilf_initAssembly.
+  type(t_bilfMatrixAssembly), intent(inout), target :: rmatrixAssembly
+  
+  ! A matrix where to assemble the contributions to.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+  
+  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information. 
+  type(t_collection), intent(inout), target, optional :: rcollection
+
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables, used by all processors
+    real(DP), dimension(:), pointer :: p_DA
+    integer :: indofTest,indofTrial,ncubp
+    
+    ! local data of every processor when using OpenMP
+    integer :: iel,ialbet,ia,ib,idofe,jdofe
+    real(DP) :: daux,db
+    integer(I32) :: cevaluationTag
+    type(t_domainIntSubset) :: rintSubset
+    integer, dimension(:,:,:), pointer :: p_Kentry
+    real(DP), dimension(:,:,:), pointer :: p_Dentry
+    real(DP), dimension(:), pointer :: p_Domega
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial
+    real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
+    real(DP), dimension(:,:), pointer :: p_DcubPtsRef
+    real(DP), dimension(:), pointer :: p_DcoefficientsBilf
+    integer, dimension(:,:), pointer :: p_IdofsTest
+    integer, dimension(:,:), pointer :: p_IdofsTrial
+    type(t_evalElementSet), pointer :: p_revalElementSet
+    integer, dimension(:,:),pointer :: p_Idescriptors
+  
+    ! Arrays for cubature points
+    real(DP), dimension(:,:,:), allocatable :: DpointsRef
+
+    ! Get some pointers for faster access
+    call lsyssc_getbase_double (rmatrix, p_DA)
+    indofTest = rmatrixAssembly%indofTest
+    indofTrial = rmatrixAssembly%indofTrial
+    ncubp = rmatrixAssembly%ncubp
+
+    ! We only need to evaluate the test and trial functions in a
+    ! single boundary node. Therefore, the use of a one-point cubature
+    ! rule is mandatory.
+    if (ncubp .ne. 1) then
+      call output_line('Assembly structure must be initialised for 1-point cubature rule!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_assembleSubmeshMat9Bdr1D')
+      call sys_halt()
+    end if
+    
+    ! Get some more pointers for faster access
+    p_Kentry => rmatrixAssembly%p_Kentry
+    p_Dentry => rmatrixAssembly%p_Dentry
+    p_Domega => rmatrixAssembly%p_Domega
+    p_DbasTest => rmatrixAssembly%p_DbasTest
+    p_DbasTrial => rmatrixAssembly%p_DbasTrial
+    p_Dcoefficients => rmatrixAssembly%p_Dcoefficients
+    p_DcubPtsRef => rmatrixAssembly%p_DcubPtsRef
+    p_Idescriptors => rmatrixAssembly%rform%Idescriptors
+    p_IdofsTest => rmatrixAssembly%p_IdofsTest
+    p_IdofsTrial => rmatrixAssembly%p_IdofsTrial
+    p_revalElementSet => rmatrixAssembly%revalElementSet
+    p_DcoefficientsBilf => rmatrixAssembly%rform%Dcoefficients
+
+    ! Allocate memory for the coordinates of the reference points
+    allocate(DpointsRef(NDIM1D+2,ncubp,rmatrixAssembly%nelementsPerBlock))
+
+    ! Either the left or the right endpoint of the 1D-element (=line)
+    ! is located at the current boundary component. Therefore, the
+    ! coordinate of the cubature point on the reference is either -1
+    ! or 1 depending on the orientation of the element
+    DpointsRef = 0.0
+
+    do iel = 1, rmatrixAssembly%nelementsPerBlock
+      if (IelementOrientation(iel) .eq. 1) then
+        DpointsRef(1,:,iel) = -1.0
+      else
+        DpointsRef(1,:,iel) = 1.0
+      end if
+    end do
+
+    ! --------------------- DOF SEARCH PHASE ------------------------
+
+    ! Calculate the global DOF`s into IdofsTest.
+    call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTest, &
+        IelementList, p_IdofsTest)
+    
+    ! If the DOF`s for the trial functions are different, calculate them, too.
+    if (.not. rmatrixAssembly%bIdenticalTrialAndTest) then
+      call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTrial, &
+          IelementList, p_IdofsTrial)
+    end if
+
+    ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
+    
+    ! For the assembly of the global matrix, we use a "local"
+    ! approach. At first we build a "local" system matrix according
+    ! to the current element. This contains all additive
+    ! contributions of element iel, which are later added at the
+    ! right positions to the elements in the global system matrix.
+    !
+    ! We have indofTrial trial DOF`s per element and
+    ! indofTest test DOF`s per element. Therefore there are
+    ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
+    ! "active" (i.e. have common support) on our current element, each 
+    ! giving an additive contribution to the system matrix.
+    !
+    ! We build a quadratic indofTrial*indofTest local matrix:
+    ! Kentry(1..indofTrial,1..indofTest) receives the position 
+    ! in the global system matrix, where the corresponding value 
+    ! has to be added to.
+    ! (The corresponding contributions can be saved separately, 
+    ! but we directly add them to the global matrix in this 
+    ! approach.)
+    !
+    ! We build local matrices for all our elements 
+    ! in the set simultaneously. Get the positions of the local matrices
+    ! in the global matrix.
+    call bilf_getLocalMatrixIndices (rmatrix, p_IdofsTrial, p_IdofsTest,&
+        p_Kentry, ubound(p_IdofsTrial,1), ubound(p_IdofsTest,1),&
+        rmatrixAssembly%nelementsPerBlock)
+
+    ! -------------------- ELEMENT EVALUATION PHASE ----------------------
+      
+    ! Ok, we found the positions of the local matrix entries
+    ! that we have to change.
+    ! To calculate the matrix contributions, we have to evaluate
+    ! the elements to give us the values of the basis functions
+    ! in all the DOF`s in all the elements in our set.
+    
+    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+    ! the elements later. All of them can be combined with OR, what will give
+    ! a combined evaluation tag. 
+    cevaluationTag = rmatrixAssembly%cevaluationTag
+    
+    ! The cubature points are already initialised by 1D->2D mapping.
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+    
+    ! Calculate all information that is necessary to evaluate the finite element
+    ! on all cells of our subset. This includes the coordinates of the points
+    ! on the cells.
+    call elprep_prepareSetForEvaluation (p_revalElementSet,&
+        cevaluationTag, rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
+        IelementList, rmatrixAssembly%ctrafoType, DpointsRef=DpointsRef)
+    
+    ! If the matrix has nonconstant coefficients, calculate the coefficients now.
+    if (.not. rmatrixAssembly%rform%ballCoeffConstant) then
+      if (present(fcoeff_buildMatrixScBdr1D_sim)) then
+        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+        rintSubset%ielementDistribution = 0
+        rintSubset%ielementStartIdx = 1
+        rintSubset%p_Ielements => IelementList
+        rintSubset%p_IdofsTrial => p_IdofsTrial
+        rintSubset%celement = rmatrixAssembly%celementTrial
+        call fcoeff_buildMatrixScBdr1D_sim (rmatrix%p_rspatialDiscrTest,&
+            rmatrix%p_rspatialDiscrTrial, rmatrixAssembly%rform,&
+            rmatrixAssembly%nelementsPerBlock, ncubp,&
+            p_revalElementSet%p_DpointsReal, iboundaryComp, p_IdofsTrial,&
+            p_IdofsTest, rintSubset, p_Dcoefficients, rcollection)
+        call domint_doneIntegration (rintSubset)
+      else
+        p_Dcoefficients = 1.0_DP
+      end if
+    end if
+      
+    ! Calculate the values of the basis functions.
+    call elem_generic_sim2 (rmatrixAssembly%celementTest, &
+        p_revalElementSet, rmatrixAssembly%BderTest, rmatrixAssembly%p_DbasTest)
+    
+    ! Omit the calculation of the trial function values if they
+    ! are identical to the test function values.
+    if (.not. rmatrixAssembly%bidenticalTrialAndTest) then
+      call elem_generic_sim2 (rmatrixAssembly%celementTrial, &
+          p_revalElementSet, rmatrixAssembly%BderTrial, &
+          rmatrixAssembly%p_DbasTrial)
+    end if
+
+    ! --------------------- DOF COMBINATION PHASE ------------------------
+    
+    ! Values of all basis functions calculated. Now we can start 
+    ! to integrate!
+    
+    ! Clear the local matrices
+    p_Dentry = 0.0_DP
+    
+    ! We have two different versions for the integration - one
+    ! with constant coefficients and one with nonconstant coefficients.
+    !
+    ! Check the bilinear form which one to use:
+    
+    if (rmatrixAssembly%rform%ballCoeffConstant) then
+      
+      ! Constant coefficients. The coefficients are to be found in
+      ! the Dcoefficients variable of the form.
+      !
+      ! Loop over the elements in the current set.
+
+      do iel = 1, rmatrixAssembly%nelementsPerBlock
+
+        ! Loop over the additive factors in the bilinear form.
+        do ialbet = 1,rmatrixAssembly%rform%itermcount
+          
+          ! Get from Idescriptors the type of the derivatives for the 
+          ! test and trial functions. The summand we calculate
+          ! here will be added to the matrix entry:
+          !
+          ! a_ij  =  int_... ( psi_j )_ib  *  ( phi_i )_ia
+          !
+          ! -> Ix=0: function value, 
+          !      =1: first derivative, ...
+          !    as defined in the module 'derivative'.
+          
+          ia = p_Idescriptors(1,ialbet)
+          ib = p_Idescriptors(2,ialbet)
+          
+          ! Multiply the weighting factor in the cubature formula with
+          ! the coefficient of the form.
+          ! This gives the actual value to multiply the
+          ! function value with before summing up to the integral.
+          daux = 0.5_DP * p_Domega(1) * p_DcoefficientsBilf(ialbet)
+            
+          ! Now loop through all possible combinations of DOF`s
+          ! in the current cubature point. The outer loop
+          ! loops through the "O"`s in the above picture,
+          ! the test functions:
+          
+          do idofe = 1,indofTest
+            
+            ! Get the value of the (test) basis function 
+            ! phi_i (our "O") in the cubature point:
+            db = p_DbasTest(idofe,ib,1,iel)
+            
+            ! Perform an inner loop through the other DOF`s
+            ! (the "X"). 
+            
+            do jdofe = 1,indofTrial
+              
+              ! Get the value of the basis function 
+              ! psi_j (our "X") in the cubature point. 
+              ! Them multiply:
+              !    db * dbas(..) * daux
+              ! ~= phi_i * psi_j * coefficient * cub.weight
+              ! Summing this up gives the integral, so the contribution
+              ! to the global matrix. 
+              !
+              ! Simply summing up db * dbas(..) * daux would give
+              ! the coefficient of the local matrix. We save this
+              ! contribution in the local matrix.
+              
+              !JCOLB = Kentry(jdofe,idofe,iel)
+              !p_DA(JCOLB) = p_DA(JCOLB) + db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
+              p_Dentry(jdofe,idofe,iel) = p_Dentry(jdofe,idofe,iel) + &
+                  db*p_DbasTrial(jdofe,ia,1,iel)*daux
+              
+            end do ! jdofe
+            
+          end do ! idofe
+          
+        end do ! ialbet
+
+      end do ! iel
+
+    else
+
+      ! Nonconstant coefficients. The coefficients are to be found in
+      ! the Dcoefficients variable as computed above.
+      !
+      ! Loop over the elements.
+      
+      do iel = 1, rmatrixAssembly%nelementsPerBlock
+
+        ! Loop over the additive factors in the bilinear form.
+        do ialbet = 1,rmatrixAssembly%rform%itermcount
+          
+          ! Get from Idescriptors the type of the derivatives for the 
+          ! test and trial functions. The summand we calculate
+          ! here will be added to the matrix entry:
+          !
+          ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
+          !
+          ! -> Ix=0: function value, 
+          !      =1: first derivative, ...
+          !    as defined in the module 'derivative'.
+          
+          ia = rmatrixAssembly%rform%Idescriptors(1,ialbet)
+          ib = rmatrixAssembly%rform%Idescriptors(2,ialbet)
+          
+          ! Multiply the weighting factor in the cubature formula with
+          ! the coefficient of the form.
+          ! This gives the actual value to multiply the function value
+          ! with before summing up to the integral.  Get the
+          ! precalculated coefficient from the coefficient array.
+          daux = 0.5_DP * p_Domega(1) * p_Dcoefficients(ialbet,1,iel)
+          
+          ! Now loop through all possible combinations of DOF`s
+          ! in the current cubature point. The outer loop
+          ! loops through the "O" in the above picture,
+          ! the test functions:
+          
+          do idofe = 1,indofTest
+            
+            ! Get the value of the (test) basis function 
+            ! phi_i (our "O") in the cubature point:
+            db = p_DbasTest(idofe,ib,1,iel)
+            
+            ! Perform an inner loop through the other DOF`s
+            ! (the "X"). 
+            
+            do jdofe = 1,indofTrial
+              
+              ! Get the value of the basis function 
+              ! psi_j (our "X") in the cubature point. 
+              ! Them multiply:
+              !    db * dbas(..) * daux
+              ! ~= phi_i * psi_j * coefficient * cub.weight
+              ! Summing this up gives the integral, so the contribution
+              ! to the global matrix. 
+              !
+              ! Simply summing up db * dbas(..) * daux would give
+              ! the coefficient of the local matrix. We save this
+              ! contribution in the local matrix of element iel.
+              
+              p_Dentry(jdofe,idofe,iel) = &
+                  p_Dentry(jdofe,idofe,iel)+db*p_DbasTrial(jdofe,ia,1,iel)*daux
+              
+            end do
+            
+          end do ! jdofe
+          
+        end do ! ialbet
+        
+      end do ! iel
+
+    end if ! rform%ballCoeffConstant
+    
+    ! Incorporate the local matrices into the global one.
+    ! Kentry gives the position of the additive contributions in Dentry.
+    
+    if (cconstrType .eq. BILF_MATC_LUMPED) then
+      
+      do iel = 1, rmatrixAssembly%nelementsPerBlock
+        
+        do idofe = 1,indofTest
+          daux = 0.0_DP
+          do jdofe = 1,indofTrial
+            daux = daux + p_Dentry(jdofe,idofe,iel)
+          end do
+          p_DA(p_Kentry(idofe,idofe,iel)) = &
+              p_DA(p_Kentry(idofe,idofe,iel)) + daux
+        end do
+        
+      end do ! iel
+      
+    else
+      
+      do iel = 1, rmatrixAssembly%nelementsPerBlock
+        
+        do idofe = 1,indofTest
+          do jdofe = 1,indofTrial
+            p_DA(p_Kentry(jdofe,idofe,iel)) = &
+                p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
+          end do
+        end do
+        
+      end do ! iel
+
+    end if
+    
+    ! Deallocate memory
+    deallocate(DpointsRef)
+    
+  end subroutine
+
+  !****************************************************************************
   
 !<subroutine>  
   
@@ -5753,7 +6182,8 @@ contains
   
 !<description>
 
-  ! Assembles the matrix entries for  a submesh by integrating over the boundary region.
+  ! Assembles the matrix entries for a submesh by integrating over the
+  ! boundary region in 2D.
 
 !</description>
 
@@ -5765,7 +6195,7 @@ contains
   ! List of elements where to assemble the bilinear form.
   integer, dimension(:), intent(in), target :: IelementList
   
-  ! List of element orientations where to assemble the linear form.
+  ! List of element orientations where to assemble the bilinear form.
   integer, dimension(:), intent(in) :: IelementOrientation
 
   ! List of start- and end-parameter values of the edges on the boundary
@@ -5958,7 +6388,7 @@ contains
       call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTest, &
           IelementList(IELset:IELmax), p_IdofsTest)
                                    
-      ! If the DOF`s for the test functions are different, calculate them, too.
+      ! If the DOF`s for the trial functions are different, calculate them, too.
       if (.not. rlocalMatrixAssembly%bIdenticalTrialAndTest) then
         call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTrial, &
             IelementList(IELset:IELmax), p_IdofsTrial)
@@ -6018,7 +6448,7 @@ contains
       
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
-        if (present(fcoeff_buildMatrixScBdr2d_sim)) then
+        if (present(fcoeff_buildMatrixScBdr2D_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
           rintSubset%ielementDistribution = 0
           rintSubset%ielementStartIdx = IELset
@@ -6160,7 +6590,7 @@ contains
         ! Nonconstant coefficients. The coefficients are to be found in
         ! the Dcoefficients variable as computed above.
         !
-        ! Loop over the elements in the current set.
+        ! Loop over the elements.
 
         do iel = 1,IELmax-IELset+1
           
@@ -6261,7 +6691,7 @@ contains
       if (cconstrType .eq. BILF_MATC_LUMPED) then
 
         !%OMP CRITICAL
-        do iel = 1,IELmax-IELset+1          
+        do iel = 1,IELmax-IELset+1
           
           do idofe = 1,indofTest
             daux = 0.0_DP
@@ -6278,7 +6708,7 @@ contains
       else
         
         !%OMP CRITICAL
-        do iel = 1,IELmax-IELset+1          
+        do iel = 1,IELmax-IELset+1
           
           do idofe = 1,indofTest
             do jdofe = 1,indofTrial
@@ -6482,12 +6912,12 @@ contains
 
 !<subroutine>
 
-  subroutine bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear, rmatrix,&
-                                          fcoeff_buildMatrixScBdr2D_sim,&
-                                          rboundaryRegion, rcollection, cconstrType)
+  subroutine bilf_buildMatrixScalarBdr1D (rform, bclear, rmatrix,&
+                                          fcoeff_buildMatrixScBdr1D_sim,&
+                                          iboundaryComp, rcollection, cconstrType)
 
 !<description>
-    ! This routine calculates the entries of a finite element matrix.
+  ! This routine calculates the entries of a finite element matrix in 1D.
   ! The matrix structure must be prepared with bilf_createMatrixStructure
   ! in advance.
   ! In case the array for the matrix entries does not exist, the routine
@@ -6499,15 +6929,398 @@ contains
   !
   ! The matrix must be unsorted when this routine is called, 
   ! otherwise an error is thrown.
+!</description>
+
+!<input>
+  ! The bilinear form specifying the underlying PDE of the discretisation.
+  type(t_bilinearForm), intent(in) :: rform
+  
+  ! Whether to clear the matrix before calculating the entries.
+  ! If .FALSE., the new matrix entries are added to the existing entries.
+  logical, intent(in) :: bclear
+  
+  ! OPTIONAL: An integer specifying the boundary component where
+  ! to calculate. If not specified, the computation is done over
+  ! the whole boundary
+  integer, intent(in), optional :: iboundaryComp
+  
+  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
+  ! Must be present if the matrix has nonconstant coefficients!
+  include 'intf_coefficientMatrixScBdr1D.inc'
+  optional :: fcoeff_buildMatrixScBdr1D_sim
+
+  ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to specify
+  ! the matrix construction method. If not specified,
+  ! BILF_MATC_ELEMENTBASED is used.
+  integer, intent(in), optional :: cconstrType
+!</input>
+
+!<inputoutput>
+  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+
+  ! OPTIONAL: A collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information. 
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</inputoutput>
+
+!</subroutine>
+  
+  ! local variables
+  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistrTest
+  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistrTrial
+  type(t_bilfMatrixAssembly) :: rmatrixAssembly
+  type(t_triangulation), pointer :: p_rtriangulation
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:), pointer :: p_IboundaryCpIdx
+  integer, dimension(:), pointer :: p_IelementDistrTest, p_IelementDistrTrial
+  integer, dimension(:), pointer :: p_InodalProperty
+  integer, dimension(:), pointer :: p_IelementsAtBoundary
+  integer, dimension(:), pointer :: IelementList, IelementOrientation
+  integer :: ibdc,idx,iel,NELbdc,ccType
+
+  ! The matrix must be unsorted, otherwise we can not set up the matrix.
+  ! Note that we cannot switch off the sorting as easy as in the case
+  ! of a vector, since there is a structure behind the matrix! So the caller
+  ! has to make sure, the matrix is unsorted when this routine is called.
+  if (rmatrix%isortStrategy .gt. 0) then
+    call output_line ('Matrix-structure must be unsorted!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+    call sys_halt()
+  end if
+
+  ! The matrix must provide discretisation structures
+  if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
+      (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
+    call output_line ('No discretisation associated!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+    call sys_halt()
+  end if
+
+  ! The discretisation must provide a triangulation structure
+  if ((.not. associated(rmatrix%p_rspatialDiscrTest%p_rtriangulation)) .or. &
+      (.not. associated(rmatrix%p_rspatialDiscrTrial%p_rtriangulation))) then
+    call output_line('No triangulation associated!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+    call sys_halt()
+  end if
+
+  ! Set pointers for quicker access
+  p_rtriangulation => rmatrix%p_rspatialDiscrTest%p_rtriangulation
+  if (.not.associated(p_rtriangulation, rmatrix%p_rspatialDiscrTrial%p_rtriangulation)) then
+    call output_line('Invalid triangulation associated!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+    call sys_halt()
+  end if
+
+  ! Set pointers
+  call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+      p_IverticesAtElement)
+  call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary,&
+      p_IelementsAtBoundary)
+  call storage_getbase_int (p_rtriangulation%h_InodalProperty,&
+      p_InodalProperty)
+  call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
+      p_IboundaryCpIdx)
+  
+  ccType = BILF_MATC_ELEMENTBASED
+  if (present(cconstrType)) ccType = cconstrType
+
+  ! Do we have a uniform triangulation? Would simplify a lot...
+  select case (rmatrix%p_rspatialDiscrTest%ccomplexity)
+  case (SPDISC_UNIFORM)
+    ! Uniform discretisations
+    select case (rmatrix%cdataType)
+    case (ST_DOUBLE) 
+      ! Which matrix structure do we have?
+      select case (rmatrix%cmatrixFormat) 
+      case (LSYSSC_MATRIX9)
+        
+        ! Probably allocate/clear the matrix
+        if (rmatrix%h_DA .eq. ST_NOHANDLE) then
+          call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
+        else
+          if (bclear) call lsyssc_clearMatrix (rmatrix)
+        end if
+
+        if (present(iboundaryComp)) then
+
+          ! Number of elements on that boundary component?
+          NELbdc = p_IboundaryCpIdx(iboundaryComp+1)-p_IboundaryCpIdx(iboundaryComp)
+
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+
+          ! Initialise a matrix assembly structure for all elements
+          call bilf_initAssembly(rmatrixAssembly, rform,&
+              rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement,&
+              rmatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement,&
+              CUB_G1_1D, NELbdc)
+          call bilf_allocAssemblyData(rmatrixAssembly)
+          
+          ! Determine the element numbers and their orientation at the boundary
+          iel = 0
+          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
+            
+            iel = iel+1
+            
+            ! Element number
+            IelementList(iel) = p_IelementsAtBoundary(idx)
+            
+            ! Element orientation, i.e. the local number of the boundary vertex
+            if (p_InodalProperty(&
+                p_IverticesAtElement(1,IelementList(iel))).eq. iboundaryComp) then
+              IelementOrientation(iel) = 1
+            elseif (p_InodalProperty(&
+                p_IverticesAtElement(2,IelementList(iel))).eq. iboundaryComp) then
+              IelementOrientation(iel) = 2
+            else
+              call output_line('Unable to determine element orientation!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+            end if
+          end do
+          
+          ! Assemble the data for all elements
+          call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
+              iboundaryComp, IelementList, IelementOrientation,&
+              ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
+          
+          ! Release the assembly structure.
+          call bilf_doneAssembly(rmatrixAssembly)
+
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+          
+        else
+          
+          ! Loop over all boundary components and call 
+          ! the calculation routines for that
+          do ibdc = 1, p_rtriangulation%nbct
+            
+            ! Number of elements on that boundary component?
+            NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
+            
+            ! Allocate memory for element list and element orientation
+            allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+
+            ! Initialise a matrix assembly structure for all elements
+            call bilf_initAssembly(rmatrixAssembly, rform,&
+                rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement,&
+                rmatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement,&
+                CUB_G1_1D, NELbdc)
+            call bilf_allocAssemblyData(rmatrixAssembly)
+
+            ! Determine the element numbers and their orientation at the boundary
+            iel = 0
+            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+              
+              iel = iel+1
+
+              ! Element number
+              IelementList(iel) = p_IelementsAtBoundary(idx)
+
+              ! Element orientation, i.e. the local number of the boundary vertex
+              if (p_InodalProperty(&
+                  p_IverticesAtElement(1,IelementList(iel))).eq. ibdc) then
+                IelementOrientation(iel) = 1
+              elseif (p_InodalProperty(&
+                  p_IverticesAtElement(2,IelementList(iel))).eq. ibdc) then
+                IelementOrientation(iel) = 2
+              else
+                call output_line('Unable to determine element orientation!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+              end if
+            end do
+
+            ! Assemble the data for all elements
+            call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
+                ibdc, IelementList, IelementOrientation,&
+                ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
+
+            ! Release the assembly structure.
+            call bilf_doneAssembly(rmatrixAssembly)
+            
+            ! Release memory
+            deallocate(IelementList, IelementOrientation)
+            
+          end do
+          
+        end if
+
+      case default
+        call output_line ('Not supported matrix structure!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+        call sys_halt()
+      end select
+      
+    case default
+      call output_line ('Single precision matrices currently not supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+      call sys_halt()
+    end select
+
+  case(SPDISC_CONFORMAL)
+    ! Conformal discretisations
+    
+    ! Set pointers
+    p_RelementDistrTest => rmatrix%p_rspatialDiscrTest%RelementDistr
+    p_RelementDistrTrial => rmatrix%p_rspatialDiscrTrial%RelementDistr
+    call storage_getbase_int (rmatrix%p_rspatialDiscrTest%h_IelementDistr,&
+        p_IelementDistrTest)
+    call storage_getbase_int (rmatrix%p_rspatialDiscrTrial%h_IelementDistr,&
+        p_IelementDistrTrial)
+
+    select case (rmatrix%cdataType)
+    case (ST_DOUBLE) 
+      ! Which matrix structure do we have?
+      select case (rmatrix%cmatrixFormat) 
+      case (LSYSSC_MATRIX9)
+        
+        ! Probably allocate/clear the matrix
+        if (rmatrix%h_DA .eq. ST_NOHANDLE) then
+          call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
+        else
+          if (bclear) call lsyssc_clearMatrix (rmatrix)
+        end if
+        
+        if (present(iboundaryComp)) then
+          
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(1), IelementOrientation(1))
+          
+          ! Process each element separately; this is not the most
+          ! efficient way but in general there is exactly one element
+          ! per boundary so that a more efficient/complicated
+          ! implementatio n will not pay-off in practice
+          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
+            
+            ! Determine the element number and its orientation at the boundary
+            IelementList(1) = p_IelementsAtBoundary(idx)
+            if (p_InodalProperty(&
+                p_IverticesAtElement(1,IelementList(1))) .eq. iboundaryComp) then
+              IelementOrientation(1) = 1
+            elseif (p_InodalProperty(&
+                p_IverticesAtElement(2,IelementList(1))) .eq. iboundaryComp) then
+              IelementOrientation(1) = 2
+            else
+              call output_line('Unable to determine element orientation!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+            end if
+            
+            ! Initialise a matrix assembly structure for one element
+            call bilf_initAssembly(rmatrixAssembly, rform,&
+                p_RelementDistrTest(p_IelementDistrTest(IelementList(1)))%celement,&
+                p_RelementDistrTrial(p_IelementDistrTrial(IelementList(1)))%celement,&
+                CUB_G1_1D, 1)
+            
+            ! Assemble the data for one element
+            call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
+                iboundaryComp, IelementList, IelementOrientation,&
+                ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
+            call bilf_allocAssemblyData(rmatrixAssembly)
+            
+            ! Release the assembly structure.
+            call bilf_doneAssembly(rmatrixAssembly)
+            
+          end do
+          
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+          
+        else
+          
+          ! Allocate memory for element list and element orientation
+          allocate(IelementList(1), IelementOrientation(1))
+          
+          ! Loop over all boundary components and call 
+          ! the calculation routines for that
+          do ibdc = 1, p_rtriangulation%nbct
+
+            ! Process each element separately; this is not the most
+            ! efficient way but in general there is exactly one element
+            ! per boundary so that a more efficient/complicated
+            ! implementatio n will not pay-off in practice
+            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+              
+              ! Determine the element number and its orientation at the boundary
+              IelementList(1) = p_IelementsAtBoundary(idx)
+              if (p_InodalProperty(&
+                  p_IverticesAtElement(1,IelementList(1))) .eq. ibdc) then
+                IelementOrientation(1) = 1
+              elseif (p_InodalProperty(&
+                  p_IverticesAtElement(2,IelementList(1))) .eq. ibdc) then
+                IelementOrientation(1) = 2
+              else
+                call output_line('Unable to determine element orientation!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+              end if
+              
+              ! Initialise a matrix assembly structure for one element
+              call bilf_initAssembly(rmatrixAssembly, rform,&
+                  p_RelementDistrTest(p_IelementDistrTest(IelementList(1)))%celement,&
+                  p_RelementDistrTrial(p_IelementDistrTrial(IelementList(1)))%celement,&
+                  CUB_G1_1D, 1)
+              
+              ! Assemble the data for one element
+              call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
+                  ibdc, IelementList, IelementOrientation,&
+                  ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
+              call bilf_allocAssemblyData(rmatrixAssembly)
+              
+              ! Release the assembly structure.
+              call bilf_doneAssembly(rmatrixAssembly)
+              
+            end do
+
+          end do
+        
+          ! Release memory
+          deallocate(IelementList, IelementOrientation)
+        
+        end if
+
+      case default
+        call output_line ('Not supported matrix structure!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+        call sys_halt()
+      end select
+      
+    case default
+      call output_line ('Single precision matrices currently not supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+      call sys_halt()
+    end select
+    
+  case default
+    call output_line ('General discretisation not implemented!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+    call sys_halt()
+  end select
+  
+  end subroutine
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear, rmatrix,&
+                                          fcoeff_buildMatrixScBdr2D_sim,&
+                                          rboundaryRegion, rcollection, cconstrType)
+
+!<description>
+  ! This routine calculates the entries of a finite element matrix in 2D.
+  ! The matrix structure must be prepared with bilf_createMatrixStructure
+  ! in advance.
+  ! In case the array for the matrix entries does not exist, the routine
+  ! allocates memory in size of the matrix of the heap for the matrix entries.
   !
-  ! IMPLEMENTATIONAL REMARK:
-  ! This is a new implementation of the matrix assembly using element subsets.
-  ! In contrast to bilf_buildMatrixScalar, this routine loops itself about
-  ! the element subsets and calls bilf_initAssembly/
-  ! bilf_assembleSubmatrix9/bilf_doneAssembly to assemble submatrices.
-  ! The bilf_assembleSubmatrix9 interface allows to assemble parts of a
-  ! matrix based on an arbitrary element list which is not bound to an
-  ! element distribution.
+  ! For setting up the entries, the discretisation structure attached to
+  ! the matrix is used (rmatrixScalar%p_rdiscretisation). This is
+  ! normally attached to the matrix by bilf_createMatrixStructure.
+  !
+  ! The matrix must be unsorted when this routine is called, 
+  ! otherwise an error is thrown.
 !</description>
 
 !<input>
