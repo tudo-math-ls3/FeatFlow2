@@ -23,7 +23,7 @@ application = transport
 indatfile = data/transport/1d/bucklev.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_strong_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -106,7 +106,7 @@ ssolutionname = @initsol
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = @exactsol
+sexactsolutionname =
 
 # type of target functional
 # 0 = zero target functional
@@ -117,13 +117,13 @@ sexactsolutionname = @exactsol
 itargetfunctype = 0
 
 # section name of target functional
-stargetfuncname = @targetFuncInt
+stargetfuncname =
 
 
 #-------------------------------------------------------------------------------
 
 # file which contains the triangulation
-trifile = grids/1d/unit2.tri
+trifile = grids/1d/rect2_2.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -182,7 +182,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 0
@@ -246,7 +246,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 0

@@ -23,7 +23,7 @@ application = transport
 indatfile = data/transport/1d/sinusoidal.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_strong_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -70,7 +70,7 @@ svelocityname = @velocity_x
 idiffusiontype = 0
 
 # section name of diffusion tensor
-sdiffusionname = @diffusion
+sdiffusionname =
 
 # type of flow reaction
 # 0 = zero reactive term
@@ -78,7 +78,7 @@ sdiffusionname = @diffusion
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = @reaction
+sreactionname =
 
 # type of right-hand side vector
 # 0 = zero right-hand side
@@ -86,7 +86,7 @@ sreactionname = @reaction
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @rhs
+srhsname =
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -117,7 +117,7 @@ sexactsolutionname = @exactsol
 itargetfunctype = 0
 
 # section name of target functional
-stargetfuncname = @targetFuncInt
+stargetfuncname =
 
 
 #-------------------------------------------------------------------------------
@@ -185,7 +185,7 @@ errorestimator = ErrorEstimator
 istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################

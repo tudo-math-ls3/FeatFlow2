@@ -23,7 +23,7 @@ application = transport
 indatfile = data/transport/1d/step.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_strong_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -117,7 +117,7 @@ sexactsolutionname = @exactsol3
 itargetfunctype = 0
 
 # section name of target functional
-stargetfuncname = @targetFuncInt
+stargetfuncname =
 
 
 #-------------------------------------------------------------------------------

@@ -157,16 +157,23 @@
 
 module transport_callback2d
 
+  use basicgeometry
+  use boundary
+  use boundarycondaux
   use collection
   use derivatives
+  use domainintegration
+  use feevaluation
+  use flagship_callback
+  use fparser
   use fsystem
   use genoutput
   use hadaptaux
-  use linearsystemscalar
   use linearsystemblock
+  use linearsystemscalar
+  use scalarpde
+  use spatialdiscretisation
   use storage
-
-  use flagship_callback
   use transport_basic
 
   implicit none
@@ -384,17 +391,6 @@ contains
       DpointsRef, Dpoints, ibct, DpointPar, Ielements, Dvalues,&
       rcollection)
 
-    use basicgeometry
-    use boundary
-    use collection
-    use domainintegration
-    use feevaluation
-    use fparser
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-
 !<description>
 
     ! This subroutine is called during the calculation of errors with
@@ -469,7 +465,7 @@ contains
     real(DP), dimension(:,:,:), pointer :: Dcoefficients
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnx,dny,dtime
-    integer :: iel,ipoint,icomp1,icomp2,icomp,ndim
+    integer :: iel,ipoint,icomp1,icomp2,icomp
 
 
     ! This subroutine assumes that the first quick access string
@@ -493,9 +489,6 @@ contains
     Dvalue = 0.0_DP
     Dvalue(NDIM3D+1) = dtime
 
-    ! Set number of spatial dimensions
-    ndim = size(Dpoints, 1)
-
     ! Allocate temporal memory
     allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 3))
 
@@ -506,7 +499,7 @@ contains
       do ipoint = 1, ubound(Dpoints,2)
 
         ! Set values for function parser
-        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+        Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
         ! Evaluate function parser
         call fparser_evalFunction(p_rfparser, icomp,  Dvalue,&
@@ -551,17 +544,6 @@ contains
   subroutine transp_errorBdrInt2d_sim(cderivative, rdiscretisation,&
       DpointsRef, Dpoints, ibct, DpointPar, Ielements, Dvalues,&
       rcollection)
-
-    use basicgeometry
-    use boundary
-    use collection
-    use domainintegration
-    use feevaluation
-    use fparser
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
 
 !<description>
 
@@ -640,7 +622,7 @@ contains
     real(DP), dimension(:,:,:), pointer :: Dcoefficients
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dt,dminPar,dmaxPar,dnx,dny,dtime
-    integer :: iel,ipoint,icomp1,icomp2,icomp,ndim
+    integer :: iel,ipoint,icomp1,icomp2,icomp
 
 
     ! This subroutine assumes that the first quick access string
@@ -684,9 +666,6 @@ contains
     Dvalue = 0.0_DP
     Dvalue(NDIM3D+1) = dtime
 
-    ! Set number of spatial dimensions
-    ndim = size(Dpoints, 1)
-
     ! Evaluate the reference function and the exact velocities in the
     ! cubature points on the boundary and store the result in
     ! Dcoefficients(:,:,3:5).
@@ -694,7 +673,7 @@ contains
       do ipoint = 1, ubound(Dpoints,2)
 
         ! Set values for function parser
-        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+        Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
         ! Evaluate function parser
         call fparser_evalFunction(p_rfparser, icomp,  Dvalue,&
@@ -774,15 +753,6 @@ contains
 
   subroutine transp_weightFuncBdrInt2d_sim(rdiscretisation, DpointsRef,&
       Dpoints, ibct, DpointPar, Ielements, Dvalues, rcollection)
-
-    use basicgeometry
-    use collection
-    use domainintegration
-    use fparser
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
 
 !<description>
     ! This subroutine is called during the calculation of errors. It
@@ -868,14 +838,11 @@ contains
     ! value holds the simulation time
     Dvalue(NDIM3D+1) = rcollection%DquickAccess(1)
 
-    ! Set number of spatial dimensions
-    ndim = size(Dpoints, 1)
-
     do iel = 1, size(Ielements)
       do ipoint = 1, ubound(Dpoints,2)
 
         ! Set values for function parser
-        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+        Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
         ! Evaluate function parser
         call fparser_evalFunction(p_rfparser, icomp, Dvalue,&
@@ -1319,17 +1286,6 @@ contains
       nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
-    use basicgeometry
-    use boundary
-    use boundarycondaux
-    use collection
-    use domainintegration
-    use feevaluation
-    use fparser
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-
 !<description>
     ! This subroutine is called during the vector assembly. It has to
     ! compute the coefficients in front of the terms of the linear
@@ -1411,7 +1367,7 @@ contains
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnx,dny,dnv,dtime,dscale,dval
-    integer :: ibdrtype,isegment,iel,ipoint,ndim
+    integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -1454,7 +1410,7 @@ contains
       !
       ! Hence, this routine should not be called for homogeneous
       ! Neumann boundary conditions since it corresponds to an
-      ! expensive assemble of a "zero" boundary integral.
+      ! expensive assembly of a "zero" boundary integral.
       Dcoefficients = 0.0_DP
 
       call output_line('Redundant assembly of vanishing boundary term!',&
@@ -1475,17 +1431,14 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the Neumann values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,1).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -1511,14 +1464,11 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser for Dirichlet value
           call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
@@ -1541,7 +1491,7 @@ contains
       ! and do not include any boundary integral into the bilinear form at all.
       
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+      allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -1557,17 +1507,14 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,3).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -1577,8 +1524,8 @@ contains
       
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -1607,7 +1554,7 @@ contains
       ! into the bilinear form.
 
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+      allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -1623,17 +1570,14 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,3).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -1643,8 +1587,8 @@ contains
 
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -1682,17 +1626,6 @@ contains
   subroutine transp_coeffVecBdrConvD2d_sim(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
-
-    use basicgeometry
-    use boundary
-    use boundarycondaux
-    use collection
-    use domainintegration
-    use feevaluation
-    use fparser
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
 
 !<description>
     ! This subroutine is called during the vector assembly. It has to
@@ -1774,7 +1707,7 @@ contains
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnx,dny,dnv,dtime,dscale,dval
-    integer :: ibdrtype,isegment,iel,ipoint,ndim
+    integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -1817,7 +1750,7 @@ contains
       !
       ! Hence, this routine should not be called for homogeneous
       ! Neumann boundary conditions since it corresponds to an
-      ! expensive assemble of a "zero" boundary integral.
+      ! expensive assembly of a "zero" boundary integral.
       Dcoefficients = 0.0_DP
       
       call output_line('Redundant assembly of vanishing boundary term!',&
@@ -1838,17 +1771,14 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
       
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-      
       ! Evaluate the function parser for the Neumann values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,1).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
           
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
           
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -1874,14 +1804,11 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser for Dirichlet value
           call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
@@ -1904,7 +1831,7 @@ contains
       ! and do not include any boundary integral into the bilinear form at all.
 
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+      allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -1920,17 +1847,14 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,3).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -1940,8 +1864,8 @@ contains
 
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -1970,7 +1894,7 @@ contains
       ! into the bilinear form.
             
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+      allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -1986,17 +1910,14 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,3).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -2006,8 +1927,8 @@ contains
       
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -2045,17 +1966,6 @@ contains
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
-
-    use basicgeometry
-    use boundary
-    use boundarycondaux
-    use collection
-    use domainintegration
-    use feevaluation
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
 
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -2139,7 +2049,7 @@ contains
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP) :: dnx,dny,dnv,dtime,dscale
-    integer :: ibdrtype,isegment,iel,ipoint,ndim,ivelocityType
+    integer :: ibdrtype,isegment,iel,ipoint,ivelocityType
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -2175,8 +2085,8 @@ contains
       if (ivelocityType .eq. VELOCITY_ZERO) then
 
         ! Set the coefficient to zero
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
             Dcoefficients(1,ipoint,iel) = 0.0
           end do
         end do
@@ -2184,7 +2094,7 @@ contains
       else
 
         ! Allocate temporal memory
-        allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+        allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
         
         ! Evaluate the velocity field in the cubature points on the boundary
         ! and store the result in Daux(:,:,:,1:2)
@@ -2198,8 +2108,8 @@ contains
         
         ! Multiply the velocity vector with the normal in each point
         ! to get the normal velocity.
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
@@ -2223,8 +2133,8 @@ contains
       !-------------------------------------------------------------------------
       ! Dirichlet boundary conditions:
 
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
           
           ! Impose Dirichlet boundary conditions via penalty method
           Dcoefficients(1,ipoint,iel) = -dscale * BDRC_DIRICHLET_PENALTY
@@ -2239,7 +2149,7 @@ contains
       Dcoefficients = 0.0_DP
 
       ! This routine should not be called at all for homogeneous Neumann boundary
-      ! conditions since it corresponds to an expensive assemble of "zero".
+      ! conditions since it corresponds to an expensive assembly of "zero".
       call output_line('Redundant assembly of vanishing boundary term!',&
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrConvP2d_sim')
 
@@ -2250,7 +2160,7 @@ contains
       ! Assemble the convective part of the boundary integral at the outflow
 
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+      allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -2264,8 +2174,8 @@ contains
 
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
@@ -2304,17 +2214,6 @@ contains
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
-
-    use basicgeometry
-    use boundary
-    use boundarycondaux
-    use collection
-    use domainintegration
-    use feevaluation
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
 
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -2398,7 +2297,7 @@ contains
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP) :: dnx,dny,dnv,dtime,dscale
-    integer :: ibdrtype,isegment,iel,ipoint,ndim,ivelocityType
+    integer :: ibdrtype,isegment,iel,ipoint,ivelocityType
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -2434,8 +2333,8 @@ contains
       if (ivelocityType .eq. VELOCITY_ZERO) then
 
         ! Set the coefficient to zero
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
             Dcoefficients(1,ipoint,iel) = 0.0
           end do
         end do
@@ -2443,7 +2342,7 @@ contains
       else
 
         ! Allocate temporal memory
-        allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+        allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
         
         ! Evaluate the velocity field in the cubature points on the boundary
         ! and store the result in Daux(:,:,:,1:2)
@@ -2457,8 +2356,8 @@ contains
         
         ! Multiply the velocity vector with the normal in each point
         ! to get the normal velocity.
-        do iel = 1, size(rdomainIntSubset%p_Ielements)
-          do ipoint = 1, ubound(Dpoints,2)
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
             call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
@@ -2482,8 +2381,8 @@ contains
       !-------------------------------------------------------------------------
       ! Dirichlet boundary conditions:
 
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
           
           ! Impose Dirichlet boundary conditions via penalty method
           Dcoefficients(1,ipoint,iel) = dscale * BDRC_DIRICHLET_PENALTY
@@ -2498,7 +2397,7 @@ contains
       Dcoefficients = 0.0_DP
 
       ! This routine should not be called at all for homogeneous Neumann boundary
-      ! conditions since it corresponds to an expensive assemble of "zero".
+      ! conditions since it corresponds to an expensive assembly of "zero".
       call output_line('Redundant assembly of vanishing boundary term!',&
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrConvD2d_sim')
       
@@ -2508,7 +2407,7 @@ contains
       ! Flux boundary conditions (Robin bc`s at the outlet)
 
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+      allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -2522,8 +2421,8 @@ contains
 
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
@@ -2770,17 +2669,6 @@ contains
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
-    use basicgeometry
-    use boundary
-    use boundarycondaux
-    use collection
-    use domainintegration
-    use feevaluation
-    use fparser
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-
 !<description>
     ! This subroutine is called during the vector assembly. It has to
     ! compute the coefficients in front of the terms of the linear
@@ -2861,7 +2749,7 @@ contains
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnx,dny,dnv,dtime,dscale,dval
-    integer :: ibdrtype,isegment,iel,ipoint,ndim
+    integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -2904,7 +2792,7 @@ contains
       !
       ! Hence, this routine should not be called for homogeneous
       ! Neumann boundary conditions since it corresponds to an
-      ! expensive assemble of a "zero" boundary integral.
+      ! expensive assembly of a "zero" boundary integral.
       Dcoefficients = 0.0_DP
 
       call output_line('Redundant assembly of vanishing boundary term!',&
@@ -2925,17 +2813,14 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the Neumann values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,1).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -2953,7 +2838,7 @@ contains
       !
       ! Evaluate coefficient for the convective part of the linear form
       !
-      ! $$ u=g \Rightarrow [0.5*u,1]u\cdot{\bf n}=[0.5*g,1]g\cdot{\bf n} $$
+      ! $$ u=g \Rightarrow [0.5*u,1]*u\cdot{\bf n}=[0.5*g,1]*g\cdot{\bf n} $$
       !
       ! The diffusive part is included into the bilinear form.
 
@@ -2961,14 +2846,11 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser for Dirichlet value
           call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
@@ -2986,28 +2868,25 @@ contains
       ! Evaluate coefficients for both the convective and the diffusive
       ! part of the linear form 
       !
-      ! $$ -([0.5*u,1]u-d\nabla u)\cdot{\bf n} = -([0.5*g,1]g)\cdot{\bf n} $$
+      ! $$ -([0.5*u,1]*u-d\nabla u)\cdot{\bf n} = -([0.5*g,1]*g)\cdot{\bf n} $$
       !
       ! and do not include any boundary integral into the bilinear form at all.
 
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), 1))
+      allocate(Daux(npointsPerElement, nelements, 1))
 
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,1).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -3015,10 +2894,10 @@ contains
         end do
       end do
 
-      ! Multiply the velocity vector [0.5*u,1] with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      ! Multiply the velocity vector [0.5*u,1] with the normal in each
+      ! point to get the normal velocity.
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -3041,13 +2920,13 @@ contains
       ! Evaluate coefficient for both the convective and diffusive
       ! part for the linear form at the inflow boundary part.
       !
-      ! $$ -([0.5*u,1]u-d\nabla u)\cdot{\bf n} = -([0.5*g,1]g)\cdot{\bf n} $$
+      ! $$ -([0.5*u,1]*u-d\nabla u)\cdot{\bf n} = -([0.5*g,1]*g)\cdot{\bf n} $$
       !
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
 
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D))
+      allocate(Daux(npointsPerElement, nelements, 2))
 
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -3059,17 +2938,14 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,2).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -3077,10 +2953,10 @@ contains
         end do
       end do
 
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      ! Multiply the velocity vector [0.5*u,1] with the normal in each
+      ! point to get the normal velocity.
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -3121,17 +2997,6 @@ contains
       rdiscretisationTrial, rdiscretisationTest, rform, nelements,&
       npointsPerElement, Dpoints, ibct, DpointPar, IdofsTrial,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
-
-    use basicgeometry
-    use boundary
-    use boundarycondaux
-    use collection
-    use domainintegration
-    use feevaluation
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
 
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -3215,7 +3080,7 @@ contains
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP) :: dnx,dny,dnv,dtime,dscale
-    integer :: ibdrtype,isegment,iel,ipoint,ndim
+    integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -3247,7 +3112,7 @@ contains
       ! Assemble the convective part of the boundary integral
 
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D))
+      allocate(Daux(npointsPerElement, nelements, 1))
       
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -3255,10 +3120,10 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      ! Multiply the velocity vector [0.5*u,1] with the normal in each
+      ! point to get the normal velocity.
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
           
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
@@ -3280,8 +3145,8 @@ contains
       !-------------------------------------------------------------------------
       ! Dirichlet boundary conditions:
       
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
           
           ! Impose Dirichlet boundary conditions via penalty method
           Dcoefficients(1,ipoint,iel) = -dscale * BDRC_DIRICHLET_PENALTY
@@ -3296,7 +3161,7 @@ contains
       Dcoefficients = 0.0_DP
       
       ! This routine should not be called at all for homogeneous Neumann boundary
-      ! conditions since it corresponds to an expensive assemble of "zero".
+      ! conditions since it corresponds to an expensive assembly of "zero".
       call output_line('Redundant assembly of vanishing boundary term!',&
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrSTBurgersP2d_sim')
 
@@ -3307,7 +3172,7 @@ contains
       ! Assemble the convective part of the boundary integral at the outflow
       
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D))
+      allocate(Daux(npointsPerElement, nelements, 1))
 
       ! Evaluate the solution field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -3315,10 +3180,10 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      ! Multiply the velocity vector [0.5*u,1] with the normal in each
+      ! point to get the normal velocity.
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
           
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
@@ -3575,17 +3440,6 @@ contains
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
-    use basicgeometry
-    use boundary
-    use boundarycondaux
-    use collection
-    use domainintegration
-    use feevaluation
-    use fparser
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-
 !<description>
     ! This subroutine is called during the vector assembly. It has to
     ! compute the coefficients in front of the terms of the linear
@@ -3666,7 +3520,7 @@ contains
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnx,dny,dnv,dtime,dscale,dval
-    integer :: ibdrtype,isegment,iel,ipoint,ndim
+    integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -3709,7 +3563,7 @@ contains
       !
       ! Hence, this routine should not be called for homogeneous
       ! Neumann boundary conditions since it corresponds to an
-      ! expensive assemble of a "zero" boundary integral.
+      ! expensive assembly of a "zero" boundary integral.
       Dcoefficients = 0.0_DP
 
       call output_line('Redundant assembly of vanishing boundary term!',&
@@ -3730,17 +3584,14 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the Neumann values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,1).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -3758,7 +3609,9 @@ contains
       !
       ! Evaluate coefficient for the convective part of the linear form
       !
-      ! $$ u=g \Rightarrow [a,1]u\cdot{\bf n}=[a,1]g\cdot{\bf n} $$
+      ! $$ u=g \Rightarrow [a,1]*u\cdot{\bf n}=[a,1]*g\cdot{\bf n} $$
+      !
+      ! where $ a = u/(u^2+0.5*(1-u)^2) $ is the velocity
       !
       ! The diffusive part is included into the bilinear form.
 
@@ -3766,14 +3619,11 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser for Dirichlet value
           call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
@@ -3790,28 +3640,27 @@ contains
       ! Evaluate coefficients for both the convective and the diffusive
       ! part of the linear form 
       !
-      ! $$ -([a,1]u-d\nabla u)\cdot{\bf n} = -([a,1]g)\cdot{\bf n} $$
+      ! $$ -([a,1]*u-d\nabla u)\cdot{\bf n} = -([a,1]*g)\cdot{\bf n} $$
+      !
+      ! where $ a = u/(u^2+0.5*(1-u)^2) $ is the velocity
       !
       ! and do not include any boundary integral into the bilinear form at all.
 
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), 1))
+      allocate(Daux(npointsPerElement, nelements, 1))
       
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,1).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -3821,8 +3670,8 @@ contains
 
       ! Multiply the velocity vector [a,1] with the normal in each point
       ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -3830,7 +3679,7 @@ contains
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
           dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                                          + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
+                      + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
           Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,1)
         end do
       end do
@@ -3845,13 +3694,15 @@ contains
       ! Evaluate coefficient for both the convective and diffusive
       ! part for the linear form at the inflow boundary part.
       !
-      ! $$ -([a,1]u-d\nabla u)\cdot{\bf n} = -([a,1]g)\cdot{\bf n} $$
+      ! $$ -([a,1]*u-d\nabla u)\cdot{\bf n} = -([a,1]*g)\cdot{\bf n} $$
+      !
+      ! where $ a = u/(u^2+0.5*(1-u)^2) $ is the velocity
       !
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
 
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D))
+      allocate(Daux(npointsPerElement, nelements, 2))
 
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -3863,17 +3714,14 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,2).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
 
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
@@ -3881,10 +3729,10 @@ contains
         end do
       end do
 
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      ! Multiply the velocity vector [a,1] with the normal in each
+      ! point to get the normal velocity.
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -3892,13 +3740,13 @@ contains
 
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                                          + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
+                      + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
             ! Compute the prescribed normal velocity
             dnv = dnx * Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2&
-                                          + 0.5*(1-Daux(ipoint,iel,2))**2) + dny
+                        + 0.5*(1-Daux(ipoint,iel,2))**2) + dny
             Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -3927,17 +3775,6 @@ contains
       rdiscretisationTrial, rdiscretisationTest, rform, nelements,&
       npointsPerElement, Dpoints, ibct, DpointPar, IdofsTrial,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
-
-    use basicgeometry
-    use boundary
-    use boundarycondaux
-    use collection
-    use domainintegration
-    use feevaluation
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
 
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -4022,7 +3859,7 @@ contains
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP) :: dnx,dny,dnv,dtime,dscale
-    integer :: ibdrtype,isegment,iel,ipoint,ndim
+    integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -4054,7 +3891,7 @@ contains
       ! Assemble the convective part of the boundary integral
 
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D))
+      allocate(Daux(npointsPerElement, nelements, 2))
       
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -4062,10 +3899,10 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      ! Multiply the velocity vector [a,1] with the normal in each
+      ! point to get the normal velocity.
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
           
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
@@ -4073,7 +3910,7 @@ contains
           
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                                          + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
+                      + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
           
           ! Scale normal velocity by scaling parameter
           Dcoefficients(1,ipoint,iel) = -dscale * dnv
@@ -4088,8 +3925,8 @@ contains
       !-------------------------------------------------------------------------
       ! Dirichlet boundary conditions:
       
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
           
           ! Impose Dirichlet boundary conditions via penalty method
           Dcoefficients(1,ipoint,iel) = -dscale * BDRC_DIRICHLET_PENALTY
@@ -4104,7 +3941,7 @@ contains
       Dcoefficients = 0.0_DP
       
       ! This routine should not be called at all for homogeneous Neumann boundary
-      ! conditions since it corresponds to an expensive assemble of "zero".
+      ! conditions since it corresponds to an expensive assembly of "zero".
       call output_line('Redundant assembly of vanishing boundary term!',&
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrSTBuckLevP2d_sim')
 
@@ -4115,7 +3952,7 @@ contains
       ! Assemble the convective part of the boundary integral at the outflow
       
       ! Allocate temporal memory
-      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D))
+      allocate(Daux(npointsPerElement, nelements, 2))
 
       ! Evaluate the solution field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -4123,10 +3960,10 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
+      ! Multiply the velocity vector [a,1] with the normal in each
+      ! point to get the normal velocity.
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
           
           ! Get the normal vector in the point from the boundary
           call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
@@ -4134,7 +3971,7 @@ contains
           
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                                          + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
+                      + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
           
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
@@ -4364,16 +4201,6 @@ contains
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
-    use basicgeometry
-    use boundary
-    use collection
-    use domainintegration
-    use feevaluation
-    use fparser
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-
 !<description>
     ! This subroutine is called during the vector assembly. It has to
     ! compute the coefficients in front of the terms of the linear
@@ -4467,17 +4294,6 @@ contains
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
-
-    use basicgeometry
-    use boundary
-    use boundarycondaux
-    use collection
-    use domainintegration
-    use feevaluation
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
 
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute

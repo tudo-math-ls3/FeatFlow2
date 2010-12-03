@@ -22,17 +22,6 @@ deffunc: @velocity_x = 1.0 ; x,y,z,t
 # Specify the diffusion coefficient
 deffunc: @diffusion = 1e-3 ; x,y,z,t
 
-# Specify the reaction term
-deffunc: @reaction = 0 ; x,y,z,t
-
-# Specify the right-hand side
-deffunc: @rhs = 0 ; x,y,z,t
-
-# Specify the quantity of interest
-deffunc: @targetFuncInt = 0 ; x,y,z,t
-deffunc: @targetFuncAnalytic = 0 ; x,y,z,t
-
-
 # Specify the boundary conditions for the primal problem
 [bdrcond_strong_primal]
 NBCT
@@ -50,3 +39,21 @@ NCOMP
 PARAMETERS
 0.0  T  'DIRICHLET_STRONG'  1.0
 0.0  T  'DIRICHLET_STRONG'  0.0
+
+# Specify the boundary conditions for the primal problem
+[bdrcond_weak_primal]
+NBCT
+2
+NEXPR
+1
+IBCT
+1
+NCOMP
+1
+IBCT
+2
+NCOMP
+1
+PARAMETERS
+0.0  T  'DIRICHLET_WEAK'  1.0
+0.0  T  'DIRICHLET_WEAK'  0.0
