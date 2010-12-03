@@ -14,23 +14,13 @@
 ################################################################################
 
 # Specify the initial solution
-[initial_solution]
-NCOMP
-4
-1.4
-4.2
-0.0
-8.8
+deffunc: @initsol_rho   = 1.4 ; x,y,z,t
+deffunc: @initsol_vel_x = 4.2 ; x,y,z,t
+deffunc: @initsol_vel_y = 0.0 ; x,y,z,t
+deffunc: @initsol_Etot  = 8.8 ; x,y,z,t
 
 # Specify the boundary conditions
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
-[bdrcond]
+[bdrcond_strong_primal]
 NBCT
 1
 NEXPR
@@ -40,10 +30,29 @@ IBCT
 NCOMP
 7
 PARAMETERS
-1.0  F  2
-2.0  F  2
+1.0  F  'FREESLIP_STRONG'
+2.0  F  'FREESLIP_STRONG'
 2.0  T  0
-3.0  T  2
-4.0  F  11
-5.0  T  2
-6.0  F  10   1.4   3.0   0.0   1.0
+3.0  T  'FREESLIP_STRONG'
+4.0  F  'SUPEROUTLET_STRONG'
+5.0  T  'FREESLIP_STRONG'
+6.0  F  'FREESTREAM_STRONG'   1.4   3.0   0.0   1.0
+
+# Specify the boundary conditions
+[bdrcond_weak_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+7
+PARAMETERS
+1.0  F  'FREESLIP_WEAK'
+2.0  F  'FREESLIP_WEAK'
+2.0  T  0
+3.0  T  'FREESLIP_WEAK'
+4.0  F  'SUPEROUTLET_WEAK'
+5.0  T  'FREESLIP_WEAK'
+6.0  F  'FREESTREAM_WEAK'   1.4   3.0   0.0   1.0

@@ -27,7 +27,7 @@ application = transport
 indatfile = data/transport/2d/anisodiff.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond5_strong_primal
+sprimalbdrcondname = bdrcond5_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname =

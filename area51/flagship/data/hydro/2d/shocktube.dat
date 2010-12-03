@@ -80,7 +80,8 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-slimitingvariable(1) = 
+slimitingvariable(2) = 
+  density
   pressure
   
 # number of failsafe steps

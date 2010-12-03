@@ -37,4 +37,18 @@ IBCT
 NCOMP
 1
 PARAMETERS
+4.0   1  'FREESLIP_STRONG'
+
+
+# Specify the boundary conditions
+[bdrcond_weak_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+1
+PARAMETERS
 4.0   1  'FREESLIP_WEAK'

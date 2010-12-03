@@ -33,35 +33,13 @@
 ################################################################################
 
 # Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-4
-0.80410679808681
-0.61481474019026
-0.00000000000000
-2.07742175014947
+deffunc: @initsol_rho   =  0.80410679808681; x,y,z,t
+deffunc: @initsol_vel_x =  0.61481474019026; x,y,z,t
+deffunc: @initsol_vel_y =  0.0; x,y,z,t
+deffunc: @initsol_Etot  =  2.07742175014947; x,y,z,t
 
 # Specify the boundary conditions
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    ibctyp =  0: Neumann boundary condition
-#    ibctyp =  1: Dirichlet boundary condition
-#    ibctyp =  2: Solid-wall boundary condition
-#    ibctyp =  3: Viscous-wall boundary condition
-#    ibctyp =  4: Farfield boundary condition (characteristics are computed)
-#    ibctyp =  5: Subsonic inlet boundary condition
-#    ibctyp =  6: Subsonic outlet boundary condition
-#    ibctyp =  7: Massflow inlet boundary condition
-#    ibctyp =  8: Massflow outlet boundary condition
-#    ibctyp =  9: Mach outflow boundary condition
-#    ibctyp = 10: Supersonic inlet boundary condition
-#    ibctyp = 11: Supersonic outlet boundary condition
-#    ibctyp = 12: Periodic boundary condition (symmetric)
-#    ibctyp = 13: Periodic boundary condition (anti-symmetric)
-[bdrcond0]
+[bdrcond_weak1_primal]
 NBCT
 1
 NEXPR
@@ -71,13 +49,13 @@ IBCT
 NCOMP
 4
 PARAMETERS
-3.0  F  2
-4.0  T  6   0.73695204154329  0.0              0.0  0.0 
-5.0  F  2
-6.0  T  4   0.8041067980868  0.76459338691461  0.0  0.73695204315437
+3.0  F  'FREESLIP_WEAK'
+4.0  T  'SUBOUTLET_WEAK'   0.73695204154329  0.0              0.0  0.0 
+5.0  F  'FREESLIP_WEAK'
+6.0  T  'FREESTREAM_WEAK'  0.8041067980868  0.76459338691461  0.0  0.73695204315437
 
-
-[bdrcond]
+# Specify the boundary conditions
+[bdrcond_weak2_primal]
 NBCT
 1
 NEXPR
@@ -87,7 +65,7 @@ IBCT
 NCOMP
 4
 PARAMETERS
-3.0  F  2
-4.0  T  4   0.8041067980868  0.76459338691461  0.0  0.73695204315437
-5.0  F  2
-6.0  T  4   0.8041067980868  0.76459338691461  0.0  0.73695204315437
+3.0  F  'FREESLIP_WEAK'
+4.0  T  'FREESTREAM_WEAK' 0.8041067980868  0.76459338691461  0.0  0.73695204315437
+5.0  F  'FREESLIP_WEAK'
+6.0  T  'FREESTREAM_WEAK'  0.8041067980868  0.76459338691461  0.0  0.73695204315437

@@ -15,7 +15,7 @@ deffunc: @initsol_vel_y = SIN(_ang*_PI/180) ; x,y,z,t
 deffunc: @initsol_Etot = 1.0/5.04+0.5*(COS(_ang*_PI/180)^2+SIN(_ang*_PI/180)^2) ; x,y,z,t
 
 # Specify the boundary conditions
-[bdrcond_strong_primal]
+[bdrcond_weak_primal]
 NBCT
 3
 NEXPR

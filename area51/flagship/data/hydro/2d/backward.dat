@@ -27,7 +27,7 @@ application = hydro
 indatfile = data/hydro/2d/backward.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_strong_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -68,7 +68,9 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 2
+isystemPrecond = 1
+
+#-------------------------------------------------------------------------------
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -83,10 +85,12 @@ isystemPrecond = 2
 #      density
 #      pressure
 #      velocity
-slimitingvariable = density,energy,momentum
+slimitingvariable(2) = 
+  density
+  pressure
 
 # number of failsafe steps
-nfailsafe = 4
+nfailsafe = 0
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =
@@ -117,6 +121,19 @@ iexactsolutiontype = 0
 # section name of exact solution
 sexactsolutionname =
 
+# variables for constrained initialization
+ssolutionconstrainvariable(2) =
+  density
+  pressure
+# number of failsafe steps in constrained initialization
+nsolutionfailsafe = 3
+# variables for failsafe constrained initialization
+ssolutionfailsafevariable(5) =
+  density
+  pressure
+  velocity_x
+  velocity_y
+  energy
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
@@ -182,7 +199,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 1
 
 # perform prelimiting
 iprelimiting = 0
@@ -209,11 +226,12 @@ sucdsolution = out/backward
 sucderror = out/backward_error
 
 # variables for ucd output
-sucdvariable(4) =
+sucdvariable(5) =
  density
  velocity
  energy
  pressure
+ machnumber
 
 
 ################################################################################
@@ -242,16 +260,16 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 0.5
+theta = 1.0
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 0.75
 
 # initial time step size
 dinitialStep = 0.001
@@ -269,10 +287,10 @@ iadaptTimestep = 0
 dadaptTime = 0.0
 
 # minimum factor by which time step may change
-ddecreaseFactor = 0.5
+ddecreaseFactor = 0.1
 
 # maximum factor by which time step may change
-dincreaseFactor = 2.0
+dincreaseFactor = 1.5
 
 # reduction factor by which time step is reduced if simulation fails
 dstepReductionFactor = 0.8
@@ -298,7 +316,7 @@ depsSteady = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = 2
 
 # minimum multigrid level number
 nlmin = 6
@@ -433,7 +451,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 30
+nmaxIterations = 50
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -463,7 +481,7 @@ dforcingStrategy = 1
 # check sufficient decrease condition in globalization
 # 0 = apply Newton increment without globalization
 # 1 = check sufficient decrease condition and perform backtracking if required
-icheckSufficientDecrease = 1
+icheckSufficientDecrease = 0
 
 # maximum number of backtracking steps
 nmaxBacktrackingSteps = 5
@@ -475,7 +493,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-12
+depsAbs = 1e-10
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -556,13 +574,13 @@ npostsmooth = 2
 nsmoothfactor = 1
 
 # linear relaxation parameter
-domega = 1
+domega = 1.0
 
 # absolute tolerance for residual
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-4
+depsRel = 0.0
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -609,7 +627,7 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 2
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -631,7 +649,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -640,10 +658,10 @@ nkrylov = 25
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-14
+depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-2
+depsRel = 0.0
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -715,19 +733,19 @@ dcoarseningTolerance = 0.1
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-ierrorestimator = 7
+ierrorestimator = 6
 
 # type or grid indicator
 # 0 = as is
 # 1 = equidistribution
 # 2 = logarithmic equidistribution
-igridindicator = 1
+igridindicator = 0
 
 # noise filter
-dnoisefilter = 0.2
+dnoisefilter = 0.05
 
 # absolute filter
-dabsfilter = 0.001
+dabsfilter = 0.01
 
 # number of protection layers
 nprotectLayers = 2
