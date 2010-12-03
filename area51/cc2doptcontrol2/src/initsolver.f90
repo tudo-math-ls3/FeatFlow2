@@ -3074,8 +3074,8 @@ contains
 !</subroutine>
 
     ! local variables
-    character(len=SYS_STRLEN) :: sstr
-    integer :: isuccess
+    character(len=SYS_STRLEN) :: sstr, sparam
+    integer :: isuccess, npoints, i
 
     ! Basic initialisation of the postprocessing structure
     call optcpp_initpostprocessing (rpostproc,rsettings%rphysicsPrimal,CCSPACE_PRIMALDUAL,&
@@ -3187,6 +3187,29 @@ contains
         call sys_halt()
       end if
     end if
+    
+    ! Init the points to evaluate
+    npoints = parlst_querysubstrings (rparlist, ssection, &
+        "CEVALUATEPOINTVALUES")
+ 
+    if (npoints .gt. 0) then
+      allocate (rpostproc%p_DcoordsPointEval(NDIM2D,npoints))
+      allocate (rpostproc%p_ItypePointEval(NDIM2D,npoints))
+    
+      ! Read the points
+      do i=1,npoints
+        call parlst_getvalue_string (rparlist, ssection, &
+            "CEVALUATEPOINTVALUES", sparam, "", i)
+        read (sparam,*) rpostproc%p_DcoordsPointEval(1,i),rpostproc%p_DcoordsPointEval(2,i),&
+            rpostproc%p_ItypePointEval(1,i),rpostproc%p_ItypePointEval(2,i)
+      end do
+    end if
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "iwritePointValues",rpostproc%iwritePointValues,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        'sfilenamePointValues',rpostproc%sfilenamePointValues,"",bdequote=.true.)
 
   end subroutine
 
@@ -3210,6 +3233,12 @@ contains
     ! Release the reference solution    
     if (rpostproc%icalcError .ne. 0) then
       call ansol_done(rpostproc%ranalyticRefFunction)
+    end if
+    
+    ! Release point coordinates for point evaluation
+    if (associated(rpostproc%p_DcoordsPointEval)) then
+      deallocate (rpostproc%p_DcoordsPointEval)
+      deallocate (rpostproc%p_ItypePointEval)
     end if
     
     call optcpp_donepostprocessing(rpostproc)

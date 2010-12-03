@@ -90,6 +90,9 @@ sfinalSolutionFileName = ''
 
 sfinalControlFileName = './ns/control'
 
+# ------------------------------------------------------------------------
+# Error analysis
+
 # Whether to calculate functional values (J(.)) during and after the computation.
 
 icalcFunctionalValues = 1
@@ -105,6 +108,9 @@ icalcError = 0
 # to use if icalcError <> 0
 
 ssectionReferenceFunction = REFERENCE-FUNCTION
+
+# ------------------------------------------------------------------------
+# Body forces
 
 # Whether or not calculate drag/lift forces
 
@@ -135,6 +141,9 @@ iwriteBodyForces = 1
 
 sfilenameBodyForces = 'ns/bdforces'
 
+# ------------------------------------------------------------------------
+# Flux values
+
 # Whether to calculate flux integrals
 
 icalcFlux = 0
@@ -163,3 +172,36 @@ iwriteKineticEnergy = 0
 # Filename for the kinetic energy
 
 sfilenameKineticEnergy = 'ns/kineticenergy'
+
+# ------------------------------------------------------------------------
+# Point values
+
+# Calculate the value of different quantities in a number of points
+# y evaluating the solution. The number in braces "(n)" defines the number
+# of points to evaluate. Afterwards follows a list of points in the
+# format
+#   "x y type der"
+# with x=x-coordinate, y=y-coordinate, type=type of quantity to evaluate,
+# der=derivative quantifier. Here:
+#   type=1: primal x-velocity, =2: primal y-velocity, =3: primal pressure,
+#       =4: dual x-velocity, =5: dual y-velocity, =6: dual pressure,
+#   der =0: function value, =1: x-derivative, =2: y-derivative
+#
+# Example: Don't evaluate anything:
+#   cevaluatePointValues(0) =
+#
+# Example: Evaluate the pressure in (0.15,0.2) and (0.25,0.2)
+#   cevaluatePointValues(2) =
+#     0.15 0.2 3 0
+#     0.25 0.2 3 0
+
+cevaluatePointValues(0) =
+
+# Whether to write the point values to a file
+
+iwritePointValues = 0
+
+# Filename for the point values
+
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
+

@@ -158,6 +158,24 @@ module structuresoptflow
     ! Boundary conditions to use.
     type(t_optcBDC), pointer :: p_rboundaryConditions => null()
     
+    ! Points coordinates where to evaluate point values. =NULL: Do not evaluate
+    ! point values.
+    real(DP), dimension(:,:), pointer :: p_DcoordsPointEval => null()
+    
+    ! Type of the point value to evaluate. Every entry corresponds to one
+    ! point coordinate in p_DcoordsPointEval. The tuples are formed by
+    ! (type,der) with 
+    !   type=1: primal x-velocity, =2: primal y-velocity, =3: primal pressure,
+    !       =4: dual x-velocity, =5: dual y-velocity, =6: dual pressure,
+    !   der =0: function value, =1: x-derivative, =2: y-derivative
+    integer, dimension(:,:), pointer :: p_ItypePointEval => null()
+    
+    ! Whether or not to write the point values to a file.
+    integer :: iwritePointValues = 0
+    
+    ! Filename for the point values if iwritePointValues <> 0.
+    character(len=SYS_STRLEN) :: sfilenamePointValues = ""
+        
 !    ! A discretisation structure that describes a piecewise constant discretisation
 !    ! (usually P0 or Q0).
 !    type(t_spatialDiscretisation) :: rdiscrConstant

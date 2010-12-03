@@ -416,6 +416,143 @@ contains
 
   end subroutine
 
+!******************************************************************************
+
+!<subroutine>
+
+  subroutine optcpp_evaluatePoints (rpostproc,rsolution,bfirst,itimestep,&
+      dtimePrimal,dtimeDual)
+
+!<description>
+  ! Evaluates the solution in a number of points as configured in the DAT file.
+!</description>
+  
+!<input>
+  ! Solution vector to compute the norm/error from.
+  type(t_vectorBlock), intent(in), target :: rsolution
+  
+  ! Number of the timestep.
+  integer, intent(in) :: itimestep
+  
+  ! Must be set to TRUE for the first value.
+  logical, intent(in) :: bfirst
+  
+  ! Solution time. =0 for stationary simulations. Primal equation
+  real(DP), intent(in) :: dtimePrimal
+
+  ! Solution time. =0 for stationary simulations. Primal equation
+  real(DP), intent(in) :: dtimeDual
+!</input>
+
+!<inputoutput>
+  ! Postprocessing structure
+  type(t_optcPostprocessing), intent(inout) :: rpostproc
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: npoints,i,iunit
+    integer :: iderType, cflag
+    logical :: bfileExists
+    real(dp), dimension(:), allocatable :: Dvalues
+    character(LEN=SYS_STRLEN) :: sstr,stemp
+    character(LEN=10), dimension(3,6), parameter :: Sfctnames = reshape (&
+      (/ "       u1 ","     u1_x ","     u1_y " , &
+         "       u2 ","     u2_x ","     u2_y " , &
+         "        p ","      p_x ","      p_y " , &
+         "  lambda1 ","lambda1_x ","lambda1_y " , &
+         "  lambda2 ","lambda2_x ","lambda2_y " , &
+         "       xi ","     xi_x ","     xi_y " /) ,&
+       (/ 3,6 /) )
+
+    if (.not. associated(rpostproc%p_DcoordsPointEval)) return
+    
+    ! Currently, only Stokes/Navier Stokes supported.
+    select case (rpostproc%p_rphysics%cequation)
+    
+    case (0,1)
+
+      ! Get the number of points to evaluate
+      npoints = ubound(rpostproc%p_DcoordsPointEval,2)
+          
+      ! Allocate memory for the values
+      allocate(Dvalues(npoints))
+      
+      ! Evaluate the function in these points.
+      do i=1,npoints
+        ! Which derivative to evaluate?
+        select case (rpostproc%p_ItypePointEval(2,i))
+        case (0)
+          iderType = DER_FUNC2D
+        case (1)
+          iderType = DER_DERIV2D_X
+        case (2)
+          iderType = DER_DERIV2D_Y
+        case default
+          iderType = DER_FUNC2D
+        end select
+        
+        call fevl_evaluate (iderType, Dvalues(i:i), &
+            rsolution%RvectorBlock(rpostproc%p_ItypePointEval(1,i)), &
+            rpostproc%p_DcoordsPointEval(:,i:i),cnonmeshPoints=FEVL_NONMESHPTS_ZERO)
+      end do
+      
+      ! Print the values to the terminal
+      call output_lbrk()
+      call output_line ('Point values')
+      call output_line ('------------')
+      do i=1,npoints
+        write (sstr,"(A10,A,F9.4,A,F9.4,A,E16.10)") &
+            Sfctnames(1+rpostproc%p_ItypePointEval(2,i),&
+            rpostproc%p_ItypePointEval(1,i)),&
+            "(",rpostproc%p_DcoordsPointEval(1,i),",",rpostproc%p_DcoordsPointEval(2,i),") = ",Dvalues(i)
+        call output_line(trim(sstr),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+      end do
+      
+      ! Write to DAT file?
+      if ((rpostproc%sfilenamePointValues .eq. "") .or. (rpostproc%iwritePointValues .eq. 0)) then
+        deallocate(Dvalues)
+        return
+      end if
+      
+      ! When writing to a file is enabled, delete the file in the first timestep.
+      cflag = SYS_APPEND
+      if (bfirst) cflag = SYS_REPLACE
+      
+      ! Write the result to a text file.
+      ! Format: timestep current-time value value value ...
+      call io_openFileForWriting(rpostproc%sfilenamePointValues, iunit, &
+          cflag, bfileExists,.true.)
+      if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+        ! Write a headline
+        write (iunit,'(A)') &
+          '# timestep time(primal) time(dual) x y type deriv value x y type deriv value ...'
+      end if
+      
+      stemp = &
+          trim(sys_siL(itimestep,10)) // ' ' // &
+          trim(sys_sdEL(dtimePrimal,10)) // ' ' // &
+          trim(sys_sdEL(dtimeDual,10))
+      write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
+      do i=1,npoints
+        stemp = ' ' //&
+            trim(sys_sdEL(rpostproc%p_DcoordsPointEval(1,i),5)) // ' ' // &
+            trim(sys_sdEL(rpostproc%p_DcoordsPointEval(2,i),5)) // ' ' // &
+            trim(sys_siL(rpostproc%p_ItypePointEval(1,i),2)) // ' ' // &
+            trim(sys_siL(rpostproc%p_ItypePointEval(2,i),2)) // ' ' // &
+            trim(sys_sdEL(Dvalues(i),10))
+        write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
+      end do
+      write (iunit,ADVANCE='YES',FMT='(A)') ""
+      close (iunit)
+      
+      deallocate(Dvalues)
+      
+    end select
+
+  end subroutine
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -893,6 +1030,9 @@ contains
       end if
       
     end select
+    
+    ! Evaluate point values.
+    call optcpp_evaluatePoints (rpostproc,rvector,bfirstFile,ifileid,dtimePrimal,dtimeDual)
   
   end subroutine
 
