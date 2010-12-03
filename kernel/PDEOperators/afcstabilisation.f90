@@ -446,7 +446,7 @@ module afcstabilisation
     type(t_vectorScalar), pointer :: p_rvectorFlux => null()
 
     ! Pointer to the vector of prelimiting antidiffusive fluxes
-    type(t_vectorScalar), pointer :: p_rvectorPrelimit => null()
+    type(t_vectorScalar), pointer :: p_rvectorFluxPrel => null()
 
     ! Pointers to the vectors of antidiffusive contributions
     type(t_vectorScalar), pointer :: p_rvectorPp => null()
@@ -639,6 +639,10 @@ contains
       if (associated(rafcstab%p_rvectorFlux)) then
         call lsyssc_releaseVector(rafcstab%p_rvectorFlux)
         deallocate(rafcstab%p_rvectorFlux)
+      end if
+      if (associated(rafcstab%p_rvectorFluxPrel)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorFluxPrel)
+        deallocate(rafcstab%p_rvectorFluxPrel)
       end if
     end if
 
@@ -866,8 +870,8 @@ contains
       if(associated(rafcstab%p_rvectorFlux))&
           call lsyssc_resizeVector(rafcstab%p_rvectorFlux,&
           rafcstab%NEDGE, .false., .false.)
-      if(associated(rafcstab%p_rvectorPrelimit))&
-          call lsyssc_resizeVector(rafcstab%p_rvectorPrelimit,&
+      if(associated(rafcstab%p_rvectorFluxPrel))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorFluxPrel,&
           rafcstab%NEDGE, .false., .false.)
     end if
     
@@ -1127,6 +1131,14 @@ contains
         call lsyssc_copyVector(rafcstabSrc%p_rvectorFlux,&
             rafcstabDest%p_rvectorFlux)
       end if
+      ! Copy prelimited antidiffusive flux (if any)
+      if (associated(rafcstabSrc%p_rvectorFluxPrel)) then
+        if (.not.(associated(rafcstabDest%p_rvectorFluxPrel)))&
+            allocate(rafcstabDest%p_rvectorFluxPrel)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorFluxPrel,&
+            rafcstabDest%p_rvectorFluxPrel)
+      end if
+
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADFLUXES))
@@ -1395,10 +1407,17 @@ contains
       if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES))) then
         call lsyssc_releaseVector(rafcstabDest%p_rvectorFlux0)
         call lsyssc_releaseVector(rafcstabDest%p_rvectorFlux)
+        deallocate(rafcstabDest%p_rvectorFlux0, rafcstabDest%p_rvectorFlux)
+        if (associated(rafcstabDest%p_rvectorFluxPrel)) then
+          call lsyssc_releaseVector(rafcstabDest%p_rvectorFluxPrel)
+          deallocate(rafcstabDest%p_rvectorFluxPrel)
+        end if
       end if
       ! Copy pointers from source to destination structure
       rafcstabDest%p_rvectorFlux0 => rafcstabSrc%p_rvectorFlux0
       rafcstabDest%p_rvectorFlux  => rafcstabSrc%p_rvectorFlux
+      if (associated(rafcstabSrc%p_rvectorFluxPrel))&
+          rafcstabDest%p_rvectorFluxPrel => rafcstabSrc%p_rvectorFluxPrel
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADFLUXES))

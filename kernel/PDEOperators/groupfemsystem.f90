@@ -397,8 +397,8 @@ contains
       ! We need the edgewise vector for the prelimited fluxes
       if (rafcstab%bprelimiting .or.&
           rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        allocate(rafcstab%p_rvectorPrelimit)
-        call lsyssc_createVector(rafcstab%p_rvectorPrelimit,&
+        allocate(rafcstab%p_rvectorFluxPrel)
+        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,&
             rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       end if
 
@@ -455,8 +455,8 @@ contains
 
       ! We need the edgewise vector if raw antidiffusive fluxes should be prelimited
       if (rafcstab%bprelimiting) then
-        allocate(rafcstab%p_rvectorPrelimit)
-        call lsyssc_createVector(rafcstab%p_rvectorPrelimit,&
+        allocate(rafcstab%p_rvectorFluxPrel)
+        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,&
             rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       end if
 
@@ -625,8 +625,8 @@ contains
       ! We need the edgewise vector for the prelimited fluxes
       if (rafcstab%bprelimiting .or.&
           rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        allocate(rafcstab%p_rvectorPrelimit)
-        call lsyssc_createVector(rafcstab%p_rvectorPrelimit,&
+        allocate(rafcstab%p_rvectorFluxPrel)
+        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,&
             rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       end if
 
@@ -687,8 +687,8 @@ contains
 
       ! We need the edgewise vector if raw antidiffusive fluxes should be prelimited
       if (rafcstab%bprelimiting) then
-        allocate(rafcstab%p_rvectorPrelimit)
-        call lsyssc_createVector(rafcstab%p_rvectorPrelimit,&
+        allocate(rafcstab%p_rvectorFluxPrel)
+        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,&
             rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       end if
       
@@ -4216,14 +4216,14 @@ contains
 
       ! Special treatment for semi-implicit FEM-FCT algorithm
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
       else
         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       end if
 
       ! Compute sums of antidiffusive increments
       if (rafcstab%bprelimiting) then
-        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
 
         if (present(fcb_calcADIncrements)) then
           ! User-supplied callback routine
@@ -4390,7 +4390,7 @@ contains
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
-        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
@@ -5629,14 +5629,14 @@ contains
 
       ! Special treatment for semi-implicit FEM-FCT algorithm
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
       else
         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       end if
 
       ! Compute sums of antidiffusive increments
       if (rafcstab%bprelimiting) then
-        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
 
         if (present(fcb_calcADIncrements)) then
           ! User-supplied callback routine
@@ -5804,7 +5804,7 @@ contains
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
-        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
@@ -7072,7 +7072,7 @@ contains
       if (binit .and.&
           (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT))&
           call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
-          rafcstab%p_rvectorPrelimit)
+          rafcstab%p_rvectorFluxPrel)
 
       ! Set specifiers for raw antidiffusive fluxes
       rafcstab%istabilisationSpec =&
@@ -7114,7 +7114,7 @@ contains
 
         ! Set pointer
         if (rafcstab%bprelimiting) then
-          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
+          call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
         else
           call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
         end if
@@ -7129,7 +7129,7 @@ contains
         ! antidiffusion is built into the fluxes we can simply copy it
         if (.not.(present(rmatrix)) .and. rafcstab%bprelimiting)&
             call lsyssc_copyVector(&
-            rafcstab%p_rvectorPrelimit, rafcstab%p_rvectorFlux)
+            rafcstab%p_rvectorFluxPrel, rafcstab%p_rvectorFlux)
       end if
 
       ! Set specifiers for raw antidiffusive fluxes
@@ -7507,7 +7507,7 @@ contains
       if (binit .and.&
           (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT))&
           call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
-          rafcstab%p_rvectorPrelimit)
+          rafcstab%p_rvectorFluxPrel)
       
       ! Set specifiers for raw antidiffusive fluxes
       rafcstab%istabilisationSpec =&
@@ -7549,7 +7549,7 @@ contains
 
         ! Set pointer
         if (rafcstab%bprelimiting) then
-          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
+          call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
         else
           call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
         end if
@@ -7564,7 +7564,7 @@ contains
         ! antidiffusion is built into the fluxes we can simply copy it
         if (.not.(present(rmatrix)) .and. rafcstab%bprelimiting)&
             call lsyssc_copyVector(&
-            rafcstab%p_rvectorPrelimit, rafcstab%p_rvectorFlux)
+            rafcstab%p_rvectorFluxPrel, rafcstab%p_rvectorFlux)
       end if
 
       ! Set specifiers for raw antidiffusive fluxes

@@ -374,8 +374,8 @@ contains
       ! We need the edgewise vector for the prelimited fluxes
       if (rafcstab%bprelimiting .or.&
           rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        allocate(rafcstab%p_rvectorPrelimit)
-        call lsyssc_createVector(rafcstab%p_rvectorPrelimit, rafcstab%NEDGE, .false., ST_DOUBLE)
+        allocate(rafcstab%p_rvectorFluxPrel)
+        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel, rafcstab%NEDGE, .false., ST_DOUBLE)
       end if
 
       ! We need the nodal vector for the predictor
@@ -472,8 +472,8 @@ contains
 
       ! We need the edgewise vector if raw antidiffusive fluxes should be prelimited
       if (rafcstab%bprelimiting) then
-        allocate(rafcstab%p_rvectorPrelimit)
-        call lsyssc_createVector(rafcstab%p_rvectorPrelimit, rafcstab%NEDGE, .false., ST_DOUBLE)
+        allocate(rafcstab%p_rvectorFluxPrel)
+        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel, rafcstab%NEDGE, .false., ST_DOUBLE)
       end if
 
       ! We need the nodal vector for the low-order predictor
@@ -2507,14 +2507,14 @@ contains
 
       ! Special treatment for semi-implicit FEM-FCT algorithm
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
       else
         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       end if
 
       ! Compute sums of antidiffusive increments
       if (rafcstab%bprelimiting) then
-        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
         call doPreADIncrements(p_IverticesAtEdge,&
             rafcstab%NEDGE, p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
       else
@@ -2624,7 +2624,7 @@ contains
       ! Compute edgewise correction factors
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
         ! Special treatment for semi-implicit FEM-FCT algorithm
-        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
         call doLimitEdgewiseConstrained(p_IverticesAtEdge,&
             rafcstab%NEDGE, p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
       else
@@ -11744,7 +11744,7 @@ contains
       if (binit .and. (rafcstab%ctypeAFCstabilisation &
                        .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
         call lalg_copyVector(p_Dflux, p_Dflux0)
       end if
 
@@ -11792,7 +11792,7 @@ contains
 
         ! Set pointer
         if (rafcstab%bprelimiting) then
-          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
+          call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
         else
           call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
         end if
@@ -11807,7 +11807,7 @@ contains
         ! antidiffusion is built into the fluxes we can simply copy it
         if (.not.(present(rconsistentMassMatrix)) .and.&
             rafcstab%bprelimiting) then
-          call lsyssc_copyVector(rafcstab%p_rvectorPrelimit,&
+          call lsyssc_copyVector(rafcstab%p_rvectorFluxPrel,&
               rafcstab%p_rvectorFlux)
         end if
       end if
