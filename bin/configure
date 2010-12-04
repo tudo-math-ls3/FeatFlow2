@@ -78,7 +78,10 @@ use Cwd qw(abs_path cwd);
 use Digest::MD5 qw(md5);
 
 # handling of command line options
-use Getopt::Long 2.33 qw(:config prefix_pattern=--);
+# Minimum requirements:
+# * Getopt::Long 2.33 added negatable options (with "!")
+# * Getopt::Long 2.35 added none or more values for an option (with "s{0,}")
+use Getopt::Long 2.35 qw(:config prefix_pattern=--);
 
 # Portably parse a pathname into directory, basename and extensions
 use File::Basename;
