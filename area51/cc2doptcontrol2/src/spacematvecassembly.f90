@@ -2137,6 +2137,7 @@ contains
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(t_jumpStabilisation) :: rjumpStabil
+    type(t_convUpwind) :: rupwindStabil
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
     
       ! Is A11=A22 physically?
@@ -2217,9 +2218,42 @@ contains
           
         case (CCMASM_STAB_UPWIND)
         
-          call output_line ('Upwind not supported.', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'assembleConvection')
-          call sys_halt()
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          
+          ! Set stabilisation parameter
+          rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
+          
+          ! Matrix weights
+          rstreamlineDiffusion2%ddelta  = 0.0_DP
+          rstreamlineDiffusion2%ddeltaT = dgammaT
+          rstreamlineDiffusion2%dnewton = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          
+          ! Call the SD method to calculate the nonlinearity for everything except
+          ! for the convection. As velocity vector, specify rvector!
+          ! Therefore, the primal velcity is always used for assembling
+          ! that thing!
+          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector)
+
+          ! Prepare the upwind structure for the assembly of the convection.
+          rupwindStabil%dupsam = rstabilisation%dupsam
+          rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rupwindStabil%dtheta = dgamma
+          
+          ! Apply the upwind operator.
+          call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
+              rupwindStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1))
+
+          if (.not. bshared) then
+            call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
+                rupwindStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(2,2))
+          end if
+          
+          !call output_line ('Upwind not supported.', &
+          !                  OU_CLASS_ERROR,OU_MODE_STD,'assembleConvection')
+          !call sys_halt()
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
@@ -3494,6 +3528,7 @@ contains
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(t_jumpStabilisation) :: rjumpStabil
+    type(t_convupwind) :: rupwindStabil
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2
@@ -3560,9 +3595,36 @@ contains
 
         case (CCMASM_STAB_UPWIND)
         
-          call output_line ('Upwind not supported.', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'assembleConvection')
-          call sys_halt()
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          
+          rstreamlineDiffusion2%dtheta = dcx
+                    
+          ! Set stabilisation parameter
+          rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
+          
+          ! Matrix weights
+          rstreamlineDiffusion2%ddelta  = 0.0_DP
+          rstreamlineDiffusion2%ddeltaT = dgammaT
+          rstreamlineDiffusion2%dnewton = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          
+          ! Call the SD method to calculate the nonlinearity except for the
+          ! convection part. As velocity vector, specify rvector!
+          ! Therefore, the primal velcity is always used for assembling
+          ! that thing!
+          call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
+              rx,rb,rvector)
+
+          ! Prepare the upwind structure for the assembly of the convection.
+          rupwindStabil%dupsam = rstabilisation%dupsam
+          rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rupwindStabil%dtheta = dgamma*dcx
+          
+          ! Apply the upwind operator.
+          call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
+              rupwindStabil, CONV_MODDEFECT, rmatrix%RmatrixBlock(1,1), rx, rb)
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
