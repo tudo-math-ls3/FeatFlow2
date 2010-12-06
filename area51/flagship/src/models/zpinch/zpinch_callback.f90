@@ -794,7 +794,7 @@ contains
       integer :: i
 
       ! Loop over all rows
-      !$omp parallel do private(x1,x2,drad,daux)
+      !$omp parallel do private(x1,x2,drad,daux) if (neq > 10000)
       do i = 1, neq
 
         ! Get coordinates at node i
@@ -848,7 +848,7 @@ contains
       integer :: i
 
       ! Loop over all rows
-      !$omp parallel do private(x1,drad,daux)
+      !$omp parallel do private(x1,drad,daux) if (neq > 10000)
       do i = 1, neq
 
         ! Get x-coordinate at node i
@@ -897,7 +897,7 @@ contains
       integer :: i
 
       ! Loop over all rows
-      !$omp parallel do private(x1,x2,drad,daux)
+      !$omp parallel do private(x1,x2,drad,daux) if (neq > 10000)
       do i = 1, neq
 
         ! Get coordinates at node i
@@ -951,7 +951,7 @@ contains
       integer :: i
 
       ! Loop over all rows
-      !$omp parallel do private(x1,drad,daux)
+      !$omp parallel do private(x1,drad,daux) if (neq > 10000)
       do i = 1, neq
 
         ! Get x-coordinate at node i

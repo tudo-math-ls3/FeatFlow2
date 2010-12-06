@@ -491,199 +491,145 @@ contains
 
 
     if (trim(cvariable) .eq. 'density') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = DENSITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'velocity_magnitude') then
       select case(nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = VELOCITY_MAGNITUDE_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = VELOCITY_MAGNITUDE_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = VELOCITY_MAGNITUDE_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     elseif (trim(cvariable) .eq. 'velocity_x') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = X_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'velocity_y') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Y_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'velocity_z') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Z_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'momentum_x') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = X_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'momentum_y') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Y_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'momentum_z') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Z_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif (trim(cvariable) .eq. 'energy') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = TOTAL_ENERGY_1T_FROM_CONSVAR(Ddata, nvar, ieq)/&
                       DENSITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
       
     elseif (trim(cvariable) .eq. 'total_energy') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = TOTAL_ENERGY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
         
     elseif (trim(cvariable) .eq. 'internal_energy') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     elseif (trim(cvariable) .eq. 'kinetic_energy') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = KINETIC_ENERGY_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = KINETIC_ENERGY_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = KINETIC_ENERGY_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     elseif (trim(cvariable) .eq. 'pressure') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     elseif (trim(cvariable) .eq. 'machnumber') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     elseif (trim(cvariable) .eq. 'speedofsound') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     else
@@ -732,201 +678,147 @@ contains
 
     
     if(trim(cvariable) .eq. 'density') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = DENSITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'velocity_magnitude') then
       select case(nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = VELOCITY_MAGNITUDE_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
 
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = VELOCITY_MAGNITUDE_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
 
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = VELOCITY_MAGNITUDE_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     elseif(trim(cvariable) .eq. 'velocity_x') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = X_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'velocity_y') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Y_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'velocity_z') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Z_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'momentum_x') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = X_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'momentum_y') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Y_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'momentum_z') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Z_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'energy') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = TOTAL_ENERGY_1L_FROM_CONSVAR(Ddata, nvar, ieq)/&
                       DENSITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
       
     elseif(trim(cvariable) .eq. 'total_energy') then
-      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = TOTAL_ENERGY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
       end do
-      !$omp end parallel do
 
     elseif(trim(cvariable) .eq. 'internal_energy') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     elseif(trim(cvariable) .eq. 'kinetic_energy') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = KINETIC_ENERGY_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = KINETIC_ENERGY_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = KINETIC_ENERGY_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     elseif(trim(cvariable) .eq. 'pressure') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     elseif(trim(cvariable) .eq. 'machnumber') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     elseif(trim(cvariable) .eq. 'speedofsound') then
       select case (nvar)
       case (NVAR1D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR2D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       case (NVAR3D)
-        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
         end do
-        !$omp end parallel do
       end select
 
     else
@@ -1101,11 +993,7 @@ contains
     !**************************************************************
     ! Set variable stored in interleave format
 
-#ifndef USE_OPENMP
-    pure &
-#endif
-
-    subroutine setVarInterleaveformat(neq, nvar, ivar, Dvalue, Ddata)
+    pure subroutine setVarInterleaveformat(neq, nvar, ivar, Dvalue, Ddata)
 
       integer, intent(in) :: neq, nvar, ivar
       real(DP), dimension(:), intent(in) :: Dvalue
@@ -1115,22 +1003,16 @@ contains
       ! local variables
       integer :: ieq
 
-      !$omp parallel do
       do ieq = 1, neq
         Ddata(ivar, ieq) = Dvalue(ieq)
       end do
-      !$omp end parallel do
 
     end subroutine setVarInterleaveformat
 
     !**************************************************************
     ! Set variable stored in block format
 
-#ifndef USE_OPENMP
-    pure &
-#endif
-
-    subroutine setVarBlockformat(neq, nvar, ivar, Dvalue, Ddata)
+    pure subroutine setVarBlockformat(neq, nvar, ivar, Dvalue, Ddata)
 
       integer, intent(in) :: neq, nvar, ivar
       real(DP), dimension(:), intent(in) :: Dvalue
@@ -1140,11 +1022,9 @@ contains
       ! local variables
       integer :: ieq
 
-      !$omp parallel do
       do ieq = 1, neq
         Ddata(ieq, ivar) = Dvalue(ieq)
       end do
-      !$omp end parallel do
 
     end subroutine setVarBlockformat
 

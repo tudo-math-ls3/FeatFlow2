@@ -6326,13 +6326,11 @@ contains
         if (alpha .ne. 0._DP .and. alpha .ne. -1._DP) then
           alpha1 = 1._DP/(1._DP+alpha)
 
-!$omp  parallel do default(shared) private(ieq,ild)
           do ieq = 1, neq
             do ild = Kld(ieq)+1, Kld(ieq+1)-1
               Da(:,ild) = Da(:,ild)*alpha1
             end do
           end do
-!$omp  end parallel do
         end if
 
       else
@@ -6340,12 +6338,10 @@ contains
         ! Constant shift for MILUE
         if (alpha .ne. 0._DP) then
           alpha1 = 1._DP+alpha
-!$omp  parallel do default(shared) private(ieq,ild)
           do ieq = 1, neq
             ild = Kld(ieq)
             Da(:,ild) = Da(:,ild)*alpha1
           end do
-!$omp  end parallel do
         end if
 
       end if
@@ -6533,7 +6529,6 @@ contains
         if (alpha .ne. 0._DP .and. alpha .ne. -1._DP) then
           alpha1 = 1._DP/(1._DP+alpha)
 
-!$omp  parallel do default(shared) private(ieq,ild)
           do ieq = 1,neq
             do ild = Kld(ieq), Kdiagonal(ieq)-1
               Da(:,ild) = Da(:,ild)*alpha1
@@ -6542,7 +6537,6 @@ contains
               Da(:,ild) = Da(:,ild)*alpha1
             end do
           end do
-!$omp  end parallel do
         end if
 
       else
@@ -6550,12 +6544,10 @@ contains
         ! Constant shift for MILU
         if (alpha .ne. 0._DP) then
           alpha1 = 1._DP+alpha
-!$omp  parallel do default(shared) private(ieq,ild)
           do ieq = 1, neq
             ild = Kdiagonal(ieq)
             Da(:,ild) = Da(:,ild)*alpha1
           end do
-!$omp  end parallel do
         end if
 
       end if
