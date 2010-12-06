@@ -265,6 +265,7 @@ module bilinearformevaluation
   use domainintegration
   use element
   use elementpreprocessing
+  use extstdassemblyinfo
   use fsystem
   use genoutput
   use linearalgebra
@@ -275,7 +276,6 @@ module bilinearformevaluation
   use storage
   use transformation
   use triangulation
-  use extstdassemblyinfo
   
   implicit none
   
@@ -426,7 +426,7 @@ contains
 
 !<subroutine>
 
-  subroutine bilf_createMatrixStructure (rdiscretisationTrial,iformat,rmatrixScalar, &
+  subroutine bilf_createMatrixStructure (rdiscretisationTrial,iformat,rmatrix, &
                                          rdiscretisationTest,cconstrType,imemguess)
   
 !<description>
@@ -464,7 +464,7 @@ contains
 !<output>
   ! The structure of a scalar matrix, fitting to the given discretisation.
   ! Memory fo the structure is allocated dynamically on the heap.
-  type(t_matrixScalar), intent(out) :: rmatrixScalar
+  type(t_matrixScalar), intent(out) :: rmatrix
 !</output>
 
 !</subroutine>
@@ -494,7 +494,7 @@ contains
       
       case (BILF_MATC_ELEMENTBASED)
         ! Call the creation routine for structure 9:
-        call bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrixScalar,&
+        call bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrix,&
             rdiscretisationTest,imem)
         
       case (BILF_MATC_EDGEBASED)
@@ -510,7 +510,7 @@ contains
         
         end if
 
-        call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrixScalar,&
+        call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrix,&
             rdiscretisationTest,imem)
         
       case DEFAULT
@@ -526,7 +526,7 @@ contains
       case (BILF_MATC_ELEMENTBASED)
       
         ! Call the creation routine for structure 9:
-        call bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrixScalar,&
+        call bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrix,&
             rdiscretisationTest,imem)
 
       case (BILF_MATC_EDGEBASED)
@@ -540,7 +540,7 @@ contains
           end if
         end if
         
-        call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrixScalar,&
+        call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrix,&
           rdiscretisationTest,imem)
         
       case DEFAULT
@@ -550,7 +550,7 @@ contains
       end select
         
       ! Translate to matrix structure 7:
-      call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
+      call lsyssc_convertMatrix (rmatrix,LSYSSC_MATRIX7)
       
     case DEFAULT
       call output_line ('Not supported matrix structure!', &
@@ -570,7 +570,7 @@ contains
 
 !<subroutine>
 
-  subroutine bilf_buildMatrixScalar (rform,bclear,rmatrixScalar,&
+  subroutine bilf_buildMatrixScalar (rform,bclear,rmatrix,&
       fcoeff_buildMatrixSc_sim,rcollection)
   
 !<description>
@@ -581,7 +581,7 @@ contains
   ! allocates memory in size of the matrix of the heap for the matrix entries.
   !
   ! For setting up the entries, the discretisation structure attached to
-  ! the matrix is used (rmatrixScalar%p_rdiscretisation). This is
+  ! the matrix is used (rmatrix%p_rdiscretisation). This is
   ! normally attached to the matrix by bilf_createMatrixStructure.
   !
   ! The matrix must be unsorted when this routine is called, 
@@ -609,7 +609,7 @@ contains
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(inout) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -621,38 +621,38 @@ contains
   ! Note that we cannot switch off the sorting as easy as in the case
   ! of a vector, since there is a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
-  if (rmatrixScalar%isortStrategy .gt. 0) then
+  if (rmatrix%isortStrategy .gt. 0) then
     call output_line ('Matrix-structure must be unsorted!', &
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
     call sys_halt()
   end if
 
-  if ((.not. associated(rmatrixScalar%p_rspatialDiscrTest)) .or. &
-      (.not. associated(rmatrixScalar%p_rspatialDiscrTrial))) then
+  if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
+      (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
     call output_line ('No discretisation associated!', &
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
     call sys_halt()
   end if
   
   ! Do we have a uniform triangulation? Would simplify a lot...
-  select case (rmatrixScalar%p_rspatialDiscrTest%ccomplexity)
+  select case (rmatrix%p_rspatialDiscrTest%ccomplexity)
   case (SPDISC_UNIFORM) 
     ! Uniform discretisation; only one type of elements, e.g. P1 or Q1
-    select case (rmatrixScalar%cdataType)
+    select case (rmatrix%cdataType)
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
-      select case (rmatrixScalar%cmatrixFormat) 
+      select case (rmatrix%cmatrixFormat) 
       case (LSYSSC_MATRIX9)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-          call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrixScalar,&  
+          call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrix,&  
               fcoeff_buildMatrixSc_sim,rcollection)
         !ELSE
-        !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar)
+        !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrix)
         !END IF
       case (LSYSSC_MATRIX7)
         ! Convert structure 7 to structure 9.For that purpose, make a backup of
         ! the original matrix...
-        call lsyssc_duplicateMatrix (rmatrixScalar,rmatrixBackup,&
+        call lsyssc_duplicateMatrix (rmatrix,rmatrixBackup,&
             LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
             
         ! Convert the matrix 
@@ -666,7 +666,7 @@ contains
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
         
         ! Copy the entries back to the original matrix and release memory.
-        call lsyssc_duplicateMatrix (rmatrixBackup,rmatrixScalar,&
+        call lsyssc_duplicateMatrix (rmatrixBackup,rmatrix,&
             LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
             
         call lsyssc_releaseMatrix (rmatrixBackup)
@@ -685,22 +685,22 @@ contains
   case (SPDISC_CONFORMAL) 
     
     ! Conformal discretisation; may have mixed P1/Q1 elements e.g.
-    select case (rmatrixScalar%cdataType)
+    select case (rmatrix%cdataType)
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
-      select case (rmatrixScalar%cmatrixFormat) 
+      select case (rmatrix%cmatrixFormat) 
       case (LSYSSC_MATRIX9)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-          call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrixScalar,&  
+          call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrix,&  
               fcoeff_buildMatrixSc_sim,rcollection)
         !ELSE
-        !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar)
+        !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrix)
         !END IF
         
       case (LSYSSC_MATRIX7)
         ! Convert structure 7 to structure 9.For that purpose, make a backup of
         ! the original matrix...
-        call lsyssc_duplicateMatrix (rmatrixScalar,rmatrixBackup,&
+        call lsyssc_duplicateMatrix (rmatrix,rmatrixBackup,&
             LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
             
         ! Convert the matrix 
@@ -714,7 +714,7 @@ contains
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
         
         ! Copy the entries back to the original matrix and release memory.
-        call lsyssc_duplicateMatrix (rmatrixBackup,rmatrixScalar,&
+        call lsyssc_duplicateMatrix (rmatrixBackup,rmatrix,&
             LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
             
         call lsyssc_releaseMatrix (rmatrixBackup)
@@ -741,7 +741,7 @@ contains
   
 !<subroutine>
   
-  subroutine bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrixScalar,&
+  subroutine bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrix,&
       rdiscretisationTest,imemGuess)
   
 !<description>
@@ -773,7 +773,7 @@ contains
 !<output>
   ! The structure of a scalar matrix, fitting to the given discretisation.
   ! Memory fo rthe structure is allocated dynamically on the heap.
-  type(t_matrixScalar), intent(out) :: rmatrixScalar
+  type(t_matrixScalar), intent(out) :: rmatrix
 !</output>
 
 !</subroutine>
@@ -855,29 +855,29 @@ contains
   !
   ! At first, initialise the structure-9 matrix:
   
-  rmatrixScalar%p_rspatialDiscrTrial => rdiscretisationTrial
+  rmatrix%p_rspatialDiscrTrial => rdiscretisationTrial
   if (present(rdiscretisationTest)) then
-    rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTest
-    rmatrixScalar%bidenticalTrialAndTest = .false.
+    rmatrix%p_rspatialDiscrTest => rdiscretisationTest
+    rmatrix%bidenticalTrialAndTest = .false.
   else
-    rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTrial
-    rmatrixScalar%bidenticalTrialAndTest = .true.
+    rmatrix%p_rspatialDiscrTest => rdiscretisationTrial
+    rmatrix%bidenticalTrialAndTest = .true.
   end if
-  rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9
+  rmatrix%cmatrixFormat = LSYSSC_MATRIX9
   
   ! Get the #DOF`s of the test space - as #DOF`s of the test space is
   ! the number of equations in our matrix. The #DOF`s in the trial space
   ! gives the number of columns of our matrix.
-  rmatrixScalar%NCOLS         = &
-      dof_igetNDofGlob(rmatrixScalar%p_rspatialDiscrTrial)
-  rmatrixScalar%NEQ           = &
-      dof_igetNDofGlob(rmatrixScalar%p_rspatialDiscrTest)
+  rmatrix%NCOLS         = &
+      dof_igetNDofGlob(rmatrix%p_rspatialDiscrTrial)
+  rmatrix%NEQ           = &
+      dof_igetNDofGlob(rmatrix%p_rspatialDiscrTest)
   
   ! and get a pointer to the triangulation.
   p_rtriangulation => rdiscretisationTrial%p_rtriangulation
   
   ! Get NEQ - we need it for guessing memory...
-  NEQ = rmatrixScalar%NEQ
+  NEQ = rmatrix%NEQ
   
   if (NEQ .eq. 0) then
     call output_line ('Empty matrix!', &
@@ -887,19 +887,19 @@ contains
   
   ! Allocate KLD...
   call storage_new ('bilf_createMatStructure9_conf', 'KLD', &
-                      NEQ+1, ST_INT, rmatrixScalar%h_KLD, &
+                      NEQ+1, ST_INT, rmatrix%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
   ! matrix construction routine!
-  call storage_getbase_int(rmatrixScalar%h_Kld,p_KLD)
+  call storage_getbase_int(rmatrix%h_Kld,p_KLD)
   
   ! Allocate h_Kdiagonal
   call storage_new ('bilf_createMatStructure9_conf', 'Kdiagonal', &
-                      NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, &
+                      NEQ, ST_INT, rmatrix%h_Kdiagonal, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
   ! matrix construction routine!
-  call storage_getbase_int (rmatrixScalar%h_Kdiagonal,p_Kdiagonal)
+  call storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
   
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
@@ -1001,9 +1001,9 @@ contains
   
     ! Activate the current element distribution
     p_relementDistrTest => &
-        rmatrixScalar%p_rspatialDiscrTest%RelementDistr(icurrentElementDistr)
+        rmatrix%p_rspatialDiscrTest%RelementDistr(icurrentElementDistr)
     p_relementDistrTrial => &
-        rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(icurrentElementDistr)
+        rmatrix%p_rspatialDiscrTrial%RelementDistr(icurrentElementDistr)
 
     ! Cancel if this element distribution is empty.
     if (p_relementDistrTest%NEL .eq. 0) cycle
@@ -1058,14 +1058,14 @@ contains
     p_Iindx => Rmemblock(1)%p_Iindx
     
     ! Loop over the elements. 
-    do IELset = 1, NEL, BILF_NELEMSIM
+    do IELset = 1, NEL, nelementsPerBlock
     
-      ! We always handle BILF_NELEMSIM elements simultaneously.
+      ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
-      ! elements simultaneously.
+      ! Get the maximum element number, such that we handle at most
+      ! nelementsPerBlock elements simultaneously.
       
-      IELmax = min(NEL,IELset-1+BILF_NELEMSIM)
+      IELmax = min(NEL,IELset-1+nelementsPerBlock)
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -1093,16 +1093,16 @@ contains
       ! the call will only fill KDFG.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our nelementPerBlock elements simultaneously.
       ! Calculate the DOF`s of the test functions:
       call dof_locGlobMapping_mult(&
-          rmatrixScalar%p_rspatialDiscrTest, p_IelementList(IELset:IELmax), &
+          rmatrix%p_rspatialDiscrTest, p_IelementList(IELset:IELmax), &
           IdofsTest)
                                    
       ! If the DOF`s for the test functions are different, calculate them, too.
       if (.not.bIdenticalTrialAndTest) then
         call dof_locGlobMapping_mult(&
-            rmatrixScalar%p_rspatialDiscrTrial, p_IelementList(IELset:IELmax), &
+            rmatrix%p_rspatialDiscrTrial, p_IelementList(IELset:IELmax), &
             IdofsTrial)
       end if
       
@@ -1344,14 +1344,14 @@ contains
   ! At first, as we now NA, we can allocate the real KCOL now!
   
   call storage_new ('bilf_createMatStructure9_conf', 'KCOL', &
-                      NA, ST_INT, rmatrixScalar%h_KCOL, &
+                      NA, ST_INT, rmatrix%h_KCOL, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
   ! matrix construction routine!
-  call storage_getbase_int (rmatrixScalar%h_Kcol,p_KCOL)
+  call storage_getbase_int (rmatrix%h_Kcol,p_KCOL)
   
   ! Save NA in the matrix structure
-  rmatrixScalar%NA = NA
+  rmatrix%NA = NA
   
   ! Set back NA to 0 at first.
 
@@ -1483,7 +1483,7 @@ contains
   
 !<subroutine>
   
-  subroutine bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrixScalar,&
+  subroutine bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrix,&
       rdiscretisationTest,imemGuess)
   
 !<description>
@@ -1517,7 +1517,7 @@ contains
 !<output>
   ! The structure of a scalar matrix, fitting to the given discretisation.
   ! Memory fo rthe structure is allocated dynamically on the heap.
-  type(t_matrixScalar), intent(out) :: rmatrixScalar
+  type(t_matrixScalar), intent(out) :: rmatrix
 !</output>
 
 !</subroutine>
@@ -1568,8 +1568,6 @@ contains
   ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTest, IdofsTrial
   integer, dimension(:,:), pointer :: p_IdofsTrial
-  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
-  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
   
   integer, dimension(:), allocatable :: IadjPtr, IadjElem
   
@@ -1599,23 +1597,23 @@ contains
   !
   ! At first, initialise the structure-9 matrix:
   
-  rmatrixScalar%p_rspatialDiscrTrial => rdiscretisationTrial
+  rmatrix%p_rspatialDiscrTrial => rdiscretisationTrial
   if (present(rdiscretisationTest)) then
-    rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTest
-    rmatrixScalar%bidenticalTrialAndTest = .false.
+    rmatrix%p_rspatialDiscrTest => rdiscretisationTest
+    rmatrix%bidenticalTrialAndTest = .false.
   else
-    rmatrixScalar%p_rspatialDiscrTest => rdiscretisationTrial
-    rmatrixScalar%bidenticalTrialAndTest = .true.
+    rmatrix%p_rspatialDiscrTest => rdiscretisationTrial
+    rmatrix%bidenticalTrialAndTest = .true.
   end if
-  rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9
+  rmatrix%cmatrixFormat = LSYSSC_MATRIX9
   
   ! Get the #DOF`s of the test space - as #DOF`s of the test space is
   ! the number of equations in our matrix. The #DOF`s in the trial space
   ! gives the number of columns of our matrix.
-  rmatrixScalar%NCOLS         = &
-      dof_igetNDofGlob(rmatrixScalar%p_rspatialDiscrTrial)
-  rmatrixScalar%NEQ           = &
-      dof_igetNDofGlob(rmatrixScalar%p_rspatialDiscrTest)
+  rmatrix%NCOLS         = &
+      dof_igetNDofGlob(rmatrix%p_rspatialDiscrTrial)
+  rmatrix%NEQ           = &
+      dof_igetNDofGlob(rmatrix%p_rspatialDiscrTest)
   
   ! and get a pointer to the triangulation.
   p_rtriangulation => rdiscretisationTrial%p_rtriangulation
@@ -1623,7 +1621,7 @@ contains
   call storage_getbase_int2d (p_rtriangulation%h_IneighboursAtElement,p_Kadj)
   
   ! Get NEQ - we need it for guessing memory...
-  NEQ = rmatrixScalar%NEQ
+  NEQ = rmatrix%NEQ
   
   if (NEQ .eq. 0) then
     call output_line ('Empty matrix!', &
@@ -1633,19 +1631,19 @@ contains
   
   ! Allocate KLD...
   call storage_new ('bilf_createMatStructure9_uni', 'KLD', &
-                      NEQ+1, ST_INT, rmatrixScalar%h_KLD, &
+                      NEQ+1, ST_INT, rmatrix%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
   ! matrix construction routine!
-  call storage_getbase_int (rmatrixScalar%h_Kld,p_KLD)
+  call storage_getbase_int (rmatrix%h_Kld,p_KLD)
   
   ! Allocate h_Kdiagonal
   call storage_new ('bilf_createMatStructure9_conf', 'Kdiagonal', &
-                      NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, &
+                      NEQ, ST_INT, rmatrix%h_Kdiagonal, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
   ! matrix construction routine!
-  call storage_getbase_int (rmatrixScalar%h_Kdiagonal,p_Kdiagonal)
+  call storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
   
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
@@ -1741,8 +1739,8 @@ contains
   NA = NEQ
   
   ! Activate the one and only element distribution
-  p_relementDistrTest => rmatrixScalar%p_rspatialDiscrTest%RelementDistr(1)
-  p_relementDistrTrial => rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)
+  p_relementDistrTest => rmatrix%p_rspatialDiscrTest%RelementDistr(1)
+  p_relementDistrTrial => rmatrix%p_rspatialDiscrTrial%RelementDistr(1)
 
   ! Get the number of local DOF`s for trial and test functions
   indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
@@ -1808,14 +1806,14 @@ contains
   p_Iindx => Rmemblock(1)%p_Iindx
   
   ! Loop over the elements. 
-  do IELset = 1, p_rtriangulation%NEL, BILF_NELEMSIM
+  do IELset = 1, p_rtriangulation%NEL, nelementsPerBlock
   
-    ! We always handle BILF_NELEMSIM elements simultaneously.
+    ! We always handle nelementsPerBlock elements simultaneously.
     ! How many elements have we actually here?
-    ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+    ! Get the maximum element number, such that we handle at most nelementsPerBlock
     ! elements simultaneously.
     
-    IELmax = min(p_rtriangulation%NEL,IELset-1+BILF_NELEMSIM)
+    IELmax = min(p_rtriangulation%NEL,IELset-1+nelementsPerBlock)
     
     ! --------------------- DOF SEARCH PHASE ------------------------
     
@@ -1879,13 +1877,13 @@ contains
     ! global DOF`s of our nelemBlockCount elements simultaneously.
     ! Calculate the DOF`s of the test functions:
     call dof_locGlobMapping_mult(&
-        rmatrixScalar%p_rspatialDiscrTest, IadjElem(1:nelemBlockCount), &
+        rmatrix%p_rspatialDiscrTest, IadjElem(1:nelemBlockCount), &
         IdofsTest)
                                  
     ! If the DOF`s for the test functions are different, calculate them, too.
     if (.not.bIdenticalTrialAndTest) then
       call dof_locGlobMapping_mult(&
-          rmatrixScalar%p_rspatialDiscrTrial, IadjElem(1:nelemBlockCount), &
+          rmatrix%p_rspatialDiscrTrial, IadjElem(1:nelemBlockCount), &
           IdofsTrial)
     end if
   
@@ -2136,14 +2134,14 @@ contains
   ! each row.
   !
   ! Save NA in the matrix structure
-  rmatrixScalar%NA = NA
+  rmatrix%NA = NA
   
   ! As we now NA, we can allocate the real KCOL now!
   
   call storage_new ('bilf_createMatStructure9_conf', 'KCOL', &
-                      NA, ST_INT, rmatrixScalar%h_KCOL, &
+                      NA, ST_INT, rmatrix%h_KCOL, &
                       ST_NEWBLOCK_NOINIT)
-  call storage_getbase_int (rmatrixScalar%h_Kcol,p_KCOL)
+  call storage_getbase_int (rmatrix%h_Kcol,p_KCOL)
   
   ! Set back NA to 0 at first.
 
@@ -2278,7 +2276,7 @@ contains
 !
 !!<subroutine>
 !
-!  SUBROUTINE bilf_buildMatrix9d_conf (rdiscretisation,rform,bclear,rmatrixScalar,&
+!  SUBROUTINE bilf_buildMatrix9d_conf (rdiscretisation,rform,bclear,rmatrix,&
 !                                      fcoeff_buildMatrixSc_sim,rcollection)
 !  
 !!<description>
@@ -2321,7 +2319,7 @@ contains
 !
 !!<inputoutput>
 !  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-!  TYPE(t_matrixScalar), INTENT(inout) :: rmatrixScalar
+!  TYPE(t_matrixScalar), INTENT(inout) :: rmatrix
 !!</inputoutput>
 !
 !!</subroutine>
@@ -2422,7 +2420,7 @@ contains
 !  
 !  !CHARACTER(LEN=20) :: CFILE
 !  
-!  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
+!  IF (.NOT. ASSOCIATED(rmatrix%p_rspatialDiscretisation)) THEN
 !    CALL output_line ('No discretisation associated!', &
 !        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
 !    CALL sys_halt()
@@ -2468,26 +2466,26 @@ contains
 !  END DO
 !  
 !  ! Get information about the matrix:
-!  NA = rmatrixScalar%NA
-!  NEQ = rmatrixScalar%NEQ
+!  NA = rmatrix%NA
+!  NEQ = rmatrix%NEQ
 !  
 !  ! We need KCOL/KLD of our matrix
-!  CALL lsyssc_getbase_Kcol (rmatrixScalar,p_KCOL)
-!  CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
+!  CALL lsyssc_getbase_Kcol (rmatrix,p_KCOL)
+!  CALL lsyssc_getbase_Kld (rmatrix,p_KLD)
 !  
 !  ! Check if the matrix entries exist. If not, allocate the matrix.
-!  IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
+!  IF (rmatrix%h_DA .EQ. ST_NOHANDLE) THEN
 !
 !    ! Clear the entries in the matrix - we need to start with zero
 !    ! when assembling a new matrix!
 !    CALL storage_new ('bilf_buildMatrix9d_conf', 'DA', &
-!                        NA, ST_DOUBLE, rmatrixScalar%h_DA, &
+!                        NA, ST_DOUBLE, rmatrix%h_DA, &
 !                        ST_NEWBLOCK_ZERO)
-!    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
+!    CALL lsyssc_getbase_double (rmatrix,p_DA)
 !
 !  ELSE
 !  
-!    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
+!    CALL lsyssc_getbase_double (rmatrix,p_DA)
 !
 !    ! If desired, clear the matrix before assembling.
 !    IF (bclear) THEN
@@ -2660,14 +2658,14 @@ contains
 !                              p_IelementList)
 !                              
 !    ! Loop over the elements - blockwise.
-!    DO IELset = 1, p_rtriangulation%NEL, BILF_NELEMSIM
+!    DO IELset = 1, p_rtriangulation%NEL, nelementsPerBlock
 !    
-!      ! We always handle BILF_NELEMSIM elements simultaneously.
+!      ! We always handle nelementsPerBlock elements simultaneously.
 !      ! How many elements have we actually here?
-!      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
-!      ! elements simultaneously.
+!      ! Get the maximum element number, such that we handle at most
+!      ! nelementsPerBlock elements simultaneously.
 !      
-!      IELmax = MIN(p_rtriangulation%NEL,IELset-1+BILF_NELEMSIM)
+!      IELmax = MIN(p_rtriangulation%NEL,IELset-1+nelementsPerBlock)
 !    
 !      ! The outstanding feature with finite elements is: A basis
 !      ! function for a DOF on one element has common support only
@@ -2692,7 +2690,7 @@ contains
 !      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
 !      !
 !      ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-!      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+!      ! global DOF`s of our nelementsPerBlock elements simultaneously.
 !      CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
 !                                  .TRUE.,IdofsTest)
 !                                   
@@ -3098,7 +3096,7 @@ contains
 !
 !!<subroutine>
 !
-!  SUBROUTINE bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,&
+!  SUBROUTINE bilf_buildMatrix9d_conf2 (rform,bclear,rmatrix,&
 !                                       fcoeff_buildMatrixSc_sim,rcollection)
 !  
 !!<description>
@@ -3111,7 +3109,7 @@ contains
 !  ! allocates memory in size of the matrix of the heap for the matrix entries.
 !  !
 !  ! For setting up the entries, the discretisation structure attached to
-!  ! the matrix is used (rmatrixScalar%p_rdiscretisation). This is
+!  ! the matrix is used (rmatrix%p_rdiscretisation). This is
 !  ! normally attached to the matrix by bilf_createMatrixStructure.
 !  !
 !  ! Double-precision version.
@@ -3138,7 +3136,7 @@ contains
 !
 !!<inputoutput>
 !  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-!  TYPE(t_matrixScalar), INTENT(inout) :: rmatrixScalar
+!  TYPE(t_matrixScalar), INTENT(inout) :: rmatrix
 !!</inputoutput>
 !
 !!</subroutine>
@@ -3170,8 +3168,6 @@ contains
 !  ! An allocateable array accepting the DOF`s of a set of elements.
 !  INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
 !  INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
-!  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
-!  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
 !  
 !  ! Allocateable arrays for the values of the basis functions - 
 !  ! for test and trial spaces.
@@ -3242,7 +3238,7 @@ contains
 !  ! The discretisation - for easier access
 !  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
 !  
-!  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
+!  IF (.NOT. ASSOCIATED(rmatrix%p_rspatialDiscretisation)) THEN
 !    CALL output_line ('No discretisation associated!',&
 !        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
 !    CALL sys_halt()
@@ -3286,33 +3282,33 @@ contains
 !  END DO
 !  
 !  ! Get information about the matrix:
-!  NA = rmatrixScalar%NA
-!  NEQ = rmatrixScalar%NEQ
+!  NA = rmatrix%NA
+!  NEQ = rmatrix%NEQ
 !  
 !  ! We need KCOL/KLD of our matrix
-!  IF ((rmatrixScalar%h_KCOL .EQ. ST_NOHANDLE) .OR. &
-!      (rmatrixScalar%h_KLD .EQ. ST_NOHANDLE)) THEN
+!  IF ((rmatrix%h_KCOL .EQ. ST_NOHANDLE) .OR. &
+!      (rmatrix%h_KLD .EQ. ST_NOHANDLE)) THEN
 !    CALL output_line ('No discretisation structure! Cannot assemble matrix!', &
 !                      OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
 !    CALL sys_halt()
 !  END IF
 !  
-!  CALL lsyssc_getbase_Kcol (rmatrixScalar,p_KCOL)
-!  CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
+!  CALL lsyssc_getbase_Kcol (rmatrix,p_KCOL)
+!  CALL lsyssc_getbase_Kld (rmatrix,p_KLD)
 !  
 !  ! Check if the matrix entries exist. If not, allocate the matrix.
-!  IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
+!  IF (rmatrix%h_DA .EQ. ST_NOHANDLE) THEN
 !
 !    ! Clear the entries in the matrix - we need to start with zero
 !    ! when assembling a new matrix!
 !    CALL storage_new ('bilf_buildMatrix9d_conf', 'DA', &
-!                        NA, ST_DOUBLE, rmatrixScalar%h_DA, &
+!                        NA, ST_DOUBLE, rmatrix%h_DA, &
 !                        ST_NEWBLOCK_ZERO)
-!    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
+!    CALL lsyssc_getbase_double (rmatrix,p_DA)
 !
 !  ELSE
 !  
-!    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
+!    CALL lsyssc_getbase_double (rmatrix,p_DA)
 !
 !    ! If desired, clear the matrix before assembling.
 !    IF (bclear) THEN
@@ -3322,7 +3318,7 @@ contains
 !  END IF
 !  
 !  ! Get the discretisation
-!  p_rdiscretisation => rmatrixScalar%p_rspatialDiscretisation
+!  p_rdiscretisation => rmatrix%p_rspatialDiscretisation
 !  
 !  IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
 !    CALL output_line ('No discretisation attached to the matrix!',&
@@ -4012,7 +4008,7 @@ contains
 
 !<subroutine>
 
-  subroutine bilf_buildMatrix9d_conf3 (rform,bclear,rmatrixScalar,&
+  subroutine bilf_buildMatrix9d_conf3 (rform,bclear,rmatrix,&
       fcoeff_buildMatrixSc_sim,rcollection,rscalarAssemblyInfo)
   
 !<description>
@@ -4025,7 +4021,7 @@ contains
   ! allocates memory in size of the matrix of the heap for the matrix entries.
   !
   ! For setting up the entries, the discretisation structure attached to
-  ! the matrix is used (rmatrixScalar%p_rdiscretisation). This is
+  ! the matrix is used (rmatrix%p_rdiscretisation). This is
   ! normally attached to the matrix by bilf_createMatrixStructure.
   !
   ! Double-precision version.
@@ -4057,7 +4053,7 @@ contains
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(inout) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -4146,8 +4142,8 @@ contains
   type(t_spatialDiscretisation), pointer :: p_rdiscrTest
   type(t_spatialDiscretisation), pointer :: p_rdiscrTrial
   
-  if ((.not. associated(rmatrixScalar%p_rspatialDiscrTest)) .or. &
-      (.not. associated(rmatrixScalar%p_rspatialDiscrTrial))) then
+  if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
+      (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
     call output_line ('No discretisation associated!',&
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
     call sys_halt()
@@ -4191,33 +4187,33 @@ contains
   end do
   
   ! Get information about the matrix:
-  NA = rmatrixScalar%NA
-  NEQ = rmatrixScalar%NEQ
+  NA = rmatrix%NA
+  NEQ = rmatrix%NEQ
   
   ! We need KCOL/KLD of our matrix
-  if ((rmatrixScalar%h_KCOL .eq. ST_NOHANDLE) .or. &
-      (rmatrixScalar%h_KLD .eq. ST_NOHANDLE)) then
+  if ((rmatrix%h_KCOL .eq. ST_NOHANDLE) .or. &
+      (rmatrix%h_KLD .eq. ST_NOHANDLE)) then
     call output_line ('No discretisation structure! Cannot assemble matrix!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
     call sys_halt()
   end if
   
-  call lsyssc_getbase_Kcol (rmatrixScalar,p_KCOL)
-  call lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
+  call lsyssc_getbase_Kcol (rmatrix,p_KCOL)
+  call lsyssc_getbase_Kld (rmatrix,p_KLD)
   
   ! Check if the matrix entries exist. If not, allocate the matrix.
-  if (rmatrixScalar%h_DA .eq. ST_NOHANDLE) then
+  if (rmatrix%h_DA .eq. ST_NOHANDLE) then
 
     ! Clear the entries in the matrix - we need to start with zero
     ! when assembling a new matrix!
     call storage_new ('bilf_buildMatrix9d_conf', 'DA', &
-                        NA, ST_DOUBLE, rmatrixScalar%h_DA, &
+                        NA, ST_DOUBLE, rmatrix%h_DA, &
                         ST_NEWBLOCK_ZERO)
-    call lsyssc_getbase_double (rmatrixScalar,p_DA)
+    call lsyssc_getbase_double (rmatrix,p_DA)
 
   else
   
-    call lsyssc_getbase_double (rmatrixScalar,p_DA)
+    call lsyssc_getbase_double (rmatrix,p_DA)
 
     ! If desired, clear the matrix before assembling.
     if (bclear) then
@@ -4227,8 +4223,8 @@ contains
   end if
   
   ! Get the discretisation
-  p_rdiscrTest => rmatrixScalar%p_rspatialDiscrTest
-  p_rdiscrTrial => rmatrixScalar%p_rspatialDiscrTrial
+  p_rdiscrTest => rmatrix%p_rspatialDiscrTest
+  p_rdiscrTrial => rmatrix%p_rspatialDiscrTrial
   
   if ((.not. associated(p_rdiscrTest)) .or. &
       (.not. associated(p_rdiscrTrial))) then
@@ -4261,6 +4257,11 @@ contains
     ! Get the number of local DOF`s for trial and test functions
     indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
     indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
+
+    ! p_IelementList must point to our set of elements in the discretisation
+    ! with that combination of trial/test functions
+    call storage_getbase_int (p_relementDistrTest%h_IelementList, &
+                              p_IelementList)
     
     ! Get the number of vertices of the element, specifying the transformation
     ! form the reference to the real element.
@@ -4285,16 +4286,6 @@ contains
     ! Get the cubature formula
     call cub_getCubature(p_relementDistrTest%ccubTypeBilForm,p_DcubPtsRef, Domega)
     
-    ! Open-MP-Extension: Open threads here.
-    ! Each thread will allocate its own local memory...
-    !
-    !%omp parallel private(rintSubset, revalElementSet,&
-    !%omp   cevaluationTag, kentry, dentry,DbasTest,DbasTrial, &
-    !%omp   IdofsTest,IdofsTrial,p_Ddetj,&
-    !%omp   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
-    !%omp   p_DbasTrial, BderTrial, BderTest, IELmax,IEL, idofe,jdofe,jcol0, &
-    !%omp   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
-    
     ! Quickly check if one of the specified derivatives is out of the allowed range:
     do IALBET = 1,rform%itermcount
       IA = rform%Idescriptors(1,IALBET)
@@ -4315,6 +4306,16 @@ contains
         call sys_halt()
       end if
     end do
+
+    ! Open-MP-Extension: Open threads here.
+    ! Each thread will allocate its own local memory...
+    !
+    !$omp parallel default(shared) &
+    !$omp private(AUX,BderTest,BderTrial,DB,DbasTest,DbasTrial,Dcoefficients,&
+    !$omp         Dentry,IA,IALBET,IB,ICUBP,IDOFE,IEL,IELmax,IdofsTest,&
+    !$omp         IdofsTrial,JCOL,JCOL0,JDFG,JDOFE,Kentry,OM,&
+    !$omp         bIdenticalTrialandTest,bcubPtsInitialised,cevaluationTag,&
+    !$omp         p_DbasTrial,p_Ddetj,p_IdofsTrial,revalElementSet,rintSubset)
     
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -4396,11 +4397,6 @@ contains
       BderTrial = BderTrialTempl
       BderTest = BderTestTempl
     end if
-    
-    ! p_IelementList must point to our set of elements in the discretisation
-    ! with that combination of trial/test functions
-    call storage_getbase_int (p_relementDistrTest%h_IelementList, &
-                              p_IelementList)
                               
     ! Loop over the elements - blockwise.
     !
@@ -4409,7 +4405,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%omp do schedule(static,1)
+    !$omp do schedule(static,1)
     do IELset = 1, size(p_IelementList), BILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -4714,14 +4710,14 @@ contains
           ! The critical section is put around both loops as indofTest/indofTrial
           ! are usually small and quickly to handle.
           !
-          !%omp critical
+          !$omp critical
           do IDOFE=1,indofTest
             do JDOFE=1,indofTrial
               p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + &
                                               Dentry(JDOFE,IDOFE)
             end do
           end do
-          !%omp end critical
+          !$omp end critical
 
         end do ! IEL
         
@@ -4821,21 +4817,21 @@ contains
           ! The critical section is put around both loops as indofTest/indofTrial
           ! are usually small and quickly to handle.
           !
-          !%omp critical
+          !$omp critical
           do IDOFE=1,indofTest
             do JDOFE=1,indofTrial
               p_DA(Kentry(JDOFE,IDOFE,IEL)) = &
                   p_DA(Kentry(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
             end do
           end do
-          !%omp end critical
+          !$omp end critical
 
         end do ! IEL
 
       end if ! rform%ballCoeffConstant
 
     end do ! IELset
-    !%omp end do
+    !$omp end do
     
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
@@ -4850,7 +4846,7 @@ contains
     deallocate(Kentry)
     deallocate(Dentry)
 
-    !%omp end parallel
+    !$omp end parallel
 
     deallocate(p_DcubPtsRef)
     deallocate(Domega)
@@ -5107,6 +5103,9 @@ contains
       BderTestTempl(I1)=.true.
     end do
 
+    ! Determine if trial and test space is the same.
+    rmatrixAssembly%bIdenticalTrialAndTest = (celementTest .eq. celementTrial)
+    
     if (rmatrixAssembly%bIdenticalTrialAndTest) then
       ! Build the actual combination of what the element should calculate.
       rmatrixAssembly%BderTrial(:) = BderTrialTempl(:) .or. BderTestTempl(:)
@@ -5127,7 +5126,7 @@ contains
       call sys_halt()
     end if
     
-      ! Get from the element space the type of coordinate system
+    ! Get from the element space the type of coordinate system
     ! that is used there:
     rmatrixAssembly%ctrafoType = elem_igetTrafoType(celementTest)
     
@@ -5142,10 +5141,7 @@ contains
     
     ! Get the cubature formula
     call cub_getCubature(ccubType,rmatrixAssembly%p_DcubPtsRef,rmatrixAssembly%p_Domega)
-
-    ! Determine if trial and test space is the same.
-    rmatrixAssembly%bIdenticalTrialAndTest = (celementTest .eq. celementTrial)
-
+ 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag. 
@@ -5360,13 +5356,21 @@ contains
     indofTrial = rmatrixAssembly%indofTrial
     ncubp = rmatrixAssembly%ncubp
 
-    ! Copy the matrix assembly data to the local matrix assembly data,
-    ! where we can allocate memory.
+    ! Open-MP-Extension: Copy the matrix assembly data to the local
+    ! matrix assembly data, where we can allocate memory.
+    !
     ! For single processor machines, this is actually boring and nonsense.
     ! But using OpenMP, here we get a local copy of the matrix
     ! assembly structure to where we can add some local data which
     ! is released upon return without changing the original matrix assembly
     ! stucture or disturbing the data of the other processors.
+    !
+    !$omp parallel default(shared) &
+    !$omp private(IELmax,cevaluationTag,daux,db,domega,ia,ialbet,ib,icubp,&
+    !$omp         idofe,iel,jdofe,p_DbasTest,p_DbasTrial,p_Dcoefficients,&
+    !$omp         p_DcoefficientsBilf,p_Ddetj,p_Dentry,p_Domega,p_Idescriptors,&
+    !$omp         p_IdofsTest,p_IdofsTrial,p_Kentry,p_revalElementSet,&
+    !$omp         rintSubset,rlocalMatrixAssembly)
     rlocalMatrixAssembly = rmatrixAssembly
     call bilf_allocAssemblyData(rlocalMatrixAssembly)
     
@@ -5390,7 +5394,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%omp do schedule(static,1)
+    !$omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalMatrixAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
@@ -5733,8 +5737,8 @@ contains
       ! The critical section is put around both loops as indofTest/indofTrial
       ! are usually small and quickly to handle.
       !
-      !%omp critical
-      do iel = 1,IELmax-IELset+1          
+      !$omp critical
+      do iel = 1,IELmax-IELset+1
       
         do idofe = 1,indofTest
           do jdofe = 1,indofTrial
@@ -5744,12 +5748,14 @@ contains
         end do
 
       end do ! iel
-      !%omp end critical
+      !$omp end critical
 
     end do ! IELset
+    !$omp end do
     
     ! Release the local matrix assembly structure
     call bilf_releaseAssemblyData(rlocalMatrixAssembly)
+    !$omp end parallel
   
   end subroutine
 
@@ -6267,13 +6273,22 @@ contains
     indofTrial = rmatrixAssembly%indofTrial
     ncubp = rmatrixAssembly%ncubp
 
-    ! Copy the matrix assembly data to the local matrix assembly data,
-    ! where we can allocate memory.
+    ! Open-MP-Extension: Copy the matrix assembly data to the local
+    ! matrix assembly data, where we can allocate memory.
+    !
     ! For single processor machines, this is actually boring and nonsense.
     ! But using OpenMP, here we get a local copy of the matrix
     ! assembly structure to where we can add some local data which
     ! is released upon return without changing the original matrix assembly
     ! stucture or disturbing the data of the other processors.
+    !
+    !$omp parallel default(shared) &
+    !$omp private(DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,cevaluationTag,&
+    !$omp         daux,db,dlen,domega,ia,ialbet,ib,icoordSystem,icubp,idofe,&
+    !$omp         iel,jdofe,k,p_DbasTest,p_DbasTrial,p_Dcoefficients,&
+    !$omp         p_DcoefficientsBilf,p_DcubPtsRef,p_Dentry,p_Domega,&
+    !$omp         p_Idescriptors,p_IdofsTest,p_IdofsTrial,p_Kentry,&
+    !$omp         p_revalElementSet,rintSubset,rlocalMatrixAssembly)
     rlocalMatrixAssembly = rmatrixAssembly
     call bilf_allocAssemblyData(rlocalMatrixAssembly)
     
@@ -6318,7 +6333,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%omp do schedule(static,1)
+    !$omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalMatrixAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
@@ -6688,7 +6703,7 @@ contains
 
       if (cconstrType .eq. BILF_MATC_LUMPED) then
 
-        !%omp critical
+        !$omp critical
         do iel = 1,IELmax-IELset+1
           
           do idofe = 1,indofTest
@@ -6701,11 +6716,11 @@ contains
           end do
           
         end do ! iel
-        !%omp end critical
+        !$omp end critical
 
       else
         
-        !%omp critical
+        !$omp critical
         do iel = 1,IELmax-IELset+1
           
           do idofe = 1,indofTest
@@ -6716,17 +6731,19 @@ contains
           end do
           
         end do ! iel
-        !%omp end critical
+        !$omp end critical
 
       end if
 
     end do ! IELset
+    !$omp end do
     
     ! Release the local matrix assembly structure
     call bilf_releaseAssemblyData(rlocalMatrixAssembly)
   
     ! Deallocate memory
     deallocate(Dxi2D, DpointsRef, DpointsPar)
+    !$omp end parallel
 
   end subroutine
 
@@ -6745,7 +6762,7 @@ contains
   ! allocates memory in size of the matrix of the heap for the matrix entries.
   !
   ! For setting up the entries, the discretisation structure attached to
-  ! the matrix is used (rmatrixScalar%p_rdiscretisation). This is
+  ! the matrix is used (rmatrix%p_rdiscretisation). This is
   ! normally attached to the matrix by bilf_createMatrixStructure.
   !
   ! The matrix must be unsorted when this routine is called, 
@@ -6922,7 +6939,7 @@ contains
   ! allocates memory in size of the matrix of the heap for the matrix entries.
   !
   ! For setting up the entries, the discretisation structure attached to
-  ! the matrix is used (rmatrixScalar%p_rdiscretisation). This is
+  ! the matrix is used (rmatrix%p_rdiscretisation). This is
   ! normally attached to the matrix by bilf_createMatrixStructure.
   !
   ! The matrix must be unsorted when this routine is called, 
@@ -7314,7 +7331,7 @@ contains
   ! allocates memory in size of the matrix of the heap for the matrix entries.
   !
   ! For setting up the entries, the discretisation structure attached to
-  ! the matrix is used (rmatrixScalar%p_rdiscretisation). This is
+  ! the matrix is used (rmatrix%p_rdiscretisation). This is
   ! normally attached to the matrix by bilf_createMatrixStructure.
   !
   ! The matrix must be unsorted when this routine is called, 
