@@ -401,39 +401,32 @@ module fparser
 !<constants>
 
 !<constantblock description="Global constants for parser">
-  ! Default initial stack size: 1 MB
-  ! During initialisation of a new function parser, the user may
-  ! specify a different initial stack size.
-  integer, parameter :: FPAR_INITSTACKSIZE   =  1024*1024
-  
-  ! Default maximum stack size: 8 MB
-  ! During initialisation of a new function parser, the user may
-  ! specify a different maximum stack size.
-  integer, parameter :: FPAR_MAXSTACKSIZE   = 8*1024*1024
 
-  ! Unlimited stack size
-  integer, parameter :: FPAR_STACKUNLIMITED = -1
+  ! Number of items to handle simultaneously when evaluating functions
+#ifndef FPAR_NITEMSIM
+  integer, parameter, public :: FPAR_NITEMSIM       = 256
+#endif
 
   ! Length of string
-  integer, parameter :: FPAR_STRLEN         = 2048
+  integer, parameter, public :: FPAR_STRLEN         = 2048
 
   ! Maximum number of predefined/user-defined constants
-  integer, parameter :: FPAR_MAXCONSTS      = 128
+  integer, parameter, public :: FPAR_MAXCONSTS      = 128
 
   ! Maximum number of predefined/user-defined expressions
-  integer, parameter :: FPAR_MAXEXPRESSIONS = 128
+  integer, parameter, public :: FPAR_MAXEXPRESSIONS = 128
 
   ! Length of constant name
-  integer, parameter :: FPAR_CONSTLEN       = 32
+  integer, parameter, public :: FPAR_CONSTLEN       = 32
 
   ! Length of expression name
-  integer, parameter :: FPAR_EXPRLEN        = 32
+  integer, parameter, public :: FPAR_EXPRLEN        = 32
 
   ! Length of function name
-  integer, parameter :: FPAR_FUNCLEN        = 32
+  integer, parameter, public :: FPAR_FUNCLEN        = 32
 
   ! Length of variable name
-  integer, parameter :: FPAR_VARLEN         = 32
+  integer, parameter, public :: FPAR_VARLEN         = 32
 
 !</constantblock>
 
@@ -655,12 +648,6 @@ module fparser
     ! Maximum number of components
     integer :: nncomp = 0
 
-    ! Maximum stack size
-    integer :: imaxStacksize = FPAR_MAXSTACKSIZE
-
-    ! Handle for stack memory
-    integer :: h_Stack = ST_NOHANDLE
-    
   end type t_fparser
 
 !</typeblock>
@@ -800,7 +787,7 @@ contains
     ! Oops...
     if (iunit .eq. -1) then
       call output_line('Unable to open input file!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
       call sys_halt()
     end if
 
@@ -869,7 +856,7 @@ contains
             call io_readlinefromfile(iunit, sdata, idatalen, ios)
             if (ios .ne. 0) then
               call output_line('Syntax error in input file!',&
-                               OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
+                  OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
               call sys_halt()
             end if
             
@@ -911,9 +898,9 @@ contains
           deallocate(Svariables)
 
           
-        case DEFAULT
+        case default
           call output_line('Invalid type of expression!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
+              OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
           call sys_halt()
         end select
 
@@ -954,7 +941,7 @@ contains
       nconstants = nconstants+1
     else
       call output_line('No space left for definition of constant!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineConstant')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineConstant')
       call sys_halt()
     end if
 
@@ -967,7 +954,7 @@ contains
         ! If it is already defined, then it must not have a different value
         if(DconstantValue(iconst) .ne. dvalue) then
           call output_line('Constant is already defined with different value!',&
-                            OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineConstant')
+              OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineConstant')
           call sys_halt()
         else
           nconstants = nconstants-1
@@ -1012,7 +999,7 @@ contains
       nexpressions = nexpressions+1
     else
       call output_line('No space left for definition of expression!',&
-                        OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineExpression')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineExpression')
       call sys_halt()
     end if
 
@@ -1036,7 +1023,7 @@ contains
         ! If it is already defined, then it must not have a different value
         if(CexpressionString(iexpression) .ne. sstring) then
           call output_line('Expression is already defined with different string!',&
-                            OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineExpression')
+              OU_CLASS_ERROR, OU_MODE_STD,'fparser_defineExpression')
           call sys_halt()
         else
           nexpressions = nexpressions-1
@@ -1055,25 +1042,15 @@ contains
 
 !<subroutine>
   
-  subroutine fparser_create (rfparser, nncomp, istacksize, imaxStacksize)
+  subroutine fparser_create (rfparser, nncomp)
 
 !<description>
     ! Initialize function parser for nncomp functions.
-    ! If the optional values istackSize and/or imaxStacksize are present
-    ! then they are used rather than the default values.
 !</description>
 
 !<input>
     ! Number of functions
     integer, intent(in) :: nncomp
-
-    ! OPTIONAL: initial size of the stack memory
-    ! If not present then the default value FPAR_INITSTACKSIZE will be used
-    integer, intent(in), optional :: istacksize
-
-    ! OPTIONAL: maximum size of the stack memory
-    ! If not present then the default value FPAR_MAXSTACKSIZE will be used
-    integer, intent(in), optional :: imaxStacksize
 !</input>
 
 !<output>
@@ -1082,9 +1059,6 @@ contains
 !</output>
 !</subroutine>
 
-    ! local variables
-    integer :: isize
-    
     ! Set number of components
     rfparser%nncomp = nncomp
     rfparser%ncomp  = 0
@@ -1092,32 +1066,6 @@ contains
     ! Allocate arrays
     allocate (rfparser%Rcomp(nncomp))
     allocate (rfparser%ScompName(nncomp))
-    
-    ! Determine stack size
-    if (present(istacksize)) then
-      isize = istacksize
-    else
-      isize = FPAR_INITSTACKSIZE
-    end if
-
-    ! Determine maximum stack size
-    if (present(imaxStacksize)) then
-      rfparser%imaxStacksize = imaxStacksize
-    else
-      rfparser%imaxStacksize = FPAR_MAXSTACKSIZE
-    end if
-
-    ! Check if initial stack size does not exceed the maximum value
-    if (rfparser%imaxStacksize .ne. FPAR_STACKUNLIMITED .and.&
-        rfparser%imaxStacksize .lt. isize) then
-      call output_line('Stack size exceeds maximum value!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'fparser_create')
-      call sys_halt()
-    end if
-    
-    ! Allocate memory for global stack
-    call storage_new('fparser_create', 'p_Dstack', isize, ST_DOUBLE,&
-                     rfparser%h_Stack, ST_NEWBLOCK_NOINIT)
     
   end subroutine fparser_create
 
@@ -1139,9 +1087,6 @@ contains
     
     ! local variables
     integer :: icomp
-    
-    ! Release stack memory
-    if (rfparser%h_Stack .ne. ST_NOHANDLE) call storage_free(rfparser%h_Stack)
     
     ! Check that pointer is associated and return otherwise
     if (.not.associated(rfparser%Rcomp)) return
@@ -1196,7 +1141,7 @@ contains
     ! Check if there is space for a new component
     if (rfparser%ncomp .eq. rfparser%nncomp) then
       call output_line('No free components left!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFunctionByName')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFunctionByName')
       call sys_halt()
     end if
 
@@ -1245,12 +1190,11 @@ contains
 
     ! local variables
     character (LEN=len(sfunctionString)) :: sstring
-    integer :: isize
     
     ! Check if component is valid
     if (icomp .lt. 1 .or. icomp .gt. rfparser%nncomp) then
       call output_line('Component number is out of range',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFunctionByNumber')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFunctionByNumber')
       call sys_halt()
     end if
     
@@ -1277,21 +1221,6 @@ contains
 
     ! If syntax is correct, then compile into bytecode
     call Compile (rfparser%Rcomp(icomp), sstring, Svariables)
-
-    ! Adjust stacksize if necessary
-    call storage_getsize(rfparser%h_Stack, isize)
-    if (isize .lt. rfparser%Rcomp(icomp)%istackSize+1) then
-      
-      if (rfparser%Rcomp(icomp)%istackSize+1 .lt. rfparser%imaxStacksize) then
-        call storage_realloc('fparser_parseFunctionByNumber',&
-            rfparser%Rcomp(icomp)%istackSize+1, rfparser%h_Stack,&
-            ST_NEWBLOCK_NOINIT, .false.)
-      else
-        call output_line('Stack size exceeds memory!',&
-                         OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFunctionByNumber')
-        call sys_halt()
-      end if
-    end if
 
   end subroutine fparser_parseFunctionByNumber
 
@@ -1436,27 +1365,30 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Dstack
+    real(DP), dimension(:), pointer :: Dstack
     integer :: EvalErrType
     
     ! Check if component is valid
     if (icomp .lt. 1 .or. icomp .gt. rfparser%nncomp) then
       call output_line('Component number is out of range',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncScalarByNumber')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncScalarByNumber')
       call sys_halt()
     end if
 
-    ! Set pointer
-    call storage_getbase_double(rfparser%h_Stack, p_Dstack)
+    ! Allocate temporal memory
+    allocate(Dstack(rfparser%Rcomp(icomp)%istackSize+1))
 
     ! Invoke working routine
-    call evalFunctionScalar(rfparser%Rcomp(icomp), p_Dstack,&
+    call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack,&
                             Dvalue, EvalErrType, dresult)
+
+    ! Deallocate temporal memory
+    deallocate(Dstack)
 
     ! Check if evaluation was successful
     if (EvalErrType .ne. 0) then
       call output_line('An error occured during function evaluation!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncScalarByNumber')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncScalarByNumber')
       call sys_halt()
     end if
 
@@ -1520,62 +1452,80 @@ contains
 !</subroutine>
     
     ! local variables
-    real(DP), dimension(:), pointer :: p_Dstack
+    real(DP), dimension(:), pointer :: Dstack
     real(DP), dimension(:), pointer :: DvalueTemp
-    integer :: ivalue,jValue,nvalue,isize,iblockSize,iblock,isizeValueBlock,isizeValueScalar
+    integer :: iValSet,iValMax,nvalue,iblockSize,isizeValueScalar,isizeValueBlock
     integer :: EvalErrType
 
     ! Check if component is valid
     if (icomp .lt. 1 .or. icomp .gt. rfparser%nncomp) then
       call output_line('Component number is out of range',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncBlockByNumber')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncBlockByNumber')
       call sys_halt()
     end if
 
     ! Get total number of variable sets
     nvalue = size(DvalueBlock, idim)
 
-    ! Set pointer
-    call storage_getbase_double(rfparser%h_Stack, p_Dstack)
-
     ! Check if the compiled function is vectorizable
     if (rfparser%Rcomp(icomp)%bisVectorizable) then
       ! ...ok, vectorization of the bytecode is admissible.
-
-      ! Get size of stack memory
-      call storage_getsize(rfparser%h_Stack, isize)
-
-      ! Compute size of blocks that can be vectorized
-      iblockSize = floor(real(isize)/real(rfparser%Rcomp(icomp)%istackSize+1))
       
       ! What is the organization of ValBlock(:,:)
       if (idim .eq. 1) then
-        do ivalue = 1, nvalue, iblockSize
+        !$omp parallel default(shared) &
+        !$omp private(Dstack,iValMax,iblockSize)
+        
+        ! Allocate temporal memory
+        allocate(Dstack(FPAR_NITEMSIM*(rfparser%Rcomp(icomp)%iStackSize+1)))
+
+        !$omp do schedule(static,1)
+        do iValSet = 1, nvalue, FPAR_NITEMSIM
           
           ! Initialization
-          jValue   = min(ivalue+iblockSize, nvalue)
-          iblock   = jValue-ivalue+1
+          iValMax    = min(iValSet+FPAR_NITEMSIM-1, nvalue)
+          iblockSize = iValMax-iValSet+1
           
           ! Invoke working routine
-          call evalFunctionBlock(rfparser%Rcomp(icomp), iblock, p_Dstack,&
-                                 DvalueBlock(ivalue:jValue,:), idim, EvalErrType,&
-                                 Dresult(ivalue:jValue), DvalueScalar)
+          call evalFunctionBlock(rfparser%Rcomp(icomp), iblockSize, Dstack,&
+                                 DvalueBlock(iValSet:iValMax,:), idim, EvalErrType,&
+                                 Dresult(iValSet:iValMax), DvalueScalar)
         end do
+        !$omp end do
+
+        ! Deallocate temporal memory
+        deallocate(Dstack)
+        !$omp end parallel
       else
-        do ivalue = 1, nvalue, iblockSize
+        !$omp parallel default(shared) &
+        !$omp private(Dstack,iValMax,iblockSize)
+        
+        ! Allocate temporal memory
+        allocate(Dstack(FPAR_NITEMSIM*(rfparser%Rcomp(icomp)%iStackSize+1)))
+
+        !$omp do schedule(static,1)
+        do iValSet = 1, nvalue, FPAR_NITEMSIM
           
           ! Initialization
-          jValue   = min(ivalue+iblockSize, nvalue)
-          iblock   = jValue-ivalue+1
-          
+          iValMax    = min(iValSet+FPAR_NITEMSIM-1, nvalue)
+          iblockSize = iValMax-iValSet+1
+
           ! Invoke working routine
-          call evalFunctionBlock(rfparser%Rcomp(icomp), iblock, p_Dstack,&
-                                 DvalueBlock(:, ivalue:jValue), idim, EvalErrType,&
-                                 Dresult(ivalue:jValue), DvalueScalar)
+          call evalFunctionBlock(rfparser%Rcomp(icomp), iblockSize, Dstack,&
+                                 DvalueBlock(:, iValSet:iValMax), idim, EvalErrType,&
+                                 Dresult(iValSet:iValMax), DvalueScalar)
         end do
+        !$omp end do
+
+        ! Deallocate temporal memory
+        deallocate(Dstack)
+        !$omp end parallel
       end if
       
     else   ! The compiled function cannot be vectorized
+
+      ! Allocate temporal memory
+      allocate(Dstack(rfparser%Rcomp(icomp)%iStackSize+1))
 
       ! The compiled bytecode cannot be vectorized. Hence, evaluate the function
       ! separately for each set of variables. Here, the organization of the array
@@ -1590,24 +1540,24 @@ contains
         allocate(DvalueTemp(isizeValueBlock+isizeValueScalar))
 
         if (idim .eq. 1) then
-          do ivalue = 1, nvalue
+          do iValSet = 1, nvalue
             
-            DvalueTemp(1:isizeValueBlock)  = DvalueBlock(ivalue,:)
+            DvalueTemp(1:isizeValueBlock)  = DvalueBlock(iValSet,:)
             DvalueTemp(isizeValueBlock+1:) = DvalueScalar
 
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), p_Dstack,&
-                                    DvalueTemp, EvalErrType, Dresult(ivalue))
+            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack,&
+                                    DvalueTemp, EvalErrType, Dresult(iValSet))
           end do
         else
-          do ivalue = 1, nvalue
+          do iValSet = 1, nvalue
             
-            DvalueTemp(1:isizeValueBlock)  = DvalueBlock(:,ivalue)
+            DvalueTemp(1:isizeValueBlock)  = DvalueBlock(:,iValSet)
             DvalueTemp(isizeValueBlock+1:) = DvalueScalar
             
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), p_Dstack,&
-                                    DvalueTemp, EvalErrType, Dresult(ivalue))
+            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack,&
+                                    DvalueTemp, EvalErrType, Dresult(iValSet))
           end do
         end if
 
@@ -1617,28 +1567,32 @@ contains
       else
         
         if (idim .eq. 1) then
-          do ivalue = 1, nvalue
+          do iValSet = 1, nvalue
             
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), p_Dstack,&
-                                    DvalueBlock(ivalue,:), EvalErrType, Dresult(ivalue))
+            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack,&
+                                    DvalueBlock(iValSet,:), EvalErrType, Dresult(iValSet))
           end do
         else
-          do ivalue = 1, nvalue
+          do iValSet = 1, nvalue
             
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), p_Dstack,&
-                                    DvalueBlock(:, ivalue), EvalErrType, Dresult(ivalue))
+            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack,&
+                                    DvalueBlock(:, iValSet), EvalErrType, Dresult(iValSet))
           end do
         end if
 
       end if
+
+      ! Deallocate temporal memory
+      deallocate(Dstack)
+
     end if
 
     ! Check if evaluation was successful
     if (EvalErrType .ne. 0) then
       call output_line('An error occured during function evaluation!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncBlockByNumber')
+          OU_CLASS_ERROR, OU_MODE_STD,'fparser_evalFuncBlockByNumber')
       call sys_halt()
     end if
 
@@ -1732,7 +1686,7 @@ contains
         write(*,FMT='(A,1X,T10,G8.2)') "push", p_Comp%Dimmed(idataPtr)
         idataPtr = idataPtr+1
 
-      case DEFAULT
+      case default
         if (iopCode .lt. VarBegin) then
           select case(iopCode)
           case(cNEG);         n = "neg"
@@ -1754,7 +1708,7 @@ contains
           case(cDEG);         n = "deg"
           case(cRAD);         n = "rad"
 
-          case DEFAULT
+          case default
             n       = Funcs(iopCode)
             nparams = MathFunctionParameters(iopCode)
           end select
@@ -1809,7 +1763,7 @@ contains
     icomp = 0
 
     call output_line('Function is not available',&
-                     OU_CLASS_WARNING, OU_MODE_STD,'fparser_getFunctionNumber')
+        OU_CLASS_WARNING, OU_MODE_STD,'fparser_getFunctionNumber')
 
   end function fparser_getFunctionNumber
 
@@ -1852,7 +1806,7 @@ contains
     do
       if (ifunctionIndex .gt. ifunctionLength) then
         call output_line('Invalid function string!',&
-                         OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+            OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
         call sys_halt()
       end if
       c = sfunctionString(ifunctionIndex:ifunctionIndex)
@@ -1864,7 +1818,7 @@ contains
         ifunctionIndex = ifunctionIndex+1
         if (ifunctionIndex .gt. ifunctionLength) then
           call output_line('Premature end of string!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         c = sfunctionString(ifunctionIndex:ifunctionIndex)
@@ -1877,26 +1831,26 @@ contains
         ifunctionIndex = ifunctionIndex+len_trim(Funcs(n))
         if (ifunctionIndex > ifunctionLength) then
           call output_line('Premature end of string!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         c = sfunctionString(ifunctionIndex:ifunctionIndex)
         if (c .ne. '(') then
           call output_line('Expecting ( after function '//sfunctionString(ifunctionIndex:)//'!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         ifunctionIndex2 = ifunctionIndex+1
         if (ifunctionIndex2 .gt. ifunctionLength) then
           call output_line('Premature end of string!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         if (sfunctionString(ifunctionIndex2:ifunctionIndex2) .eq. ')') then
           ifunctionIndex = ifunctionIndex2+1
           if (ifunctionIndex .gt. ifunctionLength) then
             call output_line('Premature end of string!',&
-                             OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+                OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
             call sys_halt()
           end if
           c = sfunctionString(ifunctionIndex:ifunctionIndex)
@@ -1915,12 +1869,12 @@ contains
         ifunctionIndex = ifunctionIndex+1
         if (ifunctionIndex .gt. ifunctionLength) then
           call output_line('Premature end of string!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         if (sfunctionString(ifunctionIndex:ifunctionIndex) .eq. ')') then
           call output_line('Empty parantheses!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         cycle
@@ -1931,7 +1885,7 @@ contains
         dnumber = RealNum (sfunctionString(ifunctionIndex:), ib, in, berror)
         if (berror) then
           call output_line('Invalid number format!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         ifunctionIndex = ifunctionIndex+in-1
@@ -1942,7 +1896,7 @@ contains
         n = ConstantIndex (sfunctionString(ifunctionIndex:))
         if (n .eq. 0) then
           call output_line('Invalid constant!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         ifunctionIndex = ifunctionIndex+len_trim(CconstantName(n))+1
@@ -1953,7 +1907,7 @@ contains
         n = ExpressionIndex (sfunctionString(ifunctionIndex:))
         if (n .eq. 0) then
           call output_line('Invalid expression!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         call CheckSyntax(CexpressionString(n), Svariables)
@@ -1965,7 +1919,7 @@ contains
         n = VariableIndex (sfunctionString(ifunctionIndex:), Svariables, ib, in)
         if (n .eq. 0) then
           call output_line('Invalid element!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         ifunctionIndex = ifunctionIndex+in-1
@@ -1982,12 +1936,12 @@ contains
         iparenthCount = iparenthCount-1
         if (iparenthCount .lt. 0) then
           call output_line('Mismatched parenthesis!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         if (sfunctionString(ifunctionIndex-1:ifunctionIndex-1) .eq. '(') then
           call output_line('Empty parentheses!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+              OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
           call sys_halt()
         end if
         ifunctionIndex = ifunctionIndex+1
@@ -2012,7 +1966,7 @@ contains
       end if
       if (iopSize .eq. 0) then
         call output_line('Operator expected!',&
-                         OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+            OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
         call sys_halt()
       end if
       
@@ -2022,7 +1976,7 @@ contains
     end do
     if (iparenthCount .gt. 0) then
       call output_line('Missing )!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
+          OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
       call sys_halt()
     end if
     call stack_release(rstack)
@@ -2138,10 +2092,10 @@ contains
     case(cAbs:cSec)
       nparameters = 1
 
-    case DEFAULT
+    case default
       nparameters = 0
       call output_line('Not a function',&
-                       OU_CLASS_WARNING, OU_MODE_STD,'MathFunctionParameters')
+          OU_CLASS_WARNING, OU_MODE_STD,'MathFunctionParameters')
     end select
 
   end function MathFunctionParameters
@@ -2495,7 +2449,7 @@ contains
         if (rcomp%Dimmed(rcomp%iimmedSize) .lt. -1.0_DP .or. &
             rcomp%Dimmed(rcomp%iimmedSize) .gt.  1.0_DP) then
           call output_line('Invalid argument for ACOS!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = acos(rcomp%Dimmed(rcomp%iimmedSize))
@@ -2507,7 +2461,7 @@ contains
         if (rcomp%Dimmed(rcomp%iimmedSize) .lt. -1.0_DP .or. &
             rcomp%Dimmed(rcomp%iimmedSize) .gt.  1.0_DP) then
           call output_line('Invalid argument for ASIN!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = asin(rcomp%Dimmed(rcomp%iimmedSize))
@@ -2535,7 +2489,7 @@ contains
         daux=rcomp%Dimmed(rcomp%iimmedSize)+sqrt(rcomp%Dimmed(rcomp%iimmedSize)**2-1)
         if (daux .le. 0) then
           call output_line('Invalid argument for ACOSH!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = log(daux)
@@ -2559,7 +2513,7 @@ contains
         daux=rcomp%Dimmed(rcomp%iimmedSize)+sqrt(rcomp%Dimmed(rcomp%iimmedSize)**2-1)
         if (daux .le. 0) then
           call output_line('Invalid argument for ASINH!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = log(daux)
@@ -2570,13 +2524,13 @@ contains
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         if (rcomp%Dimmed(rcomp%iimmedSize) .eq. -1.0_DP) then
           call output_line('Invalid argument for ATANH!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         daux=(1+rcomp%Dimmed(rcomp%iimmedSize))/(1-rcomp%Dimmed(rcomp%iimmedSize))
         if (daux .le. 0._DP) then
           call output_line('Invalid argument for ATANH!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = log(daux)/2.0_DP
@@ -2606,7 +2560,7 @@ contains
         daux=tan(rcomp%Dimmed(rcomp%iimmedSize))
         if (daux .eq. 0.0_DP) then
           call output_line('Invalid argument for COT!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = 1/daux
@@ -2618,7 +2572,7 @@ contains
         daux=sin(rcomp%Dimmed(rcomp%iimmedSize))
         if (daux .eq. 0._DP) then
           call output_line('Invalid argument for CSC!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = 1/daux
@@ -2644,7 +2598,7 @@ contains
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         if (rcomp%Dimmed(rcomp%iimmedSize) .le. 0.0_DP) then
           call output_line('Invalid argument for LOG!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = log(rcomp%Dimmed(rcomp%iimmedSize))
@@ -2655,7 +2609,7 @@ contains
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         if (rcomp%Dimmed(rcomp%iimmedSize) .le. 0.0_DP) then
           call output_line('Invalid argument for LOG!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = log10(rcomp%Dimmed(rcomp%iimmedSize))
@@ -2687,7 +2641,7 @@ contains
         daux=cos(rcomp%Dimmed(rcomp%iimmedSize))
         if (daux .eq. 0._DP) then
           call output_line('Invalid argument for SEC!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = 1/daux
@@ -2710,7 +2664,7 @@ contains
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         if (rcomp%Dimmed(rcomp%iimmedSize) .lt. 0.0_DP) then
           call output_line('Invalid argument for SQRT!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize) = sqrt(rcomp%Dimmed(rcomp%iimmedSize))
@@ -2779,7 +2733,7 @@ contains
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
         if (rcomp%Dimmed(rcomp%iimmedSize) .eq. 0.0_DP) then
           call output_line('Invalid argument for DIV!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize-1) = rcomp%Dimmed(rcomp%iimmedSize-1)/&
@@ -2794,7 +2748,7 @@ contains
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
         if (rcomp%Dimmed(rcomp%iimmedSize) .eq. 0.0_DP) then
           call output_line('Invalid argument for MOD!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
+              OU_CLASS_ERROR, OU_MODE_STD,'AddCompiledByte')
           call sys_halt()
         end if
         rcomp%Dimmed(rcomp%iimmedSize-1) = mod(rcomp%Dimmed(rcomp%iimmedSize-1),&
@@ -3105,7 +3059,7 @@ contains
         else
           exit ! - otherwise CALL sys_halt()
         endif
-      case DEFAULT
+      case default
         exit ! CALL sys_halt() at all other characters
       end select
       in = in+1
@@ -3159,7 +3113,7 @@ contains
         n = ExpressionIndex (sfunctionString(ind:))
         if (n .eq. 0) then
           call output_line('Invalid expression!',&
-                           OU_CLASS_ERROR, OU_MODE_STD,'FunctionSize')
+              OU_CLASS_ERROR, OU_MODE_STD,'FunctionSize')
           call sys_halt()
         end if
         isize = isize+FunctionSize(CexpressionString(n))
@@ -3664,7 +3618,7 @@ contains
       dnumber = RealNum (sfunctionString(ind1:), ib, in, berror)
       if (berror) then
         call output_line('Invalid number format!',&
-                         OU_CLASS_ERROR, OU_MODE_STD,'CompileElement')
+            OU_CLASS_ERROR, OU_MODE_STD,'CompileElement')
         call sys_halt()
       end if
       call AddImmediate(rcomp, dnumber)
@@ -3727,7 +3681,7 @@ contains
     end if
 
     call output_line('An unexpected error occured!',&
-                     OU_CLASS_ERROR, OU_MODE_STD,'CompileElement')
+        OU_CLASS_ERROR, OU_MODE_STD,'CompileElement')
     call sys_halt()
 
   end function CompileElement
@@ -3778,7 +3732,7 @@ contains
 
       if (rcomp%istackPtr .ne. iStackPtr+nparams) then
         call output_line('Illegal number of parameters to function!',&
-                         OU_CLASS_ERROR, OU_MODE_STD,'CompileFunctionParameters')
+            OU_CLASS_ERROR, OU_MODE_STD,'CompileFunctionParameters')
         call sys_halt()
       end if
 
@@ -3834,7 +3788,7 @@ contains
 
     if (sfunctionString(ind2:ind2) .ne. ',') then
       call output_line('Illegal number of parameters to function!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'CompileIf')
+          OU_CLASS_ERROR, OU_MODE_STD,'CompileIf')
       call sys_halt()
     end if
     call AddCompiledByte(rcomp, cIf)
@@ -3848,7 +3802,7 @@ contains
 
     if (sfunctionString(ind2:ind2) .ne. ',') then
       call output_line('Illegal number of parameters to function!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'CompileIf')
+          OU_CLASS_ERROR, OU_MODE_STD,'CompileIf')
       call sys_halt()
     end if
     call AddCompiledByte(rcomp, cJump)
@@ -3863,7 +3817,7 @@ contains
 
     if (sfunctionString(ind2:ind2) .ne. ')') then
       call output_line('Illegal number of parameters to function!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'CompileIf')
+          OU_CLASS_ERROR, OU_MODE_STD,'CompileIf')
       call sys_halt()
     end if
     
@@ -4290,7 +4244,7 @@ contains
       case (cRad)
         Dstack(istackPtr) = DegToRad(Dstack(istackPtr))
         
-      case DEFAULT
+      case default
         istackPtr = istackPtr+1
         Dstack(istackPtr) = DValue(rcomp%IbyteCode(iinstPtr)-VarBegin+1)
       end select
@@ -4371,15 +4325,12 @@ contains
         ! Functions
         !------------------------------------------------------------
       case (cAbs)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = abs(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         
 
       case (cAcos)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
           if ((Dstack(iblock, istackPtr) .lt. -1._DP) .or.&
               (Dstack(iblock, istackPtr) .gt.  1._DP)) then
@@ -4389,11 +4340,9 @@ contains
             Dstack(iblock, istackPtr) = acos(Dstack(iblock, istackPtr))
           end if
         end do
-!$omp end parallel do
 
 
       case (cAsin)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
           if ((Dstack(iblock, istackPtr) .lt. -1._DP) .or.&
               (Dstack(iblock, istackPtr) .gt.  1._DP)) then
@@ -4403,29 +4352,23 @@ contains
             Dstack(iblock, istackPtr) = asin(Dstack(iblock, istackPtr))
           end if
         end do
-!$omp end parallel do
 
         
       case (cAtan)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = atan(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
 
 
       case (cAtan2)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = atan2(Dstack(iblock, istackPtr -1),&
                                                Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
         
       case (cAcosh)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
           daux = Dstack(iblock, istackPtr)+sqrt(Dstack(iblock, istackPtr)**2-1)
           if (daux .le. 0._DP) then
@@ -4435,27 +4378,21 @@ contains
             Dstack(iblock, istackPtr) = log(daux)
           end if
         end do
-!$omp end parallel do
         
 
       case (cAnint)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = anint(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
 
 
       case (cAint)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = aint(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
 
 
       case (cAsinh)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
           daux = Dstack(iblock, istackPtr)+sqrt(Dstack(iblock, istackPtr)**2+1)
           if (daux .le. 0._DP) then
@@ -4465,11 +4402,9 @@ contains
             Dstack(iblock, istackPtr) = log(daux)
           end if
         end do
-!$omp end parallel do
 
 
       case (cAtanh)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
           if (Dstack(iblock, istackPtr) .eq. -1._DP) then
             EvalErrType = 6
@@ -4483,35 +4418,27 @@ contains
             Dstack(iblock, istackPtr) = log(daux)/2._DP
           end if
         end do
-!$omp end parallel do
 
         
       case (cCeil)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = ceiling(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
 
 
       case (cCos)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = cos(Dstack(iblock, istackPtr)) 
         end do
-!$omp end parallel do
         
 
       case (cCosh)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = cosh(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
 
 
       case (cCot)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
           daux=tan(Dstack(iblock, istackPtr))
           if (daux .eq. 0) then 
@@ -4521,11 +4448,9 @@ contains
             Dstack(iblock, istackPtr) = 1._DP/daux
           end if
         end do
-!$omp end parallel do
 
 
       case (cCsc)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
           daux=sin(Dstack(iblock, istackPtr))
           if (daux.eq.0._DP) then
@@ -4535,23 +4460,18 @@ contains
             Dstack(iblock, istackPtr) = 1._DP/daux
           end if
         end do
-!$omp end parallel do
 
 
       case (cExp)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = exp(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
 
 
       case (cFloor)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = floor(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
 
 
       case (cIf)
@@ -4559,12 +4479,11 @@ contains
         ! bytecode compilation. If we reach this point, then something
         ! went wrong before.
         call output_line('IF-THEN-ELSE cannot be vectorized!',&
-                         OU_CLASS_ERROR, OU_MODE_STD,'evalFunctionBlock')
+            OU_CLASS_ERROR, OU_MODE_STD,'evalFunctionBlock')
         call sys_halt()
         
 
       case (cLog)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
           if (Dstack(iblock, istackPtr) .le. 0._DP) then
             EvalErrType = 3
@@ -4573,11 +4492,9 @@ contains
             Dstack(iblock, istackPtr) = log(Dstack(iblock, istackPtr)) 
           end if
         end do
-!$omp end parallel do
 
 
       case (cLog10)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
           if (Dstack(iblock, istackPtr) .le. 0._DP) then
             EvalErrType = 3
@@ -4586,31 +4503,25 @@ contains
             Dstack(iblock, istackPtr) = log10(Dstack(iblock, istackPtr))
           end if
         end do
-!$omp end parallel do
 
 
       case (cMax)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = max(Dstack(iblock, istackPtr-1),&
                                              Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
         
 
       case (cMin)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = min(Dstack(iblock, istackPtr-1),&
                                              Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
         
 
       case (cSec)
-!$omp parallel do default(shared) private(iblock, daux)
         do iblock = 1, iblockSize
           daux = cos(Dstack(iblock, istackPtr))
           if (daux .eq. 0._DP) then
@@ -4620,27 +4531,21 @@ contains
             Dstack(iblock, istackPtr) = 1._DP/daux
           end if
         end do
-!$omp end parallel do
 
         
       case (cSin)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = sin(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
 
         
       case(cSinh)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = sinh(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
       
 
       case(cSqrt)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
           if (Dstack(iblock, istackPtr) .lt. 0._DP) then
             EvalErrType = 3
@@ -4649,23 +4554,18 @@ contains
             Dstack(iblock, istackPtr) = sqrt(Dstack(iblock, istackPtr))
           end if
         end do
-!$omp end parallel do
 
 
       case (cTan)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = tan(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
 
         
       case (cTanh)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = tanh(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         
 
         !------------------------------------------------------------
@@ -4673,11 +4573,9 @@ contains
         !------------------------------------------------------------
       case (cImmed)
         istackPtr = istackPtr+1
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
           Dstack(iblock, istackPtr) = rcomp%Dimmed(idataPtr)
         end do
-!$omp end parallel do
         idataPtr = idataPtr+1
 
 
@@ -4690,45 +4588,36 @@ contains
         ! Operators
         !------------------------------------------------------------
       case (cNeg)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = -Dstack(iblock, istackPtr)
         end do
-!$omp end parallel do
 
 
       case (cAdd)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = Dstack(iblock, istackPtr-1)+&
                                          Dstack(iblock, istackPtr)
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
         
 
       case (cSub)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = Dstack(iblock, istackPtr-1)-&
                                          Dstack(iblock, istackPtr)
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
 
       case (cMul)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = Dstack(iblock, istackPtr-1)*&
                                          Dstack(iblock, istackPtr)
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
         
 
       case (cDiv)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
           if (Dstack(iblock, istackPtr) .eq. 0._DP) then
             EvalErrType = 1
@@ -4738,12 +4627,10 @@ contains
                                           Dstack(iblock, istackPtr)
           end if
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
         
 
       case (cMod)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
           if (Dstack(iblock, istackPtr) .eq. 0._DP) then
             EvalErrType = 1
@@ -4753,161 +4640,128 @@ contains
                                               Dstack(iblock, istackPtr))
           end if
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
 
       case (cPow)
-!$omp parallel do default(shared) private(iblock)
         do  iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = Dstack(iblock, istackPtr-1)**Dstack(iblock, istackPtr)
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
         
       case (cEqual)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .eq.&
                                                     Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
 
       case (cNEqual)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .ne.&
                                                     Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
 
       case (cLess)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .lt.&
                                                     Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
 
       case (cLessOrEq)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .le.&
                                                     Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
         
       case (cGreater)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .gt.&
                                                     Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
         
       case (cGreaterOrEq)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .ge.&
                                                     Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
         
       case (cAnd)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(DbleToLogc(Dstack(iblock, istackPtr-1)) .and. &
                                                     DbleToLogc(Dstack(iblock, istackPtr)) )
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
 
       case (cOr)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(DbleToLogc(Dstack(iblock, istackPtr-1)) .or. &
                                                     DbleToLogc(Dstack(iblock, istackPtr)) )
         end do
-!$omp end parallel do
         istackPtr = istackPtr-1
 
 
       case (cNot)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = LogcToDble( .not. DbleToLogc(Dstack(iblock, istackPtr)) )
         end do
-!$omp end parallel do
 
         
         !------------------------------------------------------------
         ! Degrees-radians conversion
         !------------------------------------------------------------
       case (cDeg)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = RadToDeg(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
 
         
       case (cRad)
-!$omp parallel do default(shared) private(iblock)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = DegToRad(Dstack(iblock, istackPtr))
         end do
-!$omp end parallel do
         
 
-      case DEFAULT
+      case default
         istackPtr  = istackPtr+1
         iVariable = rcomp%IbyteCode(iinstPtr)-VarBegin+1
 
         ! Do we have to process one of the scalar variables of one of the block variables
         if (iVariable .ge. istartValueScalar) then
-!$omp parallel do default(shared) private(iblock)
           do iblock = 1, iblockSize
              Dstack(iblock, istackPtr) = DvalueScalar(iVariable-istartValueScalar+1)
           end do
-!$omp end parallel do
         else
           if (idim .eq. 1) then
-!$omp parallel do default(shared) private(iblock)
             do iblock = 1, iblockSize
                Dstack(iblock, istackPtr) = DvalueBlock(iblock, iVariable)
             end do
-!$omp end parallel do
           else
-!$omp parallel do default(shared) private(iblock)
             do iblock = 1, iblockSize
                Dstack(iblock, istackPtr) = DvalueBlock(iVariable, iblock)
             end do
-!$omp end parallel do
           end if
         end if
       end select
     end do
     
     EvalErrType = 0
-!$omp parallel do default(shared) private(iblock)
     do iblock = 1, iblockSize
        Dresult(iblock) = Dstack(iblock, istackPtr)
     end do
-!$omp end parallel do
 
   end subroutine evalFunctionBlock
 
