@@ -124,7 +124,7 @@ contains
     rform%Dcoefficients(1:rform%itermCount)  = dalpha1
 
     ! Now we can build the matrix entries.
-    call bilf_buildMatrixScalar (rform,bclear1,rmatrix)
+    call bilf_buildMatrixScalar2 (rform,bclear1,rmatrix)
 
   end subroutine stdop_assembleLaplaceMatrix
 
@@ -200,7 +200,7 @@ contains
     rform%Dcoefficients(1)  = dalpha1
 
     ! Now we can build the matrix entries.
-    call bilf_buildMatrixScalar (rform,bclear1,rmatrix)
+    call bilf_buildMatrixScalar2 (rform,bclear1,rmatrix)
 
   end subroutine stdop_assembleSimpleMatrix
 
