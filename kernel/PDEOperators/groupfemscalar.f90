@@ -184,12 +184,12 @@ module groupfemscalar
 
   ! Number of nodes to handle simultaneously when building matrices
 #ifndef GFSC_NEQSIM
-  integer, parameter, public :: GFSC_NEQSIM = 1000
+  integer, parameter, public :: GFSC_NEQSIM = 128
 #endif
 
   ! Number of edges to handle simultaneously when building matrices
 #ifndef GFSC_NEDGESIM
-  integer, parameter, public :: GFSC_NEDGESIM = 1000
+  integer, parameter, public :: GFSC_NEDGESIM = 64
 #endif
   
 !</constantblock>
