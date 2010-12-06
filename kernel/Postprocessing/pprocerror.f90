@@ -123,7 +123,7 @@ module pprocerror
 !<constantblock description="Constants defining the blocking of the error calculation.">
 
   ! Number of elements to handle simultaneously when building vectors
-  integer, public :: PPERR_NELEMSIM   = 1000
+  integer, public :: PPERR_NELEMSIM   = 256
   
 !</constantblock>
 
@@ -232,10 +232,10 @@ contains
   type(t_spatialDiscretisation), pointer :: p_rdiscr
   
   ! A pointer to an element distribution
-  type(t_elementDistribution), pointer :: p_relemDist
+  type(t_elementDistribution), pointer :: p_relementDistribution
   
   ! An array holding the element list
-  integer, dimension(:), pointer :: p_IelemList, p_IcurElemList
+  integer, dimension(:), pointer :: p_IelementList
   
   ! A pointer to the triangulation
   type(t_triangulation), pointer :: p_rtria
@@ -259,7 +259,7 @@ contains
   ! A t_domainIntSubset structure that is used for storing information
   ! and passing it to callback routines.
   type(t_domainIntSubset) :: rintSubset
-  type(t_evalElementSet) :: reval
+  type(t_evalElementSet) :: revalElementSet
   
   ! Two arrays for the function values and derivatives
   real(DP), dimension(:,:), allocatable :: DvalFunc
@@ -275,12 +275,16 @@ contains
   ! Pointers to the arrays that recieve th element-wise errors
   real(DP), dimension(:), pointer :: p_DerrL2, p_DerrH1, p_DerrL1
   
+  ! Number of elements in a block. Normally =PPERR_NELEMSIM,
+  ! except if there are less elements in the discretisation.
+  integer :: nelementsPerBlock
+
   ! Some other local variables
-  integer :: i,j,k,NEL,ieldist,ndofs,ncubp,iel,ider
+  integer :: i,j,k,ndofs,ncubp,iel,ider
+  integer :: IELset,IELmax,NEL,icurrentElementDistr
   integer(I32) :: ctrafoType,ccubature
-  integer :: NELtodo,NELdone,NELbatchSize
   integer(I32) :: cevalTag, celement
-  real(DP) :: derrL2, derrH1, derrL1, dom, daux, daux2
+  real(DP) :: derrL1, derrL2, derrH1, dom, daux, daux2
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
     ! Make sure we have the coefficient vectors
@@ -431,11 +435,11 @@ contains
       do i = 1, p_rdiscr%inumFEspaces
         
         ! Get a pointer to the element distribution
-        p_relemDist => p_rdiscr%RelementDistr(i)
+        p_relementDistribution => p_rdiscr%RelementDistr(i)
         
         ! If the maximum supported derivative is 1, then the element does not
         ! support first derivatives!
-        if(elem_getMaxDerivative(p_relemDist%celement) .le. 1) then
+        if(elem_getMaxDerivative(p_relementDistribution%celement) .le. 1) then
           bcalcH1 = .false.
           exit
         end if
@@ -458,22 +462,27 @@ contains
     Bder(DER_FUNC) = bcalcL2 .or. bcalcL1
     if(bcalcH1) Bder(ifirstDer:ilastDer) = .true.
     
+    ! For saving some memory in smaller discretisations, we calculate
+    ! the number of elements per block. For smaller triangulations,
+    ! this is NEL. If there are too many elements, it is at most
+    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(PPERR_NELEMSIM, NEL)
+
     ! Okay, let us loop over all element distributions
-    do ieldist = 1, p_rdiscr%inumFEspaces
+    do icurrentElementDistr = 1, p_rdiscr%inumFEspaces
     
       ! Get a pointer to the element distribution
-      p_relemDist => p_rdiscr%RelementDistr(ieldist)
-      if(p_relemDist%NEL .le. 0) cycle
+      p_relementDistribution => p_rdiscr%RelementDistr(icurrentElementDistr)
+
+      ! Cancel if this element distribution is empty.
+      if(p_relementDistribution%NEL .le. 0) cycle
       
       ! Get a pointer to the element list
-      call storage_getbase_int(p_relemDist%h_IelementList, p_IelemList)
-      
-      ! Calculate element batch size
-      NEL = p_relemDist%NEL
-      NELbatchSize = min(NEL, PPERR_NELEMSIM)
+      call storage_getbase_int(p_relementDistribution%h_IelementList,&
+                               p_IelementList)
       
       ! Get the element
-      celement = p_relemDist%celement
+      celement = p_relementDistribution%celement
       
       ! Get the number of dofs per element
       ndofs = elem_igetNDofLoc(celement)
@@ -492,62 +501,74 @@ contains
       cevalTag = ior(cevalTag, EL_EVLTAG_DETJ)
       
       ! Get the cubature rule
-      ccubature = p_relemDist%ccubTypeEval
+      ccubature = p_relementDistribution%ccubTypeEval
+
+      ! Get the number of cubature points for the cubature formula
+      ncubp = cub_igetNumPts(ccubature)
 
       ! Allocate the arrays for the cubature formula
-      ncubp = cub_igetNumPts(ccubature)
       allocate(Domega(ncubp))
       allocate(DcubPts(trafo_igetReferenceDimension(ctrafoType),ncubp))
       
       ! Get the cubature formula
       call cub_getCubature(ccubature,DcubPts, Domega)
       
+      ! Open-MP-Extension: Open threads here.
+      ! Each thread will allocate its own local memory...
+      !
+      !$omp parallel default(shared) &
+      !$omp private(Dbas,DvalDer,DvalFunc,IELmax,Idofs,daux,daux2,&
+      !$omp         derrH1,derrL1,derrL2,dom,i,icomp,ider,iel,j,k,p_Dcoeff,&
+      !$omp         p_Ddetj,p_DerrH1,p_DerrL1,p_DerrL2,revalElementSet,rintSubset) &
+      !$omp         firstprivate(cevalTag)
+      
       ! Allocate an array for the DOF-mapping
-      allocate(Idofs(ndofs,NELbatchSize))
+      allocate(Idofs(ndofs,nelementsPerBlock))
       
       ! Allocate an array that recieves the evaluated basis functions
-      allocate(Dbas(ndofs,elem_getMaxDerivative(celement),ncubp,NELbatchsize))
+      allocate(Dbas(ndofs,elem_getMaxDerivative(celement),ncubp,nelementsPerBlock))
       
       ! Allocate two arrays for the evaluation
       if(bcalcL2 .or. bcalcL1) &
-        allocate(DvalFunc(ncubp,NELbatchSize))
+        allocate(DvalFunc(ncubp,nelementsPerBlock))
       if(bcalcH1) &
-        allocate(DvalDer(ncubp,NELbatchSize,ifirstDer:ilastDer))
+        allocate(DvalDer(ncubp,nelementsPerBlock,ifirstDer:ilastDer))
       
       ! Initialise the element evaluation set
-      call elprep_init(reval)
+      call elprep_init(revalElementSet)
       
-      ! Okay, loop over all elements
-      NELdone = 0
-      do while(NELdone .lt. NEL)
+      ! Loop over the elements - blockwise.
+      !$omp do schedule(static,1)
+      do IELset = 1, p_relementDistribution%NEL, nelementsPerBlock
+  
+        ! We always handle nelementsPerBlock elements simultaneously.
+        ! How many elements have we actually here?
+        ! Get the maximum element number, such that we handle at most
+        ! nelementsPerBlock elements simultaneously.
       
-        ! How many elements do we process this time?
-        NELtodo = min(NELbatchSize, NEL-NELdone)
-        
-        ! Get a pointer to the current element list
-        p_IcurElemList => p_IelemList(NELdone+1:NELdone+NELtodo)
-        
+        IELmax = min(p_relementDistribution%NEL,IELset-1+nelementsPerBlock)
+    
         ! First, let us perform the DOF-mapping
-        call dof_locGlobMapping_mult(p_rdiscr, p_IcurElemList, Idofs)
+        call dof_locGlobMapping_mult(p_rdiscr, p_IelementList(IELset:IELmax), Idofs)
         
         ! Prepare the element for evaluation
-        call elprep_prepareSetForEvaluation (reval, cevalTag, p_rtria, &
-            p_IcurElemList, ctrafoType, DcubPts)
-        p_Ddetj => reval%p_Ddetj
+        call elprep_prepareSetForEvaluation (revalElementSet, cevalTag, p_rtria, &
+            p_IelementList(IELset:IELmax), ctrafoType, DcubPts)
+        p_Ddetj => revalElementSet%p_Ddetj
         
         ! Remove the ref-points eval tag for the next loop iteration
         cevalTag = iand(cevalTag,not(EL_EVLTAG_REFPOINTS))
 
         ! Prepare the domain integration structure
-        call domint_initIntegrationByEvalSet(reval, rintSubset)
-        rintSubset%ielementDistribution = ielDist
-        rintSubset%ielementStartIdx = NELdone+1
-        rintSubset%p_Ielements => p_IcurElemList
+        call domint_initIntegrationByEvalSet(revalElementSet, rintSubset)
+        rintSubset%ielementDistribution = icurrentElementDistr
+        rintSubset%ielementStartIdx = IELset
+        rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial => Idofs
         rintSubset%celement = celement
         
         ! Evaluate the element
-        call elem_generic_sim2(celement, reval, Bder, Dbas)
+        call elem_generic_sim2(celement, revalElementSet, Bder, Dbas)
         
         ! Now loop over all vector components
         do icomp = 1, ncomp
@@ -573,9 +594,9 @@ contains
           end if
 
           ! Reset errors for this component
+          derrL1 = 0.0_DP
           derrL2 = 0.0_DP
           derrH1 = 0.0_DP
-          derrL1 = 0.0_DP
           
           ! Evaluate function values?
           if(allocated(DvalFunc)) then
@@ -583,15 +604,15 @@ contains
             ! Do we have a reference function? If yes, then evaluate it,
             ! otherwise simply format DvalFunc to zero.
             if(present(frefFunction)) then
-              call frefFunction(icomp, DER_FUNC, p_rdiscr, NELtodo, ncubp, &
-                  reval%p_DpointsReal, rintSubset, DvalFunc, rcollection)
+              call frefFunction(icomp,DER_FUNC,p_rdiscr,IELmax-IELset+1,ncubp,&
+                  revalElementSet%p_DpointsReal,rintSubset,&
+                  DvalFunc(:,1:IELmax-IELset+1),rcollection)
             else
               DvalFunc = 0.0_DP
             end if
             
             ! Now subtract the function values of the FE function.
-            !$omp parallel do private(i,k,daux)
-            do j = 1, NELtodo
+            do j = 1,IELmax-IELset+1
               do i = 1, ncubp
                 daux = 0.0_DP
                 do k = 1, ndofs
@@ -600,7 +621,6 @@ contains
                 DvalFunc(i,j) = DvalFunc(i,j) - daux
               end do ! i
             end do ! j
-            !$omp end parallel do
           
           end if ! function values evaluation
           
@@ -611,16 +631,16 @@ contains
             ! derivatives.
             if(present(frefFunction)) then
               do ider = ifirstDer, ilastDer
-                call frefFunction(icomp, ider, p_rdiscr, NELtodo, ncubp, &
-                    reval%p_DpointsReal, rintSubset, DvalDer(:,:,ider), rcollection)
+                call frefFunction(icomp,ider,p_rdiscr,IELmax-IELset+1,ncubp, &
+                    revalElementSet%p_DpointsReal,rintSubset,&
+                    DvalDer(:,1:IELmax-IELset+1,ider),rcollection)
               end do
             else
               DvalDer = 0.0_DP
             end if
             
             ! Now subtract the derivatives of the FE function.
-            !$omp parallel do private(i,ider,k,daux)
-            do j = 1, NELtodo
+            do j = 1,IELmax-IELset+1
               do i = 1, ncubp
                 do ider = ifirstDer, ilastDer
                   daux = 0.0_DP
@@ -631,15 +651,14 @@ contains
                 end do ! ider
               end do ! i
             end do ! j
-            !$omp end parallel do
           
           end if ! derivatives evaluation
             
           ! Do we calculate L2-errors?
           if(bcalcL2 .and. associated(p_DerrL2)) then
-            !$omp parallel do private(i,iel,daux,dom) reduction(+:derrL2)
-            do j = 1, NELtodo
-              iel = p_IcurElemList(j)
+            !$omp critical
+            do j = 1,IELmax-IELset+1
+              iel = p_IelementList(j)
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = Domega(i) * abs(p_Ddetj(i,j))
@@ -648,10 +667,9 @@ contains
               p_DerrL2(iel) = sqrt(daux)
               derrL2 = derrL2 + daux
             end do ! j
-            !$omp end parallel do
+            !$omp end critical
           else if(bcalcL2) then
-            !$omp parallel do private(i,daux,dom) reduction(+:derrL2)
-            do j = 1, NELtodo
+            do j = 1,IELmax-IELset+1
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = Domega(i) * abs(p_Ddetj(i,j))
@@ -659,14 +677,13 @@ contains
               end do ! i
               derrL2 = derrL2 + daux
             end do ! j
-            !$omp end parallel do
           end if
           
           ! Do we calculate H1-errors?
           if(bcalcH1 .and. associated(p_DerrH1)) then
-            !$omp parallel do private(i,ider,iel,daux,daux2,dom) reduction(+:derrH1)
-            do j = 1, NELtodo
-              iel = p_IcurElemList(j)
+            !$omp critical
+            do j = 1,IELmax-IELset+1
+              iel = p_IelementList(j)
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = Domega(i) * abs(p_Ddetj(i,j))
@@ -679,10 +696,9 @@ contains
               p_DerrH1(iel) = sqrt(daux)
               derrH1 = derrH1 + daux
             end do ! j
-            !$omp end parallel do
+            !$omp end critical
           else if(bcalcH1) then
-            !$omp parallel do private(i,ider,daux,daux2,dom) reduction(+:derrH1)
-            do j = 1, NELtodo
+            do j = 1,IELmax-IELset+1
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = Domega(i) * abs(p_Ddetj(i,j))
@@ -694,26 +710,24 @@ contains
               end do ! i
               derrH1 = derrH1 + daux
             end do ! j
-            !$omp end parallel do
           end if
 
           ! Do we calculate L1-errors?
           if(bcalcL1 .and. associated(p_DerrL1)) then
-            !$omp parallel do private(i,iel,daux,dom) reduction(+:derrL1)
-            do j = 1, NELtodo
-              iel = p_IcurElemList(j)
+            !$omp critical
+            do j = 1,IELmax-IELset+1
+              iel = p_IelementList(j)
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = Domega(i) * abs(p_Ddetj(i,j))
                 daux = daux + dom*abs(DvalFunc(i,j))
               end do ! i
               p_DerrL1(iel) = daux
-              derrL2 = derrL2 + daux
+              derrL1 = derrL1 + daux
             end do ! j
-            !$omp end parallel do
+            !$omp end critical
           else if(bcalcL1) then
-            !$omp parallel do private(i,daux,dom) reduction(+:derrL1)
-            do j = 1, NELtodo
+            do j = 1,IELmax-IELset+1
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = Domega(i) * abs(p_Ddetj(i,j))
@@ -721,38 +735,39 @@ contains
               end do ! i
               derrL1 = derrL1 + daux
             end do ! j
-            !$omp end parallel do
           end if
-          
-          ! Incorporate errors
+
+          !$omp critical
           if(bcalcL2 .and. associated(rerror%p_DerrorL2)) &
-            rerror%p_DerrorL2(icomp) = rerror%p_DerrorL2(icomp) + derrL2
+              rerror%p_DerrorL2(icomp) = rerror%p_DerrorL2(icomp) + derrL2
           if(bcalcH1 .and. associated(rerror%p_DerrorH1)) &
-            rerror%p_DerrorH1(icomp) = rerror%p_DerrorH1(icomp) + derrH1
+              rerror%p_DerrorH1(icomp) = rerror%p_DerrorH1(icomp) + derrH1
           if(bcalcL1 .and. associated(rerror%p_DerrorL1)) &
-            rerror%p_DerrorL1(icomp) = rerror%p_DerrorL1(icomp) + derrL1
+              rerror%p_DerrorL1(icomp) = rerror%p_DerrorL1(icomp) + derrL1
+          !$omp end critical
         
         end do ! icomp
       
         ! Release the domain integration structure
         call domint_doneIntegration (rintSubset)
-        
-        NELdone = NELdone + NELtodo
 
-      end do ! while(NELdone .lt. NEL)
-
+      end do ! IELset
+      !$omp end do
+      
       ! Release the element evaluation set
-      call elprep_releaseElementSet(reval)
+      call elprep_releaseElementSet(revalElementSet)
       
       ! Deallocate all arrays
       if(allocated(DvalDer)) deallocate(DvalDer)
       if(allocated(DvalFunc)) deallocate(DvalFunc)
       deallocate(Dbas)
       deallocate(Idofs)
+      !$omp end parallel
+
       deallocate(DcubPts)
       deallocate(Domega)
     
-    end do ! ieldist
+    end do ! icurrentElementDistr
     
     ! Do not forget to take the square roots of the L2- and H1-errors
     if(associated(rerror%p_DerrorL2) .and. bcalcL2) then
@@ -1126,7 +1141,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
     
-    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -1171,7 +1186,7 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
                                
     ! Set the current error to 0 and add the error contributions of each element
@@ -1925,7 +1940,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
     
-    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -1971,7 +1986,7 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
     
     ! Set the current error to 0 and add the error contributions of each element
@@ -2728,7 +2743,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
     
-    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -2775,7 +2790,7 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
     
     ! Set the current error to 0 and add the error contributions of each element
@@ -4410,7 +4425,7 @@ contains
     ! the elements.
     integer(I32) :: cevaluationTag
 
-    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -4473,7 +4488,7 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
 
     ! Set the current error to 0 and add the error contributions of each element to that.
@@ -4931,7 +4946,7 @@ contains
     ! the elements.
     integer(I32) :: cevaluationTag
     
-    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -4973,7 +4988,7 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
 
     ! Set the mathematical expectation of the center of mass to 0
