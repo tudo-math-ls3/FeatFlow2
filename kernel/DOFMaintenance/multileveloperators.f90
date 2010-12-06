@@ -114,10 +114,8 @@ module multileveloperators
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building matrices
-#ifdef MLOP_NELEMSIM
-  integer, parameter :: MLOP_NELEMSIM   = MLOP_NELEMSIM
-#else
-  integer, parameter :: MLOP_NELEMSIM   = 100
+#ifndef MLOP_NELEMSIM
+  integer, parameter :: MLOP_NELEMSIM = 100
 #endif
   
 !</constantblock>

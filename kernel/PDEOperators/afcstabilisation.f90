@@ -342,9 +342,7 @@ module afcstabilisation
 !<constantblock description="Default tolerances for stabilisation">
   
   ! Absolute tolerance for stabilisation
-#ifdef __AFCSTAB_EPSABS
-  real(DP), parameter, public :: AFCSTAB_EPSABS = __AFCSTAB_EPSABS
-#else
+#ifndef AFCSTAB_EPSABS
   real(DP), parameter, public :: AFCSTAB_EPSABS = 1e-12
 #endif 
 

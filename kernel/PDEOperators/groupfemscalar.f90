@@ -183,16 +183,12 @@ module groupfemscalar
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of nodes to handle simultaneously when building matrices
-#ifdef GFSC_NEQSIM
-  integer, parameter, public :: GFSC_NEQSIM = GFSC_NEQSIM
-#else
+#ifndef GFSC_NEQSIM
   integer, parameter, public :: GFSC_NEQSIM = 1000
 #endif
 
   ! Number of edges to handle simultaneously when building matrices
-#ifdef GFSC_NEDGESIM
-  integer, parameter, public :: GFSC_NEDGESIM = GFSC_NEDGESIM
-#else
+#ifndef GFSC_NEDGESIM
   integer, parameter, public :: GFSC_NEDGESIM = 1000
 #endif
   

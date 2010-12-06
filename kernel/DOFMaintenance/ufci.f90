@@ -25,10 +25,8 @@ public :: t_ufciData
 !<constantblock description="General parameters">
 
   ! Maximum number of functions which may be evaluated simultaneously
-#ifdef UFCI_MAX_SIM
-  integer, parameter, public :: UFCI_MAX_SIM                    = UFCI_MAX_SIM
-#else
-  integer, parameter, public :: UFCI_MAX_SIM                    = 32
+#ifndef UFCI_MAX_SIM
+  integer, parameter, public :: UFCI_MAX_SIM = 32
 #endif
 
 !</constantblock>
@@ -36,10 +34,10 @@ public :: t_ufciData
 !<constantblock description="Task identifiers for callback function evaluation">
 
   ! Do nothing - this is just a dummy
-  integer, parameter, public :: UFCI_TASK_NONE                  = 0
+  integer, parameter, public :: UFCI_TASK_NONE     = 0
 
   ! Evaluate the function in a given set of points
-  integer, parameter, public :: UFCI_TASK_EVALUATE              = 1
+  integer, parameter, public :: UFCI_TASK_EVALUATE = 1
 
 !</constantblock>
 

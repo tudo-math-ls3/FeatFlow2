@@ -138,16 +138,12 @@ module groupfemsystem
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of nodes to handle simultaneously when building matrices
-#ifdef GFSYS_NEQSIM
-  integer, parameter, public :: GFSYS_NEQSIM = GFSYS_NEQSIM
-#else
+#ifndef GFSYS_NEQSIM
   integer, parameter, public :: GFSYS_NEQSIM = 128
 #endif
 
   ! Number of edges to handle simultaneously when building matrices
-#ifdef GFSYS_NEDGESIM
-  integer, parameter, public :: GFSYS_NEDGESIM = GFSYS_NEDGESIM
-#else
+#ifndef GFSYS_NEDGESIM
   integer, parameter, public :: GFSYS_NEDGESIM = 64
 #endif
   

@@ -401,10 +401,8 @@ module bilinearformevaluation
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building matrices
-#ifdef BILF_NELEMSIM
-  integer, parameter, public :: BILF_NELEMSIM   = BILF_NELEMSIM
-#else
-  integer, parameter, public :: BILF_NELEMSIM   = 1000
+#ifndef BILF_NELEMSIM
+  integer, parameter, public :: BILF_NELEMSIM = 512
 #endif
   
 !</constantblock>
