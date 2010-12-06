@@ -537,6 +537,9 @@ module forwardbackwardsimulation
     ! A t_fbsimPreconditioner structure that defines the preconditioner
     type(t_fbsimPreconditioner) :: rpreconditioner
 
+    ! A t_fbsimPreconditioner structure that defines an alternative preconditioner
+    type(t_fbsimPreconditioner) :: rpreconditionerAlternative
+
     ! Pointer to the underlying space-time matrix that defines the timesteping etc.
     type(t_ccoptSpaceTimeMatrix), pointer :: p_rmatrix => null()
 
@@ -841,7 +844,7 @@ contains
 !</subroutine>
 
     integer :: cspace
-    character(len=SYS_STRLEN) :: ssectionLinSol
+    character(len=SYS_STRLEN) :: ssectionLinSol,ssectionLinSol2
 
     ! Reset statistrics
     rsimsolver%nnonlinearIterations = 0
@@ -869,6 +872,10 @@ contains
       call parlst_getvalue_string (rparlist, ssection,"slinearSolver", &
           ssectionLinSol, "CC-LINEARSOLVER",bdequote=.true.)
 
+      ! Get the section defining the alternative linear solver.
+      call parlst_getvalue_string (rparlist, ssection,"slinearSolverAlternative", &
+          ssectionLinSol2, "",bdequote=.true.)
+
     case (FBSIM_SOLVER_LINFORWARD)
       cspace = CCSPACE_PRIMAL
       
@@ -893,6 +900,12 @@ contains
     call fbsim_initPreconditioner (rsimsolver%rpreconditioner, rsettings, &
         nlmin, nlmax, cspace, rparamlist=rparlist, ssection=ssectionLinSol)
         
+    ! Probably initialise the alternative preconditioner.
+    if (ssectionLinSol2 .ne. "") then
+      call fbsim_initPreconditioner (rsimsolver%rpreconditionerAlternative, rsettings, &
+          nlmin, nlmax, cspace, rparamlist=rparlist, ssection=ssectionLinSol2)
+    end if
+        
     ! Get the assembly data on our level that allows us to create nonlinear
     ! matrices.
     call smva_getDiscrData (rsettings, nlmax, rsimsolver%rdiscrData, rphysics)
@@ -916,7 +929,13 @@ contains
 
 !</subroutine>
 
+    ! Release the preconditioner.
     call fbsim_donePreconditioner (rsimsolver%rpreconditioner)
+    
+    if (rsimsolver%rpreconditionerAlternative%ctypePreconditioner .ne. 0) then
+      ! Release also the alternative preconditioner.
+      call fbsim_donePreconditioner (rsimsolver%rpreconditionerAlternative)
+    end if
 
   end subroutine
 
@@ -948,6 +967,11 @@ contains
     
     ! Remember a pointer to the underlying time discretisation.
     rsimSolver%rpreconditioner%p_rtimeDiscr => rmatrix%rdiscrData%p_rtimeDiscr
+
+    if (rsimsolver%rpreconditionerAlternative%ctypePreconditioner .ne. 0) then
+      ! THe same for the alternative preconditioner
+      rsimSolver%rpreconditionerAlternative%p_rtimeDiscr => rmatrix%rdiscrData%p_rtimeDiscr
+    end if
 
   end subroutine
 
@@ -1462,7 +1486,7 @@ contains
           ! Initialise the smoothers.
           select case (ismootherType)
           
-          case (0:9)
+          case (0:10)
 
             nullify(p_rsmoother)
           
@@ -1571,6 +1595,22 @@ contains
                 call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
                 rpreconditioner%bneedVirtTransposedD = .false.
               end select
+
+              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+              !rpreconditioner%bneedVirtTransposedD = .true.
+
+            case (10)
+              select case (cspace)
+              case (CCSPACE_PRIMAL, CCSPACE_DUAL)
+                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+                rpreconditioner%bneedVirtTransposedD = .false.
+              case (CCSPACE_PRIMALDUAL)
+                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+                rpreconditioner%bneedVirtTransposedD = .false.
+              end select
+
+              call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+                  rpreconditioner%RfilterChain)
 
               ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
               !rpreconditioner%bneedVirtTransposedD = .true.
@@ -3286,7 +3326,7 @@ contains
     real(dp) :: dtimePrimal,dtimeDual,dweightold,dweightnew,dtstep
     type(t_vectorBlock) :: rrhs
     type(t_vectorBlock) :: rdefect
-    type(t_vectorBlock) :: rdefectPrimal,rdefectDual
+    type(t_vectorBlock) :: rdefectPrimal,rdefectDual,rdefectBackup
     type(t_staticSpaceAsmTemplates), pointer :: p_rspaceAsmTempl 
     type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_ccoptSpaceTimeMatrix), pointer :: p_rspaceTimeMatrix
@@ -3325,6 +3365,11 @@ contains
     rsimsolver%p_rboundaryConditions => rboundaryConditions
     rsimSolver%rpreconditioner%p_rboundaryConditions => rboundaryConditions
     
+    if (rsimSolver%rpreconditionerAlternative%ctypePreconditioner .ne. 0) then
+      ! Also to the alternative preconditioner.
+      rsimSolver%rpreconditionerAlternative%p_rboundaryConditions => rboundaryConditions
+    end if
+    
     ! Create vector pools for the space-time vectors to have quicker access.
     call sptivec_createAccessPool(rrhsvector,rrhsAccess,4)
     call sptivec_createAccessPool(rsolvector,rsolAccess,4)
@@ -3350,6 +3395,9 @@ contains
     call lsysbl_deriveSubvector(rdefect,rdefectDual,4,6,.true.)
     call lsysbl_assignDiscrDirectVec (rdefectPrimal,rsimsolver%rdiscrData%p_rdiscrPrimal)
     call lsysbl_assignDiscrDirectVec (rdefectDual,rsimsolver%rdiscrData%p_rdiscrPrimal)
+
+    ! create a backup vector in case there is an alternative preconditioner.
+    call lsysbl_createVectorBlock(rsimsolver%rdiscrData%p_rdiscrPrimalDual,rdefectBackup)
 
     ! DEBUG!!!
     call lsysbl_getbase_double (rdefect,p_Ddefect)
@@ -3649,6 +3697,12 @@ contains
             call fbsim_assemblePrecMatrices (rsimsolver%rpreconditioner,&
                 iiterate,0,rspaceTimeMatrixPrecond,rnonlinearData,.true.)
             call stat_stopTimer (rtimerMatrixAssembly)
+            
+            if (rsimsolver%rpreconditionerAlternative%ctypePreconditioner .ne. 0) then
+              ! There is an alternative preconditioner, so make a backup of our
+              ! defect in case we have to apply that.
+              call lsysbl_copyVector (rdefect,rdefectBackup)
+            end if
                 
             ! Do preconditioning to the defect
             call fbsim_precondSpaceDefect (rsimsolver%rpreconditioner,&
@@ -3667,8 +3721,49 @@ contains
                     trim(sys_siL(ite,10))//' canceled as the preconditioner went down!',&
                     coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
               end if
-              blocalsuccess = .false.
-              exit
+              if (rsimsolver%rpreconditionerAlternative%ctypePreconditioner .eq. 0) then
+                blocalsuccess = .false.
+                exit
+              else
+                if (rsimSolver%rnonlinearIteration%ioutputLevel .ge. 0) then
+                  call output_line ('fbsim_simulate: Trying alternative preconditioner...',&
+                      coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
+                end if
+                
+                ! Restore the backup of the defect.
+                call lsysbl_copyVector (rdefectBackup,rdefect)
+                
+                ! Prepeare the alternative preconditioner.
+                call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
+                    rsimsolver%rpreconditionerAlternative,dtimePrimal,dtimeDual)
+
+                ! Assemble the preconditioner matrices on all levels.
+                call stat_startTimer (rtimerMatrixAssembly)
+                call fbsim_assemblePrecMatrices (rsimsolver%rpreconditionerAlternative,&
+                    iiterate,0,rspaceTimeMatrixPrecond,rnonlinearData,.true.)
+                call stat_stopTimer (rtimerMatrixAssembly)
+
+                ! Do preconditioning to the defect
+                call fbsim_precondSpaceDefect (rsimsolver%rpreconditionerAlternative,&
+                    rdefectPrimal,blocalsuccess,rsimsolver%rnonlinearIteration)
+                
+                ! Gather statistics
+                rsimsolver%dtimeLinearSolver = rsimsolver%dtimeLinearSolver + &
+                    rsimsolver%rnonlinearIteration%dtimeLinearSolver
+                rsimsolver%nlinearIterations = rsimsolver%nlinearIterations + &
+                    rsimsolver%rnonlinearIteration%nlinearIterations
+
+                if (.not. blocalsuccess) then
+                  if (rsimSolver%rnonlinearIteration%ioutputLevel .ge. 0) then
+                    call output_line ('fbsim_simulate: Iteration '//&
+                        trim(sys_siL(ite,10))//' canceled as the alternative preconditioner went down!',&
+                        coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
+                  end if
+                  blocalsuccess = .false.
+                  exit
+                end if
+
+              end if
             end if
 
             ! Update of the solution
@@ -4084,6 +4179,7 @@ contains
     
     ! Release the temp vectors
     call lsysbl_releaseVector (rdefect)
+    call lsysbl_releaseVector (rdefectBackup)
 
     if (present(roseenSolution)) then
       call sptivec_releaseAccessPool(roseenAccess)
