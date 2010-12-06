@@ -608,7 +608,7 @@ contains
         ! to decide processor-independently whether the line or
         ! the record ends.
         read (unit=iunit, fmt='(A1)', iostat=ios, advance='NO',&
-            end do=10, eor=20) c
+            end=10, eor=20) c
         
         ! Do not do anything in case of an error
         if (ios .eq. 0) then
