@@ -706,7 +706,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i)
+    !$omp parallel do default(shared) private(i) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -723,7 +724,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,dxj)
+    !$omp parallel do default(shared) private(i,dxj) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 1E0_DP / Ddetj(1:npoints,j)
       
@@ -1128,7 +1130,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i)
+    !$omp parallel do default(shared) private(i) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -1154,7 +1157,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,dxj,dp1,dp2,dp3)
+    !$omp parallel do default(shared) private(i,dxj,dp1,dp2,dp3) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 1E0_DP / Ddetj(1:npoints,j)
       
@@ -1546,7 +1550,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i)
+    !$omp parallel do default(shared) private(i) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -1563,7 +1568,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,dxj)
+    !$omp parallel do default(shared) private(i,dxj) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 1E0_DP / Ddetj(1:npoints,j)
       

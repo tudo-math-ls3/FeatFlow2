@@ -25,6 +25,16 @@ module elementbase
   
 !<constants>
 
+!<constantblock>
+
+  ! Minimum number of elements for OpenMP parallelisation: If the number of
+  ! elements is below this value, then no parallelisation is performed.
+#ifndef EL_NELEMMIN_OMP
+  integer, parameter, public :: EL_NELEMMIN_OMP = 1000
+#endif
+  
+!</constantblock>
+
 !<constantblock description="Element evaluation tags. Defines the basis information that is \
 !  necessary to evaluate an element. All tags define bits of a bitfield and can be \
 !  combined by an OR command.">

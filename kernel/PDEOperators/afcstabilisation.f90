@@ -348,6 +348,15 @@ module afcstabilisation
 
 !</constantblock>
 
+!<constantblock>
+  ! Minimum number of edges for OpenMP parallelisation: If the number of
+  ! edges is below this value, then no parallelisation is performed.
+#ifndef AFCSTAB_NEDGEMIN_OMP
+  integer, parameter, public :: AFCSTAB_NEDGEMIN_OMP = 1000
+#endif
+  
+!</constantblock>
+
 !</constants>
 
   ! *****************************************************************************
@@ -3005,7 +3014,9 @@ contains
     baccept = .true.
     
     ! Loop over all edges
-    !$omp parallel do private(i,j,ivar)
+    !$omp parallel do default(shared) private(i,j,ivar) &
+    !$omp if(size(IverticesAtEdge,2) > AFCSTAB_NEDGEMIN_OMP) &
+    !$omp reduction(.and.:baccept)
     do iedge = 1, size(IverticesAtEdge,2)
       
       ! Get node numbers

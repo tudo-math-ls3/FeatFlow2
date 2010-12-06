@@ -7541,13 +7541,11 @@ contains
       ! local variables
       integer :: ivar,ieq
 
-      !$omp parallel do
       do ivar = 1, NVAR
         do ieq = 1, NEQ
           DdataDest(ieq,ivar) = DdataSrc(ivar,ieq)
         end do
       end do
-      !$omp end parallel do
 
     end subroutine do_convertDble
 
@@ -7563,13 +7561,11 @@ contains
       ! local variables
       integer :: ivar,ieq
 
-      !$omp parallel do
       do ivar = 1, NVAR
         do ieq = 1, NEQ
           FdataDest(ieq,ivar) = FdataSrc(ivar,ieq)
         end do
       end do
-      !$omp end parallel do
 
     end subroutine do_convertSngl
 
@@ -7662,13 +7658,11 @@ contains
       ! local variables
       integer :: ivar,ieq
 
-      !$omp parallel do
       do ieq = 1, NEQ
         do ivar = 1, NVAR
           DdataDest(ivar,ieq) = DdataSrc(ieq,ivar)
         end do
       end do
-      !$omp end parallel do
 
     end subroutine do_convertDble
 
@@ -7684,13 +7678,11 @@ contains
       ! local variables
       integer :: ivar,ieq
 
-      !$omp parallel do
       do ieq = 1, NEQ
         do ivar = 1, NVAR
           FdataDest(ivar,ieq) = FdataSrc(ieq,ivar)
         end do
       end do
-      !$omp end parallel do
 
     end subroutine do_convertSngl
 

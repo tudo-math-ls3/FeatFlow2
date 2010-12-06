@@ -304,6 +304,16 @@ module linearsystemscalar
 
 !<constants>
 
+!<constantblock>
+
+  ! Minimum number of equations for OpenMP parallelisation: If the number of
+  ! equations is below this value, then no parallelisation is performed.
+#ifndef SCHUR_NEQMIN_OMP
+  integer, parameter, public :: LSYSSC_NEQMIN_OMP = 1000
+#endif
+  
+!</constantblock>
+
 !<constantblock description="Global constants for scalar vectors/matrices">
 
   ! Maximum number of tags that can be assigned to a scalar vector or matrix.
@@ -3786,7 +3796,8 @@ contains
           
           if(cy .eq. 0.0_DP) then
             
-            !$omp parallel do private(ia,dtmp) default(shared)
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3798,7 +3809,8 @@ contains
             
           else if(cy .eq. 1.0_DP) then
             
-            !$omp parallel do private(ia,dtmp) default(shared)
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3810,7 +3822,8 @@ contains
         
           else   ! arbitrary cy value
             
-            !$omp parallel do private(ia,dtmp) default(shared)
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3826,7 +3839,8 @@ contains
           
           if(cy .eq. 0.0_DP) then
             
-            !$omp parallel do private(ia,dtmp) default(shared)
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3838,7 +3852,8 @@ contains
             
           else if(cy .eq. 1.0_DP) then
             
-            !$omp parallel do private(ia,dtmp) default(shared)
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3850,7 +3865,8 @@ contains
             
           else   ! arbitrary cy value
             
-            !$omp parallel do private(ia,dtmp) default(shared)
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3873,7 +3889,8 @@ contains
           
           if(cy .eq. 0.0_DP) then
             
-            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3889,7 +3906,8 @@ contains
             
           else if(cy .eq. 1.0_DP) then
             
-            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3905,7 +3923,8 @@ contains
         
           else   ! arbitrary cy value
             
-            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3925,7 +3944,8 @@ contains
           
           if(cy .eq. 0.0_DP) then
             
-            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3941,7 +3961,8 @@ contains
             
           else if(cy .eq. 1.0_DP) then
             
-            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -3957,7 +3978,8 @@ contains
             
           else   ! arbitrary cy value
             
-            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = p_Kld(irow), p_Kld(irow+1)-1
@@ -4022,13 +4044,14 @@ contains
 !!$          ! What is this complicated IF-THEN structure for?
 !!$          ! Well, to prevent an initialisation of rx with zero in case cy=0!
 !!$       
-!!$          !%omp parallel do default(shared) private(irow,icol,ia)
+!!$          !$omp parallel do default(shared) private(icol,ia) &
+!!$          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
 !!$          do irow = 1, NEQ
 !!$            ia   = Kld(irow)
 !!$            icol = Kcol(ia)
 !!$            Dy(:,irow) = Dx(:,icol) * DA(ia)
 !!$          end do
-!!$          !%omp end parallel do
+!!$          !$omp end parallel do
 !!$
 !!$          ! Now we have an initial ry where we can do a usual MV
 !!$          ! with the rest of the matrix...
@@ -4050,26 +4073,28 @@ contains
 !!$          ! Multiply the first entry in each line of the matrix with the
 !!$          ! corresponding entry in rx and add it to the (scaled) ry.
 !!$          
-!!$          !%omp parallel do default(shared) private(irow,icol,ia)
+!!$          !$omp parallel do default(shared) private(icol,ia) &
+!!$          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
 !!$          do irow = 1, NEQ
 !!$            ia   = Kld(irow)
 !!$            icol = Kcol(ia)
 !!$            Dy(:,irow) = Dx(:,icol)*DA(ia) + Dy(:,irow) 
 !!$          end do
-!!$          !%omp end parallel do
+!!$          !$omp end parallel do
 !!$          
 !!$        endif
 !!$        
 !!$        ! Multiply the rest of rx with the matrix and add it to ry:
 !!$        
-!!$        !%omp parallel do default(shared) private(irow,icol,ia)
+!!$        !$omp parallel do default(shared) private(icol,ia) &
+!!$        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
 !!$        do irow = 1, NEQ
 !!$          do ia = Kld(irow)+1,Kld(irow+1)-1
 !!$            icol = Kcol(ia)
 !!$            Dy(:,irow) = Dy(:,irow) + DA(ia)*Dx(:,icol)
 !!$          end do
 !!$        end do
-!!$        !%omp end parallel do
+!!$        !$omp end parallel do
 !!$        
 !!$        ! Scale by cx, finish.
 !!$        
@@ -4139,7 +4164,8 @@ contains
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
 
-          !%omp parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
+          !$omp parallel do default(shared) private(icol,ia,ivar,jvar,dtmp) &
+          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -4155,7 +4181,7 @@ contains
               p_Dy(NVAR*(irow-1)+ivar) = dtmp
             end do
           end do
-          !%omp end parallel do
+          !$omp end parallel do
 
           ! Now we have an initial ry where we can do a usual MV
           ! with the rest of the matrix...
@@ -4177,7 +4203,8 @@ contains
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
           
-          !%omp parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
+          !$omp parallel do default(shared) private(icol,ia,ivar,jvar,dtmp) &
+          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -4193,30 +4220,31 @@ contains
               p_Dy(NVAR*(irow-1)+ivar) = dtmp + p_Dy(NVAR*(irow-1)+ivar)
             end do
           end do
-          !%omp end parallel do
+          !$omp end parallel do
           
         endif
         
         ! Multiply the rest of rx with the matrix and add it to ry:
         
-        !%omp parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
-          do irow=1,NEQ
-            do ia = p_Kld(irow)+1,p_Kld(irow+1)-1
-              icol = p_Kcol(ia)
+        !$omp parallel do default(shared) private(icol,ia,ivar,jvar,dtmp) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do irow=1,NEQ
+          do ia = p_Kld(irow)+1,p_Kld(irow+1)-1
+            icol = p_Kcol(ia)
               
-              ! Here, we compute
-              !   y(ivar,irow) = y(ivar,irow) + SUM_jvar ( A(ivar,jvar,ia)*x(jvar,icol) )
-              do ivar = 1, NVAR
-                dtmp = 0
-                do jvar=1,NVAR
-                  dtmp = dtmp + p_Dx(NVAR*(icol-1)+jvar)&
-                      * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)
-                end do
-                p_Dy(NVAR*(irow-1)+ivar) = dtmp + p_Dy(NVAR*(irow-1)+ivar)
+            ! Here, we compute
+            !   y(ivar,irow) = y(ivar,irow) + SUM_jvar ( A(ivar,jvar,ia)*x(jvar,icol) )
+            do ivar = 1, NVAR
+              dtmp = 0
+              do jvar=1,NVAR
+                dtmp = dtmp + p_Dx(NVAR*(icol-1)+jvar)&
+                    * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)
               end do
+              p_Dy(NVAR*(irow-1)+ivar) = dtmp + p_Dy(NVAR*(irow-1)+ivar)
             end do
           end do
-          !%omp end parallel do
+        end do
+        !$omp end parallel do
         
         ! Scale by cx, finish.
         
@@ -4285,7 +4313,8 @@ contains
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
           
-          !%omp parallel do default(shared) private(irow,icol,ia,ivar)
+          !$omp parallel do default(shared) private(icol,ia,ivar) &
+          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -4295,7 +4324,7 @@ contains
                   * p_DA(NVAR*(ia-1)+ivar)
             end do
           end do
-          !%omp end parallel do
+          !$omp end parallel do
 
           ! Now we have an initial ry where we can do a usual MV
           ! with the rest of the matrix...
@@ -4317,7 +4346,8 @@ contains
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
           
-          !%omp parallel do default(shared) private(irow,icol,ia,ivar)
+          !$omp parallel do default(shared) private(icol,ia,ivar) &
+          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -4328,25 +4358,26 @@ contains
                   + p_Dy(NVAR*(irow-1)+ivar)
             end do
           end do
-          !%omp end parallel do
+          !$omp end parallel do
           
         endif
         
         ! Multiply the rest of rx with the matrix and add it to ry:
         
-        !%omp parallel do default(shared) private(irow,icol,ia,ivar)
-          do irow=1,NEQ
-            do ia = p_Kld(irow)+1,p_Kld(irow+1)-1
-              icol = p_Kcol(ia)
-              
-              do ivar = 1, NVAR
-                p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+ivar)&
-                    * p_DA(NVAR*(ia-1)+ivar)&
-                    + p_Dy(NVAR*(irow-1)+ivar)
-              end do
+        !$omp parallel do default(shared) private(icol,ia,ivar) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do irow=1,NEQ
+          do ia = p_Kld(irow)+1,p_Kld(irow+1)-1
+            icol = p_Kcol(ia)
+            
+            do ivar = 1, NVAR
+              p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+ivar)&
+                  * p_DA(NVAR*(ia-1)+ivar)&
+                  + p_Dy(NVAR*(irow-1)+ivar)
             end do
           end do
-          !%omp end parallel do
+        end do
+        !$omp end parallel do
            
         ! Scale by cx, finish.
         
@@ -4408,20 +4439,20 @@ contains
           if (cy .eq. 0.0_DP) then
             
             ! cy = 0. Multiply cx*A with X and write to Y.
-            !%omp parallel do default(shared) private(irow)
+            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1,NEQ
               p_Dy(irow) = cx*p_Da(irow)*p_Dx(irow)
             end do
-            !%omp end parallel do
+            !$omp end parallel do
           
           else   ! arbitrary cy value
         
             ! Full multiplication: cx*A*X + cy*Y
-            !%omp parallel do default(shared) private(irow)
+            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1,NEQ
               p_Dy(irow) = cy*p_Dy(irow) + cx*p_Da(irow)*p_Dx(irow) 
             end do
-            !%omp end parallel do
+            !$omp end parallel do
         
           end if
         
@@ -4442,25 +4473,25 @@ contains
           if (cy .eq. 0.0_DP) then
             
             ! cy = 0. Multiply cx*A with X and write to Y.
-            !%omp parallel do default(shared) private(irow)
+            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 p_Dy(NVAR*(irow-1)+ivar) = cx*p_Da(irow)*p_Dx(NVAR*(irow-1)+ivar)
               end do
             end do
-            !%omp end parallel do
+            !$omp end parallel do
           
           else   ! arbitrary cy value
         
             ! Full multiplication: cx*A*X + cy*Y
-            !%omp parallel do default(shared) private(irow)
+            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 p_Dy(NVAR*(irow-1)+ivar) = cy*p_Dy(NVAR*(irow-1)+ivar) +&
                     cx*p_Da(irow)*p_Dx(NVAR*(irow-1)+ivar) 
               end do
             end do
-            !%omp end parallel do
+            !$omp end parallel do
         
           end if
         
@@ -10097,25 +10128,22 @@ contains
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(p_Kdiag(i))
           end do
-!%omp end parallel do
+          !$omp end parallel do
         else
           NVAR = rvectorSrc%NVAR
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(p_Kdiag(i))
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
         end if
         
       case (ST_SINGLE)
@@ -10123,25 +10151,22 @@ contains
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(p_Kdiag(i))
           end do
-!%omp end parallel do
+          !$omp end parallel do
         else
           NVAR = rvectorSrc%NVAR
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(p_Kdiag(i))
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
         end if
         
       case DEFAULT
@@ -10161,25 +10186,22 @@ contains
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i)
+          !$omp parallel dodefault(shared)
           do i=1,rvectorSrc%NEQ
             p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(p_Kdiag(i))
           end do
-!%omp end parallel do
+          !$omp end parallel do
         else
           NVAR = rvectorSrc%NVAR
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)*&
                   fmyscale/p_Fa(p_Kdiag(i))
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
         end if
         
       case (ST_SINGLE)
@@ -10187,25 +10209,22 @@ contains
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(p_Kdiag(i))
           end do
-!%omp end parallel do
+          !$omp end parallel do
         else
           NVAR = rvectorSrc%NVAR
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)*&
                   fmyscale/p_Fa(p_Kdiag(i))
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
         end if
         
       case DEFAULT
@@ -10253,28 +10272,26 @@ contains
         ! Let us go...
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
 
         case (LSYSSC_MATRIXD)
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*(p_Kdiag(i)-1)+ivar)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
 
         case DEFAULT
           call output_line('Unsupported interleaved matrix format!',&
@@ -10288,28 +10305,26 @@ contains
         ! Let us go...
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
 
         case (LSYSSC_MATRIXD)
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*(p_Kdiag(i)-1)+ivar)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
 
         case DEFAULT
           call output_line('Unsupported interleaved matrix format!',&
@@ -10335,28 +10350,26 @@ contains
         ! Let us go...
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
 
         case (LSYSSC_MATRIXD)
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*(p_Kdiag(i)-1)+ivar)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
         
         case DEFAULT
           call output_line('Unsupported interleaved matrix format!',&
@@ -10370,28 +10383,26 @@ contains
         ! Let us go...
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
 
         case (LSYSSC_MATRIXD)
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*(p_Kdiag(i)-1)+ivar)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
         
         case DEFAULT
           call output_line('Unsupported interleaved matrix format!',&
@@ -10426,25 +10437,22 @@ contains
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(i)
           end do
-!%omp end parallel do
+          !$omp end parallel do
         else
           NVAR = rvectorSrc%NVAR
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(i)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
         end if
         
       case (ST_SINGLE)
@@ -10452,25 +10460,22 @@ contains
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(i)
           end do
-!%omp end parallel do
+          !$omp end parallel do
         else
           NVAR = rvectorSrc%NVAR
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(i)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
         end if
         
       case DEFAULT
@@ -10490,25 +10495,22 @@ contains
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(i)
           end do
-!%omp end parallel do
+          !$omp end parallel do
         else
           NVAR = rvectorSrc%NVAR
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i),ivar
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(i)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
         end if
         
       case (ST_SINGLE)
@@ -10516,25 +10518,22 @@ contains
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(i)
           end do
-!%omp end parallel do
+          !$omp end parallel do
         else
           NVAR = rvectorSrc%NVAR
-!%omp parallel do&
-!%omp default(shared) &
-!%omp private(i,ivar)
+          !$omp parallel do default(shared) private(ivar) &
+          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(i)
             end do
           end do
-!%omp end parallel do
+          !$omp end parallel do
         end if
         
       case DEFAULT
@@ -14242,13 +14241,9 @@ contains
 
       integer :: i
       
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(i)
       do i=1,n
         Da3(:,i)=Da1(i)*Da2(:,i)
       end do
-!%omp end parallel do
     end subroutine do_matDmat1mul_doubledouble
 
     !**************************************************************
@@ -14266,13 +14261,9 @@ contains
 
       integer :: i
       
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(i)
       do i=1,n
         Da3(:,i)=Fa1(i)*Da2(:,i)
       end do
-!%omp end parallel do
     end subroutine do_matDmat1mul_singledouble
 
     !**************************************************************
@@ -14290,13 +14281,9 @@ contains
 
       integer :: i
 
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(i)
       do i=1,n
         Da3(:,i)=Da1(i)*Fa2(:,i)
       end do
-!%omp end parallel do
     end subroutine do_matDmat1mul_doublesingle
 
     !**************************************************************
@@ -14314,13 +14301,9 @@ contains
 
       integer :: i
 
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(i)
       do i=1,n
         Fa3(:,i)=Fa1(i)*Fa2(:,i)
       end do
-!%omp end parallel do
     end subroutine do_matDmat1mul_singlesingle
 
     !**************************************************************
@@ -14338,13 +14321,9 @@ contains
 
       integer :: i
 
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(i)
       do i=1,m
         Da3(i,:)=Da1(i,:)*Da2(i)
       end do
-!%omp end parallel do
     end subroutine do_mat1matDmul_doubledouble
 
     !**************************************************************
@@ -14362,13 +14341,9 @@ contains
 
       integer :: i
 
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(i)
       do i=1,m
         Da3(i,:)=Fa1(i,:)*Da2(i)
       end do
-!%omp end parallel do
     end subroutine do_mat1matDmul_singledouble
 
     !**************************************************************
@@ -14386,13 +14361,9 @@ contains
 
       integer :: i
 
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(i)  
       do i=1,m
         Da3(i,:)=Da1(i,:)*Fa2(i)
       end do
-!%omp end parallel do
     end subroutine do_mat1matDmul_doublesingle
 
     !**************************************************************
@@ -14410,13 +14381,9 @@ contains
 
       integer :: i
 
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(i)
       do i=1,m
         Fa3(i,:)=Fa1(i,:)*Fa2(i)
       end do
-!%omp end parallel do
     end subroutine do_mat1matDmul_singlesingle
 
     !**************************************************************
@@ -16926,13 +16893,10 @@ contains
 
       call DCOPY(int(neq*ncols),Da1,1,Da3,1)
       call DSCAL(int(neq*ncols),c1,Da3,1)
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(ieq)
+
       do ieq=1,neq
         Da3(ieq,ieq)=Da3(ieq,ieq)+c2*Da2(ieq)
       end do
-!%omp end parallel do
 
 !!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
 !!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
@@ -16958,23 +16922,15 @@ contains
       real(DP), dimension(ncols,neq), intent(inout) :: Da3
       integer                          :: ieq,icols
 
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ieq,icols)
       do ieq=1,neq
         do icols=1,ncols
           Da3(icols,ieq) = c1*Fa1(icols,ieq)
         end do
       end do
-!%omp end parallel do
 
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(ieq)
       do ieq=1,neq
         Da3(ieq,ieq)=Da3(ieq,ieq)+c2*Da2(ieq)
       end do
-!%omp end parallel do
 
 !!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
 !!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
@@ -17001,13 +16957,10 @@ contains
 
       call DCOPY(int(neq*ncols),Da1,1,Da3,1)
       call DSCAL(int(neq*ncols),c1,Da3,1)
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(ieq)
+
       do ieq=1,neq
         Da3(ieq,ieq)=Da3(ieq,ieq)+c2*Fa2(ieq)
       end do
-!%omp end parallel do
 
 !!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
 !!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
@@ -17035,13 +16988,10 @@ contains
 
       call SCOPY(int(neq*ncols),Fa1,1,Fa3,1)
       call SSCAL(int(neq*ncols),real(c1,SP),Fa3,1)
-!%omp parallel do&
-!%omp default(shared)&
-!%omp private(ieq)
+
       do ieq=1,neq
         Fa3(ieq,ieq)=Fa3(ieq,ieq)+c2*Fa2(ieq)
       end do
-!%omp end parallel do
 
 !!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
 !!$      REAL(SP), DIMENSION(m*n), INTENT(inout) :: Fa3
@@ -17119,15 +17069,11 @@ contains
       real(DP), dimension(ncols,neq), intent(inout)  :: Da3
       integer :: ild,ieq,icol
 
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ieq,icol)
       do ieq=1,neq
         do icol=1,ncols
           Da3(icol,ieq)=c1*Fa1(icol,ieq)
         end do
       end do
-!%omp end parallel do
       
       do ieq=1,neq
         do ild=Kld2(ieq),Kld2(ieq+1)-1
@@ -17322,25 +17268,17 @@ contains
         call DSCAL(int(nvar*mvar*na),c1,Da3,1)
 
         if (nvar .ne. mvar) then
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ieq,ild3)        
           do ieq=1,neq
             ild3=Kdiag3(ieq)
             Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
           end do
-!%omp end parallel do
         else
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ivar,ieq,ild3)        
           do ieq=1,neq
             ild3=Kdiag3(ieq)
             do ivar=1,nvar
               Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
             end do
           end do
-!%omp end parallel do
         end if
 
       else
@@ -17440,34 +17378,22 @@ contains
         
         ! Structure of matrices A and C is identical
 
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ia)
         do ia=1,na
           Da3(:,:,ia)=c1*Fa1(:,:,ia)
         end do
-!%omp end parallel do
         
         if (nvar .ne. mvar) then
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ieq,ild3)
           do ieq=1,neq
             ild3=Kdiag3(ieq)
             Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
           end do
-!%omp end parallel do
         else
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ivar,ieq,ild3)
           do ieq=1,neq
             ild3=Kdiag3(ieq)
             do ivar=1,nvar
               Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
             end do
           end do
-!%omp end parallel do
         end if
         
       else
@@ -17571,27 +17497,19 @@ contains
         call DSCAL(int(nvar*mvar*na),c1,Da3,1)
 
         if (nvar .ne. mvar) then
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ivar,ieq,ild3)
           do ieq=1,neq
             ild3=Kdiag3(ieq)
             do ivar=1,nvar
               Da3(ivar,1,ild3)=Da3(ivar,1,ild3)+c2*Fa2(ieq)
             end do
           end do
-!%omp end parallel do
         else
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ivar,ieq,ild3)
           do ieq=1,neq
             ild3=Kdiag3(ieq)
             do ivar=1,nvar
               Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Fa2(ieq)
             end do
           end do
-!%omp end parallel do
         end if
      
       else
@@ -17695,25 +17613,17 @@ contains
         call SSCAL(int(nvar*mvar*na),real(c1,SP),Fa3,1)
 
         if (nvar .ne. mvar) then
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ieq,ild3)      
           do ieq=1,neq
             ild3=Kdiag3(ieq)
             Fa3(:,1,ild3)=Fa3(:,1,ild3)+c2*Fa2(ieq)
           end do
-!%omp end parallel do
         else
-!%omp parallel do &
-!%omp default(shared) &
-!%omp private(ivar,ieq,ild3)      
           do ieq=1,neq
             ild3=Kdiag3(ieq)
             do ivar=1,nvar
               Fa3(ivar,ivar,ild3)=Fa3(ivar,ivar,ild3)+c2*Fa2(ieq)
             end do
           end do
-!%omp end parallel do
         end if
 
       else

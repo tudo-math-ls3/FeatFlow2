@@ -773,7 +773,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i)
+    !$omp parallel do default(shared) private(i) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -791,7 +792,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,dxj,Dhelp)
+    !$omp parallel do default(shared) private(i,dxj,Dhelp) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 0.25E0_DP / Ddetj(1:npoints,j)
       
@@ -1538,7 +1540,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i,dx,dy)
+    !$omp parallel do default(shared) private(i,dx,dy) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -1563,7 +1566,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,Dxj,dx,dy,Dhelp,idof)
+    !$omp parallel do default(shared) private(i,Dxj,dx,dy,Dhelp,idof) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 1.0E0_DP / Ddetj(1:npoints,j)
       
@@ -3953,7 +3957,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i)
+    !$omp parallel do default(shared) private(i) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -3975,7 +3980,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,dxj,Dhelp)
+    !$omp parallel do default(shared) private(i,dxj,Dhelp) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 0.125E0_DP / Ddetj(1:npoints,j)
       
@@ -4459,7 +4465,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i,dx,dy,dxy)
+    !$omp parallel do default(shared) private(i,dx,dy,dxy) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -4481,7 +4488,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,dxj,dx,dy,Dhelp)
+    !$omp parallel do default(shared) private(i,dxj,dx,dy,Dhelp) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 0.125E0_DP / Ddetj(1:npoints,j)
       
@@ -5778,7 +5786,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i)
+    !$omp parallel do default(shared) private(i) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -5800,7 +5809,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,dxj,Dhelp)
+    !$omp parallel do default(shared) private(i,dxj,Dhelp) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 0.5E0_DP / Ddetj(1:npoints,j)
       
@@ -6438,7 +6448,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i,dx,dy,d5,d6,d7,d8)
+    !$omp parallel do default(shared) private(i,dx,dy,d5,d6,d7,d8) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       ! Get the twist indices for this element.
@@ -6472,7 +6483,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,dxj,Dhelp,dx,dy,d5,d6,d7,d8)
+    !$omp parallel do default(shared) private(i,dxj,Dhelp,dx,dy,d5,d6,d7,d8) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       ! Get the twist indices for this element
@@ -7205,7 +7217,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i,dx,dy,d5,d6,d7,d8)
+    !$omp parallel do default(shared) private(i,dx,dy,d5,d6,d7,d8) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       ! Get the twist indices for this element.
@@ -7240,7 +7253,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,dx,dy,d5,d6,d7,d8,dxj,Dhelp)
+    !$omp parallel do default(shared) private(i,dx,dy,d5,d6,d7,d8,dxj,Dhelp) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       ! Get the twist indices for this element
@@ -7353,7 +7367,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_Q1_2D (celement, reval, Bder, Dbas)
+ pure subroutine elem_eval_Q1_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -9297,7 +9311,8 @@ contains
     if(Bder(DER_FUNC2D)) then
       
       ! Loop through all elements
-      !$omp parallel do private(i,itwist,Dtw,dx,dy,dx2,dy2)
+      !$omp parallel do private(i,itwist,Dtw,dx,dy,dx2,dy2) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Get the twist indices for this element.
@@ -9344,7 +9359,8 @@ contains
     if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
     
       ! Loop through all elements
-      !$omp parallel do private(i,itwist,Dtw,dx,dy,dx2,dy2,ddet,DrefDer)
+      !$omp parallel do private(i,itwist,Dtw,dx,dy,dx2,dy2,ddet,DrefDer) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Get the twist indices for this element.
@@ -9549,7 +9565,8 @@ contains
     if(Bder(DER_FUNC2D)) then
       
       ! Loop through all elements
-      !$omp parallel do private(i,itwist,Dtw,dx,dy,dx2,dy2)
+      !$omp parallel do private(i,itwist,Dtw,dx,dy,dx2,dy2) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Get the twist indices for this element.
@@ -9597,7 +9614,8 @@ contains
     if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
     
       ! Loop through all elements
-      !$omp parallel do private(i,itwist,Dtw,dx,dy,dx2,dy2,ddet,DrefDer)
+      !$omp parallel do private(i,itwist,Dtw,dx,dy,dx2,dy2,ddet,DrefDer) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Get the twist indices for this element.
@@ -10716,7 +10734,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i)
+    !$omp parallel do default(shared) private(i) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -10733,7 +10752,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,dxj,Dhelp)
+    !$omp parallel do default(shared) private(i,dxj,Dhelp) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 1.0E0_DP / Ddetj(1:npoints,j)                !!!!!!!!! Dxj(:) = 0.25E0_DP / Ddetj(1:npoints,j)
       
@@ -11464,7 +11484,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC)) then
   
-    !$omp parallel do default(shared) private(i,dx,dy)
+    !$omp parallel do default(shared) private(i,dx,dy) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -11486,7 +11507,8 @@ contains
   !if x-or y-derivatives are desired
   if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
   
-    !$omp parallel do default(shared) private(i,Dxj,dx,dy,Dhelp,idof)
+    !$omp parallel do default(shared) private(i,Dxj,dx,dy,Dhelp,idof) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 1.0E0_DP / Ddetj(1:npoints,j)
       

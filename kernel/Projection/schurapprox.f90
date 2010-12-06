@@ -110,6 +110,16 @@ public :: schur_assembleApprox2D
 
 !<constantblock>
 
+  ! Minimum number of equations for OpenMP parallelisation: If the number of
+  ! equations is below this value, then no parallelisation is performed.
+#ifndef SCHUR_NEQMIN_OMP
+  integer, parameter, public :: SCHUR_NEQMIN_OMP = 1000
+#endif
+  
+!</constantblock>
+
+!<constantblock>
+
   ! Approximate <tex>$A^{-1}$</tex> by the inverse of the main diagonal of A.
   integer, parameter, public :: SCHUR_TYPE_MAIN_DIAGONAL = 1
 
@@ -543,7 +553,8 @@ contains
   real(DP) :: dDA1, dDA2
 
     ! Loop over all rows of S/D
-    !$omp parallel do private(j,k,l,idxB,idxD,idxS,inextS,dDA1,dDA2)
+    !$omp parallel do if(n > SCHUR_NEQMIN_OMP)
+    !$omp private(j,k,l,idxB,idxD,idxS,inextS,dDA1,dDA2)
     do i = 1, n
 
       ! Loop over all non-zeroes of row i of D
@@ -675,7 +686,8 @@ contains
   real(DP) :: dDA1, dDA2
 
     ! Loop over all rows of S/D
-    !$omp parallel do private(j,k,l,idxB,idxD,idxS,inextS,dDA1,dDA2)
+    !$omp parallel do if(n > SCHUR_NEQMIN_OMP)
+    !$omp private(j,k,l,idxB,idxD,idxS,inextS,dDA1,dDA2)
     do i = 1, n
 
       ! Loop over all non-zeros of row i of D

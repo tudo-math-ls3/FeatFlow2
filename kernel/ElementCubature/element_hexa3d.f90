@@ -884,7 +884,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC3D)) then
   
-    !$omp parallel do default(shared) private(i)
+    !$omp parallel do default(shared) private(i) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -915,7 +916,8 @@ contains
   if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
       (Bder(DER_DERIV3D_Z))) then
   
-    !$omp parallel do default(shared) private(i,Dxj,Dhelp,djx,djy,djz)
+    !$omp parallel do default(shared) private(i,Dxj,Dhelp,djx,djy,djz) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 0.125_DP / Ddetj(1:npoints,j)
       
@@ -1563,7 +1565,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC3D)) then
   
-    !$omp parallel do default(shared) private(i,dx,dy,dz,dxy,dyz)
+    !$omp parallel do default(shared) private(i,dx,dy,dz,dxy,dyz) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -1589,7 +1592,8 @@ contains
   if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
       (Bder(DER_DERIV3D_Z))) then
   
-    !$omp parallel do default(shared) private(i,dx,dy,dz,djx,djy,djz,Dhelp,dxj)
+    !$omp parallel do default(shared) private(i,dx,dy,dz,djx,djy,djz,Dhelp,dxj) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 1.0_DP / Ddetj(1:npoints,j)
       
@@ -2231,7 +2235,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC3D)) then
   
-    !$omp parallel do default(shared) private(i,dx,dy,dz,dxy,dyz)
+    !$omp parallel do default(shared) private(i,dx,dy,dz,dxy,dyz) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -2257,7 +2262,8 @@ contains
   if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
       (Bder(DER_DERIV3D_Z))) then
   
-    !$omp parallel do default(shared) private(i,dx,dy,dz,djx,djy,djz,Dhelp,Dxj)
+    !$omp parallel do default(shared) private(i,dx,dy,dz,djx,djy,djz,Dhelp,Dxj) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 1.0_DP / Ddetj(1:npoints,j)
       
@@ -3566,7 +3572,8 @@ contains
     if(Bder(DER_FUNC3D)) then
     
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz)
+      !$omp parallel do private(i,dx,dy,dz) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -3597,7 +3604,8 @@ contains
     if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
 
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer)
+      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
 
         ! Loop through all points on the current element
@@ -3816,7 +3824,8 @@ contains
     if(Bder(DER_FUNC3D)) then
     
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,dx2,dy2,dz2,daux)
+      !$omp parallel do private(i,dx,dy,dz,dx2,dy2,dz2,daux) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -3872,7 +3881,8 @@ contains
     if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
 
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,dx2,dy2,dz2,daux,ddet,DrefDer)
+      !$omp parallel do private(i,dx,dy,dz,dx2,dy2,dz2,daux,ddet,DrefDer) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
 
         ! Loop through all points on the current element
@@ -4498,7 +4508,8 @@ contains
     if(Bder(DER_FUNC3D)) then
     
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,dxy,dyz)
+      !$omp parallel do private(i,dx,dy,dz,dxy,dyz) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -4531,7 +4542,8 @@ contains
     if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
 
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer)
+      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
 
         ! Loop through all points on the current element
@@ -4709,7 +4721,8 @@ contains
     if(Bder(DER_FUNC3D)) then
     
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,dxy,dyz)
+      !$omp parallel do private(i,dx,dy,dz,dxy,dyz) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -4742,7 +4755,8 @@ contains
     if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
 
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer)
+      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer) &
+      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
       do j = 1, reval%nelements
 
         ! Loop through all points on the current element

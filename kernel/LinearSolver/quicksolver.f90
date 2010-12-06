@@ -88,6 +88,15 @@ module quicksolver
 !<constants>
 
 !<constantblock>
+  ! Minimum number of equations for OpenMP parallelisation: If the number of
+  ! equations is below this value, then no parallelisation is performed.
+#ifndef QSOL_NEQMIN_OMP
+  integer, parameter, public :: QSOL_NEQMIN_OMP = 1000
+#endif
+  
+!</constantblock>
+
+!<constantblock>
   ! Operation completed successfully
   integer, parameter, public :: QSOL_INFO_SUCCESS           = 0
   
@@ -703,7 +712,8 @@ contains
   
     dalpha = 0.0_DP
     
-    !$omp parallel do default(shared) private(j,dt) reduction(+:dalpha)
+    !$omp parallel do default(shared) private(j,dt) &
+    !$omp reduction(+:dalpha) if (n > QSOL_NEQMIN_OMP)
     do i = 1, n
       dt = 0.0_DP
       do j = Kld(i), Kld(i+1)-1
@@ -891,12 +901,10 @@ contains
     ! So (hopefully) there should not be any problems here.
 
     ! Copy the rhs to work array and reset iteration vector
-    !$omp parallel do if(n .ge. 10000)
     do i = 1, n
       Dwork(i) = Dx(i)
       Dx(i) = 0.0_DP
     end do
-    !$omp end parallel do
     
     ! Launch the SOR solver.
     do ite = 1, niter

@@ -773,7 +773,8 @@ contains
   !if function values are desired
   if (Bder(DER_FUNC3D)) then
     
-    !$omp parallel do default(shared) private(i)
+    !$omp parallel do default(shared) private(i) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -792,7 +793,8 @@ contains
   if ((Bder(DER_DERIV3D_X)) .or. (Bder(DER_DERIV3D_Y)) .or. &
       (Bder(DER_DERIV3D_Z))) then
   
-    !$omp parallel do default(shared) private(i,dxj,Dinv)
+    !$omp parallel do default(shared) private(i,dxj,Dinv) &
+    !$omp if(nelements > EL_NELEMMIN_OMP)
     do j=1,nelements
 
       ! Since the jacobian matrix (and therefore also its determinant) is
