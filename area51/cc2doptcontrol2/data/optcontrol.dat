@@ -39,6 +39,11 @@ ispaceTimeFormulation = 0
 #     of Baerwolff and Hinze!)
 iconvectionExplicit = 0
 
+# Type of scaling of the global system.
+# =0: no scaling.
+# =1: System scaled by Delta(t) to normalise diagonal blocks.
+csystemScaling = 0
+
 # Type of constraints to apply to the control u.
 # =0: No constraints.
 # =1: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.

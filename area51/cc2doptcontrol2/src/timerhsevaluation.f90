@@ -568,6 +568,11 @@ contains
 !
 !      end if
 
+      ! If we work woth a scaled system, scale the RHS by dt.
+      if (roptimalControl%csystemScaling .ne. 0) then
+        call lsysbl_scaleVector (rtempVectorRHS,dtstep)
+      end if
+
       ! Implement the boundary conditions into the RHS vector        
       if (present(roptcBDC)) then
         call tbc_implementSpatialBCtoRHS (roptcBDC, &

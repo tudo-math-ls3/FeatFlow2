@@ -1385,6 +1385,9 @@ contains
     
     call parlst_getvalue_int (rparlist,ssectionOptC,&
         'iconvectionExplicit',roptcontrol%iconvectionExplicit,0)
+
+    call parlst_getvalue_int (rparlist,ssectionOptC,&
+        'csystemScaling',roptcontrol%csystemScaling,0)
     
     ! Parameters defining the constraints
     call parlst_getvalue_int (rparlist,ssectionOptC,&
@@ -3394,6 +3397,13 @@ contains
       call lsyssc_clearVector(rb%RvectorBlock(2))
       call lsyssc_clearVector(rb%RvectorBlock(3))
       call smva_assembleDefect (rnonlinearSpatialMatrix,rx,rb,-1.0_DP)
+      
+      ! Probably scale the RHS.
+      if (rsettings%rsettingsOptControl%csystemScaling .ne. 0) then
+        call lsyssc_scaleVector(rb%RvectorBlock(1),dtstep)
+        call lsyssc_scaleVector(rb%RvectorBlock(2),dtstep)
+      end if
+      
       
     end select
     

@@ -1135,6 +1135,31 @@ contains
     rnonlinearSpatialMatrix%dalphaC = rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
     rnonlinearSpatialMatrix%cmatrixType = rspaceTimeMatrix%cmatrixType
 
+    ! Probably scale the system entries.
+    if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%csystemScaling .ne. 0) then
+    
+      ! Do not scale identity matrices.
+      ! rnonlinearSpatialMatrix%Diota(:,:)    = dtstep * rnonlinearSpatialMatrix%Diota(:,:)
+      
+      rnonlinearSpatialMatrix%Dalpha(:,:)   = dtstep * rnonlinearSpatialMatrix%Dalpha(:,:)  
+      rnonlinearSpatialMatrix%Dtheta(:,:)   = dtstep * rnonlinearSpatialMatrix%Dtheta(:,:)  
+      rnonlinearSpatialMatrix%Dgamma(:,:)   = dtstep * rnonlinearSpatialMatrix%Dgamma(:,:)  
+      rnonlinearSpatialMatrix%Dnewton(:,:)  = dtstep * rnonlinearSpatialMatrix%Dnewton(:,:) 
+      rnonlinearSpatialMatrix%DgammaT(:,:)  = dtstep * rnonlinearSpatialMatrix%DgammaT(:,:) 
+      rnonlinearSpatialMatrix%Dnewton2(:,:) = dtstep * rnonlinearSpatialMatrix%Dnewton2(:,:)
+      rnonlinearSpatialMatrix%DgammaT2(:,:) = dtstep * rnonlinearSpatialMatrix%DgammaT2(:,:)
+      rnonlinearSpatialMatrix%DnewtonT(:,:) = dtstep * rnonlinearSpatialMatrix%DnewtonT(:,:)
+      rnonlinearSpatialMatrix%Deta(:,:)     = dtstep * rnonlinearSpatialMatrix%Deta(:,:)    
+      
+      ! Do not scale the pressure block.
+      ! rnonlinearSpatialMatrix%Dkappa(:,:)   = dtstep * rnonlinearSpatialMatrix%Dkappa(:,:)  
+
+      ! Do not scale the divergence equation.
+      ! rnonlinearSpatialMatrix%Dtau(:,:)     = dtstep * rnonlinearSpatialMatrix%Dtau(:,:)    
+      
+    end if
+    
+
   end subroutine  
   
   ! ***************************************************************************

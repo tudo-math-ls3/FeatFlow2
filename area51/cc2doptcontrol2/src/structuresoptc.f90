@@ -148,6 +148,11 @@ module structuresoptc
     !     of Baerwolff and Hinze!)
     integer :: iconvectionExplicit = 0
 
+    ! Type of scaling of the global system.
+    ! =0: no scaling.
+    ! =1: System scaled by Delta(t) to normalise diagonal blocks.
+    integer :: csystemScaling = 0
+
     !<!-- --------------- -->
     !<!-- TARGET FUNCTION -->
     !<!-- --------------- -->
