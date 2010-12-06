@@ -2136,6 +2136,7 @@ contains
     type(t_convUpwind) :: rupwind
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
+    type(t_convStreamDiff2) :: rstreamlineDiffusion3
     type(t_jumpStabilisation) :: rjumpStabil
     type(t_convUpwind) :: rupwindStabil
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
@@ -2223,7 +2224,7 @@ contains
           rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
           
           ! Set stabilisation parameter
-          rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
+          rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weights
           rstreamlineDiffusion2%ddelta  = 0.0_DP
@@ -2238,9 +2239,9 @@ contains
           call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector)
 
           ! Prepare the upwind structure for the assembly of the convection.
-          rupwindStabil%dupsam = rstabilisation%dupsam
+          rupwindStabil%dupsam = abs(rstabilisation%dupsam)
           rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-          rupwindStabil%dtheta = dgamma
+          rupwindStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
           
           ! Apply the upwind operator.
           call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
@@ -2250,6 +2251,15 @@ contains
             call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
                 rupwindStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(2,2))
           end if
+
+          ! Prepare the upwind structure for the assembly of the convection.
+          !rstreamlineDiffusion3%dupsam = rstabilisation%dupsam
+          !rstreamlineDiffusion3%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          !rstreamlineDiffusion3%dtheta = dgamma
+          !rstreamlineDiffusion3%ddelta = 1.0_DP
+          
+          ! Apply the upwind operator.
+          !call conv_streamDiff2Blk2dMat (rstreamlineDiffusion3,rmatrix,rvector)
           
           !call output_line ('Upwind not supported.', &
           !                  OU_CLASS_ERROR,OU_MODE_STD,'assembleConvection')
@@ -3527,6 +3537,7 @@ contains
     logical :: bshared
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
+    type(t_convStreamDiff2) :: rstreamlineDiffusion3
     type(t_jumpStabilisation) :: rjumpStabil
     type(t_convupwind) :: rupwindStabil
     
@@ -3602,7 +3613,7 @@ contains
           rstreamlineDiffusion2%dtheta = dcx
                     
           ! Set stabilisation parameter
-          rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
+          rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weights
           rstreamlineDiffusion2%ddelta  = 0.0_DP
@@ -3618,13 +3629,26 @@ contains
               rx,rb,rvector)
 
           ! Prepare the upwind structure for the assembly of the convection.
-          rupwindStabil%dupsam = rstabilisation%dupsam
+          rupwindStabil%dupsam = abs(rstabilisation%dupsam)
           rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-          rupwindStabil%dtheta = dgamma*dcx
+          rupwindStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
+          
+          ! Set stabilisation parameter
+          rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Apply the upwind operator.
           call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
               rupwindStabil, CONV_MODDEFECT, rmatrix%RmatrixBlock(1,1), rx, rb)
+
+          ! Prepare the upwind structure for the assembly of the convection.
+          !rstreamlineDiffusion3%dupsam = rstabilisation%dupsam
+          !rstreamlineDiffusion3%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          !rstreamlineDiffusion3%dtheta = dgamma*dcx
+          !rstreamlineDiffusion3%ddelta = 1.0_DP
+          
+          ! Apply the upwind operator.
+          !call conv_streamDiff2Blk2dDef (rstreamlineDiffusion3,rmatrix,&
+          !    rx,rb,rvector)
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
