@@ -216,8 +216,8 @@ module linearformevaluation
   use fsystem
   use genoutput
   use linearalgebra
-  use linearsystemscalar
   use linearsystemblock
+  use linearsystemscalar
   use mprimitives
   use scalarpde
   use spatialdiscretisation
@@ -299,10 +299,8 @@ module linearformevaluation
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building vectors
-#ifdef LINF_NELEMSIM
-  integer,public :: LINF_NELEMSIM   = LINF_NELEMSIM
-#else
-  integer,public :: LINF_NELEMSIM   = 1000
+#ifndef LINF_NELEMSIM
+  integer, parameter, public :: LINF_NELEMSIM = 256
 #endif
   
 !</constantblock>
@@ -321,11 +319,11 @@ module linearformevaluation
   public :: linf_initAssembly
   public :: linf_doneAssembly
   public :: linf_assembleSubmeshVector
-  public :: linf_assembleSubmeshVectorBdr2D
   public :: linf_assembleSubmeshVectorBdr1D
+  public :: linf_assembleSubmeshVectorBdr2D
   public :: linf_assembleSubmeshVecIntl
-  public :: linf_assembleSubmeshVecIntlBdr2D
   public :: linf_assembleSubmeshVecIntlBdr1D
+  public :: linf_assembleSubmeshVecIntlBdr2D
   public :: linf_assembleSubmeshVectorBlock
   public :: linf_assembleSubmeshVectorBlockBdr1D
   public :: linf_assembleSubmeshVectorBlockBdr2D
@@ -338,7 +336,7 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVectorScalar (rdiscretisation, rform, bclear, rvectorScalar,&
+  subroutine linf_buildVectorScalar (rdiscretisation, rform, bclear, rvector,&
                                      fcoeff_buildVectorSc_sim, rcollection)
   
 !<description>
@@ -371,7 +369,7 @@ contains
 
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
-  type(t_vectorScalar), intent(inout) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvector
 
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
@@ -384,11 +382,11 @@ contains
   ! If the vector is not set up as new vector, it has to be unsorted.
   ! If it is a new vector, we switch off the sorting.
   if (bclear) then
-    rvectorScalar%isortStrategy = -abs(rvectorScalar%isortStrategy)
+    rvector%isortStrategy = -abs(rvector%isortStrategy)
   end if
   
   ! The vector must be unsorted, otherwise we can not set up the vector.
-  if (rvectorScalar%isortStrategy .gt. 0) then
+  if (rvector%isortStrategy .gt. 0) then
     call output_line('Vector must be unsorted!',&
         OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
     call sys_halt()
@@ -398,10 +396,10 @@ contains
   if ((rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) .or.&
       (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then 
     
-    select case(rvectorScalar%cdataType)
+    select case(rvector%cdataType)
       
     case(ST_DOUBLE)
-      call linf_buildVectorDble_conf (rdiscretisation, rform, bclear, rVectorScalar,&  
+      call linf_buildVectorDble_conf (rdiscretisation, rform, bclear, rvector,&  
                                       fcoeff_buildVectorSc_sim, rcollection)
 
     case DEFAULT
@@ -422,7 +420,7 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVectorDble_conf (rdiscretisation, rform, bclear, rVectorScalar,&
+  subroutine linf_buildVectorDble_conf (rdiscretisation, rform, bclear, rvector,&
                                         fcoeff_buildVectorSc_sim, rcollection)
 
 !<description>
@@ -462,7 +460,7 @@ contains
 
 !<inputoutput>
   ! The FE vector. Calculated vector entries are added to this vector.
-  type(t_vectorScalar), intent(inout) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvector
  
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
@@ -527,11 +525,8 @@ contains
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! Current element distribution
-  type(t_elementDistribution), pointer :: p_elementDistribution
+  type(t_elementDistribution), pointer :: p_relementDistribution
   
-  ! Number of elements in the current element distribution
-  integer :: NEL
-
   ! Number of elements in a block. Normally =LINF_NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
@@ -567,31 +562,31 @@ contains
     Bder(I1)=.true.
   end do
   
-  if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then
+  if (rvector%h_Ddata .eq. ST_NOHANDLE) then
   
     ! Get the size of the vector and put it to the vector structure.
     NEQ = dof_igetNDofGlob(rdiscretisation)
     
     ! Initialise the vector parameters
-    rvectorScalar%NEQ             = NEQ
-    rvectorScalar%iidxFirstEntry  = 1
-    rvectorScalar%p_rspatialDiscr => rdiscretisation
-    rvectorScalar%cdataType       = ST_DOUBLE
+    rvector%NEQ             = NEQ
+    rvector%iidxFirstEntry  = 1
+    rvector%p_rspatialDiscr => rdiscretisation
+    rvector%cdataType       = ST_DOUBLE
 
     ! Clear the entries in the vector - we need to start with zero
     ! when assembling a new vector.
     call storage_new ('linf_buildVectorDble_conf', 'vector', &
-                        NEQ, ST_DOUBLE, rvectorScalar%h_Ddata, &
+                        NEQ, ST_DOUBLE, rvector%h_Ddata, &
                         ST_NEWBLOCK_ZERO)
-    call lsyssc_getbase_double (rvectorScalar,p_Ddata)
+    call lsyssc_getbase_double (rvector,p_Ddata)
 
   else
   
     ! Get information about the vector:
-    NEQ = rvectorScalar%NEQ
+    NEQ = rvector%NEQ
   
     ! Get the data array.
-    call lsyssc_getbase_double (rvectorScalar,p_Ddata)
+    call lsyssc_getbase_double (rvector,p_Ddata)
     
     ! If desired, clear the vector before assembling.
     if (bclear) then
@@ -614,49 +609,52 @@ contains
   do icurrentElementDistr = 1,rdiscretisation%inumFESpaces
   
     ! Activate the current element distribution
-    p_elementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
+    p_relementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
   
     ! Cancel if this element distribution is empty.
-    if (p_elementDistribution%NEL .eq. 0) cycle
+    if (p_relementDistribution%NEL .eq. 0) cycle
 
     ! Get the number of local DOF`s for trial and test functions
-    indofTest = elem_igetNDofLoc(p_elementDistribution%celement)
+    indofTest = elem_igetNDofLoc(p_relementDistribution%celement)
     
+    ! p_IelementList must point to our set of elements in the discretisation
+    ! with that combination of trial/test functions
+    call storage_getbase_int (p_relementDistribution%h_IelementList, &
+                              p_IelementList)
+
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
-    ctrafoType = elem_igetTrafoType(p_elementDistribution%celement)
+    ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
     ! Get the number of cubature points for the cubature formula
-    ncubp = cub_igetNumPts(p_elementDistribution%ccubTypeLinForm)
+    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeLinForm)
 
     ! Allocate two arrays for the points and the weights
     allocate(Domega(ncubp))
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
     
     ! Get the cubature formula
-    call cub_getCubature(p_elementDistribution%ccubTypeLinForm,p_DcubPtsRef, Domega)
-    
-    ! Open-MP-Extension: Open threads here.
-    ! Each thread will allocate its own local memory...
-    !
-    !%omp parallel private(rintSubset, revalElementSet,&
-    !%omp   p_Ddetj,DbasTest, cevaluationTag, bcubPtsInitialised,&
-    !%omp   IdofsTest,&
-    !%omp   Dcoefficients, &
-    !%omp   IELmax,IEL, idofe, &
-    !%omp   ICUBP, IALBET,OM,IA,aux)    
+    call cub_getCubature(p_relementDistribution%ccubTypeLinForm,p_DcubPtsRef, Domega)
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
     do IALBET = 1,rform%itermcount
       IA = rform%Idescriptors(IALBET)
       if ((IA.lt.0) .or. &
-          (IA .gt. elem_getMaxDerivative(p_elementDistribution%celement))) then
+          (IA .gt. elem_getMaxDerivative(p_relementDistribution%celement))) then
         call output_line('Specified test-derivative '//trim(sys_siL(IA,3))//' not available!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorDble_conf')
         call sys_halt()
       end if
     end do
 
+    ! Open-MP-Extension: Open threads here.
+    ! Each thread will allocate its own local memory...
+    !
+    !$omp parallel default(shared) &
+    !$omp private(bcubPtsInitialised,AUX,DbasTest,Dcoefficients,DlocalData,&
+    !$omp         IA,IALBET,ICUBP,IDOFE,IEL,IELmax,IdofsTest,OM,cevaluationTag,&
+    !$omp         p_Ddetj,revalElementSet,rintSubset)
+    
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
@@ -664,13 +662,13 @@ contains
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
-    allocate(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%celement),&
+    allocate(DbasTest(indofTest,elem_getMaxDerivative(p_relementDistribution%celement),&
              ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF`s of all the elements.
     allocate(IdofsTest(indofTest,nelementsPerBlock))
 
-    ! Allocate memory for the coefficients
+    ! Allocate memory for the coefficients.
     allocate(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
   
     ! Initialisation of the element set.
@@ -678,31 +676,22 @@ contains
 
     ! Indicate that cubature points must still be initialised in the element set.
     bcubPtsInitialised = .false.
-    
-    ! p_IelementList must point to our set of elements in the discretisation
-    ! with that combination of trial/test functions
-    call storage_getbase_int (p_elementDistribution%h_IelementList, &
-                              p_IelementList)
-                              
-    ! Get the number of elements there.
-    NEL = p_elementDistribution%NEL
-  
-  
+                                  
     ! Loop over the elements - blockwise.
-    !%omp do schedule(static,1)
-    do IELset = 1, NEL, LINF_NELEMSIM
+    !$omp do schedule(static,1)
+    do IELset = 1, p_relementDistribution%NEL, nelementsPerBlock
     
-      ! We always handle LINF_NELEMSIM elements simultaneously.
+      ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
-      ! elements simultaneously.
+      ! Get the maximum element number, such that we handle at most
+      ! nelementsPerBlock elements simultaneously.
       
-      IELmax = min(NEL,IELset-1+LINF_NELEMSIM)
+      IELmax = min(p_relementDistribution%NEL,IELset-1+nelementsPerBlock)
     
       ! Calculate the global DOF`s into IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our nelementsPerBlock elements simultaneously.
       call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                    IdofsTest)
       
@@ -717,7 +706,7 @@ contains
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag. 
-      cevaluationTag = elem_getEvaluationTag(p_elementDistribution%celement)
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       ! Evaluate real coordinates; they are needed in the callback function.
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
@@ -744,7 +733,6 @@ contains
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
           ctrafoType, p_DcubPtsRef(:,1:ncubp))
-          
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Now it is time to call our coefficient function to calculate the
@@ -754,7 +742,7 @@ contains
       rintSubset%ielementStartIdx = IELset
       rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
       rintSubset%p_IdofsTrial => IdofsTest
-      rintSubset%celement = p_elementDistribution%celement
+      rintSubset%celement = p_relementDistribution%celement
       
       if (present(fcoeff_buildVectorSc_sim)) then
         call fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
@@ -769,7 +757,7 @@ contains
       call domint_doneIntegration(rintSubset)
       
       ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (p_elementDistribution%celement, &
+      call elem_generic_sim2 (p_relementDistribution%celement, &
           revalElementSet, Bder, DbasTest)
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
@@ -852,14 +840,20 @@ contains
         ! Incorporate the local vector into the global one.
         ! The 'local' DOF 1..indofTest is mapped to the global DOF using
         ! the IdofsTest array.
+        ! OpenMP-Extension: This is a critical section. Only one thread is
+        ! allowed to write to the vector, otherwise the matrix may get
+        ! messed up.
+        !
+        !$omp critical
         do IDOFE = 1,indofTest
           p_Ddata(IdofsTest(IDOFE,IEL)) = p_Ddata(IdofsTest(IDOFE,IEL)) + DlocalData(IDOFE)
         end do
+        !$omp end critical
 
       end do ! IEL
       
     end do ! IELset
-    !%omp end do
+    !$omp end do
     
     ! Release memory
     deallocate(Dcoefficients)
@@ -867,8 +861,7 @@ contains
     deallocate(DbasTest)
 
     call elprep_releaseElementSet(revalElementSet)
-    
-    !%omp end parallel
+    !$omp end parallel
 
     deallocate(p_DcubPtsRef)
     deallocate(Domega)
@@ -881,7 +874,7 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVectorScalarBdr1D (rform, bclear, rvectorScalar,&
+  subroutine linf_buildVectorScalarBdr1D (rform, bclear, rvector,&
                                           fcoeff_buildVectorScBdr1D_sim,&
                                           iboundaryComp, rcollection)
 
@@ -916,7 +909,7 @@ contains
 
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
-  type(t_vectorScalar), intent(inout) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvector
   
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
@@ -939,37 +932,37 @@ contains
     integer :: ibdc,idx,iel,NELbdc
 
     ! If the vector does not exist, stop here.
-    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
     end if
     
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
+    if (rvector%isortStrategy .gt. 0) then
       call output_line('Vector must be unsorted!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
       call sys_halt()
     end if
     
     ! Clear the vector if necessary.
-    if (bclear) call lsyssc_clearVector (rvectorScalar)
+    if (bclear) call lsyssc_clearVector (rvector)
     
     ! The vector must provide a discretisation structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+    if (.not. associated(rvector%p_rspatialDiscr)) then
       call output_line('No discretisation associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
       call sys_halt()
     end if
     
     ! The discretisation must provide a triangulation structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
+    if (.not. associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
       call output_line('No triangulation associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
       call sys_halt()
     end if
     
     ! Set pointer for quicker access
-    p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
+    p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
 
     ! Set pointers
     call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
@@ -982,9 +975,9 @@ contains
         p_IboundaryCpIdx)
     
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+    if (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
       
-      select case(rvectorScalar%cdataType)
+      select case(rvector%cdataType)
         
       case(ST_DOUBLE)
         
@@ -998,7 +991,7 @@ contains
 
           ! Initialise a vector assembly structure for all elements
           call linf_initAssembly(rvectorAssembly, rform,&
-              rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
+              rvector%p_rspatialDiscr%RelementDistr(1)%celement,&
               CUB_G1_1D, NELbdc)
           call linf_allocAssemblyData(rvectorAssembly)
           
@@ -1026,7 +1019,7 @@ contains
 
           ! Assemble the data all elements
           call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
-              rvectorScalar, iboundaryComp, IelementList, IelementOrientation,&
+              rvector, iboundaryComp, IelementList, IelementOrientation,&
               fcoeff_buildVectorScBdr1D_sim, rcollection)
 
           ! Release the assembly structure.
@@ -1049,7 +1042,7 @@ contains
             
             ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
+                rvector%p_rspatialDiscr%RelementDistr(1)%celement,&
                 CUB_G1_1D, NELbdc)
             call linf_allocAssemblyData(rvectorAssembly)
 
@@ -1077,7 +1070,7 @@ contains
             
             ! Assemble the data for all elements
             call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
-                rvectorScalar, ibdc, IelementList, IelementOrientation,&
+                rvector, ibdc, IelementList, IelementOrientation,&
                 fcoeff_buildVectorScBdr1D_sim, rcollection)
             
             ! Release the assembly structure.
@@ -1098,11 +1091,11 @@ contains
     else
       
       ! Set pointers
-      p_RelementDistr => rvectorScalar%p_rspatialDiscr%RelementDistr
-      call storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
+      p_RelementDistr => rvector%p_rspatialDiscr%RelementDistr
+      call storage_getbase_int (rvector%p_rspatialDiscr%h_IelementDistr,&
           p_IelementDistr)
 
-      select case(rvectorScalar%cdataType)
+      select case(rvector%cdataType)
         
       case(ST_DOUBLE)
         
@@ -1138,7 +1131,7 @@ contains
           
             ! Assemble the data for one element
             call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
-                rvectorScalar, iboundaryComp, IelementList, IelementOrientation,&
+                rvector, iboundaryComp, IelementList, IelementOrientation,&
                 fcoeff_buildVectorScBdr1D_sim, rcollection)
             
             ! Release the assembly structure.
@@ -1185,7 +1178,7 @@ contains
               
               ! Assemble the data for one element
               call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
-                  rvectorScalar, ibdc, IelementList, IelementOrientation,&
+                  rvector, ibdc, IelementList, IelementOrientation,&
                   fcoeff_buildVectorScBdr1D_sim, rcollection)
               
               ! Release the assembly structure.
@@ -1212,7 +1205,7 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVectorScalarBdr2D (rform, ccubType, bclear, rvectorScalar,&
+  subroutine linf_buildVectorScalarBdr2D (rform, ccubType, bclear, rvector,&
                                           fcoeff_buildVectorScBdr2D_sim,&
                                           rboundaryRegion, rcollection)
   
@@ -1250,7 +1243,7 @@ contains
 
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
-  type(t_vectorScalar), intent(inout) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvector
   
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
@@ -1270,57 +1263,57 @@ contains
     integer :: ibdc,ielementDistr,NELbdc
     
     ! If the vector does not exist, stop here.
-    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
     end if
     
     ! If the vector os stored in interleave format, stop here.
-    if (rvectorScalar%NVAR .ne. 1) then
+    if (rvector%NVAR .ne. 1) then
       call output_line('Vector must not be in interleaved format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
     end if
     
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
+    if (rvector%isortStrategy .gt. 0) then
       call output_line('Vector must be unsorted!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
       call sys_halt()
     end if
     
     ! Clear the vector if necessary.
-    if (bclear) call lsyssc_clearVector (rvectorScalar)
+    if (bclear) call lsyssc_clearVector (rvector)
     
     ! The vector must provide a discretisation structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+    if (.not. associated(rvector%p_rspatialDiscr)) then
       call output_line('No discretisation associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
       call sys_halt()
     end if
     
     ! The discretisation must provide a triangulation structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
+    if (.not. associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
       call output_line('No triangulation associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
       call sys_halt()
     end if
     
     ! The discretisation must provide a boundary structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rboundary)) then
+    if (.not. associated(rvector%p_rspatialDiscr%p_rboundary)) then
       call output_line('No boundary associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
       call sys_halt()
     end if
     
     ! Set pointers for quicker access
-    p_rboundary => rvectorScalar%p_rspatialDiscr%p_rboundary
-    p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
+    p_rboundary => rvector%p_rspatialDiscr%p_rboundary
+    p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
     
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if ((rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+    if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
       
-      select case(rvectorScalar%cdataType)
+      select case(rvector%cdataType)
         
       case(ST_DOUBLE)
         
@@ -1335,24 +1328,24 @@ contains
           allocate(DedgePosition(2,NELbdc))
           
           ! Loop over the element distributions.
-          do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
+          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
             
             ! Calculate the list of elements adjacent to the boundary
             call bdraux_getElementsAtRegion(rboundaryRegion,&
-                rvectorScalar%p_rspatialDiscr, NELbdc,&
+                rvector%p_rspatialDiscr, NELbdc,&
                 IelementList, IelementOrientation, DedgePosition,&
-                rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
             
             ! Check if element distribution is empty
             if (NELbdc .le. 0) cycle
             
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 ccubType, min(LINF_NELEMSIM, NELbdc))
             
             ! Assemble the data for all elements in this element distribution
-            call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
+            call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim, rcollection)
             
@@ -1367,14 +1360,14 @@ contains
         else
           
           ! Loop over the element distributions.
-          do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
+          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
             
             ! Check if element distribution is empty
-            if (rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
             
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 ccubType, LINF_NELEMSIM)
             
             ! Create a boundary region for each boundary component and call
@@ -1395,14 +1388,14 @@ contains
               
               ! Calculate the list of elements adjacent to the boundary
               call bdraux_getElementsAtRegion(rboundaryReg,&
-                  rvectorScalar%p_rspatialDiscr, NELbdc,&
+                  rvector%p_rspatialDiscr, NELbdc,&
                   IelementList, IelementOrientation, DedgePosition,&
-                  rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
               
               if (NELbdc .gt. 0) then
                 
                 ! Assemble the data for all elements in this element distribution
-                call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
+                call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim, rcollection)
                 
@@ -1437,7 +1430,7 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVecIntlScalarBdr1D (rform, bclear, rvectorScalar,&
+  subroutine linf_buildVecIntlScalarBdr1D (rform, bclear, rvector,&
                                            fcoeff_buildVectorBlBdr1D_sim,&
                                            iboundaryComp, rcollection)
 
@@ -1472,7 +1465,7 @@ contains
 
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
-  type(t_vectorScalar), intent(inout) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvector
   
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
@@ -1495,37 +1488,37 @@ contains
     integer :: ibdc,idx,iel,NELbdc
 
     ! If the vector does not exist, stop here.
-    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
     end if
     
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
+    if (rvector%isortStrategy .gt. 0) then
       call output_line('Vector must be unsorted!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
       call sys_halt()
     end if
     
     ! Clear the vector if necessary.
-    if (bclear) call lsyssc_clearVector (rvectorScalar)
+    if (bclear) call lsyssc_clearVector (rvector)
     
     ! The vector must provide a discretisation structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+    if (.not. associated(rvector%p_rspatialDiscr)) then
       call output_line('No discretisation associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
       call sys_halt()
     end if
     
     ! The discretisation must provide a triangulation structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
+    if (.not. associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
       call output_line('No triangulation associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
       call sys_halt()
     end if
     
     ! Set pointer for quicker access
-    p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
+    p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
 
     ! Set pointers
     call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
@@ -1538,9 +1531,9 @@ contains
         p_IboundaryCpIdx)
 
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+    if (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
       
-      select case(rvectorScalar%cdataType)
+      select case(rvector%cdataType)
         
       case(ST_DOUBLE)
         
@@ -1554,9 +1547,9 @@ contains
           
           ! Initialise a vector assembly structure for all elements
           call linf_initAssembly(rvectorAssembly, rform,&
-              rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
+              rvector%p_rspatialDiscr%RelementDistr(1)%celement,&
               CUB_G1_1D, NELbdc)
-          call linf_allocAssemblyData(rvectorAssembly, rvectorScalar%NVAR)
+          call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
           
           ! Determine the element numbers and their orientation at the boundary
           iel = 0
@@ -1581,7 +1574,7 @@ contains
           end do
           
           ! Assemble the data for all elements
-          call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvectorScalar,&
+          call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvector,&
               iboundaryComp, IelementList, IelementOrientation,&
               fcoeff_buildVectorBlBdr1D_sim, rcollection)
 
@@ -1605,9 +1598,9 @@ contains
             
             ! Initialise a vector assembly structure for all element
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
+                rvector%p_rspatialDiscr%RelementDistr(1)%celement,&
                 CUB_G1_1D, NELbdc)
-            call linf_allocAssemblyData(rvectorAssembly, rvectorScalar%NVAR)
+            call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
 
             ! Determine the element numbers and their orientation at the boundary
             iel = 0
@@ -1632,7 +1625,7 @@ contains
             end do
             
             ! Assemble the data for all element
-            call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvectorScalar,&
+            call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvector,&
                 ibdc, IelementList, IelementOrientation,&
                 fcoeff_buildVectorBlBdr1D_sim, rcollection)
 
@@ -1654,11 +1647,11 @@ contains
     else
       
       ! Set pointers
-      p_RelementDistr => rvectorScalar%p_rspatialDiscr%RelementDistr
-      call storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
+      p_RelementDistr => rvector%p_rspatialDiscr%RelementDistr
+      call storage_getbase_int (rvector%p_rspatialDiscr%h_IelementDistr,&
           p_IelementDistr)
 
-      select case(rvectorScalar%cdataType)
+      select case(rvector%cdataType)
         
       case(ST_DOUBLE)
         
@@ -1690,10 +1683,10 @@ contains
             call linf_initAssembly(rvectorAssembly, rform,&
                 p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
                 CUB_G1_1D, 1)
-            call linf_allocAssemblyData(rvectorAssembly, rvectorScalar%NVAR)
+            call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
             
             ! Assemble the data for one element
-            call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvectorScalar,&
+            call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvector,&
                 iboundaryComp, IelementList, IelementOrientation,&
                 fcoeff_buildVectorBlBdr1D_sim, rcollection)
             
@@ -1737,10 +1730,10 @@ contains
               call linf_initAssembly(rvectorAssembly, rform,&
                   p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
                   CUB_G1_1D, 1)
-              call linf_allocAssemblyData(rvectorAssembly, rvectorScalar%NVAR)
+              call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
               
               ! Assemble the data for one element
-              call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvectorScalar,&
+              call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvector,&
                   ibdc, IelementList, IelementOrientation,&
                   fcoeff_buildVectorBlBdr1D_sim, rcollection)
               
@@ -1768,7 +1761,7 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVecIntlScalarBdr2D (rform, ccubType, bclear, rvectorScalar,&
+  subroutine linf_buildVecIntlScalarBdr2D (rform, ccubType, bclear, rvector,&
                                            fcoeff_buildVectorBlBdr2D_sim,&
                                            rboundaryRegion, rcollection)
   
@@ -1806,7 +1799,7 @@ contains
 
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
-  type(t_vectorScalar), intent(inout) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvector
   
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
@@ -1826,51 +1819,51 @@ contains
     integer :: ibdc,ielementDistr,NELbdc
     
     ! If the vector does not exist, stop here.
-    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
     end if
     
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
+    if (rvector%isortStrategy .gt. 0) then
       call output_line('Vector must be unsorted!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
       call sys_halt()
     end if
     
     ! Clear the vector if necessary.
-    if (bclear) call lsyssc_clearVector (rvectorScalar)
+    if (bclear) call lsyssc_clearVector (rvector)
     
     ! The vector must provide a discretisation structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+    if (.not. associated(rvector%p_rspatialDiscr)) then
       call output_line('No discretisation associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
       call sys_halt()
     end if
     
     ! The discretisation must provide a triangulation structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
+    if (.not. associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
       call output_line('No triangulation associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
       call sys_halt()
     end if
     
     ! The discretisation must provide a boundary structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rboundary)) then
+    if (.not. associated(rvector%p_rspatialDiscr%p_rboundary)) then
       call output_line('No boundary associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
       call sys_halt()
     end if
     
     ! Set pointers for quicker access
-    p_rboundary => rvectorScalar%p_rspatialDiscr%p_rboundary
-    p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
+    p_rboundary => rvector%p_rspatialDiscr%p_rboundary
+    p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
     
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if ((rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+    if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
       
-      select case(rvectorScalar%cdataType)
+      select case(rvector%cdataType)
         
       case(ST_DOUBLE)
         
@@ -1885,24 +1878,24 @@ contains
           allocate(DedgePosition(2,NELbdc))
           
           ! Loop over the element distributions.
-          do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
+          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
             
             ! Calculate the list of elements adjacent to the boundary
             call bdraux_getElementsAtRegion(rboundaryRegion,&
-                rvectorScalar%p_rspatialDiscr, NELbdc,&
+                rvector%p_rspatialDiscr, NELbdc,&
                 IelementList, IelementOrientation, DedgePosition,&
-                rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
             
             ! Check if element distribution is empty
             if (NELbdc .le. 0) cycle
             
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 ccubType, min(LINF_NELEMSIM, NELbdc))
             
             ! Assemble the data for all elements in this element distribution
-            call linf_assembleSubmeshVecIntlBdr2D (rvectorAssembly, rvectorScalar,&
+            call linf_assembleSubmeshVecIntlBdr2D (rvectorAssembly, rvector,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim, rcollection)
             
@@ -1917,14 +1910,14 @@ contains
         else
           
           ! Loop over the element distributions.
-          do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
+          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
             
             ! Check if element distribution is empty
-            if (rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
             
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 ccubType, LINF_NELEMSIM)
             
             ! Create a boundary region for each boundary component and call
@@ -1945,14 +1938,14 @@ contains
               
               ! Calculate the list of elements adjacent to the boundary
               call bdraux_getElementsAtRegion(rboundaryReg,&
-                  rvectorScalar%p_rspatialDiscr, NELbdc,&
+                  rvector%p_rspatialDiscr, NELbdc,&
                   IelementList, IelementOrientation, DedgePosition,&
-                  rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
               
               if (NELbdc .gt. 0) then
                 
                 ! Assemble the data for all elements in this element distribution
-                call linf_assembleSubmeshVecIntlBdr2D (rvectorAssembly, rvectorScalar,&
+                call linf_assembleSubmeshVecIntlBdr2D (rvectorAssembly, rvector,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim, rcollection)
                 
@@ -2247,22 +2240,28 @@ contains
     integer, dimension(:,:), pointer :: p_Idofs
     type(t_evalElementSet), pointer :: p_revalElementSet
 
-    ! A small vector holding only the additive contributions of
-    ! one element
-    real(DP), dimension(EL_MAXNBAS) :: DlocalData
+    ! A vector holding the additive contributions of elements
+    real(DP), dimension(:,:), allocatable :: DlocalData
   
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rvector,p_Ddata)
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
 
-    ! Copy the assembly data to the local assembly data,
-    ! where we can allocate memory.
+    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! data, where we can allocate memory.
+    !
     ! For single processor machines, this is actually boring and nonsense.
     ! But using OpenMP, here we get a local copy of the vector
     ! assembly structure to where we can add some local data which
     ! is released upon return without changing the original assembly
     ! stucture or disturbing the data of the other processors.
+    !
+    !$omp parallel default(shared) &
+    !$omp private(DlocalData,IELmax,cevaluationTag,daux,domega,ia,ialbet,&
+    !$omp         icubp,idofe,iel,p_Dbas,p_Dcoefficients,p_Ddetj,p_Domega,&
+    !$omp         p_Idescriptors,p_Idofs,p_revalElementSet,rintSubset,&
+    !$omp         rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly)
     
@@ -2273,7 +2272,10 @@ contains
     p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
     p_Idofs => rlocalVectorAssembly%p_Idofs
     p_revalElementSet => rlocalVectorAssembly%revalElementSet
-        
+
+    ! Allocate memory for the local data.
+    allocate(DlocalData(EL_MAXNBAS,rlocalVectorAssembly%nelementsPerBlock))
+
     ! Loop over the elements - blockwise.
     !
     ! Open-MP-Extension: Each loop cycle is executed in a different thread,
@@ -2281,13 +2283,13 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%omp do schedule(static,1)
+    !$omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
-      ! elements simultaneously.
+      ! Get the maximum element number, such that we handle at most
+      ! nelementsPerBlock elements simultaneously.
       
       IELmax = min(size(IelementList),IELset-1+rlocalVectorAssembly%nelementsPerBlock)
     
@@ -2316,7 +2318,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our nelementsPerBlock elements simultaneously.
       call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
           IelementList(IELset:IELmax), p_Idofs)
                                    
@@ -2369,7 +2371,7 @@ contains
         rintSubset%p_IdofsTrial => p_Idofs
         rintSubset%celement = rlocalVectorAssembly%celement
         call fcoeff_buildVectorSc_sim (rvector%p_rspatialDiscr,&
-            rlocalVectorAssembly%rform,  IELmax-IELset+1, ncubp,&
+            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
             p_Idofs, rintSubset,&
             p_Dcoefficients(:,:,1:IELmax-IELset+1), rcollection)
@@ -2387,7 +2389,10 @@ contains
       
       ! Values of all basis functions calculated. Now we can start 
       ! to integrate!
-      !
+      
+      ! Clear the local data
+      DlocalData(:,1:IELmax-IELset+1) = 0.0_DP
+
       ! Loop through elements in the set and for each element,
       ! loop through the DOF`s and cubature points to calculate the
       ! integral:
@@ -2397,9 +2402,6 @@ contains
         ! We make a 'local' approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
-        
-        ! Clear the output vector.
-        DlocalData(1:indof) = 0.0_DP
 
         ! Loop over all cubature points on the current element
         do icubp = 1, ncubp
@@ -2452,27 +2454,45 @@ contains
               ! the additive contribution for the vector. We save this
               ! contribution in the local array.
               
-              DlocalData(idofe) = DlocalData(idofe)+p_Dbas(idofe,ia,icubp,iel)*daux
+              DlocalData(idofe,iel) = DlocalData(idofe,iel)+p_Dbas(idofe,ia,icubp,iel)*daux
               
             end do ! jdofe
             
           end do ! ialbet
 
-        end do ! icubp 
-        
-        ! Incorporate the local vector into the global one.
-        ! The 'local' DOF 1..indofTest is mapped to the global DOF using
-        ! the IdofsTest array.
-        do IDOFE = 1,indof
-          p_Ddata(p_Idofs(idofe,iel)) = p_Ddata(p_Idofs(idofe,iel)) + DlocalData(idofe)
-        end do
+        end do ! icubp
 
       end do ! iel
-
+        
+      ! Incorporate the local vector into the global one.
+      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! the IdofsTest array.
+      !
+      ! OpenMP-Extension: This is a critical section. Only one thread is
+      ! allowed to write to the vector, otherwise the vector may get
+      ! messed up.
+      ! The critical section is put around both loops as indofTest are
+      ! usually small and quickly to handle.
+      !
+      !$omp critical
+      do iel = 1,IELmax-IELset+1
+        
+        do idofe = 1,indof
+          p_Ddata(p_Idofs(idofe,iel)) = p_Ddata(p_Idofs(idofe,iel)) + DlocalData(idofe,iel)
+        end do
+        
+      end do ! iel
+      !$omp end critical
+      
     end do ! IELset
+    !$omp end do
     
     ! Release the local vector assembly structure
     call linf_releaseAssemblyData(rlocalVectorAssembly)
+
+    ! Deallocate memory
+    deallocate(DlocalData)
+    !$omp end parallel
   
   end subroutine
 
@@ -2538,27 +2558,31 @@ contains
     type(t_evalElementSet), pointer :: p_revalElementSet
 
     ! A small vector holding only the additive contributions of one element
-    real(DP), dimension(:,:), allocatable :: DlocalData
+    real(DP), dimension(:,:,:), allocatable :: DlocalData
     real(DP), dimension(:), allocatable :: Daux
   
-    ! Allocate temporal array
-    allocate(DlocalData(rvector%NVAR,EL_MAXNBAS), Daux(rvector%NVAR))
-
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rvector,p_Ddata)
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
 
-    ! Copy the assembly data to the local assembly data,
-    ! where we can allocate memory.
+    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! data, where we can allocate memory.
+    !
     ! For single processor machines, this is actually boring and nonsense.
     ! But using OpenMP, here we get a local copy of the vector
     ! assembly structure to where we can add some local data which
     ! is released upon return without changing the original assembly
     ! stucture or disturbing the data of the other processors.
+    !
+    !$omp parallel default(shared) &
+    !$omp private(Daux,DlocalData,IELmax,cevaluationTag,domega,ia,ialbet,&
+    !$omp         icubp,idofe,iel,ivar,p_Dbas,p_Dcoefficients,p_Ddetj,p_Domega,&
+    !$omp         p_Idescriptors,p_Idofs,p_revalElementSet,rintSubset,&
+    !$omp         rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%NVAR)
-    
+   
     ! Get some more pointers to local data.
     p_Domega => rlocalVectorAssembly%p_Domega
     p_Dbas => rlocalVectorAssembly%p_Dbas
@@ -2566,6 +2590,10 @@ contains
     p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
     p_Idofs => rlocalVectorAssembly%p_Idofs
     p_revalElementSet => rlocalVectorAssembly%revalElementSet
+
+    ! Allocate memory for the local data.
+    allocate(DlocalData(rvector%NVAR,EL_MAXNBAS,rlocalVectorAssembly%nelementsPerBlock))
+    allocate(Daux(rvector%NVAR))
         
     ! Loop over the elements - blockwise.
     !
@@ -2574,13 +2602,13 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%omp do schedule(static,1)
+    !$omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
-      ! elements simultaneously.
+      ! Get the maximum element number, such that we handle at most
+      ! nelementsPerBlock elements simultaneously.
       
       IELmax = min(size(IelementList),IELset-1+rlocalVectorAssembly%nelementsPerBlock)
     
@@ -2609,7 +2637,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our nelementsPerBlock elements simultaneously.
       call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
           IelementList(IELset:IELmax), p_Idofs)
                                    
@@ -2662,7 +2690,7 @@ contains
         rintSubset%p_IdofsTrial => p_Idofs
         rintSubset%celement = rlocalVectorAssembly%celement
         call fcoeff_buildVectorBl_sim (rvector%p_rspatialDiscr,&
-            rlocalVectorAssembly%rform,  IELmax-IELset+1, ncubp,&
+            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
             p_Idofs, rintSubset,&
             p_Dcoefficients(:,:,:,1:IELmax-IELset+1), rcollection)
@@ -2680,7 +2708,10 @@ contains
       
       ! Values of all basis functions calculated. Now we can start 
       ! to integrate!
-      !
+      
+      ! Clear the local data
+      DlocalData(:,:,1:IELmax-IELset+1) = 0.0_DP
+      
       ! Loop through elements in the set and for each element,
       ! loop through the DOF`s and cubature points to calculate the
       ! integral:
@@ -2690,9 +2721,6 @@ contains
         ! We make a 'local' approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
-        
-        ! Clear the output vector.
-        DlocalData(:,1:indof) = 0.0_DP
 
         ! Loop over all cubature points on the current element
         do icubp = 1, ncubp
@@ -2745,33 +2773,49 @@ contains
               ! the additive contribution for the vector. We save this
               ! contribution in the local array.
               
-              DlocalData(:,idofe) = DlocalData(:,idofe)+p_Dbas(idofe,ia,icubp,iel)*Daux
+              DlocalData(:,idofe,iel) = DlocalData(:,idofe,iel)+p_Dbas(idofe,ia,icubp,iel)*Daux
               
             end do ! jdofe
             
           end do ! ialbet
 
-        end do ! icubp 
-        
-        ! Incorporate the local vector into the global one.
-        ! The 'local' DOF 1..indofTest is mapped to the global DOF using
-        ! the IdofsTest array.
-        do IDOFE = 1,indof
-          do ivar = 1, rvector%NVAR
-            p_Ddata(rvector%NVAR*(p_Idofs(idofe,iel)-1)+ivar) =&
-                p_Ddata(rvector%NVAR*(p_Idofs(idofe,iel)-1)+ivar) + DlocalData(ivar,idofe)
-          end do
-        end do
+        end do ! icubp
 
       end do ! iel
+        
+      ! Incorporate the local vector into the global one.
+      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! the IdofsTest array.
+      !
+      ! OpenMP-Extension: This is a critical section. Only one thread is
+      ! allowed to write to the vector, otherwise the vector may get
+      ! messed up.
+      ! The critical section is put around both loops as indofTest are
+      ! usually small and quickly to handle.
+      !
+      !$omp critical
+      do iel = 1,IELmax-IELset+1
+        
+        do idofe = 1,indof
+          do ivar = 1, rvector%NVAR
+            p_Ddata(rvector%NVAR*(p_Idofs(idofe,iel)-1)+ivar) =&
+                p_Ddata(rvector%NVAR*(p_Idofs(idofe,iel)-1)+ivar) +&
+                DlocalData(ivar,idofe,iel)
+          end do
+        end do
+        
+      end do ! iel
+      !$omp end critical
 
     end do ! IELset
+    !$omp end do
     
     ! Release the local vector assembly structure
     call linf_releaseAssemblyData(rlocalVectorAssembly)
-  
+    
     ! Deallocate memory
     deallocate(DlocalData, Daux)
+    !$omp end parallel
     
   end subroutine
 
@@ -3077,10 +3121,9 @@ contains
     integer, dimension(:,:), pointer :: p_Idofs
     type(t_evalElementSet), pointer :: p_revalElementSet
 
-    ! A small vector holding only the additive contributions of
-    ! one element
-    real(DP), dimension(EL_MAXNBAS) :: DlocalData
-  
+    ! A vector holding the additive contributions of elements
+    real(DP), dimension(:,:), allocatable :: DlocalData
+
     ! Arrays for cubature points 1D->2D
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
@@ -3096,13 +3139,21 @@ contains
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
 
-    ! Copy the assembly data to the local assembly data,
-    ! where we can allocate memory.
+    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! data, where we can allocate memory.
+    !
     ! For single processor machines, this is actually boring and nonsense.
     ! But using OpenMP, here we get a local copy of the vector
     ! assembly structure to where we can add some local data which
     ! is released upon return without changing the original assembly
     ! stucture or disturbing the data of the other processors.
+    !
+    !$omp parallel default(shared) &
+    !$omp private(DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
+    !$omp         cevaluationTag,daux,dlen,domega,ia,ialbet,icoordSystem,&
+    !$omp         icubp,idofe,iel,k,p_Dbas,p_Dcoefficients,p_DcubPtsRef,&
+    !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
+    !$omp         rintSubset,rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly)
     
@@ -3114,7 +3165,7 @@ contains
     p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
     p_Idofs => rlocalVectorAssembly%p_Idofs
     p_revalElementSet => rlocalVectorAssembly%revalElementSet
-    
+
     ! Transpose the coordinate array such that we get coordinates we
     ! can work with in the mapping between 1D and 2D.
     do k = 1, ubound(p_DcubPtsRef,1)
@@ -3122,6 +3173,9 @@ contains
         Dxi1D(icubp,k) = p_DcubPtsRef(k,icubp)
       end do
     end do
+
+    ! Allocate memory for the local data.
+    allocate(DlocalData(EL_MAXNBAS,rlocalVectorAssembly%nelementsPerBlock))
 
     ! Allocate memory for the cubature points in 2D.
     allocate(Dxi2D(ncubp,NDIM2D+1,rlocalVectorAssembly%nelementsPerBlock))
@@ -3142,13 +3196,13 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%omp do schedule(static,1)
+    !$omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
-      ! elements simultaneously.
+      ! Get the maximum element number, such that we handle at most
+      ! nelementsPerBlock elements simultaneously.
       
       IELmax = min(size(IelementList),IELset-1+rlocalVectorAssembly%nelementsPerBlock)
       
@@ -3206,7 +3260,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our nelementsPerBlock elements simultaneously.
       call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
           IelementList(IELset:IELmax), p_Idofs)
                                    
@@ -3242,7 +3296,7 @@ contains
         rintSubset%p_IdofsTrial => p_Idofs
         rintSubset%celement = rlocalVectorAssembly%celement
         call fcoeff_buildVectorScBdr2D_sim (rvector%p_rspatialDiscr,&
-            rlocalVectorAssembly%rform,  IELmax-IELset+1, ncubp,&
+            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
             ibdc, DpointsPar(:,1:IELmax-IELset+1),&
             p_Idofs, rintSubset, &
@@ -3261,7 +3315,10 @@ contains
       
       ! Values of all basis functions calculated. Now we can start 
       ! to integrate!
-      !
+      
+      ! Clear the local data
+      DlocalData(:,1:IELmax-IELset+1) = 0.0_DP
+
       ! Loop through elements in the set and for each element,
       ! loop through the DOF`s and cubature points to calculate the
       ! integral:
@@ -3271,9 +3328,6 @@ contains
         ! We make a 'local' approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
-        
-        ! Clear the output vector.
-        DlocalData(1:indof) = 0.0_DP
 
         ! Get the length of the edge. Let us use the parameter values
         ! on the boundary for that purpose; this is a more general
@@ -3332,30 +3386,45 @@ contains
               ! the additive contribution for the vector. We save this
               ! contribution in the local array.
               
-              DlocalData(idofe) = DlocalData(idofe)+p_Dbas(idofe,ia,icubp,iel)*daux
+              DlocalData(idofe,iel) = DlocalData(idofe,iel)+p_Dbas(idofe,ia,icubp,iel)*daux
               
             end do ! idofe
             
           end do ! ialbet
 
         end do ! icubp 
-        
-        ! Incorporate the local vector into the global one.
-        ! The 'local' DOF 1..indofTest is mapped to the global DOF using
-        ! the IdofsTest array.
-        do idofe = 1,indof
-          p_Ddata(p_Idofs(idofe,iel)) = p_Ddata(p_Idofs(idofe,iel)) + DlocalData(idofe)
-        end do
 
       end do ! iel
+        
+      ! Incorporate the local vector into the global one.
+      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! the IdofsTest array.
+      !
+      ! OpenMP-Extension: This is a critical section. Only one thread is
+      ! allowed to write to the vector, otherwise the vector may get
+      ! messed up.
+      ! The critical section is put around both loops as indofTest are
+      ! usually small and quickly to handle.
+      !
+      !$omp critical
+      do iel = 1,IELmax-IELset+1
+        
+        do idofe = 1,indof
+          p_Ddata(p_Idofs(idofe,iel)) = p_Ddata(p_Idofs(idofe,iel)) + DlocalData(idofe,iel)
+        end do
+        
+      end do ! iel
+      !$omp end critical
 
     end do ! IELset
+    !$omp end do
     
     ! Release the local vector assembly structure
     call linf_releaseAssemblyData(rlocalVectorAssembly)
 
     ! Deallocate memory
-    deallocate(Dxi2D, DpointsRef, DpointsPar)
+    deallocate(Dxi2D, DpointsRef, DpointsPar, DlocalData)
+    !$omp end parallel
 
   end subroutine
 
@@ -3669,7 +3738,7 @@ contains
     type(t_evalElementSet), pointer :: p_revalElementSet
 
     ! A small vector holding only the additive contributions of one element
-    real(DP), dimension(:,:), allocatable :: DlocalData
+    real(DP), dimension(:,:,:), allocatable :: DlocalData
     real(DP), dimension(:), allocatable :: Daux
     
     ! Arrays for cubature points 1D->2D
@@ -3682,21 +3751,26 @@ contains
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
 
-    ! Allocate temporal array
-    allocate(DlocalData(rvector%NVAR,EL_MAXNBAS), Daux(rvector%NVAR))
-
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rvector, p_Ddata)
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
 
-    ! Copy the assembly data to the local assembly data,
-    ! where we can allocate memory.
+    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! data, where we can allocate memory.
+    !
     ! For single processor machines, this is actually boring and nonsense.
     ! But using OpenMP, here we get a local copy of the vector
     ! assembly structure to where we can add some local data which
     ! is released upon return without changing the original assembly
     ! stucture or disturbing the data of the other processors.
+    !
+    !$omp parallel default(shared) &
+    !$omp private(Daux,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
+    !$omp         cevaluationTag,dlen,domega,ia,ialbet,icoordSystem,icubp,&
+    !$omp         idofe,iel,ivar,k,p_Dbas,p_Dcoefficients,p_DcubPtsRef,&
+    !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
+    !$omp         rintSubset,rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%NVAR)
     
@@ -3717,6 +3791,10 @@ contains
       end do
     end do
 
+    ! Allocate memory for the local data.
+    allocate(DlocalData(rvector%NVAR,EL_MAXNBAS,rlocalVectorAssembly%nelementsPerBlock))
+    allocate(Daux(rvector%NVAR))
+
     ! Allocate memory for the cubature points in 2D.
     allocate(Dxi2D(ncubp,NDIM2D+1,rlocalVectorAssembly%nelementsPerBlock))
 
@@ -3736,13 +3814,13 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%omp do schedule(static,1)
+    !$omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
-      ! elements simultaneously.
+      ! Get the maximum element number, such that we handle at most
+      ! nelementsPerBlock elements simultaneously.
       
       IELmax = min(size(IelementList),IELset-1+rlocalVectorAssembly%nelementsPerBlock)
       
@@ -3800,7 +3878,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our nelementsPerBlock elements simultaneously.
       call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
           IelementList(IELset:IELmax), p_Idofs)
                                    
@@ -3836,7 +3914,7 @@ contains
         rintSubset%p_IdofsTrial => p_Idofs
         rintSubset%celement = rlocalVectorAssembly%celement
         call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rspatialDiscr,&
-            rlocalVectorAssembly%rform,  IELmax-IELset+1, ncubp,&
+            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
             ibdc, DpointsPar(:,1:IELmax-IELset+1),&
             p_Idofs, rintSubset, &
@@ -3855,7 +3933,10 @@ contains
       
       ! Values of all basis functions calculated. Now we can start 
       ! to integrate!
-      !
+      
+      ! Clear the local data
+      DlocalData(:,:,1:IELmax-IELset+1) = 0.0_DP
+
       ! Loop through elements in the set and for each element,
       ! loop through the DOF`s and cubature points to calculate the
       ! integral:
@@ -3865,9 +3946,6 @@ contains
         ! We make a 'local' approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
-        
-        ! Clear the output vector.
-        DlocalData(:,1:indof) = 0.0_DP
 
         ! Get the length of the edge. Let us use the parameter values
         ! on the boundary for that purpose; this is a more general
@@ -3926,33 +4004,49 @@ contains
               ! the additive contribution for the vector. We save this
               ! contribution in the local array.
               
-              DlocalData(:,idofe) = DlocalData(:,idofe)+p_Dbas(idofe,ia,icubp,iel)*Daux
+              DlocalData(:,idofe,iel) = DlocalData(:,idofe,iel)+p_Dbas(idofe,ia,icubp,iel)*Daux
               
             end do ! idofe
             
           end do ! ialbet
 
-        end do ! icubp 
+        end do ! icubp
+
+      end do ! iel
         
-        ! Incorporate the local vector into the global one.
-        ! The 'local' DOF 1..indofTest is mapped to the global DOF using
-        ! the IdofsTest array.
+      ! Incorporate the local vector into the global one.
+      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! the IdofsTest array.
+      !
+      ! OpenMP-Extension: This is a critical section. Only one thread is
+      ! allowed to write to the vector, otherwise the vector may get
+      ! messed up.
+      ! The critical section is put around both loops as indofTest are
+      ! usually small and quickly to handle.
+      !
+      !$omp critical
+      do iel = 1,IELmax-IELset+1
+        
         do idofe = 1,indof
           do ivar = 1, rvector%NVAR
             p_Ddata(rvector%NVAR*(p_Idofs(idofe,iel)-1)+ivar) =&
-                p_Ddata(rvector%NVAR*(p_Idofs(idofe,iel)-1)+ivar) + DlocalData(ivar,idofe)
+                p_Ddata(rvector%NVAR*(p_Idofs(idofe,iel)-1)+ivar) +&
+                DlocalData(ivar,idofe,iel)
           end do
         end do
-
+        
       end do ! iel
+      !$omp end critical
 
     end do ! IELset
+    !$omp end do
     
     ! Release the local vector assembly structure
     call linf_releaseAssemblyData(rlocalVectorAssembly)
 
     ! Deallocate memory
     deallocate(Dxi2D, DpointsRef, DpointsPar, DlocalData, Daux)
+    !$omp end parallel
 
   end subroutine
 
@@ -4018,24 +4112,28 @@ contains
     type(t_evalElementSet), pointer :: p_revalElementSet
 
     ! A small vector holding only the additive contributions of one element
-    real(DP), dimension(:,:), allocatable :: DlocalData
+    real(DP), dimension(:,:,:), allocatable :: DlocalData
     real(DP), dimension(:), allocatable :: Daux
   
-    ! Allocate temporal array
-    allocate(DlocalData(rvector%nblocks,EL_MAXNBAS), Daux(rvector%nblocks))
-
     ! Get some pointers for faster access
     call lsysbl_getbase_double (rvector,p_Ddata)
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
 
-    ! Copy the assembly data to the local assembly data,
-    ! where we can allocate memory.
+    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! data, where we can allocate memory.
+    !
     ! For single processor machines, this is actually boring and nonsense.
     ! But using OpenMP, here we get a local copy of the vector
     ! assembly structure to where we can add some local data which
     ! is released upon return without changing the original assembly
     ! stucture or disturbing the data of the other processors.
+    !
+    !$omp parallel default(shared) &
+    !$omp private(Daux,DlocalData,IELmax,cevaluationTag,domega,ia,ialbet,&
+    !$omp         iblock,icubp,idofe,iel,p_Dbas,p_Dcoefficients,p_Ddetj,p_Domega,&
+    !$omp         p_Idescriptors,p_Idofs,p_revalElementSet,rintSubset,&
+    !$omp         rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks)
     
@@ -4047,6 +4145,10 @@ contains
     p_Idofs => rlocalVectorAssembly%p_Idofs
     p_revalElementSet => rlocalVectorAssembly%revalElementSet
 
+    ! Allocate temporal array
+    allocate(DlocalData(rvector%nblocks,EL_MAXNBAS,rlocalVectorAssembly%nelementsPerBlock))
+    allocate(Daux(rvector%nblocks))
+
     ! Loop over the elements - blockwise.
     !
     ! Open-MP-Extension: Each loop cycle is executed in a different thread,
@@ -4054,13 +4156,13 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%omp do schedule(static,1)
+    !$omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
-      ! elements simultaneously.
+      ! Get the maximum element number, such that we handle at most
+      ! nelementsPerBlock elements simultaneously.
       
       IELmax = min(size(IelementList),IELset-1+rlocalVectorAssembly%nelementsPerBlock)
     
@@ -4089,7 +4191,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our nelementsPerBlock elements simultaneously.
       call dof_locGlobMapping_mult(&
           rvector%p_rblockDiscr%RspatialDiscr(1), &
           IelementList(IELset:IELmax), p_Idofs)
@@ -4143,7 +4245,7 @@ contains
         rintSubset%p_IdofsTrial => p_Idofs
         rintSubset%celement = rlocalVectorAssembly%celement
         call fcoeff_buildVectorBl_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
-            rlocalVectorAssembly%rform,  IELmax-IELset+1, ncubp,&
+            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
             p_Idofs, rintSubset,&
             p_Dcoefficients(:,:,:,1:IELmax-IELset+1), rcollection)
@@ -4161,7 +4263,10 @@ contains
       
       ! Values of all basis functions calculated. Now we can start 
       ! to integrate!
-      !
+      
+      ! Clear the local data
+      DlocalData(:,:,1:IELmax-IELset+1) = 0.0_DP
+
       ! Loop through elements in the set and for each element,
       ! loop through the DOF`s and cubature points to calculate the
       ! integral:
@@ -4171,9 +4276,6 @@ contains
         ! We make a 'local' approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
-        
-        ! Clear the output vector.
-        DlocalData(:,1:indof) = 0.0_DP
 
         ! Loop over all cubature points on the current element
         do icubp = 1, ncubp
@@ -4226,34 +4328,49 @@ contains
               ! the additive contribution for the vector. We save this
               ! contribution in the local array.
               
-              DlocalData(:,idofe) = DlocalData(:,idofe)+p_Dbas(idofe,ia,icubp,iel)*Daux
+              DlocalData(:,idofe,iel) = DlocalData(:,idofe,iel)+p_Dbas(idofe,ia,icubp,iel)*Daux
               
             end do ! jdofe
             
           end do ! ialbet
 
-        end do ! icubp 
+        end do ! icubp
+
+      end do ! iel
+      
+      ! Incorporate the local vector into the global one.
+      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! the IdofsTest array.
+      !
+      ! OpenMP-Extension: This is a critical section. Only one thread is
+      ! allowed to write to the vector, otherwise the vector may get
+      ! messed up.
+      ! The critical section is put around both loops as indofTest are
+      ! usually small and quickly to handle.
+      !
+      !$omp critical
+      do iel = 1,IELmax-IELset+1
         
-        ! Incorporate the local vector into the global one.
-        ! The 'local' DOF 1..indofTest is mapped to the global DOF using
-        ! the IdofsTest array.
         do iblock =1,rvector%nblocks
-          do IDOFE = 1,indof
+          do idofe = 1,indof
             p_Ddata(rvector%RvectorBlock(iblock)%iidxFirstEntry+p_Idofs(idofe,iel)-1)=&
                 p_Ddata(rvector%RvectorBlock(iblock)%iidxFirstEntry+p_Idofs(idofe,iel)-1)+&
-                DlocalData(iblock,idofe)
+                DlocalData(iblock,idofe,iel)
           end do
         end do
         
       end do ! iel
+      !$omp end critical
 
     end do ! IELset
+    !$omp end do
     
     ! Release the local vector assembly structure
     call linf_releaseAssemblyData(rlocalVectorAssembly)
   
     ! Deallocate memory
     deallocate(DlocalData, Daux)
+    !$omp end parallel
 
   end subroutine
 
@@ -4569,7 +4686,7 @@ contains
     type(t_evalElementSet), pointer :: p_revalElementSet
 
     ! A small vector holding only the additive contributions of one element
-    real(DP), dimension(:,:), allocatable :: DlocalData
+    real(DP), dimension(:,:,:), allocatable :: DlocalData
     real(DP), dimension(:), allocatable :: Daux
     
     ! Arrays for cubature points 1D->2D
@@ -4582,21 +4699,26 @@ contains
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
 
-    ! Allocate temporal array
-    allocate(DlocalData(rvector%nblocks,EL_MAXNBAS), Daux(rvector%nblocks))
-
     ! Get some pointers for faster access
     call lsysbl_getbase_double (rvector, p_Ddata)
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
 
-    ! Copy the assembly data to the local assembly data,
-    ! where we can allocate memory.
+    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! data, where we can allocate memory.
+    !
     ! For single processor machines, this is actually boring and nonsense.
     ! But using OpenMP, here we get a local copy of the vector
     ! assembly structure to where we can add some local data which
     ! is released upon return without changing the original assembly
     ! stucture or disturbing the data of the other processors.
+    !
+    !$omp parallel default(shared) &
+    !$omp private(DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
+    !$omp         cevaluationTag,daux,dlen,domega,ia,ialbet,icoordSystem,&
+    !$omp         iblock,icubp,idofe,iel,k,p_Dbas,p_Dcoefficients,p_DcubPtsRef,&
+    !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
+    !$omp         rintSubset,rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks)
     
@@ -4617,6 +4739,10 @@ contains
       end do
     end do
 
+    ! Allocate memory for the local data.
+    allocate(DlocalData(rvector%nblocks,EL_MAXNBAS,rlocalVectorAssembly%nelementsPerBlock))
+    allocate(Daux(rvector%nblocks))
+
     ! Allocate memory for the cubature points in 2D.
     allocate(Dxi2D(ncubp,NDIM2D+1,rlocalVectorAssembly%nelementsPerBlock))
 
@@ -4636,13 +4762,13 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%omp do schedule(static,1)
+    !$omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
-      ! elements simultaneously.
+      ! Get the maximum element number, such that we handle at most
+      ! nelementsPerBlock elements simultaneously.
       
       IELmax = min(size(IelementList),IELset-1+rlocalVectorAssembly%nelementsPerBlock)
       
@@ -4700,7 +4826,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our nelementsPerBlock elements simultaneously.
       call dof_locGlobMapping_mult(&
           rvector%p_rblockDiscr%RspatialDiscr(1), &
           IelementList(IELset:IELmax), p_Idofs)
@@ -4737,7 +4863,7 @@ contains
         rintSubset%p_IdofsTrial => p_Idofs
         rintSubset%celement = rlocalVectorAssembly%celement
         call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
-            rlocalVectorAssembly%rform,  IELmax-IELset+1, ncubp,&
+            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
             ibdc, DpointsPar(:,1:IELmax-IELset+1),&
             p_Idofs, rintSubset, &
@@ -4756,7 +4882,10 @@ contains
       
       ! Values of all basis functions calculated. Now we can start 
       ! to integrate!
-      !
+
+      ! Clear the local data
+      DlocalData(:,:,1:IELmax-IELset+1) = 0.0_DP
+      
       ! Loop through elements in the set and for each element,
       ! loop through the DOF`s and cubature points to calculate the
       ! integral:
@@ -4766,9 +4895,6 @@ contains
         ! We make a 'local' approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
-        
-        ! Clear the output vector.
-        DlocalData(:,1:indof) = 0.0_DP
 
         ! Get the length of the edge. Let us use the parameter values
         ! on the boundary for that purpose; this is a more general
@@ -4827,34 +4953,49 @@ contains
               ! the additive contribution for the vector. We save this
               ! contribution in the local array.
               
-              DlocalData(:,idofe) = DlocalData(:,idofe)+p_Dbas(idofe,ia,icubp,iel)*Daux
+              DlocalData(:,idofe,iel) = DlocalData(:,idofe,iel)+p_Dbas(idofe,ia,icubp,iel)*Daux
               
             end do ! idofe
             
           end do ! ialbet
 
         end do ! icubp 
+
+      end do ! iel
         
-        ! Incorporate the local vector into the global one.
-        ! The 'local' DOF 1..indofTest is mapped to the global DOF using
-        ! the IdofsTest array.
+      ! Incorporate the local vector into the global one.
+      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! the IdofsTest array.
+      !
+      ! OpenMP-Extension: This is a critical section. Only one thread is
+      ! allowed to write to the vector, otherwise the vector may get
+      ! messed up.
+      ! The critical section is put around both loops as indofTest are
+      ! usually small and quickly to handle.
+      !
+      !$omp critical
+      do iel = 1,IELmax-IELset+1
+        
         do iblock =1,rvector%nblocks
           do idofe = 1,indof
             p_Ddata(rvector%RvectorBlock(iblock)%iidxFirstEntry+p_Idofs(idofe,iel)-1)=&
                 p_Ddata(rvector%RvectorBlock(iblock)%iidxFirstEntry+p_Idofs(idofe,iel)-1)+&
-                DlocalData(iblock,idofe)
+                DlocalData(iblock,idofe,iel)
           end do
         end do
         
       end do ! iel
+      !$omp end critical
 
     end do ! IELset
+    !$omp end do
     
     ! Release the local vector assembly structure
     call linf_releaseAssemblyData(rlocalVectorAssembly)
 
     ! Deallocate memory
     deallocate(Dxi2D, DpointsRef, DpointsPar, DlocalData, Daux)
+    !$omp end parallel
 
   end subroutine
 
@@ -4862,7 +5003,7 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVectorScalar2 (rform, bclear, rvectorScalar,&
+  subroutine linf_buildVectorScalar2 (rform, bclear, rvector,&
                                       fcoeff_buildVectorSc_sim, rcollection)
   
 !<description>
@@ -4902,7 +5043,7 @@ contains
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
   ! The vector must exist before being passed to this routine.
-  type(t_vectorScalar), intent(inout) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvector
   
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
@@ -4918,60 +5059,60 @@ contains
     integer, dimension(:), pointer :: p_IelementList
     
     ! If the vector does not exist, stop here.
-    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
     end if
     
     ! If the vector os stored in interleave format, stop here.
-    if (rvectorScalar%NVAR .ne. 1) then
+    if (rvector%NVAR .ne. 1) then
       call output_line('Vector must not be in interleaved format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
     end if
     
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
+    if (rvector%isortStrategy .gt. 0) then
       call output_line('Vector must be unsorted!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
       call sys_halt()
     end if
     
     ! Clear the vector if necessary.
-    if (bclear) call lsyssc_clearVector (rvectorScalar)
+    if (bclear) call lsyssc_clearVector (rvector)
     
     ! The vector must provide a discretisation structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+    if (.not. associated(rvector%p_rspatialDiscr)) then
       call output_line('No discretisation associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
       call sys_halt()
     end if
     
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if ((rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+    if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
       
-      select case(rvectorScalar%cdataType)
+      select case(rvector%cdataType)
         
       case(ST_DOUBLE)
         ! Loop over the element distributions.
-        do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
+        do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
           
           ! Check if element distribution is empty
-          if (rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+          if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
           
           ! Get list of elements in distribution
           call storage_getbase_int(&
-              rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%h_IelementList,&
+              rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%h_IelementList,&
               p_IelementList)
           
           ! Initialise a vector assembly structure for that element distribution
           call linf_initAssembly(rvectorAssembly,rform,&
-              rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-              rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%ccubTypeLinForm,&
+              rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+              rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%ccubTypeLinForm,&
               min(LINF_NELEMSIM, size(p_IelementList)))
           
           ! Assemble the data for all elements in this element distribution
-          call linf_assembleSubmeshVector (rvectorAssembly,rvectorScalar,&
+          call linf_assembleSubmeshVector (rvectorAssembly,rvector,&
               p_IelementList,fcoeff_buildVectorSc_sim,rcollection)
           
           ! Release the assembly structure.
@@ -4996,7 +5137,7 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVecIntlScalar2 (rform, bclear, rvectorScalar,&
+  subroutine linf_buildVecIntlScalar2 (rform, bclear, rvector,&
                                        fcoeff_buildVectorBl_sim, rcollection)
   
 !<description>
@@ -5036,7 +5177,7 @@ contains
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
   ! The vector must exist before being passed to this routine.
-  type(t_vectorScalar), intent(inout) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvector
   
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
@@ -5052,54 +5193,54 @@ contains
     integer, dimension(:), pointer :: p_IelementList
 
     ! If the vector does not exist, stop here.
-    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalar2')
     end if
     
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
+    if (rvector%isortStrategy .gt. 0) then
       call output_line('Vector must be unsorted!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalar2')
       call sys_halt()
     end if
     
     ! Clear the vector if necessary.
-    if (bclear) call lsyssc_clearVector (rvectorScalar)
+    if (bclear) call lsyssc_clearVector (rvector)
     
     ! The vector must provide a discretisation structure
-    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+    if (.not. associated(rvector%p_rspatialDiscr)) then
       call output_line('No discretisation associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalar2')
       call sys_halt()
     end if
     
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if ((rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+    if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
       
-      select case(rvectorScalar%cdataType)
+      select case(rvector%cdataType)
         
       case(ST_DOUBLE)
         ! Loop over the element distributions.
-        do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
+        do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
           
           ! Check if element distribution is empty
-          if (rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+          if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
           
           ! Get list of elements in distribution
           call storage_getbase_int(&
-              rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%h_IelementList,&
+              rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%h_IelementList,&
               p_IelementList)
           
           ! Initialise a vector assembly structure for that element distribution
           call linf_initAssembly(rvectorAssembly,rform,&
-              rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-              rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%ccubTypeLinForm,&
+              rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+              rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%ccubTypeLinForm,&
               min(LINF_NELEMSIM, size(p_IelementList)))
           
           ! Assemble the data for all elements in this element distribution
-          call linf_assembleSubmeshVecIntl (rvectorAssembly,rvectorScalar,&
+          call linf_assembleSubmeshVecIntl (rvectorAssembly,rvector,&
               p_IelementList,fcoeff_buildVectorBl_sim,rcollection)
           
           ! Release the assembly structure.
