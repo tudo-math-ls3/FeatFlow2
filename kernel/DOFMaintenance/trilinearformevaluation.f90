@@ -559,17 +559,17 @@ contains
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
-    !%OMP PARALLEL PRIVATE(rintSubset, revalElementSet,&
-    !%OMP   p_Ddetj,kentry, dentry,DbasTest,DbasTrial, &
-    !%OMP   IdofsTest,IdofsTrial,cevaluationTag, &
-    !%OMP   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
-    !%OMP   p_DbasTrial, BderTrial, BderTest, ielmax,IEL, idofe,jdofe,jcol0, &
-    !%OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,ifunc,aux, db,IdofsFunc,DbasFunc, &
-    !%OMP   bIdenticalFuncAndTrial,p_IdofsFunc, &
-    !%OMP   p_DbasFunc,iderType,p_IelementList,p_Ddata)    
+    !%omp parallel private(rintSubset, revalElementSet,&
+    !%omp   p_Ddetj,kentry, dentry,DbasTest,DbasTrial, &
+    !%omp   IdofsTest,IdofsTrial,cevaluationTag, &
+    !%omp   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
+    !%omp   p_DbasTrial, BderTrial, BderTest, ielmax,IEL, idofe,jdofe,jcol0, &
+    !%omp   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,ifunc,aux, db,IdofsFunc,DbasFunc, &
+    !%omp   bIdenticalFuncAndTrial,p_IdofsFunc, &
+    !%omp   p_DbasFunc,iderType,p_IelementList,p_Ddata)    
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
-    !%OMP SINGLE
+    !%omp single
     do IALBET = 1,rform%itermcount
       ifunc = rform%Idescriptors(1,IALBET)
       IA = rform%Idescriptors(2,IALBET)
@@ -599,7 +599,7 @@ contains
         call sys_halt()
       end if
     end do
-    !%OMP END SINGLE
+    !%omp end single
     
     ! Allocate an array saving the coordinates of corner vertices of elements
     
@@ -719,7 +719,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, NEL, TRILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -1077,18 +1077,18 @@ contains
         
         ! Incorporate the local matrices into the global one.
         ! Kentry gives the position of the additive contributions in Dentry.
-        !%OMP CRITICAL
+        !%omp critical
         do IDOFE=1,indofTest
           do JDOFE=1,indofTrial
             p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
           end do
         end do
-        !%OMP END CRITICAL
+        !%omp end critical
 
       end do ! IEL
 
     end do ! IELset
-    !%OMP END DO
+    !%omp end do
     
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
@@ -1103,7 +1103,7 @@ contains
     deallocate(Kentry)
     deallocate(Dentry)
     
-    !%OMP END PARALLEL
+    !%omp end parallel
 
     deallocate(p_DcubPtsRef)
     deallocate(Domega)

@@ -762,14 +762,14 @@ contains
       case (TRAFO_ID_MLINCUBE)
         ! 1D simplex -> linear line transformation. 
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !$omp parallel do private(ipoint)
         do iel=1,size(Ielements)
           do ipoint = 1,2
             Dcoords (1,ipoint,iel) = &
               p_DvertexCoords(1,p_IverticesAtElement(ipoint,Ielements(iel)))
           end do
         end do
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
       
       end select
 
@@ -789,27 +789,27 @@ contains
       case (TRAFO_ID_LINSIMPLEX)
         ! 2D simplex -> linear triangular transformation. 
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !$omp parallel do private(ipoint)
         do iel=1,size(Ielements)
           do ipoint = 1,3
             Dcoords (1:NDIM2D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
           end do
         end do
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
       
       case (TRAFO_ID_MLINCUBE)
         ! Bilinear transformation for cubic-shaped elements 
         ! -> Bilinear quadrilateral transformation.
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !$omp parallel do private(ipoint)
         do iel=1,size(Ielements)
           do ipoint = 1,4
             Dcoords (1:NDIM2D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
           end do
         end do
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
       
       end select
 
@@ -829,52 +829,52 @@ contains
       case (TRAFO_ID_LINSIMPLEX)
         ! 3D simplex -> linear tetrahedral transformation. 
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !$omp parallel do private(ipoint)
         do iel=1,size(Ielements)
           do ipoint = 1,4
             Dcoords (1:NDIM3D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
           end do
         end do
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
       
       case (TRAFO_ID_MLINCUBE)
         ! Trilinear transformation for cubic-shaped elements 
         ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !$omp parallel do private(ipoint)
         do iel=1,size(Ielements)
           do ipoint = 1,8
             Dcoords (1:NDIM3D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
           end do
         end do
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
       
       case (TRAFO_ID_MLINPYRAMID)
         ! Bilinear transformation for pyramid shaped elements 
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !$omp parallel do private(ipoint)
         do iel=1,size(Ielements)
           do ipoint = 1,5
             Dcoords (1:NDIM3D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
           end do
         end do
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
       
       
       case (TRAFO_ID_MLINPRISM)
         ! Bilinear transformation for prismic shaped elements 
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !$omp parallel do private(ipoint)
         do iel=1,size(Ielements)
           do ipoint = 1,6
             Dcoords (1:NDIM3D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
           end do
         end do
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
 
       end select
       
@@ -1626,7 +1626,7 @@ contains
       if(.not. present(DpointsReal)) then
         
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt)
+        !$omp parallel do private(ipt)
         do iel=1,nelements
         
           ! Loop over the points
@@ -1639,12 +1639,12 @@ contains
           end do
         
         end do
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
         
       else
       
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt)
+        !$omp parallel do private(ipt)
         do iel=1,nelements
           
           ! Loop over the points
@@ -1661,7 +1661,7 @@ contains
           end do
           
         end do
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
 
       end if
     
@@ -1681,7 +1681,7 @@ contains
       if (.not. present(DpointsReal)) then
       
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt,dax,day,dbx,dby,dcx,dcy)
+        !$omp parallel do private(ipt,dax,day,dbx,dby,dcx,dcy)
         do iel = 1,nelements
           
           ! Loop over the points
@@ -1715,12 +1715,12 @@ contains
           end do ! ipt
           
         end do ! iel
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
         
       else
 
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt,dax,day,dbx,dby,dcx,dcy)
+        !$omp parallel do private(ipt,dax,day,dbx,dby,dcx,dcy)
         do iel = 1,nelements
           
           ! Loop over the points
@@ -1767,7 +1767,7 @@ contains
           end do ! ipt
           
         end do ! iel
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
         
       end if
     
@@ -1780,7 +1780,7 @@ contains
       if (.not. present(DpointsReal)) then
       
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        !$omp parallel do private(ipt,DjacPrep)
         do iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_quad2D(Dcoords(:,:,iel), DjacPrep)
@@ -1793,12 +1793,12 @@ contains
           end do ! ipt
           
         end do ! iel
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
       
       else
 
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        !$omp parallel do private(ipt,DjacPrep)
         do iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_quad2D(Dcoords(:,:,iel), DjacPrep)
@@ -1812,7 +1812,7 @@ contains
           end do ! ipt
           
         end do ! iel
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
 
       end if
       
@@ -1908,7 +1908,7 @@ contains
       ! Calculate with or without coordinates?
       if (.not. present(DpointsReal)) then
       
-        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        !$omp parallel do private(ipt,DjacPrep)
         do iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_hexa3D(Dcoords(:,:,iel), DjacPrep)
@@ -1921,11 +1921,11 @@ contains
           end do ! ipt
           
         end do !iel
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
         
       else
 
-        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        !$omp parallel do private(ipt,DjacPrep)
         do iel = 1, nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_hexa3D(Dcoords(:,:,iel), DjacPrep)
@@ -1939,7 +1939,7 @@ contains
           end do ! ipt
           
         end do ! iel
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
         
       end if
 
@@ -1948,7 +1948,7 @@ contains
       ! Calculate with or without coordinates?
       if (.not. present(DpointsReal)) then
       
-        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        !$omp parallel do private(ipt,DjacPrep)
         do iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_pyra3D(Dcoords(:,:,iel), DjacPrep)
@@ -1961,11 +1961,11 @@ contains
           end do ! ipt
           
         end do !iel
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
         
       else
 
-        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        !$omp parallel do private(ipt,DjacPrep)
         do iel = 1, nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_pyra3D(Dcoords(:,:,iel), DjacPrep)
@@ -1979,7 +1979,7 @@ contains
           end do ! ipt
           
         end do ! iel
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
         
       end if
 
@@ -1988,7 +1988,7 @@ contains
       ! Calculate with or without coordinates?
       if (.not. present(DpointsReal)) then
       
-        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        !$omp parallel do private(ipt,DjacPrep)
         do iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_prism3D(Dcoords(:,:,iel), DjacPrep)
@@ -2001,11 +2001,11 @@ contains
           end do ! ipt
           
         end do !iel
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
         
       else
 
-        !$OMP PARALLEL DO PRIVATE(ipt,DjacPrep)
+        !$omp parallel do private(ipt,DjacPrep)
         do iel = 1, nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_prism3D(Dcoords(:,:,iel), DjacPrep)
@@ -2019,7 +2019,7 @@ contains
           end do ! ipt
           
         end do ! iel
-        !$OMP END PARALLEL DO
+        !$omp end parallel do
         
       end if
     

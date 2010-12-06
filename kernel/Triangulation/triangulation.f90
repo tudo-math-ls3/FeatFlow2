@@ -6795,7 +6795,7 @@ p_InodalPropertyDest = -4711
       ! Ok, let us catch the actual vertices.
       !      
       ! Check all vertices to find out, which vertices are on the boundary.
-      !%OMP PARALLEL do PRIVATE(ibct,ivbd)
+      !%omp parallel do private(ibct,ivbd)
       do ivt = 1, rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
           ! id of the boundary component
@@ -6814,7 +6814,7 @@ p_InodalPropertyDest = -4711
           p_IverticesAtBoundary (ivbd) = ivt
         end if
       end do
-      !%OMP END PARALLEL do
+      !%omp end parallel do
         
     end subroutine genRawBoundary2D
 
@@ -7258,7 +7258,7 @@ p_InodalPropertyDest = -4711
       ! Ok, let us catch the actual vertices.
       !      
       ! Check all vertices to find out, which vertices are on the boundary.
-      !%OMP PARALLEL do PRIVATE(ibct,ivbd)
+      !%omp parallel do private(ibct,ivbd)
       do ivt=1,rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
           ! id of the boundary component
@@ -7277,7 +7277,7 @@ p_InodalPropertyDest = -4711
           p_IverticesAtBoundary (ivbd) = ivt
         end if
       end do
-      !%OMP END PARALLEL do
+      !%omp end parallel do
      
     end subroutine genRawBoundary2D
 

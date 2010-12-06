@@ -639,12 +639,12 @@ contains
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
-    !%OMP PARALLEL PRIVATE(rintSubset, revalElementSet,&
-    !%OMP   p_Ddetj,DbasTest, cevaluationTag, bcubPtsInitialised,&
-    !%OMP   IdofsTest,&
-    !%OMP   Dcoefficients, &
-    !%OMP   IELmax,IEL, idofe, &
-    !%OMP   ICUBP, IALBET,OM,IA,aux)    
+    !%omp parallel private(rintSubset, revalElementSet,&
+    !%omp   p_Ddetj,DbasTest, cevaluationTag, bcubPtsInitialised,&
+    !%omp   IdofsTest,&
+    !%omp   Dcoefficients, &
+    !%omp   IELmax,IEL, idofe, &
+    !%omp   ICUBP, IALBET,OM,IA,aux)    
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
     do IALBET = 1,rform%itermcount
@@ -689,7 +689,7 @@ contains
   
   
     ! Loop over the elements - blockwise.
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, NEL, LINF_NELEMSIM
     
       ! We always handle LINF_NELEMSIM elements simultaneously.
@@ -859,7 +859,7 @@ contains
       end do ! IEL
       
     end do ! IELset
-    !%OMP END DO
+    !%omp end do
     
     ! Release memory
     deallocate(Dcoefficients)
@@ -868,7 +868,7 @@ contains
 
     call elprep_releaseElementSet(revalElementSet)
     
-    !%OMP END PARALLEL
+    !%omp end parallel
 
     deallocate(p_DcubPtsRef)
     deallocate(Domega)
@@ -2281,7 +2281,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
@@ -2574,7 +2574,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
@@ -3142,7 +3142,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
@@ -3736,7 +3736,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
@@ -4054,7 +4054,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
@@ -4636,7 +4636,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.

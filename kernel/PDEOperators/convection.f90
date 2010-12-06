@@ -4207,15 +4207,15 @@ contains
     ! in Windows!?!
     ! Each thread will allocate its own local memory...
 
-    !%OMP PARALLEL private( &
-    !%OMP p_Ddetj, i,k,Dbas,Idofs,DbasALE, &
-    !%OMP IdofsALE,DlocalDelta,Kentry,Kentry12,Dentry, &
-    !%OMP DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
-    !%OMP DvelocityUderiv,DvelocityVderiv,dre,IEL,db,icubp,&
-    !%OMP IDOFE,JCOL0,JDOFE,JDFG,jcol,du1loc,du2loc,dbx,dby, &
-    !%OMP du1locx,du1locy,du2locx,du2locy,OM,AH,HBASI1,HBASI2,&
-    !%OMP HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ,AH11,AH12,AH21, &
-    !%OMP AH22,IELmax,revalElementSet,dny)
+    !%omp parallel private( &
+    !%omp p_Ddetj, i,k,Dbas,Idofs,DbasALE, &
+    !%omp IdofsALE,DlocalDelta,Kentry,Kentry12,Dentry, &
+    !%omp DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
+    !%omp DvelocityUderiv,DvelocityVderiv,dre,IEL,db,icubp,&
+    !%omp IDOFE,JCOL0,JDOFE,JDFG,jcol,du1loc,du2loc,dbx,dby, &
+    !%omp du1locx,du1locy,du2locx,du2locy,OM,AH,HBASI1,HBASI2,&
+    !%omp HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ,AH11,AH12,AH21, &
+    !%omp AH22,IELmax,revalElementSet,dny)
 
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -4313,7 +4313,7 @@ contains
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX.
     ! Round up the norm to 1D-8 if it is too small...
-    !%OMP SINGLE
+    !%omp single
     dumax=0.0_DP
     if (dweight2 .eq. 0.0_DP) then
 
@@ -4339,7 +4339,7 @@ contains
     !print *,"dumax: ",dumax
     if (dumax.lt.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
-    !%OMP end SINGLE
+    !%omp end single
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
@@ -4353,7 +4353,7 @@ contains
     ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
-    !%OMP do SCHEDULE(dynamic,1)
+    !%omp do schedule(dynamic,1)
     do IELset = 1, size(p_IelementList), BILF_NELEMSIM
 
       ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -5470,7 +5470,7 @@ contains
 
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and (if different from A11) also into A22.
-          !%OMP CRITICAL
+          !%omp critical
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
               do JDOFE=1,indof
@@ -5479,10 +5479,10 @@ contains
               end do
             end do
           end do
-          !%OMP end CRITICAL
+          !%omp end critical
 
           if (.not. associated(p_Da11,p_Da22)) then
-            !%OMP CRITICAL
+            !%omp critical
             do IEL=1,IELmax-IELset+1
               do IDOFE=1,indof
                 do JDOFE=1,indof
@@ -5492,7 +5492,7 @@ contains
                 end do
               end do
             end do
-            !%OMP end CRITICAL
+            !%omp end critical
 
           end if
 
@@ -5501,7 +5501,7 @@ contains
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and A22 (both must exist and be independent from
           ! each other).
-          !%OMP CRITICAL
+          !%omp critical
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
               do JDOFE=1,indof
@@ -5519,9 +5519,9 @@ contains
               end do
             end do
           end do
-          !%OMP end CRITICAL
+          !%omp end critical
 
-          !%OMP CRITICAL
+          !%omp critical
           ! Include the local Newton matrix parts into A12 and A21.
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
@@ -5538,7 +5538,7 @@ contains
               end do
             end do
           end do
-          !%OMP end CRITICAL
+          !%omp end critical
 
         end if
 
@@ -5556,7 +5556,7 @@ contains
 
         ! With or without Newton?
         if ((dnewton .eq. 0.0_DP) .and. (dnewtonTransposed .eq. 0.0_DP)) then
-          !%OMP CRITICAL
+          !%omp critical
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
 
@@ -5573,9 +5573,9 @@ contains
               end do
             end do
           end do
-          !%OMP end CRITICAL
+          !%omp end critical
         else
-          !%OMP CRITICAL
+          !%omp critical
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
 
@@ -5600,14 +5600,14 @@ contains
               end do
             end do
           end do
-          !%OMP end CRITICAL
+          !%omp end critical
         end if
 
       end if
 
 
     end do ! IELset
-    !%OMP end do
+    !%omp end do
 
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
@@ -5629,7 +5629,7 @@ contains
     deallocate(Idofs)
     deallocate(DbasALE)
     deallocate(Dbas)
-    !%OMP end PARALLEL
+    !%omp end parallel
     deallocate(Domega)
     deallocate(p_DcubPtsRef)
 
@@ -8129,15 +8129,15 @@ contains
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
 
-    !§OMP PARALLEL private(csysTrial, p_DcubPtsReal, &
-    !§OMP p_Ddetj, j,i,k,Dbas,Idofs,DbasALE, &
-    !§OMP IdofsALE,DlocalDelta,bnonpar,Kentry,Kentry12,Dentry, &
-    !§OMP DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
-    !§OMP DvelocityUderiv,DvelocityVderiv,dre,IEL,db,icubp,&
-    !§OMP IDOFE,JCOL0,JDOFE,JDFG,jcol,du1loc,du2loc,dbx,dby, &
-    !§OMP du1locx,du1locy,du2locx,du2locy,OM,AH,HBASI1,HBASI2,&
-    !§OMP HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ,AH11,AH12,AH21, &
-    !§OMP AH22,IELmax,revalElementSet,dny,p_DcubPts)
+    !%omp parallel private(csysTrial, p_DcubPtsReal, &
+    !%omp p_Ddetj, j,i,k,Dbas,Idofs,DbasALE, &
+    !%omp IdofsALE,DlocalDelta,bnonpar,Kentry,Kentry12,Dentry, &
+    !%omp DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
+    !%omp DvelocityUderiv,DvelocityVderiv,dre,IEL,db,icubp,&
+    !%omp IDOFE,JCOL0,JDOFE,JDFG,jcol,du1loc,du2loc,dbx,dby, &
+    !%omp du1locx,du1locy,du2locx,du2locy,OM,AH,HBASI1,HBASI2,&
+    !%omp HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ,AH11,AH12,AH21, &
+    !%omp AH22,IELmax,revalElementSet,dny,p_DcubPts)
 
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -8232,7 +8232,7 @@ contains
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX.
     ! Round up the norm to 1D-8 if it is too small...
-    !§OMP SINGLE
+    !%omp single
     dumax=0.0_DP
     if (dweight2 .eq. 0.0_DP) then
 
@@ -8260,7 +8260,7 @@ contains
     !print *,"dumax: ",dumax
     if (dumax.lt.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
-    !§OMP end SINGLE
+    !%omp end single
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
@@ -8274,7 +8274,7 @@ contains
     ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
-    !§OMP do SCHEDULE(dynamic,1)
+    !%omp do schedule(dynamic,1)
     do IELset = 1, size(p_IelementList), BILF_NELEMSIM
 
       ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -9229,7 +9229,7 @@ contains
 
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and (if different from A11) also into A22 and A33.
-          !§OMP CRITICAL
+          !%omp critical
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
               do JDOFE=1,indof
@@ -9259,14 +9259,14 @@ contains
               end do
             end do
           end if
-          !§OMP end CRITICAL
+          !%omp end critical
 
         else
 
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and A22 (both must exist and be independent from
           ! each other).
-          !§OMP CRITICAL
+          !%omp critical
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
               do JDOFE=1,indof
@@ -9308,7 +9308,7 @@ contains
               end do
             end do
           end do
-          !§OMP end CRITICAL
+          !%omp end critical
 
         end if
 
@@ -9326,7 +9326,7 @@ contains
 
         ! With or without Newton?
         if (dnewton .eq. 0.0_DP) then
-          !§OMP CRITICAL
+          !%omp critical
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
 
@@ -9344,9 +9344,9 @@ contains
               end do
             end do
           end do
-          !§OMP end CRITICAL
+          !%omp end critical
         else
-          !§OMP CRITICAL
+          !%omp critical
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
 
@@ -9378,14 +9378,14 @@ contains
               end do
             end do
           end do
-          !§OMP end CRITICAL
+          !%omp end critical
         end if
 
       end if
 
 
     end do ! IELset
-    !§OMP end do
+    !%omp end do
 
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
@@ -9412,7 +9412,7 @@ contains
     deallocate(Idofs)
     deallocate(DbasALE)
     deallocate(Dbas)
-    !§OMP end PARALLEL
+    !%omp end parallel
     deallocate(Domega)
     deallocate(p_DcubPtsRef)
 

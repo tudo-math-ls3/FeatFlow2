@@ -3380,12 +3380,12 @@ contains
 !    ! in Windows!?!
 !    ! Each thread will allocate its own local memory...
 !    !
-!    !%OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,p_DcubPtsReal, &
-!    !%OMP   p_Djac,p_Ddetj,p_Dcoords, kentry, dentry,DbasTest,DbasTrial, &
-!    !%OMP   IdofsTest,IdofsTrial,bnonparTrial,bnonparTest,p_DcubPtsTrial,&
-!    !%OMP   p_DcubPtsTest,Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
-!    !%OMP   p_DbasTrial, BderTrial, BderTest, j, IELmax,IEL, idofe,jdofe,jcol0, &
-!    !%OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
+!    !%omp parallel private(rintSubset, p_DcubPtsRef,p_DcubPtsReal, &
+!    !%omp   p_Djac,p_Ddetj,p_Dcoords, kentry, dentry,DbasTest,DbasTrial, &
+!    !%omp   IdofsTest,IdofsTrial,bnonparTrial,bnonparTest,p_DcubPtsTrial,&
+!    !%omp   p_DcubPtsTest,Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
+!    !%omp   p_DbasTrial, BderTrial, BderTest, j, IELmax,IEL, idofe,jdofe,jcol0, &
+!    !%omp   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
 !    
 !    ! Get from the trial element space the type of coordinate system
 !    ! that is used there:
@@ -3540,7 +3540,7 @@ contains
 !    ! inner loop(s).
 !    ! The blocks have all the same size, so we can use static scheduling.
 !    !
-!    !%OMP do schedule(static,1)
+!    !%omp do schedule(static,1)
 !    DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
 !    
 !      ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -3865,14 +3865,14 @@ contains
 !          ! The critical section is put around both loops as indofTest/indofTrial
 !          ! are usually small and quickly to handle.
 !          !
-!          !%OMP CRITICAL
+!          !%omp critical
 !          DO IDOFE=1,indofTest
 !            DO JDOFE=1,indofTrial
 !              p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + &
 !                                              Dentry(JDOFE,IDOFE)
 !            END DO
 !          END DO
-!          !%OMP END CRITICAL
+!          !%omp end critical
 !
 !        END DO ! IEL
 !        
@@ -3972,21 +3972,21 @@ contains
 !          ! The critical section is put around both loops as indofTest/indofTrial
 !          ! are usually small and quickly to handle.
 !          !
-!          !%OMP CRITICAL
+!          !%omp critical
 !          DO IDOFE=1,indofTest
 !            DO JDOFE=1,indofTrial
 !              p_DA(Kentry(JDOFE,IDOFE,IEL)) = &
 !                  p_DA(Kentry(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
 !            END DO
 !          END DO
-!          !%OMP END CRITICAL
+!          !%omp end critical
 !
 !        END DO ! IEL
 !
 !      END IF ! rform%ballCoeffConstant
 !
 !    END DO ! IELset
-!    !%OMP END DO
+!    !%omp end do
 !    
 !    IF (.NOT. rform%ballCoeffConstant) THEN
 !      DEALLOCATE(Dcoefficients)
@@ -4001,7 +4001,7 @@ contains
 !    ! Release memory
 !    CALL domint_doneIntegration(rintSubset)
 !
-!    !%OMP END PARALLEL
+!    !%omp end parallel
 !
 !  END DO ! icurrentElementDistr
 !
@@ -4290,12 +4290,12 @@ contains
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
-    !%OMP PARALLEL PRIVATE(rintSubset, revalElementSet,&
-    !%OMP   cevaluationTag, kentry, dentry,DbasTest,DbasTrial, &
-    !%OMP   IdofsTest,IdofsTrial,p_Ddetj,&
-    !%OMP   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
-    !%OMP   p_DbasTrial, BderTrial, BderTest, IELmax,IEL, idofe,jdofe,jcol0, &
-    !%OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
+    !%omp parallel private(rintSubset, revalElementSet,&
+    !%omp   cevaluationTag, kentry, dentry,DbasTest,DbasTrial, &
+    !%omp   IdofsTest,IdofsTrial,p_Ddetj,&
+    !%omp   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
+    !%omp   p_DbasTrial, BderTrial, BderTest, IELmax,IEL, idofe,jdofe,jcol0, &
+    !%omp   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
     do IALBET = 1,rform%itermcount
@@ -4411,7 +4411,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, size(p_IelementList), BILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -4716,14 +4716,14 @@ contains
           ! The critical section is put around both loops as indofTest/indofTrial
           ! are usually small and quickly to handle.
           !
-          !%OMP CRITICAL
+          !%omp critical
           do IDOFE=1,indofTest
             do JDOFE=1,indofTrial
               p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + &
                                               Dentry(JDOFE,IDOFE)
             end do
           end do
-          !%OMP END CRITICAL
+          !%omp end critical
 
         end do ! IEL
         
@@ -4823,21 +4823,21 @@ contains
           ! The critical section is put around both loops as indofTest/indofTrial
           ! are usually small and quickly to handle.
           !
-          !%OMP CRITICAL
+          !%omp critical
           do IDOFE=1,indofTest
             do JDOFE=1,indofTrial
               p_DA(Kentry(JDOFE,IDOFE,IEL)) = &
                   p_DA(Kentry(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
             end do
           end do
-          !%OMP END CRITICAL
+          !%omp end critical
 
         end do ! IEL
 
       end if ! rform%ballCoeffConstant
 
     end do ! IELset
-    !%OMP END DO
+    !%omp end do
     
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
@@ -4852,7 +4852,7 @@ contains
     deallocate(Kentry)
     deallocate(Dentry)
 
-    !%OMP END PARALLEL
+    !%omp end parallel
 
     deallocate(p_DcubPtsRef)
     deallocate(Domega)
@@ -5392,7 +5392,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalMatrixAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
@@ -5735,7 +5735,7 @@ contains
       ! The critical section is put around both loops as indofTest/indofTrial
       ! are usually small and quickly to handle.
       !
-      !%OMP CRITICAL
+      !%omp critical
       do iel = 1,IELmax-IELset+1          
       
         do idofe = 1,indofTest
@@ -5746,7 +5746,7 @@ contains
         end do
 
       end do ! iel
-      !%OMP END CRITICAL
+      !%omp end critical
 
     end do ! IELset
     
@@ -6320,7 +6320,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
-    !%OMP do schedule(static,1)
+    !%omp do schedule(static,1)
     do IELset = 1, size(IelementList), rlocalMatrixAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
@@ -6690,7 +6690,7 @@ contains
 
       if (cconstrType .eq. BILF_MATC_LUMPED) then
 
-        !%OMP CRITICAL
+        !%omp critical
         do iel = 1,IELmax-IELset+1
           
           do idofe = 1,indofTest
@@ -6703,11 +6703,11 @@ contains
           end do
           
         end do ! iel
-        !%OMP END CRITICAL
+        !%omp end critical
 
       else
         
-        !%OMP CRITICAL
+        !%omp critical
         do iel = 1,IELmax-IELset+1
           
           do idofe = 1,indofTest
@@ -6718,7 +6718,7 @@ contains
           end do
           
         end do ! iel
-        !%OMP END CRITICAL
+        !%omp end critical
 
       end if
 
