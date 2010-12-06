@@ -892,7 +892,7 @@ contains
       ! input/output parameters
       type(t_array), dimension(:,:), intent(inout) :: K
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DcoefficientsAtNode
@@ -907,12 +907,18 @@ contains
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
 
+      !$omp parallel default(shared) &
+      !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
+      !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
+      !$omp         iedge,ii,ij,ivar,ji,jj)
+
       ! Allocate temporal memory
       allocate(IverticesAtNode(2,GFSYS_NEQSIM))
       allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
       allocate(DcoefficientsAtNode(NVAR,1,GFSYS_NEQSIM))
 
       ! Loop over the equations
+      !$omp do schedule(static,1)
       do IEQset = 1, NEQ, GFSYS_NEQSIM
 
         ! We always handle GFSYS_NEQSIM equations simultaneously.
@@ -947,6 +953,7 @@ contains
         
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
+        !$omp critical(MATRIX)
         do idx = 1, IEQmax-IEQset+1
 
           ! Get position of diagonal entry
@@ -957,8 +964,10 @@ contains
             K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)+&
                 DcoefficientsAtNode(ivar,1,idx)
           end do
-        end do       
+        end do
+        !$omp end critical(MATRIX)
       end do
+      !$omp end do nowait
       
       ! Deallocate temporal memory
       deallocate(IverticesAtNode)
@@ -974,6 +983,7 @@ contains
       allocate(DcoefficientsAtEdge(NVAR,3,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -1004,6 +1014,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global matrix
+        !$omp critical(MATRIX)
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -1029,11 +1040,14 @@ contains
                 DcoefficientsAtEdge(ivar,3,idx) + DcoefficientsAtEdge(ivar,1,idx) 
           end do
         end do
+        !$omp end critical(MATRIX)
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DcoefficientsAtEdge)
+      !$omp end parallel
 
     end subroutine doOperatorMat79Diag
 
@@ -1057,7 +1071,7 @@ contains
       ! input/output parameters
       type(t_array), dimension(:,:), intent(inout) :: K
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DcoefficientsAtNode
@@ -1072,12 +1086,18 @@ contains
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
 
+      !$omp parallel default(shared) &
+      !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
+      !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
+      !$omp         iedge,ii,ij,ijpos,ivar,jvar,ji,jj)
+
       ! Allocate temporal memory
       allocate(IverticesAtNode(2,GFSYS_NEQSIM))
       allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
       allocate(DcoefficientsAtNode(NVAR*NVAR,1,GFSYS_NEQSIM))
 
       ! Loop over the equations
+      !$omp do schedule(static,1)
       do IEQset = 1, NEQ, GFSYS_NEQSIM
 
         ! We always handle GFSYS_NEQSIM equations simultaneously.
@@ -1112,6 +1132,7 @@ contains
 
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
+        !$omp critical(MATRIX)
         do idx = 1, IEQmax-IEQset+1
 
           ! Get position of diagonal entry
@@ -1126,7 +1147,9 @@ contains
             end do
           end do
         end do
+        !$omp end critical(MATRIX)
       end do
+      !$omp end do nowait
 
       ! Deallocate temporal memory
       deallocate(IverticesAtNode)
@@ -1142,6 +1165,7 @@ contains
       allocate(DcoefficientsAtEdge(NVAR*NVAR,3,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -1172,6 +1196,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and prepare the auxiliary arrays
+        !$omp critical(MATRIX)
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -1200,11 +1225,14 @@ contains
             end do
           end do
         end do
+        !$omp end critical(MATRIX)
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DcoefficientsAtEdge)
+      !$omp end parallel
 
     end subroutine doOperatorMat79
 
@@ -1369,7 +1397,7 @@ contains
       ! input/output parameters
       real(DP), dimension(MVAR,NA), intent(inout) :: K
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DcoefficientsAtNode
@@ -1384,12 +1412,18 @@ contains
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
 
+      !$omp parallel default(shared) &
+      !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
+      !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
+      !$omp         iedge,ii,ij,ji,jj)
+
       ! Allocate temporal memory
       allocate(IverticesAtNode(2,GFSYS_NEQSIM))
       allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
       allocate(DcoefficientsAtNode(MVAR,1,GFSYS_NEQSIM))
 
       ! Loop over the equations
+      !$omp do schedule(static,1)
       do IEQset = 1, NEQ, GFSYS_NEQSIM
 
         ! We always handle GFSYS_NEQSIM equations simultaneously.
@@ -1424,6 +1458,7 @@ contains
 
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
+        !$omp critical(MATRIX)
         do idx = 1, IEQmax-IEQset+1
 
           ! Get position of diagonal entry
@@ -1432,7 +1467,9 @@ contains
           ! Update the diagonal coefficient
           K(:,ii) = K(:,ii) + DcoefficientsAtNode(:,1,idx)
         end do
+        !$omp end critical(MATRIX)
       end do
+      !$omp end do nowait
 
       ! Deallocate temporal memory
       deallocate(IverticesAtNode)
@@ -1448,6 +1485,7 @@ contains
       allocate(DcoefficientsAtEdge(MVAR,3,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -1478,6 +1516,7 @@ contains
         
         ! Loop through all edges in the current set
         ! and prepare the auxiliary arrays
+        !$omp critical(MATRIX)
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -1497,11 +1536,14 @@ contains
           K(:,ij) = K(:,ij) + DcoefficientsAtEdge(:,2,idx) + DcoefficientsAtEdge(:,1,idx) 
           K(:,ji) = K(:,ji) + DcoefficientsAtEdge(:,3,idx) + DcoefficientsAtEdge(:,1,idx) 
         end do
+        !$omp end critical(MATRIX)
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DcoefficientsAtEdge)
+      !$omp end parallel
       
     end subroutine doOperatorMat79
 
@@ -1609,7 +1651,7 @@ contains
       ! input/output parameters
       real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DfluxesAtEdge
       
@@ -1617,11 +1659,15 @@ contains
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
 
 
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,j)
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,2,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -1652,6 +1698,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -1665,11 +1712,14 @@ contains
           Dy(i,:) = Dy(i,:)+DfluxesAtEdge(:,1,idx)
           Dy(j,:) = Dy(j,:)+DfluxesAtEdge(:,2,idx)
         end do
+        !$omp end critical
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DfluxesAtEdge)
+      !$omp end parallel
       
     end subroutine doDivVector
     
@@ -1770,19 +1820,22 @@ contains
       ! input/output parameters
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DfluxesAtEdge
       
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
 
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,j)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,2,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -1813,6 +1866,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -1826,11 +1880,14 @@ contains
           Dy(:,i) = Dy(:,i)+DfluxesAtEdge(:,1,idx)
           Dy(:,j) = Dy(:,j)+DfluxesAtEdge(:,2,idx)
         end do
+        !$omp end critical
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DfluxesAtEdge)
+      !$omp end parallel
       
     end subroutine doDivVector
 
@@ -2007,7 +2064,7 @@ contains
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
@@ -2017,6 +2074,10 @@ contains
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
       
+      !$omp parallel default(shared) &
+      !$omp private(DcharVariablesAtEdge,DdataAtEdge,DeigenvaluesAtEdge,&
+      !$omp         DfluxesAtEdge,DmatrixCoeffsAtEdge,DrighteigenvectorsAtEdge,&
+      !$omp         IEDGEmax,i,idx,iedge,j)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
@@ -2026,12 +2087,15 @@ contains
       allocate(DeigenvaluesAtEdge(NVAR,GFSYS_NEDGESIM))
 
       ! Clear P's and Q's (X-direction)
+      !$omp single
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -2068,6 +2132,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical(FLUXES)
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -2081,6 +2146,7 @@ contains
           Dy(i,:) = Dy(i,:)+DfluxesAtEdge(:,1,idx)
           Dy(j,:) = Dy(j,:)+DfluxesAtEdge(:,2,idx)
         end do
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (X-direction)
@@ -2096,13 +2162,16 @@ contains
 
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(1, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
 
       ! Deallocate some temporal memory
       deallocate(DfluxesAtEdge)
@@ -2111,13 +2180,16 @@ contains
       ! Compute nodal correction factors (X-direction)
       !-------------------------------------------------------------------------
 
+      !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
       Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      !$omp end single
       
       ! Allocate some temporal memory
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -2155,13 +2227,16 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -2169,6 +2244,7 @@ contains
       deallocate(DcharVariablesAtEdge)
       deallocate(DeigenvaluesAtEdge)
       deallocate(DrighteigenvectorsAtEdge)
+      !$omp end parallel
 
     end subroutine doLimitTVDMat79_1D
 
@@ -2193,7 +2269,7 @@ contains
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
@@ -2203,7 +2279,11 @@ contains
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
 
-      
+      !$omp parallel default(shared) &
+      !$omp private(DcharVariablesAtEdge,DdataAtEdge,DeigenvaluesAtEdge,&
+      !$omp         DfluxesAtEdge,DmatrixCoeffsAtEdge,DrighteigenvectorsAtEdge,&
+      !$omp         IEDGEmax,i,idx,iedge,j)
+   
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DmatrixCoeffsAtEdge(2,2,GFSYS_NEDGESIM))
@@ -2212,12 +2292,15 @@ contains
       allocate(DeigenvaluesAtEdge(NVAR,GFSYS_NEDGESIM))
 
       ! Clear P's and Q's (X-direction)
+      !$omp single
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -2256,6 +2339,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical(FLUXES)
         do idx = 1, IEDGEmax-IEDGEset+1
           
           ! Get actual edge number
@@ -2269,6 +2353,7 @@ contains
           Dy(i,:) = Dy(i,:)+DfluxesAtEdge(:,1,idx)
           Dy(j,:) = Dy(j,:)+DfluxesAtEdge(:,2,idx)
         end do
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (X-direction)
@@ -2284,13 +2369,16 @@ contains
 
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(1, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
       
       ! Deallocate some temporal memory
       deallocate(DfluxesAtEdge)
@@ -2299,19 +2387,22 @@ contains
       ! Compute nodal correction factors (X-direction)
       !-------------------------------------------------------------------------
       
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
-
       ! Allocate some temporal memory
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,GFSYS_NEDGESIM))
+      
+      !$omp single
+      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's (Y-direction)
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
       
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -2351,12 +2442,14 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (Y-direction)
@@ -2372,22 +2465,27 @@ contains
 
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(2, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
 
       !-------------------------------------------------------------------------
       ! Compute nodal correction factors (Y-direction)
       !-------------------------------------------------------------------------
 
+      !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
       Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      !$omp end single
       
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -2427,13 +2525,16 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(2, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
       end do
+      !$omp end do
       
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -2441,6 +2542,7 @@ contains
       deallocate(DcharVariablesAtEdge)
       deallocate(DeigenvaluesAtEdge)
       deallocate(DrighteigenvectorsAtEdge)
+      !$omp end parallel
 
     end subroutine doLimitTVDMat79_2D
 
@@ -2461,11 +2563,11 @@ contains
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
-      !input/output parameters
+      ! input/output parameters
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
@@ -2475,6 +2577,10 @@ contains
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
 
+      !$omp parallel default(shared) &
+      !$omp private(DcharVariablesAtEdge,DdataAtEdge,DeigenvaluesAtEdge,&
+      !$omp         DfluxesAtEdge,DmatrixCoeffsAtEdge,DrighteigenvectorsAtEdge,&
+      !$omp         IEDGEmax,i,idx,iedge,j)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
@@ -2484,12 +2590,15 @@ contains
       allocate(DeigenvaluesAtEdge(NVAR,GFSYS_NEDGESIM))
       
       ! Clear P's and Q's (X-direction)
+      !$omp single
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -2530,6 +2639,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical(FLUXES)
         do idx = 1, IEDGEmax-IEDGEset+1
           
           ! Get actual edge number
@@ -2543,6 +2653,7 @@ contains
           Dy(i,:) = Dy(i,:)+DfluxesAtEdge(:,1,idx)
           Dy(j,:) = Dy(j,:)+DfluxesAtEdge(:,2,idx)
         end do
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (X-direction)
@@ -2558,13 +2669,16 @@ contains
 
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(1, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
       
       ! Deallocate some temporal memory
       deallocate(DfluxesAtEdge)
@@ -2573,19 +2687,22 @@ contains
       ! Compute nodal correction factors (X-direction)
       !-------------------------------------------------------------------------
       
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
-
       ! Allocate some temporal memory
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,GFSYS_NEDGESIM))
+
+      !$omp single
+      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's (Y-direction)
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -2627,12 +2744,14 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (Y-direction)
@@ -2648,18 +2767,22 @@ contains
 
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(2, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
 
       !-------------------------------------------------------------------------
       ! Compute nodal correction factors (Y-direction)
       !-------------------------------------------------------------------------
 
+      !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
       Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
 
@@ -2668,8 +2791,10 @@ contains
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -2711,12 +2836,14 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(2, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (Z-direction)
@@ -2732,22 +2859,28 @@ contains
         
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(3, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
 
       !-------------------------------------------------------------------------
       ! Compute nodal correction factors (Z-direction)
       !-------------------------------------------------------------------------
 
+      !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
       Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      !$omp end single
       
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -2789,13 +2922,16 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(3, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -2803,6 +2939,7 @@ contains
       deallocate(DcharVariablesAtEdge)
       deallocate(DeigenvaluesAtEdge)
       deallocate(DrighteigenvectorsAtEdge)
+      !$omp end parallel
 
     end subroutine doLimitTVDMat79_3D
 
@@ -3107,7 +3244,7 @@ contains
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
@@ -3117,6 +3254,10 @@ contains
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
       
+      !$omp parallel default(shared) &
+      !$omp private(DcharVariablesAtEdge,DdataAtEdge,DeigenvaluesAtEdge,&
+      !$omp         DfluxesAtEdge,DmatrixCoeffsAtEdge,DrighteigenvectorsAtEdge,&
+      !$omp         IEDGEmax,i,idx,iedge,j)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
@@ -3126,12 +3267,15 @@ contains
       allocate(DeigenvaluesAtEdge(NVAR,GFSYS_NEDGESIM))
       
       ! Clear P's and Q's (X-direction)
+      !$omp single
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -3168,6 +3312,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical(FLUXES)
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -3181,6 +3326,7 @@ contains
           Dy(:,i) = Dy(:,i)+DfluxesAtEdge(:,1,idx)
           Dy(:,j) = Dy(:,j)+DfluxesAtEdge(:,2,idx)
         end do
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (X-direction)
@@ -3196,13 +3342,16 @@ contains
 
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(1, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
       
       ! Deallocate some temporal memory
       deallocate(DfluxesAtEdge)
@@ -3211,13 +3360,16 @@ contains
       ! Compute nodal correction factors (X-direction)
       !-------------------------------------------------------------------------
 
+      !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
       Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      !$omp end single
       
       ! Allocate some temporal memory
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -3255,13 +3407,16 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -3269,6 +3424,7 @@ contains
       deallocate(DcharVariablesAtEdge)
       deallocate(DeigenvaluesAtEdge)
       deallocate(DrighteigenvectorsAtEdge)
+      !$omp end parallel
 
     end subroutine doLimitTVDMat79_1D
 
@@ -3293,7 +3449,7 @@ contains
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
@@ -3303,6 +3459,10 @@ contains
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
 
+      !$omp parallel default(shared) &
+      !$omp private(DcharVariablesAtEdge,DdataAtEdge,DeigenvaluesAtEdge,&
+      !$omp         DfluxesAtEdge,DmatrixCoeffsAtEdge,DrighteigenvectorsAtEdge,&
+      !$omp         IEDGEmax,i,idx,iedge,j)
       
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
@@ -3312,12 +3472,15 @@ contains
       allocate(DeigenvaluesAtEdge(NVAR,GFSYS_NEDGESIM))
 
       ! Clear P's and Q's (X-direction)
+      !$omp single
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -3356,6 +3519,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical(FLUXES)
         do idx = 1, IEDGEmax-IEDGEset+1
           
           ! Get actual edge number
@@ -3369,6 +3533,7 @@ contains
           Dy(:,i) = Dy(:,i)+DfluxesAtEdge(:,1,idx)
           Dy(:,j) = Dy(:,j)+DfluxesAtEdge(:,2,idx)
         end do
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (X-direction)
@@ -3384,13 +3549,16 @@ contains
 
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(1, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
       
       ! Deallocate some temporal memory
       deallocate(DfluxesAtEdge)
@@ -3399,19 +3567,22 @@ contains
       ! Compute nodal correction factors (X-direction)
       !-------------------------------------------------------------------------
       
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
-
       ! Allocate some temporal memory
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,GFSYS_NEDGESIM))
+
+      !$omp single
+      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's (Y-direction)
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
       
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -3451,12 +3622,14 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (Y-direction)
@@ -3472,22 +3645,28 @@ contains
 
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(2, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
 
       !-------------------------------------------------------------------------
       ! Compute nodal correction factors (Y-direction)
       !-------------------------------------------------------------------------
 
+      !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
       Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      !$omp end single
       
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -3527,13 +3706,16 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(2, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
       end do
+      !$omp end do
       
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -3541,6 +3723,7 @@ contains
       deallocate(DcharVariablesAtEdge)
       deallocate(DeigenvaluesAtEdge)
       deallocate(DrighteigenvectorsAtEdge)
+      !$omp end parallel
 
     end subroutine doLimitTVDMat79_2D
 
@@ -3565,7 +3748,7 @@ contains
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
@@ -3575,6 +3758,10 @@ contains
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
 
+      !$omp parallel default(shared) &
+      !$omp private(DcharVariablesAtEdge,DdataAtEdge,DeigenvaluesAtEdge,&
+      !$omp         DfluxesAtEdge,DmatrixCoeffsAtEdge,DrighteigenvectorsAtEdge,&
+      !$omp         IEDGEmax,i,idx,iedge,j)
       
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
@@ -3584,12 +3771,15 @@ contains
       allocate(DeigenvaluesAtEdge(NVAR,GFSYS_NEDGESIM))
       
       ! Clear P's and Q's (X-direction)
+      !$omp single
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -3630,6 +3820,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical(FLUXES)
         do idx = 1, IEDGEmax-IEDGEset+1
           
           ! Get actual edge number
@@ -3643,6 +3834,7 @@ contains
           Dy(:,i) = Dy(:,i)+DfluxesAtEdge(:,1,idx)
           Dy(:,j) = Dy(:,j)+DfluxesAtEdge(:,2,idx)
         end do
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (X-direction)
@@ -3658,13 +3850,16 @@ contains
 
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(1, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
       
       ! Deallocate some temporal memory
       deallocate(DfluxesAtEdge)
@@ -3673,19 +3868,22 @@ contains
       ! Compute nodal correction factors (X-direction)
       !-------------------------------------------------------------------------
       
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
-
       ! Allocate some temporal memory
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,GFSYS_NEDGESIM))
+
+      !$omp single
+      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's (Y-direction)
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -3727,12 +3925,14 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (Y-direction)
@@ -3748,18 +3948,22 @@ contains
 
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(2, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
 
       !-------------------------------------------------------------------------
       ! Compute nodal correction factors (Y-direction)
       !-------------------------------------------------------------------------
 
+      !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
       Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
 
@@ -3768,8 +3972,10 @@ contains
       call lalg_clearVector(Dpm)
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
+      !$omp end single
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -3811,12 +4017,14 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(2, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
 
         !-----------------------------------------------------------------------
         ! Assemble artificial viscosities and antidiffusive fluxes (Z-direction)
@@ -3832,22 +4040,28 @@ contains
         
         ! Assemble the upper and lower bounds Q and the sums of
         ! antidiffusive contributions P for the set of edges
+        !$omp critical(BOUNDS)
         call doBoundsAndIncrements_sim(3, NVAR,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
             Dpp, Dpm, Dqp, Dqm)
+        !$omp end critical(BOUNDS)
       end do
+      !$omp end do
 
       !-------------------------------------------------------------------------
       ! Compute nodal correction factors (Z-direction)
       !-------------------------------------------------------------------------
 
+      !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
       Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      !$omp end single
       
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -3889,13 +4103,16 @@ contains
             rcollection=rcollection)
 
         ! Apply limited characteristic fluxes to global vector
+        !$omp critical(FLUXES)
         call doLimitADFluxes_sim(3, NVAR, dscale, Drp, Drm,&
             DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax), Dy)
+        !$omp end critical(FLUXES)
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -3903,6 +4120,7 @@ contains
       deallocate(DcharVariablesAtEdge)
       deallocate(DeigenvaluesAtEdge)
       deallocate(DrighteigenvectorsAtEdge)
+      !$omp end parallel
       
     end subroutine doLimitTVDMat79_3D
 
@@ -4569,7 +4787,7 @@ contains
       ! input/output parameters
       real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dpp,Dpm
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
@@ -4578,16 +4796,21 @@ contains
       integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
 
+      ! Clear P`s
+      call lalg_clearVector(Dpp)
+      call lalg_clearVector(Dpm)
+
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DfluxesAtEdge,DtransformedFluxesAtEdge,&
+      !$omp         IEDGEmax,i,idx,iedge,j)
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,GFSYS_NEDGESIM))
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
-      ! Clear P`s
-      call lalg_clearVector(Dpp)
-      call lalg_clearVector(Dpm)
-
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -4619,6 +4842,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vectors
+        !$omp critical
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -4634,12 +4858,15 @@ contains
           Dpm(:,i) = Dpm(:,i)+min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
           Dpm(:,j) = Dpm(:,j)+min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
         end do
+        !$omp end critical
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DfluxesAtEdge)
       deallocate(DtransformedFluxesAtEdge)
+      !$omp end parallel
 
     end subroutine doADIncrementsTransformed
 
@@ -4717,7 +4944,7 @@ contains
       real(DP), dimension(:), intent(inout) :: Dalpha
       real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dpp,Dpm
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
@@ -4729,17 +4956,23 @@ contains
       integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
 
+      ! Clear P`s
+      call lalg_clearVector(Dpp)
+      call lalg_clearVector(Dpm)
+
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DfluxesAtEdge,DtransformedFluxesAtEdge,&
+      !$omp         DtransformedPrelFluxesAtEdge,F_ij,F_ji,IEDGEmax,&
+      !$omp         alpha_ij,alpha_ji,i,idx,iedge,j)
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,GFSYS_NEDGESIM))
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
       allocate(DtransformedPrelFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
-      ! Clear P`s
-      call lalg_clearVector(Dpp)
-      call lalg_clearVector(Dpm)
-
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -4779,6 +5012,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -4809,13 +5043,16 @@ contains
           Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
           Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
         end do
+        !$omp end critical
       end do
+      !$omp end do
       
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DfluxesAtEdge)
       deallocate(DtransformedFluxesAtEdge)
       deallocate(DtransformedPrelFluxesAtEdge)
+      !$omp end parallel
 
     end subroutine doPreADIncrementsTransformed
 
@@ -4877,23 +5114,27 @@ contains
       ! input/output parameters
       real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dqp,Dqm
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:), pointer :: DtransformedDataAtEdge
 
       ! local variables
       integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
       
-
-      ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
-      allocate(DtransformedDataAtEdge(NVARtransformed,GFSYS_NEDGESIM))
       
       ! Clear Q`s
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
 
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DtransformedDataAtEdge,idx,IEDGEmax,i,j,iedge)
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DtransformedDataAtEdge(NVARtransformed,GFSYS_NEDGESIM))
+      
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -4923,6 +5164,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -4938,11 +5180,14 @@ contains
           Dqm(:,i) = min(Dqm(:,i), DtransformedDataAtEdge(:,idx))
           Dqm(:,j) = min(Dqm(:,j),-DtransformedDataAtEdge(:,idx))
         end do
+        !$omp end critical
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DtransformedDataAtEdge)
+      !$omp end parallel
 
     end subroutine doBoundsTransformed
 
@@ -5098,7 +5343,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
 
@@ -5107,11 +5352,16 @@ contains
       integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
 
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DtransformedFluxesAtEdge,&
+      !$omp         IEDGEmax,R_ij,R_ji,i,idx,iedge,j)
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -5180,10 +5430,12 @@ contains
           Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
         end do
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DtransformedFluxesAtEdge)
+      !$omp end parallel
      
     end subroutine doLimitEdgewiseTransformed
 
@@ -5256,7 +5508,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxes1AtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxes2AtEdge
@@ -5266,12 +5518,17 @@ contains
       integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
 
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DtransformedFluxes1AtEdge,&
+      !$omp         DtransformedFluxes2AtEdge,IEDGEmax,R_ij,R_ji,i,idx,iedge,j)
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DtransformedFluxes1AtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
       allocate(DtransformedFluxes2AtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
       
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -5343,11 +5600,13 @@ contains
           Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
         end do
       end do
+      !$omp end do
       
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DtransformedFluxes1AtEdge)
       deallocate(DtransformedFluxes2AtEdge)
+      !$omp end parallel
       
     end subroutine doLimitEdgewiseConstrainedTransformed
 
@@ -5984,7 +6243,7 @@ contains
       ! input/output parameters
       real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dpp,Dpm
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
@@ -5992,17 +6251,22 @@ contains
       ! local variables
       integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
+      
+      ! Clear P`s
+      call lalg_clearVector(Dpp)
+      call lalg_clearVector(Dpm)
+
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DfluxesAtEdge,DtransformedFluxesAtEdge,&
+      !$omp         IEDGEmax,i,idx,iedge,j)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,GFSYS_NEDGESIM))
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
-      ! Clear P`s
-      call lalg_clearVector(Dpp)
-      call lalg_clearVector(Dpm)
-
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -6034,6 +6298,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vectors
+        !$omp critical
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -6049,12 +6314,15 @@ contains
           Dpm(:,i) = Dpm(:,i)+min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
           Dpm(:,j) = Dpm(:,j)+min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
         end do
+        !$omp end critical
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DfluxesAtEdge)
       deallocate(DtransformedFluxesAtEdge)
+      !$omp end parallel
 
     end subroutine doADIncrementsTransformed
 
@@ -6132,7 +6400,7 @@ contains
       real(DP), dimension(:), intent(inout) :: Dalpha
       real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dpp,Dpm
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
@@ -6144,17 +6412,23 @@ contains
       integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
 
+      ! Clear P`s
+      call lalg_clearVector(Dpp)
+      call lalg_clearVector(Dpm)
+
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DfluxesAtEdge,DtransformedFluxesAtEdge,&
+      !$omp         DtransformedPrelFluxesAtEdge,F_ij,F_ji,IEDGEmax,&
+      !$omp         alpha_ij,alpha_ji,i,idx,iedge,j)
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,GFSYS_NEDGESIM))
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
       allocate(DtransformedPrelFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
-      ! Clear P`s
-      call lalg_clearVector(Dpp)
-      call lalg_clearVector(Dpm)
-
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -6194,6 +6468,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -6224,13 +6499,16 @@ contains
           Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
           Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
         end do
+        !$omp end critical
       end do
+      !$omp end do
       
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DfluxesAtEdge)
       deallocate(DtransformedFluxesAtEdge)
       deallocate(DtransformedPrelFluxesAtEdge)
+      !$omp end parallel
 
     end subroutine doPreADIncrementsTransformed
     
@@ -6292,7 +6570,7 @@ contains
       ! input/output parameters
       real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dqp,Dqm
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:), pointer :: DtransformedDataAtEdge
 
@@ -6300,15 +6578,19 @@ contains
       integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
       
 
-      ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
-      allocate(DtransformedDataAtEdge(NVARtransformed,GFSYS_NEDGESIM))
-      
       ! Clear Q`s
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
 
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DtransformedDataAtEdge,idx,IEDGEmax,i,j,iedge)
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DtransformedDataAtEdge(NVARtransformed,GFSYS_NEDGESIM))
+   
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -6338,6 +6620,7 @@ contains
 
         ! Loop through all edges in the current set
         ! and scatter the entries to the global vector
+        !$omp critical
         do idx = 1, IEDGEmax-IEDGEset+1
 
           ! Get actual edge number
@@ -6353,11 +6636,14 @@ contains
           Dqm(:,i) = min(Dqm(:,i), DtransformedDataAtEdge(:,idx))
           Dqm(:,j) = min(Dqm(:,j),-DtransformedDataAtEdge(:,idx))
         end do
+        !$omp end critical
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DtransformedDataAtEdge)
+      !$omp end parallel
 
     end subroutine doBoundsTransformed
 
@@ -6513,7 +6799,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
 
@@ -6522,11 +6808,16 @@ contains
       integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
 
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DtransformedFluxesAtEdge,&
+      !$omp         IEDGEmax,R_ij,R_ji,i,idx,iedge,j)
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -6595,10 +6886,12 @@ contains
           Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
         end do
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DtransformedFluxesAtEdge)
+      !$omp end parallel
       
     end subroutine doLimitEdgewiseTransformed
 
@@ -6672,7 +6965,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxes1AtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxes2AtEdge
@@ -6682,12 +6975,17 @@ contains
       integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
 
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,DtransformedFluxes1AtEdge,&
+      !$omp         DtransformedFluxes2AtEdge,IEDGEmax,R_ij,R_ji,i,idx,iedge,j)
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DtransformedFluxes1AtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
       allocate(DtransformedFluxes2AtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
       
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -6759,11 +7057,13 @@ contains
           Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
         end do
       end do
+      !$omp end do
       
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DtransformedFluxes1AtEdge)
       deallocate(DtransformedFluxes2AtEdge)
+      !$omp end parallel
       
     end subroutine doLimitEdgewiseConstrainedTransformed
 
@@ -7186,17 +7486,21 @@ contains
 
       real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
 
+      
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,i,j,idx,iedge,IEDGEmax)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -7225,20 +7529,18 @@ contains
             IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
             Dflux(:,IEDGEset:IEDGEmax), rcollection)
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
+      !$omp end parallel
 
     end subroutine doFluxes
 
     !**************************************************************
     ! Assemble raw antidiffusive mass fluxes
 
-#ifndef USE_OPENMP
-    pure &
-#endif
-
-    subroutine doMassFluxes(IverticesAtEdge, NEDGE, NEQ, NVAR,&
+    pure subroutine doMassFluxes(IverticesAtEdge, NEDGE, NEQ, NVAR,&
         DmatrixData, Dx, dscale, Dflux)
       
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
@@ -7269,11 +7571,7 @@ contains
     !**************************************************************
     ! Combine two fluxes: flux2 := flux2+dscale*alpha*flux2
 
-#ifndef USE_OPENMP
-    pure &
-#endif
-
-    subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
+    pure subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1
       real(DP), dimension(:), intent(in) :: Dalpha
@@ -7621,17 +7919,21 @@ contains
 
       real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
 
 
+      !$omp parallel default(shared) &
+      !$omp private(DdataAtEdge,i,j,idx,iedge,IEDGEmax)
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
 
       ! Loop over the edges
+      !$omp do schedule(static,1)
       do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
         ! We always handle GFSYS_NEDGESIM edges simultaneously.
@@ -7660,20 +7962,18 @@ contains
             IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
             Dflux(:,IEDGEset:IEDGEmax), rcollection)
       end do
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
+      !$omp end parallel
 
     end subroutine doFluxes
 
     !**************************************************************
     ! Assemble raw antidiffusive mass fluxes
 
-#ifndef USE_OPENMP
-    pure &
-#endif
-
-    subroutine doMassFluxes(IverticesAtEdge, NEDGE, NEQ, NVAR,&
+    pure subroutine doMassFluxes(IverticesAtEdge, NEDGE, NEQ, NVAR,&
         DmatrixData, Dx,dscale, Dflux)
 
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
@@ -7704,11 +8004,7 @@ contains
     !**************************************************************
     ! Combine two fluxes: flux2 := flux2+dscale*alpha*flux2
 
-#ifndef USE_OPENMP
-    pure &
-#endif
-
-    subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
+    pure subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1
       real(DP), dimension(:), intent(in) :: Dalpha
