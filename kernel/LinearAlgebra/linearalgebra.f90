@@ -688,21 +688,17 @@ contains
 
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Qx)
         Qy(i) = Qx(i)
       end do
-      !$omp end parallel do
       
       !call QCOPY(size(Qx),Qx,1,Qy,1)
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Qy(i) = Qx(i)
       end do
-      !$omp end parallel do
       
       !call QCOPY(n,Qx,1,Qy,1)
 
@@ -742,19 +738,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Fx)
         Dy(i) = real(Fx(i),DP)
       end do
-      !$omp end parallel do
     
     else
 
-      !$omp parallel do
       do i = 1, n
         Dy(i) = real(Fx(i),DP)
       end do
-      !$omp end parallel do
     
     end if
 
@@ -792,19 +784,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Fx)
         Qy(i) = real(Fx(i),QP)
       end do
-      !$omp end parallel do
     
     else
 
-      !$omp parallel do
       do i = 1, n
         Qy(i) = real(Fx(i),QP)
       end do
-      !$omp end parallel do
     
     end if
 
@@ -842,19 +830,15 @@ contains
   
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Dx)
         Fy(i) = real(Dx(i),SP)
       end do
-      !$omp end parallel do
 
     else
     
-      !$omp parallel do
       do i = 1, n
         Fy(i) = real(Dx(i),SP)
       end do
-      !$omp end parallel do
 
     end if  
 
@@ -892,19 +876,15 @@ contains
   
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Dx)
         Qy(i) = real(Dx(i),QP)
       end do
-      !$omp end parallel do
 
     else
     
-      !$omp parallel do
       do i = 1, n
         Qy(i) = real(Dx(i),QP)
       end do
-      !$omp end parallel do
 
     end if  
 
@@ -942,19 +922,15 @@ contains
   
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Qx)
         Fy(i) = real(Qx(i),SP)
       end do
-      !$omp end parallel do
 
     else
     
-      !$omp parallel do
       do i = 1, n
         Fy(i) = real(Qx(i),SP)
       end do
-      !$omp end parallel do
 
     end if  
 
@@ -992,19 +968,15 @@ contains
   
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Qx)
         Dy(i) = real(Qx(i),DP)
       end do
-      !$omp end parallel do
 
     else
     
-      !$omp parallel do
       do i = 1, n
         Dy(i) = real(Qx(i),DP)
       end do
-      !$omp end parallel do
 
     end if  
 
@@ -1043,19 +1015,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = Ix(i)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1094,19 +1062,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1145,19 +1109,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1196,19 +1156,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1247,19 +1203,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = Ix(i)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1298,19 +1250,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1349,19 +1297,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1400,19 +1344,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1451,19 +1391,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = Ix(i)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1502,19 +1438,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1553,19 +1485,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1604,19 +1532,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1655,19 +1579,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = Ix(i)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1706,19 +1626,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1757,19 +1673,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1808,19 +1720,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
-      !$omp end parallel do
       
     else
 
-      !$omp parallel do
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
-      !$omp end parallel do
       
     end if
 
@@ -1858,19 +1766,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Lx)
         Ly(i) = Lx(i)
       end do
-      !$omp end parallel do
     
     else
 
-      !$omp parallel do
       do i = 1, n
         Ly(i) = Lx(i)
       end do
-      !$omp end parallel do
     
     end if
 
@@ -1908,19 +1812,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Sx)
         Sy(i) = Sx(i)
       end do
-      !$omp end parallel do
     
     else
 
-      !$omp parallel do
       do i = 1, n
         Sy(i) = Sx(i)
       end do
-      !$omp end parallel do
     
     end if
 
@@ -2033,25 +1933,21 @@ contains
 
     if (present(n) .and. present(m)) then
     
-      !$omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Qy(i,j) = Qx(i,j)
         end do
       end do
-      !$omp end parallel do
       
       !call QCOPY(n*m,Qx,1,Qy,1)
       
     else
 
-      !$omp parallel do private(i)
       do j = 1, size(Qx,2)
         do i = 1, size(Qx,1)
           Qy(i,j) = Qx(i,j)
         end do
       end do
-      !$omp end parallel do
 
       !call QCOPY(size(Qx,1)*size(Qx,2),Qx,1,Qy,1)
       
@@ -2091,23 +1987,19 @@ contains
   
     if (present(n) .and. present(m)) then
 
-      !$omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Dy(i,j) = real(Fx(i,j),DP)
         end do
       end do
-     !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i)
       do j = 1, size(Fx,2)
         do i = 1, size(Fx,1)
           Dy(i,j) = real(Fx(i,j),DP)
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -2145,23 +2037,19 @@ contains
   
     if (present(n) .and. present(m)) then
 
-      !$omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Qy(i,j) = real(Fx(i,j),QP)
         end do
       end do
-     !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i)
       do j = 1, size(Fx,2)
         do i = 1, size(Fx,1)
           Qy(i,j) = real(Fx(i,j),QP)
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -2199,23 +2087,19 @@ contains
   
     if (present(n) .and. present(m)) then
 
-      !$omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Fy(i,j) = real(Dx(i,j),SP)
         end do
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i)
       do j = 1, size(Dx,2)
         do i = 1, size(Dx,1)
           Fy(i,j) = real(Dx(i,j),SP)
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -2253,23 +2137,19 @@ contains
   
     if (present(n) .and. present(m)) then
 
-      !$omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Qy(i,j) = real(Dx(i,j),QP)
         end do
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i)
       do j = 1, size(Dx,2)
         do i = 1, size(Dx,1)
           Qy(i,j) = real(Dx(i,j),QP)
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -2307,23 +2187,19 @@ contains
   
     if (present(n) .and. present(m)) then
 
-      !$omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Fy(i,j) = real(Qx(i,j),SP)
         end do
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i)
       do j = 1, size(Qx,2)
         do i = 1, size(Qx,1)
           Fy(i,j) = real(Qx(i,j),SP)
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -2361,23 +2237,19 @@ contains
   
     if (present(n) .and. present(m)) then
 
-      !$omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Dy(i,j) = real(Qx(i,j),DP)
         end do
       end do
-     !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i)
       do j = 1, size(Qx,2)
         do i = 1, size(Qx,1)
           Dy(i,j) = real(Qx(i,j),DP)
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -2416,23 +2288,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = Ix(i,j)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = Ix(i,j)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -2471,23 +2339,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I16)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I16)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -2526,23 +2390,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I32)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I32)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -2581,23 +2441,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I64)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I64)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -2636,23 +2492,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = Ix(i,j)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = Ix(i,j)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -2691,23 +2543,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I8)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I8)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -2746,23 +2594,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I32)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I32)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -2801,23 +2645,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I64)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I64)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -2856,23 +2696,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = Ix(i,j)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = Ix(i,j)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -2911,23 +2747,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I8)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I8)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -2966,23 +2798,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I16)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I16)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -3021,23 +2849,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I64)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I64)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -3076,23 +2900,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = Ix(i,j)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = Ix(i,j)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -3131,23 +2951,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I8)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I8)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -3186,23 +3002,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I16)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I16)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -3241,23 +3053,19 @@ contains
   
     if(present(m) .and. present(n)) then
     
-      !%omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I32)
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I32)
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -3296,23 +3104,19 @@ contains
   
     if (present(n) .and. present(m)) then
 
-      !$omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Ly(i,j) = Lx(i,j)
         end do
       end do
-      !$omp end parallel do
 
     else
       
-      !$omp parallel do private(i)
       do j = 1, size(Lx,2)
         do i = 1, size(Lx,1)
           Ly(i,j) = Lx(i,j)
         end do
       end do
-      !$omp end parallel do
 
     end if
   
@@ -3351,23 +3155,19 @@ contains
   
     if (present(n) .and. present(m)) then
 
-      !$omp parallel do private(i)
       do j = 1, m
         do i = 1, n
           Sy(i,j) = Sx(i,j)
         end do
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i)
       do j = 1, size(Sx,2)
         do i = 1, size(Sx,1)
           Sy(i,j) = Sx(i,j)
         end do
       end do
-      !$omp end parallel do
 
     end if
   
@@ -3480,7 +3280,6 @@ contains
 
     if (present(n) .and. present(m) .and. present(o)) then
     
-      !$omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3488,13 +3287,11 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
       
       !call QCOPY(n*m*o,Qx,1,Qy,1)
       
     else
 
-      !$omp parallel do private(i,j)
       do k = 1, size(Qx,3)
         do j = 1, size(Qx,2)
           do i = 1, size(Qx,1)
@@ -3502,7 +3299,6 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
 
       !call QCOPY(size(Qx,1)*size(Qx,2)*size(Qx,3),Qx,1,Qy,1)
       
@@ -3542,7 +3338,6 @@ contains
   
     if (present(n) .and. present(m) .and. present(o)) then
 
-      !$omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3550,11 +3345,9 @@ contains
           end do
         end do
       end do
-     !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i)
       do k = 1, size(Fx,3)
         do j = 1, size(Fx,2)
           do i = 1, size(Fx,1)
@@ -3562,7 +3355,6 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -3600,7 +3392,6 @@ contains
   
     if (present(n) .and. present(m) .and. present(o)) then
 
-      !$omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3608,11 +3399,9 @@ contains
           end do
         end do
       end do
-     !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i,j)
       do k = 1, size(Fx,3)
         do j = 1, size(Fx,2)
           do i = 1, size(Fx,1)
@@ -3620,7 +3409,6 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -3658,7 +3446,6 @@ contains
   
     if (present(n) .and. present(m) .and. present(o)) then
 
-      !$omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3666,11 +3453,9 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i,j)
       do k = 1, size(Dx,3)
         do j = 1, size(Dx,2)
           do i = 1, size(Dx,1)
@@ -3678,7 +3463,6 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -3716,7 +3500,6 @@ contains
   
     if (present(n) .and. present(m) .and. present(o)) then
 
-      !$omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3724,11 +3507,9 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i,j)
       do k = 1, size(Dx,3)
         do j = 1, size(Dx,2)
           do i = 1, size(Dx,1)
@@ -3736,7 +3517,6 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -3774,7 +3554,6 @@ contains
   
     if (present(n) .and. present(m) .and. present(o)) then
 
-      !$omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3782,11 +3561,9 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i,j)
       do k = 1, size(Qx,3)
         do j = 1, size(Qx,2)
           do i = 1, size(Qx,1)
@@ -3794,7 +3571,6 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -3832,7 +3608,6 @@ contains
   
     if (present(n) .and. present(m) .and. present(o)) then
 
-      !$omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3840,11 +3615,9 @@ contains
           end do
         end do
       end do
-     !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i,j)
       do k = 1, size(Qx,3)
         do j = 1, size(Qx,2)
           do i = 1, size(Qx,1)
@@ -3852,7 +3625,6 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
       
     end if
 
@@ -3891,7 +3663,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3899,11 +3670,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3911,7 +3680,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -3950,7 +3718,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3958,11 +3725,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
-    
+
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3970,7 +3735,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4009,7 +3773,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4017,11 +3780,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4029,7 +3790,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4068,7 +3828,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4076,11 +3835,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4088,7 +3845,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4127,7 +3883,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4135,11 +3890,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4147,7 +3900,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4186,7 +3938,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4194,11 +3945,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4206,7 +3955,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4245,7 +3993,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4253,11 +4000,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4265,7 +4010,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4304,7 +4048,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4312,11 +4055,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4324,7 +4065,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4363,7 +4103,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4371,11 +4110,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4383,7 +4120,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4422,7 +4158,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4430,11 +4165,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4442,7 +4175,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4481,7 +4213,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4489,11 +4220,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4501,7 +4230,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4540,7 +4268,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4548,11 +4275,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4560,7 +4285,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4599,7 +4323,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4607,11 +4330,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4619,7 +4340,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4658,7 +4378,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4666,11 +4385,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4678,7 +4395,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4717,7 +4433,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4725,11 +4440,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4737,7 +4450,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4776,7 +4488,6 @@ contains
   
     if(present(m) .and. present(n) .and. present(o)) then
     
-      !%omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4784,11 +4495,9 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
     
     else
     
-      !%omp parallel do private(i,j)
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4796,7 +4505,6 @@ contains
           end do
         end do
       end do
-      !%omp end parallel do
 
     end if
   
@@ -4835,7 +4543,6 @@ contains
   
     if (present(n) .and. present(m)) then
 
-      !$omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4843,11 +4550,9 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
 
     else
       
-      !$omp parallel do private(i,j)
       do k = 1, size(Lx,3)
         do j = 1, size(Lx,2)
           do i = 1, size(Lx,1)
@@ -4855,7 +4560,6 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
 
     end if
   
@@ -4894,7 +4598,6 @@ contains
   
     if (present(n) .and. present(m)) then
 
-      !$omp parallel do private(i,j)
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4902,11 +4605,9 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do private(i,j)
       do k = 1, size(Sx,3)
         do j = 1, size(Sx,2)
           do i = 1, size(Sx,1)
@@ -4914,7 +4615,6 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
 
     end if
   
@@ -5046,11 +4746,9 @@ contains
         call lalg_clearVectorQuad(Qx)
       else if(qc .ne. 1.0_QP) then
       
-        !$omp parallel do
         do i = 1, size(Qx)
           Qx(i) = qc * Qx(i)
         end do
-        !$omp end parallel do
       
         !call QSCAL(size(Qx),qc,Qx,1)
       end if
@@ -5059,11 +4757,9 @@ contains
         call lalg_clearVectorQuad(Qx,n)
       else if(qc .ne. 1.0_QP) then
 
-        !$omp parallel do
         do i = 1, n
           Qx(i) = qc * Qx(i)
         end do
-        !$omp end parallel do
 
         !call QSCAL(n,qc,Qx,1)
       end if
@@ -5171,13 +4867,11 @@ contains
       call lalg_clearVectorQuad2D(Qx)
     else if(qc .ne. 1.0_QP) then
     
-      !$omp parallel do private(i)
       do j = 1, size(Qx,2)
         do i = 1, size(Qx,1)
           Qx(i,j) = qc*Qx(i,j)
         end do
       end do
-      !$omp end parallel do
     
       !call QSCAL(size(Qx,1)*size(Qx,2),qc,Qx,1)
     end if
@@ -5284,7 +4978,6 @@ contains
       call lalg_clearVectorQuad3D(Qx)
     else if(qc .ne. 1.0_QP) then
     
-      !$omp parallel do private(i,j)
       do k = 1, size(Qx,3)
         do j = 1, size(Qx,2)
           do i = 1, size(Qx,1)
@@ -5292,7 +4985,6 @@ contains
           end do
         end do
       end do
-      !$omp end parallel do
     
       !call QSCAL(size(Qx,1)*size(Qx,2)*size(Qx,3),qc,Qx,1)
     end if
@@ -5326,19 +5018,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Fx)
         Fx(i) = 0.0_SP
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Fx(i) = 0.0_SP
       end do
-      !$omp end parallel do
       
     end if
   
@@ -5371,19 +5059,15 @@ contains
 
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Dx)
         Dx(i) = 0.0_DP
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Dx(i) = 0.0_DP
       end do
-      !$omp end parallel do
       
     end if
   
@@ -5416,19 +5100,15 @@ contains
 
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Qx)
         Qx(i) = 0.0_QP
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Qx(i) = 0.0_QP
       end do
-      !$omp end parallel do
       
     end if
   
@@ -5461,19 +5141,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = 0_I8
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = 0_I8
       end do
-      !$omp end parallel do
       
     end if
   
@@ -5506,19 +5182,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = 0_I16
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = 0_I16
       end do
-      !$omp end parallel do
       
     end if
   
@@ -5551,19 +5223,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = 0_I32
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = 0_I32
       end do
-      !$omp end parallel do
       
     end if
   
@@ -5596,19 +5264,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = 0_I64
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = 0_I64
       end do
-      !$omp end parallel do
       
     end if
   
@@ -5636,13 +5300,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)
     do j = 1, size(Fx,2)
       do i = 1, size(Fx,1)
         Fx(i,j) = 0.0_SP
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -5666,13 +5328,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Dx,2)
       do i = 1, size(Dx,1)
         Dx(i,j) = 0.0_DP
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -5696,13 +5356,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Qx,2)
       do i = 1, size(Qx,1)
         Qx(i,j) = 0.0_QP
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -5728,13 +5386,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Ix,2)
       do i = 1, size(Ix,1)
         Ix(i,j) = 0_I8
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -5760,13 +5416,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Ix,2)
       do i = 1, size(Ix,1)
         Ix(i,j) = 0_I16
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -5792,13 +5446,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Ix,2)
       do i = 1, size(Ix,1)
         Ix(i,j) = 0_I32
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -5824,13 +5476,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Ix,2)
       do i = 1, size(Ix,1)
         Ix(i,j) = 0_I32
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -5856,7 +5506,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Fx,3)
       do j = 1, size(Fx,2)
         do i = 1, size(Fx,1)
@@ -5864,7 +5513,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -5888,7 +5536,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Dx,3)
       do j = 1, size(Dx,2)
         do i = 1, size(Dx,1)
@@ -5896,7 +5543,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -5920,7 +5566,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,k)
     do k = 1, size(Qx,3)
       do j = 1, size(Qx,2)
         do i = 1, size(Qx,1)
@@ -5928,7 +5573,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -5954,7 +5598,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)  
     do k = 1, size(Ix,3)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
@@ -5962,7 +5605,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -5988,7 +5630,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Ix,3)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
@@ -5996,7 +5637,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -6022,7 +5662,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Ix,3)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
@@ -6030,7 +5669,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -6056,7 +5694,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Ix,3)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
@@ -6064,7 +5701,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
  
@@ -6098,19 +5734,15 @@ contains
 
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Fx)
         Fx(i) = fvalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Fx(i) = fvalue
       end do
-      !$omp end parallel do
       
     end if
   
@@ -6146,19 +5778,15 @@ contains
   
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Dx)
         Dx(i) = dvalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, size(Dx)
         Dx(i) = dvalue
       end do
-      !$omp end parallel do
       
     end if
   
@@ -6194,19 +5822,15 @@ contains
   
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Qx)
         Qx(i) = qvalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, size(Qx)
         Qx(i) = qvalue
       end do
-      !$omp end parallel do
       
     end if
   
@@ -6242,19 +5866,15 @@ contains
   
     if (.not. present(n)) then
    
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Ix(i) = ivalue
       end do
-      !$omp end parallel do
       
     end if
   
@@ -6290,19 +5910,15 @@ contains
   
     if (.not. present(n)) then
    
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Ix(i) = ivalue
       end do
-      !$omp end parallel do
       
     end if
   
@@ -6338,19 +5954,15 @@ contains
   
     if (.not. present(n)) then
    
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Ix(i) = ivalue
       end do
-      !$omp end parallel do
       
     end if
   
@@ -6386,19 +5998,15 @@ contains
   
     if (.not. present(n)) then
    
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Ix(i) = ivalue
       end do
-      !$omp end parallel do
       
     end if
   
@@ -6434,19 +6042,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Lx)
         Lx(i) = lvalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Lx(i) = lvalue
       end do
-      !$omp end parallel do
       
     end if
   
@@ -6482,19 +6086,15 @@ contains
   
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Sx)
         Sx(i) = svalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Sx(i) = svalue
       end do
-      !$omp end parallel do
       
     end if
   
@@ -6525,13 +6125,11 @@ contains
   ! local variables
   integer :: i,j
   
-    !$omp parallel do private(i)
     do j = 1, size(Fx,2)
       do i = 1, size(Fx,1)
         Fx(i,j) = fvalue
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -6560,13 +6158,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Dx,2)
       do i = 1, size(Dx,1)
         Dx(i,j) = dvalue
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -6595,13 +6191,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Qx,2)
       do i = 1, size(Qx,1)
         Qx(i,j) = qvalue
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -6630,13 +6224,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Ix,2)
       do i = 1, size(Ix,1)
         Ix(i,j) = ivalue
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -6665,13 +6257,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Ix,2)
       do i = 1, size(Ix,1)
         Ix(i,j) = ivalue
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -6700,13 +6290,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Ix,2)
       do i = 1, size(Ix,1)
         Ix(i,j) = ivalue
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -6735,13 +6323,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)  
     do j = 1, size(Ix,2)
       do i = 1, size(Ix,1)
         Ix(i,j) = ivalue
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -6770,13 +6356,11 @@ contains
   ! local variables
   integer :: i,j
   
-    !$omp parallel do private(i)
     do j = 1, size(Lx,2)
       do i = 1, size(Lx,1)
         Lx(i,j) = lvalue
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -6805,13 +6389,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(i)
     do j = 1, size(Sx,2)
       do i = 1, size(Sx,1)
         Sx(i,j) = svalue
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -6840,7 +6422,6 @@ contains
   ! local variables
   integer :: i,j,k
   
-    !$omp parallel do private(i,j)
     do k = 1, size(Fx,3)
       do j = 1, size(Fx,2)
         do i = 1, size(Fx,1)
@@ -6848,7 +6429,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -6877,7 +6457,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Dx,3)
       do j = 1, size(Dx,2)
         do i = 1, size(Dx,1)
@@ -6885,7 +6464,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -6914,7 +6492,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,k)
     do k = 1, size(Qx,3)
       do j = 1, size(Qx,2)
         do i = 1, size(Qx,1)
@@ -6922,7 +6499,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -6951,7 +6527,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Ix,3)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
@@ -6959,7 +6534,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -6988,7 +6562,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Ix,3)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
@@ -6996,7 +6569,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -7025,7 +6597,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Ix,3)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
@@ -7033,7 +6604,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -7062,7 +6632,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Ix,3)
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
@@ -7070,7 +6639,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -7099,7 +6667,6 @@ contains
   ! local variables
   integer :: i,j,k
   
-    !$omp parallel do private(i,j)
     do k = 1, size(Lx,3)
       do j = 1, size(Lx,2)
         do i = 1, size(Lx,1)
@@ -7107,7 +6674,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -7136,7 +6702,6 @@ contains
   ! local variables
   integer :: i,j,k
 
-    !$omp parallel do private(i,j)
     do k = 1, size(Sx,3)
       do j = 1, size(Sx,2)
         do i = 1, size(Sx,1)
@@ -7144,7 +6709,6 @@ contains
         end do
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
 
@@ -7338,19 +6902,15 @@ contains
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = 0.0_QP
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcy*Qy(i)
         end do
-        !$omp end parallel do
       
       end if
     
@@ -7358,27 +6918,21 @@ contains
     
       if(qcy .eq. 1.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = Qy(i) + Qx(i)
         end do
-        !$omp end parallel do
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = Qx(i)
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcy*Qy(i) + Qx(i)
         end do
-        !$omp end parallel do
 
       end if
     
@@ -7386,27 +6940,21 @@ contains
     
       if(qcy .eq. 1.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = Qy(i) + qcx*Qx(i)
         end do
-        !$omp end parallel do
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcx*Qx(i)
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcy*Qy(i) + qcx*Qx(i)
         end do
-        !$omp end parallel do
 
       end if
     
@@ -7469,11 +7017,9 @@ contains
       else if(dcy .eq. 0.0_DP) then
       
         ! Simply clear Dy
-        !$omp parallel do
         do i = 1, k
           Dy(i) = 0.0_DP
         end do
-        !$omp end parallel do
       
       else
       
@@ -7486,27 +7032,21 @@ contains
     
       if(dcy .eq. 1.0_DP) then
       
-        !$omp parallel do
         do i = 1, k
           Dy(i) = Dy(i) + real(Fx(i),DP)
         end do
-        !$omp end parallel do
       
       else if(dcy .eq. 0.0_DP) then
       
-        !$omp parallel do
         do i = 1, k
           Dy(i) = real(Fx(i),DP)
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Dy(i) = dcy*Dy(i) + real(Fx(i),DP)
         end do
-        !$omp end parallel do
 
       end if
     
@@ -7517,27 +7057,21 @@ contains
 
       if(dcy .eq. 1.0_DP) then
       
-        !$omp parallel do
         do i = 1, k
           Dy(i) = Dy(i) + dcx*real(Fx(i),DP)
         end do
-        !$omp end parallel do
       
       else if(dcy .eq. 0.0_DP) then
       
-        !$omp parallel do
         do i = 1, k
           Dy(i) = dcx*real(Fx(i),DP)
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Dy(i) = dcy*Dy(i) + dcx*real(Fx(i),DP)
         end do
-        !$omp end parallel do
 
       end if
     
@@ -7600,19 +7134,15 @@ contains
       else if(qcy .eq. 0.0_QP) then
       
         ! Simply clear Qy
-        !$omp parallel do
         do i = 1, k
           Qy(i) = 0.0_QP
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcy*Qy(i)
         end do
-        !$omp end parallel do
       
       end if
     
@@ -7620,27 +7150,21 @@ contains
     
       if(qcy .eq. 1.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = Qy(i) + real(Fx(i),QP)
         end do
-        !$omp end parallel do
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = real(Fx(i),QP)
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcy*Qy(i) + real(Fx(i),QP)
         end do
-        !$omp end parallel do
 
       end if
     
@@ -7651,27 +7175,21 @@ contains
 
       if(qcy .eq. 1.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = Qy(i) + qcx*real(Fx(i),QP)
         end do
-        !$omp end parallel do
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcx*real(Fx(i),QP)
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcy*Qy(i) + qcx*real(Fx(i),QP)
         end do
-        !$omp end parallel do
 
       end if
     
@@ -7734,19 +7252,15 @@ contains
       else if(qcy .eq. 0.0_QP) then
       
         ! Simply clear Qy
-        !$omp parallel do
         do i = 1, k
           Qy(i) = 0.0_QP
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcy*Qy(i)
         end do
-        !$omp end parallel do
       
       end if
     
@@ -7754,27 +7268,21 @@ contains
     
       if(qcy .eq. 1.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = Qy(i) + real(Dx(i),QP)
         end do
-        !$omp end parallel do
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = real(Dx(i),QP)
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcy*Qy(i) + real(Dx(i),QP)
         end do
-        !$omp end parallel do
 
       end if
     
@@ -7785,27 +7293,21 @@ contains
 
       if(qcy .eq. 1.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = Qy(i) + qcx*real(Dx(i),QP)
         end do
-        !$omp end parallel do
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcx*real(Dx(i),QP)
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do
         do i = 1, k
           Qy(i) = qcy*Qy(i) + qcx*real(Dx(i),QP)
         end do
-        !$omp end parallel do
 
       end if
     
@@ -7944,13 +7446,11 @@ contains
   ! local variables
   integer :: i,j
   
-    !$omp parallel do private(i)
     do j = 1, size(Qx,2)
       do i = 1, size(Qx,1)
         Qy(i,j) = qcy*Qy(i,j) + qcx*Qx(i,j)
       end do
     end do
-    !$omp end parallel do
   
   end subroutine
   
@@ -7999,13 +7499,11 @@ contains
       else if(dcy .eq. 0.0_DP) then
       
         ! Simply clear Dy
-        !$omp parallel do private(i)
         do j = 1, size(Dy,2)
           do i = 1, size(Dy,1)
             Dy(i,j) = 0.0_DP
           end do
         end do
-        !$omp end parallel do
       
       else
       
@@ -8018,33 +7516,27 @@ contains
     
       if(dcy .eq. 1.0_DP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Dy,2)
           do i = 1, size(Dy,1)
             Dy(i,j) = Dy(i,j) + real(Fx(i,j),DP)
           end do
         end do
-        !$omp end parallel do
       
       else if(dcy .eq. 0.0_DP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Dy,2)
           do i = 1, size(Dy,1)
             Dy(i,j) = real(Fx(i,j),DP)
           end do
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do private(i)
         do j = 1, size(Dy,2)
           do i = 1, size(Dy,1)
             Dy(i,j) = dcy*Dy(i,j) + real(Fx(i,j),DP)
           end do
         end do
-        !$omp end parallel do
 
       end if
     
@@ -8055,33 +7547,27 @@ contains
 
       if(dcy .eq. 1.0_DP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Dy,2)
           do i = 1, size(Dy,1)
             Dy(i,j) = Dy(i,j) + dcx*real(Fx(i,j),DP)
           end do
         end do
-        !$omp end parallel do
       
       else if(dcy .eq. 0.0_DP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Dy,2)
           do i = 1, size(Dy,1)
             Dy(i,j) = dcx*real(Fx(i,j),DP)
           end do
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do private(i)
         do j = 1, size(Dy,2)
           do i = 1, size(Dy,1)
             Dy(i,j) = dcy*Dy(i,j) + dcx*real(Fx(i,j),DP)
           end do
         end do
-        !$omp end parallel do
 
       end if
     
@@ -8134,23 +7620,19 @@ contains
       else if(qcy .eq. 0.0_QP) then
       
         ! Simply clear Qy
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = 0.0_QP
           end do
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = qcy*Qy(i,j)
           end do
         end do
-        !$omp end parallel do
       
       end if
     
@@ -8158,33 +7640,27 @@ contains
     
       if(qcy .eq. 1.0_QP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = Qy(i,j) + real(Fx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = real(Fx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = qcy*Qy(i,j) + real(Fx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
 
       end if
     
@@ -8195,33 +7671,27 @@ contains
 
       if(qcy .eq. 1.0_QP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = Qy(i,j) + qcx*real(Fx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = qcx*real(Fx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = qcy*Qy(i,j) + qcx*real(Fx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
 
       end if
     
@@ -8274,23 +7744,19 @@ contains
       else if(qcy .eq. 0.0_QP) then
       
         ! Simply clear Qy
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = 0.0_QP
           end do
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = qcy*Qy(i,j)
           end do
         end do
-        !$omp end parallel do
       
       end if
     
@@ -8298,33 +7764,27 @@ contains
     
       if(qcy .eq. 1.0_QP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = Qy(i,j) + real(Dx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = real(Dx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = qcy*Qy(i,j) + real(Dx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
 
       end if
     
@@ -8335,33 +7795,27 @@ contains
 
       if(qcy .eq. 1.0_QP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = Qy(i,j) + qcx*real(Dx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
       
       else if(qcy .eq. 0.0_QP) then
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = qcx*real(Dx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
       
       else
       
-        !$omp parallel do private(i)
         do j = 1, size(Qy,2)
           do i = 1, size(Qy,1)
             Qy(i,j) = qcy*Qy(i,j) + qcx*real(Dx(i,j),QP)
           end do
         end do
-        !$omp end parallel do
 
       end if
     
@@ -8485,20 +7939,16 @@ contains
     res = 0.0_QP
     if (.not. present(n)) then
     
-      !$omp parallel do reduction(+:res)
       do i = 1, size(Qx)
         res = res + Qx(i)*Qy(i)
       end do
-      !$omp end parallel do
       
       !res = QDOT(size(Qx),Qx,1,Qy,1)
     else
     
-      !$omp parallel do reduction(+:res)
       do i = 1, n
         res = res + Qx(i)*Qy(i)
       end do
-      !$omp end parallel do
       
       !res = QDOT(n,Qx,1,Qy,1)
     end if
@@ -8603,13 +8053,11 @@ contains
   
     res = 0.0_QP
   
-    !$omp parallel do private(i) reduction(+:res)
     do j = 1, size(Qx,2)
       do i = 1, size(Qx,1)
         res = res + Qx(i,j)*Qy(i,j)
       end do
     end do
-    !$omp end parallel do
 
     !res = QDOT(size(Qx,1)*size(Qx,2),Qx,1,Qy,1)
   
@@ -8830,42 +8278,34 @@ contains
     select case (cnorm)
     case (LINALG_NORMSUM)
       ! L1-norm: sum all entries
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + abs(Qx(i))
       end do
-      !$omp end parallel do
       !resnorm = QASUM(isize,Qx,1)
 
     case (LINALG_NORMEUCLID)
       ! Euclidian norm = scalar product (vector,vector)
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + Qx(i)*Qx(i)
       end do
-      !$omp end parallel do
       resnorm = sqrt(resnorm)
       !resnorm = QNRM2(isize,Qx,1)
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) has norm = 1.
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + abs(Qx(i))
       end do
-      !$omp end parallel do
       resnorm = resnorm / real(isize,QP)
       !resnorm = QASUM(isize,Dx,1) / real(isize,QP)
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + Qx(i)*Qx(i)
       end do
-      !$omp end parallel do
       resnorm = sqrt(resnorm / real(isize,QP))
       !resnorm = QNRM2(isize,Qx,1) / sqrt(real(isize,QP))
       
@@ -8883,11 +8323,9 @@ contains
           end if
         end do
       else
-        !$omp parallel do reduction(max:resnorm)
         do i = 1, isize
           resnorm = max(resnorm,abs(Qx(i)))
         end do
-        !$omp end parallel do
       end if
         
     case default
@@ -8947,39 +8385,31 @@ contains
     select case (cnorm)
     case (LINALG_NORMSUM)
       ! L1-norm: sum all entries
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + abs(Fx(i)-Fy(i))
       end do
-      !$omp end parallel do
 
     case (LINALG_NORMEUCLID)
       ! Euclidian norm = scalar product (vector,vector)
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
       end do
-      !$omp end parallel do
       resnorm = sqrt(resnorm)
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) to has norm = 1.
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + abs(Fx(i)-Fy(i))
       end do
-      !$omp end parallel do
       resnorm = resnorm / real(isize,SP)
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
       end do
-      !$omp end parallel do
       resnorm = sqrt(resnorm / real(isize,SP))
       
     case (LINALG_NORMMAX)
@@ -9056,54 +8486,42 @@ contains
     case (LINALG_NORMSUM)
       ! L1-norm: sum all entries
       if (present(Dw)) then
-        !$omp parallel do reduction(+:resnorm)
         do i = 1, isize
           resnorm = resnorm + Dw(i)*abs(Dx(i)-Dy(i))
         end do
-        !$omp end parallel do
       else
-        !$omp parallel do reduction(+:resnorm)
         do i = 1, isize
           resnorm = resnorm + abs(Dx(i)-Dy(i))
         end do
-        !$omp end parallel do
       end if
 
     case (LINALG_NORMEUCLID)
       ! Euclidian norm = scalar product (vector,vector)
       if (present(Dw)) then
-        !$omp parallel do reduction(+:resnorm)
         do i = 1, isize
           resnorm = resnorm + Dw(i)*(Dx(i)-Dy(i))*(Dx(i)-Dy(i))
         end do
-        !$omp end parallel do
       else
-        !$omp parallel do reduction(+:resnorm)
         do i = 1, isize
           resnorm = resnorm + (Dx(i)-Dy(i))*(Dx(i)-Dy(i))
         end do
-        !$omp end parallel do
       end if
       resnorm = sqrt(resnorm)
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) has norm = 1.
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + abs(Dx(i)-Dy(i))
       end do
-      !$omp end parallel do
       resnorm = resnorm / real(isize,DP)
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + (Dx(i)-Dy(i))*(Dx(i)-Dy(i))
       end do
-      !$omp end parallel do
       resnorm = sqrt(resnorm / real(isize,DP))
       
     case (LINALG_NORMMAX)
@@ -9180,54 +8598,42 @@ contains
     case (LINALG_NORMSUM)
       ! L1-norm: sum all entries
       if (present(Qw)) then
-        !$omp parallel do reduction(+:resnorm)
         do i = 1, isize
           resnorm = resnorm + Qw(i)*abs(Qx(i)-Qy(i))
         end do
-        !$omp end parallel do
       else
-        !$omp parallel do reduction(+:resnorm)
         do i = 1, isize
           resnorm = resnorm + abs(Qx(i)-Qy(i))
         end do
-        !$omp end parallel do
       end if
 
     case (LINALG_NORMEUCLID)
       ! Euclidian norm = scalar product (vector,vector)
       if (present(Qw)) then
-        !$omp parallel do reduction(+:resnorm)
         do i = 1, isize
           resnorm = resnorm + Qw(i)*(Qx(i)-Qy(i))*(Qx(i)-Qy(i))
         end do
-        !$omp end parallel do
       else
-        !$omp parallel do reduction(+:resnorm)
         do i = 1, isize
           resnorm = resnorm + (Qx(i)-Qy(i))*(Qx(i)-Qy(i))
         end do
-        !$omp end parallel do
       end if
       resnorm = sqrt(resnorm)
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) has norm = 1.
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + abs(Qx(i)-Qy(i))
       end do
-      !$omp end parallel do
       resnorm = resnorm / real(isize,DP)
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
-      !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + (Qx(i)-Qy(i))*(Qx(i)-Qy(i))
       end do
-      !$omp end parallel do
       resnorm = sqrt(resnorm / real(isize,DP))
       
     case (LINALG_NORMMAX)
@@ -9461,13 +8867,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(j)
     do i = 1, size(Sy)
       do j = 1, size(Sx)
         Stensor(j,i) = Sx(j)*Sy(i)
       end do
     end do
-    !$omp end parallel do
       
   end subroutine
 
@@ -9499,13 +8903,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(j)
     do i = 1, size(Dy)
       do j = 1, size(Dx)
         Dtensor(j,i) = Dx(j)*Dy(i)
       end do
     end do
-    !$omp end parallel do
       
   end subroutine
 
@@ -9537,13 +8939,11 @@ contains
   ! local variables
   integer :: i,j
 
-    !$omp parallel do private(j)
     do i = 1, size(Qy)
       do j = 1, size(Qx)
         Qtensor(j,i) = Qx(j)*Qy(i)
       end do
     end do
-    !$omp end parallel do
       
   end subroutine
   !****************************************************************************
@@ -9578,19 +8978,15 @@ contains
     
     if (.not. present(n)) then
       
-      !$omp parallel do
       do i = 1, size(Fx)
         Fx(i) = Fx(i) + fvalue
       end do
-      !$omp end parallel do
       
     else
       
-      !$omp parallel do
       do i = 1, n
         Fx(i) = Fx(i) + fvalue
       end do
-      !$omp end parallel do
       
     end if
     
@@ -9628,19 +9024,15 @@ contains
     
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Dx)
         Dx(i) = Dx(i) + dvalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Dx(i) = Dx(i) + dvalue
       end do
-      !$omp end parallel do
       
     end if
     
@@ -9679,19 +9071,15 @@ contains
     
     if (.not. present(n)) then
     
-      !$omp parallel do
       do i = 1, size(Qx)
         Qx(i) = Qx(i) + qvalue
       end do
-      !$omp end parallel do
       
     else
     
-      !$omp parallel do
       do i = 1, n
         Qx(i) = Qx(i) + qvalue
       end do
-      !$omp end parallel do
       
     end if
     
@@ -9724,13 +9112,11 @@ contains
     ! Nothing to do?
     if(fvalue .eq. 0.0_SP) return
     
-    !$omp parallel do private(i)
     do j = 1, size(Fx,2)
       do i = 1, size(Fx,1)
         Fx(i,j) = Fx(i,j) + fvalue
       end do
     end do
-    !$omp end parallel do
     
   end subroutine
   
@@ -9761,13 +9147,11 @@ contains
     ! Nothing to do?
     if(dvalue .eq. 0.0_DP) return
     
-    !$omp parallel do private(i)
     do j = 1, size(Dx,2)
       do i = 1, size(Dx,1)
         Dx(i,j) = Dx(i,j) + dvalue
       end do
     end do
-    !$omp end parallel do
     
   end subroutine
   
@@ -9798,13 +9182,11 @@ contains
     ! Nothing to do?
     if(qvalue .eq. 0.0_QP) return
     
-    !$omp parallel do private(i)
     do j = 1, size(Qx,2)
       do i = 1, size(Qx,1)
         Qx(i,j) = Qx(i,j) + qvalue
       end do
     end do
-    !$omp end parallel do
     
   end subroutine
 
@@ -9836,17 +9218,13 @@ contains
     integer :: i
     
     if (.not. present(n)) then
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
       end do
-      !$omp end parallel do
     else
-      !$omp parallel do
       do i = 1, n
         Ix(i) = Ix(i) + ivalue
       end do
-      !$omp end parallel do
     end if
     
   end subroutine
@@ -9879,17 +9257,13 @@ contains
     integer :: i
     
     if (.not. present(n)) then
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
       end do
-      !$omp end parallel do
     else
-      !$omp parallel do
       do i = 1, n
         Ix(i) = Ix(i) + ivalue
       end do
-      !$omp end parallel do
     end if
     
   end subroutine
@@ -9922,17 +9296,13 @@ contains
     integer :: i
     
     if (.not. present(n)) then
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
       end do
-      !$omp end parallel do
     else
-      !$omp parallel do
       do i = 1, n
         Ix(i) = Ix(i) + ivalue
       end do
-      !$omp end parallel do
     end if
     
   end subroutine
@@ -9965,17 +9335,13 @@ contains
     integer :: i
     
     if (.not. present(n)) then
-      !$omp parallel do
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
       end do
-      !$omp end parallel do
     else
-      !$omp parallel do
       do i = 1, n
         Ix(i) = Ix(i) + ivalue
       end do
-      !$omp end parallel do
     end if
     
   end subroutine
@@ -10017,19 +9383,15 @@ contains
 
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Fy,1)
         Fy(i) = sc*Fx(i)*Fy(i)
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do
       do i = 1, n
         Fy(i) = sc*Fx(i)*Fy(i)
       end do
-      !$omp end parallel do
 
     end if
 
@@ -10072,19 +9434,15 @@ contains
 
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Dy,1)
         Dy(i) = dc*Dx(i)*Dy(i)
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do
       do i = 1, n
         Dy(i) = dc*Dx(i)*Dy(i)
       end do
-      !$omp end parallel do
 
     end if
 
@@ -10127,19 +9485,15 @@ contains
 
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Qy,1)
         Qy(i) = qc*Qx(i)*Qy(i)
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do
       do i = 1, n
         Qy(i) = qc*Qx(i)*Qy(i)
       end do
-      !$omp end parallel do
 
     end if
 
@@ -10182,19 +9536,15 @@ contains
 
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Dy,1)
         Dy(i) = dc*Fx(i)*Dy(i)
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do
       do i = 1, n
         Dy(i) = dc*Fx(i)*Dy(i)
       end do
-      !$omp end parallel do
 
     end if
 
@@ -10237,19 +9587,15 @@ contains
 
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Qy,1)
         Qy(i) = qc*real(Fx(i),QP)*Qy(i)
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do
       do i = 1, n
         Qy(i) = qc*real(Fx(i),QP)*Qy(i)
       end do
-      !$omp end parallel do
 
     end if
 
@@ -10292,19 +9638,15 @@ contains
 
     if (.not. present(n)) then
 
-      !$omp parallel do
       do i = 1, size(Qy,1)
         Qy(i) = qc*real(Dx(i),QP)*Qy(i)
       end do
-      !$omp end parallel do
 
     else
 
-      !$omp parallel do
       do i = 1, n
         Qy(i) = qc*real(Dx(i),QP)*Qy(i)
       end do
-      !$omp end parallel do
 
     end if
 
