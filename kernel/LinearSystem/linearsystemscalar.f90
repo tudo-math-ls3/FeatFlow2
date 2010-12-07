@@ -10186,7 +10186,7 @@ contains
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-          !$omp parallel dodefault(shared)
+          !$omp parallel do default(shared)
           do i=1,rvectorSrc%NEQ
             p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(p_Kdiag(i))
           end do
