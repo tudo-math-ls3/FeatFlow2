@@ -30,8 +30,10 @@ module commandparser
   use stdoperators
   use feevaluation
   use analyticprojection
+  use spdiscprojection
   
   use vectorio
+  use ucd
 
   implicit none
   
@@ -496,6 +498,137 @@ contains
 
   ! ***************************************************************************
 
+  subroutine cmdprs_parseIndexString1D (sstring,svecname,p_IvecComponents)
+  
+  !<description>
+    ! Parses a string as 1D array. sstring may have the following form:
+    ! "SPECIFIER" - returns svecname="SPECIFIER" and p_IvecComponents => null().
+    ! "SPECIFIER[i]" - returns svecname="SPECIFIER" and p_IvecComponents => [i,1].
+    ! "SPECIFIER[i,j,...]" - returns svecname="SPECIFIER" and p_IvecComponents => [i,j,...].
+    ! "SPECIFIER[i:j]" - returns svecname="SPECIFIER" and p_IvecComponents => [i,...,j].
+  !</description>
+
+  !<input>
+    ! Input string.
+    character(len=SYS_STRLEN), intent(in) :: sstring
+  !</input>
+
+  !<output>
+    ! The specifier in the string. ="" if sstring is invalid.
+    character(len=SYS_STRLEN), intent(out) :: svecname
+    
+    ! Pointer to an array collecting the indices or NULL if no indices are specified.
+    ! Must be released by the caller!
+    integer, dimension(:), pointer :: p_IvecComponents
+  !</output>
+
+    integer :: i,j,k,i1,i2,icount
+    character(len=SYS_STRLEN) :: sstr,ssubstr
+
+    ! Reset the output.
+    svecname = ""
+    nullify(p_IvecComponents)
+    
+    ! Find a bracket.
+    i = index(sstring,"[")
+    if (i .eq. 0) then
+      ! Only the name is given.
+      svecname = trim(adjustl(sstring))
+      return
+    else
+      ! Get the name and the specifier. Remove all spaces from the specifier.
+      svecname = trim(adjustl(sstring(1:i-1)))
+      sstr = ""
+      k = 0
+      do j = i,len_trim(sstring)
+        select case (ichar(sstring(j:j)))
+        case (ichar(' '),ichar('['),ichar(']'))
+          ! Do nothing.
+        case (ichar('A'):ichar('Z'),ichar('_'),ichar('0'):ichar('9'),ichar(':'))
+          ! Copy
+          k=k+1
+          sstr(k:k) = sstring(j:j)
+        case (ichar(','))
+          ! Replace by space
+          k = k+1
+          sstr(k:k) = ' '
+        case default
+          ! Stop here, the string is invalid!
+          svecname = ""
+          return
+        end select
+      end do
+      
+      ! Ok. Now find the number sets. Orient at the whitespaces.
+      i = 1
+      icount = 0
+      do while (i .le. k)
+        
+        ! Get the first substring.
+        read(sstr,'(A)') ssubstr
+        
+        ! ":" included? Replace by ' ' and read in the set.
+        j = index(ssubstr,":")
+        if (j .ne. 0) then
+          ssubstr(j:j) = "  "
+          read(ssubstr,*) i1,i2
+          icount = icount + abs(i2 - i1) + 1
+        else
+          ! Only one entry
+          icount = icount + 1
+        end if
+        
+        ! Next token
+        i = i + len_trim(ssubstr)
+        
+      end do
+      
+      ! Allocate memory for the numbers
+      allocate (p_IvecComponents(icount))
+      
+      ! Get the numbers.
+      icount = 0
+      i = 1
+      do while (i .le. k)
+        
+        ! Get the first substring.
+        read(sstr,'(A)') ssubstr
+        
+        ! ":" included? Replace by ' ' and read in the set.
+        j = index(ssubstr,":")
+        if (j .ne. 0) then
+        
+          ssubstr(j:j) = " "
+          read(ssubstr,*) i1,i2
+          
+          if (i1 .le. i2) then
+            do j = i1,i2
+              icount = icount + 1
+              p_IvecComponents(icount) = j
+            end do
+          else
+            do j = i2,i1,-1
+              icount = icount + 1
+              p_IvecComponents(icount) = j
+            end do
+          end if
+        else
+          ! Only one entry
+          icount = icount + 1
+          read (ssubstr,*) p_IvecComponents(icount)
+        end if
+        
+        ! Next token
+        i = i + len_trim(ssubstr)
+        
+      end do
+      
+    end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+
   recursive subroutine cmdprs_docommand (rcmdStatus,Sargs)
   
   !<description>
@@ -640,11 +773,6 @@ contains
       return
     end if
 
-    if (scmd .eq. "COPYSUBVECTOR") then
-      call cmdprs_do_copysubvector (rcmdStatus,Sargs)
-      return
-    end if
-    
     if (scmd .eq. "COPYVECTOR") then
       call cmdprs_do_copyvector (rcmdStatus,Sargs)
       return
@@ -657,6 +785,11 @@ contains
     
     if (scmd .eq. "L2PROJECTION") then
       call cmdprs_do_l2projection (rcmdStatus,Sargs)
+      return
+    end if
+    
+    if (scmd .eq. "WRITEUCD") then
+      call cmdprs_do_writeucd (rcmdStatus,Sargs)
       return
     end if
     
@@ -693,136 +826,136 @@ contains
       call output_line ("The following commands are available. For a specific help")
       call output_line ("type ""HELP [command]"".")
       call output_lbrk ()
-      call output_line ("  help               - This help page.");
-      call output_line ("  exit               - Exits the command line.");
-      call output_line ("  meminfo            - Information about memory management.");
-      call output_line ("  exec               - Execute script.");
-      call output_line ("  print              - Print some text.");
-      call output_line ("  set                - Modify/set/print environment.");
-      call output_line ("  show               - Show environment variable (if possible).");
-      call output_line ("  delete             - Delete variable from environment.");
-      call output_line ("  destroy            - Destroys an environment structure (extended delete).");
-      call output_line ("  read2dprm          - Read 2D .prm file.");
-      call output_line ("  read2dtri          - Read 2D .tri file.");
-      call output_line ("  meshrefine         - Refine a mesh.");
-      call output_line ("  meshhierarchy      - Create a mesh hierarchy.");
-      call output_line ("  fespace            - Create a FE space.");
-      call output_line ("  fehierarchy        - Create a FE hierarchy.");
-      call output_line ("  mlevelprjhierarchy - Create a multilevel projection hierarchy.");
-      call output_line ("  createblockvector  - Create an empty block vector.");
-      call output_line ("  readblockvector    - Read a block vector from a file.");
-      call output_line ("  writeblockvector   - Write a block vector to a file.");
-      call output_line ("  copyvector         - Copy a vector to another.");
-      call output_line ("  copysubvector      - Copy a subvector to another.");
-      call output_line ("  interpolatevector  - Interpolate a vector to another level.");
-      call output_line ("  l2projection       - Appies an L2 projection to a vector.");
+      call output_line ("  help               - This help page.")
+      call output_line ("  exit               - Exits the command line.")
+      call output_line ("  meminfo            - Information about memory management.")
+      call output_line ("  exec               - Execute script.")
+      call output_line ("  print              - Print some text.")
+      call output_line ("  set                - Modify/set/print environment.")
+      call output_line ("  show               - Show environment variable (if possible).")
+      call output_line ("  delete             - Delete variable from environment.")
+      call output_line ("  destroy            - Destroys an environment structure (extended delete).")
+      call output_line ("  read2dprm          - Read 2D .prm file.")
+      call output_line ("  read2dtri          - Read 2D .tri file.")
+      call output_line ("  meshrefine         - Refine a mesh.")
+      call output_line ("  meshhierarchy      - Create a mesh hierarchy.")
+      call output_line ("  fespace            - Create a FE space.")
+      call output_line ("  fehierarchy        - Create a FE hierarchy.")
+      call output_line ("  mlevelprjhierarchy - Create a multilevel projection hierarchy.")
+      call output_line ("  createblockvector  - Create an empty block vector.")
+      call output_line ("  readblockvector    - Read a block vector from a file.")
+      call output_line ("  writeblockvector   - Write a block vector to a file.")
+      call output_line ("  copyvector         - Copy a vector to another.")
+      call output_line ("  interpolatevector  - Interpolate a vector to another level.")
+      call output_line ("  l2projection       - Appies an L2 projection to a vector.")
+      call output_line ("  writeucd           - Writes a postprocessing file.")
     
     else
     
       call cmdprs_getparam (Sargs,2,sargformatted,.true.,.false.)
       
       if (sargformatted .eq. "EXIT") then
-        call output_line ("EXIT - Close interactive command line, return to terminal.");
+        call output_line ("EXIT - Close interactive command line, return to terminal.")
         call output_lbrk ()
-        call output_line ("Usage:");
-        call output_line ("  EXIT");
+        call output_line ("Usage:")
+        call output_line ("  EXIT")
       
         return
       end if
 
       if (sargformatted .eq. "EXEC") then
-        call output_line ("EXEC - Execute a script on hard disc.");
+        call output_line ("EXEC - Execute a script on hard disc.")
         call output_lbrk ()
-        call output_line ("Usage:");
-        call output_line ("  EXEC ""[filename/path]""");
+        call output_line ("Usage:")
+        call output_line ("  EXEC ""[filename/path]""")
       
         return
       end if
 
       if (sargformatted .eq. "PRINT") then
-        call output_line ("PRINT - prints some text to the terminal.");
+        call output_line ("PRINT - prints some text to the terminal.")
         call output_lbrk ()
-        call output_line ("Usage:");
-        call output_line ("  PRINT ""[some text]""");
+        call output_line ("Usage:")
+        call output_line ("  PRINT ""[some text]""")
       
         return
       end if
 
       if (sargformatted .eq. "SET") then
-        call output_line ("SET - Modify or show environment.");
+        call output_line ("SET - Modify or show environment.")
         call output_lbrk ()
-        call output_line ("Usage:");
-        call output_line ("* To show statistics about the environment:");
-        call output_line ("      SET");
+        call output_line ("Usage:")
+        call output_line ("* To show statistics about the environment:")
+        call output_line ("      SET")
         call output_lbrk ()
-        call output_line ("*To set/modify an integer variable:");
-        call output_line ("      SET INT [name] [value]");
+        call output_line ("*To set/modify an integer variable:")
+        call output_line ("      SET INT [name] [value]")
         call output_lbrk ()
-        call output_line ("*To set/modify an double precision variable:");
-        call output_line ("      SET DOUBLE [name] [value]");
+        call output_line ("*To set/modify an double precision variable:")
+        call output_line ("      SET DOUBLE [name] [value]")
         call output_lbrk ()
-        call output_line ("*To set/modify a string variable:");
-        call output_line ("      SET STRING [name] [value]");
+        call output_line ("*To set/modify a string variable:")
+        call output_line ("      SET STRING [name] [value]")
       
         return
       end if
     
       if (sargformatted .eq. "DELETE") then
-        call output_line ("DELETE - Delete a variable from the environment.");
+        call output_line ("DELETE - Delete a variable from the environment.")
         call output_lbrk ()
-        call output_line ("Usage:");
-        call output_line ("  DELETE [name]");
+        call output_line ("Usage:")
+        call output_line ("  DELETE [name]")
         call output_lbrk ()
-        call output_line ("WARNING: This does not release probably associated memory!");
+        call output_line ("WARNING: This does not release probably associated memory!")
       
         return
       end if
     
       if (sargformatted .eq. "DESTROY") then
-        call output_line ("DESTROY - Releases memory associated to an environment variable.");
+        call output_line ("DESTROY - Releases memory associated to an environment variable.")
         call output_lbrk ()
-        call output_line ("Usage:");
-        call output_line ("  DESTROY [name]");
+        call output_line ("Usage:")
+        call output_line ("  DESTROY [name]")
         call output_lbrk ()
-        call output_line ("Automatically detects the type of an environment variable and");
-        call output_line ("releases the associated structure from memory (if there is one).");
-        call output_line ("The variable is removed from the environment");
+        call output_line ("Automatically detects the type of an environment variable and")
+        call output_line ("releases the associated structure from memory (if there is one).")
+        call output_line ("The variable is removed from the environment")
       
         return
       end if
     
       if (sargformatted .eq. "SHOW") then
-        call output_line ("SHOW - Show content about an environment vairbale.");
+        call output_line ("SHOW - Show content about an environment vairbale.")
         call output_lbrk ()
-        call output_line ("Usage:");
-        call output_line ("  SHOW [name]");
+        call output_line ("Usage:")
+        call output_line ("  SHOW [name]")
         call output_lbrk ()
-        call output_line ("If possible, this routine prints information about an");
-        call output_line ("environment variable to the terminal. For standard types");
-        call output_line ("(int, double, string,...), the value is returned.");
-        call output_line ("For extended types (e.g. meshes), status information");
-        call output_line ("is returned.");
+        call output_line ("If possible, this routine prints information about an")
+        call output_line ("environment variable to the terminal. For standard types")
+        call output_line ("(int, double, string,...), the value is returned.")
+        call output_line ("For extended types (e.g. meshes), status information")
+        call output_line ("is returned.")
       
         return
       end if
     
       if (sargformatted .eq. "INFO") then
-        call output_line ("INFO - Detailed information about environment vairbales.");
+        call output_line ("INFO - Detailed information about environment vairbales.")
         call output_lbrk ()
-        call output_line ("Usage:");
-        call output_line ("  SHOW [name]");
+        call output_line ("Usage:")
+        call output_line ("  SHOW [name]")
         call output_lbrk ()
-        call output_line ("Shows detailed information about an environment variable.");
-        call output_line ("This includes type, value,...");
+        call output_line ("Shows detailed information about an environment variable.")
+        call output_line ("This includes type, value,...")
       
         return
       end if
     
       if (sargformatted .eq. "READ2DPRM") then
-        call output_line ("READ2DPRM - Read 2D .PRM file.");
+        call output_line ("READ2DPRM - Read 2D .PRM file.")
         call output_lbrk ()
-        call output_line ("Usage:");
-        call output_line ("  READ2DPRM [varname] [filename]");
+        call output_line ("Usage:")
+        call output_line ("  READ2DPRM [varname] [filename]")
         call output_lbrk ()
         call output_line ("Read in a .prm file and store it using the name [variable].")
       
@@ -830,24 +963,24 @@ contains
       end if
 
       if (sargformatted .eq. "READ2DTRI") then
-        call output_line ("READ2DTRI - Read 2D .TRI file.");
+        call output_line ("READ2DTRI - Read 2D .TRI file.")
         call output_lbrk ()
-        call output_line ("Usage:");
-        call output_line ("  READ2DTRI [varname] [filename] [ BOUNDARY varbd ]");
+        call output_line ("Usage:")
+        call output_line ("  READ2DTRI [varname] [filename] [ BOUNDARY varbd ]")
         call output_lbrk ()
         call output_line ("Read in a .tri file and store it using the name [variable].")
         call output_line ("If BOUNDARY is specified, the triangulation is connected")
         call output_line ("to a boundary object varbd.")
         call output_lbrk ()
         call output_line ("Example:")
-        call output_line ("  read2dprm myprm ""myprmfile.prm""");
-        call output_line ("  read2dtri mytri ""mytrifile.tri"" boundary myprm");
+        call output_line ("  read2dprm myprm ""myprmfile.prm""")
+        call output_line ("  read2dtri mytri ""mytrifile.tri"" boundary myprm")
       
         return
       end if
 
       if (sargformatted .eq. "MESHREFINE") then
-        call output_line ("MESHREFINE - Refine a mesh.");
+        call output_line ("MESHREFINE - Refine a mesh.")
         call output_lbrk ()
         call output_line ("Usage:")
         call output_line ("   meshrefine [varname] [...options...]")
@@ -871,7 +1004,7 @@ contains
       end if
 
       if (sargformatted .eq. "MESHHIERARCHY") then
-        call output_line ("MESHHIERARCHY - Create a mesh hierarchy.");
+        call output_line ("MESHHIERARCHY - Create a mesh hierarchy.")
         call output_lbrk ()
         call output_line ("Usage:")
         call output_line ("   meshhierarchy [varname] [...options...]")
@@ -902,7 +1035,7 @@ contains
       end if
 
       if (sargformatted .eq. "FESPACE") then
-        call output_line ("FESPACE - Create an FE space.");
+        call output_line ("FESPACE - Create an FE space.")
         call output_lbrk ()
         call output_line ("Usage:")
         call output_line ("   fespace [varname] [...options...]")
@@ -923,20 +1056,20 @@ contains
         call output_line ("      Must be defined in advance to all element/cubature specifications.")
         call output_lbrk ()
         call output_line ("  ... --TRIELEMENTS EL_xxx EL_xxx EL_xxx ...")
-        call output_line ("      Specifies a list of TRI/TETRA elemnent types to be used for");
+        call output_line ("      Specifies a list of TRI/TETRA elemnent types to be used for")
         call output_line ("      triangular/tetrahedral elements. There must be one ID per component.")
         call output_lbrk ()
         call output_line ("  ... --QUADELEMENTS EL_xxx EL_xxx EL_xxx ...")
-        call output_line ("      Specifies a list of QUAD/HEXA elemnent types to be used for");
+        call output_line ("      Specifies a list of QUAD/HEXA elemnent types to be used for")
         call output_line ("      quadrilateral/hexahedral elements. There must be one ID per component.")
         call output_lbrk ()
         call output_line ("  ... --TRICUB CUB_xxx CUB_xxx CUB_xxx ...")
-        call output_line ("      Specifies a list of TRI/TETRA cubature formulas to be used for");
+        call output_line ("      Specifies a list of TRI/TETRA cubature formulas to be used for")
         call output_line ("      triangular/tetrahedral elements. There must be one ID per component.")
         call output_line ("      If not defined, the default cubature formula is used.")
         call output_lbrk ()
         call output_line ("  ... --QUADCUB CUB_xxx CUB_xxx CUB_xxx ...")
-        call output_line ("      Specifies a list of QUAD/HEXA cubature formulas to be used for");
+        call output_line ("      Specifies a list of QUAD/HEXA cubature formulas to be used for")
         call output_line ("      quadrilateral/hexahedral elements. There must be one ID per component.")
         call output_line ("      If not defined, the default cubature formula is used.")
       
@@ -944,7 +1077,7 @@ contains
       end if
 
       if (sargformatted .eq. "FEHIERARCHY") then
-        call output_line ("FEHIERARCHY - Create an FE hierarchy.");
+        call output_line ("FEHIERARCHY - Create an FE hierarchy.")
         call output_lbrk ()
         call output_line ("Usage:")
         call output_line ("   fehierarchy [varname] [...options...]")
@@ -965,26 +1098,26 @@ contains
         call output_line ("      Must be defined in advance to all element/cubature specifications.")
         call output_lbrk ()
         call output_line ("  ... --TRIELEMENT EL_xxx EL_xxx EL_xxx ...")
-        call output_line ("      Specifies a list of TRI/TETRA elemnent types to be used for");
+        call output_line ("      Specifies a list of TRI/TETRA elemnent types to be used for")
         call output_line ("      triangular/tetrahedral elements. There must be one ID per component.")
         call output_lbrk ()
         call output_line ("  ... --QUADELEMENT EL_xxx EL_xxx EL_xxx ...")
-        call output_line ("      Specifies a list of QUAD/HEXA elemnent types to be used for");
+        call output_line ("      Specifies a list of QUAD/HEXA elemnent types to be used for")
         call output_line ("      quadrilateral/hexahedral elements. There must be one ID per component.")
         call output_lbrk ()
         call output_line ("  ... --TRICUB CUB_xxx CUB_xxx CUB_xxx ...")
-        call output_line ("      Specifies a list of TRI/TETRA cubature formulas to be used for");
+        call output_line ("      Specifies a list of TRI/TETRA cubature formulas to be used for")
         call output_line ("      triangular/tetrahedral elements. There must be one ID per component.")
         call output_lbrk ()
         call output_line ("  ... --QUADCUB CUB_xxx CUB_xxx CUB_xxx ...")
-        call output_line ("      Specifies a list of QUAD/HEXA cubature formulas to be used for");
+        call output_line ("      Specifies a list of QUAD/HEXA cubature formulas to be used for")
         call output_line ("      quadrilateral/hexahedral elements. There must be one ID per component.")
       
         return
       end if
 
       if (sargformatted .eq. "MLEVELPRJHIERARCHY") then
-        call output_line ("MLEVELPRJHIERARCHY - Create an multilevel projection hierarchy.");
+        call output_line ("MLEVELPRJHIERARCHY - Create an multilevel projection hierarchy.")
         call output_lbrk ()
         call output_line ("Usage:")
         call output_line ("   mlevelprjhierarchy [varname] [...options...]")
@@ -995,14 +1128,14 @@ contains
         call output_line ("The following options are possible in [...options...]:")
         call output_lbrk ()
         call output_line ("  ... --FEHIERARCHY [varname] ...")
-        call output_line ("      Create a multilevel projection hierarchy based on the");
-        call output_line ("      FE space hierarchy [varname]. Mandatory argument");
+        call output_line ("      Create a multilevel projection hierarchy based on the")
+        call output_line ("      FE space hierarchy [varname]. Mandatory argument")
       
         return
       end if
 
       if (sargformatted .eq. "CREATEBLOCKVECTOR") then
-        call output_line ("CREATEBLOCKVECTOR - Create an empty block vector.");
+        call output_line ("CREATEBLOCKVECTOR - Create an empty block vector.")
         call output_lbrk ()
         call output_line ("Usage:")
         call output_line ("   createblockvector [varname] [...options...]")
@@ -1012,18 +1145,18 @@ contains
         call output_line ("The following options are possible in [...options...]:")
         call output_lbrk ()
         call output_line ("  ... --FEHIERARCHY [varname] ...")
-        call output_line ("      Defines the FE hierarchy, the vector is based on.");
-        call output_line ("      Mandatory argument");
+        call output_line ("      Defines the FE hierarchy, the vector is based on.")
+        call output_line ("      Mandatory argument")
         call output_lbrk ()
         call output_line ("  ... --LEVEL [varname] ...")
-        call output_line ("      Level in the hierarchy specifying the discretisation of the vector.");
-        call output_line ("      Default is max. level.");
+        call output_line ("      Level in the hierarchy specifying the discretisation of the vector.")
+        call output_line ("      Default is max. level.")
       
         return
       end if
 
       if (sargformatted .eq. "READBLOCKVECTOR") then
-        call output_line ("READBLOCKVECTOR - Read block vector from file.");
+        call output_line ("READBLOCKVECTOR - Read block vector from file.")
         call output_lbrk ()
         call output_line ("Usage:")
         call output_line ("   readblockvector [varname] [...options...]")
@@ -1033,17 +1166,17 @@ contains
         call output_line ("The following options are possible in [...options...]:")
         call output_lbrk ()
         call output_line ("  ... --FILENAME [varname] ...")
-        call output_line ("      Defines the filename of the file to read.");
-        call output_line ("      Mandatory argument");
+        call output_line ("      Defines the filename of the file to read.")
+        call output_line ("      Mandatory argument")
         call output_lbrk ()
         call output_line ("  ... --UNFORMATTED ...")
-        call output_line ("      Read a binary file. Default is formatted, human readable file.");
+        call output_line ("      Read a binary file. Default is formatted, human readable file.")
       
         return
       end if
 
       if (sargformatted .eq. "WRITEBLOCKVECTOR") then
-        call output_line ("WRITEBLOCKVECTOR - Write block vector to file.");
+        call output_line ("WRITEBLOCKVECTOR - Write block vector to file.")
         call output_lbrk ()
         call output_line ("Usage:")
         call output_line ("   writeblockvector [varname] [...options...]")
@@ -1053,36 +1186,39 @@ contains
         call output_line ("The following options are possible in [...options...]:")
         call output_lbrk ()
         call output_line ("  ... --FILENAME [varname] ...")
-        call output_line ("      Defines the filename of the file to read.");
-        call output_line ("      Mandatory argument");
+        call output_line ("      Defines the filename of the file to read.")
+        call output_line ("      Mandatory argument")
         call output_lbrk ()
         call output_line ("  ... --FORMAT [varname] ...")
-        call output_line ("      Defines the format of the numbers in the file.");
-        call output_line ("      Applies only if --UNFORMATTED is not specified.");
-        call output_line ("      Default: E20.10");
+        call output_line ("      Defines the format of the numbers in the file.")
+        call output_line ("      Applies only if --UNFORMATTED is not specified.")
+        call output_line ("      Default: E20.10")
         call output_lbrk ()
         call output_line ("  ... --UNFORMATTED ...")
-        call output_line ("      Read a binary file. Default is formatted, human readable file.");
+        call output_line ("      Read a binary file. Default is formatted, human readable file.")
       
         return
       end if
 
       if (sargformatted .eq. "COPYVECTOR") then
-        call output_line ("COPYVECTOR - Copy a vector.");
+        call output_line ("COPYVECTOR - Copy a vector.")
         call output_lbrk ()
         call output_line ("Usage:")
-        call output_line ("   copysubvector [varsource] [vardest]")
+        call output_line ("   copyvector [varsource] [vardest]")
         call output_lbrk ()
         call output_line ("Copies vector [varsource] to vector [vardest].")
+        call output_line ("The vector may be a full block vector or a single.")
+        call output_line ("subvector.")
         call output_lbrk ()
         call output_line ("Example:")
         call output_line ("    copyvector source dest")
+        call output_line ("    copyvector source[2] dest[1]")
       
         return
       end if
 
       if (sargformatted .eq. "INTERPOLATEVECTOR") then
-        call output_line ("INTERPOLATEVECTOR - Interpolate a vector.");
+        call output_line ("INTERPOLATEVECTOR - Interpolate a vector.")
         call output_lbrk ()
         call output_line ("Usage:")
         call output_line ("   interpolatevector [varsource] [lvlsource] [vardest] [lvldest] [...options...]")
@@ -1098,19 +1234,19 @@ contains
         call output_line ("The following options are possible in [...options...]:")
         call output_lbrk ()
         call output_line ("  ... --MLPRJHIERARCHY [varname] ...")
-        call output_line ("      Defines the underlying projection hierarchy.");
-        call output_line ("      Mandatory argument.");
+        call output_line ("      Defines the underlying projection hierarchy.")
+        call output_line ("      Mandatory argument.")
         call output_lbrk ()
         call output_line ("  ... --FEHIERARCHY [varname] ...")
-        call output_line ("      Defines the underlying FE hierarchy.");
-        call output_line ("      Mandatory argument if source and destination level differ");
-        call output_line ("      by more than one level.");
+        call output_line ("      Defines the underlying FE hierarchy.")
+        call output_line ("      Mandatory argument if source and destination level differ")
+        call output_line ("      by more than one level.")
       
         return
       end if
 
       if (sargformatted .eq. "L2PROJECTION") then
-        call output_line ("L2PROJECTION - Applies an L2 projection to a vector.");
+        call output_line ("L2PROJECTION - Applies an L2 projection to a vector.")
         call output_lbrk ()
         call output_line ("Usage:")
         call output_line ("   l2projection [varsource] [vardest] [...options...]")
@@ -1126,23 +1262,55 @@ contains
         call output_line ("  ... --VERBOSE ...")
         call output_line ("      Activate verbose output.")
         call output_lbrk ()
-        call output_line ("  ... --RELERROR [error} ...")
+        call output_line ("  ... --RELERROR [error] ...")
         call output_line ("      Defines the relative accuracy of the projection.")
       
         return
       end if
 
-      if (sargformatted .eq. "COPYSUBVECTOR") then
-        call output_line ("COPYSUBVECTOR - Copy a subvector.");
+      if (sargformatted .eq. "WRITEUCD") then
+        call output_line ("WRITEUCD - Write a postprocessing file.")
         call output_lbrk ()
         call output_line ("Usage:")
-        call output_line ("   copysubvector [varsource] [sourcecomp] [vardest] [destcomp]")
+        call output_line ("   writeucd [filename] [mesh] [type] [...options...]")
         call output_lbrk ()
-        call output_line ("Copies subvector [sourcecomp] of vector [varsource] to")
-        call output_line ("subvector [destcomp] of vector [vardest].")
+        call output_line ("Writes a postproceessing file [filename] based on the")
+        call output_line ("mesh [mesh]. [type] specifies the type of the output.")
+        call output_line ("[mesh] may be either the name of a mesh or in an indexed")
+        call output_line ("form a mesh in a mesh hierarchy, e.g. ""myhier[3]"".")
         call output_lbrk ()
         call output_line ("Example:")
-        call output_line ("    copysubvector source 1 dest 4")
+        call output_line ("    writeucd mypostproc.vtk mymesh vtk")
+        call output_lbrk ()
+        call output_line ("The following postprocessing output is possible:")
+        call output_lbrk ()
+        call output_line ("  [type] = ""vtk"": VTK-output")
+        call output_line ("           ""gmv"": GMV output")
+        call output_lbrk ()
+        call output_line ("The following parameters are available in [...options...]:")
+        call output_lbrk ()
+        call output_line ("  --POINTDATASCALAR [name] [vector]")
+        call output_line ("          Writes out subvector of vector [vector]")
+        call output_line ("          as scalar array with the name [name]. May be specified")
+        call output_line ("          more than once. The data is interpreted in the corner")
+        call output_line ("          points of the elements. Example:")
+        call output_line ("              --pointdatascalar vel_y myvec[2] 2")
+        call output_lbrk ()
+        call output_line ("  --POINTDATAVEC [name] [vector]")
+        call output_line ("          Writes out a set of subvectors from vector [vector]")
+        call output_line ("          as a vector field with name [name]. [subveccount] specifies")
+        call output_line ("          the number of subvectors and [subvectors...] is a list")
+        call output_line ("          of subvectors. Example to write out component 1 and 2:")
+        call output_line ("              --pointdatavec velocity myvec[1,2]")
+        call output_line ("          Example to write out component 1 till 3:")
+        call output_line ("              --pointdatavec velocity myvec[1..3]")
+        call output_lbrk ()
+        call output_line ("  --CELLDATASCALAR [name] [vector] [subvector]")
+        call output_line ("          Writes out subvector [subvector] of vector [vector]")
+        call output_line ("          as scalar array with the name [name]. May be specified")
+        call output_line ("          more than once. The data is interpreted in the elements.")
+        call output_line ("          Example:")
+        call output_line ("              --celldatascalar pressure myvec 3")
       
         return
       end if
@@ -3189,71 +3357,6 @@ contains
 
   ! ***************************************************************************
 
-  subroutine cmdprs_do_copysubvector (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: WRITEBLOCKVECTOR.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    type(t_vectorBlock), pointer :: p_rvectorBlock1,p_rvectorBlock2
-    character(len=COLLCT_MLNAME) :: ssource, sdest, stoken
-    integer :: icomp1, icomp2
-    
-    if (size(Sargs) .lt. 5) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Source vector and component
-    call cmdprs_getparam (Sargs,2,ssource,.true.,.false.)
-    call cmdprs_getparam (Sargs,3,stoken,.false.,.false.)
-    read (stoken,*) icomp1
-    
-    ! Destination
-    call cmdprs_getparam (Sargs,4,sdest,.true.,.false.)
-    call cmdprs_getparam (Sargs,5,stoken,.false.,.false.)
-    read (stoken,*) icomp2
-
-    p_rvectorBlock1 => collct_getvalue_vec (rcmdStatus%rcollection, ssource)
-    if (.not. associated(p_rvectorBlock1)) then
-      call output_line ("Invalid source vector!")
-      return
-    end if
-    
-    if ((icomp1 .lt. 1) .or. (icomp1 .gt. p_rvectorBlock1%nblocks)) then
-      call output_line ("Invalid source component!")
-      return
-    end if
-
-    p_rvectorBlock2 => collct_getvalue_vec (rcmdStatus%rcollection, sdest)
-    if (.not. associated(p_rvectorBlock2)) then
-      call output_line ("Invalid destination vector!")
-      return
-    end if
-
-    if ((icomp2 .lt. 1) .or. (icomp2 .gt. p_rvectorBlock1%nblocks)) then
-      call output_line ("Invalid destination component!")
-      return
-    end if
-    
-    call lsyssc_copyVector (p_rvectorBlock1%RvectorBlock(icomp1),&
-        p_rvectorBlock2%RvectorBlock(icomp2))
-    
-  end subroutine
-
-  ! ***************************************************************************
-
   subroutine cmdprs_do_copyvector (rcmdStatus,Sargs)
   
   !<description>
@@ -3272,30 +3375,83 @@ contains
   
     ! local variables
     type(t_vectorBlock), pointer :: p_rvectorBlock1,p_rvectorBlock2
-    character(len=COLLCT_MLNAME) :: ssource, sdest
+    character(len=SYS_STRLEN) :: ssourceall, sdestall, ssource, sdest
+    integer, dimension(:), pointer :: p_IdxSource,p_IdxDest
+    logical :: bsourcescalar, bdestscalar
+    integer :: icomp1, icomp2
     
     if (size(Sargs) .lt. 3) then
       call output_line ("Not enough arguments.")
       return
     end if
     
-    ! Source vector and component
-    call cmdprs_getparam (Sargs,2,ssource,.true.,.false.)
-    call cmdprs_getparam (Sargs,3,sdest,.true.,.false.)
+    ! Source and destination vector
+    call cmdprs_getparam (Sargs,2,ssourceall,.true.,.false.)
+    call cmdprs_getparam (Sargs,3,sdestall,.true.,.false.)
+    
+    ! Vector name and components
+    call cmdprs_parseIndexString1D (ssourceall,ssource,p_IdxSource)
+    call cmdprs_parseIndexString1D (sdestall,sdest,p_IdxDest)
+    
+    bsourcescalar = associated(p_IdxSource)
+    bdestscalar = associated(p_IdxDest)
+    if (bsourcescalar .neqv. bdestscalar) then
+      if (bsourcescalar) deallocate(p_IdxSource)
+      if (bdestscalar) deallocate(p_IdxDest)
+      call output_line ("Both vectors must be block or scalar")
+      return
+    end if
 
     p_rvectorBlock1 => collct_getvalue_vec (rcmdStatus%rcollection, ssource)
     if (.not. associated(p_rvectorBlock1)) then
+      if (bsourcescalar) deallocate(p_IdxSource)
+      if (bdestscalar) deallocate(p_IdxDest)
       call output_line ("Invalid source vector!")
       return
     end if
     
     p_rvectorBlock2 => collct_getvalue_vec (rcmdStatus%rcollection, sdest)
     if (.not. associated(p_rvectorBlock2)) then
+      if (bsourcescalar) deallocate(p_IdxSource)
+      if (bdestscalar) deallocate(p_IdxDest)
       call output_line ("Invalid destination vector!")
       return
     end if
 
-    call lsysbl_copyVector (p_rvectorBlock1,p_rvectorBlock2)
+    if (.not. bsourcescalar) then
+      ! Block copy
+      call lsysbl_copyVector (p_rvectorBlock1,p_rvectorBlock2)
+    else
+      if ((ubound(p_IdxSource,1) .ne. 1) .or. (ubound(p_IdxDest,1) .ne. 1)) then
+        deallocate(p_IdxSource)
+        deallocate(p_IdxDest)
+        call output_line ("Only one component allowed!")
+        return
+      end if
+      
+      icomp1 = p_IdxSource(1)
+      icomp2 = p_IdxDest(1)
+    
+      if ((icomp1 .lt. 1) .or. (icomp1 .gt. p_rvectorBlock1%nblocks)) then
+        deallocate(p_IdxSource)
+        deallocate(p_IdxDest)
+        call output_line ("Invalid source component!")
+        return
+      end if
+
+      if ((icomp2 .lt. 1) .or. (icomp2 .gt. p_rvectorBlock1%nblocks)) then
+        deallocate(p_IdxSource)
+        deallocate(p_IdxDest)
+        call output_line ("Invalid destination component!")
+        return
+      end if
+      
+      call lsyssc_copyVector (p_rvectorBlock1%RvectorBlock(icomp1),&
+          p_rvectorBlock2%RvectorBlock(icomp2))
+
+      deallocate(p_IdxSource)
+      deallocate(p_IdxDest)
+    end if
     
   end subroutine
 
@@ -3656,6 +3812,271 @@ contains
       call lsyssc_releaseMatrix (rmatrixMass)
     end do
 
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine cmdprs_do_writeucd (rcmdStatus,Sargs)
+  
+  !<description>
+    ! Command: WRITEUCD.
+  !</description>
+  
+  !<inputoutput>
+    ! Current status block.
+    type(t_commandstatus), intent(inout) :: rcmdStatus
+  !</inputoutput>
+
+  !<input>
+    ! Command line arguments.
+    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
+  !</input>
+  
+    ! local variables
+    character(len=SYS_STRLEN) :: sfilename,smesh,stype,stoken,svecname,sname
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_vectorBlock), pointer :: p_rvectorBlock
+    integer, dimension(:), pointer :: p_IdxVec
+    real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
+    type(t_meshHierarchy), pointer :: p_rmeshHierarchy
+    type(t_ucdExport) :: rexport
+    integer :: iparam
+    logical :: bexists
+    
+    if (size(Sargs) .lt. 4) then
+      call output_line ("Not enough arguments.")
+      return
+    end if
+    
+    ! Source vector and destination
+    call cmdprs_getparam (Sargs,2,sfilename,.false.,.true.)
+    call cmdprs_getparam (Sargs,3,stoken,.true.,.false.)
+    call cmdprs_getparam (Sargs,4,stype,.true.,.false.)
+
+    ! Get the mesh. Probably an index in a mesh hierarchy.
+    call cmdprs_parseIndexString1D (stoken,smesh,p_IdxVec)
+    if (.not. associated (p_IdxVec)) then
+      p_rtriangulation => collct_getvalue_tria(rcmdStatus%rcollection,smesh,bexists=bexists)
+      if (.not. bexists) then
+        call output_line ("Unknown variable!")
+        return
+      end if
+    else
+      ! A mesh in a hierarchy.
+      p_rmeshHierarchy => collct_getvalue_mshh(rcmdStatus%rcollection,smesh,bexists=bexists)
+      if (.not. bexists) then
+        deallocate(p_IdxVec)
+        call output_line ("Unknown variable!")
+        return
+      end if
+      
+      if ((p_IdxVec(1) .lt. 1) .or. (p_IdxVec(1) .gt. p_rmeshHierarchy%nlevels)) then
+        deallocate(p_IdxVec)
+        call output_line ("Invalid mesh level!")
+        return
+      end if
+      
+      ! Get the mesh
+      p_rtriangulation => p_rmeshHierarchy%p_Rtriangulations(p_IdxVec(1))
+      deallocate(p_IdxVec)
+    end if
+    
+    ! Open the UCD file.
+    if (stype .eq. "VTK") then
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfilename)
+    else if (stype .eq. "GMV") then
+      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfilename)
+    else
+      call output_line ("Unknown output format!")
+      return
+    end if
+    
+    ! Loop through the parameters
+    iparam = 5
+    do while (iparam .le. size(Sargs))
+      ! Next token
+      call cmdprs_getparam (Sargs,iparam,stoken,.true.,.false.)
+      iparam = iparam + 1
+      
+      if (stoken .eq. "--POINTDATASCALAR") then 
+        
+        ! Write scalar subvector for points
+        
+        if (iparam .ge. size(Sargs)) then
+          ! Exit the loop, write the file.
+          call output_line ("Invalid argument!")
+          exit
+        else
+          ! Next tokens
+          call cmdprs_getparam (Sargs,iparam,sname,.false.,.true.)
+          call cmdprs_getparam (Sargs,iparam+1,stoken,.true.,.false.)
+          iparam = iparam + 2
+          
+          ! Get the vector. Array specifier must be given.
+          call cmdprs_parseIndexString1D (stoken,svecname,p_IdxVec)
+          if ((svecname .eq. "") .or. (.not. associated(p_IdxVec))) then
+            call output_line ("Invalid data vector!")
+            exit
+          end if
+          
+          p_rvectorBlock => collct_getvalue_vec (rcmdStatus%rcollection, svecname)
+          if (.not. associated(p_rvectorBlock)) then
+            deallocate(p_IdxVec)
+            call output_line ("Invalid data vector!")
+            exit
+          end if
+          
+          if ((p_IdxVec(1) .lt. 1) .or. (p_IdxVec(1) .gt. p_rvectorBlock%nblocks)) then
+            deallocate(p_IdxVec)
+            call output_line ("Invalid component!")
+            exit
+          end if
+          
+          ! Write the block
+          call spdp_projectToVertices (p_rvectorBlock%RvectorBlock(p_IdxVec(1)),p_Ddata1)
+          call ucd_addVariableVertexBased (rexport,trim(sname),UCD_VAR_STANDARD,p_Ddata1)
+          deallocate(p_Ddata1)
+          
+          deallocate(p_IdxVec)
+          
+        end if        
+
+      else if (stoken .eq. "--POINTDATAVEC") then 
+      
+        ! Write vector field for points
+
+        if (iparam .ge. size(Sargs)) then
+          ! Exit the loop, write the file.
+          call output_line ("Invalid argument!")
+          exit
+        else
+          ! Next tokens
+          call cmdprs_getparam (Sargs,iparam,sname,.false.,.true.)
+          call cmdprs_getparam (Sargs,iparam+1,stoken,.true.,.false.)
+          iparam = iparam + 2
+          
+          ! Get the vector. Array specifier must be given.
+          call cmdprs_parseIndexString1D (stoken,svecname,p_IdxVec)
+          if ((svecname .eq. "") .or. (.not. associated(p_IdxVec))) then
+            call output_line ("Invalid data vector!")
+            exit
+          end if
+          
+          p_rvectorBlock => collct_getvalue_vec (rcmdStatus%rcollection, svecname)
+          if (.not. associated(p_rvectorBlock)) then
+            deallocate(p_IdxVec)
+            call output_line ("Invalid data vector!")
+            exit
+          end if
+          
+          ! Up to three components
+          nullify(p_Ddata1)
+          nullify(p_Ddata2)
+          nullify(p_Ddata3)
+          
+          if (size(p_IdxVec) .ge. 1) then
+            if ((p_IdxVec(1) .lt. 1) .or. (p_IdxVec(1) .gt. p_rvectorBlock%nblocks)) then
+              deallocate(p_IdxVec)
+              call output_line ("Invalid component!")
+              exit
+            end if
+            call spdp_projectToVertices (p_rvectorBlock%RvectorBlock(p_IdxVec(1)),p_Ddata1)
+          end if  
+
+          if (size(p_IdxVec) .ge. 2) then
+            if ((p_IdxVec(2) .lt. 1) .or. (p_IdxVec(2) .gt. p_rvectorBlock%nblocks)) then
+              deallocate(p_Ddata1)
+              deallocate(p_IdxVec)
+              call output_line ("Invalid component!")
+              exit
+            end if
+            call spdp_projectToVertices (p_rvectorBlock%RvectorBlock(p_IdxVec(1)),p_Ddata2)
+          end if  
+
+          if (size(p_IdxVec) .ge. 3) then
+            if ((p_IdxVec(2) .lt. 1) .or. (p_IdxVec(2) .gt. p_rvectorBlock%nblocks)) then
+              deallocate(p_Ddata2)
+              deallocate(p_Ddata1)
+              deallocate(p_IdxVec)
+              call output_line ("Invalid component!")
+              exit
+            end if
+            call spdp_projectToVertices (p_rvectorBlock%RvectorBlock(p_IdxVec(1)),p_Ddata3)
+          end if  
+          
+          ! Write the block
+          select case (size(p_IdxVec))
+          case (1)
+            call ucd_addVarVertBasedVec (rexport,trim(sname),p_Ddata1)
+            deallocate(p_Ddata1)
+          case (2)
+            call ucd_addVarVertBasedVec (rexport,trim(sname),p_Ddata1,p_Ddata2)
+            deallocate(p_Ddata2)
+            deallocate(p_Ddata1)
+          case (3:)
+            call ucd_addVarVertBasedVec (rexport,trim(sname),p_Ddata1,p_Ddata2,p_Ddata3)
+            deallocate(p_Ddata3)
+            deallocate(p_Ddata2)
+            deallocate(p_Ddata1)
+          end select
+          
+          deallocate(p_IdxVec)
+          
+        end if
+
+      else if (stoken .eq. "--CELLDATASCALAR") then 
+
+        ! Write scalar subvector for cells
+
+        if (iparam .ge. size(Sargs)) then
+          ! Exit the loop, write the file.
+          call output_line ("Invalid argument!")
+          exit
+        else
+          ! Next tokens
+          call cmdprs_getparam (Sargs,iparam,sname,.false.,.true.)
+          call cmdprs_getparam (Sargs,iparam+1,stoken,.true.,.false.)
+          iparam = iparam + 2
+          
+          ! Get the vector. Array specifier must be given.
+          call cmdprs_parseIndexString1D (stoken,svecname,p_IdxVec)
+          if ((svecname .eq. "") .or. (.not. associated(p_IdxVec))) then
+            call output_line ("Invalid data vector!")
+            exit
+          end if
+          
+          p_rvectorBlock => collct_getvalue_vec (rcmdStatus%rcollection, svecname)
+          if (.not. associated(p_rvectorBlock)) then
+            deallocate(p_IdxVec)
+            call output_line ("Invalid data vector!")
+            exit
+          end if
+          
+          if ((p_IdxVec(1) .lt. 1) .or. (p_IdxVec(1) .gt. p_rvectorBlock%nblocks)) then
+            deallocate(p_IdxVec)
+            call output_line ("Invalid component!")
+            exit
+          end if
+          
+          ! Write the block
+          call spdp_projectToCells (p_rvectorBlock%RvectorBlock(p_IdxVec(1)),p_Ddata1)
+          call ucd_addVariableElementBased (rexport,trim(sname),UCD_VAR_STANDARD,p_Ddata1)
+          deallocate(p_Ddata1)
+          
+          deallocate(p_IdxVec)
+          
+        end if        
+
+      else
+        call output_line ("Invalid parameter!")
+        exit
+      end if
+    end do
+    
+    ! Write the file, done.
+    call ucd_write(rexport)
+    call ucd_release(rexport)
+    
   end subroutine
 
 end module
