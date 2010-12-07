@@ -1748,8 +1748,8 @@ contains
       ! We build local matrices for all our elements 
       ! in the set simultaneously. Get the positions of the local matrices
       ! in the global matrix.
-      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTrial,p_IdofsTest,p_Kentry,&
-          ubound(p_IdofsTrial,1),ubound(p_IdofsTest,1),IELmax-IELset+1)
+      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTest,p_IdofsTrial,p_Kentry,&
+          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)
 
       ! -------------------- ELEMENT EVALUATION PHASE ----------------------
       
