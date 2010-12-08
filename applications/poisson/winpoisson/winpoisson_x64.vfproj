@@ -56,6 +56,7 @@
 		<File RelativePath="..\src\poisson2d_method1_mg.f90"/>
 		<File RelativePath="..\src\poisson2d_method1_ncc.f90"/>
 		<File RelativePath="..\src\poisson2d_method1_prolmat.f90"/>
+		<File RelativePath="..\src\poisson2d_method1_robin.f90"/>
 		<File RelativePath="..\src\poisson2d_method2.f90"/>
 		<File RelativePath="..\src\poisson2d_method2_cmsort.f90"/>
 		<File RelativePath="..\src\poisson2d_method2_collect.f90"/>
