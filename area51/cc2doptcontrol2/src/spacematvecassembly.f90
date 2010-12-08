@@ -2171,6 +2171,15 @@ contains
             call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
           end if
         end if
+        
+        ! WARNING: The stabilisation operator is always associated to the
+        ! operator y\nabla and not to the equation! Therefore, the sign of
+        ! dupsam is always set in such a way that it annihilates any
+        ! "-" sign in front of y\nabla -- as it appears in the dual equation.
+        !
+        ! For standatd EOJ and other symmetric stabilisation that set up
+        ! a separate stabilisation term independent of y\nabla, abs(dupsam) is
+        ! therefore the correct weight for the stabilisation.
                       
         select case (rstabilisation%cupwind)
         case (CCMASM_STAB_STREAMLINEDIFF)
@@ -2241,7 +2250,7 @@ contains
           ! Prepare the upwind structure for the assembly of the convection.
           rupwindStabil%dupsam = abs(rstabilisation%dupsam)
           rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-          rupwindStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
+          rupwindStabil%dtheta = dgamma ! ???
           
           ! Apply the upwind operator.
           call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
@@ -2296,11 +2305,14 @@ contains
           ! There's not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
-          ! Set stabilisation parameter
+          ! Set stabilisation parameter.
+          ! Remove any "-" sign from dupsam as this is a symmetric stabilisation
+          ! which is always added, independently of whether it is the primal
+          ! or the dual equation!
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Matrix weight
-          rjumpStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
+          rjumpStabil%dtheta = dgamma
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -2343,10 +2355,13 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
+          ! Remove any "-" sign from dupsam as this is a symmetric stabilisation
+          ! which is always added, independently of whether it is the primal
+          ! or the dual equation!
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Matrix weight
-          rjumpStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
+          rjumpStabil%dtheta = dgamma
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -2389,14 +2404,14 @@ contains
           ! We use the precomputed EOJ matrix and sum it up to the
           ! existing matrix.
           call lsyssc_matrixLinearComb(rmatrixEOJ,&
-              dgamma*mprim_signum(rstabilisation%dupsam),&
+              dgamma,&
               rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 
           if (.not. bshared) then
             ! Also for the Y-velocity.
             call lsyssc_matrixLinearComb(rmatrixEOJ,&
-                dgamma*mprim_signum(rstabilisation%dupsam),&
+                dgamma,&
                 rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
           end if
@@ -2420,10 +2435,13 @@ contains
             rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
             
             ! Set stabilisation parameter
+            ! Remove any "-" sign from dupsam as this is a symmetric stabilisation
+            ! which is always added, independently of whether it is the primal
+            ! or the dual equation!
             rjumpStabil%dgamma = abs(rstabilisation%dupsam)
             
             ! Matrix weight
-            rjumpStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
+            rjumpStabil%dtheta = dgamma
 
             ! Call the jump stabilisation technique to stabilise that stuff.   
             ! We can assemble the jump part any time as it's independent of any
@@ -2443,14 +2461,14 @@ contains
             ! We use the precomputed EOJ matrix and sum it up to the
             ! existing matrix.
             call lsyssc_matrixLinearComb(rmatrixEOJ,&
-                dgamma*mprim_signum(rstabilisation%dupsam),&
+                dgamma,&
                 rmatrix%RmatrixBlock(1,1),1.0_DP,&
                 rmatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 
             if (.not. bshared) then
               ! Also for the Y-velocity.
               call lsyssc_matrixLinearComb(rmatrixEOJ,&
-                  dgamma*mprim_signum(rstabilisation%dupsam),&
+                  dgamma,&
                   rmatrix%RmatrixBlock(2,2),1.0_DP,&
                   rmatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
             end if
@@ -3631,7 +3649,7 @@ contains
           ! Prepare the upwind structure for the assembly of the convection.
           rupwindStabil%dupsam = abs(rstabilisation%dupsam)
           rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-          rupwindStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
+          rupwindStabil%dtheta = dcx*dgamma ! ???
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
@@ -3687,7 +3705,7 @@ contains
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Matrix weight
-          rjumpStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
+          rjumpStabil%dtheta = dcx*dgamma
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -3736,7 +3754,7 @@ contains
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Matrix weight
-          rjumpStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
+          rjumpStabil%dtheta = dcx*dgamma
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -3781,11 +3799,11 @@ contains
           ! the matrix -- only its sign is not incorporated, so we do that here.
           call lsyssc_scalarMatVec(rmatrixEOJ,&
               rx%RvectorBlock(1),rb%RvectorBlock(1),&
-              -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
+              -dcx*dgamma,1.0_DP)
 
           call lsyssc_scalarMatVec(rmatrixEOJ,&
               rx%RvectorBlock(2),rb%RvectorBlock(2),&
-              -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
+              -dcx*dgamma,1.0_DP)
 
         case default
           print *,'Don''t know how to set up nonlinearity!?!'
@@ -3808,7 +3826,7 @@ contains
             rjumpStabil%dgamma = abs(rstabilisation%dupsam)
             
             ! Matrix weight
-            rjumpStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
+            rjumpStabil%dtheta = dcx*dgamma
 
             ! Call the jump stabilisation technique to stabilise that stuff.   
             ! We can assemble the jump part any time as it's independent of any
@@ -3832,11 +3850,11 @@ contains
             ! the matrix -- only its sign is not incorporated, so we do that here.
             call lsyssc_scalarMatVec(rmatrixEOJ,&
                 rx%RvectorBlock(1),rb%RvectorBlock(1),&
-                -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
+                -dcx*dgamma,1.0_DP)
 
             call lsyssc_scalarMatVec(rmatrixEOJ,&
                 rx%RvectorBlock(2),rb%RvectorBlock(2),&
-                -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
+                -dcx*dgamma,1.0_DP)
 
           case default
             ! No stabilisation
