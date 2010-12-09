@@ -1253,17 +1253,14 @@ contains
         if (coeffMatrix_CZ   > 0) nmatrices = nmatrices+1
 
         ! Initialise memory for constant coefficient matrices
-        call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(convectionAFC), nmatrices)
+        if (nmatrices > 0)&
+            call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(convectionAFC), nmatrices)
 
       else
         ! Resize stabilisation structure
         call afcstab_resizeStabilisation(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(templateMatrix))
-
-        rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec =&
-            iand(rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec,&
-            not(AFCSTAB_HAS_OFFDIAGONALEDGES))
       end if
 
       ! Copy constant coefficient matrices to stabilisation structure
@@ -1288,7 +1285,6 @@ contains
       end if
     end if
 
-
     ! The same applies to the diffusive stabilisation structure
     if (diffusionAFC > 0) then
       if (rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
@@ -1303,17 +1299,14 @@ contains
         if (coeffMatrix_S   > 0) nmatrices = nmatrices+1
 
         ! Initialise memory for constant coefficient matrices
-        call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(diffusionAFC), nmatrices)
+        if (nmatrices > 0)&
+            call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(diffusionAFC), nmatrices)
 
       else
         ! Resize stabilisation structure
         call afcstab_resizeStabilisation(&
             rproblemLevel%Rafcstab(diffusionAFC),&
             rproblemLevel%Rmatrix(templateMatrix))
-
-        rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec =&
-            iand(rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec,&
-            not(AFCSTAB_HAS_OFFDIAGONALEDGES))
       end if
 
       ! Copy constant coefficient matrices to stabilisation structure
@@ -1667,8 +1660,8 @@ contains
       call ppsol_readPGM(0, ssolutionName, rpgm)
 
       ! Set pointers
-      call storage_getbase_double2D(rproblemLevel%rtriangulation&
-          %h_DvertexCoords, p_DvertexCoords)
+      call storage_getbase_double2D(&
+          rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
       call storage_getbase_double(rvector%h_Ddata, p_Ddata)
 
       ! Initialize the solution by the image data
@@ -2040,8 +2033,8 @@ contains
 
       ! Build the discretised target functional. The contribution of
       ! the surfae integral comes in be weakly impose boundary conditions
-      call linf_buildVectorScalar2(rform, .true., rvector&
-          %RvectorBlock(1), transp_coeffVectorAnalytic, rcollection)
+      call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
+          transp_coeffVectorAnalytic, rcollection)
 
 
     case DEFAULT
@@ -2374,8 +2367,8 @@ contains
 
     if (lumpedMassMatrix > 0) then
       ! Set pointer to the lumped mass matrix
-      call lsyssc_getbase_double(rproblemLevel&
-          %Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
+      call lsyssc_getbase_double(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
       NEQ = rproblemLevel%Rmatrix(lumpedMassMatrix)%NEQ
 
     else
@@ -2499,10 +2492,10 @@ contains
 
           ! Compute the exact value of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
-              ffunctionReference=transp_refFuncAnalytic, rcollection&
-              =rcollection, rdiscretisation=rsolutionPrimal&
-              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncAnalytic)
+              ffunctionReference=transp_refFuncAnalytic,&
+              rcollection=rcollection,&
+              rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+              ffunctionWeight=transp_weightFuncAnalytic)
         end if
 
 
@@ -2545,10 +2538,10 @@ contains
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dtargetFunc,&
-              ffunctionReference=transp_errorBdrInt2D_sim, rcollection&
-              =rcollection, rdiscretisation=rsolutionPrimal&
-              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D_sim)
+              ffunctionReference=transp_errorBdrInt2D_sim,&
+              rcollection=rcollection,&
+              rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+              ffunctionWeight=transp_weightFuncBdrInt2D_sim)
 
           ! Compute exact error in target functional. Note that the
           ! routine pperr_scalar computes the value $J(0-u_h)$ so that we
@@ -2559,17 +2552,17 @@ contains
 
           ! Compute the exact error of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetError,&
-              ffunctionReference=transp_errorBdrInt2D_sim, rcollection&
-              =rcollection, rdiscretisation=rsolutionPrimal&
-              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D_sim)
+              ffunctionReference=transp_errorBdrInt2D_sim,&
+              rcollection=rcollection,&
+              rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+              ffunctionWeight=transp_weightFuncBdrInt2D_sim)
 
           ! Compute the exact value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetFunc,&
-              ffunctionReference=transp_refFuncBdrInt2D_sim, rcollection&
-              =rcollection, rdiscretisation=rsolutionPrimal&
-              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D_sim)
+              ffunctionReference=transp_refFuncBdrInt2D_sim,&
+              rcollection=rcollection,&
+              rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+              ffunctionWeight=transp_weightFuncBdrInt2D_sim)
         end if
 
 
@@ -2638,10 +2631,10 @@ contains
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
-              ffunctionReference=transp_errorBdrInt2D_sim, rcollection&
-              =rcollection, rdiscretisation=rsolutionPrimal&
-              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D_sim)
+              ffunctionReference=transp_errorBdrInt2D_sim,&
+              rcollection=rcollection,&
+              rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+              ffunctionWeight=transp_weightFuncBdrInt2D_sim)
 
           ! Add boundary contribution
           dtargetFunc = dtargetFunc + daux
@@ -2660,10 +2653,10 @@ contains
 
           ! Compute the exact value of the quantity of interest.
           call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
-              ffunctionReference=transp_refFuncAnalytic, rcollection&
-              =rcollection, rdiscretisation=rsolutionPrimal&
-              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncAnalytic)
+              ffunctionReference=transp_refFuncAnalytic,&
+              rcollection=rcollection,&
+              rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+              ffunctionWeight=transp_weightFuncAnalytic)
 
           ! Get the name of the function used for evaluating the
           ! surface integral part of the target functional
@@ -2681,20 +2674,20 @@ contains
 
           ! Compute the exact error of the quantity of interest at the boundary
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
-              ffunctionReference=transp_errorBdrInt2D_sim, rcollection&
-              =rcollection, rdiscretisation=rsolutionPrimal&
-              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D_sim)
+              ffunctionReference=transp_errorBdrInt2D_sim,&
+              rcollection=rcollection,&
+              rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+              ffunctionWeight=transp_weightFuncBdrInt2D_sim)
 
           ! Add boundary contribution
           dexactTargetError = dexactTargetError + daux
 
           ! Compute the exact value of the quantity of interest at the boundary
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
-              ffunctionReference=transp_refFuncBdrInt2D_sim, rcollection&
-              =rcollection, rdiscretisation=rsolutionPrimal&
-              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D_sim)
+              ffunctionReference=transp_refFuncBdrInt2D_sim,&
+              rcollection=rcollection,&
+              rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+              ffunctionWeight=transp_weightFuncBdrInt2D_sim)
 
           ! Add boundary contribution
           dexactTargetFunc = dexactTargetFunc + daux
@@ -3025,7 +3018,7 @@ contains
 
       ! We need the global norm of the scalar error variable
       call pperr_scalar(PPERR_H1ERROR, dsolution,&
-          rsolution %RvectorBlock(1))
+          rsolution%RvectorBlock(1))
 
       call output_line('Total percentage error:       '//trim(sys_sdEP(derror/dsolution,15,6)))
 
@@ -3047,8 +3040,8 @@ contains
 
       ! We need the global norm of the scalar error variable
       call lsyssc_createVector(rvectorScalar, rerror%NEQ, .true.)
-      call pperr_scalar(PPERR_H1ERROR, dsolution, rsolution&
-          %RvectorBlock(1), relementError=rvectorScalar)
+      call pperr_scalar(PPERR_H1ERROR, dsolution,&
+          rsolution%RvectorBlock(1), relementError=rvectorScalar)
 
       call output_line('Total percentage error: '//trim(sys_sdEP(derror/dsolution,15,6)))
       call output_lbrk()
@@ -3152,10 +3145,10 @@ contains
       call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
 
       ! Set pointers
-      call storage_getbase_int2D(rproblemLevel%rtriangulation&
-          %h_IneighboursAtElement, p_IneighboursAtElement)
-      call storage_getbase_int2D(rproblemLevel%rtriangulation&
-          %h_IverticesAtElement, p_IverticesAtElement)
+      call storage_getbase_int2D(&
+          rproblemLevel%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+      call storage_getbase_int2D(&
+          rproblemLevel%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
       call lsyssc_getbase_double(rerror, p_Ddata)
 
       ! Compute protection layers
@@ -3471,8 +3464,8 @@ contains
         ! type to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(p_rproblemLevel&
-            %Rmatrix(templateMatrix), rgraph)
+        call grph_createGraphFromMatrix(&
+            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true.)
 
@@ -3494,8 +3487,8 @@ contains
             rcollection%p_rvectorQuickAccess1 => rsolution
 
             ! Perform h-adaptation and update the triangulation structure
-            call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
-                %rtriangulation, relementError, rcollection)
+            call transp_adaptTriangulation(rhadapt,&
+                p_rproblemLevel%rtriangulation, relementError, rcollection)
 
             ! Release element-wise error distribution
             call lsyssc_releaseVector(relementError)
@@ -3505,8 +3498,8 @@ contains
                 p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
             ! Update the template matrix according to the sparsity pattern
-            call grph_generateMatrix(rgraph, p_rproblemLevel&
-                %Rmatrix(templateMatrix))
+            call grph_generateMatrix(rgraph,&
+                p_rproblemLevel%Rmatrix(templateMatrix))
 
             ! Resize the solution vector accordingly
             call lsysbl_resizeVectorBlock(rsolution, &
@@ -3694,15 +3687,15 @@ contains
         rcollection%p_rvectorQuickAccess1 => rsolution
 
         ! Perform h-adaptation and update the triangulation structure
-        call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
-            %rtriangulation, relementError, rcollection)
+        call transp_adaptTriangulation(rhadapt,&
+            p_rproblemLevel%rtriangulation, relementError, rcollection)
 
         ! Release element-wise error distribution
         call lsyssc_releaseVector(relementError)
 
         ! Update the template matrix according to the sparsity pattern
-        call grph_generateMatrix(rgraph, p_rproblemLevel&
-            %Rmatrix(templateMatrix))
+        call grph_generateMatrix(rgraph,&
+            p_rproblemLevel%Rmatrix(templateMatrix))
 
         ! Resize the solution vector accordingly
         call lsysbl_resizeVectorBlock(rsolution, &
@@ -3970,8 +3963,8 @@ contains
         ! to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(p_rproblemLevel&
-            %Rmatrix(templateMatrix), rgraph)
+        call grph_createGraphFromMatrix(&
+            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true.)
 
@@ -4078,16 +4071,16 @@ contains
       rcollection%p_rvectorQuickAccess1 => rsolution
 
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
-          %rtriangulation, relementError, rcollection)
+      call transp_adaptTriangulation(rhadapt,&
+          p_rproblemLevel%rtriangulation, relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
-      call grph_generateMatrix(rgraph, p_rproblemLevel&
-          %Rmatrix(templateMatrix))
+      call grph_generateMatrix(rgraph,&
+          p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolution, p_rproblemLevel&
-          %Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(rsolution,&
+          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
 
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)
@@ -4273,8 +4266,8 @@ contains
         ! to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(p_rproblemLevel&
-            %Rmatrix(templateMatrix), rgraph)
+        call grph_createGraphFromMatrix(&
+            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true.)
 
@@ -4470,16 +4463,16 @@ contains
       rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
 
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
-          %rtriangulation, relementError, rcollection)
+      call transp_adaptTriangulation(rhadapt,&
+          p_rproblemLevel%rtriangulation, relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
-      call grph_generateMatrix(rgraph, p_rproblemLevel&
-          %Rmatrix(templateMatrix))
+      call grph_generateMatrix(rgraph,&
+          p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolutionPrimal, p_rproblemLevel&
-          %Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(rsolutionPrimal,&
+          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
 
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)
@@ -4663,8 +4656,8 @@ contains
         ! to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(p_rproblemLevel&
-            %Rmatrix(templateMatrix), rgraph)
+        call grph_createGraphFromMatrix(&
+            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true.)
 
@@ -4771,16 +4764,16 @@ contains
       rcollection%p_rvectorQuickAccess1 => rsolution
 
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
-          %rtriangulation, relementError, rcollection)
+      call transp_adaptTriangulation(rhadapt,&
+          p_rproblemLevel%rtriangulation, relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
-      call grph_generateMatrix(rgraph, p_rproblemLevel&
-          %Rmatrix(templateMatrix))
+      call grph_generateMatrix(rgraph,&
+          p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolution, p_rproblemLevel&
-          %Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(rsolution,&
+          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
 
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)
@@ -4972,8 +4965,8 @@ contains
         ! to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(p_rproblemLevel&
-            %Rmatrix(templateMatrix), rgraph)
+        call grph_createGraphFromMatrix(&
+            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true.)
 
@@ -5170,16 +5163,15 @@ contains
       rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
 
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
-          %rtriangulation, relementError, rcollection)
+      call transp_adaptTriangulation(rhadapt,&
+          p_rproblemLevel%rtriangulation, relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
-      call grph_generateMatrix(rgraph, p_rproblemLevel&
-          %Rmatrix(templateMatrix))
+      call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolutionPrimal, p_rproblemLevel&
-          %Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(rsolutionPrimal,&
+          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
 
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)

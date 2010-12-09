@@ -1321,7 +1321,8 @@ contains
         if (coeffMatrix_CYZ  > 0) nmatrices = nmatrices+1
 
         ! Initialise memory for constant coefficient matrices
-        call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(inviscidAFC), nmatrices)
+        if (nmatrices > 0)&
+            call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(inviscidAFC), nmatrices)
 
       else
         ! Resize stabilisation structure
