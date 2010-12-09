@@ -139,25 +139,25 @@ Rate of convergence     : 9.266907052634352E-02
 
 Calculating 2D Stokes-Problem 1 - Schur-Complement
 --------------------------------------------------
-BiCGStab: Iteration 0,  !!RES!! = 1.103253824600793E-01
-BiCGStab: Iteration 1,  !!RES!! = 4.212394313144030E-02
-BiCGStab: Iteration 2,  !!RES!! = 9.356222037301165E-03
-BiCGStab: Iteration 3,  !!RES!! = 3.320205314935705E-03
-BiCGStab: Iteration 4,  !!RES!! = 1.460497468356730E-03
-BiCGStab: Iteration 5,  !!RES!! = 4.151246975831422E-04
-BiCGStab: Iteration 6,  !!RES!! = 6.378609767308802E-05
-BiCGStab: Iteration 7,  !!RES!! = 1.403789328901361E-05
-BiCGStab: Iteration 8,  !!RES!! = 2.911434901090193E-06
-BiCGStab: Iteration 9,  !!RES!! = 8.914118229368840E-07
+BiCGStab: Iteration 0,  !!RES!! = 1.103253824600792E-01
+BiCGStab: Iteration 1,  !!RES!! = 4.212394313144032E-02
+BiCGStab: Iteration 2,  !!RES!! = 9.356222037301085E-03
+BiCGStab: Iteration 3,  !!RES!! = 3.320205314935697E-03
+BiCGStab: Iteration 4,  !!RES!! = 1.460497468356740E-03
+BiCGStab: Iteration 5,  !!RES!! = 4.151246975830929E-04
+BiCGStab: Iteration 6,  !!RES!! = 6.378609767308760E-05
+BiCGStab: Iteration 7,  !!RES!! = 1.403789328900545E-05
+BiCGStab: Iteration 8,  !!RES!! = 2.911434901087243E-06
+BiCGStab: Iteration 9,  !!RES!! = 8.914118229340463E-07
 
 BiCGStab statistics:
 
 Iterations              : 9
-!!INITIAL RES!!         : 1.103253824600793E-01
-!!RES!!                 : 8.914118229368840E-07
-!!RES!!/!!INITIAL RES!! : 8.079843487145285E-06
+!!INITIAL RES!!         : 1.103253824600792E-01
+!!RES!!                 : 8.914118229340463E-07
+!!RES!!/!!INITIAL RES!! : 8.079843487119564E-06
 
-Rate of convergence     : 2.717414466767153E-01
+Rate of convergence     : 2.717414466766192E-01
 
 Calculating 2D Stokes-Problem 2 - simple VANKA
 ----------------------------------------------
