@@ -54,10 +54,7 @@ endif
 # Specify -fopenmp for all gcc compilers
 ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77LIBS := -DUSE_OPENMP -fopenmp $(CFLAGSF77LIBS)
-CFLAGSF77     := -DUSE_OPENMP -fopenmp $(CFLAGSF77)
-CFLAGSF90     := -DUSE_OPENMP -fopenmp $(CFLAGSF90)
 CFLAGSC       := -DUSE_OPENMP -fopenmp $(CFLAGSC)
-CFLAGSCXX     := -DUSE_OPENMP -fopenmp $(CFLAGSCXX)
 LDFLAGS       := -DUSE_OPENMP -fopenmp $(LDFLAGS)
 endif
 

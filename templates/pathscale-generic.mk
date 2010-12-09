@@ -54,10 +54,7 @@ endif
 # Specify -fopenmp for all Pathscale compilers
 ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77LIBS := -DUSE_OPENMP -mp $(CFLAGSF77LIBS)
-CFLAGSF77     := -DUSE_OPENMP -mp $(CFLAGSF77)
-CFLAGSF90     := -DUSE_OPENMP -mp $(CFLAGSF90)
 CFLAGSC       := -DUSE_OPENMP -mp $(CFLAGSC)
-CFLAGSCXX     := -DUSE_OPENMP -mp $(CFLAGSCXX)
 LDFLAGS       := -DUSE_OPENMP -mp $(LDFLAGS)
 endif
 

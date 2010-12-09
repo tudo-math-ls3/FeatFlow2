@@ -58,7 +58,6 @@ MESSAGE  := $(MESSAGE) \
             echo '*** Warning: OpenMP is not supported by G95 compiler'; \
             echo;
 CFLAGSC       := -DUSE_OPENMP -fopenmp $(CFLAGSC)
-CFLAGSCXX     := -DUSE_OPENMP -fopenmp $(CFLAGSCXX)
 LDFLAGS       := -DUSE_OPENMP -fopenmp $(LDFLAGS)
 endif
 

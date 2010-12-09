@@ -54,10 +54,7 @@ endif
 # Specify -xopenmp for all Sun compilers
 ifeq ($(strip $(OPENMP)), YES)
 CFLAGSF77LIBS := -DUSE_OPENMP -xopenmp $(CFLAGSF77LIBS)
-CFLAGSF77     := -DUSE_OPENMP -xopenmp $(CFLAGSF77)
-CFLAGSF90     := -DUSE_OPENMP -xopenmp $(CFLAGSF90)
 CFLAGSC       := -DUSE_OPENMP -xopenmp $(CFLAGSC)
-CFLAGSCXX     := -DUSE_OPENMP -xopenmp $(CFLAGSCXX)
 LDFLAGS       := -DUSE_OPENMP -xopenmp $(LDFLAGS)
 endif
 
