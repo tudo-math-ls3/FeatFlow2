@@ -89,6 +89,7 @@ module initsolver
   use timeboundaryconditions
   use timerhsevaluation
   
+  
   implicit none
   
   private
@@ -2853,10 +2854,11 @@ contains
     logical :: bsuccess
     type(t_anSolution) :: rlocalsolution
     character(len=SYS_STRLEN) :: sstartVector,sstartVectorSolver
+    character(len=SYS_STRLEN) :: sstartVectorBackwardSolver
     character(len=SYS_STRLEN) :: sstartVectorBoundaryConditions
     character(len=SYS_STRLEN) :: sstartVectorPostprocessing
     type(t_vectorBlock) :: rvectorSpace
-    type(t_simSolver) :: rsimsolver
+    type(t_simSolver) :: rsimsolver,rsimsolverBackward
     type(t_ccoptSpaceTimeMatrix) :: rspaceTimeMatrix
     type(t_spaceTimeMatrixDiscrData) :: rdiscrData
     type(t_optcBDC) :: rboudaryConditions
@@ -2874,6 +2876,9 @@ contains
 
     call parlst_getvalue_string (rparlist, ssection, &
         'sstartVectorSolver', sstartVectorSolver, "CC-NONLINEAR",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist, ssection, &
+        'sstartVectorBackwardSolver', sstartVectorBackwardSolver, "CC-LINEARSOLVER",bdequote=.true.)
         
     call parlst_getvalue_string (rparlist, ssection, &
         'sstartVectorBoundaryConditions', sstartVectorBoundaryConditions,&
@@ -3011,6 +3016,118 @@ contains
             
           call output_line ("Total #iterations linear solver:        "//&
             trim(sys_siL(rsimsolver%nlinearIterations,10)))
+        end if
+      
+      case (4)
+        ! Initialise with zero.
+        call sptivec_clearVector(rvector)
+        
+        ! Put the initial solution to the first timestep.
+        call ansol_prjToVector (rinitialCondition,rinitialCondition%rtimeDiscr%dtimeInit,&
+            rvectorSpace,1,3,rmassMatrix)
+            
+        call sptivec_setTimestepData (rvector, 1, rvectorSpace)
+        
+        ! Create a nonlinear space-time matrix that resembles the current
+        ! forward equation.
+        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
+            rdiscrData)
+        call stlin_initSpaceTimeMatrix (&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,&
+            rsettings%rglobalData,rsettings%rdebugFlags)
+
+        ! Get the boundary conditions
+        call init_initBoundaryConditions (rparlist,SEC_SBDEXPRESSIONS,&
+            sstartVectorBoundaryConditions,rsettings%rphysicsPrimal,rboudaryConditions)
+        
+        ! #############
+        ! Forward sweep
+        ! #############
+        
+        ! Initialise a forward simulation solver that simulates the function to calculate the
+        ! start vector.
+        call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
+            1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARD, rsimsolver)
+
+        ! Attach the matrix to the solver.            
+        call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
+        
+        ! Get settings about postprocessing
+        if (sstartVectorPostprocessing .ne. "") then
+          call init_initForwardSimPostproc (rparlist,&
+              sstartVectorPostprocessing,rsimsolver%rpostprocessing)
+        end if
+        
+        ! Simulate...
+        call fbsim_simulate (rsimsolver, rvector, rrhs, &
+            rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
+            
+        ! Clean up
+        call fbsim_done (rsimsolver)
+        
+        ! ##############
+        ! Backward sweep
+        ! ##############
+        
+        ! Initialise a forward simulation solver that simulates the function to calculate the
+        ! start vector.
+        call fbsim_init (rsettings, rparlist, sstartVectorBackwardSolver, &
+            1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_LINBACKWARD, rsimsolverBackward)
+            
+        ! Attach the matrix to the solver.
+        call fbsim_setMatrix (rsimsolverBackward,rspaceTimeMatrix)
+        
+        ! Get settings about postprocessing
+        if (sstartVectorPostprocessing .ne. "") then
+          call init_initForwardSimPostproc (rparlist,&
+              sstartVectorPostprocessing,rsimsolverBackward%rpostprocessing)
+
+          ! Postprocessing of the combined solution!
+          rsimsolverBackward%rpostprocessing%cspace = CCSPACE_PRIMALDUAL
+        end if
+        
+        ! Simulate...
+        call fbsim_simulate (rsimsolverBackward, rvector, rrhs, &
+            rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
+            
+        ! Clean up
+        call fbsim_done (rsimsolverBackward)
+        
+        ! Release the matrix.
+        call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
+      
+        ! Probably print some statistical data
+        if (ioutputLevel .ge. 1) then
+          call output_lbrk ()
+          call output_line ("Total time for forward simulation:      "//&
+              trim(sys_sdL(rsimsolver%dtimeTotal,10)))
+
+          call output_line ("Total time for backward simulation:      "//&
+              trim(sys_sdL(rsimsolverBackward%dtimeTotal,10)))
+
+          call output_line ("Total time for simulation:               "//&
+              trim(sys_sdL(rsimsolver%dtimeTotal+rsimsolverBackward%dtimeTotal,10)))
+
+          call output_line ("Total time for nonlinear solver:        "//&
+            trim(sys_sdL(rsimsolver%dtimeNonlinearSolver+rsimsolverBackward%dtimeNonlinearSolver,10)))
+            
+          call output_line ("Total time for defect calculation:      "//&
+            trim(sys_sdL(rsimsolver%dtimeDefectCalculation+rsimsolverBackward%dtimeDefectCalculation,10)))
+
+          call output_line ("Total time for matrix assembly:         "//&
+            trim(sys_sdL(rsimsolver%dtimeMatrixAssembly+rsimsolverBackward%dtimeMatrixAssembly,10)))
+            
+          call output_line ("Total time for linear solver:           "//&
+            trim(sys_sdL(rsimsolver%dtimeLinearSolver+rsimsolverBackward%dtimeLinearSolver,10)))
+            
+          call output_line ("Total time for postprocessing:          "//&
+            trim(sys_sdL(rsimsolver%dtimePostprocessing+rsimsolverBackward%dtimePostprocessing,10)))
+            
+          call output_line ("Total #iterations nonlinear solver:     "//&
+            trim(sys_siL(rsimsolver%nnonlinearIterations+rsimsolverBackward%nnonlinearIterations,10)))
+            
+          call output_line ("Total #iterations linear solver:        "//&
+            trim(sys_siL(rsimsolver%nlinearIterations+rsimsolverBackward%nlinearIterations,10)))
         end if
       
       end select
@@ -3594,8 +3711,5 @@ contains
 !        LINSOL_ALG_MULTIGRID2)
 !
 !  end subroutine
-
-!Nach der 1. Iteration ist der Def. nicht mehr 0 tritz Stokes.
-!Das Startresiduum passt nicht
 
 end module

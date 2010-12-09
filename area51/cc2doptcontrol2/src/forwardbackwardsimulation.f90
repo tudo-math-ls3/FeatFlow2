@@ -2911,7 +2911,11 @@ contains
 !</subroutine>
 
     ! Fetch data
-    rpostproc%cspace = cspace
+    if (rpostproc%cspace .eq. CCSPACE_UNDEFINED) then
+      ! Allow a caller to specify the type of postprocessing, do not overwrite
+      ! previous data.
+      rpostproc%cspace = cspace
+    end if
     rpostproc%p_rspaceDiscr => rspaceTimeMatrix%rdiscrData%p_rspaceDiscr
     rpostproc%p_rtimeDiscr => rspaceTimeMatrix%rdiscrData%p_rtimeDiscr
     rpostproc%p_rboundaryConditions => rboundaryConditions
@@ -2938,7 +2942,7 @@ contains
 !</subroutine>
 
     ! local variables
-    rpostproc%cspace = CCSPACE_PRIMAL
+    rpostproc%cspace = CCSPACE_UNDEFINED
     nullify(rpostproc%p_rspaceDiscr)
     nullify(rpostproc%p_rtimeDiscr)
     nullify(rpostproc%p_rboundaryConditions)
@@ -4153,6 +4157,13 @@ contains
           ! Write the solution back from the pool into the space-time vector.
           ! p_rcurrentsol is connected to the pool vector with index iiterate.
           call sptivec_commitVecInPool (rsolAccess,iiterate)
+
+          ! Postprocessing          
+          call stat_startTimer (rtimerPostProc)
+          call fbsim_postprocessing (rsimSolver%rpostprocessing,p_rcurrentsol,iiterate,&
+              dtimePrimal,dtimeDual,rsimsolver%p_rsettings)
+          call stat_stopTimer (rtimerPostProc)
+          
         else
           !exit
         end if

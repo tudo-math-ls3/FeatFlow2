@@ -20,7 +20,10 @@ module constantsoptc
 
 !<constantblock description="General constant specifying the primal and/or dual space.">
 
-  ! drimal space
+  ! undefined
+  integer, parameter, public :: CCSPACE_UNDEFINED = 0
+
+  ! primal space
   integer, parameter, public :: CCSPACE_PRIMAL = 1
 
   ! dual space

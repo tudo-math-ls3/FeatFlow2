@@ -35,6 +35,9 @@ sfilenameUCD = './gmv/u.vtk'
 # =2: The start vector is created by evaluating the section sstartVector.
 # =3: The start vector is created by a forward simulation starting from
 #     the initial condition. The dual solution is initialised to zero.
+# =4: The start vector is created by a forward simulation starting from
+#     the initial condition. The dual solution is initialised by a backward
+#     simulation.
 
 ctypeStartVector = 3
 
@@ -51,6 +54,10 @@ sstartVector = INITIALITERATE
 # Name of the section configuring the forward solver if ctypeStartVector=2.
 
 sstartVectorSolver = CC-NONLINEAR
+
+# Name of the section configuring the backward solver if ctypeStartVector=3.
+
+sstartVectorBackwardSolver = %{CC-NONLINEAR.slinearSolver}
 
 # Name of the section defining the boundary conditions of the start vector
 # if ctypeStartVector=2.
