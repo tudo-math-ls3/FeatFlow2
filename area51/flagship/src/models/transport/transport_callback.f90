@@ -504,7 +504,6 @@ contains
         case (AFCSTAB_DMP)
           ! Satisfy discrete maximum principle
           call gfsc_buildDiffusionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_S),&
               rproblemLevel%Rafcstab(diffusionAFC),&
               1.0_DP, .false., .true.,&
               rproblemLevel%Rmatrix(transportMatrix))
@@ -513,7 +512,6 @@ contains
           ! Satisfy discrete maximum principle
           ! and assemble stabilisation structure
           call gfsc_buildDiffusionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_S),&
               rproblemLevel%Rafcstab(diffusionAFC),&
               1.0_DP, .true., .true.,&
               rproblemLevel%Rmatrix(transportMatrix))
@@ -628,7 +626,6 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagonalPrimal_sim, fcb_calcMatrixPrimal_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -636,7 +633,6 @@ contains
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagonalPrimal_sim, fcb_calcMatrixPrimal_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -644,7 +640,6 @@ contains
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagonalPrimal_sim, fcb_calcMatrixPrimal_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -675,7 +670,6 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP1d_sim, transp_calcMatGalConvP1d_sim,&
                 1.0_DP, .false., .false.,&
@@ -683,7 +677,6 @@ contains
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP2d_sim, transp_calcMatGalConvP2d_sim,&
                 1.0_DP, .false., .false.,&
@@ -691,7 +684,6 @@ contains
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP3d_sim, transp_calcMatGalConvP3d_sim,&
                 1.0_DP, .false., .false.,&
@@ -707,7 +699,6 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP1d_sim, transp_calcMatUpwConvP1d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -715,7 +706,6 @@ contains
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP2d_sim, transp_calcMatUpwConvP2d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -723,7 +713,6 @@ contains
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP3d_sim, transp_calcMatUpwConvP3d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -748,7 +737,6 @@ contains
 
           ! Apply standard Galerkin discretisation
           call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagSTBurgersP2d_sim, transp_calcMatGalSTBurgersP2d_sim,&
               1.0_DP, .false., .false.,&
@@ -761,7 +749,6 @@ contains
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
           call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagSTBurgersP2d_sim, transp_calcMatUpwSTBurgersP2d_sim,&
               1.0_DP, bbuildStabilisation, .false.,&
@@ -783,7 +770,6 @@ contains
 
           ! Apply standard Galerkin discretisation
           call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagSTBuckLevP2d_sim, transp_calcMatGalSTBuckLevP2d_sim,&
               1.0_DP, .false., .false.,&
@@ -796,7 +782,6 @@ contains
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
           call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagSTBuckLevP2d_sim, transp_calcMatUpwSTBuckLevP2d_sim,&
               1.0_DP, bbuildStabilisation, .false.,&
@@ -818,7 +803,6 @@ contains
 
           ! Apply standard Galerkin discretisation
           call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBurgersP1d_sim, transp_calcMatGalBurgersP1d_sim,&
               1.0_DP, .false., .false.,&
@@ -831,7 +815,6 @@ contains
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
           call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBurgersP1d_sim, transp_calcMatUpwBurgersP1d_sim,&
               1.0_DP, bbuildStabilisation, .false.,&
@@ -853,7 +836,6 @@ contains
 
           ! Apply standard Galerkin discretisation
           call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBurgersP2d_sim, transp_calcMatGalBurgersP2d_sim,&
               1.0_DP, .false., .false.,&
@@ -866,7 +848,6 @@ contains
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
           call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBurgersP2d_sim, transp_calcMatUpwBurgersP2d_sim,&
               1.0_DP, bbuildStabilisation, .false.,&
@@ -888,7 +869,6 @@ contains
 
           ! Apply standard Galerkin discretisation
           call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBuckLevP1d_sim, transp_calcMatGalBuckLevP1d_sim,&
               1.0_DP, .false., .false.,&
@@ -901,7 +881,6 @@ contains
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
           call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBuckLevP1d_sim, transp_calcMatUpwBuckLevP1d_sim,&
               1.0_DP, bbuildStabilisation, .false.,&
@@ -952,7 +931,6 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagonalDual_sim, fcb_calcMatrixDual_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -960,7 +938,6 @@ contains
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagonalDual_sim, fcb_calcMatrixDual_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -968,7 +945,6 @@ contains
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagonalDual_sim, fcb_calcMatrixDual_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -1000,7 +976,6 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD1d_sim, transp_calcMatGalConvD1d_sim,&
                 1.0_DP, .false., .false.,&
@@ -1008,7 +983,6 @@ contains
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD2d_sim, transp_calcMatGalConvD2d_sim,&
                 1.0_DP, .false., .false.,&
@@ -1016,7 +990,6 @@ contains
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD3d_sim, transp_calcMatGalConvD3d_sim,&
                 1.0_DP, .false., .false.,&
@@ -1032,7 +1005,6 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD1d_sim, transp_calcMatUpwConvD1d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -1040,7 +1012,6 @@ contains
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD2d_sim, transp_calcMatUpwConvD2d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -1048,7 +1019,6 @@ contains
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD3d_sim, transp_calcMatUpwConvD3d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&

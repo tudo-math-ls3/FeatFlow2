@@ -821,7 +821,7 @@ contains
     type(t_boundary) , pointer :: p_rboundary
     type(t_fparser), pointer :: p_rfparser
 
-    integer :: i,j,nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
+    integer :: i,j,nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval,nmatrices
 
     ! Retrieve application specific parameters from the parameter list
     call parlst_getvalue_int(rparlist,&
@@ -1246,7 +1246,17 @@ contains
             rproblemLevel%Rafcstab(convectionAFC),&
             p_rdiscretisation)
 
+        ! Compute number of matrices to by copied
+        nmatrices = 0
+        if (coeffMatrix_CX   > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CY   > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZ   > 0) nmatrices = nmatrices+1
+
+        ! Initialise memory for constant coefficient matrices
+        call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(convectionAFC), nmatrices)
+
       else
+        ! Resize stabilisation structure
         call afcstab_resizeStabilisation(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(templateMatrix))
@@ -1254,6 +1264,27 @@ contains
         rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec =&
             iand(rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec,&
             not(AFCSTAB_HAS_OFFDIAGONALEDGES))
+      end if
+
+      ! Copy constant coefficient matrices to stabilisation structure
+      nmatrices = 0
+      if (coeffMatrix_CX > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), (/nmatrices/))
+      end if
+      if (coeffMatrix_CY > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CY:coeffMatrix_CY), (/nmatrices/))
+      end if
+      if (coeffMatrix_CZ > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_CZ:coeffMatrix_CZ), (/nmatrices/))
       end if
     end if
 
@@ -1267,7 +1298,15 @@ contains
             rproblemLevel%Rafcstab(diffusionAFC),&
             p_rdiscretisation)
 
+        ! Compute number of matrices to by copied
+        nmatrices = 0
+        if (coeffMatrix_S   > 0) nmatrices = nmatrices+1
+
+        ! Initialise memory for constant coefficient matrices
+        call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(diffusionAFC), nmatrices)
+
       else
+        ! Resize stabilisation structure
         call afcstab_resizeStabilisation(&
             rproblemLevel%Rafcstab(diffusionAFC),&
             rproblemLevel%Rmatrix(templateMatrix))
@@ -1275,6 +1314,15 @@ contains
         rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec =&
             iand(rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec,&
             not(AFCSTAB_HAS_OFFDIAGONALEDGES))
+      end if
+
+      ! Copy constant coefficient matrices to stabilisation structure
+      nmatrices = 0
+      if (coeffMatrix_S > 0) then
+        nmatrices = nmatrices+1
+        call afcstab_CopyMatrixCoeffs(&
+            rproblemLevel%Rafcstab(diffusionAFC),&
+            rproblemLevel%Rmatrix(coeffMatrix_S:coeffMatrix_S), (/nmatrices/))
       end if
     end if
 
