@@ -953,7 +953,6 @@ contains
         
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
-        !$omp critical(MATRIX)
         do idx = 1, IEQmax-IEQset+1
 
           ! Get position of diagonal entry
@@ -965,9 +964,8 @@ contains
                 DcoefficientsAtNode(ivar,1,idx)
           end do
         end do
-        !$omp end critical(MATRIX)
       end do
-      !$omp end do nowait
+      !$omp end do
       
       ! Deallocate temporal memory
       deallocate(IverticesAtNode)
@@ -1132,7 +1130,6 @@ contains
 
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
-        !$omp critical(MATRIX)
         do idx = 1, IEQmax-IEQset+1
 
           ! Get position of diagonal entry
@@ -1147,9 +1144,8 @@ contains
             end do
           end do
         end do
-        !$omp end critical(MATRIX)
       end do
-      !$omp end do nowait
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(IverticesAtNode)
@@ -1458,7 +1454,6 @@ contains
 
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
-        !$omp critical(MATRIX)
         do idx = 1, IEQmax-IEQset+1
 
           ! Get position of diagonal entry
@@ -1467,9 +1462,8 @@ contains
           ! Update the diagonal coefficient
           K(:,ii) = K(:,ii) + DcoefficientsAtNode(:,1,idx)
         end do
-        !$omp end critical(MATRIX)
       end do
-      !$omp end do nowait
+      !$omp end do
 
       ! Deallocate temporal memory
       deallocate(IverticesAtNode)
