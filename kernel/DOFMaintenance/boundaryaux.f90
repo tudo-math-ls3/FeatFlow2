@@ -169,7 +169,6 @@ contains
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer :: ibdc,iedge,iel,ilocaledge
-    real(DP) :: dpar1,dpar2
 
     ! Get some pointers and arrays for quicker access
     p_rtriangulation => rdiscretisation%p_rtriangulation
@@ -226,10 +225,11 @@ contains
       
       ! Loop through the edges on the boundary component ibdc. If the
       ! edge is inside, remember the element number and figure out the
-      ! orientation of the edge, whereby iel counts the total number of
-      ! elements in the region.
+      ! orientation of the edge, whereby iel counts the total number
+      ! of elements in the region. Be careful: The last edge must be
+      ! treated differently!
       iel = 0
-      do iedge = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+      do iedge = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-2
         if (boundary_isInRegion(rboundaryRegion, ibdc,&
             p_DedgeParameterValue(iedge))) then
           
@@ -246,30 +246,45 @@ contains
           IelementOrientation(iel) = ilocaledge
           
           if (present(DedgePosition)) then
-            ! Save the start parameter value of the edge -- in length
-            ! parametrisation.
-            dpar1 = boundary_convertParameter(rdiscretisation%p_rboundary, &
-                ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, &
-                BDR_PAR_LENGTH)
-            
-            ! Save the end parameter value. Be careful: The last edge
-            ! must be treated differently!
-            if (iedge .ne. p_IboundaryCpIdx(ibdc+1)-1) then
-              dpar2 = boundary_convertParameter(rdiscretisation%p_rboundary, &
-                  ibdc, p_DvertexParameterValue(iedge+1), rboundaryRegion%cparType, &
-                  BDR_PAR_LENGTH)
-              
-            else
-              dpar2 = boundary_dgetMaxParVal(&
-                  rdiscretisation%p_rboundary,ibdc,BDR_PAR_LENGTH)
-            end if
-            
-            DedgePosition(1,iel) = dpar1
-            DedgePosition(2,iel) = dpar2
+            ! Save the start and end parameter values of the edge
+            DedgePosition(1,iel) = p_DvertexParameterValue(iedge)
+            DedgePosition(2,iel) = p_DvertexParameterValue(iedge+1)
           end if
-          
+
         end if
       end do
+
+      ! Convert parameter values in length parametrisation
+      call boundary_convertParameterList(rdiscretisation%p_rboundary,&
+          ibdc, DedgePosition(:,1:iel), DedgePosition(:,1:iel),&
+          rboundaryRegion%cparType, BDR_PAR_LENGTH)
+      
+      ! Handle the last edge differently
+      iedge = p_IboundaryCpIdx(ibdc+1)-1
+      
+      if (boundary_isInRegion(rboundaryRegion, ibdc,&
+          p_DedgeParameterValue(iedge))) then
+          
+        iel = iel + 1
+          
+        ! Element number
+        IelementList(iel) = p_IelementsAtBoundary(iedge)
+
+        ! Element orientation; i.e. the local number of the boundary edge 
+        do ilocaledge = 1,ubound(p_IedgesAtElement,1)
+          if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
+              p_IedgesAtBoundary(iedge)) exit
+        end do
+        IelementOrientation(iel) = ilocaledge
+        
+        ! Save the start parameter value of the edge -- in length parametrisation.
+        DedgePosition(1,iel) = boundary_convertParameter(rdiscretisation%p_rboundary,&
+            ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, BDR_PAR_LENGTH)
+        
+        ! Save the end parameter value of the edge -- in length parametrisation.
+        DedgePosition(2,iel) = boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
+            ibdc, BDR_PAR_LENGTH)
+      end if
       
     else
       
@@ -279,10 +294,11 @@ contains
 
       ! Loop through the edges on the boundary component ibdc. If the
       ! edge is inside, remember the element number and figure out the
-      ! orientation of the edge, whereby iel counts the total number of
-      ! elements in the region.
+      ! orientation of the edge, whereby iel counts the total number
+      ! of elements in the region. Be careful: The last edge must be
+      ! treated differently!
       iel = 0
-      do iedge = 1,NELbdc
+      do iedge = 1,NELbdc-1
         if (boundary_isInRegion(rboundaryRegion, ibdc,&
             p_DedgeParameterValue(iedge))) then
           
@@ -304,30 +320,55 @@ contains
           IelementOrientation(iel) = ilocaledge
           
           if (present(DedgePosition)) then
-            ! Save the start parameter value of the edge -- in length
-            ! parametrisation.
-            dpar1 = boundary_convertParameter(rdiscretisation%p_rboundary, &
-                ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, &
-                BDR_PAR_LENGTH)
-            
-            ! Save the end parameter value. Be careful: The last edge
-            ! must be treated differently!
-            if (iedge .ne. NELbdc) then
-              dpar2 = boundary_convertParameter(rdiscretisation%p_rboundary, &
-                  ibdc, p_DvertexParameterValue(iedge+1), rboundaryRegion%cparType, &
-                  BDR_PAR_LENGTH)
-              
-            else
-              dpar2 = boundary_dgetMaxParVal(&
-                  rdiscretisation%p_rboundary,ibdc,BDR_PAR_LENGTH)
-            end if
-            
-            DedgePosition(1,iel) = dpar1
-            DedgePosition(2,iel) = dpar2
+            ! Save the start and end parameter values of the edge
+            DedgePosition(1,iel) = p_DvertexParameterValue(iedge)
+            DedgePosition(2,iel) = p_DvertexParameterValue(iedge+1)
           end if
-          
+
         end if
       end do
+
+      ! Convert parameter values in length parametrisation
+      call boundary_convertParameterList(rdiscretisation%p_rboundary,&
+          ibdc, DedgePosition(:,1::iel), DedgePosition(:,1::iel),&
+          rboundaryRegion%cparType, BDR_PAR_LENGTH)
+
+      ! Handle the last edge differently
+      if (boundary_isInRegion(rboundaryRegion, ibdc,&
+          p_DedgeParameterValue(NELbdc))) then
+        
+        ! Check if we are the correct element distribution
+        if (present(celement)) then
+          if (celement .ne. p_RelementDistribution(&
+              p_IelementDistr(p_IelementsAtBoundary(NELbdc)))%celement) then
+            ! Adjust number of elements
+            NELbdc = iel
+            return
+          end if
+        end if
+        iel = iel + 1
+        
+        ! Element number
+        IelementList(iel) = p_IelementsAtBoundary(NELbdc)
+        
+        ! Element orientation; i.e. the local number of the boundary edge 
+        do ilocaledge = 1,ubound(p_IedgesAtElement,1)
+          if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(NELbdc)) .eq. &
+              p_IedgesAtBoundary(NELbdc)) exit
+        end do
+        IelementOrientation(iel) = ilocaledge
+        
+        if (present(DedgePosition)) then
+          ! Save the start parameter value of the edge -- in length parametrisation.
+          DedgePosition(1,iel) = boundary_convertParameter(rdiscretisation%p_rboundary, &
+              ibdc, p_DvertexParameterValue(NELbdc), rboundaryRegion%cparType, BDR_PAR_LENGTH)
+          
+          ! Save the end parameter value of the edge -- in length parametrisation.
+          DedgePosition(2,iel) = boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
+              ibdc, BDR_PAR_LENGTH)
+        end if
+
+      end if
 
     end if
 
