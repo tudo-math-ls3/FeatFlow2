@@ -450,7 +450,7 @@ contains
   type(t_feSpaceLevel), intent(in) :: rfeSpace
 
   ! OPTIONAL: Element id.
-  integer, intent(in) :: ielementType
+  integer, intent(in), optional :: ielementType
 !</input>
 
 !<output>

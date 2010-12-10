@@ -473,6 +473,17 @@ module forwardbackwardsimulation
     ! Filename for UCD output.
     ! A timestep index '.0001','.0002',... is appended to this.
     character(len=SYS_STRLEN) :: sfilenameUCD = "./gmv/u"
+
+    ! Write solution vector to a sequence of files.
+    ! =0: don't write
+    ! =1: write out, use formatted output.
+    ! =2: write out, use unformatted output.
+
+    integer :: cwriteSolution = 0
+
+    ! Name/path of file for writing solution
+
+    character(len=SYS_STRLEN) :: swriteSolutionFilename = ""
   
     ! <!-- the following parameters are automatically maintained during a simulation -->
     
@@ -3233,6 +3244,57 @@ contains
     
   end subroutine
 
+!******************************************************************************
+
+!<subroutine>
+
+  subroutine fbsim_writeRAW (rpostprocessing,rvector,istep,rsettings)
+
+!<description>
+  ! Writes out the solution as raw data file to disc.
+!</description>
+  
+!<input>
+  ! Solution vector.
+  type(t_vectorBlock), intent(in) :: rvector
+  
+  ! Id of the timestep.
+  integer, intent(in) :: istep
+  
+  ! The structure of the main solver
+  type(t_settings_optflow), intent(inout), target :: rsettings
+!</input>
+
+!<inputoutput>
+  ! Postprocessing structure. Must have been initialised prior
+  ! to calling this routine.
+  ! The time stamp of the last written out GMV is updated.
+  type(t_fbsimPostprocessing), intent(inout) :: rpostprocessing  
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    character(len=SYS_STRLEN) :: sfilename
+    
+    ! Create a filename.
+    if (rpostprocessing%swriteSolutionFilename .eq. "") return
+    sfilename = trim(rpostprocessing%swriteSolutionFilename)//sys_si0L(istep,5)
+    
+    ! Write out the file.
+    select case (rpostprocessing%cwriteSolution) 
+    case (1)
+      ! Formatted
+      call vecio_writeBlockVectorHR (rvector, "vector", .true.,&
+          0, sfilename, "(E20.10)")
+    case (2)
+      ! Unformatted
+      call vecio_writeBlockVectorHR (rvector, "vector", .true.,&
+          0, sfilename)
+    end select
+
+  end subroutine
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -3270,6 +3332,10 @@ contains
     ! Output to a visualisation file?
     if (rpostproc%ioutputUCD .ne. 0) then
       call fbsim_writeUCD (rpostproc,rsolution,istep-1,dtimePrimal,dtimeDual,rsettings)
+    end if
+    
+    if (rpostproc%cwriteSolution .ne. 0) then
+      call fbsim_writeRAW (rpostproc,rsolution,istep-1,rsettings)
     end if
 
   end subroutine
@@ -4005,6 +4071,12 @@ contains
           ! Write the solution back from the pool into the space-time vector.
           ! p_rcurrentsol is connected to the pool vector with index iiterate.
           call sptivec_commitVecInPool (rsolAccess,iiterate)
+
+          ! Postprocessing          
+          call stat_startTimer (rtimerPostProc)
+          call fbsim_postprocessing (rsimSolver%rpostprocessing,p_rcurrentsol,iiterate,&
+              dtimePrimal,dtimeDual,rsimsolver%p_rsettings)
+          call stat_stopTimer (rtimerPostProc)
 
         else
           !exit

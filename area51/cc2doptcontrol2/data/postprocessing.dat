@@ -22,6 +22,16 @@ ioutputUCD = 3
 
 sfilenameUCD = './gmv/u.vtk'
 
+# Write solution vector to a sequence of files.
+# =0: don't write
+# =1: write out, use formatted output.
+# =2: write out, use unformatted output.
+
+cwriteSolution = 0
+
+# Name/path of file for writing solution
+
+swriteSolutionFilename = ''
 
 ####################
 [TIME-PREPROCESSING]

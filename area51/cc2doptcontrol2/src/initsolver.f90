@@ -668,6 +668,10 @@ contains
         'ioutputUCD', rpostprocessing%ioutputUCD)
     call parlst_getvalue_string (rparlist, ssection, &
         'sfilenameUCD', rpostprocessing%sfilenameUCD,"",bdequote=.true.)
+    call parlst_getvalue_int (rparlist, ssection, &
+        'cwriteSolution', rpostprocessing%cwriteSolution)
+    call parlst_getvalue_string (rparlist, ssection, &
+        'swriteSolutionFilename', rpostprocessing%swriteSolutionFilename,"",bdequote=.true.)
 
   end subroutine
   
