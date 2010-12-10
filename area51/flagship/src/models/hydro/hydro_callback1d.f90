@@ -455,7 +455,7 @@ contains
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: pi,pj,ui,uj
-    real(DP) :: H_ij,anorm,aux,c_ij,d_ij,q_ij,u_ij
+    real(DP) :: H_ij,aux,c_ij,d_ij,q_ij,u_ij
     integer :: idx
 
 

@@ -463,8 +463,9 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:,:), pointer :: Dcoefficients
+    real(DP), dimension(:,:), pointer :: Dnx,Dny
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnx,dny,dtime
+    real(DP) :: dtime
     integer :: iel,ipoint,icomp1,icomp2,icomp
 
 
@@ -491,16 +492,20 @@ contains
 
     ! Allocate temporal memory
     allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 3))
+    allocate(Dnx(size(DpointPar,1),size(DpointPar,2)))
+    allocate(Dny(size(DpointPar,1),size(DpointPar,2)))
 
-    ! Evaluate the reference function and the exact velocities in the
-    ! cubature points on the boundary and store the result in
-    ! Dcoefficients(:,:,1:3).
+    ! Get the normal vectors in the cubature points on the boundary
+    call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+    
+    ! Evaluate the reference function and the exact velocities
     do iel = 1, size(Ielements)
       do ipoint = 1, ubound(Dpoints,2)
 
         ! Set values for function parser
         Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
-
+        
         ! Evaluate function parser
         call fparser_evalFunction(p_rfparser, icomp,  Dvalue,&
             Dcoefficients(ipoint,iel,1))
@@ -508,32 +513,20 @@ contains
             Dcoefficients(ipoint,iel,2))
         call fparser_evalFunction(p_rfparser, icomp2, Dvalue,&
             Dcoefficients(ipoint,iel,3))
-      end do
-    end do
-    
-    ! Multiply the velocity vector with the normal in each point
-    ! to get the normal velocity.
-    do iel = 1, size(Ielements)
-      do ipoint = 1, ubound(Dpoints,2)
-
-        ! Get the normal vector in the point from the boundary
-        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-            ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
         
         ! Compute the expression from the data stored in Dcoefficients
         !
         !    u * (v x n)
         !
         ! in each cubature point on each elements
-
         Dvalues(ipoint,iel) = Dcoefficients(ipoint,iel,1) *&
-                              (dnx * Dcoefficients(ipoint,iel,2) +&
-                               dny * Dcoefficients(ipoint,iel,3))
+                              (Dnx(ipoint,iel) * Dcoefficients(ipoint,iel,2) +&
+                               Dny(ipoint,iel) * Dcoefficients(ipoint,iel,3))
       end do
     end do
 
     ! Free temporal memory
-    deallocate(Dcoefficients)
+    deallocate(Dcoefficients, Dnx, Dny)
 
   end subroutine transp_refFuncBdrInt2d_sim
 
@@ -620,8 +613,9 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Dcoefficients
+    real(DP), dimension(:,:), pointer :: Dnx,Dny
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dt,dminPar,dmaxPar,dnx,dny,dtime
+    real(DP) :: dtime
     integer :: iel,ipoint,icomp1,icomp2,icomp
 
 
@@ -642,6 +636,8 @@ contains
 
     ! Allocate temporal memory
     allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 5))
+    allocate(Dnx(size(DpointPar,1),size(DpointPar,2)))
+    allocate(Dny(size(DpointPar,1),size(DpointPar,2)))
 
     ! Evaluate the velocity field in the cubature points on the boundary
     ! and store the result in Dcoefficients(:,:,1:2)
@@ -666,15 +662,17 @@ contains
     Dvalue = 0.0_DP
     Dvalue(NDIM3D+1) = dtime
 
-    ! Evaluate the reference function and the exact velocities in the
-    ! cubature points on the boundary and store the result in
-    ! Dcoefficients(:,:,3:5).
+    ! Get the normal vectors in the cubature points on the boundary
+    call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+
+    ! Evaluate the reference function and the exact velocities
     do iel = 1, size(Ielements)
       do ipoint = 1, ubound(Dpoints,2)
 
         ! Set values for function parser
         Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
-
+        
         ! Evaluate function parser
         call fparser_evalFunction(p_rfparser, icomp,  Dvalue,&
             Dcoefficients(ipoint,iel,3))
@@ -682,68 +680,23 @@ contains
             Dcoefficients(ipoint,iel,4))
         call fparser_evalFunction(p_rfparser, icomp2, Dvalue,&
             Dcoefficients(ipoint,iel,5))
-      end do
-    end do
-
-    ! Get the minimum and maximum parameter value. The point with the
-    ! minimal parameter value is the start point of the interval, the
-    ! point with the maximum parameter value the endpoint.
-    dminPar = DpointPar(1,1)
-    dmaxPar = DpointPar(1,1)
-    do iel = 1, size(Ielements)
-      do ipoint = 1, ubound(Dpoints,2)
-        dminPar = min(DpointPar(ipoint,iel), dminPar)
-        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-      end do
-    end do
-
-    ! Multiply the velocity vector with the normal in each point
-    ! to get the normal velocity.
-    do iel = 1, size(Ielements)
-      do ipoint = 1, ubound(Dpoints,2)
-
-        dt = DpointPar(ipoint,iel)
-
-        ! Get the normal vector in the point from the boundary.
-        ! Note that the parameter value is in length parametrisation!
-        ! When we are at the left or right endpoint of the interval, we
-        ! calculate the normal vector based on the current edge.
-        ! Without that, the behaviour of the routine may lead to some
-        ! confusion if the endpoints of the interval coincide with
-        ! the endpoints of a boundary edge. In such a case, the routine
-        ! would normally compute the normal vector as a mean on the
-        ! normal vectors of the edges adjacent to such a point!
-        if (DpointPar(ipoint,iel) .eq. dminPar) then
-          ! Start point
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-          ! End point
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-        else
-          ! Inner point
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-        end if
-
+        
         ! Compute the expression from the data stored in Dcoefficients
         !
         !    u * (v x n) - u_h * (v_h x n)
         !
         ! in each cubature point on each elements
-
         Dvalues(ipoint,iel) = Dcoefficients(ipoint,iel,3) *&
-                              (dnx * Dcoefficients(ipoint,iel,4) +&
-                               dny * Dcoefficients(ipoint,iel,5))-&
+                              (Dnx(ipoint,iel) * Dcoefficients(ipoint,iel,4) +&
+                               Dny(ipoint,iel) * Dcoefficients(ipoint,iel,5))-&
                               Dvalues(ipoint,iel) *&
-                              (dnx * Dcoefficients(ipoint,iel,1) +&
-                               dny * Dcoefficients(ipoint,iel,2))
+                              (Dnx(ipoint,iel) * Dcoefficients(ipoint,iel,1) +&
+                               Dny(ipoint,iel) * Dcoefficients(ipoint,iel,2))
       end do
     end do
 
     ! Free temporal memory
-    deallocate(Dcoefficients)
+    deallocate(Dcoefficients, Dnx, Dny)
 
   end subroutine transp_errorBdrInt2d_sim
 
@@ -1365,8 +1318,9 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
+    real(DP), dimension(:,:), pointer :: Dnx,Dny
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnx,dny,dnv,dtime,dscale,dval
+    real(DP) :: dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -1492,6 +1446,8 @@ contains
       
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -1503,13 +1459,18 @@ contains
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,3).
+      ! Dcoefficients(:,:,3). Multiply the velocity vector with the
+      ! normal in each point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -1519,26 +1480,16 @@ contains
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Daux(ipoint,iel,3))
-        end do
-      end do
-      
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
+                Dny(ipoint,iel) * Daux(ipoint,iel,2)
           Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,3)
         end do
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
       
     case(BDRC_FLUX)
@@ -1555,6 +1506,8 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -1566,13 +1519,18 @@ contains
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,3).
+      ! Dcoefficients(:,:,3). Multiply the velocity vector with the
+      ! normal in each point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -1582,20 +1540,10 @@ contains
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Daux(ipoint,iel,3))
-        end do
-      end do
-
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
           ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
+                Dny(ipoint,iel) * Daux(ipoint,iel,2)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
@@ -1607,7 +1555,7 @@ contains
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
       
     case default
@@ -1705,8 +1653,9 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
+    real(DP), dimension(:,:), pointer :: Dnx,Dny
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnx,dny,dnv,dtime,dscale,dval
+    real(DP) :: dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -1832,6 +1781,8 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -1843,13 +1794,18 @@ contains
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,3).
+      ! Dcoefficients(:,:,3). Multiply the velocity vector with the
+      ! normal in each point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -1859,26 +1815,16 @@ contains
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Daux(ipoint,iel,3))
-        end do
-      end do
-
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-
+          
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
+                Dny(ipoint,iel) * Daux(ipoint,iel,2)
           Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
         end do
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
       
     case(BDRC_FLUX)
@@ -1895,6 +1841,8 @@ contains
             
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -1905,6 +1853,10 @@ contains
       call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+      
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
 
       ! Initialize values
       Dvalue = 0.0_DP
@@ -1912,7 +1864,8 @@ contains
 
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,3).
+      ! Dcoefficients(:,:,3). Multiply the velocity vector with the
+      ! normal in each point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -1922,20 +1875,10 @@ contains
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Daux(ipoint,iel,3))
-        end do
-      end do
-      
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
           
           ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
+                Dny(ipoint,iel) * Daux(ipoint,iel,2)
 
           ! Check if we are at the dual inflow boundary
           if (dnv .gt. SYS_EPSREAL) then
@@ -1947,7 +1890,8 @@ contains
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
+
 
     case default
       call output_line('Invalid type of boundary conditions!',&
@@ -2048,7 +1992,8 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dnx,dny,dnv,dtime,dscale
+    real(DP), dimension(:,:), pointer :: Dnx,Dny
+    real(DP) :: dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ivelocityType
 
 #ifndef TRANSP_USE_IBP
@@ -2095,7 +2040,9 @@ contains
 
         ! Allocate temporal memory
         allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
-        
+        allocate(Dnx(npointsPerElement, nelements))
+        allocate(Dny(npointsPerElement, nelements))
+
         ! Evaluate the velocity field in the cubature points on the boundary
         ! and store the result in Daux(:,:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
@@ -2105,18 +2052,19 @@ contains
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
             p_rvelocity%RvectorBlock(2), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+        ! Get the normal vectors in the cubature points on the boundary
+        call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
         
         ! Multiply the velocity vector with the normal in each point
         ! to get the normal velocity.
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
             
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-            
             ! Compute the normal velocity
-            dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
             
             ! Scale normal velocity by scaling parameter
             Dcoefficients(1,ipoint,iel) = -dscale * dnv
@@ -2124,7 +2072,7 @@ contains
         end do
         
         ! Free temporal memory
-        deallocate(Daux)
+        deallocate(Daux, Dnx, Dny)
 
       end if
 
@@ -2161,6 +2109,8 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -2172,17 +2122,18 @@ contains
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-          
           ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
+                Dny(ipoint,iel) * Daux(ipoint,iel,2)
 
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
@@ -2194,7 +2145,7 @@ contains
       end do
 
       ! Free temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
       
     
     case default
@@ -2296,7 +2247,8 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dnx,dny,dnv,dtime,dscale
+    real(DP), dimension(:,:), pointer :: Dnx,Dny
+    real(DP) :: dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ivelocityType
 
 #ifndef TRANSP_USE_IBP
@@ -2343,6 +2295,8 @@ contains
 
         ! Allocate temporal memory
         allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
+        allocate(Dnx(npointsPerElement, nelements))
+        allocate(Dny(npointsPerElement, nelements))
         
         ! Evaluate the velocity field in the cubature points on the boundary
         ! and store the result in Daux(:,:,:,1:2)
@@ -2354,17 +2308,18 @@ contains
             p_rvelocity%RvectorBlock(2), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
+        ! Get the normal vectors in the cubature points on the boundary
+        call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+
         ! Multiply the velocity vector with the normal in each point
         ! to get the normal velocity.
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
             
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-            
             ! Compute the normal velocity
-            dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
 
             ! Scale normal velocity by scaling parameter
             Dcoefficients(1,ipoint,iel) = dscale * dnv
@@ -2372,7 +2327,7 @@ contains
         end do
         
         ! Free temporal memory
-        deallocate(Daux)
+        deallocate(Daux, Dnx, Dny)
 
       end if
 
@@ -2408,6 +2363,8 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
@@ -2419,17 +2376,18 @@ contains
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-
           ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
+                Dny(ipoint,iel) * Daux(ipoint,iel,2)
 
           ! Check if we are at the dual outflow boundary
           if (dnv .lt. -SYS_EPSREAL) then
@@ -2441,7 +2399,7 @@ contains
       end do
 
       ! Free temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
       
     case default
@@ -2747,8 +2705,9 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
+    real(DP), dimension(:,:), pointer :: Dnx,Dny
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnx,dny,dnv,dtime,dscale,dval
+    real(DP) :: dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -2874,7 +2833,13 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
@@ -2891,26 +2856,15 @@ contains
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Daux(ipoint,iel,1))
-        end do
-      end do
-
-      ! Multiply the velocity vector [0.5*u,1] with the normal in each
-      ! point to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = dnx * 0.5*Daux(ipoint,iel,1) + dny
+          dnv = Dnx(ipoint,iel) * 0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
           Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,1)
         end do
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
 
     case(BDRC_FLUX)
@@ -2927,6 +2881,8 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 2))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -2934,13 +2890,18 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints, &
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,2).
+      ! Dcoefficients(:,:,2). Multiply the velocity vector [0.5*u,1]
+      ! with the normal in each point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -2950,25 +2911,14 @@ contains
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Daux(ipoint,iel,2))
-        end do
-      end do
-
-      ! Multiply the velocity vector [0.5*u,1] with the normal in each
-      ! point to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
           ! Compute the normal velocity
-          dnv = dnx * 0.5*Daux(ipoint,iel,1) + dny
+          dnv = Dnx(ipoint,iel) * 0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
             ! Compute the prescribed normal velocity
-            dnv = dnx * 0.5*Daux(ipoint,iel,2) + dny
+            dnv = Dnx(ipoint,iel) * 0.5*Daux(ipoint,iel,2) + Dny(ipoint,iel)
             Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -2977,7 +2927,7 @@ contains
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
 
     case default
@@ -3079,7 +3029,8 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dnx,dny,dnv,dtime,dscale
+    real(DP), dimension(:,:), pointer :: Dnx,Dny
+    real(DP) :: dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -3113,6 +3064,8 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -3120,17 +3073,17 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      
       ! Multiply the velocity vector [0.5*u,1] with the normal in each
       ! point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
           
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-          
           ! Compute the normal velocity
-          dnv = dnx * 0.5*Daux(ipoint,iel,1) + dny
+          dnv = Dnx(ipoint,iel) * 0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
           
           ! Scale normal velocity by scaling parameter
           Dcoefficients(1,ipoint,iel) = -dscale * dnv
@@ -3138,7 +3091,7 @@ contains
       end do
       
       ! Free temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
       
     case (BDRC_DIRICHLET)
@@ -3173,24 +3126,26 @@ contains
       
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the solution field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
       call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+      
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
 
       ! Multiply the velocity vector [0.5*u,1] with the normal in each
       ! point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
           
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-          
           ! Compute the normal velocity
-          dnv = dnx * 0.5*Daux(ipoint,iel,1) + dny
+          dnv = Dnx(ipoint,iel) * 0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
           
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
@@ -3202,7 +3157,7 @@ contains
       end do
       
       ! Free temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
 
     case default
@@ -3518,8 +3473,9 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
+    real(DP), dimension(:,:), pointer :: Dnx,Dny
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnx,dny,dnv,dtime,dscale,dval
+    real(DP) :: dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -3633,6 +3589,7 @@ contains
         end do
       end do
 
+
     case (BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Robin boundary conditions:
@@ -3648,14 +3605,21 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
       
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,1).
+      ! Dcoefficients(:,:,1). Multiply the velocity vector [a,1] with
+      ! the normal in each point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -3665,27 +3629,17 @@ contains
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Daux(ipoint,iel,1))
-        end do
-      end do
-
-      ! Multiply the velocity vector [a,1] with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                      + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
+          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+                0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
           Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,1)
         end do
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
+
 
     case(BDRC_FLUX)
       !-------------------------------------------------------------------------
@@ -3703,6 +3657,8 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 2))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -3710,13 +3666,18 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints, &
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
       ! Evaluate the function parser for the boundary values in the
       ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,2).
+      ! Dcoefficients(:,:,2). Multiply the velocity vector [a,1] with
+      ! the normal in each point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -3726,27 +3687,16 @@ contains
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Daux(ipoint,iel,2))
-        end do
-      end do
-
-      ! Multiply the velocity vector [a,1] with the normal in each
-      ! point to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-
+          
           ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                      + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
+          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+                0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
             ! Compute the prescribed normal velocity
-            dnv = dnx * Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2&
-                        + 0.5*(1-Daux(ipoint,iel,2))**2) + dny
+            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2 +&
+                  0.5*(1-Daux(ipoint,iel,2))**2) + Dny(ipoint,iel)
             Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -3755,7 +3705,7 @@ contains
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
 
     case default
@@ -3858,7 +3808,8 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dnx,dny,dnv,dtime,dscale
+    real(DP), dimension(:,:), pointer :: Dnx,Dny
+    real(DP) :: dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -3892,6 +3843,8 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 2))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -3899,18 +3852,18 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+
       ! Multiply the velocity vector [a,1] with the normal in each
       ! point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
           
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-          
           ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                      + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
+          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+                0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
           
           ! Scale normal velocity by scaling parameter
           Dcoefficients(1,ipoint,iel) = -dscale * dnv
@@ -3918,7 +3871,7 @@ contains
       end do
       
       ! Free temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
       
     case (BDRC_DIRICHLET)
@@ -3953,6 +3906,8 @@ contains
       
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 2))
+      allocate(Dnx(npointsPerElement, nelements))
+      allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the solution field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
@@ -3960,18 +3915,18 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
+      ! Get the normal vectors in the cubature points on the boundary
+      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      
       ! Multiply the velocity vector [a,1] with the normal in each
       ! point to get the normal velocity.
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
           
-          ! Get the normal vector in the point from the boundary
-          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-              ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-          
           ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                      + 0.5*(1-Daux(ipoint,iel,1))**2) + dny
+          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+                0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
           
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
@@ -3983,7 +3938,7 @@ contains
       end do
       
       ! Free temporal memory
-      deallocate(Daux)
+      deallocate(Daux, Dnx, Dny)
 
 
     case default

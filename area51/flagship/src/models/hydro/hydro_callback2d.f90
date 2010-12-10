@@ -4660,11 +4660,11 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution
-    real(DP), dimension(:,:), pointer :: Daux1
+    real(DP), dimension(:,:), pointer :: Daux1,Dnx,Dny
     real(DP), dimension(:,:,:), pointer :: Daux2
     real(DP), dimension(NVAR2D) :: DstateI,DstateM,Dflux,Diff
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnx,dny,dtime,dscale,pI,cI,rM,pM,cM,dvnI,dvtI,dvnM,dvtM,w1,w4
+    real(DP) :: dtime,dscale,pI,cI,rM,pM,cM,dvnI,dvtI,dvnM,dvtM,w1,w4
     integer :: ibdrtype,isegment,iel,ipoint,ndim,ivar,nvar,iexpr,nmaxExpr
 
 #ifndef HYDRO_USE_IBP
@@ -4703,6 +4703,14 @@ contains
     isegment = rcollection%IquickAccess(2)
     nmaxExpr = rcollection%IquickAccess(3)
 
+    ! Allocate temporal memory
+    allocate(Dnx(npointsPerElement, nelements))
+    allocate(Dny(npointsPerElement, nelements))
+
+    ! Get the normal vectors in the cubature points on the boundary
+    call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+
     if (p_rsolution%nblocks .eq. 1) then
 
       !-------------------------------------------------------------------------
@@ -4737,10 +4745,6 @@ contains
 
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
-
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -4756,8 +4760,8 @@ contains
             rM = DstateM(1)
             pM = DstateM(4)
             cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
-            dvnM =  dnx*DstateM(2)+dny*DstateM(3)
-            dvtM = -dny*DstateM(2)+dnx*DstateM(3)
+            dvnM =  Dnx(ipoint,iel)*DstateM(2)+Dny(ipoint,iel)*DstateM(3)
+            dvtM = -Dny(ipoint,iel)*DstateM(2)+Dnx(ipoint,iel)*DstateM(3)
             
             ! Compute auxiliary quantities based on internal state vector
             pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-0.5*&
@@ -4768,11 +4772,11 @@ contains
 
             ! Compute the normal and tangential velocities based
             ! on internal state vector
-            dvnI = ( dnx*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     dny*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
                      Daux1((ipoint-1)*NVAR2D+1,iel)
-            dvtI = (-dny*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     dnx*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+            dvtI = (-Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
                      Daux1((ipoint-1)*NVAR2D+1,iel)
             
             ! Select free stream or computed Riemann invariant depending
@@ -4806,8 +4810,8 @@ contains
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( dnx*dvnM+dny*dvtM)
-            DstateM(3) = rM*(-dny*dvnM+dnx*dvtM)
+            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
             DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
             
             ! Setup the computed internal state vector
@@ -4817,7 +4821,8 @@ contains
             DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
@@ -4835,10 +4840,6 @@ contains
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
             
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-            
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
             DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
@@ -4847,21 +4848,22 @@ contains
             
             ! Compute the normal and tangential velocities based
             ! on the internal state vector
-            dvnI = ( dnx*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     dny*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
                      Daux1((ipoint-1)*NVAR2D+1,iel)
-            dvtI = (-dny*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     dnx*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+            dvtI = (-Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
                      Daux1((ipoint-1)*NVAR2D+1,iel)
 
             ! Compute the mirrored state vector
             DstateM(1) = DstateI(1)
-            DstateM(2) = DstateM(1)*(-dvnI*dnx - dvtI*dny)
-            DstateM(3) = DstateM(1)*(-dvnI*dny + dvtI*dnx)
+            DstateM(2) = DstateM(1)*(-dvnI*Dnx(ipoint,iel) - dvtI*Dny(ipoint,iel))
+            DstateM(3) = DstateM(1)*(-dvnI*Dny(ipoint,iel) + dvtI*Dnx(ipoint,iel))
             DstateM(4) = DstateI(4)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
 
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
@@ -4884,10 +4886,6 @@ contains
 
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
-
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -4912,7 +4910,8 @@ contains
             DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
 
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
@@ -4929,10 +4928,6 @@ contains
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
 
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-        
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
             DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
@@ -4940,7 +4935,7 @@ contains
             DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
 
             ! Assemble Galerkin fluxes at the boundary
-            call doGalerkinFlux(DstateI, dnx, dny, Dflux)
+            call doGalerkinFlux(DstateI, Dnx(ipoint,iel), Dny(ipoint,iel), Dflux)
 
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*Dflux
@@ -4964,10 +4959,6 @@ contains
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
 
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
@@ -4985,8 +4976,8 @@ contains
             dvtM = DstateM(3)
 
             ! Compute the normal velocity based on the internal state vector
-            dvnI = ( dnx*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     dny*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
                      Daux1((ipoint-1)*NVAR2D+1,iel)
 
             ! Compute the speed of sound based on the internal state vector
@@ -5001,10 +4992,11 @@ contains
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*(dnx*0.5*(w1+w4)-dny*dvtM)
-            DstateM(3) = rM*(dny*0.5*(w1+w4)+dnx*dvtM)
-            DstateM(4) = (1.0/(GAMMA-1.0))*pM+0.5*rM*((dnx*0.5*(w1+w4)-dny*dvtM)**2+&
-                                          (dny*0.5*(w1+w4)+dnx*dvtM)**2)
+            DstateM(2) = rM*(Dnx(ipoint,iel)*0.5*(w1+w4)-Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(Dny(ipoint,iel)*0.5*(w1+w4)+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = (1.0/(GAMMA-1.0))*pM+&
+                0.5*rM*((Dnx(ipoint,iel)*0.5*(w1+w4)-Dny(ipoint,iel)*dvtM)**2+&
+                        (Dny(ipoint,iel)*0.5*(w1+w4)+Dnx(ipoint,iel)*dvtM)**2)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
@@ -5013,7 +5005,8 @@ contains
             DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
@@ -5037,10 +5030,6 @@ contains
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
 
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
@@ -5057,11 +5046,11 @@ contains
 
             ! Compute the normal and tangential velocities based
             ! on internal state vector
-            dvnI = ( dnx*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     dny*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
                      Daux1((ipoint-1)*NVAR2D+1,iel)
-            dvtI = (-dny*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     dnx*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+            dvtI = (-Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
                      Daux1((ipoint-1)*NVAR2D+1,iel)
             
             ! Compute three Riemann invariants based on internal state vector
@@ -5083,8 +5072,8 @@ contains
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( dnx*dvnM+dny*dvtM)
-            DstateM(3) = rM*(-dny*dvnM+dnx*dvtM)
+            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
             DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
             
             ! Setup the computed internal state vector
@@ -5094,7 +5083,8 @@ contains
             DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
@@ -5149,10 +5139,6 @@ contains
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
 
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-            
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
@@ -5167,8 +5153,8 @@ contains
             rM = DstateM(1)
             pM = DstateM(4)
             cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
-            dvnM =  dnx*DstateM(2)+dny*DstateM(3)
-            dvtM = -dny*DstateM(2)+dnx*DstateM(3)
+            dvnM =  Dnx(ipoint,iel)*DstateM(2)+Dny(ipoint,iel)*DstateM(3)
+            dvtM = -Dny(ipoint,iel)*DstateM(2)+Dnx(ipoint,iel)*DstateM(3)
 
             ! Compute auxiliary quantities based on internal state vector
             pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-0.5*&
@@ -5178,10 +5164,10 @@ contains
 
             ! Compute the normal and tangential velocities based
             ! on internal state vector
-            dvnI = ( dnx*Daux2(ipoint,iel,2)+&
-                     dny*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
-            dvtI = (-dny*Daux2(ipoint,iel,2)+&
-                     dnx*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
+            dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
+                     Dny(ipoint,iel)*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
+            dvtI = (-Dny(ipoint,iel)*Daux2(ipoint,iel,2)+&
+                     Dnx(ipoint,iel)*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
 
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
@@ -5214,8 +5200,8 @@ contains
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( dnx*dvnM+dny*dvtM)
-            DstateM(3) = rM*(-dny*dvnM+dnx*dvtM)
+            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
             DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
             
             ! Setup the computed internal state vector
@@ -5225,7 +5211,8 @@ contains
             DstateI(4) = Daux2(ipoint,iel,4)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
@@ -5243,10 +5230,6 @@ contains
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
             
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-            
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
             DstateI(2) = Daux2(ipoint,iel,2)
@@ -5255,19 +5238,20 @@ contains
 
             ! Compute the normal and tangential velocities based
             ! on the internal state vector
-            dvnI = ( dnx*Daux2(ipoint,iel,2)+&
-                     dny*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
-            dvtI = (-dny*Daux2(ipoint,iel,2)+&
-                      dnx*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
+            dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
+                     Dny(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
+            dvtI = (-Dny(ipoint,iel)*Daux2(ipoint,iel,2)+&
+                      Dnx(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
 
             ! Compute the mirrored state vector
             DstateM(1) = DstateI(1)
-            DstateM(2) = DstateM(1)*(-dvnI*dnx - dvtI*dny)
-            DstateM(3) = DstateM(1)*(-dvnI*dny + dvtI*dnx)
+            DstateM(2) = DstateM(1)*(-dvnI*Dnx(ipoint,iel) - dvtI*Dny(ipoint,iel))
+            DstateM(3) = DstateM(1)*(-dvnI*Dny(ipoint,iel) + dvtI*Dnx(ipoint,iel))
             DstateM(4) = DstateI(4)
 
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
@@ -5290,10 +5274,6 @@ contains
 
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
-
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
 
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -5318,7 +5298,8 @@ contains
             DstateI(4) = Daux2(ipoint,iel,4)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
@@ -5335,10 +5316,6 @@ contains
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
 
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-        
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
             DstateI(2) = Daux2(ipoint,iel,2)
@@ -5346,7 +5323,7 @@ contains
             DstateI(4) = Daux2(ipoint,iel,4)
 
             ! Assemble Galerkin fluxes at the boundary
-            call doGalerkinFlux(DstateI, dnx, dny, Dflux)
+            call doGalerkinFlux(DstateI, Dnx(ipoint,iel), Dny(ipoint,iel), Dflux)
 
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*Dflux
@@ -5370,10 +5347,6 @@ contains
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
 
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
@@ -5391,8 +5364,8 @@ contains
             dvtM = DstateM(3)
 
             ! Compute the normal velocity based on the internal state vector
-            dvnI = ( dnx*Daux2(ipoint,iel,2)+&
-                     dny*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
+            dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
+                     Dny(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
 
             ! Compute the speed of sound based on the internal state vector
             cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
@@ -5406,10 +5379,11 @@ contains
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*(dnx*0.5*(w1+w4)-dny*dvtM)
-            DstateM(3) = rM*(dny*0.5*(w1+w4)+dnx*dvtM)
-            DstateM(4) = (1.0/(GAMMA-1.0))*pM+0.5*rM*((dnx*0.5*(w1+w4)-dny*dvtM)**2+&
-                                          (dny*0.5*(w1+w4)+dnx*dvtM)**2)
+            DstateM(2) = rM*(Dnx(ipoint,iel)*0.5*(w1+w4)-Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(Dny(ipoint,iel)*0.5*(w1+w4)+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = (1.0/(GAMMA-1.0))*pM+&
+                0.5*rM*((Dnx(ipoint,iel)*0.5*(w1+w4)-Dny(ipoint,iel)*dvtM)**2+&
+                        (Dny(ipoint,iel)*0.5*(w1+w4)+Dnx(ipoint,iel)*dvtM)**2)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5418,7 +5392,8 @@ contains
             DstateI(4) = Daux2(ipoint,iel,4)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
@@ -5442,10 +5417,6 @@ contains
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
 
-            ! Get the normal vector in the point from the boundary
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
-
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
@@ -5461,10 +5432,10 @@ contains
 
             ! Compute the normal and tangential velocities based
             ! on internal state vector
-            dvnI = ( dnx*Daux2(ipoint,iel,2)+&
-                     dny*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
-            dvtI = (-dny*Daux2(ipoint,iel,2)+&
-                     dnx*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
+            dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
+                     Dny(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
+            dvtI = (-Dny(ipoint,iel)*Daux2(ipoint,iel,2)+&
+                     Dnx(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
             
             ! Compute three Riemann invariants based on internal state vector
             DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
@@ -5485,8 +5456,8 @@ contains
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( dnx*dvnM+dny*dvtM)
-            DstateM(3) = rM*(-dny*dvnM+dnx*dvtM)
+            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
             DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
             
             ! Setup the computed internal state vector
@@ -5496,7 +5467,8 @@ contains
             DstateI(4) = Daux2(ipoint,iel,4)
             
             ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
             
             ! Store flux in the cubature points
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
@@ -5515,6 +5487,9 @@ contains
       
     end if
 
+    ! Deallocate temporal memory
+    deallocate(Dnx,Dny)
+
   contains
 
     ! Here come the working routines
@@ -5523,7 +5498,7 @@ contains
     ! Approximate Riemann solver along the outward unit normal
     !***************************************************************************
 
-    subroutine doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+    pure subroutine doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
 
       ! input parameters
       real(DP), dimension(NVAR2D), intent(in) :: DstateI, DstateM
@@ -5628,7 +5603,7 @@ contains
     ! Compute the Galerkin flux (used for supersonic outflow)
     !***************************************************************************
 
-    subroutine doGalerkinFlux(Dstate, dnx, dny, Dflux)
+    pure subroutine doGalerkinFlux(Dstate, dnx, dny, Dflux)
 
       ! input parameters
       real(DP), dimension(NVAR2D), intent(in) :: Dstate
