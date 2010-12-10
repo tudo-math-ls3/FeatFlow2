@@ -19,6 +19,10 @@
 !# 3.) ansol_configAnalytical
 !#     -> Configures a solution to be analytically given
 !#
+!#     ansol_configExpressions
+!#     -> Configures a solution to be given as expressions or
+!#        configures the expressions in a blended flow.
+!#
 !# 4.) ansol_configStationaryFile
 !#     -> Reads a solution from a file, configures the function to be stationary
 !#
@@ -54,6 +58,13 @@
 !# 12.) ansol_getSpaceTimeDiscr
 !#      -> Obtains the space/time discretisation of an underlying
 !#         space-time solution if possible.
+!#
+!# Notes
+!# -----
+!# * The so called "blended" functions allow to create a function by a blending
+!#   of two sub-functions. Such functions are defined by an expression for each
+!#   component. The expression must return a value in the range [0..1] where
+!#   0 represents the 1st solution and 1 the 2nd.
 !# </purpose>
 !##############################################################################
 
@@ -151,6 +162,10 @@ module analyticsolution
 
   ! Nonstationary solution, specified by the application, mesh-based. Arbitrary level.
   integer, parameter, public :: ANSOL_TP_MBNONSTATIONARY = 5
+  
+  ! Blended function. The expressions for each component return a parameter
+  ! value in [0,1] that blends between two sub-solutions.
+  integer, parameter, public :: ANSOL_TP_BLENDED = 6
 
 !</constantblock>
 
@@ -211,6 +226,12 @@ module analyticsolution
     ! Auxiliary variable: Current point in time.
     real(DP) :: dtime
     
+    ! 1st sub-solution. Used for blended functions.
+    type(t_anSolution), pointer :: p_rsubsolution1 => null()
+    
+    ! 2nd sub-solution. Used for blended functions.
+    type(t_anSolution), pointer :: p_rsubsolution2 => null()
+    
   end type
 
 !</typeblock>
@@ -221,8 +242,10 @@ module analyticsolution
     module procedure ansol_init_zero
     module procedure ansol_init_analytical
     module procedure ansol_init_discr
+    module procedure ansol_init_fespace
     module procedure ansol_init_tria
     module procedure ansol_init_file
+    module procedure ansol_init_blended
   end interface
 
   interface ansol_prepareEval
@@ -256,18 +279,58 @@ contains
   ! changed using ansol_configExpressions.
 !</description>
 
+!<input>
+  ! Number of components
+  integer, intent(in) :: ncomponents
+!</input>
+
 !<output>
   ! The solution to initialise.
   type(t_anSolution), intent(out) :: rsolution
-  
-  ! Number of components
-  integer, intent(in) :: ncomponents
 !</output>
 
 !</subroutine>
 
     rsolution%ctype = ANSOL_TP_ZERO
     rsolution%ncomponents = ncomponents
+    
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine ansol_init_blended (rsolution,ncomponents,rsolution1,rsolution2)
+
+!<description>
+  ! Initialises a solution as blended solution between two other solutions.
+  ! The solution depends on an expression for each component. The expression
+  ! must return a value in the range [0,1] for each point in time, where
+  ! 0 represents the values of rsolution1 and 1 the values of rsolution2.
+!</description>
+
+!<input>
+  ! Number of components
+  integer, intent(in) :: ncomponents
+
+  ! 1st solution.
+  type(t_anSolution), intent(in), target :: rsolution1
+
+  ! 2nd solution
+  type(t_anSolution), intent(in), target :: rsolution2
+!</input>
+
+!<output>
+  ! The solution to initialise.
+  type(t_anSolution), intent(out) :: rsolution
+!</output>
+
+!</subroutine>
+
+    rsolution%ctype = ANSOL_TP_BLENDED
+    rsolution%ncomponents = ncomponents
+    rsolution%p_rsubsolution1 => rsolution1
+    rsolution%p_rsubsolution2 => rsolution2
     
   end subroutine
 
@@ -366,6 +429,44 @@ contains
     ! Create the underlying FE space
     call fesph_createFEspace (rsolution%rfeSpace,ilevel,&
       rdiscr,ilevelDiscr,fgetDiscr,rcollection)
+      
+    ! Determine the number of components
+    rsolution%ncomponents = rsolution%rfeSpace%p_rdiscretisation%ncomponents
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine ansol_init_fespace (rsolution,rfespace,ielementType)
+
+!<description>
+  ! Initialises a solution structure based on a FEM-space structure.
+!</description>
+
+!<input>
+  ! The underlying FEM space structure.
+  type(t_feSpaceLevel), intent(in) :: rfeSpace
+
+  ! OPTIONAL: Element id.
+  integer, intent(in) :: ielementType
+!</input>
+
+!<output>
+  ! The solution to initialise.
+  type(t_anSolution), intent(out) :: rsolution
+!</output>
+
+!</subroutine>
+
+    rsolution%ctype = ANSOL_TP_MBUNDEFINED
+    
+    ! Take the FE space.
+    rsolution%rfeSpace = rfeSpace
+    if (present(ielementType)) then
+      rsolution%ielementType = ielementType
+    end if
       
     ! Determine the number of components
     rsolution%ncomponents = rsolution%rfeSpace%p_rdiscretisation%ncomponents
@@ -537,6 +638,13 @@ contains
         deallocate(rsolution%p_Sexpressions)
       end if
       
+    case (ANSOL_TP_BLENDED)
+      ! Release the parser and the expressions, that is all.
+      if (associated(rsolution%p_Sexpressions)) then
+        call fparser_release(rsolution%rparserExpression)
+        deallocate(rsolution%p_Sexpressions)
+      end if
+
     case (ANSOL_TP_MBUNDEFINED)
       ! Release the mesh, that is all.
       call fesph_releaseFEspace(rsolution%rfeSpace)
@@ -598,6 +706,7 @@ contains
     ! Basic checks
     if ((rsolution%ctype .ne. ANSOL_TP_ANALYTICAL) .and. &
         (rsolution%ctype .ne. ANSOL_TP_EXPRESSIONS) .and. &
+        (rsolution%ctype .ne. ANSOL_TP_BLENDED) .and. &
         (rsolution%ctype .ne. ANSOL_TP_ZERO)) then
       call output_line('Incorrect solution initialisation!',&
           OU_CLASS_ERROR, OU_MODE_STD,'ansol_configAnalytical')
@@ -630,7 +739,9 @@ contains
         end if
       end do
       
-      rsolution%ctype = ANSOL_TP_EXPRESSIONS
+      if (rsolution%ctype .ne. ANSOL_TP_BLENDED) then
+        rsolution%ctype = ANSOL_TP_EXPRESSIONS
+      end if
       
     else
     
@@ -842,7 +953,7 @@ contains
   
 !<subroutine>
 
-  subroutine ansol_prepareEvalCollection (rsolution,rcollection,sname,dtime)
+  recursive subroutine ansol_prepareEvalCollection (rsolution,rcollection,sname,dtime)
 
 !<description>
   ! Adds a solution structure at a definite time as variable to a collection.
@@ -868,7 +979,7 @@ contains
 
 !</subroutine>
 
-    type(t_vectorBlock), pointer :: p_rvector
+    type(t_vectorBlock), pointer :: p_rvector,p_rvector2
 
     ! Put the type and id to the collection.
     call collct_setvalue_int (rcollection, trim(sname)//"_CTYPE", &
@@ -886,6 +997,20 @@ contains
 
     case (ANSOL_TP_ZERO)
       ! Nothing to do
+
+    case (ANSOL_TP_BLENDED)
+
+      ! Add a reference to the parser to the collection
+      call collct_setvalue_pars (rcollection, trim(sname)//"_PARS", &
+          rsolution%rparserExpression, .true.) 
+          
+      ! Add the current time to the collection
+      call collct_setvalue_real (rcollection, trim(sname)//"_TIME", &
+          dtime, .true.) 
+          
+      ! Prepare the evaluation of the sub-functions.
+      call ansol_prepareEvalCollection (rsolution%p_rsubsolution1,rcollection,trim(sname)//"1",dtime)
+      call ansol_prepareEvalCollection (rsolution%p_rsubsolution1,rcollection,trim(sname)//"2",dtime)
 
     case (ANSOL_TP_EXPRESSIONS)
     
@@ -928,7 +1053,7 @@ contains
   
 !<subroutine>
 
-  subroutine ansol_doneEvalCollection (rcollection,sname)
+  recursive subroutine ansol_doneEvalCollection (rcollection,sname)
 
 !<description>
   ! Removes a solution structure from a collection.
@@ -972,6 +1097,17 @@ contains
       
       call collct_deletevalue (rcollection, trim(sname)//"_TIME")
 
+    case (ANSOL_TP_BLENDED)
+    
+      ! Remove our parser from the collection
+      call collct_deletevalue (rcollection, trim(sname)//"_PARS")
+      
+      call collct_deletevalue (rcollection, trim(sname)//"_TIME")
+      
+      ! Clean up the sub-solutions
+      call ansol_doneEvalCollection(rcollection,trim(sname)//"1")
+      call ansol_doneEvalCollection(rcollection,trim(sname)//"2")
+
     case (ANSOL_TP_MBSTATIONARYFILE,ANSOL_TP_MBSTATIONARY)
     
       ! Delete the reference to the stationary solution.
@@ -999,7 +1135,7 @@ contains
   
 !<subroutine>
 
-  subroutine ansol_evaluateByCollection (rcollection,sname,idim,Dvalues,&
+  recursive subroutine ansol_evaluateByCollection (rcollection,sname,idim,Dvalues,&
       npoints,nelements,Dpoints,Ielements,ierror,iid)
 
 !<description>
@@ -1059,9 +1195,12 @@ contains
     real(DP), dimension(:), allocatable :: DvaluesAct
     real(DP), dimension(:,:), allocatable :: DpointsAct
     integer, dimension(:), allocatable :: IelementsAct
+    real(dp), dimension(:,:), allocatable :: p_Dval
     
     type(t_fparser), pointer :: p_rparser
-    real(dp), dimension(:,:), allocatable :: p_Dval
+    real(DP) :: dweight
+    real(DP), dimension(:,:), allocatable :: Dvalues2
+    real(DP), dimension(4) :: DvaluesBlending
     
     ! DEBUG!!!
     !real(DP), dimension(:), pointer :: p_Ddata
@@ -1075,6 +1214,52 @@ contains
     ctype = collct_getvalue_int (rcollection, trim(sname)//"_CTYPE")
 
     select case (ctype)
+
+    case (ANSOL_TP_BLENDED)
+    
+      ! Get the parser object with the RHS expressions from the collection
+      p_rparser => collct_getvalue_pars (rcollection, trim(sname)//"_PARS")
+      dtime = collct_getvalue_real (rcollection, trim(sname)//"_TIME")
+      
+      ! Call the parser, evaluare the weighting parameter.
+      DvaluesBlending(:) = (/dtime,0.0_DP,0.0_DP,0.0_DP/)
+      call fparser_evalFunction (p_rparser, idim, DvaluesBlending, dweight)
+      dweight = min(max(dweight,0.0_DP),1.0_DP)
+
+      ! Allocate a 2nd array that receives the values from the 2nd subfunction.
+      allocate (Dvalues2(ubound(Dvalues,1),ubound(Dvalues,2)))
+      
+      ! Evaluate the functions
+      call ansol_evaluateByCollection (rcollection,trim(sname)//"1",idim,Dvalues,&
+          npoints,nelements,Dpoints,Ielements,ierror)
+          
+      if (ierror .ne. 0) then
+        ! Error.
+        Dvalues(:,:) = 0.0_DP
+        deallocate(Dvalues2)
+        return
+      end if
+          
+      call ansol_evaluateByCollection (rcollection,trim(sname)//"2",idim,Dvalues2,&
+          npoints,nelements,Dpoints,Ielements,ierror)
+
+      if (ierror .ne. 0) then
+        ! Error.
+        Dvalues(:,:) = 0.0_DP
+        deallocate(Dvalues2)
+        return
+      end if
+          
+      ! Calculate the blended value, release, finish.
+
+      ! Reshape the data, that's it.
+      do i=1,nelements
+        do j=1,npoints
+          Dvalues(j,i) = (1-dweight) * Dvalues(j,i) + dweight * Dvalues2(j,i)
+        end do
+      end do
+      
+      deallocate(Dvalues2)
 
     case (ANSOL_TP_EXPRESSIONS)
     
@@ -1212,7 +1397,7 @@ contains
   
 !<subroutine>
 
-  subroutine ansol_prepareEvalDirect (rsolution,dtime)
+  recursive subroutine ansol_prepareEvalDirect (rsolution,dtime)
 
 !<description>
   ! Must be called in advance of a call to ansol_evaluateDirect.
@@ -1233,6 +1418,11 @@ contains
 !</subroutine>
 
     select case (rsolution%ctype)
+    case (ANSOL_TP_BLENDED)
+      ! Pass to the subfunctions
+      call ansol_prepareEvalDirect (rsolution%p_rsubsolution1,dtime)
+      call ansol_prepareEvalDirect (rsolution%p_rsubsolution2,dtime)
+    
     case (ANSOL_TP_MBNONSTATIONARYFILE,ANSOL_TP_MBNONSTATIONARY)
       
       ! Create a solution vector as temporary space for evaluations.
@@ -1254,7 +1444,7 @@ contains
   
 !<subroutine>
 
-  subroutine ansol_doneEvalDirect (rsolution)
+  recursive subroutine ansol_doneEvalDirect (rsolution)
 
 !<description>
   ! Must be called when the evaluation of a solution is finished.
@@ -1269,6 +1459,11 @@ contains
 !</subroutine>
 
     select case (rsolution%ctype)
+    case (ANSOL_TP_BLENDED)
+      ! Pass to the subfunctions
+      call ansol_doneEvalDirect (rsolution%p_rsubsolution1)
+      call ansol_doneEvalDirect (rsolution%p_rsubsolution2)
+
     case (ANSOL_TP_MBNONSTATIONARYFILE,ANSOL_TP_MBNONSTATIONARY)
       
       ! Release the temp vector
@@ -1284,7 +1479,7 @@ contains
   
 !<subroutine>
 
-  subroutine ansol_evaluateDirect (rsolution,idim,Dvalues,&
+  recursive subroutine ansol_evaluateDirect (rsolution,idim,Dvalues,&
       npoints,nelements,Dpoints,Ielements,ierror,iid)
 
 !<description>
@@ -1341,6 +1536,9 @@ contains
     real(DP), dimension(:), allocatable :: DvaluesAct
     real(DP), dimension(:,:), allocatable :: DpointsAct
     integer, dimension(:), allocatable :: IelementsAct
+    real(DP) :: dweight
+    real(DP), dimension(:,:), allocatable :: Dvalues2
+    real(DP), dimension(4) :: DvaluesBlending
     
     real(dp), dimension(:,:), allocatable :: p_Dval
     
@@ -1355,6 +1553,48 @@ contains
     ! Evaluate, depending on the type.
     
     select case (rsolution%ctype)
+    case (ANSOL_TP_BLENDED)
+    
+      ! Call the parser, evaluare the weighting parameter.
+      DvaluesBlending(:) = (/rsolution%dtime,0.0_DP,0.0_DP,0.0_DP/)
+      call fparser_evalFunction (rsolution%rparserExpression, idim, DvaluesBlending, dweight)
+      dweight = min(max(dweight,0.0_DP),1.0_DP)
+
+      ! Allocate a 2nd array that receives the values from the 2nd subfunction.
+      allocate (Dvalues2(ubound(Dvalues,1),ubound(Dvalues,2)))
+      
+      ! Evaluate the functions
+      call ansol_evaluateDirect (rsolution%p_rsubsolution1,idim,Dvalues,&
+          npoints,nelements,Dpoints,Ielements,ierror)
+          
+      if (ierror .ne. 0) then
+        ! Error.
+        Dvalues(:,:) = 0.0_DP
+        deallocate(Dvalues2)
+        return
+      end if
+          
+      call ansol_evaluateDirect (rsolution%p_rsubsolution2,idim,Dvalues,&
+          npoints,nelements,Dpoints,Ielements,ierror)
+
+      if (ierror .ne. 0) then
+        ! Error.
+        Dvalues(:,:) = 0.0_DP
+        deallocate(Dvalues2)
+        return
+      end if
+          
+      ! Calculate the blended value, release, finish.
+
+      ! Reshape the data, that's it.
+      do i=1,nelements
+        do j=1,npoints
+          Dvalues(j,i) = (1-dweight) * Dvalues(j,i) + dweight * Dvalues2(j,i)
+        end do
+      end do
+      
+      deallocate(Dvalues2)
+
     case (ANSOL_TP_EXPRESSIONS)
       ! Prepare the array with the values for the function.
       allocate(p_Dval(3,npoints*nelements))
