@@ -176,6 +176,7 @@ ncomponents = 2
 sexpression(2) =
   ""
   ""
+  
 
 # Refinement level of the coarse mesh corresponding to the function vector.
 # Only valid if ctype =1 or =2.
@@ -249,6 +250,17 @@ ifileformat = 1
 # NOTE: NOT YET SUPPORTED!
 # ssectionInitSol = INITIALCONDITION
 
+# Name of the section configuring the forward solver if ctypeStartVector=2.
+# NOTE: NOT YET SUPPORTED!
+# snonlinearSolver = CC-NONLINEAR
+
+# Name of the section defining the boundary conditions
+# NOTE: NOT YET SUPPORTED!
+# sboundaryConditions = BDCONDITIONS
+
+# Section with postprocessing settings during a forward simulation 
+# NOTE: NOT YET SUPPORTED!
+# spostprocessing = POSTPROC_FORWARDSIM
 
 # =======================================================================================
 # Section that defines the initial iterate in the optimal control problem.
