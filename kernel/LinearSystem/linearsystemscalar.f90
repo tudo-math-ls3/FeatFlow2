@@ -20647,6 +20647,15 @@ contains
         
       select case(rmatrix%cdataType)
       case (ST_SINGLE)
+#if defined USE_COMPILER_SUNSTUDIO_12_1_OR_PRERELEASE || defined USE_COMPILER_SUNSTUDIO_12_2_OR_PRERELEASE
+        call output_line('single precision matrices not supported for SunStudio ' // &
+                         'Compiler 12.1', OU_CLASS_ERROR, OU_MODE_STD, &
+                         'lsyssc_sortMatrixCols')
+        call output_line('or SunStudio Express editions from 2009 and 2010 due ' // &
+                         'to compiler error.', OU_CLASS_ERROR, OU_MODE_STD, &
+                         'lsyssc_sortMatrixCols')
+        call sys_halt()
+#else
         ! fetch the data array
         call storage_getbase_single(rmatrix%h_DA, p_Fdata)
         do i = 1, rmatrix%NEQ
@@ -20664,6 +20673,7 @@ contains
             p_Fdata(k+1) = ft
           end do ! j
         end do ! i
+#endif
 
       case (ST_DOUBLE)
         ! fetch the data array
