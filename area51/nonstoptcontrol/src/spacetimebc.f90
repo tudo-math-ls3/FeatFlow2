@@ -35,6 +35,7 @@ module spacetimebc
 
   use spacetimehierarchy
   use fespacehierarchy
+  use fespacehierarchybase
 
   use physics
 
