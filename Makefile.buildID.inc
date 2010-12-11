@@ -110,7 +110,7 @@ ifeq ($(strip $(REALID)), pc-athlon64-linux)
 REALID:=$(strip $(REALID))-gcc-goto
 endif
 
-ifeq ($(strip $(REALID)), pc-athlon64x2-linux)
+ifeq ($(strip $(REALID)), pc64-athlon64x2-linux)
 REALID:=$(strip $(REALID))-gcc-goto
 endif
 
