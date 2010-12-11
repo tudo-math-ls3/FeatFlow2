@@ -87,6 +87,25 @@ endif
 # errors with this setting, both for unoptimised and optimised builds.
 #CFLAGSF90 := -DENABLE_USE_ONLY $(CFLAGSF90)
 
+# Detect compiler version
+SUNSTUDIOVERSION  := $(shell eval $(CXXVERSION) )
+
+# Enable workarounds for Intel 10.1.0[0-1][0-9] compiler releases, 
+# (not necessary for Intel 10.1.021)
+ifneq (,$(findstring Sun C++ 5.10,$(SUNSTUDIOVERSION)))
+ifneq (,$(findstring 2009/03/06,$(SUNSTUDIOVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_1_OR_PRERELEASE $(CFLAGSF90)
+endif
+ifneq (,$(findstring 2009/06/03,$(SUNSTUDIOVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_1_OR_PRERELEASE $(CFLAGSF90)
+endif
+endif
+ifneq (,$(findstring Sun C++ 5.11,$(SUNSTUDIOVERSION)))
+ifneq (,$(findstring 2010/05/10,$(SUNSTUDIOVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_2_OR_PRERELEASE $(CFLAGSF90)
+endif
+endif
+
 
 
 ##############################################################################
