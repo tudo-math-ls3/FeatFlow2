@@ -823,10 +823,8 @@ contains
         end if
       
         call lsyssc_matrixLinearComb (&
-            rnonlinearCCMatrix%p_rmatrixMass       ,rnonlinearCCMatrix%dalpha,&
-            rmatrix%RmatrixBlock(1,1),0.0_DP,&
-            rmatrix%RmatrixBlock(1,1),&
-            .false.,.false.,.true.,.true.)
+            rnonlinearCCMatrix%p_rmatrixMass,rmatrix%RmatrixBlock(1,1),&
+            rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
             
         if (.not. bshared) then
 
@@ -839,16 +837,12 @@ contains
           end if
 
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rmatrixMass     ,rnonlinearCCMatrix%dalpha,&
-              rmatrix%RmatrixBlock(2,2),0.0_DP,&
-              rmatrix%RmatrixBlock(2,2),&
-              .false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%p_rmatrixMass,rmatrix%RmatrixBlock(2,2),&
+              rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
 
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rmatrixMass     ,rnonlinearCCMatrix%dalpha,&
-              rmatrix%RmatrixBlock(3,3),0.0_DP,&
-              rmatrix%RmatrixBlock(3,3),&
-              .false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%p_rmatrixMass,rmatrix%RmatrixBlock(3,3),&
+              rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
         end if
         
       else
@@ -867,22 +861,17 @@ contains
       ! Plug in the Stokes matrix?
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
         call lsyssc_matrixLinearComb (&
-            rnonlinearCCMatrix%p_rmatrixStokes     ,rnonlinearCCMatrix%dtheta,&
-            rmatrix%RmatrixBlock(1,1),1.0_DP,&
-            rmatrix%RmatrixBlock(1,1),&
-            .false.,.false.,.true.,.true.)
+            rnonlinearCCMatrix%p_rmatrixStokes,rmatrix%RmatrixBlock(1,1),&
+            rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
             
         if (.not. bshared) then
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rmatrixStokes   ,rnonlinearCCMatrix%dtheta,&
-              rmatrix%RmatrixBlock(2,2),1.0_DP,&
-              rmatrix%RmatrixBlock(2,2),&
-              .false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%p_rmatrixStokes,rmatrix%RmatrixBlock(2,2),&
+              rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
+
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rmatrixStokes   ,rnonlinearCCMatrix%dtheta,&
-              rmatrix%RmatrixBlock(3,3),1.0_DP,&
-              rmatrix%RmatrixBlock(3,3),&
-              .false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%p_rmatrixStokes,rmatrix%RmatrixBlock(3,3),&
+              rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
         end if
       end if
       

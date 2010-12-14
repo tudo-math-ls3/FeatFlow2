@@ -416,8 +416,8 @@ contains
     ! Note that rmatrix shares its data with rmatrixBlock(1,1) so by modifying
     ! rmatrix, we simultaneously modify rmatrixBlock(1,1).
     call lsyssc_matrixLinearComb (&
-        rmatrixMass,1.0_DP/dtstep, rmatrixLaplace,1.0_DP, rmatrix,&
-        .false.,.false.,.true.,.true.)
+        rmatrixMass, rmatrixLaplace, 1.0_DP/dtstep, 1.0_DP,&
+        .false.,.false.,.true.,.true., rmatrix)
         
     ! Next step is to implement boundary conditions into the matrix.
     ! This is done using a vector/matrix filter for discrete boundary 

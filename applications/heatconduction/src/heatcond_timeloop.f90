@@ -188,11 +188,9 @@ contains
                                    rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
                                    LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
       call lsyssc_matrixLinearComb (rproblem%RlevelInfo(i)%rmatrixStatic%RmatrixBlock(1,1),&
+                                    rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
                                     rproblem%rtimedependence%rtimestepping%dweightMatrixLHS,&
-                                    rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
-                                    1.0_DP,&
-                                    rproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
-                                    .false.,.false.,.true.,.true.)
+                                    1.0_DP,.false.,.false.,.true.,.true.)
     end do
     
     ! Discretise the boundary conditions at the new time instant

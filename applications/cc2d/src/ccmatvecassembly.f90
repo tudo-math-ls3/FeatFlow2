@@ -988,10 +988,8 @@ contains
         end if
       
         call lsyssc_matrixLinearComb (&
-            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rnonlinearCCMatrix%dalpha,&
-            rmatrix%RmatrixBlock(1,1),0.0_DP,&
-            rmatrix%RmatrixBlock(1,1),&
-            .false.,.false.,.true.,.true.)
+            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,1),&
+            rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
             
         if (.not. bshared) then
 
@@ -1001,10 +999,8 @@ contains
           end if
 
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rnonlinearCCMatrix%dalpha,&
-              rmatrix%RmatrixBlock(2,2),0.0_DP,&
-              rmatrix%RmatrixBlock(2,2),&
-              .false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,2),&
+              rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
         end if
         
       else
@@ -1043,17 +1039,13 @@ contains
         if ((rnonlinearCCMatrix%p_rphysics%isubequation .eq. 0) .and. &
             (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rnonlinearCCMatrix%dtheta,&
-              rmatrix%RmatrixBlock(1,1),1.0_DP,&
-              rmatrix%RmatrixBlock(1,1),&
-              .false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rmatrix%RmatrixBlock(1,1),&
+              rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
               
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rnonlinearCCMatrix%dtheta,&
-                rmatrix%RmatrixBlock(2,2),1.0_DP,&
-                rmatrix%RmatrixBlock(2,2),&
-                .false.,.false.,.true.,.true.)
+                rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rmatrix%RmatrixBlock(2,2),&
+                rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
           end if
         end if
       end if
@@ -1293,17 +1285,13 @@ contains
         
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
-              rmatrix%RmatrixBlock(1,1),1.0_DP,&
-              rmatrix%RmatrixBlock(1,1),&
-              .false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(1,1),&
+              rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
-                rmatrix%RmatrixBlock(2,2),1.0_DP,&
-                rmatrix%RmatrixBlock(2,2),&
-                .false.,.false.,.true.,.true.)
+                rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(2,2),&
+                rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
           end if
           
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
@@ -1505,17 +1493,13 @@ contains
         
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
-              rmatrix%RmatrixBlock(1,1),1.0_DP,&
-              rmatrix%RmatrixBlock(1,1),&
-              .false.,.false.,.true.,.true.)
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(1,1),&
+              rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
-                rmatrix%RmatrixBlock(2,2),1.0_DP,&
-                rmatrix%RmatrixBlock(2,2),&
-                .false.,.false.,.true.,.true.)
+                rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(2,2),&
+                rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
           end if
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
