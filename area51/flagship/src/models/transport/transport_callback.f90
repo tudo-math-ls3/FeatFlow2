@@ -1080,11 +1080,11 @@ contains
           'lumpedmassmatrix', lumpedMassMatrix)
 
       call lsyssc_MatrixLinearComb(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rmatrix(transportMatrix),&
-          -rtimestep%theta*rtimestep%dStep,&
-          rproblemLevel%Rmatrix(systemMatrix),&
-          .false., .false., .true., .true.)
+          1.0_DP, -rtimestep%theta*rtimestep%dStep,&
+          .false., .false., .true., .true.,&
+          rproblemLevel%Rmatrix(systemMatrix))
 
     case (MASS_CONSISTENT)
 
@@ -1099,11 +1099,11 @@ contains
           'consistentmassmatrix', consistentMassMatrix)
 
       call lsyssc_MatrixLinearComb(&
-          rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
+          rproblemLevel%Rmatrix(consistentMassMatrix),&
           rproblemLevel%Rmatrix(transportMatrix),&
-          -rtimestep%theta*rtimestep%dStep,&
-          rproblemLevel%Rmatrix(systemMatrix),&
-          .false., .false., .true., .true.)
+          1.0_DP, -rtimestep%theta*rtimestep%dStep,&
+          .false., .false., .true., .true.,&
+          rproblemLevel%Rmatrix(systemMatrix))
 
     case DEFAULT
 
@@ -1623,10 +1623,10 @@ contains
 
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%Rmatrix(transportMatrix),&
-          -rtimestep%theta*rtimestep%dStep,&
-          rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
-          rproblemLevel%Rmatrix(jacobianMatrix),&
-          .false., .false., .true., bisExactStructure)
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          -rtimestep%theta*rtimestep%dStep, 1.0_DP,&
+          .false., .false., .true., bisExactStructure,&
+          rproblemLevel%Rmatrix(jacobianMatrix))
 
     case (MASS_CONSISTENT)
 
@@ -1638,10 +1638,10 @@ contains
 
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%Rmatrix(transportMatrix),&
-          -rtimestep%theta*rtimestep%dStep,&
-          rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
-          rproblemLevel%Rmatrix(jacobianMatrix),&
-          .false., .false., .true., bisExactStructure)
+          rproblemLevel%Rmatrix(consistentMassMatrix),&
+          -rtimestep%theta*rtimestep%dStep, 1.0_DP,&
+          .false., .false., .true., bisExactStructure,&
+          rproblemLevel%Rmatrix(jacobianMatrix))
 
     case DEFAULT
 
@@ -1652,10 +1652,9 @@ contains
       !-------------------------------------------------------------------------
 
       call lsyssc_MatrixLinearComb(&
-          rproblemLevel%Rmatrix(transportMatrix), -1.0_DP,&
-          rproblemLevel%Rmatrix(jacobianMatrix), 0.0_DP,&
+          rproblemLevel%Rmatrix(transportMatrix),&
           rproblemLevel%Rmatrix(jacobianMatrix),&
-          .false., .false., .true., bisExactStructure)
+          -1.0_DP, 0.0_DP, .false., .false., .true., bisExactStructure)
 
     end select
 

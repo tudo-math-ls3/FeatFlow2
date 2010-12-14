@@ -362,20 +362,18 @@ contains
           call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
           do ivar = 1, mhd_getNVAR(rproblemLevel)
             call lsyssc_matrixLinearComb(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
-                rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar), 1.0_DP,&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                .false., .false., .true., .true.)
+                1.0_DP, 1.0_DP, .false., .false., .true., .true.)
           end do
 
         case (MASS_CONSISTENT)
           call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
           do ivar = 1, mhd_getNVAR(rproblemLevel)
             call lsyssc_matrixLinearComb(&
-                rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
-                rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar), 1.0_DP,&
+                rproblemLevel%Rmatrix(consistentMassMatrix),&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                .false., .false., .true., .true.)
+                1.0_DP, 1.0_DP, .false., .false., .true., .true.)
           end do
 
         case DEFAULT
@@ -746,10 +744,9 @@ contains
             rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
 
         call lsyssc_MatrixLinearComb(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rmatrix(systemMatrix),&
-            rtimestep%theta*rtimestep%dStep,&
-            rproblemLevel%Rmatrix(systemMatrix),&
+            1.0_DP, rtimestep%theta*rtimestep%dStep,&
             .false., .false., .true., .true.)
 
       case (MASS_CONSISTENT)
@@ -767,10 +764,9 @@ contains
             rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
 
         call lsyssc_MatrixLinearComb(&
-            rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
+            rproblemLevel%Rmatrix(consistentMassMatrix),&
             rproblemLevel%Rmatrix(systemMatrix),&
-            rtimestep%theta*rtimestep%dStep,&
-            rproblemLevel%Rmatrix(systemMatrix),&
+            1.0_DP, rtimestep%theta*rtimestep%dStep,&
             .false., .false., .true., .true.)
 
       case DEFAULT
@@ -813,10 +809,9 @@ contains
             if (ivar .eq. jvar) then
 
               call lsyssc_MatrixLinearComb(&
-                  rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
+                  rproblemLevel%Rmatrix(lumpedMassMatrix),&
                   rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                  rtimestep%theta*rtimestep%dStep,&
-                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
+                  1.0_DP, rtimestep%theta*rtimestep%dStep,&
                   .false., .false., .true., .true.)
 
             elseif (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
@@ -851,11 +846,10 @@ contains
             if (ivar .eq. jvar) then
 
               call lsyssc_MatrixLinearComb(&
-                  rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
+                  rproblemLevel%Rmatrix(consistentMassMatrix),&
                   rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                  rtimestep%theta*rtimestep%dStep,&
-                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                  .false., .false., .true.,.true.)
+                  1.0_DP, rtimestep%theta*rtimestep%dStep,&
+                  .false., .false., .true., .true.)
 
             elseif (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
 
