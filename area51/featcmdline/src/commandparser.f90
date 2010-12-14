@@ -10,6 +10,7 @@ module commandparser
   use basicgeometry
   use boundary
   use triangulation
+  
   use meshhierarchy
   use element
   use cubature
@@ -34,6 +35,8 @@ module commandparser
   
   use vectorio
   use ucd
+  
+  use typedsymbol
 
   implicit none
   
@@ -45,12 +48,25 @@ module commandparser
     ! Set to TRUE to terminate
     logical :: bterminate = .false.
     
+    ! Error flag. =0: no error.
+    integer :: ierror = 0
+    
     ! Echo of the command line.
     logical :: becho = .false.
     
     ! Global collection object with all variables
     type(t_collection) :: rcollection
     
+  end type
+  
+  ! Block of commands.
+  type t_commandBlock
+  
+    ! Number of lines.
+    integer :: icount = 0
+  
+    ! List of lines.
+    type(VARYING_STRING), dimension(:), pointer :: p_Rcommands
   end type
   
   public :: t_commandstatus
@@ -63,6 +79,8 @@ contains
 
   ! ***************************************************************************
 
+!<subroutine>
+
   subroutine cmdprs_init (rcmdStatus)
 
   !<description>
@@ -73,12 +91,16 @@ contains
     ! Command line to initialise.
     type(t_commandstatus), intent(out) :: rcmdStatus
   !</output>
+
+!</subroutine>
   
     call collct_init (rcmdStatus%rcollection)
 
   end subroutine
 
   ! ***************************************************************************
+
+!<subroutine>
 
   subroutine cmdprs_done (rcmdStatus)
 
@@ -90,12 +112,105 @@ contains
     ! Command line to clean up.
     type(t_commandstatus), intent(inout) :: rcmdStatus
   !</inputoutput>
+
+!</subroutine>
   
     call collct_done (rcmdStatus%rcollection)
   
   end subroutine
 
   ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cmdprs_initCmdBlock (rcmdBlock)
+
+  !<description>
+    ! Initialises a command block.
+  !</description>
+  
+  !<output>
+    ! Command block to initialise.
+    type(t_commandBlock), intent(out) :: rcmdBlock
+  !</output>
+
+!</subroutine>
+  
+    rcmdBlock%icount = 0
+    allocate(rcmdBlock%p_Rcommands(128))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cmdprs_addCommand (rcmdBlock,scommand)
+
+  !<description>
+    ! Puts a command to a command block.
+  !</description>
+
+  !<inputoutput>
+    ! Command block to modify
+    type(t_commandBlock), intent(inout) :: rcmdBlock
+  !</inputoutput>
+  
+  !<input>
+    ! Command to put into the command block.
+    type(VARYING_STRING), intent(in) :: scommand
+  !</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(VARYING_STRING), dimension(:), pointer :: p_Rcommands
+
+    ! Reallocate if there is not enough memory.
+    if (rcmdBlock%icount .eq. size(rcmdBlock%p_Rcommands)) then
+      allocate (p_Rcommands(rcmdBlock%icount+128))
+      p_Rcommands(1:rcmdBlock%icount) = rcmdBlock%p_Rcommands(:)
+      deallocate(rcmdBlock%p_Rcommands)
+      rcmdBlock%p_Rcommands => p_Rcommands
+    end if
+    
+    ! Store the command
+    rcmdBlock%icount = rcmdBlock%icount + 1
+    rcmdBlock%p_Rcommands(rcmdBlock%icount) = scommand
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cmdprs_doneCmdBlock (rcmdBlock)
+
+  !<description>
+    ! Clean up a command block.
+  !</description>
+
+  !<inputoutput>
+    ! Command block to clean up.
+    type(t_commandBlock), intent(inout) :: rcmdBlock
+  !</inputoutput>
+  
+!</subroutine>
+
+    integer :: i
+    do i=1,rcmdBlock%icount
+      ! Release memory.
+      rcmdBlock%p_Rcommands(i) = ""
+    end do
+
+    rcmdBlock%icount = 0
+    deallocate(rcmdBlock%p_Rcommands)
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
 
   subroutine cmdprs_releaseargs (p_Sargs)
   
@@ -107,6 +222,8 @@ contains
     ! Command line to release.
     type(VARYING_STRING), dimension(:), pointer :: p_Sargs
   !</inputoutput>
+
+!</subroutine>
 
     integer :: i
     
@@ -258,6 +375,871 @@ contains
   
   ! ***************************************************************************
 
+  subroutine cmdprs_complexSplit (ssource,sdest,icharset,bdequote)
+  
+  !<description>
+    ! Subduvides a line into an array of substrings.
+    ! Quotation marks around substrings are removed.
+    ! Escaped character are changed to standard characters.
+    ! The different words are separated by "\0" characters.         
+    ! the string is automatically trimmed.
+  !</description>
+  
+  !<input>
+    ! A source string.
+    character(len=*), intent(in) :: ssource
+    
+    ! Type of character set to use for splitting.
+    ! =0: split on word boundaries
+    ! =1: split on expression boundaries (expression characters
+    !     like brackets are separate words).
+    ! =2: split on parameter boundaries (command line version)
+    ! =3: spöit on parameter boundaries (sourcecode version)
+    integer :: icharset
+
+    ! Determins whether to de-quote substrings or not.
+    logical, intent(in) :: bdequote
+  !</input>
+
+  !<output>
+    ! The output string
+    character(len=*), intent(out) :: sdest
+  !</output>
+  
+    integer :: ipos,idest,imaxlen
+    integer :: ccurrchargroup
+    character :: ccurrentquote
+    logical :: btriggered
+    integer, parameter :: CHARGROUP_WHITESPACE = 1
+    integer, parameter :: CHARGROUP_ONECHAREXP = 2
+    integer, parameter :: CHARGROUP_TWOCHAREXP = 3
+    integer, parameter :: CHARGROUP_INWORD     = 4
+    integer, parameter :: CHARGROUP_INQUOTE    = 5
+    
+    ! The following chargroups are defined:
+    ! Chargroup 1: Whitespaces. Ignored.
+    ! Chargroup 2: One-character words. A character from this group
+    !              triggers this character to be a word and the next character
+    !              to be also a new word.
+    ! Chargroup 3: Two-character words. This group contains actually two character
+    !              groups. If the character from the first subgroup is found,
+    !              The character from the 2nd subgroup must match. In this case,
+    !              both characters together form a 2-character word.
+    !              Examples: Expressions like "&&", "!=" or "==".
+    ! Chargroup 4: Word characters. A word character behind a character from a
+    !              lower chargroup triggers a new word. A "\" character triggers
+    !              an escaped character which is transferred to the destination
+    !              without change.
+    ! Chargroup 5: Quotation marks with de-escape.
+    !              1st occurence triggers start, 2nd occurrence the end.
+    !              Escaped characters in this set are de-escaped.
+    !              All characters in quotation marks are associated to
+    !              this chargroup.
+    ! Chargroup 6: Comment characters.
+    !              These characters immediately stop the parsing.
+    !
+    ! The following character sets are defined:
+    ! icharset=0: Splitting on word boundaries
+    !    Group 1: " "
+    !    Group 2: ""
+    !    Group 3: "" / ""
+    !    Group 4: Everything which is not in the other groups
+    !    Group 5: "'""
+    !    Group 6: "#"
+    !
+    ! icharset=1: Splitting on expression boundaries.
+    !    Group 1: " "
+    !    Group 2: "!+-*/%()~;{}^<>="
+    !    Group 3: subgroup 1: "&|=!<>-+<>"
+    !             subgroup 2: "&|==<>-+=="
+    !    Group 4: Everything which is not in the other groups
+    !    Group 5: "'""
+    !    Group 6: "#"
+    !
+    ! icharset=2: Splitting on parameters boundaries (command line parameters)
+    !    Group 1: " "
+    !    Group 2: "="
+    !    Group 3: "" / ""
+    !    Group 4: Everything which is not in the other groups
+    !    Group 5: "'""
+    !    Group 6: "#"
+    !
+    ! icharset=3: Splitting on parameters boundaries (sourcecode parameters)
+    !    Group 1: " "
+    !    Group 2: "(),="
+    !    Group 3: "" / ""
+    !    Group 4: Everything which is not in the other groups
+    !    Group 5: "'""
+    !    Group 6: "#"
+    !
+
+    ! Clear the destination.
+    sdest = ""
+
+    ! Loop through the chars.
+    ipos = 1
+    idest = 0
+    imaxlen = len_trim(ssource)
+    
+    ccurrchargroup = CHARGROUP_WHITESPACE
+    btriggered = .false.
+    
+    do 
+    
+      ! Stop is wew are behind the last character.
+      if (ipos .gt. imaxlen) exit
+    
+      ! Behaviour depends on current character group and set.
+      select case (icharset)
+      case (0)
+        call trigger_chargroup5 (ccurrchargroup,"'""",btriggered,ssource,ipos,imaxlen,&
+            sdest,idest,ccurrentquote,bdequote)
+            
+        if (.not. btriggered) then
+          call trigger_chargroup1 (ccurrchargroup," ",btriggered,ssource,ipos)
+        end if
+        
+      case (1)
+        call trigger_chargroup5 (ccurrchargroup,"'""",btriggered,ssource,ipos,imaxlen,&
+            sdest,idest,ccurrentquote,bdequote)
+            
+        if (.not. btriggered) then
+          call trigger_chargroup3 (ccurrchargroup,"&|=!<>-+<>",&
+                                                  "&|==<>-+==",&
+              btriggered,ssource,ipos,imaxlen,sdest,idest)
+        end if
+        
+        if (.not. btriggered) then
+          call trigger_chargroup2 (ccurrchargroup,"!+-*/%()~;{}^<>=",btriggered,ssource,ipos,&
+              sdest,idest)
+        end if
+        
+        if (.not. btriggered) then
+          call trigger_chargroup1 (ccurrchargroup," ",btriggered,ssource,ipos)
+        end if
+        
+      case (2)
+        call trigger_chargroup5 (ccurrchargroup,"'""",btriggered,ssource,ipos,imaxlen,&
+            sdest,idest,ccurrentquote,bdequote)
+            
+        if (.not. btriggered) then
+          call trigger_chargroup2 (ccurrchargroup,"=",btriggered,ssource,ipos,&
+              sdest,idest)
+        end if
+            
+        if (.not. btriggered) then
+          call trigger_chargroup1 (ccurrchargroup," ",btriggered,ssource,ipos)
+        end if
+        
+      case (3)
+        call trigger_chargroup5 (ccurrchargroup,"'""",btriggered,ssource,ipos,imaxlen,&
+            sdest,idest,ccurrentquote,bdequote)
+            
+        if (.not. btriggered) then
+          call trigger_chargroup2 (ccurrchargroup,",=()",btriggered,ssource,ipos,&
+              sdest,idest)
+        end if
+            
+        if (.not. btriggered) then
+          call trigger_chargroup1 (ccurrchargroup," ",btriggered,ssource,ipos)
+        end if
+        
+      end select
+
+      ! Trigger comment characters
+      if (.not. btriggered) then
+        call trigger_chargroup6 (ccurrchargroup,"#",btriggered,ssource,ipos,imaxlen)
+      end if
+
+      ! Remaining characters belong to group 4.
+      if (.not. btriggered) then
+        call process_chargroup4 (ccurrchargroup,ssource,ipos,imaxlen,sdest,idest)
+      end if
+    
+    end do
+    
+  contains
+  
+    ! -------------------------------------------------------------------------
+    subroutine trigger_chargroup1 (ccurrentgroup,schars,btriggered,ssource,isourcepos)
+    
+      ! Checks if the next token belongs to this character group.
+      ! If that is the case, the destination and the pointers are modified according
+      ! to the current state.
+      
+      ! Current character group
+      integer, intent(inout) :: ccurrentgroup
+
+      ! Characters in this group.
+      character(len=*), intent(in) :: schars
+      
+      ! Returns if the group is triggered.
+      logical, intent(out) :: btriggered
+      
+      ! Source string
+      character(len=*), intent(in) :: ssource
+      
+      ! Source pointer
+      integer, intent(inout) :: isourcepos
+      
+      ! local variables
+      integer :: i
+      
+      i = index(schars,ssource(isourcepos:isourcepos))
+      btriggered = i .ne. 0
+      
+      if (btriggered) then
+        isourcepos = isourcepos+1
+
+        ! We are now in whitespace-mode
+        ccurrentgroup = CHARGROUP_WHITESPACE
+      end if
+    
+    end subroutine
+
+    ! -------------------------------------------------------------------------
+    subroutine trigger_chargroup2 (ccurrentgroup,schars,btriggered,ssource,isourcepos,&
+        sdest,idestpos)
+    
+      ! Checks if the next token belongs to this character group.
+      ! If that is the case, the destination and the pointers are modified according
+      ! to the current state.
+      
+      ! Current character group
+      integer, intent(inout) :: ccurrentgroup
+
+      ! Characters in this group.
+      character(len=*), intent(in) :: schars
+      
+      ! Returns if the group is triggered.
+      logical, intent(out) :: btriggered
+      
+      ! Source string
+      character(len=*), intent(in) :: ssource
+      
+      ! Source pointer
+      integer, intent(inout) :: isourcepos
+      
+      ! Destination string
+      character(len=*), intent(inout) :: sdest
+      
+      ! Destination pointer
+      integer, intent(inout) :: idestpos
+      
+      ! local variables
+      integer :: i
+      
+      i = index(schars,ssource(isourcepos:isourcepos))
+      btriggered = i .ne. 0
+
+      if (btriggered) then
+        ! First character? probably insert a separator.
+        if (idestpos .gt. 0) then
+          idestpos = idestpos + 1;
+          sdest(idestpos:idestpos) = char(0)
+        end if
+
+        ! Transfer the character
+        idestpos = idestpos + 1
+        sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
+        
+        isourcepos = isourcepos+1
+      
+        ! We are now in one-character-expression mode
+        ccurrentgroup = CHARGROUP_ONECHAREXP
+      end if
+    
+    end subroutine
+
+    ! -------------------------------------------------------------------------
+    subroutine trigger_chargroup3 (ccurrentgroup,schars1,schars2,btriggered,ssource,isourcepos,&
+        imaxlen,sdest,idestpos)
+    
+      ! Checks if the next token belongs to this character group.
+      ! If that is the case, the destination and the pointers are modified according
+      ! to the current state.
+
+      ! Current character group
+      integer, intent(inout) :: ccurrentgroup
+      
+      ! Characters in this group. 1st subgroup.
+      character(len=*), intent(in) :: schars1
+
+      ! Characters in this group. 2nd subgroup.
+      character(len=*), intent(in) :: schars2
+      
+      ! Returns if the group is triggered.
+      logical, intent(out) :: btriggered
+      
+      ! Source string
+      character(len=*), intent(in) :: ssource
+      
+      ! Source pointer
+      integer, intent(inout) :: isourcepos
+      
+      ! Length of ssource
+      integer, intent(inout) :: imaxlen
+      
+      ! Destination string
+      character(len=*), intent(inout) :: sdest
+      
+      ! Destination pointer
+      integer, intent(inout) :: idestpos
+      
+      ! local variables
+      integer :: i,j
+      
+      i = 0
+      do
+        ! Find the character. This is a 2-character matching test, so if there
+        ! is only 1 character left, we cannot match!
+        ! Continue the search if the previous 2nd char did not match.
+        j = index(schars1(i+1:),ssource(isourcepos:isourcepos))
+        i = i+j
+        btriggered = (j .ne. 0) .and. (isourcepos .lt. imaxlen)
+
+        if (btriggered) then
+          ! Check if the next character (if it exists) matches the character of
+          ! the next subgroup.
+          btriggered = schars2(i:i) .eq. ssource(isourcepos+1:isourcepos+1)
+          
+          if (btriggered) then
+            ! First character? probably insert a separator.
+            if (idestpos .gt. 0) then
+              idestpos = idestpos + 1;
+              sdest(idestpos:idestpos) = char(0)
+            end if
+
+            ! Transfer the characters
+            idestpos = idestpos + 1
+            sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
+            isourcepos = isourcepos+1
+
+            idestpos = idestpos + 1
+            sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
+            isourcepos = isourcepos+1
+            
+            ! We are now in two-character-expression mode
+            ccurrentgroup = CHARGROUP_TWOCHAREXP
+            
+          end if
+        end if
+        
+        if (j .eq. 0) exit
+        
+      end do
+    
+    end subroutine
+
+    ! -------------------------------------------------------------------------
+    subroutine process_chargroup4 (ccurrentgroup,ssource,isourcepos,imaxlen,sdest,idestpos)
+    
+      ! Processes characters in character group 4.
+      ! The destination and the pointers are modified according
+      ! to the current state.
+      
+      ! Current character group
+      integer, intent(inout) :: ccurrentgroup
+
+      ! Source string
+      character(len=*), intent(in) :: ssource
+      
+      ! Source pointer
+      integer, intent(inout) :: isourcepos
+      
+      ! Length of ssource
+      integer, intent(inout) :: imaxlen
+
+      ! Destination string
+      character(len=*), intent(inout) :: sdest
+      
+      ! Destination pointer
+      integer, intent(inout) :: idestpos
+      
+      ! First character or new word (sequence)? probably insert a separator.
+      if ((idestpos .gt. 1) .and. (ccurrentgroup .lt. CHARGROUP_INWORD)) then
+        idestpos = idestpos + 1;
+        sdest(idestpos:idestpos) = char(0)
+      end if
+
+      ! Is that an escape char?
+      if (ssource(isourcepos:isourcepos) .eq. '\') then
+        ! What about the next char?
+        if (isourcepos .lt. imaxlen) then
+          ! Take the next character as it is.
+          idestpos = idestpos + 1
+          sdest(idestpos:idestpos) = ssource(isourcepos+1:isourcepos+1)
+          isourcepos = isourcepos+2
+        else
+          ! Ignore the character
+          isourcepos = isourcepos+1
+        end if
+      else
+        ! Transfer the character
+        idestpos = idestpos + 1
+        sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
+        
+        isourcepos = isourcepos+1
+      end if
+
+      ! We are now in in-word mode.
+      ccurrentgroup = CHARGROUP_INWORD
+    
+    end subroutine
+
+    ! -------------------------------------------------------------------------
+    subroutine trigger_chargroup5 (ccurrentgroup,schars,btriggered,ssource,isourcepos,imaxlen,&
+        sdest,idestpos,ccurrentquote,bdequote)
+    
+      ! Checks if the next token belongs to this character group.
+      ! If that is the case, the destination and the pointers are modified according
+      ! to the current state.
+      
+      ! Current character group
+      integer, intent(inout) :: ccurrentgroup
+      
+      ! Characters in this group.
+      character(len=*), intent(in) :: schars
+      
+      ! Returns if the group is triggered.
+      logical, intent(out) :: btriggered
+      
+      ! Source string
+      character(len=*), intent(in) :: ssource
+      
+      ! Source pointer
+      integer, intent(inout) :: isourcepos
+      
+      ! Length of ssource
+      integer, intent(inout) :: imaxlen
+
+      ! Destination string
+      character(len=*), intent(inout) :: sdest
+      
+      ! Destination pointer
+      integer, intent(inout) :: idestpos
+      
+      ! Last found quotation character. =0 if no quotation active.
+      character, intent(inout) :: ccurrentquote
+      
+      ! Determins whether to de-quote the string or not.
+      logical, intent(in) :: bdequote
+      
+      ! local variables
+      integer :: i
+      
+      ! Result is the current state of ccurrentquote
+      btriggered = .false.
+      
+      ! Chech the current character for the next state.
+      !
+      ! Are we quoted?
+      if (ccurrentgroup .ne. CHARGROUP_INQUOTE) then
+        i = index(schars,ssource(isourcepos:isourcepos))
+
+        if (i .ne. 0) then
+          ! Quotation character. Start dequoting.
+          ccurrentquote = ssource(isourcepos:isourcepos)
+          
+          ! First character or new word (sequence)? probably insert a separator
+          ! for the characters that follow.
+          if ((idestpos .gt. 1) .and. (ccurrentgroup .lt. CHARGROUP_INWORD)) then
+            idestpos = idestpos + 1;
+            sdest(idestpos:idestpos) = char(0)
+          end if
+          
+          ! We are now in in-quote mode.
+          ccurrentgroup = CHARGROUP_INQUOTE
+          btriggered = .true.
+          
+          if (.not. bdequote) then
+            ! Transfer the character
+            idestpos = idestpos + 1
+            sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
+          end if
+          
+          ! otherwise ignore the quote character.
+          isourcepos = isourcepos+1
+          
+        end if
+      else
+        ! We are in 'quoted' mode. Any "\0" char was put to the string before.
+        btriggered = .true.
+        
+        ! Is that an escape char?
+        if (ssource(isourcepos:isourcepos) .eq. '\') then
+
+          if (.not. bdequote) then
+            ! Transfer this character as it is.
+            idestpos = idestpos + 1
+            sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
+          end if
+        
+          ! What about the next char?
+          if (isourcepos .lt. imaxlen) then
+            ! Take the next character as it is.
+            idestpos = idestpos + 1
+            sdest(idestpos:idestpos) = ssource(isourcepos+1:isourcepos+1)
+            isourcepos = isourcepos+2
+          else
+            ! Ignore the character
+            isourcepos = isourcepos+1
+          end if
+        else
+          ! Stop quoting?
+          if (ssource(isourcepos:isourcepos) .eq. ccurrentquote) then
+            ! Return to 'inword' mode. Next whitespace triggers next word.
+            ccurrentgroup = CHARGROUP_INWORD
+            ccurrentquote = char(0)
+
+            if (.not. bdequote) then
+              ! Transfer the character
+              idestpos = idestpos + 1
+              sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
+            end if
+            
+            ! otherwise ignore the quote character.
+            isourcepos = isourcepos+1
+            
+          else
+            ! Transfer the character
+            idestpos = idestpos + 1
+            sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
+            
+            isourcepos = isourcepos+1
+          end if
+        end if
+      end if
+    
+    end subroutine
+
+    ! -------------------------------------------------------------------------
+    subroutine trigger_chargroup6 (ccurrentgroup,schars,btriggered,ssource,isourcepos,imaxlen)
+    
+      ! Checks if the next token belongs to this character group.
+      ! If that is the case, the destination and the pointers are modified according
+      ! to the current state.
+      
+      ! Current character group
+      integer, intent(inout) :: ccurrentgroup
+
+      ! Characters in this group.
+      character(len=*), intent(in) :: schars
+      
+      ! Returns if the group is triggered.
+      logical, intent(out) :: btriggered
+      
+      ! Source string
+      character(len=*), intent(in) :: ssource
+      
+      ! Source pointer
+      integer, intent(inout) :: isourcepos
+      
+      ! Length of ssource
+      integer, intent(inout) :: imaxlen
+      
+      ! local variables
+      integer :: i
+      
+      i = index(schars,ssource(isourcepos:isourcepos))
+      btriggered = i .ne. 0
+      
+      if (btriggered) then
+        ! Skip everything
+        isourcepos = imaxlen
+      end if
+      
+    end subroutine
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+  subroutine cmdprs_nexttoken (ssource,istart,iend,ilength,bback)
+  
+  !<description>
+    ! Determins the bounds of the next token.
+  !</description>
+  
+  !<input>
+    ! A source string. Must have been split with cmdprs_complexSplit.
+    character(len=*), intent(in) :: ssource
+
+    ! OPTIONAL: Trimmed length of the string. Speeds up the routine
+    ! if specified.
+    integer, intent(in), optional :: ilength
+  !</input>
+  
+  !<inputoutput>
+    ! On input: Start index of the previous token or =0, if the first
+    ! token should be determined.
+    ! On output: Start index of the next token or =0 if there is no more
+    ! token.
+    integer, intent(inout) :: istart
+    
+    ! On input: End index of the previous token or =0, if the first
+    ! token should be determined.
+    ! On output: End index of the next token or =0 if there is no more
+    ! token.
+    integer, intent(inout) :: iend
+    
+    ! OPTIONAL: Backward mode. Start from the end of the string.
+    logical, intent(in), optional :: bback
+  !</inputoutput>
+  
+  !</subroutine>
+  
+    integer :: ilen
+    logical :: back
+    if (present(ilength)) then
+      ilen = ilength
+    else
+      ilen = len_trim(ssource)
+    end if
+    
+    back = .false.
+    if (present(bback)) back = bback
+    
+    if (.not. back) then
+      
+      ! Forward mode
+      if (istart .eq. 0) then
+        
+        ! Find first token
+        istart = 1
+        iend = index (ssource,char(0))
+        if (iend .eq. 0) then
+          iend = istart
+        else
+          ! Go one back -- the \0.
+          iend = iend - 1
+        end if
+        
+      else
+      
+        ! Find next token
+        istart = iend + 2
+        if (istart .gt. ilen) then
+          ! Finish
+          istart = 0
+          iend = 0
+        else
+          ! Find next end.
+          iend = index (ssource(istart:),char(0))
+          if (iend .eq. 0) then
+            iend = ilength
+          else
+            ! Go one back -- the \0.
+            iend = istart + iend - 2
+          end if
+        end if
+      end if
+    
+    else
+
+      ! Backward mode. Slightly easier due to well designed indices...
+      
+      if (iend .eq. 0) then
+        
+        ! Find first token
+        iend = ilen
+        istart = index (ssource,char(0),.true.) + 1
+        
+      else
+      
+        ! Find next token
+        iend = istart - 2
+        if (iend .lt. 1) then
+          ! Finish
+          istart = 0
+          iend = 0
+        else
+          ! Find next end.
+          istart = index (ssource(1:iend),char(0),.true.) + 1
+        end if
+      end if
+    
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+  !</subroutine>
+
+  subroutine cmdprs_counttokens (ssource,ntokens)
+  
+  !<description>
+    ! Calculates the number of tokens in ssource.
+  !</description>
+  
+  !<input>
+    ! A source string. Must have been split with cmdprs_complexSplit.
+    character(len=*), intent(in) :: ssource
+  !</input>
+  
+  !<output>
+    ! Number of tokens. =0 if ssource does not contain text.
+    integer, intent(out) :: ntokens
+  !</output>
+  
+  !</subroutine>
+  
+    integer :: i
+    
+    ntokens = 0
+    
+    ! Return if there is no text.
+    if (ssource .eq. "") return
+  
+    ! Count the number of \0 characters
+    ntokens = 0
+    do i = 1,len_trim(ssource)
+      if (ssource(i:i) .eq. char(0)) then
+        ntokens = ntokens + 1
+      end if
+    end do
+    
+    ! Add 1 for the last token.
+    ntokens = ntokens + 1
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine cmdprs_commandmatch (ssource,ScommandTokens,bmatch)
+  
+  !<description>
+    ! Checks if ssource matches a command.
+    ! ssource must have been prepared with cmdprs_complexSplit.
+    ! ScommandTokens is an array of strings which is compared to the
+    ! substrings in ssource. A string "?" in ScommandTokens match any
+    ! character sequence. A string "*" matches any number of arbitrary
+    ! strings; remaining array entries are checked against the last tokens.
+  !</description>
+  
+  !<input>
+    ! A source string. Must have been split with cmdprs_complexSplit.
+    character(len=*), intent(in) :: ssource
+    
+    ! Command subtokens to match against ssource.
+    ! Examples:
+    !   (/ "if", "(", "*", ")" /) matches an IF command.
+    !   (/ "for", "(", "*" ")" /) matches a for command.
+    ! Parsing stops with the first empty token in ScommandTokens.
+    character(len=*), dimension(:), intent(in) :: ScommandTokens
+  !</input>
+
+  !<output>
+    ! Whether the string matches or not.
+    logical, intent(out) :: bmatch
+  !</output>
+  
+    integer :: icurrenttokenstart, icurrenttokenend
+    integer :: isubtoken1, isubtoken2, ilength
+    
+    bmatch = .true.
+    isubtoken1 = 1
+    
+    ! Start to tokenise.
+    icurrenttokenstart = 0
+    icurrenttokenend = 0
+    ilength = len_trim (ssource)
+    
+    do
+
+      ! Get the next token    
+      call cmdprs_nexttoken (ssource,icurrenttokenstart,icurrenttokenend,ilength)
+      
+      ! Check the token.
+      !
+      ! Was this the last token?
+      if (ScommandTokens(isubtoken1) .eq. "") then
+        if (icurrenttokenstart .eq. 0) then
+          ! Done. String matches.
+          return
+        else
+          ! There are more substrings than tokens. String does not match.
+          bmatch = .false.
+          return
+        end if
+      else if (icurrenttokenstart .eq. 0) then
+        ! There are more tokens than substrings. String does not match.
+        bmatch = .false.
+        return
+      end if
+      
+      ! Is this a placeholder for one word?
+      if (ScommandTokens(isubtoken1) .eq. "?") then
+        ! Go to next token.
+        isubtoken1 = isubtoken1 + 1
+        cycle
+      end if
+      
+      ! Is this a placeholder for arbitrary many words?
+      if (ScommandTokens(isubtoken1) .eq. "*") then
+        ! Scan from the end.
+        exit
+      end if
+
+      ! Does the token match?
+      if (trim(ScommandTokens(isubtoken1)) .ne. &
+          sys_upcase (ssource(icurrenttokenstart:icurrenttokenend))) then
+        ! No! Cancel matching.
+        bmatch = .false.
+        return
+      end if
+      
+      ! Next one.
+      isubtoken1 = isubtoken1 + 1
+      
+    end do
+
+    ! Find the last token to check
+    do isubtoken2 = isubtoken1+1, ubound(ScommandTokens,1)
+      if (ScommandTokens(isubtoken2) .eq. "") exit
+    end do
+    isubtoken2 = isubtoken2 - 1
+
+    ! Start to tokenise from the end
+    icurrenttokenend = 0
+    icurrenttokenstart = 0
+    
+    do
+
+      ! Get the next token    
+      call cmdprs_nexttoken (ssource,icurrenttokenstart,icurrenttokenend,ilength,.true.)
+      
+      ! Is this a placeholder for one word?
+      if (ScommandTokens(isubtoken2) .eq. "?") then
+        ! Go to next token.
+        isubtoken1 = isubtoken1 - 1
+        cycle
+      end if
+      
+      ! Is this a placeholder for arbitrary many words?
+      if (ScommandTokens(isubtoken2) .eq. "*") then
+        ! We reached the "*". String matches.
+        return
+      end if
+
+      ! Does the token match?
+      if (trim(ScommandTokens(isubtoken2)) .ne. &
+          sys_upcase (ssource(icurrenttokenstart:icurrenttokenend))) then
+        ! No! Cancel matching.
+        bmatch = .false.
+        return
+      end if
+      
+      ! Next one.
+      isubtoken2 = isubtoken2 - 1
+      
+    end do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
   subroutine cmdprs_splitline (ssource,p_Sargs)
   
   !<description>
@@ -278,92 +1260,602 @@ contains
     type(VARYING_STRING), dimension(:), pointer :: p_Sargs
   !</output>
   
-    type(VARYING_STRING) :: stemp
-    integer :: i, icount, istart
-    character :: squotechar, scurrentchar
-    logical :: bescape
-    
-    
-    ! Copy the string, remove leading/trailing spaces.
-    stemp = trim(ssource)
-    
-    ! Loop through the string. Replace spaces by #0 except
-    ! for those being quoted.
-    i = 1
-    bescape = .false.
-    squotechar = ' '
-    do 
-      if (i .gt. len(stemp)) exit
-      
-      if (bescape) then
-      
-        ! Switch off escape mode.
-        bescape = .false.
+    character(len=(len(ssource)*2+1)) :: stemp,stemp2
 
-      else
-        ! Get the current character.
-        scurrentchar = getchar (stemp,i);
-        
-        if (scurrentchar .eq. "\") then
-        
-          ! take the next character as it is.
-          bescape = .true.
-        
-        else if ((scurrentchar .eq. "'") .or. (scurrentchar .eq. """")) then
-          
-          ! Start quoting or stop it. Only the current quote char
-          ! triggers off the quoting.
-          if (squotechar .eq. scurrentchar) then
-            squotechar = " "
-          else
-            squotechar = scurrentchar
-          end if
-          
-        else if ((squotechar .eq. " ") .and. (scurrentchar .eq. " ")) then
-        
-          ! Replace by #0. That's the separator.
-          call setchar (stemp,i,char(0))
-          
-        end if
-      end if
+    ! Copy the string.
+    stemp = ssource
+    
+    ! Split the string.
+    call cmdprs_complexSplit (stemp,stemp2,2,.true.)
 
-      ! next char
-      i = i+1
-    end do
-    
-    ! Count number of words.#
-    icount = 1
-    do i=1,len(stemp)
-      if (getchar(stemp,i) .eq. char(0)) then
-        icount = icount + 1
-      end if
-    end do
-    
-    ! Allocate memory
-    allocate (p_Sargs(icount))
-
-    ! Get the parameters
-    istart = 1
-    icount = 0
-    do i=1,len(stemp)
-      if (getchar(stemp,i) .eq. char(0)) then
-        icount = icount + 1
-        p_Sargs(icount) = extract(stemp,istart,i-1)
-        
-        ! Continue behind current position
-        istart = i+1
-      end if
-    end do
-    
-    ! Last argument
-    icount = icount + 1
-    p_Sargs(icount) = extract(stemp,istart,len(stemp))
+    ! Convert to string list.
+    call cmdprs_splitlinedirect (stemp2,p_Sargs)
     
   end subroutine
 
   ! ***************************************************************************
 
-  subroutine cmdprs_parsestream (rcmdStatus,istream)
+  subroutine cmdprs_splitlinedirect (ssource,p_Sargs)
+  
+  !<description>
+    ! Subduvides a line into an array of substrings.
+    ! 'Direct' Version, ssource must have been split with cmdprs_complexSplit.
+    ! Quotation marks around substrings are removed.
+  !</description>
+  
+  !<input>
+    ! A source string.
+    character(len=*), intent(in) :: ssource
+  !</input>
+  
+  !<output>
+    ! A pointer pointing to an array of strings, each string referring to
+    ! one parameter in ssource.
+    ! The value NULL is returned if there are no arguments
+    ! in the string.
+    type(VARYING_STRING), dimension(:), pointer :: p_Sargs
+  !</output>
+  
+    integer :: i, icount, istart,iend, imax
+    
+    nullify(p_Sargs)
+    
+    ! Stop if there is nothing.
+    if (ssource .eq. "") then
+      return
+    end if
+    
+    ! Count the number of \0 characters
+    icount = 0
+    do i = 1,len_trim(ssource)
+      if (ssource(i:i) .eq. char(0)) then
+        icount = icount + 1
+      end if
+    end do
+
+    ! Allocate memory.
+    allocate (p_Sargs(icount+1))
+    
+    ! Get the tokens.
+    istart = 1
+    iend = 0
+    i = 0
+    imax = len_trim(ssource)
+    do while (iend .le. imax)
+      ! End of the word
+      iend = index (ssource(istart:imax),char(0))
+      if (iend .eq. 0) then
+        iend = imax+1
+      else
+        iend = iend+istart-1    ! Correct the position
+      end if
+      
+      ! Save the token
+      i = i + 1
+      p_Sargs(i) = ssource(istart:iend-1)
+      
+      ! Next token
+      istart = iend + 1
+    end do
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+  recursive subroutine cmdprs_getNextBlock (rcmdblock,iline,istartline,iendline)
+  
+  !<description>
+    ! Parses the lines in a command block and finds a block.
+    ! A block is either one single command or a block startng with "{" and ending
+    ! with "}".
+  !</description>
+  
+  !<input>
+    ! Command block with commands.
+    type(t_commandBlock), intent(in) :: rcmdblock
+    
+    ! Start line from where to parse commands
+    integer, intent(in) :: iline
+  !</input>
+    
+  !<output>
+    ! Start line in the command block. 
+    ! A value =0 indicates an error.
+    ! If istartline=0 and iendline>0, the block end was not found.
+    integer, intent(out) :: istartline
+    
+    ! End line in the command block. 
+    ! If this equals to istartline, this is a 1-line command block.
+    ! Otherwise, the command block starts with "{" and ends with "}".
+    integer, intent(out) :: iendline
+  !</output>
+
+    integer :: icurrentline,iblockcount
+    character(len=32) :: sline
+    
+    iblockcount = 0
+    istartline = 0
+    iendline = 0
+    
+    ! Parse all lines.
+    do icurrentline = iline,rcmdblock%icount
+    
+      ! Get the line
+      sline = rcmdblock%p_Rcommands(icurrentline)
+      sline = trim(adjustl(sline))
+      
+      ! Comment? empty line?
+      if ((sline .ne. "") .and. (sline(1:1) .ne. "#")) then
+      
+        ! Command in a block?
+        if (iblockcount .gt. 0) then
+        
+          if (istartline .gt. 0) then
+            ! Remember line index for them last line.
+            iendline = icurrentline
+          end if
+          
+        end if
+        
+        ! Block start?
+        if (sline .eq. "{") then
+        
+          ! One more block.
+          iblockcount = iblockcount + 1
+          
+          if (iblockcount .eq. 1) then
+            ! First block.
+            !
+            ! Curretly that's a zero block.
+            istartline = icurrentline
+            iendline = istartline
+          
+            ! Skip this line.
+            cycle
+          end if
+          
+        else if (sline .eq. "}") then  ! Block end?
+        
+          ! Decrease block counter
+          if (iblockcount .gt. 0) then
+            iblockcount = iblockcount - 1
+            
+            ! Block end?
+            if (iblockcount .eq. 0) then
+              return
+            end if
+          else
+            ! Error.
+            istartline = 0
+          end if
+          
+        end if
+      
+        ! Command in a block?
+        if (iblockcount .eq. 0) then
+        
+          ! This is a single line command.
+          istartline = icurrentline
+          iendline = icurrentline
+          return
+        
+        end if        
+      
+      end if
+
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine cmdprs_getNextLine (rcmdblock,iline,istartline,iendline,sline)
+  
+  !<description>
+    ! Increases the line counter to the next line
+  !</description>
+  
+  !<input>
+    ! Command block with commands.
+    type(t_commandBlock), intent(in) :: rcmdblock
+
+    ! Start line in the command block. 
+    integer, intent(in) :: istartline
+    
+    ! End line in the command block. 
+    integer, intent(in) :: iendline
+  !</input>
+    
+  !<inputoutput>
+    ! On input: Current line.
+    ! On output: Line number of the next valid line or =0 if there is no
+    ! more valid line in the block.
+    integer, intent(inout) :: iline
+  !</inputoutput>
+  
+  !<output>
+    ! The next line. Completely split and dequoted.
+    character(len=*) :: sline
+  !</output>
+  
+  !</subroutine>
+  
+    character(len=len(sline)) :: stemp
+    integer :: iprevline
+    
+    iprevline = iline
+    
+    do iline = max(istartline,iprevline+1),iendline
+    
+      ! Get the line and split + dequote it.
+      stemp = rcmdblock%p_Rcommands(iline)
+      call cmdprs_complexSplit (stemp,sline,1,.true.)
+      
+      ! Return the first nonempty line
+      if (sline .ne. "") return
+      
+    end do
+    
+    ! We processed all lines, none found.
+    sline = ""
+    iline = 0
+
+  end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  recursive subroutine cmdprs_docommand (rcmdStatus,rcmdblock,inestlevel,&
+      scommand,iline,iblockstart,iblockend,bworkflowAllowed,rvalue)
+  
+  !<description>
+    ! Executes a command.
+  !</description>
+  
+  !<inputoutput>
+    ! Command line status object
+    type(t_commandstatus), intent(inout) :: rcmdStatus
+
+    ! Input: Number of the line corresponding to scommand.
+    ! Output: Last executed line. Program continues after that.
+    integer, intent(inout) :: iline
+  !</inputoutput>
+
+  !<input>
+    ! Command block with commands.
+    ! The block may start with "{"; in this case it must end with "}".
+    ! the block must at least contain one line.
+    type(t_commandBlock), intent(in) :: rcmdblock
+    
+    ! Command string. Splitted and dequoted.
+    character(len=*), intent(in) :: scommand
+    
+    ! Start of the commands depending on the command in rcmdBlock.
+    integer, intent(in) :: iblockstart
+
+    ! End of the commands depending on the command in rcmdBlock.
+    integer, intent(in) :: iblockend
+    
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
+    
+    ! If set to TRUE, workfloa commands (like FOR, IF, ...) are allowed.
+    logical, intent(in) :: bworkflowAllowed
+    
+    ! Structure encapsuling return values.
+    ! Initialised with default values by "intent(out)".
+    type(t_symbolValue), intent(out) :: rvalue
+  !</input>
+  
+  !</subroutine>
+
+    integer :: istart, iend, istart2, iend2, istart3, iend3, icmdIndex
+    integer :: ierror
+    type(VARYING_STRING), dimension(:), pointer :: p_Sargs
+    logical :: bmatch
+    character(len=SYS_NAMELEN) :: ssectionname
+    character(len=*), dimension(5,11), parameter :: Sworkflow = RESHAPE( &
+      (/ "{     ", "      ", "      ", "      ", "      ", &
+         "}     ", "      ", "      ", "      ", "      ", &
+         "FOR   ", "(     ", "*     ", ")     ", "      ", &
+         "WHILE ", "(     ", "*     ", ")     ", "      ", &
+         "DO    ", "WHILE ", "(     ", "*     ", ")     ", &
+         "IF    ", "(     ", "*     ", ")     ", "      ", &
+         "INT   ", "?     ", "      ", "      ", "      ", &
+         "DOUBLE", "?     ", "      ", "      ", "      ", &
+         "STRING", "?     ", "      ", "      ", "      ", &
+         "INT   ", "?     ", "=     ", "?     ", "      ", &
+         "DOUBLE", "?     ", "=     ", "?     ", "      ", &
+         "STRING", "?     ", "=     ", "?     ", "      " &
+       /),(/ 5,11 /)  )
+    integer, parameter :: idxCmdBEGIN   = 1
+    integer, parameter :: idxCmdEND     = 2
+    integer, parameter :: idxCmdFOR     = 3
+    integer, parameter :: idxCmdWHILE   = 4
+    integer, parameter :: idxCmdDOWHILE = 5
+    integer, parameter :: idxCmdIF      = 6
+    integer, parameter :: idxCmdINT     = 7
+    integer, parameter :: idxCmdDOUBLE  = 8
+    integer, parameter :: idxCmdSTRING  = 9
+    integer, parameter :: idxCmdINT2    = 10
+    integer, parameter :: idxCmdDOUBLE2 = 11
+    integer, parameter :: idxCmdSTRING2 = 12
+    
+    bmatch = .false.
+    
+    ! Name of the section corresponding to the current nesting level
+    if (inestlevel .eq. 0) then
+      ssectionname = ""
+    else
+      ssectionname = trim(sys_siL(inestlevel,10))
+    end if
+
+    do icmdindex = 1,ubound(Sworkflow,2)
+      ! Try to match the command
+      call cmdprs_commandmatch (scommand,Sworkflow(:,icmdindex),bmatch)
+      
+      if (bmatch) then
+        select case (icmdindex)
+
+        case (idxCmdINT)
+          ! Create INT variable.
+          istart = 0
+          iend = 0
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call collct_setvalue_int (rcmdStatus%rcollection, scommand(istart:iend), &
+              0, .true., ssectionname=ssectionname) 
+
+        case (idxCmdDOUBLE)
+          ! Create DOUBLE variable.
+          istart = 0
+          iend = 0
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call collct_setvalue_real (rcmdStatus%rcollection, scommand(istart:iend), &
+              0.0_DP, .true., ssectionname=ssectionname) 
+
+        case (idxCmdSTRING)
+          ! Create STRING variable.
+          istart = 0
+          iend = 0
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call collct_setvalue_string (rcmdStatus%rcollection, scommand(istart:iend), &
+              "", .true., ssectionname=ssectionname) 
+
+        case (idxCmdINT2)
+          ! Create INT variable and assign.
+          istart = 0
+          iend = 0
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call collct_setvalue_int (rcmdStatus%rcollection, scommand(istart:iend), &
+              0, .true., ssectionname=ssectionname)
+          istart2 = 0
+          iend2 = 0
+          call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
+
+        case (idxCmdDOUBLE2)
+          ! Create DOUBLE variable and assign.
+          istart = 0
+          iend = 0
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call collct_setvalue_real (rcmdStatus%rcollection, scommand(istart:iend), &
+              0.0_DP, .true., ssectionname=ssectionname) 
+          istart2 = 0
+          iend2 = 0
+          call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
+
+        case (idxCmdSTRING2)
+          ! Create STRING variable and assign.
+          istart = 0
+          iend = 0
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+          call collct_setvalue_string (rcmdStatus%rcollection, scommand(istart:iend), &
+              "", .true., ssectionname=ssectionname) 
+          istart2 = 0
+          iend2 = 0
+          call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
+
+        case default
+        
+          ! Command not found. 
+          rcmdStatus%ierror = 1     
+               
+        end select
+          
+        if (bworkflowAllowed .and. (rcmdStatus%ierror .ne. 0)) then
+          
+          ! 2nd chance...
+          rcmdStatus%ierror = 0
+          
+          select case (icmdindex)
+          case (idxCmdBEGIN)
+            ! Get the subblock and execute
+            call cmdprs_getNextBlock (rcmdblock,iline,istart2,iend2)
+            
+            ! Create new nest level in the collection
+            call collct_addsection (rcmdStatus%rcollection, trim(sys_siL(inestlevel+1,10)))
+            
+            ! Execute
+            call cmdprs_parsecmdblock (rcmdStatus,rcmdblock,inestlevel+1,istart2,iend2,rvalue)
+
+            ! Remove local symbols
+            call collct_deletesection (rcmdStatus%rcollection, trim(sys_siL(inestlevel+1,10)))
+
+            ! Move the current to the end of the block.
+            iline = iend2
+            
+          case (idxCmdFOR)
+            ! For loop. Fetch the command block from the next lines.
+            call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
+            
+            ! Process the command
+            call cmdprs_doFor (rcmdStatus,rcmdblock,inestlevel,scommand,iline,istart2,iend2)
+            
+      exit      ! Move the current to the end of the block.
+            iline = iend2
+            
+          case (idxCmdWHILE)
+            ! While loop. Fetch the command block from the next lines.
+            call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
+
+            ! Move the current to the end of the block.
+            iline = iend2
+
+          case (idxCmdDOWHILE)
+            ! Do-while loop. Fetch the command block from the next lines.
+            call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
+
+            ! Move the current to the end of the block.
+            iline = iend2
+
+          case (idxCmdIF)
+            ! If-command. Most complicated. Get one or two subblocks.
+            call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
+            
+            ! Move the current to the end of the block.
+            iline = iend2
+
+          case default
+          
+            ! Command not found. 
+            rcmdStatus%ierror = 1          
+
+          end select
+        end if
+
+        if (rcmdStatus%ierror .ne. 0) then
+          call output_line ("Wrong syntax!")
+          rcmdStatus%ierror = 1
+        end if
+          
+        ! Next line
+        exit
+        
+      end if
+      
+    end do
+    
+    if (.not. bmatch) then
+      
+      ! No build-in command. Process special command.
+      call cmdprs_splitlinedirect (scommand,p_Sargs)
+      if (associated(p_Sargs)) then
+        call cmdprs_dospecialcommand (rcmdStatus,p_Sargs,ierror)
+        call cmdprs_releaseargs (p_Sargs)
+        bmatch = ierror .eq. 0
+      end if
+      
+    end if
+    
+    if (.not. bmatch) then
+      ! Try it as an immediate expression.
+      ! Processes e.g. variable assignments etc...
+      istart = 0
+      iend = 0
+      call tpsym_evalExpression (scommand,rcmdStatus%rcollection,inestlevel,istart,iend,rvalue)
+    end if
+    
+    if (rcmdStatus%ierror .ne. 0) then
+      call output_line ("Invalid syntax!")
+    end if
+      
+  end subroutine
+
+  ! ***************************************************************************
+
+  recursive subroutine cmdprs_parsecmdblock (rcmdStatus,&
+      rcmdblock,inestlevel,iblockstart,iblockend,rreturnValue)
+  
+  !<description>
+    ! Parses a command block.
+  !</description>
+  
+  !<inputoutput>
+    ! Command line status object
+    type(t_commandstatus), intent(inout) :: rcmdStatus
+  !</inputoutput>
+
+  !<input>
+    ! Command block with commands.
+    ! The block may start with "{"; in this case it must end with "}".
+    ! the block must at least contain one line.
+    type(t_commandBlock), intent(in) :: rcmdblock
+    
+    ! Start line in the command block. If not specified, the first line is assumed.
+    integer, intent(in), optional :: iblockstart
+    
+    ! End line in the command block. If not specified, the last line is assumed.
+    integer, intent(in), optional :: iblockend
+    
+    ! Level of nesting
+    integer, intent(in), optional :: inestlevel
+
+    ! Structure encapsuling return values.
+    ! Initialised with default values by "intent(out)".
+    type(t_symbolValue), intent(out) :: rreturnvalue
+  !</input>
+
+    integer :: iline, istart, iend, iblock
+    character(len=SYS_STRLEN*2) :: sline,stemp2
+    logical :: bfirst
+    
+    istart = 1
+    iend = rcmdblock%icount
+    if (present(iblockstart)) istart = iblockstart
+    if (present(iblockend)) iend = iblockend
+    
+    ! Parse all lines.
+    iline = 0
+    iblock = 0
+    bfirst = .true.
+    do
+    
+      ! Get the line and split + dequote it.
+      call cmdprs_getNextLine (rcmdblock,iline,istart,iend,sline)
+      
+      ! Stop if there is no more line or we have to stop the processing.
+      if ((iline .eq. 0) .or. &
+          rcmdStatus%bterminate  .or. (rcmdStatus%ierror .ne. 0)) exit
+    
+      if (rcmdStatus%becho) then
+        stemp2 = rcmdblock%p_Rcommands(iline)
+        call output_line (trim(stemp2))
+      end if
+
+      ! Is this a block start and the beginning of the block?
+      if ((sline .eq. "{") .and. bfirst) then
+        ! Start of our block. Increase the block counter.
+        iblock = iblock + 1
+      else if (sline .eq. "}")then
+        ! Decrease the block counter
+        iblock = iblock - 1
+      else
+        ! Execute this as a command.
+        call cmdprs_docommand (rcmdStatus,rcmdblock,inestlevel,&
+            sline,iline,iblockstart,iblockend,.true.,rreturnvalue)
+      end if
+
+      bfirst = .false.
+    
+    end do
+    
+    ! Error if the block end cannot be found.
+    if (iblock .gt. 0) then
+      call output_line ("Cannot find end of block!")
+      rcmdStatus%ierror = 1
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine cmdprs_parsestream (rcmdStatus,istream,inestlevel)
   
   !<description>
     ! Parses an input stream.
@@ -377,60 +1869,59 @@ contains
   !<input>
     ! The input stream channel.
     integer, intent(in) :: istream
+
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
   !</input>
 
-    type(VARYING_STRING) :: sinput,sin,sin2
-    type(VARYING_STRING), dimension(:), pointer :: p_Sargs
+    type(VARYING_STRING) :: sinput,sin
+    type(t_commandBlock) :: rcmdBlock
     integer :: ierr
+    type(t_symbolValue) :: rreturnvalue
+
+    ! Initialise the command block
+    call cmdprs_initcmdblock (rcmdBlock)
 
     do while (.not. rcmdStatus%bterminate)
     
       sin = ""
-      sin2 = ""
       sinput = ""
       
       call get(istream,sin,IOSTAT=ierr) ! read next line of file
       
       ! Trim. Warning, this allocates memory!!!
-      sin2 = adjustl(sin)
-      sinput = trim(sin2)
-      
-      
-      if (rcmdStatus%becho) then
-        call output_line (CHAR(sinput))
-      end if
+      sinput = trim(sin)
       
       if (ierr == -1 .or. ierr > 0) then
+    
+        if (rcmdblock%icount .eq. 0) then
+          ! Finish.
+          exit
+        end if
         
-        ! Stop, there's no more data.
-        exit
+        ! There's no more data. Start executing.
+        call cmdprs_parsecmdblock (rcmdStatus,rcmdblock,inestlevel,rreturnvalue=rreturnvalue)
+  
+        ! Create a new command block
+        call cmdprs_donecmdblock (rcmdBlock)
+        call cmdprs_initcmdblock (rcmdBlock)
         
       else
         if (len(sinput) .ne. 0) then
           ! Ignore comments
           if (getchar (sinput,1) .ne. "#") then
       
-            ! Parse the line.
-            call cmdprs_splitline (sinput,p_Sargs)
-            
-            ! A command involved?
-            if (ubound(p_Sargs,1) .ne. 0) then
-            
-              ! Execute the command
-              call cmdprs_docommand (rcmdStatus,p_Sargs)
-            
-            end if
-            
-            ! Release memory
-            call cmdprs_releaseargs(p_Sargs)
+            ! Append the line to the command block
+            call cmdprs_addCommand (rcmdBlock,sinput)
+              
           end if
         end if
       end if
     end do
 
     ! Release memory    
+    call cmdprs_donecmdblock (rcmdBlock)
     sin = ""
-    sin2 = ""
     sinput = ""
     
   end subroutine
@@ -451,8 +1942,12 @@ contains
     type(VARYING_STRING) :: sinput
     type(VARYING_STRING), dimension(:), pointer :: p_Sargs
     character(len=SYS_STRLEN) :: sstr
+    integer :: ierror
 
     do while (.not. rcmdStatus%bterminate)
+    
+      ! Reset the error marker.
+      rcmdStatus%ierror = 0
       
       ! Read tghe next line from the termninal
       call output_line("> ",bnolinebreak=.true.,bnotrim=.true.)
@@ -476,12 +1971,11 @@ contains
           if (associated(p_Sargs)) then
           
             ! Execute the command
-            call cmdprs_docommand (rcmdStatus,p_Sargs)
+            call cmdprs_dospecialcommand (rcmdStatus,p_Sargs,ierror)
           
+            ! Release memory
+            call cmdprs_releaseargs(p_Sargs)
           end if
-          
-          ! Release memory
-          call cmdprs_releaseargs(p_Sargs)
           
         end if
       
@@ -629,7 +2123,7 @@ contains
 
   ! ***************************************************************************
 
-  recursive subroutine cmdprs_docommand (rcmdStatus,Sargs)
+  recursive subroutine cmdprs_dospecialcommand (rcmdStatus,Sargs,ierror)
   
   !<description>
     ! Executes a command.
@@ -642,8 +2136,17 @@ contains
     ! Command line arguments.
     type(VARYING_STRING), dimension(:), intent(in) :: Sargs
   !</inputoutput>
+  
+  !<output>
+    ! Error flag.
+    ! =0: no error.
+    ! =1: Command not found
+    integer, intent(out) :: ierror
+  !</output>
 
     type(VARYING_STRING) :: scmd, sarg
+    
+    ierror = 0
     
     ! Get the command
     scmd = Sargs(1)
@@ -793,10 +2296,470 @@ contains
       return
     end if
     
-    if (scmd .ne. "") then
-      call output_line ("Unknown command!")
-    end if
+    ! Not found
+    ierror = 1
   
+  end subroutine
+  
+  ! ***************************************************************************
+  ! Parsing of symbols
+  ! ***************************************************************************
+  
+  ! ***************************************************************************
+
+  !<subroutine>
+  
+  recursive subroutine tpsym_evalExpression (sstring,rcollection,inestlevel,istart,iend,rvalue)
+  
+  !<description>
+    ! Parses a string of symbols and creates a value from it.
+  !</description>
+
+  !<input>
+    ! String containing symbols. The string must have been split with cmdprs_complexSplit
+    ! and must completely be trimmed!
+    character(len=*), intent(in) :: sstring
+  !</input>
+
+  !<inputoutput>
+    ! IN: Start/End of the first token of the expression or =0,
+    ! if to start with the very first token.
+    ! OUT: Start/End of the next token after the expression.
+    ! =0 if the expression is completed.
+    integer, intent(inout) :: istart,iend
+  !</inputoutput>
+
+  !<input>
+    ! Collection containing symbols.
+    type(t_collection), intent(inout) :: rcollection
+
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
+  !</input>
+  
+  !<input
+  
+  !<output>
+    ! The value of the expression.
+    type(t_symbolValue), intent(out) :: rvalue
+  !</output>
+  
+  !</subroutine>
+  
+    ! local variables
+    integer :: iprevopstart,iprevopend,icurropstart,icurropend,isymbolstart,isymbolend
+    type(t_symbolValue) :: rvaluetemp
+    integer :: ileftprec, irightprec, ilength
+    
+    ilength = len_trim(sstring)
+    
+    ! Start with the first token?
+    if (istart .eq. 0) then
+      call cmdprs_nexttoken (sstring,istart,iend,ilength)
+    end if
+
+    ! Current token.
+    isymbolstart = istart
+    isymbolend = iend
+    
+    ! Get the previous operator.
+    iprevopstart = istart
+    iprevopend = iend
+    call cmdprs_nexttoken (sstring,iprevopstart,iprevopend,ilength,.true.)
+    
+    if (sstring(istart:iend) .eq. "(") then
+      ! Evaluate the value in the brackets.
+      call tpsym_evalExpressionBrackets (sstring,rcollection,inestlevel,istart,iend,rvalue)
+      ! istart/iend now points to the last token -- the closing bracket.
+    else
+      ! Parse the symbol, create a value.
+      call tpsym_parseSymbol (sstring(isymbolstart:isymbolend),rcollection,inestlevel,rvalue)
+    end if
+    if (rvalue%ctype .eq. STYPE_INVALID) return
+    
+    ! Repeat to evaluate all following operators.
+    do while (istart .ne. 0)
+      ! We have a value. Get the next operator.
+      call cmdprs_nexttoken (sstring,istart,iend,ilength)
+      icurropstart = istart
+      icurropend = iend
+      
+      ! What is more important, the left or the rigt operator?
+      !
+      ! Left more important -> Stop here, return, value will be used.
+      ! Right more important -> Recursively evaluate the expression on the right
+      !    and evaluate the value of the operator.
+      if (iprevopstart .gt. 0) then
+        if (icurropstart .eq. 0) return
+        if (getOperatorWeight(sstring(iprevopstart:iprevopend)) .gt. &
+            getOperatorWeight(sstring(icurropstart:icurropend))) return
+      end if
+      
+      ! Check for immediate operators.
+      if (sstring(icurropstart:icurropend) .eq. "++") then
+      
+        ! Increase variable, return old value.
+        rvaluetemp = 1
+        rvalue = rvalue + rvaluetemp
+        call tpsym_saveSymbol (rvalue,inestlevel,rcollection)
+        rvalue = rvalue - rvaluetemp
+        
+        ! Next token
+        call cmdprs_nexttoken (sstring,istart,iend,ilength)
+        if (istart .eq. 0) return
+        
+      elseif (sstring(icurropstart:icurropend) .eq. "--") then
+      
+        ! Increase variable, return old value.
+        rvaluetemp = 1
+        rvalue = rvalue - rvaluetemp
+        call tpsym_saveSymbol (rvalue,inestlevel,rcollection)
+        rvalue = rvalue + rvaluetemp
+
+        ! Next token
+        call cmdprs_nexttoken (sstring,istart,iend,ilength)
+        if (istart .eq. 0) return
+        
+      else      
+
+        ! Right operator more important. Evaluate the right expression first and
+        ! calculate a new value with the operator.
+        call cmdprs_nexttoken (sstring,istart,iend,ilength)
+        if (istart .eq. 0) return
+        
+        call tpsym_evalExpression (sstring,rcollection,inestlevel,istart,iend,rvaluetemp)
+        if (rvaluetemp%ctype .eq. STYPE_INVALID) return
+        
+        ! What is the operator?
+        if (sstring(icurropstart:icurropend) .eq. "+") then
+          rvalue = rvalue + rvaluetemp
+        else if (sstring(icurropstart:icurropend) .eq. "-") then
+          rvalue = rvalue - rvaluetemp
+        else if (sstring(icurropstart:icurropend) .eq. "*") then
+          rvalue = rvalue * rvaluetemp
+        else if (sstring(icurropstart:icurropend) .eq. "/") then
+          rvalue = rvalue / rvaluetemp
+        else if (sstring(icurropstart:icurropend) .eq. "%") then
+          rvalue = mod(rvalue, rvaluetemp)
+        else if (sstring(icurropstart:icurropend) .eq. "==") then
+          ! Compare. Result is an int without any connection to a variable.
+          if (rvalue == rvaluetemp) then
+            call tpsym_undefine(rvalue)
+            rvalue = 1
+          else
+            rvalue = 0
+          end if
+        else if (sstring(icurropstart:icurropend) .eq. "!=") then
+          ! Compare. Result is an int without any connection to a variable.
+          if (rvalue /= rvaluetemp) then
+            call tpsym_undefine(rvalue)
+            rvalue = 1
+          else
+            call tpsym_undefine(rvalue)
+            rvalue = 0
+          end if
+        else if (sstring(icurropstart:icurropend) .eq. "<") then
+          ! Compare. Result is an int without any connection to a variable.
+          if (rvalue < rvaluetemp) then
+            call tpsym_undefine(rvalue)
+            rvalue = 1
+          else
+            call tpsym_undefine(rvalue)
+            rvalue = 0
+          end if
+        else if (sstring(icurropstart:icurropend) .eq. ">") then
+          ! Compare. Result is an int without any connection to a variable.
+          if (rvalue > rvaluetemp) then
+            call tpsym_undefine(rvalue)
+            rvalue = 1
+          else
+            call tpsym_undefine(rvalue)
+            rvalue = 0
+          end if
+        else if (sstring(icurropstart:icurropend) .eq. "<=") then
+          ! Compare. Result is an int without any connection to a variable.
+          if (rvalue <= rvaluetemp) then
+            call tpsym_undefine(rvalue)
+            rvalue = 1
+          else
+            call tpsym_undefine(rvalue)
+            rvalue = 0
+          end if
+        else if (sstring(icurropstart:icurropend) .eq. ">=") then
+          ! Compare. Result is an int without any connection to a variable.
+          if (rvalue >= rvaluetemp) then
+            call tpsym_undefine(rvalue)
+            rvalue = 1
+          else
+            call tpsym_undefine(rvalue)
+            rvalue = 0
+          end if
+        else if (sstring(icurropstart:icurropend) .eq. "=") then
+          ! Assign + save.
+          rvalue = rvaluetemp
+          call tpsym_saveSymbol (rvalue,inestlevel,rcollection)
+        end if
+        
+      end if
+      
+    end do
+    
+  contains
+  
+    ! --------------------------------------------
+    integer function getOperatorWeight (soperator)
+    
+    ! Returns the weight of an operator.
+    ! Use the C operator precedence:
+    !
+    !    http://www.difranco.net/cop2220/op-prec.htm
+
+    ! The operator
+    character(len=*), intent(in) :: soperator
+    
+      getOperatorWeight = 0
+      
+      if (soperator .eq. "||") then
+        getOperatorWeight = 3
+      else if (soperator .eq. "&&") then
+        getOperatorWeight = 4
+      else if (soperator .eq. "|") then
+        getOperatorWeight = 5
+      else if (soperator .eq. "^") then
+        getOperatorWeight = 6
+      else if (soperator .eq. "&") then
+        getOperatorWeight = 7
+      else if ((soperator .eq. "==") .or. (soperator .eq. "!=")) then
+        getOperatorWeight = 8
+      else if ((soperator .eq. "<") .or. (soperator .eq. "<=") .or. &
+               (soperator .eq. ">") .or. (soperator .eq. ">=")) then
+        getOperatorWeight = 9
+      else if ((soperator .eq. "<<") .or. (soperator .eq. ">>")) then
+        getOperatorWeight = 10
+      else if ((soperator .eq. "+") .or. (soperator .eq. "-")) then
+        getOperatorWeight = 11
+      else if ((soperator .eq. "+") .or. (soperator .eq. "-") .or. &
+               (soperator .eq. "%")) then
+        getOperatorWeight = 12
+      else if ((soperator .eq. "++") .or. (soperator .eq. "--") .or. &
+               (soperator .eq. "!") .or. (soperator .eq. "~")) then
+        getOperatorWeight = 13
+      end if
+    
+    end function
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+  
+  recursive subroutine tpsym_evalExpressionBrackets (sstring,rcollection,inestlevel,istart,iend,rvalue)
+  
+  !<description>
+    ! Parses an expression in brackets.
+  !</description>
+
+  !<input>
+    ! String containing symbols. The string must have been split with cmdprs_complexSplit
+    ! and must completely be trimmed!
+    character(len=*), intent(in) :: sstring
+  
+    ! Collection containing symbols.
+    type(t_collection), intent(inout) :: rcollection
+
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
+  !</input>
+  
+  !<inputoutput>
+    ! IN: Start/End of the opening bracket.
+    ! OUT: Start/End of the closing bracket.
+    integer, intent(inout) :: istart,iend
+  !</inputoutput>
+  
+  !<output>
+    ! The value of the expression.
+    type(t_symbolValue), intent(out) :: rvalue
+  !</output>
+  
+  !</subroutine>
+  
+    ! local variables
+    integer :: istart2,iend2
+    integer :: ibracket,ilength
+    
+    ! Get basic information
+    ilength = len(sstring)
+    
+    ! Expression in brackets. Most important.
+    !
+    ! Search closing bracket -- or inner expression(s) to be evaluated.
+    istart2 = istart
+    iend2 = iend
+    ibracket = 1
+    call cmdprs_nexttoken (sstring,istart2,iend2,ilength,.true.)
+    do while ((ibracket .gt. 0) .and. (istart2 .ne. 0))
+      if (sstring(istart2:istart2) .eq. "(") then
+        ibracket = ibracket + 1
+      else if (sstring(istart2:istart2) .eq. ")") then
+        ibracket = ibracket - 1
+        if (ibracket .eq. 0) exit
+      end if
+      
+      ! Ignore other tokens.
+      call cmdprs_nexttoken (sstring,istart2,iend2,ilength,.true.)
+    end do
+    
+    ! Return if ibracket <> 0, expression invalid.
+    if (ibracket .gt. 0) return
+    
+    ! Evaluate recursively.
+    istart = 0
+    iend = 0
+    call tpsym_evalExpression (sstring(iend+2:istart2-2),rcollection,inestlevel,&
+        istart,iend,rvalue)
+    
+    ! Return the position of the closing bracket.
+    istart = istart2
+    iend = iend2
+
+  end subroutine
+  
+  ! ***************************************************************************
+  ! Work flow command handlers
+  ! ***************************************************************************
+
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine cmdprs_doFor (rcmdStatus,rcmdblock,inestlevel,scommand,iline,&
+      iblockstart,iblockend)
+  
+  !<description>
+    ! Work flow command: FOR loop
+  !</description>
+
+  !<inputoutput>
+    ! Current status block.
+    type(t_commandstatus), intent(inout) :: rcmdStatus
+  !</inputoutput>
+  
+  !<input>
+    ! Current command block containing the program
+    type(t_commandBlock), intent(in) :: rcmdBlock
+
+    ! Command string. Splitted and dequoted.
+    character(len=*), intent(in) :: scommand
+    
+    ! Number of the line
+    integer, intent(inout) :: iline
+    
+    ! Start of the commands depending on the command in rcmdBlock.
+    integer, intent(in) :: iblockstart
+
+    ! End of the commands depending on the command in rcmdBlock.
+    integer, intent(in) :: iblockend
+    
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
+  !</input>
+  
+  !</subroutine>
+
+    ! local variables
+    integer :: isemicolon1,isemicolon2
+    integer :: istart,iend,ilength,isubcommandline
+    integer :: istartarg, iendarg
+    logical :: berror
+    logical :: bfirst
+    type(t_symbolValue) :: rreturnvalue
+
+    ! scommand has a special stucture:
+    !   FOR ( ... )
+    ! The entries in the braces have the form
+    !    ... ; ... ; ...
+    ! with "..." specifying an expression.
+    
+    ! Search for the two semicola
+    istart = 0
+    ilength = len_trim(scommand)
+    isemicolon1 = 0
+    isemicolon2 = 0
+    berror = .false.
+    call cmdprs_nexttoken (scommand,istart,iend,ilength)
+    do while (istart .ne. 0) 
+      ! Find the semicola
+      if (scommand(istart:iend) .eq. ";") then
+        if (isemicolon1 .eq. 0) then
+          isemicolon1 = istart
+        else if (isemicolon2 .eq. 0) then
+          isemicolon2 = istart
+        else
+          berror = .true.
+        end if
+
+      ! Find the start of the arguments (behind the "(") and
+      ! their ends (before the ")").
+      else if (scommand(istart:iend) .eq. "(") then
+        istartarg = iend+2
+      else if (scommand(istart:iend) .eq. ")") then  
+        iendarg = istart-2
+      end if
+
+      call cmdprs_nexttoken (scommand,istart,iend,ilength)
+    end do
+    if (isemicolon2 .eq. 0) berror = .true.
+    
+    if (.not. berror) then
+      ! Loop initialisation
+      isubcommandline = iline+1
+      call cmdprs_docommand (rcmdStatus,rcmdblock,inestlevel,&
+          scommand(istartarg:isemicolon1-2),isubcommandline,&
+          iblockstart,iblockend,.false.,rreturnvalue)
+    
+      ! Execute the FOR loop in an endless DO loop.
+      bfirst = .true.
+      do while (.not. rcmdStatus%bterminate .and. (rcmdStatus%ierror .eq. 0)) 
+      
+        if (.not. bfirst) then
+          ! Check termination criterion
+          isubcommandline = iline+1
+          call cmdprs_docommand (rcmdStatus,rcmdblock,inestlevel,&
+              scommand(isemicolon1+2:isemicolon2-2),isubcommandline,&
+              iblockstart,iblockend,.false.,rreturnvalue)
+              
+          ! Stop if FALSE is returned.
+          if (rreturnvalue%ivalue .eq. 0) exit
+          
+        end if
+        
+        if (.not. rcmdStatus%bterminate .and. (rcmdStatus%ierror .eq. 0)) then
+        
+          ! The actual loop commands.
+          call cmdprs_parsecmdblock (rcmdStatus,rcmdblock,inestlevel,&
+              iblockstart,iblockend,rreturnvalue)
+
+        end if
+
+        if (.not. rcmdStatus%bterminate .and. (rcmdStatus%ierror .eq. 0)) then
+          ! Final command block of the FOR loop.
+          isubcommandline = iline+1
+          call cmdprs_docommand (rcmdStatus,rcmdblock,inestlevel,&
+              scommand(isemicolon2+2:iendarg),isubcommandline,&
+              iblockstart,iblockend,.false.,rreturnvalue)
+        end if
+        
+        bfirst = .false.
+      
+      end do
+    end if
+    
+    if (berror) then
+      call output_line ("Wrong syntax!")
+    end if
+
   end subroutine
 
   ! ***************************************************************************
@@ -804,6 +2767,8 @@ contains
   ! ***************************************************************************
 
   ! ***************************************************************************
+
+  !<subroutine>
 
   subroutine cmdprs_do_help (Sargs)
   
@@ -815,6 +2780,8 @@ contains
     ! Command line arguments.
     type(VARYING_STRING), dimension(:), intent(in) :: Sargs
   !</input>
+  
+  !</subroutine>  
   
     character(len=20) :: sargformatted
   
@@ -1361,7 +3328,7 @@ contains
       call io_openFileForReading(svalue, iunit, .true.)
 
       ! Interpret the stream
-      call cmdprs_parsestream (rcmdStatus,iunit)
+      call cmdprs_parsestream (rcmdStatus,iunit,0)
       
       close (iunit)
     end if
