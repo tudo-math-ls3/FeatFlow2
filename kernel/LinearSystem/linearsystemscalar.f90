@@ -308,7 +308,7 @@ module linearsystemscalar
 
   ! Minimum number of equations for OpenMP parallelisation: If the number of
   ! equations is below this value, then no parallelisation is performed.
-#ifndef SCHUR_NEQMIN_OMP
+#ifndef LSYSSC_NEQMIN_OMP
   integer, parameter, public :: LSYSSC_NEQMIN_OMP = 1000
 #endif
   
@@ -792,6 +792,11 @@ module linearsystemscalar
     module procedure lsyssc_resizeMatrixDirect
     module procedure lsyssc_resizeMatrixIndirect
   end interface
+
+  interface lsyssc_matrixLinearComb
+    module procedure lsyssc_matrixLinearComb
+    module procedure lsyssc_matrixLinearComb2
+  end interface lsyssc_matrixLinearComb
 
   public :: lsyssc_createVector
   public :: lsyssc_createVecByDiscr
@@ -12745,18 +12750,18 @@ contains
       
     case (LSYSSC_MATRIX9)
       ! Create KCOL, KLD, KDiagonal
-      call storage_new ('lsyssc_createDiagMatrix', 'KCOL', NEQ, &
+      call storage_new ('lsyssc_createDiagMatrixStuc', 'KCOL', NEQ, &
           ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
-      call storage_new ('lsyssc_createDiagMatrix', 'KLD', NEQ+1, &
+      call storage_new ('lsyssc_createDiagMatrixStruc', 'KLD', NEQ+1, &
           ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
-      call storage_new ('lsyssc_createDiagMatrix', 'KDiagonal', NEQ, &
+      call storage_new ('lsyssc_createDiagMatrixStruc', 'KDiagonal', NEQ, &
           ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ORDERED)
           
     case (LSYSSC_MATRIX7)
       ! Create KCOL, KLD.
-      call storage_new ('lsyssc_createDiagMatrix', 'KCOL', NEQ, &
+      call storage_new ('lsyssc_createDiagMatrixStruc', 'KCOL', NEQ, &
           ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
-      call storage_new ('lsyssc_createDiagMatrix', 'KLD', NEQ+1, &
+      call storage_new ('lsyssc_createDiagMatrixStruc', 'KLD', NEQ+1, &
           ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
           
     case DEFAULT
@@ -14748,7 +14753,7 @@ contains
 
     !**************************************************************
     ! Format 7/9-7/9 multiplication
-    ! Compute the number of nonzero matrix entries of C:=A * B
+    ! Compute the number of nonzero matrix entries of C := A * B
     ! 
     ! Method: A' * A = sum [over i=1, nrow] a(i)^T a(i)         (cpp fix: .')
     !         where a(i) = i-th row of A. We must be careful not
@@ -15156,15 +15161,15 @@ contains
   end subroutine lsyssc_multMatMat
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
-  subroutine lsyssc_matrixLinearComb (rmatrixA,cA,rmatrixB,cB,rmatrixC,&
+  subroutine lsyssc_matrixLinearComb2 (rmatrixA,cA,rmatrixB,cB,rmatrixC,&
       bmemory,bsymb,bnumb,bisExactStructure)
 
     !<description>
-    ! Adds constant times a matrix to another matrix
-    !   rmatrixC = cA*rmatrixA + cB*rmatrixB
+    ! Performs a linear combination:
+    !   rmatrixC = ca*rmatrixA + cB*rmatrixB
     !
     ! All matrix formats and most combinations of matrix formats are
     ! supported for matrices A and B. The resulting matrix C=ca*A+cb*B
@@ -15176,14 +15181,18 @@ contains
     ! Moreover, rmatrixC can be the same as rmatrixA or rmatrixB, but
     ! then, BMEMORY and BSYMB must both be FALSE and the user must
     ! take care, the matrix C corresponds to the "encompassing" matrix.
+    !
+    ! WARNING: This routine is deprecated and will be removed in future.
+    !          Use the (in some cases) much more efficient subroutine
+    !          lsyssc_matrixLinearComb2 as replacement.
     !</description>
 
 !<input>
-    ! source matrices
-    type(t_matrixScalar), intent(in) :: rmatrixA,rmatrixB
+    ! First source matrix
+    type(t_matrixScalar), intent(in) :: rmatrixA
 
     ! scaling factors
-    real(DP), intent(in) :: cA,cB
+    real(DP), intent(in) :: ca,cb
 
     ! BMEMORY = FALSE: Do not allocate required memory for C=A+B.
     ! BMEMORY = TRUE:  Generate all required structures for C=A+B 
@@ -15211,55 +15220,166 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Output matrix. May coincode with rmatrixB.
+    ! Second source matrix
+    type(t_matrixScalar), intent(inout) :: rmatrixB
+    
+    ! Output matrix. May coincide with rmatrixB.
     type(t_matrixScalar), intent(inout) :: rmatrixC
 !</inputoutput>
 
 !</subroutine>
 
-    ! local variables
-    real(DP), dimension(:), pointer :: DaA,DaB,DaC
-    real(SP), dimension(:), pointer :: FaA,FaB,FaC
-    integer, dimension(:), pointer :: KldA,KldB,KldC,KdiagonalC,Kaux
-    integer, dimension(:), pointer :: KcolA,KcolB,KcolC
-    integer :: h_Kaux,isizeIntl
-    logical :: bfast
+    call lsyssc_matrixLinearComb(rmatrixA,rmatrixB,ca,cb,&
+        bmemory,bsymb,bnumb,bisExactStructure,rmatrixC)
 
-    h_Kaux=ST_NOHANDLE
+  end subroutine lsyssc_matrixLinearComb2
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine lsyssc_matrixLinearComb (rmatrixA,rmatrixB,ca,cb,&
+      bmemory,bsymb,bnumb,bisExactStructure,rdest)
+
+    !<description>
+    ! Performs a linear combination:
+    !   rdest or rmatrixB = ca*rmatrixA + cB*rmatrixB
+    !
+    ! Most combinations of matrix formats are supported for matrices A
+    ! and B. If the destination matrix rmatrixDest is not given, then
+    ! matrix rmatrrixB must be combatible with matrix rmatrixA, that
+    ! is, all non-zero entries of matrix rmatrixA must be present in
+    ! rmatrixB. If the destination matrix rmatrixC is given and
+    ! BMEMORY=FALSE, then matrix rmatrixC must be compatible to both
+    ! matrices rmatrixA and rmatrixB. If BMEMORY=TRUE, then the
+    ! destination matrix rmatrixC is generated on-the-fly with the
+    ! correct sparsity pattern to comprise the non-zero matrix entries
+    ! of rmatrixA and rmatrixB.
+    ! </description>
+
+!<input>
+    ! First source matrix
+    type(t_matrixScalar), intent(in) :: rmatrixA
+
+    ! scaling factors
+    real(DP), intent(in) :: ca,cb
+
+    ! OPTIONAL Allocate memory for matrix structure and/or data
+    ! BMEMORY = FALSE: Do not allocate required memory for C=A+B.
+    ! BMEMORY = TRUE:  Generate all required structures for C=A+B 
+    ! Default: FALSE
+    logical, intent(in), optional :: bmemory
+
+    ! OPTIONAL: Compute symbolic matrix-matrix-addition
+    ! BSYMB = FALSE: Do not generate the required matrix structures.
+    !                This may be useful, if the same matrices A and B
+    !                need to be added several times, but the
+    !                sparsity patterns do not change
+    ! BSYMN = TRUE:  Generate all required matrix structures for C=A+B
+    ! Default: FALSE
+    logical, intent(in), optional :: bsymb
+
+    ! OPTIONAL: Compute numerical matrix-matrix-addition
+    ! BNUMB = FALSE: Do not perform the numerical addition
+    ! BNUMB = TRUE:  Perform numerical addition
+    ! Default: TRUE
+    logical, intent(in), optional :: bnumb
+    
+    ! OPTIONAL: Indicates whether the resulting matrix has the
+    ! required symbolic structure or is a superset of the symbolic
+    ! matrix-matrix product. In some cases, this may allow for much
+    ! more efficient implementation.
+    ! Standard: FALSE
+    logical, intent(in), optional :: bisExactStructure
+!</input>
+
+!<inputoutput>
+    ! Second source vector; also receives the result if rdest is not specified.
+    type(t_matrixScalar), intent(inout), target :: rmatrixB
+
+    ! OPTIONAL: Destination matrix. If not specified, rmatrixB will be overwritten.
+    type(t_matrixScalar), intent(inout), target, optional :: rdest
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_matrixScalar), pointer :: p_rdest
+    real(DP), dimension(:), pointer :: p_DaA,p_DaB,p_DaC
+    real(SP), dimension(:), pointer :: p_FaA,p_FaB,p_FaC
+    integer, dimension(:), pointer :: p_KldA,p_KldB,p_KldC
+    integer, dimension(:), pointer :: p_KcolA,p_KcolB,p_KcolC
+    integer, dimension(:), pointer :: p_KdiagonalB,p_KdiagonalC,p_Kaux
+    integer :: h_Kaux,isizeIntl
+    logical :: bfast,bmem,bsym,bnum
+
+    ! Set pointer either to the explicitly given destination matrix or
+    ! to the second source matrix which serves as destination matrix
+    if (present(rdest)) then
+      p_rdest => rdest
+    else
+      p_rdest => rmatrixB
+    end if
+
+    ! Set optional arguments
+    bmem = .false.; if(present(bmemory)) bmem=bmemory
+    bsym = .false.; if(present(bsymb))   bsym=bsymb
+    bnum = .false.; if(present(bnumb))   bnum=bnumb
     
     ! Check if fast implementation can be used
-    bfast=.false.
-    if (present(bisExactStructure)) bfast = bisExactStructure
-    bfast = bfast .or. (bmemory .and. bsymb)
+    bfast=.false.; if (present(bisExactStructure)) bfast = bisExactStructure
+    bfast = bfast .or. (bmem .and. bsym)
 
-    ! Check if both matrices are compatible
-    if (rmatrixA%NEQ .ne. rmatrixB%NEQ .or. &
-        & rmatrixA%NCOLS .ne. rmatrixB%NCOLS) then
-      print *, 'lsyssc_matrixLinearComb: number of rows/columns of ' // &
-               'matrix A is not compatible with number of rows/columns of matrix B'
-      call sys_halt()
-    end if
-
-    ! Check if both matrices have the same sorting
-    if (rmatrixA%isortStrategy .ne. rmatrixB%isortStrategy) then
-      print *, 'lsyssc_matrixLinearComb: incompatible sorting strategies'
-      call sys_halt()
-    end if
-
-    ! Release matrix if required and set common variables
-    if (bmemory) then
-      call lsyssc_releaseMatrix(rmatrixC)
-      if (rmatrixA%cdataType .eq. ST_DOUBLE .or. rmatrixB%cdataType .eq. ST_DOUBLE) then
-        rmatrixC%cdataType = ST_DOUBLE
+    ! Do we need to generate the destination matrix?
+    if (bmem) then
+      if (present(rdest)) then
+        ! Prepare destination matrix
+        call lsyssc_releaseMatrix(rdest)
+        if ((rmatrixA%cdataType .eq. ST_DOUBLE) .or.&
+            (rmatrixB%cdataType .eq. ST_DOUBLE)) then
+          rdest%cdataType = ST_DOUBLE
+        else
+          rdest%cdataType = ST_SINGLE
+        end if
+        rdest%NEQ                = rmatrixA%NEQ
+        rdest%NCOLS              = rmatrixA%NCOLS
+        rdest%isortStrategy      = rmatrixA%isortStrategy
+        rdest%h_IsortPermutation = rmatrixA%h_IsortPermutation
       else
-        rmatrixC%cdataType = ST_SINGLE
+        call output_line('Destination matrix must be given if BMEMORY=TRUE!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+        call sys_halt()
       end if
     end if
-    
-    ! Set sorting strategy for matrix C
-    rmatrixC%isortStrategy = rmatrixA%isortStrategy
-    rmatrixC%h_IsortPermutation = rmatrixA%h_IsortPermutation
 
+    ! Check if all matrices are compatible
+    if ((rmatrixA%NEQ   .ne. rmatrixB%NEQ) .or.&
+        (rmatrixA%NEQ   .ne. p_rdest%NEQ)  .or.&
+        (rmatrixA%NCOLS .ne. rmatrixB%NCOLS) .or.&
+        (rmatrixA%NCOLS .ne. p_rdest%NCOLS)) then
+      call output_line('Number of rows/columns is not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+      call sys_halt()
+    end if
+
+    ! Check if all matrices have the same sorting
+    if ((rmatrixA%isortStrategy .ne. rmatrixB%isortStrategy) .or.&
+        (rmatrixA%isortStrategy .ne. p_rdest%isortStrategy)) then
+      call output_line('Sorting strategies are incompatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+      call sys_halt()
+    end if
+
+    ! Check if destination matrix has compatible data type
+    if (((rmatrixA%cdatatype .eq. ST_DOUBLE) .or.&
+         (rmatrixB%cdatatype .eq. ST_DOUBLE)) .and.&
+         (p_rdest%cdatatype .ne. ST_DOUBLE)) then
+      call output_line('Data type of destination matrix is not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+      call sys_halt()
+    end if
+
+    ! What is the matrix format of matrix A?
     select case(rmatrixA%cmatrixFormat)
 
     case (LSYSSC_MATRIX1)   ! A is full matrix ---------------------------------
@@ -15269,27 +15389,28 @@ contains
       case (LSYSSC_MATRIX1) ! B is full matrix  - - - - - - - - - - - - - - - -
         
         ! memory allocation?
-        if (bmemory) then
-          rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
-          rmatrixC%NA = rmatrixA%NEQ*rmatrixA%NCOLS
-          call storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        if (bmem .and. present(rdest)) then
+          rdest%cmatrixFormat = LSYSSC_MATRIX1
+          rdest%NA            = rmatrixA%NEQ*rmatrixA%NCOLS
+          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+              rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
         
         ! symbolic addition?
-        if (bsymb) then
-          rmatrixC%NEQ = rmatrixA%NEQ
-          rmatrixC%NCOLS = rmatrixA%NCOLS
+        if (bsym .and. present(rdest)) then
+          rdest%NEQ   = rmatrixA%NEQ
+          rdest%NCOLS = rmatrixA%NCOLS
         end if
         
         ! numerical addition?
-        if (bnumb) then
+        if (bnum) then
           
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -15297,54 +15418,80 @@ contains
           ! double
           select case(rmatrixA%cdataType)
 
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lalg_copyVectorDble(DaA,DaC)
-              call lalg_vectorLinearCombDble(DaB,DaC,cB,cA)
+              call lsyssc_getbase_double(rmatrixA,p_DaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_DaB,p_DaC)
+                call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
+              else
+                call lalg_vectorLinearComb(p_DaA,p_DaB,ca,cb)
+              end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lalg_copyVectorDble(DaA,DaC)
-              call lalg_vectorLinearCombDble(real(FaB,DP),DaC,cB,cA)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_FaB,p_DaC)
+                call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
+              else
+                call output_line('Destination matrix must not be single precision if'//&
+                    'one of the source matrices is in double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
 
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
 
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lalg_copyVectorDble(real(FaA,DP),DaC)
-              call lalg_vectorLinearCombDble(DaB,DaC,cB,cA)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_DaB,p_DaC)
+                call lalg_vectorLinearComb(p_FaA,p_DaC,real(ca,SP),cb)
+              else
+                call lalg_vectorLinearComb(p_FaA,p_DaB,real(ca,SP),cb)
+              end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              call lalg_copyVectorSngl(FaA,FaC)
-              call lalg_vectorLinearCombSngl(FaB,FaC,real(cB,SP),real(cA,SP))
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_single(rmatrixB,p_FaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rdest,p_FaC)
+                call lalg_copyVector(p_FaB,p_FaC)
+                call lalg_vectorLinearComb(p_FaA,p_FaC,real(ca,SP),real(cb,SP))
+              else
+                call lalg_vectorLinearComb(p_FaA,p_FaB,real(ca,SP),real(cb,SP))
+              end if
 
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
@@ -15352,78 +15499,122 @@ contains
       case (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
         
         ! memory allocation?
-        if (bmemory) then
-          rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
-          rmatrixC%NA = rmatrixA%NEQ*rmatrixA%NCOLS
-          call storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        if (bmem .and. present(rdest)) then
+          rdest%cmatrixFormat = LSYSSC_MATRIX1
+          rdest%NA            = rmatrixA%NEQ*rmatrixA%NCOLS
+          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+              rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
         
         ! symbolical addition?
-        if (bsymb) then
-          rmatrixC%NEQ = rmatrixA%NEQ
-          rmatrixC%NCOLS = rmatrixA%NCOLS
+        if (bsym .and. present(rdest)) then
+          rdest%NEQ   = rmatrixA%NEQ
+          rdest%NCOLS = rmatrixA%NCOLS
         end if
         
         ! numerical addition?
-        if (bnumb) then
+        if (bnum) then
           
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
-          ! double          
+          ! double
           select case(rmatrixA%cdataType)
 
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1matDadd_doubledouble(rmatrixA%NEQ,rmatrixA%NCOLS,DaA,cA,DaB,cB,DaC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_double(rmatrixB,p_DaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_DaA,p_DaC)
+                call do_matDmat1add_DbleDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                                             p_DaB,p_DaC,cb,ca)
+              else
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is a full matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1matDadd_doublesingle(rmatrixA%NEQ,rmatrixA%NCOLS,DaA,cA,FaB,cB,DaC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_DaA,p_DaC)
+                call do_matDmat1add_SnglDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                                             p_FaB,p_DaC,real(cb,SP),ca)
+              else
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is a full matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
 
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
 
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1matDadd_singledouble(rmatrixA%NEQ,rmatrixA%NCOLS,FaA,cA,DaB,cB,DaC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rmatrixA,p_FaA)
+                call lsyssc_getbase_double(rmatrixB,p_DaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_FaA,p_DaC)
+                call do_matDmat1add_DbleDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                                             p_DaB,p_DaC,cb,ca)
+              else
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is a full matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              call do_mat1matDadd_singlesingle(rmatrixA%NEQ,rmatrixA%NCOLS,FaA,cA,FaB,cB,FaC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rmatrixA,p_FaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_single(rdest,p_FaC)
+                call lalg_copyVector(p_FaA,p_FaC)
+                call do_matDmat1add_SnglSngl(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                                             p_FaB,p_FaC,real(cb,SP),real(ca,SP))
+              else
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is a full matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
 
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
@@ -15431,27 +15622,28 @@ contains
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
         
         ! memory allocation?
-        if (bmemory) then
-          rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
-          rmatrixC%NA = rmatrixA%NEQ*rmatrixA%NCOLS
-          call storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        if (bmem .and. present(rdest)) then
+          rdest%cmatrixFormat = LSYSSC_MATRIX1
+          rdest%NA            = rmatrixA%NEQ*rmatrixA%NCOLS
+          call storage_new('lsyssc_matrixLinearComb','h_Da',rdest%NA,&
+              rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
         
         ! symbolical addition?
-        if (bsymb) then
-          rmatrixC%NEQ = rmatrixA%NEQ
-          rmatrixC%NCOLS = rmatrixA%NCOLS
+        if (bsym .and. present(rdest)) then
+          rdest%NEQ   = rmatrixA%NEQ
+          rdest%NCOLS = rmatrixA%NCOLS
         end if
         
         ! numerical addition?
-        if (bnumb) then
+        if (bnum) then
 
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -15459,71 +15651,111 @@ contains
           ! double          
           select case(rmatrixA%cdataType)
             
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              call do_mat1mat79add_doubledouble(rmatrixA%NEQ,rmatrixA%NCOLS,&
-                  DaA,cA,KldB,KcolB,DaB,cB,DaC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_double(rmatrixB,p_DaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                call lalg_copyVector(p_DaA,p_DaC)
+                call do_mat79mat1add_DbleDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                                              p_KldB,p_KcolB,p_DaB,p_DaC,cb,ca)
+              else
+                call output_line('Destination matrix must not be CSR matrix if'//&
+                    'one of the source matrices is a full matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              call do_mat1mat79add_doublesingle(rmatrixA%NEQ,rmatrixA%NCOLS,&
-                  DaA,cA,KldB,KcolB,FaB,cB,DaC)
-
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                call lalg_copyVector(p_DaA,p_DaC)
+                call do_mat79mat1add_SnglDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                                              p_KldB,p_KcolB,p_FaB,p_DaC,real(cb,SP),ca)
+              else
+                call output_line('Destination matrix must not be CSR matrix if'//&
+                    'one of the source matrices is a full matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
+              
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
 
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              call do_mat1mat79add_singledouble(rmatrixA%NEQ,rmatrixA%NCOLS,&
-                  FaA,cA,KldB,KcolB,DaB,cB,DaC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rmatrixA,p_FaA)
+                call lsyssc_getbase_double(rmatrixB,p_DaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                call lalg_copyVector(p_FaA,p_DaC)
+                call do_mat79mat1add_DbleDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                                              p_KldB,p_KcolB,p_DaB,p_DaC,cb,ca)
+              else
+                call output_line('Destination matrix must not be CSR matrix if'//&
+                    'one of the source matrices is a full matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              call do_mat1mat79add_singlesingle(rmatrixA%NEQ,rmatrixA%NCOLS,&
-                  FaA,cA,KldB,KcolB,FaB,cB,FaC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rmatrixA,p_FaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_single(rdest,p_FaC)
+                call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                call lalg_copyVector(p_FaA,p_FaC)
+                call do_mat79mat1add_SnglSngl(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                                              p_KldB,p_KcolB,p_FaB,p_FaC,real(cb,SP),real(ca,SP))
+              else
+                call output_line('Destination matrix must not be CSR matrix if'//&
+                    'one of the source matrices is a full matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
 
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
 
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
 
-      case DEFAULT
-        print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+      case default
+        call output_line('Unsupported combination of matrix formats!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
         call sys_halt()
       end select
-
+      
       !-------------------------------------------------------------------------
 
     case (LSYSSC_MATRIXD)   ! A is diagonal matrix -----------------------------
@@ -15533,78 +15765,109 @@ contains
       case (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
         
         ! memory allocation?
-        if (bmemory) then
-          rmatrixC%cmatrixFormat = LSYSSC_MATRIXD
-          rmatrixC%NA = rmatrixA%NA
-          call storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        if (bmem .and. present(rdest)) then
+          rdest%cmatrixFormat = LSYSSC_MATRIXD
+          rdest%NA            = rmatrixA%NA
+          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+              rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIXD) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIXD) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
         
         ! symbolical addition?
-        if (bsymb) then
-          rmatrixC%NEQ = rmatrixA%NEQ
-          rmatrixC%NCOLS = rmatrixA%NCOLS
+        if (bsym .and. present(rdest)) then
+          rdest%NEQ   = rmatrixA%NEQ
+          rdest%NCOLS = rmatrixA%NCOLS
         end if
         
         ! numerical addition?
-        if (bnumb) then
+        if (bnum) then
           
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
-          ! double          
+          ! double
           select case(rmatrixA%cdataType)
             
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
               
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              DaC=cA*DaA+cb*DaB
-
-            case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              DaC=cA*DaA+cb*FaB
+              call lsyssc_getbase_double(rmatrixA,p_DaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_DaB,p_DaC)
+                call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
+              else
+                call lalg_vectorLinearComb(p_DaA,p_DaB,ca,cb)
+              end if
               
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case (ST_SINGLE)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_FaB,p_DaC)
+                call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
+              else
+                call output_line('Destination matrix must not be single precision if'//&
+                    'one of the source matrices is in double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
+              
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
 
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              DaC=cA*FaA+cb*DaB
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_DaB,p_DaC)
+                call lalg_vectorLinearComb(p_FaA,p_DaC,real(ca,SP),cb)
+              else
+                call lalg_vectorLinearComb(p_FaA,p_DaB,real(ca,SP),cb)
+              end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              FaC=cA*FaA+cb*FaB
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_single(rmatrixB,p_FaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rdest,p_FaC)
+                call lalg_copyVector(p_FaB,p_FaC)
+                call lalg_vectorLinearComb(p_FaA,p_FaC,real(ca,SP),real(cb,SP))
+              else
+                call lalg_vectorLinearComb(p_FaA,p_FaB,real(ca,SP),real(cb,SP))
+              end if
 
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
 
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
@@ -15612,27 +15875,28 @@ contains
       case (LSYSSC_MATRIX1) ! B is full matrix - - - - - - - - - - -
 
         ! memory allocation?
-        if (bmemory) then
-          rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
-          rmatrixC%NA = rmatrixB%NEQ*rmatrixB%NCOLS
-          call storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        if (bmem .and. present(rdest)) then
+          rdest%cmatrixFormat = LSYSSC_MATRIX1
+          rdest%NA            = rmatrixB%NEQ*rmatrixB%NCOLS
+          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+              rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
         
         ! symbolical addition?
-        if (bsymb) then
-          rmatrixC%NEQ = rmatrixB%NEQ
-          rmatrixC%NCOLS = rmatrixB%NCOLS
+        if (bsym .and. present(rdest)) then
+          rdest%NEQ   = rmatrixB%NEQ
+          rdest%NCOLS = rmatrixB%NCOLS
         end if
         
         ! numerical addition?
-        if (bnumb) then
+        if (bnum) then
 
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -15640,77 +15904,115 @@ contains
           ! double          
           select case(rmatrixA%cdataType)
 
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1matDadd_doubledouble(rmatrixB%NEQ,rmatrixB%NCOLS,DaB,cB,DaA,cA,DaC)
+              call lsyssc_getbase_double(rmatrixA,p_DaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_DaB,p_DaC)
+                call do_matDmat1add_DbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                             p_DaA,p_DaC,ca,cb)
+              else
+                call do_matDmat1add_DbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                             p_DaA,p_DaB,ca,cb)
+              end if
               
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1matDadd_singledouble(rmatrixB%NEQ,rmatrixB%NCOLS,FaB,cB,DaA,cA,DaC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_FaB,p_DaC)
+                call do_matDmat1add_DbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                             p_DaA,p_DaC,ca,cb)
+              else
+                call output_line('Destination matrix must not be single precision if'//&
+                    'one of the source matrices is in double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
 
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
 
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1matDadd_doublesingle(rmatrixA%NEQ,rmatrixA%NCOLS,DaB,cB,FaA,cA,DaC)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_DaB,p_DaC)
+                call do_matDmat1add_SnglDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                             p_FaA,p_DaC,real(ca,SP),cb)
+              else
+                call do_matDmat1add_SnglDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                             p_FaA,p_DaB,real(ca,SP),cb)
+              end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              call do_mat1matDadd_singlesingle(rmatrixB%NEQ,rmatrixB%NCOLS,FaB,cB,FaA,cA,FaC)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_single(rmatrixB,p_FaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rdest,p_FaC)
+                call lalg_copyVector(p_FaB,p_FaC)
+                call do_matDmat1add_SnglSngl(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                             p_FaA,p_FaC,real(ca,SP),real(cb,SP))
+              else
+                call do_matDmat1add_SnglSngl(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                             p_FaA,p_FaB,real(ca,SP),real(cb,SP))
+              end if
 
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
         
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
-        
+
         ! memory allocation?
-        if (bmemory) then
-          rmatrixC%cmatrixFormat = rmatrixB%cmatrixFormat
-          rmatrixC%NA = rmatrixB%NA
-          call storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        if (bmem .and. present(rdest)) then
+          rdest%cmatrixFormat = rmatrixB%cmatrixFormat
+          rdest%NA            = rmatrixB%NA
+          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+              rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. rmatrixB%cmatrixFormat) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat .ne. rmatrixB%cmatrixFormat) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
         
         ! symbolic addition?
-        if (bsymb) then
-          call lsyssc_duplicateMatrix(rmatrixB,rmatrixC,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
+        if (bsym .and. present(rdest)) then
+          call lsyssc_duplicateMatrix(rmatrixB,rdest,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
         end if
         
         ! numerical addition?
-        if (bnumb) then
+        if (bnum) then
           
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -15718,110 +16020,233 @@ contains
           ! double
           select case(rmatrixA%cdataType)
 
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              call lsyssc_getbase_double(rmatrixA,p_DaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_DaB,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
+                  call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                  call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+                  
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_DbleDble(1,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaB,p_DaC,1.0_DP,0.0_DP)
                 end if
-                call do_mat79matDadd_doubledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
-                    DaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                else
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+                call do_matDmat79add_DbleDble(1,1,rdest%NEQ,rmatrixB%NA,&
+                                              p_KdiagonalC,p_DaA,p_DaC,ca,cb)
               else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDadd_doubledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
-                    DaB,cB,DaA,cA,DaC,KldC,KcolC)
+                ! Set diagonal pointer
+                if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                else
+                  call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                end if
+
+                ! We have to apply only the diagonal of matrix A
+                call do_matDmat79add_DbleDble(1,1,rmatrixB%NEQ,rmatrixB%NA,&
+                                              p_KdiagonalB,p_DaA,p_DaB,ca,cb)
               end if
               
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_FaB,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
+                  call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                  call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_SnglDble(1,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaB,p_DaC,1.0_SP,0.0_DP)
                 end if
-                call do_mat79matDadd_singledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
-                    FaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                else
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+
+                ! We have to apply only the diagonal of matrix A
+                call do_matDmat79add_DbleDble(1,1,rdest%NEQ,rdest%NA,&
+                                              p_KdiagonalC,p_DaA,p_DaC,ca,cb)
               else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDadd_singledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
-                    FaB,cB,DaA,cA,DaC,KldC,KcolC)
+                call output_line('Destination matrix must not be single precision if'//&
+                    'one of the source matrices is in double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
               end if
               
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_DaB,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
+                  call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                  call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+                  
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_DbleDble(1,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaB,p_DaC,1.0_DP,0.0_DP)
                 end if
-                call do_mat79matDadd_doublesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
-                    DaB,cB,FaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                else
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+                
+                ! We have to apply only the diagonal of matrix A
+                call do_matDmat79add_SnglDble(1,1,rdest%NEQ,rdest%NA,&
+                                              p_KdiagonalC,p_FaA,p_DaC,real(ca,SP),cb)
               else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDadd_doublesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
-                    DaB,cB,FaA,cA,DaC,KldC,KcolC)
+                ! Set diagonal pointer
+                if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                else
+                  call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                end if
+
+                ! We have to apply only the diagonal of matrix A
+                call do_matDmat79add_SnglDble(1,1,rmatrixB%NEQ,rmatrixB%NA,&
+                                              p_KdiagonalB,p_FaA,p_DaB,real(ca,SP),cb)
               end if
               
             case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_single(rmatrixB,p_FaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rdest,p_FaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_FaB,p_FaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
+                  call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                  call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_SnglSngl(1,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaB,p_FaC,1.0_SP,0.0_SP)
                 end if
-                call do_mat79matDadd_singlesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
-                    FaB,cB,FaA,cA,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                else
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+                
+                ! We have to apply only the diagonal of matrix A
+                call do_matDmat79add_SnglSngl(1,1,rdest%NEQ,rdest%NA,&
+                                              p_KdiagonalC,p_FaA,p_FaC,real(ca,SP),real(cb,SP))
               else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDadd_singlesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
-                    FaB,cB,FaA,cA,FaC,KldC,KcolC)
+                ! Set diagonal pointer
+                if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                else
+                  call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                end if
+                
+                ! We have to apply only the diagonal of matrix A
+                call do_matDmat79add_SnglSngl(1,1,rmatrixB%NEQ,rmatrixB%NA,&
+                                              p_KdiagonalB,p_FaA,p_FaB,real(ca,SP),real(cb,SP))
               end if
               
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
@@ -15833,29 +16258,30 @@ contains
         if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
         
         ! memory allocation?
-        if (bmemory) then
-          rmatrixC%cmatrixFormat = rmatrixB%cmatrixFormat
-          rmatrixC%cinterleavematrixFormat = rmatrixB%cinterleavematrixFormat
-          rmatrixC%NA = rmatrixB%NA
-          rmatrixC%NVAR = rmatrixB%NVAR
-          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        if (bmem .and. present(rdest)) then
+          rdest%cmatrixFormat           = rmatrixB%cmatrixFormat
+          rdest%cinterleavematrixFormat = rmatrixB%cinterleavematrixFormat
+          rdest%NA                      = rmatrixB%NA
+          rdest%NVAR                    = rmatrixB%NVAR
+          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rdest%NA,&
+              rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. rmatrixB%cmatrixFormat .or. &
-            rmatrixC%cinterleavematrixFormat .ne. rmatrixB%cinterleavematrixFormat) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat           .ne. rmatrixB%cmatrixFormat .or. &
+            p_rdest%cinterleavematrixFormat .ne. rmatrixB%cinterleavematrixFormat) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
 
         ! symbolic addition?
-        if (bsymb) then
-          call lsyssc_duplicateMatrix(rmatrixB,rmatrixC,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
+        if (bsym .and. present(rdest)) then
+          call lsyssc_duplicateMatrix(rmatrixB,rdest,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
         end if
 
         ! numerical addition?
-        if (bnumb) then
+        if (bnum) then
 
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -15863,163 +16289,280 @@ contains
           ! double
           select case(rmatrixA%cdataType)
             
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
               
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              call lsyssc_getbase_double(rmatrixA,p_DaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+                
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_DaB,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                end if
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
-                else
-                  call do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,1,&
-                      rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                  call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                  call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+                  
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_DbleDble(isizeIntl,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaB,p_DaC,1.0_DP,0.0_DP)
                 end if
 
-              else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,KldC,KcolC)
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                 else
-                  call do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,1,&
-                      rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,KldC,KcolC)
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+                
+                ! We have to apply only the diagonal of matrix A
+                if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_DbleDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_DaA,p_DaC,ca,cb)
+                else
+                  call do_matDmat79add_DbleDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_DaA,p_DaC,ca,cb)
+                end if
+              else
+                ! Set diagonal pointer
+                if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                else
+                  call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                end if
+                
+                ! We have to apply only the diagonal of matrix A
+                if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_DbleDble(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
+                                                p_KdiagonalB,p_DaA,p_DaB,ca,cb)
+                else
+                  call do_matDmat79add_DbleDble(rmatrixB%NVAR,1,rmatrixB%NEQ,rmatrixB%NA,&
+                                                p_KdiagonalB,p_DaA,p_DaB,ca,cb)
                 end if
               end if
               
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_FaB,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                end if
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
-                else
-                  call do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,1,&
-                      rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                  call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                  call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_SnglDble(isizeIntl,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaB,p_DaC,1.0_SP,0.0_DP)
                 end if
 
-              else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,KldC,KcolC)
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                 else
-                  call do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,1,&
-                      rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,KldC,KcolC)
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                 end if
+
+                ! We have to apply only the diagonal of matrix A
+                if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_DbleDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_DaA,p_DaC,ca,cb)
+                else
+                  call do_matDmat79add_DbleDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_DaA,p_DaC,ca,cb)
+                end if
+              else
+                call output_line('Destination matrix must not be single precision if'//&
+                    'one of the source matrices is in double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
               end if
 
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
 
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
               
             case (ST_DOUBLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_DaB,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                end if
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
-                else
-                  call do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,1,&
-                      rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                  call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                  call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+                  
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_DbleDble(isizeIntl,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaB,p_DaC,1.0_DP,0.0_DP)
                 end if
 
-              else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,KldC,KcolC)
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                 else
-                  call do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,1,&
-                      rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,KldC,KcolC)
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+
+                ! We have to apply only the diagonal of matrix A
+                if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_SnglDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_FaA,p_DaC,real(ca,SP),cb)
+                else
+                  call do_matDmat79add_SnglDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_FaA,p_DaC,real(ca,SP),cb)
+                end if
+              else
+                ! Set diagonal pointer
+                if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                else
+                  call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                end if
+
+                ! We have to apply only the diagonal of matrix A
+                if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_SnglDble(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
+                                                p_KdiagonalB,p_FaA,p_DaB,real(ca,SP),cb)
+                else
+                  call do_matDmat79add_SnglDble(rmatrixB%NVAR,1,rmatrixB%NEQ,rmatrixB%NA,&
+                                                p_KdiagonalB,p_FaA,p_DaB,real(ca,SP),cb)
                 end if
               end if
               
             case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              call lsyssc_getbase_Kld(rmatrixB,KldB)
-              call lsyssc_getbase_Kcol(rmatrixB,KcolB)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_single(rmatrixB,p_FaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rdest,p_FaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_FaB,p_FaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
+                  call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+                  call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_SnglSngl(isizeIntl,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaB,p_FaC,1.0_SP,0.0_SP)
                 end if
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                 else
-                  call do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,1,&
-                      rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                 end if
 
-              else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,KldC,KcolC)
+                ! We have to apply only the diagonal of matrix A
+                if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_SnglSngl(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_FaA,p_FaC,real(ca,SP),real(cb,SP))
                 else
-                  call do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,1,&
-                      rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,KldC,KcolC)
+                  call do_matDmat79add_SnglSngl(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_FaA,p_FaC,real(ca,SP),real(cb,SP))
+                end if
+              else
+                ! Set diagonal pointer
+                if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                else
+                  call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                end if
+                
+                ! We have to apply only the diagonal of matrix A
+                if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_SnglSngl(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
+                                                p_KdiagonalB,p_FaA,p_FaB,real(ca,SP),real(cb,SP))
+                else
+                  call do_matDmat79add_SnglSngl(rmatrixB%NVAR,1,rmatrixB%NEQ,rmatrixB%NA,&
+                                                p_KdiagonalB,p_FaA,p_FaB,real(ca,SP),real(cb,SP))
                 end if
               end if
-              
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
 
-      case DEFAULT
-        print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+      case default
+        call output_line('Unsupported combination of matrix formats!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
         call sys_halt()
       end select
-
+        
       !-------------------------------------------------------------------------
 
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! A is CSR matrix ---------------------
@@ -16029,27 +16572,28 @@ contains
       case (LSYSSC_MATRIX1) ! B is full matrix - - - - - - - - - - - - - - - - -
         
         ! memory allocation?
-        if (bmemory) then
-          rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
-          rmatrixC%NA = rmatrixB%NEQ*rmatrixB%NCOLS
-          call storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        if (bmem .and. present(rdest)) then
+          rdest%cmatrixFormat = LSYSSC_MATRIX1
+          rdest%NA            = rmatrixB%NEQ*rmatrixB%NCOLS
+          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+              rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
         
         ! symbolical addition?
-        if (bsymb) then
-          rmatrixC%NEQ = rmatrixB%NEQ
-          rmatrixC%NCOLS = rmatrixB%NCOLS
+        if (bsym .and. present(rdest)) then
+          rdest%NEQ   = rmatrixB%NEQ
+          rdest%NCOLS = rmatrixB%NCOLS
         end if
         
         ! numerical addition?
-        if (bnumb) then
+        if (bnum) then
           
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -16057,62 +16601,95 @@ contains
           ! double          
           select case(rmatrixA%cdataType)
             
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              call do_mat1mat79add_doubledouble(rmatrixB%NEQ,rmatrixB%NCOLS,&
-                  DaB,cB,KldA,KcolA,DaA,cA,DaC)
+              call lsyssc_getbase_double(rmatrixA,p_DaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+              call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_DaB,p_DaC)
+                call do_mat79mat1add_DbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                              p_KldA,p_KcolA,p_DaA,p_DaC,ca,cb)
+              else
+                call do_mat79mat1add_DbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                              p_KldA,p_KcolA,p_DaA,p_DaB,ca,cb)
+              end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              call do_mat1mat79add_singledouble(rmatrixB%NEQ,rmatrixB%NCOLS,&
-                  FaB,cB,KldA,KcolA,DaA,cA,DaC)
-              
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+                call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+                call lalg_copyVector(p_FaB,p_DaC)
+                call do_mat79mat1add_DbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                              p_KldA,p_KcolA,p_DaA,p_DaC,ca,cb)
+              else
+                call output_line('Destination matrix must not be single precision if'//&
+                    'one of the source matrices is in double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
+
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
               
             case (ST_DOUBLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              call do_mat1mat79add_doublesingle(rmatrixB%NEQ,rmatrixB%NCOLS,&
-                  DaB,cB,KldA,KcolA,FaA,cA,DaC)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+              call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
+                call lalg_copyVector(p_DaB,p_DaC)
+                call do_mat79mat1add_SnglDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                              p_KldA,p_KcolA,p_FaA,p_DaC,real(ca,SP),cb)
+              else
+                call do_mat79mat1add_SnglDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                              p_KldA,p_KcolA,p_FaA,p_DaB,real(ca,SP),cb)
+              end if
               
             case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              call do_mat1mat79add_singlesingle(rmatrixB%NEQ,rmatrixB%NCOLS,&
-                  FaB,cB,KldA,KcolA,FaA,cA,FaC)
-              
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_single(rmatrixB,p_FaB)
+              call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+              call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rdest,p_FaC)
+                call lalg_copyVector(p_FaB,p_FaC)
+                call do_mat79mat1add_SnglSngl(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                              p_KldA,p_KcolA,p_FaA,p_FaC,real(ca,SP),real(cb,SP))
+              else
+                call do_mat79mat1add_SnglSngl(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                              p_KldA,p_KcolA,p_FaA,p_FaB,real(ca,SP),real(cb,SP))
+              end if
+
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
@@ -16120,26 +16697,27 @@ contains
       case (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
       
         ! memory allocation?
-        if (bmemory) then
-          rmatrixC%cmatrixFormat = rmatrixA%cmatrixFormat
-          rmatrixC%NA = rmatrixA%NA
-          call storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        if (bmem .and. present(rdest)) then
+          rdest%cmatrixFormat = rmatrixA%cmatrixFormat
+          rdest%NA            = rmatrixA%NA
+          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+              rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. rmatrixA%cmatrixFormat) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat .ne. rmatrixA%cmatrixFormat) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
         
         ! symbolic addition?
-        if (bsymb) then
-          call lsyssc_duplicateMatrix(rmatrixA,rmatrixC,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
+        if (bsym .and. present(rdest)) then
+          call lsyssc_duplicateMatrix(rmatrixA,rdest,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
         end if
         
         ! numerical addition?
-        if (bnumb) then
+        if (bnum) then
 
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -16147,110 +16725,217 @@ contains
           ! double
           select case(rmatrixA%cdataType)
 
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_double(rmatrixB,p_DaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_DaA,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
+                  call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+                  call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := A + 0*C
+                  call do_mat79mat79add_DbleDble(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaA,p_DaC,1.0_DP,0.0_DP)
                 end if
-                call do_mat79matDadd_doubledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
-                    DaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                else
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+
+                ! We have to apply only the diagonal of matrix B
+                call do_matDmat79add_DbleDble(1,1,rdest%NEQ,rdest%NA,&
+                                              p_KdiagonalC,p_DaB,p_DaC,cb,ca)
               else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDadd_doubledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
-                    DaA,cA,DaB,cB,DaC,KldC,KcolC)
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is a CSR matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
               end if
               
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_DaA,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
+                  call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+                  call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagoanl pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := A + 0*C
+                  call do_mat79mat79add_DbleDble(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaA,p_DaC,1.0_DP,0.0_DP)
                 end if
-                call do_mat79matDadd_doublesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
-                    DaA,cA,FaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                else
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+
+                ! We have to apply only the diagonal of matrix B
+                call do_matDmat79add_SnglDble(1,1,rdest%NEQ,rdest%NA,&
+                                              p_KdiagonalC,p_FaB,p_DaC,real(cb,SP),ca)
               else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDadd_doublesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
-                    DaA,cA,FaB,cB,DaC,KldC,KcolC)
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is a CSR matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
               end if
-              
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
               
             case (ST_DOUBLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
-                else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                end if
-                call do_mat79matDadd_singledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
-                    FaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
-              else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDadd_singledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
-                    FaA,cA,DaB,cB,DaC,KldC,KcolC)
-              end if
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rmatrixA,p_FaA)
+                call lsyssc_getbase_double(rmatrixB,p_DaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
 
-            case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_FaA,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
+                  call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+                  call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+                  
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := A + 0*C
+                  call do_mat79mat79add_SnglDble(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaA,p_DaC,1.0_SP,0.0_DP)
                 end if
-                call do_mat79matDadd_singlesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
-                    FaA,cA,FaB,cB,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                else
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+
+                ! We have to apply only the diagonal of matrix B
+                call do_matDmat79add_DbleDble(1,1,rdest%NEQ,rdest%NA,&
+                                              p_KdiagonalC,p_DaB,p_DaC,cb,ca)
               else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDadd_singlesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
-                    FaA,cA,FaB,cB,FaC,KldC,KcolC)
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is a CSR matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
+             
+            case (ST_SINGLE)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rmatrixA,p_FaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_single(rdest,p_FaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_FaA,p_FaC)
+                else
+                  call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+                  call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+                  
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := A + 0*C
+                  call do_mat79mat79add_SnglSngl(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaA,p_FaC,1.0_SP,0.0_SP)
+                end if
+
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                else
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+
+                ! We have to apply only the diagonal of matrix B
+                call do_matDmat79add_SnglSngl(1,1,rdest%NEQ,rdest%NA,&
+                                              p_KdiagonalC,p_FaB,p_FaC,real(cb,SP),real(ca,SP))
+              else
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is CSR matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
               end if
               
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
@@ -16258,63 +16943,69 @@ contains
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
                 
         ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixA,KldA)
-        call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-        call lsyssc_getbase_Kld(rmatrixB,KldB)
-        call lsyssc_getbase_Kcol(rmatrixB,KcolB)
+        call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+        call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+        call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+        call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
         
         ! memory allocation?
-        if (bmemory) then
+        if (bmem .and. present(rdest)) then
           ! Duplicate structure of matrix A or B depending on which
           ! matrix is given in the encompassing matrix format
           if (rmatrixA%cmatrixFormat .ge. rmatrixB%cmatrixFormat) then
-            call lsyssc_duplicateMatrix(rmatrixA,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
+            call lsyssc_duplicateMatrix(rmatrixA,rdest,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           else
-            call lsyssc_duplicateMatrix(rmatrixB,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
+            call lsyssc_duplicateMatrix(rmatrixB,rdest,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           end if
           
           ! Set auxiliary pointers
-          call storage_new('lsyssc_matrixLinearComb','Kaux',rmatrixB%NCOLS,&
-              &ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
-          call storage_getbase_int(h_Kaux,Kaux)
+          h_Kaux = ST_NOHANDLE
+          call storage_new('lsyssc_matrixLinearComb','h_Kaux',&
+              rmatrixB%NCOLS,ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
+          call storage_getbase_int(h_Kaux,p_Kaux)
           
           ! Compute number of nonzero matrix entries: NA
-          rmatrixC%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,rmatrixA%NCOLS,KldA,KcolA,KldB,KcolB,Kaux)
-          call storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-          call storage_realloc('lsyssc_matrixLinearComb',rmatrixC%NA,&
-              rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.false.)
+          rdest%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,p_KldA,p_KcolA,p_KldB,p_KcolB,p_Kaux)
+          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+              rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
+          call storage_new('lsyssc_matrixLinearComb','h_Kcol',&
+              rdest%NA,ST_INT,rdest%h_Kcol,ST_NEWBLOCK_NOINIT)
+
+          ! Free temporal memory
+          call storage_free(h_Kaux)
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. max(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat)) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat .ne.&
+            max(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat)) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
         
         ! symbolic addition?
-        if (bsymb) then
+        if (bsym .and. present(rdest)) then
           
           ! Set pointers
-          call lsyssc_getbase_Kld(rmatrixC,KldC)
-          call lsyssc_getbase_Kcol(rmatrixC,KcolC)
+          call lsyssc_getbase_Kld(rdest,p_KldC)
+          call lsyssc_getbase_Kcol(rdest,p_KcolC)
                     
-          if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
-            call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-            call do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
-                rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC,KdiagonalC)
+          if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX9) then
+            call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+            call do_mat79mat79add_symb(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                       p_KldA,p_KcolA,rmatrixA%cmatrixFormat,&
+                                       p_KldB,p_KcolB,rmatrixB%cmatrixFormat,&
+                                       p_KldC,p_KcolC,p_KdiagonalC)
           else
-            call do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
-                rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC)
+            call do_mat79mat79add_symb(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                       p_KldA,p_KcolA,rmatrixA%cmatrixFormat,&
+                                       p_KldB,p_KcolB,rmatrixB%cmatrixFormat,&
+                                       p_KldC,p_KcolC)
           end if
         end if
         
         ! numerical addition?
-        if (bnumb) then
-          
-          ! Set pointers
-          call lsyssc_getbase_Kld(rmatrixC,KldC)
-          call lsyssc_getbase_Kcol(rmatrixC,KcolC)
+        if (bnum) then
           
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -16322,139 +17013,253 @@ contains
           ! double   
           select case(rmatrixA%cdataType)
             
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              
-              if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
-                  (rmatrixA%cmatrixFormat .eq. rmatrixC%cmatrixFormat) .and. (bfast)) then
-                
-                ! We rely on the user who tells us that we should assume the
-                ! same structure for the matrices. In this case, we can
-                ! directly call a BLAS routine to do the matrix combination.
-                ! That is MUCH faster!
-                ! Note that matrix B might coincide with matrix C, so we
-                ! first check this to prevent unnecessary copy operations!
+              call lsyssc_getbase_double(rmatrixA,p_DaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
 
-                if (.not. associated (DaB,DaC)) then
-                  call lalg_copyVectorDble (DaB,DaC)
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                    (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
+                  
+                  call lalg_copyVector(p_DaB, p_DaC)
+                  call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
+                else
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagoanl pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_DbleDble(1,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaB,p_DaC,1.0_DP,0.0_DP)
+                  
+                  ! Compute C := ca*A + cb*C
+                  call do_mat79mat79add_DbleDble(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaA,p_DaC,ca,cb)
+                end if
+              else
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. (bfast)) then
+
+                  call lalg_vectorLinearComb(p_DaA,p_DaB,ca,cb)
+                else
+                  ! Set diagonal pointer
+                  if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                  call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                else
+                  call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
                 end if
                 
-                call lalg_vectorLinearCombDble (DaA,DaC,cA,cB)                
-                
-              else if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
-                
-                call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                call do_mat79mat79add_numb_dbledble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
-                
-              else
-                
-                call do_mat79mat79add_numb_dbledble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KldC,DaC)
-                    
+                  ! Compute B:= ca*A + cb*B
+                  call do_mat79mat79add_DbleDble(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
+                                                 p_DaA,p_DaB,ca,cb)
+                end if
               end if
               
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              
-              if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
-                
-                call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                call do_mat79mat79add_numb_dblesngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,DaC)
-                
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                    (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
+                  
+                  call lalg_copyVector(p_FaB, p_DaC)
+                  call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
+                else
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_SnglDble(1,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaB,p_DaC,1.0_SP,0.0_DP)
+                  
+                  ! Compute C := ca*A + cb*C
+                  call do_mat79mat79add_DbleDble(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaA,p_DaC,ca,cb)
+                end if
               else
-                
-                call do_mat79mat79add_numb_dblesngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KldC,DaC)
-                
+                call output_line('Destination matrix must not be single precision if'//&
+                    'one of the source matrices is in double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
               end if
               
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
               
             case (ST_DOUBLE) 
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
 
-              if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
-                
-                call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                call do_mat79mat79add_numb_sngldble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                    (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
+                  
+                  call lalg_copyVector(p_DaB, p_DaC)
+                  call lalg_vectorLinearComb(p_FaA,p_DaC,real(ca,SP),cb)
+                else
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
 
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_DbleDble(1,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaB,p_DaC,1.0_DP,0.0_DP)
+                  
+                  ! Compute C := ca*A + cb*C
+                  call do_mat79mat79add_SnglDble(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaA,p_DaC,real(ca,SP),cb)
+                end if
               else
-                
-                call do_mat79mat79add_numb_sngldble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KldC,DaC)
-                
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. (bfast)) then
+                  
+                  call lalg_vectorLinearComb(p_FaA,p_DaB,real(ca,SP),cb)
+                else
+                  ! Set diagonal pointer
+                  if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                  end if
+
+                  ! Compute B:= ca*A + cb*B
+                  call do_mat79mat79add_SnglDble(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
+                                                 p_FaA,p_DaB,real(ca,SP),cb)
+                end if
               end if
               
             case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              
-              if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
-                  (rmatrixA%cmatrixFormat .eq. rmatrixC%cmatrixFormat) .and. (bfast)) then
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_single(rmatrixB,p_FaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rdest,p_FaC)
+
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                    (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
+
+                  call lalg_copyVector(p_FaB, p_FaC)
+                  call lalg_vectorLinearComb(p_FaA,p_FaC,real(ca,SP),real(cb,SP))
+                else
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
                   
-                ! We rely on the user who tells us that we should assume the
-                ! same structure for the matrices. In this case, we can
-                ! directly call a BLAS routine to do the matrix combination.
-                ! That is MUCH faster!
-                ! Note that matrix B might coincide with matrix C, so we
-                ! first check this to prevent unnecessary copy operations!
-                
-                if (.not. associated (DaB,DaC)) then
-                  call lalg_copyVectorSngl (FaB,FaC)
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_SnglSngl(1,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaB,p_FaC,1.0_SP,0.0_SP)
+                  
+                  ! Compute C := ca*A + cb*C
+                  call do_mat79mat79add_SnglSngl(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaA,p_FaC,real(ca,SP),real(cb,SP))
                 end if
-                
-                call lalg_vectorLinearCombSngl (FaA,FaC,real(cA,SP),real(cB,SP))                
-
-              else if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
-                
-                call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                call do_mat79mat79add_numb_snglsngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,FaC)
-
               else
-                
-                call do_mat79mat79add_numb_snglsngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KldC,FaC)
-                
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. (bfast)) then
+                  
+                  call lalg_vectorLinearComb(p_FaA,p_FaB,real(ca,SP),real(cb,SP))
+                else
+                  ! Set diagonal pointer
+                  if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+                    call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                  end if
+                  
+                  ! Compute B:= ca*A + cb*B
+                  call do_mat79mat79add_SnglSngl(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
+                                                 p_FaA,p_FaB,real(ca,SP),real(cb,SP))
+                end if
               end if
-              
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
             
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
 
-      case DEFAULT
-        print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+      case default
+        call output_line('Unsupported combination of matrix formats!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
         call sys_halt()
       end select
-      
+
       !-------------------------------------------------------------------------
       
     case (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL) ! A is interleave CSR matrix -
@@ -16468,29 +17273,30 @@ contains
       case (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
 
         ! memory allocation?
-        if (bmemory) then
-          rmatrixC%cmatrixFormat = rmatrixA%cmatrixFormat
-          rmatrixC%cinterleavematrixFormat = rmatrixA%cinterleavematrixFormat
-          rmatrixC%NA = rmatrixA%NA
-          rmatrixC%NVAR = rmatrixA%NVAR
-          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        if (bmem .and. present(rdest)) then
+          rdest%cmatrixFormat           = rmatrixA%cmatrixFormat
+          rdest%cinterleavematrixFormat = rmatrixA%cinterleavematrixFormat
+          rdest%NA                      = rmatrixA%NA
+          rdest%NVAR                    = rmatrixA%NVAR
+          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rdest%NA,&
+              rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. rmatrixA%cmatrixFormat .or. &
-            rmatrixC%cinterleavematrixFormat .ne. rmatrixA%cinterleavematrixFormat) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if ((p_rdest%cmatrixFormat .ne. rmatrixA%cmatrixFormat) .or. &
+            (p_rdest%cinterleavematrixFormat .ne. rmatrixA%cinterleavematrixFormat)) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
 
         ! symbolic addition?
-        if (bsymb) then
-          call lsyssc_duplicateMatrix(rmatrixA,rmatrixC,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
+        if (bsym .and. present(rdest)) then
+          call lsyssc_duplicateMatrix(rmatrixA,rdest,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
         end if
 
         ! numerical addition?
-        if (bnumb) then
+        if (bnum) then
           
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -16498,154 +17304,237 @@ contains
           ! double
           select case(rmatrixA%cdataType)
             
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-                  call lsyssc_getbase_Kcol(rmatrixC,KdiagonalC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_double(rmatrixB,p_DaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_DaA,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                end if
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
-                else
-                  call do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,1,&
-                      rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                  call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+                  call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := A + 0*C
+                  call do_mat79mat79add_DbleDble(isizeIntl,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaA,p_DaC,1.0_DP,0.0_DP)
                 end if
 
-              else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,KldC,KcolC)
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                 else
-                  call do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,1,&
-                      rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,KldC,KcolC)
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                 end if
+
+                ! We have to apply only the diagonal of matrix B
+                if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_DbleDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_DaB,p_DaC,cb,ca)
+                else
+                  call do_matDmat79add_DbleDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_DaB,p_DaC,cb,ca)
+                end if
+              else
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is a CSR matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
               end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_DaA,p_DaC)
                 else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
+                  call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+                  call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := A + 0*C
+                  call do_mat79mat79add_DbleDble(isizeIntl,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaA,p_DaC,1.0_DP,0.0_DP)
                 end if
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                 else
-                  call do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,1,&
-                      rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+
+                ! We have to apply only the diagonal of matrix B
+                if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_SnglDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_FaB,p_DaC,real(cb,SP),ca)
+                else
+                  call do_matDmat79add_SnglDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_FaB,p_DaC,real(cb,SP),ca)
+                end if
+              else
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is a CSR matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
+
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              call sys_halt()
+            end select
+
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+            
+            select case(rmatrixB%cdataType)
+              
+            case (ST_DOUBLE)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rmatrixA,p_FaA)
+                call lsyssc_getbase_double(rmatrixB,p_DaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_FaA,p_DaC)
+                else
+                  call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+                  call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+                  
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := A + 0*C
+                  call do_mat79mat79add_SnglDble(isizeIntl,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaA,p_DaC,1.0_SP,0.0_DP)
+                end if
+
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                else
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                end if
+
+                ! We have to apply only the diagonal of matrix B
+                if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_DbleDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_DaB,p_DaC,cb,ca)
+                else
+                  call do_matDmat79add_DbleDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_DaB,p_DaC,cb,ca)
+                end if
+              else
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is a CSR matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
+              end if
+
+            case (ST_SINGLE)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rmatrixA,p_FaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_single(rdest,p_FaC)
+
+                ! Can we make use of fast copy operation?
+                if (bfast) then
+                  call lalg_copyVector(p_FaA,p_FaC)
+                else
+                  call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+                  call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+                  
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+                  
+                  ! Compute C := A + 0*C
+                  call do_mat79mat79add_SnglSngl(isizeIntl,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaA,p_FaC,1.0_SP,0.0_SP)
                 end if
                 
-              else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,KldC,KcolC)
+                ! Set diagonal pointer
+                if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                  call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                 else
-                  call do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,1,&
-                      rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,KldC,KcolC)
+                  call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                 end if
+                
+                ! We have to apply only the diagonal of matrix B
+                if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
+                  call do_matDmat79add_SnglSngl(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_FaB,p_FaC,real(cb,SP),real(ca,SP))
+                else
+                  call do_matDmat79add_SnglSngl(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                                                p_KdiagonalC,p_FaB,p_FaC,real(cb,SP),real(ca,SP))
+                end if
+              else
+                call output_line('Destination matrix must not be diagonal matrix if'//&
+                    'one of the source matrices is CSR matrix!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
               end if
-
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+              
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-
-          case (ST_SINGLE)
             
-            select case(rmatrixB%cdataType)
-              
-            case (ST_DOUBLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
-                else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                end if
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
-                else
-                  call do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,1,&
-                      rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
-                end if
-
-              else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,KldC,KcolC)
-                else
-                  call do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,1,&
-                      rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,KldC,KcolC)
-                end if
-              end if
-
-            case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
-              call lsyssc_getbase_Kld(rmatrixA,KldA)
-              call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-              if (bfast) then
-                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-                  call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
-                else
-                  call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                end if
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
-                else
-                  call do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,1,&
-                      rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
-                end if
-
-              else
-                call lsyssc_getbase_Kld(rmatrixC,KldC)
-                call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
-                      rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,KldC,KcolC)
-                else
-                  call do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,1,&
-                      rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,KldC,KcolC)
-                end if
-              end if
-              
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              call sys_halt()
-            end select
-
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
@@ -16655,7 +17544,8 @@ contains
         ! Check if interleave matrices are compatible
         if (rmatrixA%NVAR .ne. rmatrixB% NVAR .or. &
             rmatrixA%cinterleavematrixFormat .ne. rmatrixB%cinterleavematrixFormat) then
-          print *, 'lsyssc_matrixLinearComb: incompatible interleave matrices!'
+          call output_line('Source matrices have incompatible interleave format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
         
@@ -16664,64 +17554,72 @@ contains
         if (rmatrixA%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
         
         ! Set pointers
-        call lsyssc_getbase_Kld(rmatrixA,KldA)
-        call lsyssc_getbase_Kcol(rmatrixA,KcolA)
-        call lsyssc_getbase_Kld(rmatrixB,KldB)
-        call lsyssc_getbase_Kcol(rmatrixB,KcolB)
+        call lsyssc_getbase_Kld(rmatrixA,p_KldA)
+        call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
+        call lsyssc_getbase_Kld(rmatrixB,p_KldB)
+        call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
         
         ! memory allocation?
-        if (bmemory) then
+        if (bmem .and. present(rdest)) then
           ! Duplicate structure of matrix A or B depending on which
           ! matrix is given in the encompassing matrix format
           if (rmatrixA%cmatrixFormat .ge. rmatrixB%cmatrixFormat) then
-            call lsyssc_duplicateMatrix(rmatrixA,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
+            call lsyssc_duplicateMatrix(rmatrixA,rdest,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           else
-            call lsyssc_duplicateMatrix(rmatrixB,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
+            call lsyssc_duplicateMatrix(rmatrixB,rdest,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           end if
           
           ! Set auxiliary pointers
-          call storage_new('lsyssc_matrixLinearComb','Kaux',rmatrixB%NCOLS,ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
-          call storage_getbase_int(h_Kaux,Kaux)
+          h_Kaux = ST_NOHANDLE
+          call storage_new('lsyssc_matrixLinearComb','h_Kaux',&
+              rmatrixB%NCOLS,ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
+          call storage_getbase_int(h_Kaux,p_Kaux)
           
           ! Compute number of nonzero matrix entries: NA
-          rmatrixC%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,rmatrixA%NCOLS,KldA,KcolA,KldB,KcolB,Kaux)
-          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
-              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-          call storage_realloc('lsyssc_matrixLinearComb',rmatrixC%NA,&
-              rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.false.)
+          rdest%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,p_KldA,p_KcolA,p_KldB,p_KcolB,p_Kaux)
+          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rdest%NA,&
+              rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
+          call storage_realloc('lsyssc_matrixLinearComb',rdest%NA,&
+              rdest%h_Kcol,ST_NEWBLOCK_NOINIT,.false.)
+
+          ! Free temporal memory
+          call storage_free(h_Kaux)
         end if
 
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat .ne. max(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat) .or. &
-          rmatrixC%cinterleavematrixFormat .ne. rmatrixA%cinterleavematrixFormat .or. &
-          rmatrixC%NA .ne. rmatrixA%NVAR) then
-          print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+        if (p_rdest%cmatrixFormat .ne.&
+              max(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat) .or. &
+            p_rdest%cinterleavematrixFormat .ne.&
+              rmatrixA%cinterleavematrixFormat .or. &
+            p_rdest%NA .ne. rmatrixA%NVAR) then
+          call output_line('Destination matrix has incompatible format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
 
         ! symbolic addition?
-        if (bsymb) then
+        if (bsym .and. present(rdest)) then
           
           ! Set pointers
-          call lsyssc_getbase_Kld(rmatrixC,KldC)
-          call lsyssc_getbase_Kcol(rmatrixC,KcolC)
+          call lsyssc_getbase_Kld(rdest,p_KldC)
+          call lsyssc_getbase_Kcol(rdest,p_KcolC)
           
-          if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
-            call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-            call do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
-                rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC,KdiagonalC)
+          if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
+            call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+            call do_mat79mat79add_symb(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                       p_KldA,p_KcolA,rmatrixA%cmatrixFormat,&
+                                       p_KldB,p_KcolB,rmatrixB%cmatrixFormat,&
+                                       p_KldC,p_KcolC,p_KdiagonalC)
           else
-            call do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
-                rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC)
+            call do_mat79mat79add_symb(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                                       p_KldA,p_KcolA,rmatrixA%cmatrixFormat,&
+                                       p_KldB,p_KcolB,rmatrixB%cmatrixFormat,&
+                                       p_KldC,p_KcolC)
           end if
         end if
 
         ! numerical addition?
-        if (bnumb) then
-          
-          ! Set pointers
-          call lsyssc_getbase_Kld(rmatrixC,KldC)
-          call lsyssc_getbase_Kcol(rmatrixC,KcolC)
+        if (bnum) then
           
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -16729,944 +17627,675 @@ contains
           ! double   
           select case(rmatrixA%cdataType)
             
-          case (ST_DOUBLE)
+          case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case(rmatrixB%cdataType)
 
             case (ST_DOUBLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
+              call lsyssc_getbase_double(rmatrixA,p_DaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
 
-              if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
-                  (rmatrixA%cmatrixFormat .eq. rmatrixC%cmatrixFormat) .and. (bfast)) then
-                
-                ! We rely on the user who tells us that we should assume the
-                ! same structure for the matrices. In this case, we can
-                ! directly call a BLAS routine to do the matrix combination.
-                ! That is MUCH faster!
-                ! Note that matrix B might coincide with matrix C, so we
-                ! first check this to prevent unnecessary copy operations!
-                
-                if (.not. associated (DaB,DaC)) then
-                  call lalg_copyVectorDble (DaB,DaC)
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                    (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
+                  
+                  call lalg_copyVector(p_DaB, p_DaC)
+                  call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
+                else
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_DbleDble(isizeIntl,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaB,p_DaC,1.0_DP,0.0_DP)
+                  
+                  ! Compute C := ca*A + cb*C
+                  call do_mat79mat79add_DbleDble(isizeIntl,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaA,p_DaC,ca,cb)
                 end if
-                
-                call lalg_vectorLinearCombDble (DaA,DaC,cA,cB)                
-                
-              else if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
-                
-                call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                call do_mat79mat79add_numb_dbledble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
-                
               else
-                
-                call do_mat79mat79add_numb_dbledble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KldC,DaC)
-                
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. (bfast)) then
+
+                  call lalg_vectorLinearComb(p_DaA,p_DaB,ca,cb)
+                else
+                  ! Set diagonal pointer
+                  if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                  end if
+
+                  ! Compute B:= ca*A + cb*B
+                  call do_mat79mat79add_DbleDble(isizeIntl,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
+                                                 p_DaA,p_DaB,ca,cb)
+                end if
               end if
 
             case (ST_SINGLE)
-              call lsyssc_getbase_double(rmatrixA,DaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              
-              if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
-                
-                call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                call do_mat79mat79add_numb_dblesngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,DaC)
-                
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rmatrixA,p_DaA)
+                call lsyssc_getbase_single(rmatrixB,p_FaB)
+                call lsyssc_getbase_double(rdest,p_DaC)
+
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                    (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
+                  
+                  call lalg_copyVector(p_FaB, p_DaC)
+                  call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
+                else
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+                  
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_SnglDble(isizeIntl,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaB,p_DaC,1.0_SP,0.0_DP)
+                  
+                  ! Compute C := ca*A + cb*C
+                  call do_mat79mat79add_DbleDble(1,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaA,p_DaC,ca,cb)
+                end if
               else
-                
-                call do_mat79mat79add_numb_dblesngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KldC,DaC)
-                
+                call output_line('Destination matrix must not be single precision if'//&
+                    'one of the source matrices is in double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                call sys_halt()
               end if
               
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
 
-          case (ST_SINGLE)
+          case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
             
             select case(rmatrixB%cdataType)
               
             case (ST_DOUBLE) 
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_double(rmatrixB,DaB)
-              call lsyssc_getbase_double(rmatrixC,DaC)
-              
-              if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
-                
-                call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                call do_mat79mat79add_numb_sngldble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_double(rmatrixB,p_DaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_double(rdest,p_DaC)
 
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                    (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
+                  
+                  call lalg_copyVector(p_DaB, p_DaC)
+                  call lalg_vectorLinearComb(p_FaA,p_DaC,real(ca,SP),cb)
+                else
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_DbleDble(isizeIntl,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_DaB,p_DaC,1.0_DP,0.0_DP)
+                  
+                  ! Compute C := ca*A + cb*C
+                  call do_mat79mat79add_SnglDble(isizeIntl,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaA,p_DaC,real(ca,SP),cb)
+                end if
               else
-                
-                call do_mat79mat79add_numb_sngldble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KldC,DaC)
-                
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. (bfast)) then
+                  
+                  call lalg_vectorLinearComb(p_FaA,p_DaB,real(ca,SP),cb)
+                else
+                  ! Set diagonal pointer
+                  if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                  end if
+
+                  ! Compute B:= ca*A + cb*B
+                  call do_mat79mat79add_SnglDble(isizeIntl,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
+                                                 p_FaA,p_DaB,real(ca,SP),cb)
+                end if
               end if
               
             case (ST_SINGLE)
-              call lsyssc_getbase_single(rmatrixA,FaA)
-              call lsyssc_getbase_single(rmatrixB,FaB)
-              call lsyssc_getbase_single(rmatrixC,FaC)
+              call lsyssc_getbase_single(rmatrixA,p_FaA)
+              call lsyssc_getbase_single(rmatrixB,p_FaB)
+              ! Do we have an explicit destination matrix?
+              if (present(rdest)) then
+                call lsyssc_getbase_single(rdest,p_FaC)
 
-              if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
-                  (rmatrixA%cmatrixFormat .eq. rmatrixC%cmatrixFormat) .and. (bfast)) then
-                
-                ! We rely on the user who tells us that we should assume the
-                ! same structure for the matrices. In this case, we can
-                ! directly call a BLAS routine to do the matrix combination.
-                ! That is MUCH faster!
-                ! Note that matrix B might coincide with matrix C, so we
-                ! first check this to prevent unnecessary copy operations!
-                
-                if (.not. associated (DaB,DaC)) then
-                  call lalg_copyVectorSngl (FaB,FaC)
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                    (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
+
+                  call lalg_copyVector(p_FaB, p_FaC)
+                  call lalg_vectorLinearComb(p_FaA,p_FaC,real(ca,SP),real(cb,SP))
+                else
+                  call lsyssc_getbase_Kld(rdest,p_KldC)
+                  call lsyssc_getbase_Kcol(rdest,p_KcolC)
+                  
+                  ! Set diagonal pointer
+                  if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
+                  end if
+
+                  ! Compute C := B + 0*C
+                  call do_mat79mat79add_SnglSngl(isizeIntl,rmatrixB%NEQ,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaB,p_FaC,1.0_SP,0.0_SP)
+                  
+                  ! Compute C := ca*A + cb*C
+                  call do_mat79mat79add_SnglSngl(isizeIntl,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
+                                                 p_FaA,p_FaC,real(ca,SP),real(cb,SP))
                 end if
-                
-                call lalg_vectorLinearCombSngl (FaA,FaC,real(cA,SP),real(cB,SP))                
-                
-              else if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
-                
-                call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
-                call do_mat79mat79add_numb_snglsngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,FaC)
-
               else
-                
-                call do_mat79mat79add_numb_snglsngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
-                    KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KldC,FaC)
-                
+                ! Can we make use of fast copy operation?
+                if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. (bfast)) then
+                  
+                  call lalg_vectorLinearComb(p_FaA,p_FaB,real(ca,SP),real(cb,SP))
+                else
+                  ! Set diagonal pointer
+                  if (rmatrixB%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+                    call lsyssc_getbase_Kld(rmatrixB,p_KdiagonalB)
+                  else
+                    call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
+                  end if
+                  
+                  ! Compute B:= ca*A + cb*B
+                  call do_mat79mat79add_SnglSngl(isizeIntl,rmatrixA%NEQ,&
+                                                 rmatrixA%NA,p_KldA,p_KcolA,&
+                                                 rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
+                                                 p_FaA,p_FaB,real(ca,SP),real(cb,SP))
+                end if
               end if
 
-            case DEFAULT
-              print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            case default
+              call output_line('Unsupported combination of data types!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
-          case DEFAULT
-            print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+
+          case default
+            call output_line('Unsupported data type of source matrix!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
 
-      case DEFAULT
-        print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+      case default
+        call output_line('Unsupported combination of matrix formats!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
         call sys_halt()
       end select
-
+       
       !-------------------------------------------------------------------------
 
-    case DEFAULT
-      print *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+    case default
+      call output_line('Unsupported matrix format of source matrix!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
       call sys_halt()
     end select
-
-    ! Clear auxiliary vectors
-    if (h_Kaux .ne. ST_NOHANDLE) call storage_free(h_Kaux)
 
   contains
 
     ! Here, the real MM addition routines follow.
 
     !**************************************************************
-    ! Format 1-D addition
-    ! double precision matrix A (format 1)
-    ! double precision matrix B (format D)
-    ! double precision matrix C (format 1)
+    ! Format D-1 addition:    B := ca*A + cb*B
+    ! double precision matrix A (format D)
+    ! double precision matrix B (format 1)
 
-    subroutine do_mat1matDadd_doubledouble(neq,ncols,Da1,c1,Da2,c2,Da3)
+    subroutine do_matDmat1add_DbleDble(neq,ncols,DaA,DaB,da,db)
 
-      integer, intent(in)              :: neq,ncols
-      real(DP), intent(in)                          :: c1,c2
-      real(DP), dimension(ncols,neq), intent(in)    :: Da1
-      real(DP), dimension(neq), intent(in)          :: Da2
-      real(DP), dimension(ncols,neq), intent(inout) :: Da3
-      integer                          :: ieq
+      integer, intent(in)                           :: neq,ncols
+      real(DP), intent(in)                          :: da,db
+      real(DP), dimension(neq), intent(in)          :: DaA
+      real(DP), dimension(ncols,neq), intent(inout) :: DaB
 
-      call DCOPY(int(neq*ncols),Da1,1,Da3,1)
-      call DSCAL(int(neq*ncols),c1,Da3,1)
-
-      do ieq=1,neq
-        Da3(ieq,ieq)=Da3(ieq,ieq)+c2*Da2(ieq)
-      end do
-
-!!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
-!!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
-!!$      CALL lalg_copyVectorDble(Da1,Da3)
-!!$      CALL lalg_scaleVector(Da3,c1)
-!!$      DO i=0,n-1
-!!$        Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
-!!$      END DO
-    end subroutine do_mat1matDadd_doubledouble
-
-    !**************************************************************
-    ! Format 1-D addition
-    ! single precision matrix A (format 1)
-    ! double precision matrix B (format D)
-    ! double precision matrix C (format 1)
-
-    subroutine do_mat1matDadd_singledouble(neq,ncols,Fa1,c1,Da2,c2,Da3)
-
-      integer, intent(in)              :: neq,ncols
-      real(DP), intent(in)                          :: c1,c2
-      real(SP), dimension(ncols,neq), intent(in)    :: Fa1
-      real(DP), dimension(neq), intent(in)          :: Da2
-      real(DP), dimension(ncols,neq), intent(inout) :: Da3
-      integer                          :: ieq,icols
-
-      do ieq=1,neq
-        do icols=1,ncols
-          Da3(icols,ieq) = c1*Fa1(icols,ieq)
-        end do
-      end do
-
-      do ieq=1,neq
-        Da3(ieq,ieq)=Da3(ieq,ieq)+c2*Da2(ieq)
-      end do
-
-!!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
-!!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
-!!$      CALL lalg_scaleVector(Da3,c1)
-!!$      DO i=0,n-1
-!!$        Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
-!!$      END DO
-    end subroutine do_mat1matDadd_singledouble
-
-    !**************************************************************
-    ! Format 1-D addition
-    ! double precision matrix A (format 1)
-    ! single precision matrix B (format D)
-    ! double precision matrix C (format 1)
-
-    subroutine do_mat1matDadd_doublesingle(neq,ncols,Da1,c1,Fa2,c2,Da3)
-
-      integer, intent(in)              :: neq,ncols
-      real(DP), intent(in)                          :: c1,c2
-      real(DP), dimension(ncols,neq), intent(in)    :: Da1
-      real(SP), dimension(neq), intent(in)          :: Fa2
-      real(DP), dimension(ncols,neq), intent(inout) :: Da3
       integer :: ieq
 
-      call DCOPY(int(neq*ncols),Da1,1,Da3,1)
-      call DSCAL(int(neq*ncols),c1,Da3,1)
+      ! Compute B := cb*B
+      call lalg_scaleVector(DaB,db)
 
-      do ieq=1,neq
-        Da3(ieq,ieq)=Da3(ieq,ieq)+c2*Fa2(ieq)
+      ! Compute B := B + diag(A)
+      do ieq = 1,neq
+        DaB(ieq,ieq) = DaB(ieq,ieq)+da*DaA(ieq)
       end do
 
-!!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
-!!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
-!!$      CALL lalg_copyVectorDble(Da1,Da3)
-!!$      CALL lalg_scaleVector(Da3,c1)
-!!$      DO i=0,n-1
-!!$        Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Fa2(i+1)
-!!$      END DO
-    end subroutine do_mat1matDadd_doublesingle
+    end subroutine do_matDmat1add_DbleDble
 
     !**************************************************************
-    ! Format 1-D addition
-    ! single precision matrix A (format 1)
-    ! single precision matrix B (format D)
-    ! single precision matrix C (format 1)
+    ! Format D-1 addition:    B := ca*A + cb*B
+    ! single precision matrix A (format D)
+    ! single precision matrix B (format 1)
 
-    subroutine do_mat1matDadd_singlesingle(neq,ncols,Fa1,c1,Fa2,c2,Fa3)
+    subroutine do_matDmat1add_SnglSngl(neq,ncols,FaA,FaB,fa,fb)
 
-      integer, intent(in) :: neq,ncols
-      real(DP), intent(in) :: c1,c2
-      real(SP), dimension(ncols,neq), intent(in)    :: Fa1
-      real(SP), dimension(neq), intent(in)      :: Fa2
-      real(SP), dimension(ncols,neq), intent(inout) :: Fa3
+      integer, intent(in)                           :: neq,ncols
+      real(SP), intent(in)                          :: fa,fb
+      real(SP), dimension(neq), intent(in)          :: FaA
+      real(SP), dimension(ncols,neq), intent(inout) :: FaB
+
       integer :: ieq
-
-      call SCOPY(int(neq*ncols),Fa1,1,Fa3,1)
-      call SSCAL(int(neq*ncols),real(c1,SP),Fa3,1)
-
-      do ieq=1,neq
-        Fa3(ieq,ieq)=Fa3(ieq,ieq)+c2*Fa2(ieq)
-      end do
-
-!!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
-!!$      REAL(SP), DIMENSION(m*n), INTENT(inout) :: Fa3
-!!$      CALL lalg_copyVectorSngl(Fa1,Fa3)
-!!$      CALL lalg_scaleVector(Fa3,REAL(c1,SP))
-!!$      DO i=0,n-1
-!!$        Fa3(i*m+i+1)=Fa3(i*m+i+1)+c2*Fa2(i+1)
-!!$      END DO
-    end subroutine do_mat1matDadd_singlesingle
-
-    !**************************************************************
-    ! Format 1-7/9 addition
-    ! double precision matrix A (format 1)
-    ! double precision matrix B (format 7 or format 9)
-    ! double precision matrix C (format 1)
-
-    subroutine do_mat1mat79add_doubledouble(neq,ncols,Da1,c1,Kld2,Kcol2,Da2,c2,Da3)
-
-      ! REMARK: The matrix A (format 1) is stored row-wise. Hence,
-      ! this subroutine handles the transposed of matrix A. Therefore,
-      ! the row and column indices IEQ and ICOL are swapped when the
-      ! contribution of matrix B is applied to matrix C.
-
-      integer, intent(in)               :: neq,ncols
-      integer, dimension(:), intent(in) :: Kld2
-      integer, dimension(:), intent(in) :: Kcol2
-      real(DP), intent(in)                           :: c1,c2
-      real(DP), dimension(ncols,neq), intent(in)     :: Da1
-      real(DP), dimension(:), intent(in)             :: Da2
-      real(DP), dimension(ncols,neq), intent(inout)  :: Da3
-      integer :: ild,ieq,icol
-
-      call DCOPY(int(neq*ncols),Da1,1,Da3,1)
-      call DSCAL(int(neq*ncols),c1,Da3,1)
       
-      do ieq=1,neq
-        do ild=Kld2(ieq),Kld2(ieq+1)-1
-          icol=Kcol2(ild)
-          Da3(icol,ieq)=Da3(icol,ieq)+c2*Da2(ild)
-        end do
+      ! Compute B := cb*B
+      call lalg_scaleVector(FaB,fb)
+
+      ! Compute B := B + diag(A)
+      do ieq = 1,neq
+        FaB(ieq,ieq) = FaB(ieq,ieq)+fa*FaA(ieq)
       end do
 
-!!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
-!!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
-!!$      CALL lalg_copyVectorDble(Da1,Da3)
-!!$      CALL lalg_scaleVector(Da3,c1)
-!!$      
-!!$      DO i=1,n
-!!$        DO ild=Kld2(i),Kld2(i+1)-1
-!!$          j=Kcol2(ild)-1
-!!$          Da3(j*m+i)=Da3(j*m+i)+c2*Da2(ild)
-!!$        END DO
-!!$      END DO
-    end subroutine do_mat1mat79add_doubledouble
+    end subroutine do_matDmat1add_SnglSngl
 
     !**************************************************************
-    ! Format 1-7/9 addition
-    ! single precision matrix A (format 1)
-    ! double precision matrix B (format 7 or format 9)
-    ! double precision matrix C (format 1)
+    ! Format D-1 addition:    B := ca*A + cb*B
+    ! single precision matrix A (format D)
+    ! double precision matrix B (format 1)
 
-    subroutine do_mat1mat79add_singledouble(neq,ncols,Fa1,c1,Kld2,Kcol2,Da2,c2,Da3)
+    subroutine do_matDmat1add_SnglDble(neq,ncols,FaA,DaB,fa,db)
 
-      ! REMARK: The matrix A (format 1) is stored row-wise. Hence,
-      ! this subroutine handles the transposed of matrix A. Therefore,
-      ! the row and column indices IEQ and ICOL are swapped when the
-      ! contribution of matrix B is applied to matrix C.
-
-      integer, intent(in)               :: neq,ncols
-      integer, dimension(:), intent(in) :: Kld2
-      integer, dimension(:), intent(in) :: Kcol2
-      real(DP), intent(in)                           :: c1,c2
-      real(SP), dimension(ncols,neq), intent(in)     :: Fa1
-      real(DP), dimension(:), intent(in)             :: Da2
-      real(DP), dimension(ncols,neq), intent(inout)  :: Da3
-      integer :: ild,ieq,icol
-
-      do ieq=1,neq
-        do icol=1,ncols
-          Da3(icol,ieq)=c1*Fa1(icol,ieq)
-        end do
-      end do
+      integer, intent(in)                           :: neq,ncols
+      real(SP), intent(in)                          :: fa
+      real(DP), intent(in)                          :: db
+      real(SP), dimension(neq), intent(in)          :: FaA
+      real(DP), dimension(ncols,neq), intent(inout) :: DaB
       
-      do ieq=1,neq
-        do ild=Kld2(ieq),Kld2(ieq+1)-1
-          icol=Kcol2(ild)
-          Da3(icol,ieq)=Da3(icol,ieq)+c2*Da2(ild)
-        end do
-      end do
-    end subroutine do_mat1mat79add_singledouble
-
-    !**************************************************************
-    ! Format 1-7/9 addition
-    ! double precision matrix A (format 1)
-    ! single precision matrix B (format 7 or format 9)
-    ! double precision matrix C (format 1)
-
-    subroutine do_mat1mat79add_doublesingle(neq,ncols,Da1,c1,Kld2,Kcol2,Fa2,c2,Da3)
-
-      ! REMARK: The matrix A (format 1) is stored row-wise. Hence,
-      ! this subroutine handles the transposed of matrix A. Therefore,
-      ! the row and column indices IEQ and ICOL are swapped when the
-      ! contribution of matrix B is applied to matrix C.
-
-      integer, intent(in)               :: neq,ncols
-      integer, dimension(:), intent(in) :: Kld2
-      integer, dimension(:), intent(in) :: Kcol2
-      real(DP), intent(in)                           :: c1,c2
-      real(DP), dimension(ncols,neq), intent(in)     :: Da1
-      real(SP), dimension(:), intent(in)             :: Fa2
-      real(DP), dimension(ncols,neq), intent(inout)  :: Da3
-      integer :: ild,ieq,icol
-
-      call DCOPY(int(neq*ncols),Da1,1,Da3,1)
-      call DSCAL(int(neq*ncols),c1,Da3,1)
-
-      do ieq=1,neq
-        do ild=Kld2(ieq),Kld2(ieq+1)-1
-          icol=Kcol2(ild)
-          Da3(icol,ieq)=Da3(icol,ieq)+c2*Fa2(ild)
-        end do
-      end do
+      integer :: ieq
       
-!!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
-!!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
-!!$      CALL lalg_copyVectorDble(Da1,Da3)
-!!$      CALL lalg_scaleVector(Da3,c1)
-!!$
-!!$      DO i=1,n
-!!$        DO ild=Kld2(i),Kld2(i+1)-1
-!!$          j=Kcol2(ild)
-!!$          Da3(j*m+i)=Da3(j*m+i)+c2*Fa2(ild)
-!!$        END DO
-!!$      END DO
-    end subroutine do_mat1mat79add_doublesingle
+      ! Compute B := cb*B
+      call lalg_scaleVector(DaB,db)
+      
+      ! Compute B := B + diag(A)
+      do ieq = 1,neq
+        DaB(ieq,ieq) = DaB(ieq,ieq)+fa*FaA(ieq)
+      end do
+
+    end subroutine do_matDmat1add_SnglDble
 
     !**************************************************************
-    ! Format 1-7/9 addition
-    ! single precision matrix A (format 1)
-    ! single precision matrix B (format 7 or format 9)
-    ! single precision matrix C (format 1)
+    ! Format 7/9-1 addition:  B := ca*A + cb*B
+    ! double precision matrix A (format 7 or format 9)
+    ! double precision matrix B (format 1)
+    subroutine do_mat79mat1add_DbleDble(neq,ncols,Kld,Kcol,DaA,DaB,da,db)
 
-    subroutine do_mat1mat79add_singlesingle(neq,ncols,Fa1,c1,Kld2,Kcol2,Fa2,c2,Fa3)
-
-      ! REMARK: The matrix A (format 1) is stored row-wise. Hence,
-      ! this subroutine handles the transposed of matrix A. Therefore,
+      ! REMARK: The matrix B (format 1) is stored row-wise. Hence,
+      ! this subroutine handles the transposed of matrix B. Therefore,
       ! the row and column indices IEQ and ICOL are swapped when the
-      ! contribution of matrix B is applied to matrix C.
+      ! contribution of matrix A is applied.
 
-      integer, intent(in)               :: neq,ncols
-      integer, dimension(:), intent(in) :: Kld2
-      integer, dimension(:), intent(in) :: Kcol2
-      real(DP), intent(in)                           :: c1,c2
-      real(SP), dimension(ncols,neq), intent(in)     :: Fa1
-      real(SP), dimension(:), intent(in)             :: Fa2
-      real(SP), dimension(ncols,neq), intent(inout)  :: Fa3
+      integer, intent(in)                            :: neq,ncols
+      integer, dimension(:), intent(in)              :: Kld
+      integer, dimension(:), intent(in)              :: Kcol
+      real(DP), intent(in)                           :: da,db
+      real(DP), dimension(:), intent(in)             :: DaA
+      real(DP), dimension(ncols,neq), intent(inout)  :: DaB
+
       integer :: ild,ieq,icol
       
-      call SCOPY(int(neq*ncols),Fa1,1,Fa3,1)
-      call SSCAL(int(neq*ncols),real(c1,SP),Fa3,1)
+      ! Compute B := cb*B
+      call lalg_scaleVector(DaB,db)
       
-      do ieq=1,neq
-        do ild=Kld2(ieq),Kld2(ieq+1)-1
-          icol=Kcol2(ild)
-          Fa3(icol,ieq)=Fa3(icol,ieq)+c2*Fa2(ild)
+      ! Compute B := B + A
+      !$omp parallel do private(ild,icol) default(shared) &
+      !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+      do ieq = 1,neq
+        do ild = Kld(ieq),Kld(ieq+1)-1
+          icol = Kcol(ild)
+          DaB(icol,ieq) = DaB(icol,ieq)+da*DaA(ild)
         end do
       end do
-      
-!!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
-!!$      REAL(SP), DIMENSION(m*n), INTENT(inout) :: Fa3
-!!$      CALL lalg_copyVectorSngl(Fa1,Fa3)
-!!$      CALL lalg_scaleVector(Fa3,REAL(c1,SP))
-!!$      
-!!$      DO i=1,n
-!!$        DO ild=Kld2(i),Kld2(i+1)-1
-!!$          j=Kcol2(ild)
-!!$          Fa3(j*m+i)=Fa3(j*m+i)+c2*Fa2(ild)
-!!$        END DO
-!!$      END DO
-    end subroutine do_mat1mat79add_singlesingle
+      !$omp end parallel do
+
+    end subroutine do_mat79mat1add_DbleDble
 
     !**************************************************************
-    ! Format 7/9-D addition
-    ! double precision matrix A (format 7 or format 9, interleave possible)
-    ! double precision matrix B (format D)
-    ! double precision matrix C (format 7 or format 9, interleave possible)
+    ! Format 7/9-1 addition:  B := ca*A + cb*B
+    ! single precision matrix A (format 7 or format 9)
+    ! single precision matrix B (format 1)
+    subroutine do_mat79mat1add_SnglSngl(neq,ncols,Kld,Kcol,FaA,FaB,fa,fb)
 
-    subroutine do_mat79matDadd_doubledouble(Kld1,Kcol1,nvar,mvar,neq,&
-        Da1,c1,Da2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
+      ! REMARK: The matrix B (format 1) is stored row-wise. Hence,
+      ! this subroutine handles the transposed of matrix B. Therefore,
+      ! the row and column indices IEQ and ICOL are swapped when the
+      ! contribution of matrix A is applied.
+
+      integer, intent(in)                            :: neq,ncols
+      integer, dimension(:), intent(in)              :: Kld
+      integer, dimension(:), intent(in)              :: Kcol
+      real(SP), intent(in)                           :: fa,fb
+      real(SP), dimension(:), intent(in)             :: FaA
+      real(SP), dimension(ncols,neq), intent(inout)  :: FaB
+
+      integer :: ild,ieq,icol
       
-      integer, intent(in)                         :: neq
-      integer, intent(in)                                      :: nvar,mvar
-      integer, intent(in), optional               :: na
-      integer, dimension(:), intent(in)           :: Kld1
-      integer, dimension(:), intent(in)           :: Kcol1
-      integer, dimension(:), intent(in), optional :: Kld3,Kdiag3
-      integer, dimension(:), intent(in), optional :: Kcol3
-      real(DP), intent(in)                                     :: c1,c2
-      real(DP), dimension(nvar,mvar,*), intent(in)             :: Da1
-      real(DP), dimension(:), intent(in)                       :: Da2
-      real(DP), dimension(nvar,mvar,*), intent(inout)          :: Da3
+      ! Compute B := cb*B
+      call lalg_scaleVector(FaB,fb)
       
-      integer :: ieq
-      integer :: ild1,ild3,ildend3
-      integer :: icol1,icol3
-      integer :: ivar
-
-      if (present(Kld3) .and. present(Kcol3)) then
-      
-        ! The structure of matrix A may be only a subset of C, so that
-        ! each entry must be visited separately
-        
-        if (nvar .ne. mvar) then
-
-          ! Loop over all rows
-          do ieq=1,neq
-            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-            
-            ! Loop over all columns of current row
-            do ild1=Kld1(ieq),Kld1(ieq+1)-1
-              icol1=Kcol1(ild1)
-              
-              ! Skip positions in resulting matrix if required
-              do ild3=ild3,ildend3
-                icol3=Kcol3(ild3)
-                if (icol3 .eq. icol1) exit
-                Da3(:,1,ild3)=0._DP
-              end do
-              
-              Da3(:,1,ild3)=c1*Da1(:,1,ild1)
-              ! Diagonal entry?
-              if (icol3 .eq. ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
-              ild3=ild3+1
-            end do
-            Da3(:,1,ild3:ildend3)=0._DP
-          end do
-        
-        else
-          
-          ! Loop over all rows
-          do ieq=1,neq
-            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-            
-            ! Loop over all columns of current row
-            do ild1=Kld1(ieq),Kld1(ieq+1)-1
-              icol1=Kcol1(ild1)
-              
-              ! Skip positions in resulting matrix if required
-              do ild3=ild3,ildend3
-                icol3=Kcol3(ild3)
-                if (icol3 .eq. icol1) exit
-                Da3(:,:,ild3)=0._DP
-              end do
-              
-              Da3(:,:,ild3)=c1*Da1(:,:,ild1)
-              ! Diagonal entry?
-              if (icol3 .eq. ieq) then
-                do ivar=1,nvar
-                  Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
-                end do
-              end if
-              ild3=ild3+1
-            end do
-            Da3(:,:,ild3:ildend3)=0._DP
-          end do
-
-        end if
-
-      elseif (present(Kdiag3) .and. present(na)) then
-        
-        ! Structure of matrices A and C is identical
-
-        call DCOPY(int(nvar*mvar*na),Da1,1,Da3,1)
-        call DSCAL(int(nvar*mvar*na),c1,Da3,1)
-
-        if (nvar .ne. mvar) then
-          do ieq=1,neq
-            ild3=Kdiag3(ieq)
-            Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
-          end do
-        else
-          do ieq=1,neq
-            ild3=Kdiag3(ieq)
-            do ivar=1,nvar
-              Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
-            end do
-          end do
-        end if
-
-      else
-        print *, "do_mat79matDadd_doubledouble: either Kld,Kcol or Kdiag must be present."
-        call sys_halt()        
-      end if
-    end subroutine do_mat79matDadd_doubledouble
-
-    !**************************************************************
-    ! Format 7/9-D addition
-    ! single precision matrix A (format 7 or format 9, interleave possible)
-    ! double precision matrix B (format D)
-    ! double precision matrix C (format 7 or format 9, interleave possible)
-
-    subroutine do_mat79matDadd_singledouble(Kld1,Kcol1,nvar,mvar,neq,&
-        Fa1,c1,Da2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
-      
-      integer, intent(in)                         :: neq
-      integer, intent(in)                                      :: nvar,mvar
-      integer, intent(in), optional               :: na
-      integer, dimension(:), intent(in)           :: Kld1
-      integer, dimension(:), intent(in)           :: Kcol1
-      integer, dimension(:), intent(in), optional :: Kld3,Kdiag3
-      integer, dimension(:), intent(in), optional :: Kcol3
-      real(DP), intent(in)                                     :: c1,c2
-      real(SP), dimension(nvar,mvar,*), intent(in)             :: Fa1
-      real(DP), dimension(:), intent(in)                       :: Da2
-      real(DP), dimension(nvar,mvar,*), intent(inout)          :: Da3
-
-      integer :: ieq
-      integer :: ild1,ild3,ildend3
-      integer :: icol1,icol3,ia
-      integer :: ivar
-      
-      if (present(Kld3) .and. present(Kcol3)) then
-        
-        ! The structure of matrix A may be only a subset of C, so that
-        ! each entry must be visited separately
-        
-        if (nvar .ne. mvar) then
-          
-          ! Loop over all rows
-          do ieq=1,neq
-            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-            
-            ! Loop over all columns of current row
-            do ild1=Kld1(ieq),Kld1(ieq+1)-1
-              icol1=Kcol1(ild1)
-              
-              ! Skip positions in resulting matrix if required
-              do ild3=ild3,ildend3
-                icol3=Kcol3(ild3)
-                if (icol3 .eq. icol1) exit
-                Da3(:,1,ild3)=0._DP
-              end do
-              
-              Da3(:,1,ild3)=c1*Fa1(:,1,ild1)
-              ! Diagonal entry?
-              if (icol3 .eq. ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
-              ild3=ild3+1
-            end do
-            Da3(:,1,ild3:ildend3)=0._DP
-          end do
-          
-        else
-
-          ! Loop over all rows
-          do ieq=1,neq
-            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-            
-            ! Loop over all columns of current row
-            do ild1=Kld1(ieq),Kld1(ieq+1)-1
-              icol1=Kcol1(ild1)
-              
-              ! Skip positions in resulting matrix if required
-              do ild3=ild3,ildend3
-                icol3=Kcol3(ild3)
-                if (icol3 .eq. icol1) exit
-                Da3(:,:,ild3)=0._DP
-              end do
-              
-              Da3(:,:,ild3)=c1*Fa1(:,:,ild1)
-              ! Diagonal entry?
-              if (icol3 .eq. ieq) then
-                do ivar=1,nvar
-                  Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
-                end do
-              end if
-              ild3=ild3+1
-            end do
-            Da3(:,:,ild3:ildend3)=0._DP
-          end do
-
-        end if
-
-      elseif (present(Kdiag3) .and. present(na)) then
-        
-        ! Structure of matrices A and C is identical
-
-        do ia=1,na
-          Da3(:,:,ia)=c1*Fa1(:,:,ia)
+      ! Compute B := B + A
+      !$omp parallel do private(ild,icol) default(shared) &
+      !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+      do ieq = 1,neq
+        do ild = Kld(ieq),Kld(ieq+1)-1
+          icol = Kcol(ild)
+          FaB(icol,ieq) = FaB(icol,ieq)+fa*FaA(ild)
         end do
-        
-        if (nvar .ne. mvar) then
-          do ieq=1,neq
-            ild3=Kdiag3(ieq)
-            Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
-          end do
-        else
-          do ieq=1,neq
-            ild3=Kdiag3(ieq)
-            do ivar=1,nvar
-              Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
-            end do
-          end do
-        end if
-        
-      else
-        print *, "do_mat79matDadd_singledouble: either Kld,Kcol or Kdiag must be present."
-        call sys_halt()        
-      end if
-    end subroutine do_mat79matDadd_singledouble
+      end do
+      !$omp end parallel do
+
+    end subroutine do_mat79mat1add_SnglSngl
 
     !**************************************************************
-    ! Format 7/9-D addition
-    ! double precision matrix A (format 7 or format 9, interleave possible)
-    ! single precision matrix B (format D)
-    ! double precision matrix C (format 7 or format 9, interleave possible)
+    ! Format 7/9-1 addition:  B := ca*A + cb*B
+    ! single precision matrix A (format 7 or format 9)
+    ! double precision matrix B (format 1)
+    subroutine do_mat79mat1add_SnglDble(neq,ncols,Kld,Kcol,FaA,DaB,fa,db)
 
-    subroutine do_mat79matDadd_doublesingle(Kld1,Kcol1,nvar,mvar,neq,&
-        Da1,c1,Fa2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
+      ! REMARK: The matrix B (format 1) is stored row-wise. Hence,
+      ! this subroutine handles the transposed of matrix B. Therefore,
+      ! the row and column indices IEQ and ICOL are swapped when the
+      ! contribution of matrix A is applied.
 
-      integer, intent(in)                         :: neq
-      integer, intent(in)                                      :: nvar,mvar
-      integer, intent(in), optional               :: na
-      integer, dimension(:), intent(in)           :: Kld1
-      integer, dimension(:), intent(in)           :: Kcol1
-      integer, dimension(:), intent(in), optional :: Kld3,Kdiag3
-      integer, dimension(:), intent(in), optional :: Kcol3
-      real(DP), intent(in)                                     :: c1,c2
-      real(DP), dimension(nvar,mvar,*), intent(in)             :: Da1
-      real(SP), dimension(:), intent(in)                       :: Fa2
-      real(DP), dimension(nvar,mvar,*), intent(inout)          :: Da3
+      integer, intent(in)                            :: neq,ncols
+      integer, dimension(:), intent(in)              :: Kld
+      integer, dimension(:), intent(in)              :: Kcol
+      real(SP), intent(in)                           :: fa
+      real(DP), intent(in)                           :: db
+      real(SP), dimension(:), intent(in)             :: FaA
+      real(DP), dimension(ncols,neq), intent(inout)  :: DaB
 
-      integer :: ieq
-      integer :: ild1,ild3,ildend3
-      integer :: icol1,icol3
-      integer :: ivar
+      integer :: ild,ieq,icol
       
-      if (present(Kld3) .and. present(Kcol3)) then
-        
-        ! The structure of matrix A may be only a subset of C, so that
-        ! each entry must be visited separately
-        
-        if (nvar .ne. mvar) then
-          
-          ! Loop over all rows
-          do ieq=1,neq
-            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-            
-            ! Loop over all columns of current row
-            do ild1=Kld1(ieq),Kld1(ieq+1)-1
-              icol1=Kcol1(ild1)
-              
-              ! Skip positions in resulting matrix if required
-              do ild3=ild3,ildend3
-                icol3=Kcol3(ild3)
-                if (icol3 .eq. icol1) exit
-                Da3(:,1,ild3)=0._DP
-              end do
-              
-              Da3(:,1,ild3)=c1*Da1(:,1,ild1)
-              ! Diagonal entry?
-              if (icol3 .eq. ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Fa2(ieq)
-              ild3=ild3+1
-            end do
-            Da3(:,1,ild3:ildend3)=0._DP
-          end do
-        
-        else
+      ! Compute B := cb*B
+      call lalg_scaleVector(DaB,db)
+      
+      ! Compute B := B + A
+      !$omp parallel do private(ild,icol) default(shared) &
+      !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+      do ieq = 1,neq
+        do ild = Kld(ieq),Kld(ieq+1)-1
+          icol = Kcol(ild)
+          DaB(icol,ieq) = DaB(icol,ieq)+fa*FaA(ild)
+        end do
+      end do
+      !$omp end parallel do
 
-          ! Loop over all rows
-          do ieq=1,neq
-            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-            
-            ! Loop over all columns of current row
-            do ild1=Kld1(ieq),Kld1(ieq+1)-1
-              icol1=Kcol1(ild1)
-              
-              ! Skip positions in resulting matrix if required
-              do ild3=ild3,ildend3
-                icol3=Kcol3(ild3)
-                if (icol3 .eq. icol1) exit
-                Da3(:,:,ild3)=0._DP
-              end do
-              
-              Da3(:,:,ild3)=c1*Da1(:,:,ild1)
-              ! Diagonal entry?
-              if (icol3 .eq. ieq) then
-                do ivar=1,nvar
-                  Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Fa2(ieq)
-                end do
-              end if
-              ild3=ild3+1
-            end do
-            Da3(:,:,ild3:ildend3)=0._DP
-          end do
-          
-        end if
-        
-      elseif (present(Kdiag3) .and. present(na)) then
-
-        ! Structure of matrices A and C is identical
-        
-        call DCOPY(int(nvar*mvar*na),Da1,1,Da3,1)
-        call DSCAL(int(nvar*mvar*na),c1,Da3,1)
-
-        if (nvar .ne. mvar) then
-          do ieq=1,neq
-            ild3=Kdiag3(ieq)
-            do ivar=1,nvar
-              Da3(ivar,1,ild3)=Da3(ivar,1,ild3)+c2*Fa2(ieq)
-            end do
-          end do
-        else
-          do ieq=1,neq
-            ild3=Kdiag3(ieq)
-            do ivar=1,nvar
-              Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Fa2(ieq)
-            end do
-          end do
-        end if
-     
-      else
-        print *, "do_mat79matDadd_doublesingle: either Kld,Kcol or Kdiag must be present."
-        call sys_halt()        
-      end if
-    end subroutine do_mat79matDadd_doublesingle
+    end subroutine do_mat79mat1add_SnglDble
 
     !**************************************************************
-    ! Format 7/9-D addition
-    ! single precision matrix A (format 7 or format 9, interleave possible)
-    ! single precision matrix B (format D)
-    ! single precision matrix C (format 7 or format 9, interleave possible)
-
-    subroutine do_mat79matDadd_singlesingle(Kld1,Kcol1,nvar,mvar,neq,&
-        Fa1,c1,Fa2,c2,Fa3,Kld3,Kcol3,Kdiag3,na)
-
-      integer, intent(in)                         :: neq
-      integer, intent(in)                                      :: nvar,mvar
-      integer, intent(in), optional               :: na
-      integer, dimension(:), intent(in)           :: Kld1
-      integer, dimension(:), intent(in)           :: Kcol1
-      integer, dimension(:), intent(in), optional :: Kld3,Kdiag3
-      integer, dimension(:), intent(in), optional :: Kcol3
-      real(DP), intent(in)                                     :: c1,c2
-      real(SP), dimension(nvar,mvar,*), intent(in)             :: Fa1
-      real(SP), dimension(:), intent(in)                       :: Fa2
-      real(SP), dimension(nvar,mvar,*), intent(inout)          :: Fa3
-
-      integer :: ieq
-      integer :: ild1,ild3,ildend3
-      integer :: icol1,icol3
-      integer :: ivar
+    ! Format 7/9-D addition:  B := ca*A + cb*B
+    ! double precision matrix A (format D)
+    ! double precision matrix B (format 7 or format 9, interleave possible)
+    
+    subroutine do_matDmat79add_DbleDble(nvar,mvar,neq,na,Kdiagonal,DaA,DaB,da,db)
       
-      if (present(Kld3) .and. present(Kcol3)) then
+      integer, intent(in)                              :: neq,na
+      integer, intent(in)                              :: nvar,mvar
+      integer, dimension(:), intent(in)                :: Kdiagonal
+      real(DP), intent(in)                             :: da,db
+      real(DP), dimension(:), intent(in)               :: DaA
+      real(DP), dimension(nvar,mvar,na), intent(inout) :: DaB
+      
+      integer :: ieq,ild,ivar
 
-        ! The structure of matrix A may be only a subset of C, so that
-        ! each entry must be visited separately
+      ! Compute B := cb*B
+      call lalg_scaleVector(DaB,db)
+
+      if (nvar .eq. mvar) then
+
+        ! Compute B := B + A
+        !$omp parallel do private(ild,ivar) default(shared) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do ieq = 1,neq
+          ild = Kdiagonal(ieq)
+          do ivar = 1,nvar
+            DaB(ivar,ivar,ild) = DaB(ivar,ivar,ild)+da*DaA(ieq)
+          end do
+        end do
+        !$omp end parallel do
+
+      elseif (nvar .eq. 1) then
+
+        ! Compute B := B + A
+        !$omp parallel do private(ild) default(shared) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do ieq = 1,neq
+          ild = Kdiagonal(ieq)
+          DaB(1,:,ild) = DaB(1,:,ild)+da*DaA(ieq)
+        end do
+        !$omp end parallel do
+
+      elseif (mvar .eq. 1) then
+
+        ! Compute B := B + A
+        !$omp parallel do private(ild) default(shared) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do ieq = 1,neq
+          ild = Kdiagonal(ieq)
+          DaB(:,1,ild) = DaB(:,1,ild)+da*DaA(ieq)
+        end do
+        !$omp end parallel do
+
+      else   ! nvar /= mvar
+
+        call output_line('Destination matrix must satisfy NVAR = MVAR!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79_DbleDble')
+        call sys_halt()
         
-        if (nvar .ne. mvar) then
-
-          ! Loop over all rows
-          do ieq=1,neq
-            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-            
-            ! Loop over all columns of current row
-            do ild1=Kld1(ieq),Kld1(ieq+1)-1
-              icol1=Kcol1(ild1)
-              
-              ! Skip positions in resulting matrix if required
-              do ild3=ild3,ildend3
-                icol3=Kcol3(ild3)
-                if (icol3 .eq. icol1) exit
-                Fa3(:,1,ild3)=0._SP
-              end do
-              
-              Fa3(:,1,ild3)=c1*Fa1(:,1,ild1)
-              ! Diagonal entry?
-              if (icol3 .eq. ieq) Fa3(:,1,ild3)=Fa3(:,1,ild3)+c2*Fa2(ieq)
-              ild3=ild3+1
-            end do
-            Fa3(:,1,ild3:ildend3)=0._SP
-          end do
-
-        else
-
-          ! Loop over all rows
-          do ieq=1,neq
-            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-            
-            ! Loop over all columns of current row
-            do ild1=Kld1(ieq),Kld1(ieq+1)-1
-              icol1=Kcol1(ild1)
-              
-              ! Skip positions in resulting matrix if required
-              do ild3=ild3,ildend3
-                icol3=Kcol3(ild3)
-                if (icol3 .eq. icol1) exit
-                Fa3(:,:,ild3)=0._SP
-              end do
-              
-              Fa3(:,:,ild3)=c1*Fa1(:,:,ild1)
-              ! Diagonal entry?
-              if (icol3 .eq. ieq) then
-                do ivar=1,nvar
-                  Fa3(ivar,ivar,ild3)=Fa3(ivar,ivar,ild3)+c2*Fa2(ieq)
-                end do
-              end if
-              ild3=ild3+1
-            end do
-            Fa3(:,1,ild3:ildend3)=0._SP
-          end do
-
-        end if
-        
-      elseif (present(Kdiag3) .and. present(na)) then
-
-        ! Structure of matrices A and C is identical
-        
-        call SCOPY(int(nvar*mvar*na),Fa1,1,Fa3,1)
-        call SSCAL(int(nvar*mvar*na),real(c1,SP),Fa3,1)
-
-        if (nvar .ne. mvar) then
-          do ieq=1,neq
-            ild3=Kdiag3(ieq)
-            Fa3(:,1,ild3)=Fa3(:,1,ild3)+c2*Fa2(ieq)
-          end do
-        else
-          do ieq=1,neq
-            ild3=Kdiag3(ieq)
-            do ivar=1,nvar
-              Fa3(ivar,ivar,ild3)=Fa3(ivar,ivar,ild3)+c2*Fa2(ieq)
-            end do
-          end do
-        end if
-
-      else
-        print *, "do_mat79matDadd_singlesingle: either Kld,Kcol or Kdiag must be present."
-        call sys_halt()        
       end if
-    end subroutine do_mat79matDadd_singlesingle
+
+    end subroutine do_matDmat79add_DbleDble
+
+    !**************************************************************
+    ! Format 7/9-D addition:  B := ca*A + cb*B
+    ! single precision matrix A (format D)
+    ! single precision matrix B (format 7 or format 9, interleave possible)
+    
+    subroutine do_matDmat79add_SnglSngl(nvar,mvar,neq,na,Kdiagonal,FaA,FaB,fa,fb)
+      
+      integer, intent(in)                              :: neq,na
+      integer, intent(in)                              :: nvar,mvar
+      integer, dimension(:), intent(in)                :: Kdiagonal
+      real(SP), intent(in)                             :: fa,fb
+      real(SP), dimension(:), intent(in)               :: FaA
+      real(SP), dimension(nvar,mvar,na), intent(inout) :: FaB
+      
+      integer :: ieq,ild,ivar
+
+      ! Compute B := cb*B
+      call lalg_scaleVector(FaB,fb)
+
+      if (nvar .eq. mvar) then
+
+        ! Compute B := B + A
+        !$omp parallel do private(ild,ivar) default(shared) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do ieq = 1,neq
+          ild = Kdiagonal(ieq)
+          do ivar = 1,nvar
+            FaB(ivar,ivar,ild) = FaB(ivar,ivar,ild)+fa*FaA(ieq)
+          end do
+        end do
+        !$omp end parallel do
+
+      elseif (nvar .eq. 1) then
+
+        ! Compute B := B + A
+        !$omp parallel do private(ild) default(shared) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do ieq = 1,neq
+          ild = Kdiagonal(ieq)
+          FaB(1,:,ild) = FaB(1,:,ild)+fa*FaA(ieq)
+        end do
+        !$omp end parallel do
+
+      elseif (mvar .eq. 1) then
+
+        ! Compute B := B + A
+        !$omp parallel do private(ild) default(shared) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do ieq = 1,neq
+          ild = Kdiagonal(ieq)
+          FaB(:,1,ild) = FaB(:,1,ild)+fa*FaA(ieq)
+        end do
+        !$omp end parallel do
+
+      else   ! nvar /= mvar
+
+        call output_line('Destination matrix must satisfy NVAR = MVAR!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79_SnglSngl')
+        call sys_halt()
+        
+      end if
+
+    end subroutine do_matDmat79add_SnglSngl
+
+    !**************************************************************
+    ! Format 7/9-D addition:  B := ca*A + cb*B
+    ! single precision matrix A (format D)
+    ! double precision matrix B (format 7 or format 9, interleave possible)
+    
+    subroutine do_matDmat79add_SnglDble(nvar,mvar,neq,na,Kdiagonal,FaA,DaB,fa,db)
+      
+      integer, intent(in)                              :: neq,na
+      integer, intent(in)                              :: nvar,mvar
+      integer, dimension(:), intent(in)                :: Kdiagonal
+      real(SP), intent(in)                             :: fa
+      real(DP), intent(in)                             :: db
+      real(SP), dimension(:), intent(in)               :: FaA
+      real(DP), dimension(nvar,mvar,na), intent(inout) :: DaB
+      
+      integer :: ieq,ild,ivar
+
+      ! Compute B := cb*B
+      call lalg_scaleVector(DaB,db)
+
+      if (nvar .eq. mvar) then
+
+        ! Compute B := B + A
+        !$omp parallel do private(ild,ivar) default(shared) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do ieq = 1,neq
+          ild = Kdiagonal(ieq)
+          do ivar = 1,nvar
+            DaB(ivar,ivar,ild) = DaB(ivar,ivar,ild)+fa*FaA(ieq)
+          end do
+        end do
+        !$omp end parallel do
+
+      elseif (nvar .eq. 1) then
+
+        ! Compute B := B + A
+        !$omp parallel do private(ild) default(shared) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do ieq = 1,neq
+          ild = Kdiagonal(ieq)
+          DaB(1,:,ild) = DaB(1,:,ild)+fa*FaA(ieq)
+        end do
+        !$omp end parallel do
+
+      elseif (mvar .eq. 1) then
+
+        ! Compute B := B + A
+        !$omp parallel do private(ild) default(shared) &
+        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        do ieq = 1,neq
+          ild = Kdiagonal(ieq)
+          DaB(:,1,ild) = DaB(:,1,ild)+fa*FaA(ieq)
+        end do
+        !$omp end parallel do
+
+      else   ! nvar /= mvar
+
+        call output_line('Destination matrix must satisfy NVAR = MVAR!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79_SnglDble')
+        call sys_halt()
+        
+      end if
+
+    end subroutine do_matDmat79add_SnglDble
     
     !**************************************************************
-    ! Format 7/9-7/9 addition
-    ! Compute the number of nonzero matrix entries of C:=A + B
+    ! Format 7/9-7/9 addition:  C :=A + B
+    ! This routinecomputes the number of nonzero matrix entries.
     ! 
     ! Remark: This subroutine is a modified version of the APLBDG
     !         subroutine taken from the SPARSEKIT library written
     !         by Youcef Saad.
 
-    function do_mat79mat79add_computeNA(neq,ncols,KldA,KcolA,KldB&
-        &,KcolB,Kaux) result(NA)
+    function do_mat79mat79add_computeNA(neq,KldA,KcolA,KldB,KcolB,Kaux) result(NA)
 
-      integer, dimension(:), intent(in) :: KldA,KldB
-      integer, dimension(:), intent(in) :: KcolB,KcolA
+      integer, intent(in)                  :: neq
+      integer, dimension(:), intent(in)    :: KldA,KldB
+      integer, dimension(:), intent(in)    :: KcolB,KcolA
       integer, dimension(:), intent(inout) :: Kaux
-      integer, intent(in) :: neq,ncols
+
       integer :: NA
       
       integer :: ieq,jeq,ild,icol,idg,ndg,last
 
       ! Initialization
-      Kaux=0; NA=0
+      Kaux = 0; NA = 0
       
-      do ieq=1,neq
+      do ieq = 1,neq
 
         ! For each row of matrix A
-        ndg=0
+        ndg = 0
 
         ! End-of-linked list
-        last=-1
+        last = -1
 
         ! Row of matrix A
-        do ild=KldA(ieq),KldA(ieq+1)-1
+        do ild = KldA(ieq),KldA(ieq+1)-1
           
           ! Column number to be added
-          icol=KcolA(ild)
+          icol = KcolA(ild)
 
           ! Add element to the linked list
           ndg = ndg+1
@@ -17675,10 +18304,10 @@ contains
         end do
         
         ! Row of matrix B
-        do ild=KldB(ieq),KldB(ieq+1)-1
+        do ild = KldB(ieq),KldB(ieq+1)-1
           
           ! Column number to be added
-          icol=KcolB(ild)
+          icol = KcolB(ild)
 
           ! Add element to the linked list
           if (Kaux(icol) .eq. 0) then
@@ -17692,45 +18321,46 @@ contains
         NA = NA+ndg
 
         ! Reset KAUX to zero
-        do idg=1,ndg
+        do idg = 1,ndg
           jeq = Kaux(last)
           Kaux(last) = 0
           last = jeq
         end do
 
       end do
+
     end function do_mat79mat79add_computeNA
 
     !**************************************************************
-    ! Format 7/9-7/9 addition
-    ! Perform symbolical matrix-matrix-addition C := A + B
+    ! Format 7/9-7/9 addition:  C := A + B
+    ! Ths routine performs symbolical matrix-matrix-addition.
     ! 
     ! Remark: This subroutine is a modified version of the APLB1
     !         subroutine taken from the SPARSEKIT library written
     !         by Youcef Saad.
 
     subroutine do_mat79mat79add_symb(neq,ncols,KldA,KcolA,cmatrixFormatA,&
-        &KldB,KcolB,cmatrixFormatB,KldC,KcolC,Kdiagonal)
+        KldB,KcolB,cmatrixFormatB,KldC,KcolC,Kdiagonal)
 
-      integer, intent(in) :: neq,ncols
-      integer, intent(in) :: cmatrixFormatA,cmatrixFormatB
-      integer, dimension(:), intent(in) :: KldA,KldB
-      integer, dimension(:), intent(in) :: KcolA,KcolB
-      integer, dimension(:), intent(inout) :: KldC
-      integer, dimension(:), intent(inout) :: KcolC
+      integer, intent(in)                            :: neq,ncols
+      integer, intent(in)                            :: cmatrixFormatA,cmatrixFormatB
+      integer, dimension(:), intent(in)              :: KldA,KldB
+      integer, dimension(:), intent(in)              :: KcolA,KcolB
+      integer, dimension(:), intent(inout)           :: KldC
+      integer, dimension(:), intent(inout)           :: KcolC
       integer, dimension(:), intent(inout), optional :: Kdiagonal
       
       integer :: ieq,ildA,ildB,ildC,ildendA,ildendB,icolA,icolB,icolC
 
       ! Initialization
-      KldC(1)=1; ildC=1
+      KldC(1) = 1; ildC = 1
 
       ! Loop over all rows
-      do ieq=1,neq
+      do ieq = 1,neq
 
         ! Initialize column pointers for matrix A and B
-        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
-        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
+        ildA = KldA(ieq); ildendA = KldA(ieq+1)-1
+        ildB = KldB(ieq); ildendB = KldB(ieq+1)-1
 
         ! Check if diagonal entry needs to be stored at leading
         ! position for storage format CSR7. Then, both matrices A and
@@ -17796,14 +18426,14 @@ contains
             ! present then the diagonal entry is already stored in
             ! the first position of each row (see above).
             if (present(Kdiagonal)) then
-              Kdiagonal(ieq)=ildC
+              Kdiagonal(ieq) = ildC
               KcolC(ildC) = icolC
               ildC = ildC+1
             end if
 
           else
             ! Off-diagonal entries are handled as usual
-            KcolC(ildC)=icolC
+            KcolC(ildC) = icolC
             ildC = ildC+1
           end if
           
@@ -17811,705 +18441,739 @@ contains
           if (ildA > ildendA .and. ildB > ildendB) exit
         end do
 
-        KldC(ieq+1)=ildC
+        KldC(ieq+1) = ildC
       end do
+
     end subroutine do_mat79mat79add_symb
 
     !**************************************************************
-    ! Format 7/9-7/9 addition
-    ! Perform numerical matrix-matrix-addition C := ca * A + cb * B
-    ! 
-    ! Remark: This subroutine is a modified version of the APLB1
-    !         subroutine taken from the SPARSEKIT library written
-    !         by Youcef Saad.
-    !
-    ! The vectors KLDC and KCOLC are not necessary at first glance.
-    ! However, if the matrix C is allowed to have even a larger
-    ! sparsity pattern as the "sum" of A and B, then they are
-    ! required to find the correct positions in the final matrix C.
-    !
-    ! In this subroutine, KDIAGC is the vector which points to the
-    ! position of the diagonal entries. If matrix C is stored in
-    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
-    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
+    ! Format 7/9-7/9 addition:  B := ca*A + cb*B
+    ! This routine perform numerical matrix-matrix-addition.
 
-    subroutine do_mat79mat79add_numb_dbledble(isizeIntl,neq,ncols,&
-        KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
-      
-      integer, intent(in)               :: neq,ncols
-      integer, intent(in)                            :: isizeIntl
-      integer, dimension(:), intent(in) :: KldA,KldB,KldC,KdiagC
-      integer, dimension(:), intent(in) :: KcolA,KcolB,KcolC
-      real(DP), intent(in)                           :: cA,cB
-      real(DP), dimension(isizeIntl,*), intent(in)   :: DaA
-      real(DP), dimension(isizeIntl,*), intent(in)   :: DaB
-      real(DP), dimension(isizeIntl,*), intent(inout):: DaC
-      
-      integer :: ieq
-      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
-      integer :: icolA,icolB,icolC,idiagC
+    subroutine do_mat79mat79add_DbleDble(isizeIntl,neq,&
+        naA,KldA,KcolA,naB,KldB,KcolB,KdiagonalB,DaA,DaB,da,db)
 
-      ! Loop over all ROWS
-      do ieq=1,neq
-        
-        ! Initialize column pointers for matrix A, B and C
-        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
-        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
-        ildC=KldC(ieq); ildendC=KldC(ieq+1)-1
+      integer, intent(in)                              :: isizeIntl,neq
+      integer, intent(in)                              :: naA,naB
+      integer, dimension(:), intent(in)                :: KldA,KldB
+      integer, dimension(:), intent(in)                :: KcolA,KcolB
+      integer, dimension(:), intent(in)                :: KdiagonalB
+      real(DP), intent(in)                             :: da,db
+      real(DP), dimension(isizeIntl,naA), intent(in)   :: DaA
+      real(DP), dimension(isizeIntl,naB), intent(inout):: DaB
 
-        ! Initialize pointer to diagonal entry
-        idiagC = KdiagC(ieq)
-        
-        ! Since the final value of the diagonal entry
-        !    c_i,i = ca * a_i,i + cb * b_i,i
-        ! is updated step-by-step, set the diagonal entry to zero
-        DaC(:,idiagC) = 0._DP
-        
-        ! For each row IEQ loop over the columns of matrix A and B
-        ! simultaneously and collect the corresponding matrix entries
-        do
-          
-          ! Find next column number for matrices A and B
-          if (ildA .le. ildendA) then
-            icolA = KcolA(ildA)
-          else
-            icolA = ncols+1
-          end if
-          
-          if (ildB .le. ildendB) then
-            icolB = KcolB(ildB)
-          else
-            icolB = ncols+1
-          end if
-          
-          ! First, check if at least for one of the two matrices A
-          ! and/or B the diagonal entry which requires special
-          ! treatment has been reached. In this case, update (!!!)
-          ! the diagonal entry of the resulting matrix C immediately
-          ! and proceed to the next iteration
+      integer :: ieq,ildA,ildB,icolA,icolB,ild
+
+      ! Compute B := cb*B
+      call lalg_scaleVector(DaB,db)
+
+      ! Loop over all rows
+      row: do ieq = 1, neq
+
+        ! Initialise column pointer for matrix B
+        ildB = KldB(ieq)
+
+        ! Loop over all colums
+        col: do ildA = KldA(ieq),KldA(ieq+1)-1
+
+          ! Get column number
+          icolA = KcolA(ildA)
+
+          ! Are we on the diagonal?
           if (icolA .eq. ieq) then
-            if (icolB .eq. ieq) then
-              
-              ! 1. Case: For both matrices A and B the diagonal entry
-              ! has been reached
-              DaC(:,idiagC)=cA*DaA(:,ildA)+cB*DaB(:,ildB)
-              ildA = ildA+1
-              ildB = ildB+1
-            else
-
-              ! 2. Case: For matrix A the diagonal entry has been
-              ! reached. Hence, skip matrix B.
-              DaC(:,idiagC)=DaC(:,idiagC)+cA*DaA(:,ildA)
-              ildA = ildA+1
-            end if
-          elseif (icolB .eq. ieq) then
-
-            !   3. Case: For matrix B the diagonal entry has been
-            !      reached. Hence, skip matrix A.
-            DaC(:,idiagC)=DaC(:,idiagC)+cB*DaB(:,ildB)
-            ildB = ildB+1
-
+            DaB(:,KdiagonalB(ieq)) = DaB(:,KdiagonalB(ieq)) + da*DaA(:,ildA)
           else
-            
-            ! For both matrices A and B we have to process off-
-            ! -diagonal entries. Consider three different cases.
-            ! 1.) The next column is the same for both matrices A and B
-            ! 2.) The next column number is only present in matrix A
-            ! 3.) The next column number is only present in matrix B
-            !
-            ! Since matrix C is implicitly allowed to posses matrix
-            ! entries which are present neither in matrix A nor B, the
-            ! position ILDC needs to be updated of the current column
-            ! is not the diagonal entry whose position is known a
-            ! priori
-            
-            if (icolA .eq. icolB) then
-              
-              ! 1. Case: Processing same column in matrix A and B
+            ! Search for row/column number in matrix B
+            do ild = ildB, KldB(ieq+1)-1
+              icolB = KcolB(ild)
+              if (icolB .eq. icolA) then
+                ildB = ild
+                DaB(:,ildB) = DaB(:,ildB) + da*DaA(:,ildA)
+                cycle col
+              end if
+            end do
 
-              ! Update column number for matrix C
-              do ildC=ildc,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolA) exit
-                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
-              end do
+            do ild = KldB(ieq), ildB-1
+              icolB = KcolB(ild)
+              if (icolB .eq. icolA) then
+                ildB = ild
+                DaB(:,ildB) = DaB(:,ildB) + da*DaA(:,ildA)
+                cycle col
+              end if
+            end do
 
-              DaC(:,ildC)=cA*DaA(:,ildA)+cB*DaB(:,ildB)
-              ildA = ildA+1
-              ildB = ildB+1
-              ildC = ildC+1
-              
-            elseif (icolA < icolB) then
-              
-              ! 2. Case: Processing column in matrix A only
-
-              ! Update column number for matrix C
-              do ildC=ildC,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolA) exit
-                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
-              end do
-
-              DaC(:,ildC)=cA*DaA(:,ildA)
-              ildA = ildA+1
-              ildC = ildC+1
-              
-            else
-              
-              ! 3. Case: Processing column in matrix B only
-              
-              ! Update column number for matrix C
-              do ildC=ildC,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolB) exit
-                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
-              end do
-
-              DaC(:,ildC)=cB*DaB(:,ildB)
-              ildB = ildB+1
-              ildC = ildC+1
-
-            end if
+            ! If we end up here, then the row/column number is not
+            ! present in matrix B and we stop with an error
+            call output_line('Destination matrix does not provide row/column number!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79add_DbleDble')
+            call sys_halt()
           end if
           
-          ! Check if column IEQ is completed for both matrices A and B
-          if (ildA > ildendA .and. ildB > ildendB) exit
-        end do
+        end do col
+      end do row
 
-        ! Since matrix C is allowed to have additional column entries
-        ! which are not present in the "sum" of A and B, the
-        ! remainder of C needs to be nullified by hand
-        if (ildC .le. ildendC) then
-          if (KcolC(ildC) .eq. ieq) then
-            DaC(:,ildC+1:1:ildendC) = 0._DP
-          else
-            DaC(:,ildC:1:ildendC)   = 0._DP
-          end if
-        end if
-      end do
-    end subroutine do_mat79mat79add_numb_dbledble
+    end subroutine do_mat79mat79add_DbleDble
+
 
     !**************************************************************
-    ! Format 7/9-7/9 addition
-    ! Perform numerical matrix-matrix-addition C := ca * A + cb * B
-    ! 
-    ! Remark: This subroutine is a modified version of the APLB1
-    !         subroutine taken from the SPARSEKIT library written
-    !         by Youcef Saad.
-    !
-    ! The vectors KLDC and KCOLC are not necessary at first glance.
-    ! However, if the matrix C is allowed to have even a larger
-    ! sparsity pattern as the "sum" of A and B, then they are
-    ! required to find the correct positions in the final matrix C.
-    !
-    ! In this subroutine, KDIAGC is the vector which points to the
-    ! position of the diagonal entries. If matrix C is stored in
-    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
-    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
+    ! Format 7/9-7/9 addition:  B := ca*A + cb*B
+    ! This routine perform numerical matrix-matrix-addition.
+   
+    subroutine do_mat79mat79add_SnglSngl(isizeIntl,neq,&
+        naA,KldA,KcolA,naB,KldB,KcolB,KdiagonalB,FaA,FaB,fa,fb)
 
-    subroutine do_mat79mat79add_numb_dblesngl(isizeIntl,neq,ncols,&
-        KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,DaC)
-      
-      integer, intent(in)               :: neq,ncols
-      integer, intent(in)                            :: isizeIntl
-      integer, dimension(:), intent(in) :: KldA,KldB,KldC,KdiagC
-      integer, dimension(:), intent(in) :: KcolA,KcolB,KcolC
-      real(DP), intent(in)                           :: cA,cB
-      real(DP), dimension(isizeIntl,*), intent(in)   :: DaA
-      real(SP), dimension(isizeIntl,*), intent(in)   :: FaB
-      real(DP), dimension(isizeIntl,*), intent(inout):: DaC
-      
-      integer :: ieq
-      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
-      integer :: icolA,icolB,icolC,idiagC
-      
-      ! Loop over all ROWS
-      do ieq=1,neq
-        
-        ! Initialize column pointers for matrix A, B and C
-        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
-        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
-        ildC=KldC(ieq); ildendC=KldC(ieq+1)-1
+      integer, intent(in)                              :: isizeIntl,neq
+      integer, intent(in)                              :: naA,naB
+      integer, dimension(:), intent(in)                :: KldA,KldB
+      integer, dimension(:), intent(in)                :: KcolA,KcolB
+      integer, dimension(:), intent(in)                :: KdiagonalB
+      real(SP), intent(in)                             :: fa,fb
+      real(SP), dimension(isizeIntl,naA), intent(in)   :: FaA
+      real(SP), dimension(isizeIntl,naB), intent(inout):: FaB
 
-        ! Initialize pointer to diagonal entry
-        idiagC = KdiagC(ieq)
-        
-        ! Since the final value of the diagonal entry
-        !    c_i,i = ca * a_i,i + cb * b_i,i
-        ! is updated step-by-step, set the diagonal entry to zero
-        DaC(:,idiagC) = 0._DP
-        
-        ! For each row IEQ loop over the columns of matrix A and B
-        ! simultaneously and collect the corresponding matrix entries
-        do
-          
-          ! Find next column number for matrices A and B
-          if (ildA .le. ildendA) then
-            icolA = KcolA(ildA)
-          else
-            icolA = ncols+1
-          end if
-          
-          if (ildB .le. ildendB) then
-            icolB = KcolB(ildB)
-          else
-            icolB = ncols+1
-          end if
-          
-          ! First, check if at least for one of the two matrices A
-          ! and/or B the diagonal entry which requires special
-          ! treatment has been reached. In this case, update (!!!)
-          ! the diagonal entry of the resulting matrix C immediately
-          ! and proceed to the next iteration
+      integer :: ieq,ildA,ildB,icolA,icolB,ild
+
+      ! Compute B := cb*B
+      call lalg_scaleVector(FaB,fb)
+
+      ! Loop over all rows
+      row: do ieq = 1, neq
+
+        ! Initialise column pointer for matrix B
+        ildB = KldB(ieq)
+
+        ! Loop over all colums
+        col: do ildA = KldA(ieq),KldA(ieq+1)-1
+
+          ! Get column number
+          icolA = KcolA(ildA)
+
+          ! Are we on the diagonal?
           if (icolA .eq. ieq) then
-            if (icolB .eq. ieq) then
-          
-              ! 1. Case: For both matrices A and B the diagonal entry
-              ! has been reached
-              DaC(:,idiagC)=cA*DaA(:,ildA)+cB*FaB(:,ildB)
-              ildA = ildA+1
-              ildB = ildB+1
-            else
-
-              ! 2. Case: For matrix A the diagonal entry has been
-              ! reached. Hence, skip matrix B.
-              DaC(:,idiagC)=DaC(:,idiagC)+cA*DaA(:,ildA)
-              ildA = ildA+1
-            end if
-          elseif (icolB .eq. ieq) then
-
-            !   3. Case: For matrix B the diagonal entry has been
-            !      reached. Hence, skip matrix A.
-            DaC(:,idiagC)=DaC(:,idiagC)+cB*FaB(:,ildB)
-            ildB = ildB+1
-
+            FaB(:,KdiagonalB(ieq)) = FaB(:,KdiagonalB(ieq)) + fa*FaA(:,ildA)
           else
-            
-            ! For both matrices A and B we have to process off-
-            ! -diagonal entries. Consider three different cases.
-            ! 1.) The next column is the same for both matrices A and B
-            ! 2.) The next column number is only present in matrix A
-            ! 3.) The next column number is only present in matrix B
-            !
-            ! Since matrix C is implicitly allowed to posses matrix
-            ! entries which are present neither in matrix A nor B, the
-            ! position ILDC needs to be updated of the current column
-            ! is not the diagonal entry whose position is known a
-            ! priori
-            
-            if (icolA .eq. icolB) then
-              
-              ! 1. Case: Processing same column in matrix A and B
+            ! Search for row/column number in matrix B
+            do ild = ildB, KldB(ieq+1)-1
+              icolB = KcolB(ild)
+              if (icolB .eq. icolA) then
+                ildB = ild
+                FaB(:,ildB) = FaB(:,ildB) + fa*FaA(:,ildA)
+                cycle col
+              end if
+            end do
 
-              ! Update column number for matrix C
-              do ildC=ildc,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolA) exit
-                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
-              end do
+            do ild = KldB(ieq), ildB-1
+              icolB = KcolB(ild)
+              if (icolB .eq. icolA) then
+                ildB = ild
+                FaB(:,ildB) = FaB(:,ildB) + fa*FaA(:,ildA)
+                cycle col
+              end if
+            end do
 
-              DaC(:,ildC)=cA*DaA(:,ildA)+cB*FaB(:,ildB)
-              ildA = ildA+1
-              ildB = ildB+1
-              ildC = ildC+1
-              
-            elseif (icolA < icolB) then
-              
-              ! 2. Case: Processing column in matrix A only
-
-              ! Update column number for matrix C
-              do ildC=ildC,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolA) exit
-                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
-              end do
-
-              DaC(:,ildC)=cA*DaA(:,ildA)
-              ildA = ildA+1
-              ildC = ildC+1
-              
-            else
-              
-              ! 3. Case: Processing column in matrix B only
-              
-              ! Update column number for matrix C
-              do ildC=ildC,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolB) exit
-                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
-              end do
-
-              DaC(:,ildC)=cB*FaB(:,ildB)
-              ildB = ildB+1
-              ildC = ildC+1
-
-            end if
+            ! If we end up here, then the row/column number is not
+            ! present in matrix B and we stop with an error
+            call output_line('Destination matrix does not provide row/column number!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79add_SnglSngl')
+            call sys_halt()
           end if
           
-          ! Check if column IEQ is completed for both matrices A and B
-          if (ildA > ildendA .and. ildB > ildendB) exit
-        end do
+        end do col
+      end do row
 
-        ! Since matrix C is allowed to have additional column entries
-        ! which are not present in the "sum" of A and B, the
-        ! remainder of C needs to be nullified by hand
-        if (ildC .le. ildendC) then
-          if (KcolC(ildC) .eq. ieq) then
-            DaC(:,ildC+1:1:ildendC) = 0._DP
-          else
-            DaC(:,ildC:1:ildendC)   = 0._DP
-          end if
-        end if
-      end do
-    end subroutine do_mat79mat79add_numb_dblesngl
+    end subroutine do_mat79mat79add_SnglSngl
 
     !**************************************************************
-    ! Format 7/9-7/9 addition
-    ! Perform numerical matrix-matrix-addition C := ca * A + cb * B
-    ! 
-    ! Remark: This subroutine is a modified version of the APLB1
-    !         subroutine taken from the SPARSEKIT library written
-    !         by Youcef Saad.
-    !
-    ! The vectors KLDC and KCOLC are not necessary at first glance.
-    ! However, if the matrix C is allowed to have even a larger
-    ! sparsity pattern as the "sum" of A and B, then they are
-    ! required to find the correct positions in the final matrix C.
-    !
-    ! In this subroutine, KDIAGC is the vector which points to the
-    ! position of the diagonal entries. If matrix C is stored in
-    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
-    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
+    ! Format 7/9-7/9 addition:  B := ca*A + cb*B
+    ! This routine perform numerical matrix-matrix-addition.
+    
+    subroutine do_mat79mat79add_SnglDble(isizeIntl,neq,&
+        naA,KldA,KcolA,naB,KldB,KcolB,KdiagonalB,FaA,DaB,fa,db)
 
-    subroutine do_mat79mat79add_numb_sngldble(isizeIntl,neq,ncols,&
-        KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
-      
-      integer, intent(in)               :: neq,ncols
-      integer, intent(in)                            :: isizeIntl
-      integer, dimension(:), intent(in) :: KldA,KldB,KldC,KdiagC
-      integer, dimension(:), intent(in) :: KcolA,KcolB,KcolC
-      real(DP), intent(in)                           :: cA,cB
-      real(SP), dimension(isizeIntl,*), intent(in)   :: FaA
-      real(DP), dimension(isizeIntl,*), intent(in)   :: DaB
-      real(DP), dimension(isizeIntl,*), intent(inout):: DaC
+      integer, intent(in)                              :: isizeIntl,neq
+      integer, intent(in)                              :: naA,naB
+      integer, dimension(:), intent(in)                :: KldA,KldB
+      integer, dimension(:), intent(in)                :: KcolA,KcolB
+      integer, dimension(:), intent(in)                :: KdiagonalB
+      real(SP), intent(in)                             :: fa
+      real(DP), intent(in)                             :: db
+      real(SP), dimension(isizeIntl,naA), intent(in)   :: FaA
+      real(DP), dimension(isizeIntl,naB), intent(inout):: DaB
 
-      integer :: ieq
-      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
-      integer :: icolA,icolB,icolC,idiagC
-      
-      ! Loop over all ROWS
-      do ieq=1,neq
-        
-        ! Initialize column pointers for matrix A, B and C
-        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
-        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
-        ildC=KldC(ieq); ildendC=KldC(ieq+1)-1
+      integer :: ieq,ildA,ildB,icolA,icolB,ild
 
-        ! Initialize pointer to diagonal entry
-        idiagC = KdiagC(ieq)
-        
-        ! Since the final value of the diagonal entry
-        !    c_i,i = ca * a_i,i + cb * b_i,i
-        ! is updated step-by-step, set the diagonal entry to zero
-        DaC(:,idiagC) = 0._DP
-        
-        ! For each row IEQ loop over the columns of matrix A and B
-        ! simultaneously and collect the corresponding matrix entries
-        do
-          
-          ! Find next column number for matrices A and B
-          if (ildA .le. ildendA) then
-            icolA = KcolA(ildA)
-          else
-            icolA = ncols+1
-          end if
-          
-          if (ildB .le. ildendB) then
-            icolB = KcolB(ildB)
-          else
-            icolB = ncols+1
-          end if
-          
-          ! First, check if at least for one of the two matrices A
-          ! and/or B the diagonal entry which requires special
-          ! treatment has been reached. In this case, update (!!!)
-          ! the diagonal entry of the resulting matrix C immediately
-          ! and proceed to the next iteration
+      ! Compute B := cb*B
+      call lalg_scaleVector(DaB,db)
+
+      ! Loop over all rows
+      row: do ieq = 1, neq
+
+        ! Initialise column pointer for matrix B
+        ildB = KldB(ieq)
+
+        ! Loop over all colums
+        col: do ildA = KldA(ieq),KldA(ieq+1)-1
+
+          ! Get column number
+          icolA = KcolA(ildA)
+
+          ! Are we on the diagonal?
           if (icolA .eq. ieq) then
-            if (icolB .eq. ieq) then
-          
-              ! 1. Case: For both matrices A and B the diagonal entry
-              ! has been reached
-              DaC(:,idiagC)=cA*FaA(:,ildA)+cB*DaB(:,ildB)
-              ildA = ildA+1
-              ildB = ildB+1
-            else
-
-              ! 2. Case: For matrix A the diagonal entry has been
-              ! reached. Hence, skip matrix B.
-              DaC(:,idiagC)=DaC(:,idiagC)+cA*FaA(:,ildA)
-              ildA = ildA+1
-            end if
-          elseif (icolB .eq. ieq) then
-
-            !   3. Case: For matrix B the diagonal entry has been
-            !      reached. Hence, skip matrix A.
-            DaC(:,idiagC)=DaC(:,idiagC)+cB*DaB(:,ildB)
-            ildB = ildB+1
-
+            DaB(:,KdiagonalB(ieq)) = DaB(:,KdiagonalB(ieq)) + fa*FaA(:,ildA)
           else
-            
-            ! For both matrices A and B we have to process off-
-            ! -diagonal entries. Consider three different cases.
-            ! 1.) The next column is the same for both matrices A and B
-            ! 2.) The next column number is only present in matrix A
-            ! 3.) The next column number is only present in matrix B
-            !
-            ! Since matrix C is implicitly allowed to posses matrix
-            ! entries which are present neither in matrix A nor B, the
-            ! position ILDC needs to be updated of the current column
-            ! is not the diagonal entry whose position is known a
-            ! priori
-            
-            if (icolA .eq. icolB) then
-              
-              ! 1. Case: Processing same column in matrix A and B
+            ! Search for row/column number in matrix B
+            do ild = ildB, KldB(ieq+1)-1
+              icolB = KcolB(ild)
+              if (icolB .eq. icolA) then
+                ildB = ild
+                DaB(:,ildB) = DaB(:,ildB) + fa*FaA(:,ildA)
+                cycle col
+              end if
+            end do
 
-              ! Update column number for matrix C
-              do ildC=ildc,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolA) exit
-                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
-              end do
+            do ild = KldB(ieq), ildB-1
+              icolB = KcolB(ild)
+              if (icolB .eq. icolA) then
+                ildB = ild
+                DaB(:,ildB) = DaB(:,ildB) + fa*FaA(:,ildA)
+                cycle col
+              end if
+            end do
 
-              DaC(:,ildC)=cA*FaA(:,ildA)+cB*DaB(:,ildB)
-              ildA = ildA+1
-              ildB = ildB+1
-              ildC = ildC+1
-              
-            elseif (icolA < icolB) then
-              
-              ! 2. Case: Processing column in matrix A only
-
-              ! Update column number for matrix C
-              do ildC=ildC,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolA) exit
-                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
-              end do
-
-              DaC(:,ildC)=cA*FaA(:,ildA)
-              ildA = ildA+1
-              ildC = ildC+1
-              
-            else
-              
-              ! 3. Case: Processing column in matrix B only
-              
-              ! Update column number for matrix C
-              do ildC=ildC,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolB) exit
-                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
-              end do
-
-              DaC(:,ildC)=cB*DaB(:,ildB)
-              ildB = ildB+1
-              ildC = ildC+1
-
-            end if
+            ! If we end up here, then the row/column number is not
+            ! present in matrix B and we stop with an error
+            call output_line('Destination matrix does not provide row/column number!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79add_SnglDble')
+            call sys_halt()
           end if
           
-          ! Check if column IEQ is completed for both matrices A and B
-          if (ildA > ildendA .and. ildB > ildendB) exit
-        end do
+        end do col
+      end do row
 
-        ! Since matrix C is allowed to have additional column entries
-        ! which are not present in the "sum" of A and B, the
-        ! remainder of C needs to be nullified by hand
-        if (ildC .le. ildendC) then
-          if (KcolC(ildC) .eq. ieq) then
-            DaC(:,ildC+1:1:ildendC) = 0._DP
-          else
-            DaC(:,ildC:1:ildendC)   = 0._DP
-          end if
-        end if
-      end do
-    end subroutine do_mat79mat79add_numb_sngldble
+    end subroutine do_mat79mat79add_SnglDble
 
-    !**************************************************************
-    ! Format 7/9-7/9 addition
-    ! Perform numerical matrix-matrix-addition C := ca * A + cb * B
-    ! 
-    ! Remark: This subroutine is a modified version of the APLB1
-    !         subroutine taken from the SPARSEKIT library written
-    !         by Youcef Saad.
-    !
-    ! The vectors KLDC and KCOLC are not necessary at first glance.
-    ! However, if the matrix C is allowed to have even a larger
-    ! sparsity pattern as the "sum" of A and B, then they are
-    ! required to find the correct positions in the final matrix C.
-    !
-    ! In this subroutine, KDIAGC is the vector which points to the
-    ! position of the diagonal entries. If matrix C is stored in
-    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
-    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
+!!$    !**************************************************************
+!!$    ! Format 7/9-7/9 addition
+!!$    ! Perform numerical matrix-matrix-addition C := ca * A + cb * B
+!!$    ! 
+!!$    ! Remark: This subroutine is a modified version of the APLB1
+!!$    !         subroutine taken from the SPARSEKIT library written
+!!$    !         by Youcef Saad.
+!!$    !
+!!$    ! The vectors KLDC and KCOLC are not necessary at first glance.
+!!$    ! However, if the matrix C is allowed to have even a larger
+!!$    ! sparsity pattern as the "sum" of A and B, then they are
+!!$    ! required to find the correct positions in the final matrix C.
+!!$    !
+!!$    ! In this subroutine, KDIAGC is the vector which points to the
+!!$    ! position of the diagonal entries. If matrix C is stored in
+!!$    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
+!!$    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
+!!$
+!!$    subroutine do_mat79mat79add_DbleDble(isizeIntl,neq,ncols,&
+!!$        KldA,KcolA,KldB,KcolB,DaA,DaB,ca,cb,KldC,KcolC,KdiagC,DaC)
+!!$      
+!!$      integer, intent(in)                            :: neq,ncols
+!!$      integer, intent(in)                            :: isizeIntl
+!!$      integer, dimension(:), intent(in)              :: KldA,KldB,KldC,KdiagC
+!!$      integer, dimension(:), intent(in)              :: KcolA,KcolB,KcolC
+!!$      real(DP), intent(in)                           :: ca,cb
+!!$      real(DP), dimension(isizeIntl,*), intent(in)   :: DaA
+!!$      real(DP), dimension(isizeIntl,*), intent(in)   :: DaB
+!!$      real(DP), dimension(isizeIntl,*), intent(inout):: DaC
+!!$      
+!!$      integer :: ieq
+!!$      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+!!$      integer :: icolA,icolB,icolC,idiagC
+!!$
+!!$      ! Loop over all ROWS
+!!$      do ieq=1,neq
+!!$        
+!!$        ! Initialize column pointers for matrix A, B and C
+!!$        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
+!!$        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
+!!$        ildC=KldC(ieq); ildendC=KldC(ieq+1)-1
+!!$
+!!$        ! Initialize pointer to diagonal entry
+!!$        idiagC = KdiagC(ieq)
+!!$        
+!!$        ! Since the final value of the diagonal entry
+!!$        !    c_i,i = ca * a_i,i + cb * b_i,i
+!!$        ! is updated step-by-step, set the diagonal entry to zero
+!!$        DaC(:,idiagC) = 0._DP
+!!$        
+!!$        ! For each row IEQ loop over the columns of matrix A and B
+!!$        ! simultaneously and collect the corresponding matrix entries
+!!$        do
+!!$          
+!!$          ! Find next column number for matrices A and B
+!!$          if (ildA .le. ildendA) then
+!!$            icolA = KcolA(ildA)
+!!$          else
+!!$            icolA = ncols+1
+!!$          end if
+!!$          
+!!$          if (ildB .le. ildendB) then
+!!$            icolB = KcolB(ildB)
+!!$          else
+!!$            icolB = ncols+1
+!!$          end if
+!!$          
+!!$          ! First, check if at least for one of the two matrices A
+!!$          ! and/or B the diagonal entry which requires special
+!!$          ! treatment has been reached. In this case, update (!!!)
+!!$          ! the diagonal entry of the resulting matrix C immediately
+!!$          ! and proceed to the next iteration
+!!$          if (icolA .eq. ieq) then
+!!$            if (icolB .eq. ieq) then
+!!$              
+!!$              ! 1. Case: For both matrices A and B the diagonal entry
+!!$              ! has been reached
+!!$              DaC(:,idiagC)=ca*DaA(:,ildA)+cB*DaB(:,ildB)
+!!$              ildA = ildA+1
+!!$              ildB = ildB+1
+!!$            else
+!!$
+!!$              ! 2. Case: For matrix A the diagonal entry has been
+!!$              ! reached. Hence, skip matrix B.
+!!$              DaC(:,idiagC)=DaC(:,idiagC)+ca*DaA(:,ildA)
+!!$              ildA = ildA+1
+!!$            end if
+!!$          elseif (icolB .eq. ieq) then
+!!$
+!!$            !   3. Case: For matrix B the diagonal entry has been
+!!$            !      reached. Hence, skip matrix A.
+!!$            DaC(:,idiagC)=DaC(:,idiagC)+cB*DaB(:,ildB)
+!!$            ildB = ildB+1
+!!$
+!!$          else
+!!$            
+!!$            ! For both matrices A and B we have to process off-
+!!$            ! -diagonal entries. Consider three different cases.
+!!$            ! 1.) The next column is the same for both matrices A and B
+!!$            ! 2.) The next column number is only present in matrix A
+!!$            ! 3.) The next column number is only present in matrix B
+!!$            !
+!!$            ! Since matrix C is implicitly allowed to posses matrix
+!!$            ! entries which are present neither in matrix A nor B, the
+!!$            ! position ILDC needs to be updated of the current column
+!!$            ! is not the diagonal entry whose position is known a
+!!$            ! priori
+!!$            
+!!$            if (icolA .eq. icolB) then
+!!$              
+!!$              ! 1. Case: Processing same column in matrix A and B
+!!$
+!!$              ! Update column number for matrix C
+!!$              do ildC=ildc,ildendC
+!!$                icolC=KcolC(ildC)
+!!$                if (icolC .eq. icolA) exit
+!!$                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
+!!$              end do
+!!$
+!!$              DaC(:,ildC)=ca*DaA(:,ildA)+cB*DaB(:,ildB)
+!!$              ildA = ildA+1
+!!$              ildB = ildB+1
+!!$              ildC = ildC+1
+!!$              
+!!$            elseif (icolA < icolB) then
+!!$              
+!!$              ! 2. Case: Processing column in matrix A only
+!!$
+!!$              ! Update column number for matrix C
+!!$              do ildC=ildC,ildendC
+!!$                icolC=KcolC(ildC)
+!!$                if (icolC .eq. icolA) exit
+!!$                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
+!!$              end do
+!!$
+!!$              DaC(:,ildC)=ca*DaA(:,ildA)
+!!$              ildA = ildA+1
+!!$              ildC = ildC+1
+!!$              
+!!$            else
+!!$              
+!!$              ! 3. Case: Processing column in matrix B only
+!!$              
+!!$              ! Update column number for matrix C
+!!$              do ildC=ildC,ildendC
+!!$                icolC=KcolC(ildC)
+!!$                if (icolC .eq. icolB) exit
+!!$                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
+!!$              end do
+!!$
+!!$              DaC(:,ildC)=cB*DaB(:,ildB)
+!!$              ildB = ildB+1
+!!$              ildC = ildC+1
+!!$
+!!$            end if
+!!$          end if
+!!$          
+!!$          ! Check if column IEQ is completed for both matrices A and B
+!!$          if (ildA > ildendA .and. ildB > ildendB) exit
+!!$        end do
+!!$
+!!$        ! Since matrix C is allowed to have additional column entries
+!!$        ! which are not present in the "sum" of A and B, the
+!!$        ! remainder of C needs to be nullified by hand
+!!$        if (ildC .le. ildendC) then
+!!$          if (KcolC(ildC) .eq. ieq) then
+!!$            DaC(:,ildC+1:1:ildendC) = 0._DP
+!!$          else
+!!$            DaC(:,ildC:1:ildendC)   = 0._DP
+!!$          end if
+!!$        end if
+!!$      end do
+!!$    end subroutine do_mat79mat79add_DbleDble
 
-    subroutine do_mat79mat79add_numb_snglsngl(isizeIntl,neq,ncols,&
-        KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,FaC)
-      
-      integer, intent(in)               :: neq,ncols
-      integer, intent(in)                            :: isizeIntl
-      integer, dimension(:), intent(in) :: KldA,KldB,KldC,KdiagC
-      integer, dimension(:), intent(in) :: KcolA,KcolB,KcolC
-      real(DP), intent(in)                           :: cA,cB
-      real(SP), dimension(isizeIntl,*), intent(in)   :: FaA
-      real(SP), dimension(isizeIntl,*), intent(in)   :: FaB
-      real(SP), dimension(isizeIntl,*), intent(inout):: FaC
-      
-      integer :: ieq
-      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
-      integer :: icolA,icolB,icolC,idiagC
-      
-      ! Loop over all ROWS
-      do ieq=1,neq
-        
-        ! Initialize column pointers for matrix A, B and C
-        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
-        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
-        ildC=KldC(ieq); ildendC=KldC(ieq+1)-1
+!!$    !**************************************************************
+!!$    ! Format 7/9-7/9 addition
+!!$    ! Perform numerical matrix-matrix-addition C := ca * A + cb * B
+!!$    ! 
+!!$    ! Remark: This subroutine is a modified version of the APLB1
+!!$    !         subroutine taken from the SPARSEKIT library written
+!!$    !         by Youcef Saad.
+!!$    !
+!!$    ! The vectors KLDC and KCOLC are not necessary at first glance.
+!!$    ! However, if the matrix C is allowed to have even a larger
+!!$    ! sparsity pattern as the "sum" of A and B, then they are
+!!$    ! required to find the correct positions in the final matrix C.
+!!$    !
+!!$    ! In this subroutine, KDIAGC is the vector which points to the
+!!$    ! position of the diagonal entries. If matrix C is stored in
+!!$    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
+!!$    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
+!!$
+!!$    subroutine do_mat79mat79add_DbleSngl(isizeIntl,neq,ncols,&
+!!$        KldA,KcolA,DaA,ca,KldB,KcolB,FaB,cb,KldC,KcolC,KdiagC,DaC)
+!!$      
+!!$      integer, intent(in)                            :: neq,ncols
+!!$      integer, intent(in)                            :: isizeIntl
+!!$      integer, dimension(:), intent(in)              :: KldA,KldB,KldC,KdiagC
+!!$      integer, dimension(:), intent(in)              :: KcolA,KcolB,KcolC
+!!$      real(DP), intent(in)                           :: ca,cb
+!!$      real(DP), dimension(isizeIntl,*), intent(in)   :: DaA
+!!$      real(SP), dimension(isizeIntl,*), intent(in)   :: FaB
+!!$      real(DP), dimension(isizeIntl,*), intent(inout):: DaC
+!!$      
+!!$      integer :: ieq
+!!$      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+!!$      integer :: icolA,icolB,icolC,idiagC
+!!$      
+!!$      ! Loop over all ROWS
+!!$      do ieq=1,neq
+!!$        
+!!$        ! Initialize column pointers for matrix A, B and C
+!!$        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
+!!$        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
+!!$        ildC=KldC(ieq); ildendC=KldC(ieq+1)-1
+!!$
+!!$        ! Initialize pointer to diagonal entry
+!!$        idiagC = KdiagC(ieq)
+!!$        
+!!$        ! Since the final value of the diagonal entry
+!!$        !    c_i,i = ca * a_i,i + cb * b_i,i
+!!$        ! is updated step-by-step, set the diagonal entry to zero
+!!$        DaC(:,idiagC) = 0._DP
+!!$        
+!!$        ! For each row IEQ loop over the columns of matrix A and B
+!!$        ! simultaneously and collect the corresponding matrix entries
+!!$        do
+!!$          
+!!$          ! Find next column number for matrices A and B
+!!$          if (ildA .le. ildendA) then
+!!$            icolA = KcolA(ildA)
+!!$          else
+!!$            icolA = ncols+1
+!!$          end if
+!!$          
+!!$          if (ildB .le. ildendB) then
+!!$            icolB = KcolB(ildB)
+!!$          else
+!!$            icolB = ncols+1
+!!$          end if
+!!$          
+!!$          ! First, check if at least for one of the two matrices A
+!!$          ! and/or B the diagonal entry which requires special
+!!$          ! treatment has been reached. In this case, update (!!!)
+!!$          ! the diagonal entry of the resulting matrix C immediately
+!!$          ! and proceed to the next iteration
+!!$          if (icolA .eq. ieq) then
+!!$            if (icolB .eq. ieq) then
+!!$          
+!!$              ! 1. Case: For both matrices A and B the diagonal entry
+!!$              ! has been reached
+!!$              DaC(:,idiagC)=ca*DaA(:,ildA)+cB*FaB(:,ildB)
+!!$              ildA = ildA+1
+!!$              ildB = ildB+1
+!!$            else
+!!$
+!!$              ! 2. Case: For matrix A the diagonal entry has been
+!!$              ! reached. Hence, skip matrix B.
+!!$              DaC(:,idiagC)=DaC(:,idiagC)+ca*DaA(:,ildA)
+!!$              ildA = ildA+1
+!!$            end if
+!!$          elseif (icolB .eq. ieq) then
+!!$
+!!$            !   3. Case: For matrix B the diagonal entry has been
+!!$            !      reached. Hence, skip matrix A.
+!!$            DaC(:,idiagC)=DaC(:,idiagC)+cB*FaB(:,ildB)
+!!$            ildB = ildB+1
+!!$
+!!$          else
+!!$            
+!!$            ! For both matrices A and B we have to process off-
+!!$            ! -diagonal entries. Consider three different cases.
+!!$            ! 1.) The next column is the same for both matrices A and B
+!!$            ! 2.) The next column number is only present in matrix A
+!!$            ! 3.) The next column number is only present in matrix B
+!!$            !
+!!$            ! Since matrix C is implicitly allowed to posses matrix
+!!$            ! entries which are present neither in matrix A nor B, the
+!!$            ! position ILDC needs to be updated of the current column
+!!$            ! is not the diagonal entry whose position is known a
+!!$            ! priori
+!!$            
+!!$            if (icolA .eq. icolB) then
+!!$              
+!!$              ! 1. Case: Processing same column in matrix A and B
+!!$
+!!$              ! Update column number for matrix C
+!!$              do ildC=ildc,ildendC
+!!$                icolC=KcolC(ildC)
+!!$                if (icolC .eq. icolA) exit
+!!$                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
+!!$              end do
+!!$
+!!$              DaC(:,ildC)=ca*DaA(:,ildA)+cB*FaB(:,ildB)
+!!$              ildA = ildA+1
+!!$              ildB = ildB+1
+!!$              ildC = ildC+1
+!!$              
+!!$            elseif (icolA < icolB) then
+!!$              
+!!$              ! 2. Case: Processing column in matrix A only
+!!$
+!!$              ! Update column number for matrix C
+!!$              do ildC=ildC,ildendC
+!!$                icolC=KcolC(ildC)
+!!$                if (icolC .eq. icolA) exit
+!!$                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
+!!$              end do
+!!$
+!!$              DaC(:,ildC)=ca*DaA(:,ildA)
+!!$              ildA = ildA+1
+!!$              ildC = ildC+1
+!!$              
+!!$            else
+!!$              
+!!$              ! 3. Case: Processing column in matrix B only
+!!$              
+!!$              ! Update column number for matrix C
+!!$              do ildC=ildC,ildendC
+!!$                icolC=KcolC(ildC)
+!!$                if (icolC .eq. icolB) exit
+!!$                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
+!!$              end do
+!!$
+!!$              DaC(:,ildC)=cB*FaB(:,ildB)
+!!$              ildB = ildB+1
+!!$              ildC = ildC+1
+!!$
+!!$            end if
+!!$          end if
+!!$          
+!!$          ! Check if column IEQ is completed for both matrices A and B
+!!$          if (ildA > ildendA .and. ildB > ildendB) exit
+!!$        end do
+!!$
+!!$        ! Since matrix C is allowed to have additional column entries
+!!$        ! which are not present in the "sum" of A and B, the
+!!$        ! remainder of C needs to be nullified by hand
+!!$        if (ildC .le. ildendC) then
+!!$          if (KcolC(ildC) .eq. ieq) then
+!!$            DaC(:,ildC+1:1:ildendC) = 0._DP
+!!$          else
+!!$            DaC(:,ildC:1:ildendC)   = 0._DP
+!!$          end if
+!!$        end if
+!!$      end do
+!!$    end subroutine do_mat79mat79add_DbleSngl
+    
+!!$    !**************************************************************
+!!$    ! Format 7/9-7/9 addition
+!!$    ! Perform numerical matrix-matrix-addition C := ca * A + cb * B
+!!$    ! 
+!!$    ! Remark: This subroutine is a modified version of the APLB1
+!!$    !         subroutine taken from the SPARSEKIT library written
+!!$    !         by Youcef Saad.
+!!$    !
+!!$    ! The vectors KLDC and KCOLC are not necessary at first glance.
+!!$    ! However, if the matrix C is allowed to have even a larger
+!!$    ! sparsity pattern as the "sum" of A and B, then they are
+!!$    ! required to find the correct positions in the final matrix C.
+!!$    !
+!!$    ! In this subroutine, KDIAGC is the vector which points to the
+!!$    ! position of the diagonal entries. If matrix C is stored in
+!!$    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
+!!$    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
+!!$
+!!$    subroutine do_mat79mat79add_SnglSngl(isizeIntl,neq,ncols,&
+!!$        KldA,KcolA,FaA,ca,KldB,KcolB,FaB,cb,KldC,KcolC,KdiagC,FaC)
+!!$      
+!!$      integer, intent(in)                            :: neq,ncols
+!!$      integer, intent(in)                            :: isizeIntl
+!!$      integer, dimension(:), intent(in)              :: KldA,KldB,KldC,KdiagC
+!!$      integer, dimension(:), intent(in)              :: KcolA,KcolB,KcolC
+!!$      real(DP), intent(in)                           :: ca,cb
+!!$      real(SP), dimension(isizeIntl,*), intent(in)   :: FaA
+!!$      real(SP), dimension(isizeIntl,*), intent(in)   :: FaB
+!!$      real(SP), dimension(isizeIntl,*), intent(inout):: FaC
+!!$      
+!!$      integer :: ieq
+!!$      integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+!!$      integer :: icolA,icolB,icolC,idiagC
+!!$      
+!!$      ! Loop over all ROWS
+!!$      do ieq=1,neq
+!!$        
+!!$        ! Initialize column pointers for matrix A, B and C
+!!$        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
+!!$        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
+!!$        ildC=KldC(ieq); ildendC=KldC(ieq+1)-1
+!!$
+!!$        ! Initialize pointer to diagonal entry
+!!$        idiagC = KdiagC(ieq)
+!!$        
+!!$        ! Since the final value of the diagonal entry
+!!$        !    c_i,i = ca * a_i,i + cb * b_i,i
+!!$        ! is updated step-by-step, set the diagonal entry to zero
+!!$        FaC(:,idiagC) = 0._SP
+!!$        
+!!$        ! For each row IEQ loop over the columns of matrix A and B
+!!$        ! simultaneously and collect the corresponding matrix entries
+!!$        do
+!!$          
+!!$          ! Find next column number for matrices A and B
+!!$          if (ildA .le. ildendA) then
+!!$            icolA = KcolA(ildA)
+!!$          else
+!!$            icolA = ncols+1
+!!$          end if
+!!$          
+!!$          if (ildB .le. ildendB) then
+!!$            icolB = KcolB(ildB)
+!!$          else
+!!$            icolB = ncols+1
+!!$          end if
+!!$          
+!!$          ! First, check if at least for one of the two matrices A
+!!$          ! and/or B the diagonal entry which requires special
+!!$          ! treatment has been reached. In this case, update (!!!)
+!!$          ! the diagonal entry of the resulting matrix C immediately
+!!$          ! and proceed to the next iteration
+!!$          if (icolA .eq. ieq) then
+!!$            if (icolB .eq. ieq) then
+!!$          
+!!$              ! 1. Case: For both matrices A and B the diagonal entry
+!!$              ! has been reached
+!!$              FaC(:,idiagC)=ca*FaA(:,ildA)+cB*FaB(:,ildB)
+!!$              ildA = ildA+1
+!!$              ildB = ildB+1
+!!$            else
+!!$
+!!$              ! 2. Case: For matrix A the diagonal entry has been
+!!$              ! reached. Hence, skip matrix B.
+!!$              FaC(:,idiagC)=FaC(:,idiagC)+ca*FaA(:,ildA)
+!!$              ildA = ildA+1
+!!$            end if
+!!$          elseif (icolB .eq. ieq) then
+!!$
+!!$            !   3. Case: For matrix B the diagonal entry has been
+!!$            !      reached. Hence, skip matrix A.
+!!$            FaC(:,idiagC)=FaC(:,idiagC)+cB*FaB(:,ildB)
+!!$            ildB = ildB+1
+!!$
+!!$          else
+!!$            
+!!$            ! For both matrices A and B we have to process off-
+!!$            ! -diagonal entries. Consider three different cases.
+!!$            ! 1.) The next column is the same for both matrices A and B
+!!$            ! 2.) The next column number is only present in matrix A
+!!$            ! 3.) The next column number is only present in matrix B
+!!$            !
+!!$            ! Since matrix C is implicitly allowed to posses matrix
+!!$            ! entries which are present neither in matrix A nor B, the
+!!$            ! position ILDC needs to be updated of the current column
+!!$            ! is not the diagonal entry whose position is known a
+!!$            ! priori
+!!$            
+!!$            if (icolA .eq. icolB) then
+!!$              
+!!$              ! 1. Case: Processing same column in matrix A and B
+!!$
+!!$              ! Update column number for matrix C
+!!$              do ildC=ildc,ildendC
+!!$                icolC=KcolC(ildC)
+!!$                if (icolC .eq. icolA) exit
+!!$                if (icolC .ne. ieq) FaC(:,ildC) = 0._SP
+!!$              end do
+!!$
+!!$              FaC(:,ildC)=ca*FaA(:,ildA)+cB*FaB(:,ildB)
+!!$              ildA = ildA+1
+!!$              ildB = ildB+1
+!!$              ildC = ildC+1
+!!$              
+!!$            elseif (icolA < icolB) then
+!!$              
+!!$              ! 2. Case: Processing column in matrix A only
+!!$
+!!$              ! Update column number for matrix C
+!!$              do ildC=ildC,ildendC
+!!$                icolC=KcolC(ildC)
+!!$                if (icolC .eq. icolA) exit
+!!$                if (icolC .ne. ieq) FaC(:,ildC) = 0._SP
+!!$              end do
+!!$
+!!$              FaC(:,ildC)=ca*FaA(:,ildA)
+!!$              ildA = ildA+1
+!!$              ildC = ildC+1
+!!$              
+!!$            else
+!!$              
+!!$              ! 3. Case: Processing column in matrix B only
+!!$              
+!!$              ! Update column number for matrix C
+!!$              do ildC=ildC,ildendC
+!!$                icolC=KcolC(ildC)
+!!$                if (icolC .eq. icolB) exit
+!!$                if (icolC .ne. ieq) FaC(:,ildC) = 0._SP
+!!$              end do
+!!$
+!!$              FaC(:,ildC)=cB*FaB(:,ildB)
+!!$              ildB = ildB+1
+!!$              ildC = ildC+1
+!!$
+!!$            end if
+!!$          end if
+!!$          
+!!$          ! Check if column IEQ is completed for both matrices A and B
+!!$          if (ildA > ildendA .and. ildB > ildendB) exit
+!!$        end do
+!!$
+!!$        ! Since matrix C is allowed to have additional column entries
+!!$        ! which are not present in the "sum" of A and B, the
+!!$        ! remainder of C needs to be nullified by hand
+!!$        if (ildC .le. ildendC) then
+!!$          if (KcolC(ildC) .eq. ieq) then
+!!$            FaC(:,ildC+1:1:ildendC) = 0._SP
+!!$          else
+!!$            FaC(:,ildC:1:ildendC)   = 0._SP
+!!$          end if
+!!$        end if
+!!$      end do
+!!$    end subroutine do_mat79mat79add_SnglSngl
 
-        ! Initialize pointer to diagonal entry
-        idiagC = KdiagC(ieq)
-        
-        ! Since the final value of the diagonal entry
-        !    c_i,i = ca * a_i,i + cb * b_i,i
-        ! is updated step-by-step, set the diagonal entry to zero
-        FaC(:,idiagC) = 0._SP
-        
-        ! For each row IEQ loop over the columns of matrix A and B
-        ! simultaneously and collect the corresponding matrix entries
-        do
-          
-          ! Find next column number for matrices A and B
-          if (ildA .le. ildendA) then
-            icolA = KcolA(ildA)
-          else
-            icolA = ncols+1
-          end if
-          
-          if (ildB .le. ildendB) then
-            icolB = KcolB(ildB)
-          else
-            icolB = ncols+1
-          end if
-          
-          ! First, check if at least for one of the two matrices A
-          ! and/or B the diagonal entry which requires special
-          ! treatment has been reached. In this case, update (!!!)
-          ! the diagonal entry of the resulting matrix C immediately
-          ! and proceed to the next iteration
-          if (icolA .eq. ieq) then
-            if (icolB .eq. ieq) then
-          
-              ! 1. Case: For both matrices A and B the diagonal entry
-              ! has been reached
-              FaC(:,idiagC)=cA*FaA(:,ildA)+cB*FaB(:,ildB)
-              ildA = ildA+1
-              ildB = ildB+1
-            else
-
-              ! 2. Case: For matrix A the diagonal entry has been
-              ! reached. Hence, skip matrix B.
-              FaC(:,idiagC)=FaC(:,idiagC)+cA*FaA(:,ildA)
-              ildA = ildA+1
-            end if
-          elseif (icolB .eq. ieq) then
-
-            !   3. Case: For matrix B the diagonal entry has been
-            !      reached. Hence, skip matrix A.
-            FaC(:,idiagC)=FaC(:,idiagC)+cB*FaB(:,ildB)
-            ildB = ildB+1
-
-          else
-            
-            ! For both matrices A and B we have to process off-
-            ! -diagonal entries. Consider three different cases.
-            ! 1.) The next column is the same for both matrices A and B
-            ! 2.) The next column number is only present in matrix A
-            ! 3.) The next column number is only present in matrix B
-            !
-            ! Since matrix C is implicitly allowed to posses matrix
-            ! entries which are present neither in matrix A nor B, the
-            ! position ILDC needs to be updated of the current column
-            ! is not the diagonal entry whose position is known a
-            ! priori
-            
-            if (icolA .eq. icolB) then
-              
-              ! 1. Case: Processing same column in matrix A and B
-
-              ! Update column number for matrix C
-              do ildC=ildc,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolA) exit
-                if (icolC .ne. ieq) FaC(:,ildC) = 0._SP
-              end do
-
-              FaC(:,ildC)=cA*FaA(:,ildA)+cB*FaB(:,ildB)
-              ildA = ildA+1
-              ildB = ildB+1
-              ildC = ildC+1
-              
-            elseif (icolA < icolB) then
-              
-              ! 2. Case: Processing column in matrix A only
-
-              ! Update column number for matrix C
-              do ildC=ildC,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolA) exit
-                if (icolC .ne. ieq) FaC(:,ildC) = 0._SP
-              end do
-
-              FaC(:,ildC)=cA*FaA(:,ildA)
-              ildA = ildA+1
-              ildC = ildC+1
-              
-            else
-              
-              ! 3. Case: Processing column in matrix B only
-              
-              ! Update column number for matrix C
-              do ildC=ildC,ildendC
-                icolC=KcolC(ildC)
-                if (icolC .eq. icolB) exit
-                if (icolC .ne. ieq) FaC(:,ildC) = 0._SP
-              end do
-
-              FaC(:,ildC)=cB*FaB(:,ildB)
-              ildB = ildB+1
-              ildC = ildC+1
-
-            end if
-          end if
-          
-          ! Check if column IEQ is completed for both matrices A and B
-          if (ildA > ildendA .and. ildB > ildendB) exit
-        end do
-
-        ! Since matrix C is allowed to have additional column entries
-        ! which are not present in the "sum" of A and B, the
-        ! remainder of C needs to be nullified by hand
-        if (ildC .le. ildendC) then
-          if (KcolC(ildC) .eq. ieq) then
-            FaC(:,ildC+1:1:ildendC) = 0._SP
-          else
-            FaC(:,ildC:1:ildendC)   = 0._SP
-          end if
-        end if
-      end do
-    end subroutine do_mat79mat79add_numb_snglsngl
   end subroutine lsyssc_matrixLinearComb
 
   ! ***************************************************************************
