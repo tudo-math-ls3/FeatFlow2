@@ -1551,36 +1551,34 @@ contains
   !</subroutine>
 
     integer :: istart, iend, istart2, iend2, istart3, iend3, icmdIndex
-    integer :: ierror
     type(VARYING_STRING), dimension(:), pointer :: p_Sargs
     logical :: bmatch
+    integer :: ierror
     character(len=SYS_NAMELEN) :: ssectionname
-    character(len=*), dimension(5,11), parameter :: Sworkflow = RESHAPE( &
-      (/ "{     ", "      ", "      ", "      ", "      ", &
-         "}     ", "      ", "      ", "      ", "      ", &
-         "FOR   ", "(     ", "*     ", ")     ", "      ", &
-         "WHILE ", "(     ", "*     ", ")     ", "      ", &
-         "DO    ", "WHILE ", "(     ", "*     ", ")     ", &
-         "IF    ", "(     ", "*     ", ")     ", "      ", &
-         "INT   ", "?     ", "      ", "      ", "      ", &
-         "DOUBLE", "?     ", "      ", "      ", "      ", &
-         "STRING", "?     ", "      ", "      ", "      ", &
-         "INT   ", "?     ", "=     ", "?     ", "      ", &
-         "DOUBLE", "?     ", "=     ", "?     ", "      ", &
-         "STRING", "?     ", "=     ", "?     ", "      " &
-       /),(/ 5,11 /)  )
-    integer, parameter :: idxCmdBEGIN   = 1
-    integer, parameter :: idxCmdEND     = 2
-    integer, parameter :: idxCmdFOR     = 3
-    integer, parameter :: idxCmdWHILE   = 4
-    integer, parameter :: idxCmdDOWHILE = 5
-    integer, parameter :: idxCmdIF      = 6
-    integer, parameter :: idxCmdINT     = 7
-    integer, parameter :: idxCmdDOUBLE  = 8
-    integer, parameter :: idxCmdSTRING  = 9
-    integer, parameter :: idxCmdINT2    = 10
-    integer, parameter :: idxCmdDOUBLE2 = 11
-    integer, parameter :: idxCmdSTRING2 = 12
+    character(len=*), dimension(5), parameter :: spatternBEGIN = &
+      (/ "{     ", "      ", "      ", "      ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternEND = &
+      (/ "}     ", "      ", "      ", "      ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternFOR = &
+      (/ "FOR   ", "(     ", "*     ", ")     ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternWHILE = &
+      (/ "WHILE ", "(     ", "*     ", ")     ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternDO = &
+      (/ "DO    ", "(     ", "*     ", ")     ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternIF = &
+      (/ "IF    ", "(     ", "*     ", ")     ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternINT = &
+      (/ "INT   ", "?     ", "      ", "      ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternDOUBLE = &
+      (/ "DOUBLE", "?     ", "      ", "      ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternSTRING = &
+      (/ "STRING", "?     ", "      ", "      ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternINT2 = &
+      (/ "INT   ", "?     ", "=     ", "*     ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternDOUBLE2 = &
+      (/ "DOUBLE", "?     ", "=     ", "*     ", "      " /)
+    character(len=*), dimension(5), parameter :: spatternSTRING2 = &
+      (/ "STRING", "?     ", "=     ", "*     ", "      " /)
     
     bmatch = .false.
     
@@ -1591,156 +1589,181 @@ contains
       ssectionname = trim(sys_siL(inestlevel,10))
     end if
 
-    do icmdindex = 1,ubound(Sworkflow,2)
-      ! Try to match the command
-      call cmdprs_commandmatch (scommand,Sworkflow(:,icmdindex),bmatch)
-      
-      if (bmatch) then
-        select case (icmdindex)
-
-        case (idxCmdINT)
-          ! Create INT variable.
-          istart = 0
-          iend = 0
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call collct_setvalue_int (rcmdStatus%rcollection, scommand(istart:iend), &
-              0, .true., ssectionname=ssectionname) 
-
-        case (idxCmdDOUBLE)
-          ! Create DOUBLE variable.
-          istart = 0
-          iend = 0
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call collct_setvalue_real (rcmdStatus%rcollection, scommand(istart:iend), &
-              0.0_DP, .true., ssectionname=ssectionname) 
-
-        case (idxCmdSTRING)
-          ! Create STRING variable.
-          istart = 0
-          iend = 0
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call collct_setvalue_string (rcmdStatus%rcollection, scommand(istart:iend), &
-              "", .true., ssectionname=ssectionname) 
-
-        case (idxCmdINT2)
-          ! Create INT variable and assign.
-          istart = 0
-          iend = 0
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call collct_setvalue_int (rcmdStatus%rcollection, scommand(istart:iend), &
-              0, .true., ssectionname=ssectionname)
-          istart2 = 0
-          iend2 = 0
-          call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
-
-        case (idxCmdDOUBLE2)
-          ! Create DOUBLE variable and assign.
-          istart = 0
-          iend = 0
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call collct_setvalue_real (rcmdStatus%rcollection, scommand(istart:iend), &
-              0.0_DP, .true., ssectionname=ssectionname) 
-          istart2 = 0
-          iend2 = 0
-          call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
-
-        case (idxCmdSTRING2)
-          ! Create STRING variable and assign.
-          istart = 0
-          iend = 0
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-          call collct_setvalue_string (rcmdStatus%rcollection, scommand(istart:iend), &
-              "", .true., ssectionname=ssectionname) 
-          istart2 = 0
-          iend2 = 0
-          call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
-
-        case default
-        
-          ! Command not found. 
-          rcmdStatus%ierror = 1     
-               
-        end select
-          
-        if (bworkflowAllowed .and. (rcmdStatus%ierror .ne. 0)) then
-          
-          ! 2nd chance...
-          rcmdStatus%ierror = 0
-          
-          select case (icmdindex)
-          case (idxCmdBEGIN)
-            ! Get the subblock and execute
-            call cmdprs_getNextBlock (rcmdblock,iline,istart2,iend2)
-            
-            ! Create new nest level in the collection
-            call collct_addsection (rcmdStatus%rcollection, trim(sys_siL(inestlevel+1,10)))
-            
-            ! Execute
-            call cmdprs_parsecmdblock (rcmdStatus,rcmdblock,inestlevel+1,istart2,iend2,rvalue)
-
-            ! Remove local symbols
-            call collct_deletesection (rcmdStatus%rcollection, trim(sys_siL(inestlevel+1,10)))
-
-            ! Move the current to the end of the block.
-            iline = iend2
-            
-          case (idxCmdFOR)
-            ! For loop. Fetch the command block from the next lines.
-            call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
-            
-            ! Process the command
-            call cmdprs_doFor (rcmdStatus,rcmdblock,inestlevel,scommand,iline,istart2,iend2)
-            
-      exit      ! Move the current to the end of the block.
-            iline = iend2
-            
-          case (idxCmdWHILE)
-            ! While loop. Fetch the command block from the next lines.
-            call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
-
-            ! Move the current to the end of the block.
-            iline = iend2
-
-          case (idxCmdDOWHILE)
-            ! Do-while loop. Fetch the command block from the next lines.
-            call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
-
-            ! Move the current to the end of the block.
-            iline = iend2
-
-          case (idxCmdIF)
-            ! If-command. Most complicated. Get one or two subblocks.
-            call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
-            
-            ! Move the current to the end of the block.
-            iline = iend2
-
-          case default
-          
-            ! Command not found. 
-            rcmdStatus%ierror = 1          
-
-          end select
-        end if
-
-        if (rcmdStatus%ierror .ne. 0) then
-          call output_line ("Wrong syntax!")
-          rcmdStatus%ierror = 1
-        end if
-          
-        ! Next line
-        exit
-        
-      end if
-      
-    end do
+    ! Try to match the command
+    call cmdprs_commandmatch (scommand,spatternINT,bmatch)
     
+    if (bmatch) then
+      ! Create INT variable.
+      istart = 0
+      iend = 0
+      call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+      call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+      call collct_setvalue_int (rcmdStatus%rcollection, scommand(istart:iend), &
+          0, .true., ssectionname=ssectionname) 
+    end if
+
+    if (.not. bmatch) then
+      call cmdprs_commandmatch (scommand,spatternDOUBLE,bmatch)
+    
+      if (bmatch) then
+        ! Create DOUBLE variable.
+        istart = 0
+        iend = 0
+        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+        call collct_setvalue_real (rcmdStatus%rcollection, scommand(istart:iend), &
+            0.0_DP, .true., ssectionname=ssectionname) 
+      end if
+    end if
+
+    if (.not. bmatch) then
+      call cmdprs_commandmatch (scommand,spatternSTRING,bmatch)
+    
+      if (bmatch) then
+        ! Create STRING variable.
+        istart = 0
+        iend = 0
+        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+        call collct_setvalue_string (rcmdStatus%rcollection, scommand(istart:iend), &
+            "", .true., ssectionname=ssectionname) 
+      end if
+    end if
+
+    if (.not. bmatch) then
+      call cmdprs_commandmatch (scommand,spatternINT2,bmatch)
+    
+      if (bmatch) then
+        ! Create INT variable and assign.
+        istart = 0
+        iend = 0
+        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+        call collct_setvalue_int (rcmdStatus%rcollection, scommand(istart:iend), &
+            0, .true., ssectionname=ssectionname)
+        istart2 = 0
+        iend2 = 0
+        call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
+      end if
+    end if
+
+    if (.not. bmatch) then
+      call cmdprs_commandmatch (scommand,spatternDOUBLE2,bmatch)
+    
+      if (bmatch) then
+        ! Create DOUBLE variable and assign.
+        istart = 0
+        iend = 0
+        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+        call collct_setvalue_real (rcmdStatus%rcollection, scommand(istart:iend), &
+            0.0_DP, .true., ssectionname=ssectionname) 
+        istart2 = 0
+        iend2 = 0
+        call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
+      end if
+    end if
+
+    if (.not. bmatch) then
+      call cmdprs_commandmatch (scommand,spatternSTRING2,bmatch)
+    
+      if (bmatch) then
+        ! Create STRING variable and assign.
+        istart = 0
+        iend = 0
+        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
+        call collct_setvalue_string (rcmdStatus%rcollection, scommand(istart:iend), &
+            "", .true., ssectionname=ssectionname) 
+        istart2 = 0
+        iend2 = 0
+        call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
+      end if
+    end if
+
+    if (bworkflowAllowed .and. (rcmdStatus%ierror .eq. 0)) then
+      
+      ! 2nd chance...
+
+      if (.not. bmatch) then
+        
+        call cmdprs_commandmatch (scommand,spatternBEGIN,bmatch)
+      
+        if (bmatch) then
+          ! Get the subblock and execute
+          call cmdprs_getNextBlock (rcmdblock,iline,istart2,iend2)
+          
+          ! Create new nest level in the collection
+          call collct_addsection (rcmdStatus%rcollection, trim(sys_siL(inestlevel+1,10)))
+          
+          ! Execute
+          call cmdprs_parsecmdblock (rcmdStatus,rcmdblock,inestlevel+1,istart2,iend2,rvalue)
+
+          ! Remove local symbols
+          call collct_deletesection (rcmdStatus%rcollection, trim(sys_siL(inestlevel+1,10)))
+
+          ! Move the current to the end of the block.
+          iline = iend2
+        end if
+      end if
+          
+      if (.not. bmatch) then
+
+        call cmdprs_commandmatch (scommand,spatternFOR,bmatch)
+      
+        if (bmatch) then
+          ! For loop. Fetch the command block from the next lines.
+          call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
+          
+          ! Process the command
+          call cmdprs_doFor (rcmdStatus,rcmdblock,inestlevel,scommand,iline,istart2,iend2)
+          
+          ! Move the current to the end of the block.
+          iline = iend2
+        end if
+      end if
+          
+      if (.not. bmatch) then
+
+        call cmdprs_commandmatch (scommand,spatternWHILE,bmatch)
+
+        if (bmatch) then
+          ! While loop. Fetch the command block from the next lines.
+          call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
+
+          ! Move the current to the end of the block.
+          iline = iend2
+        end if
+      end if
+
+      if (.not. bmatch) then
+
+        call cmdprs_commandmatch (scommand,spatternDO,bmatch)
+      
+        if (bmatch) then
+          ! Do-while loop. Fetch the command block from the next lines.
+          call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
+
+          ! Move the current to the end of the block.
+          iline = iend2
+        end if
+      end if
+
+      if (.not. bmatch) then
+
+        call cmdprs_commandmatch (scommand,spatternIF,bmatch)
+      
+        if (bmatch) then
+          ! If-command. Most complicated. Get one or two subblocks.
+          call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
+          
+          ! Move the current to the end of the block.
+          iline = iend2
+        end if
+      end if
+
+    end if
+
     if (.not. bmatch) then
       
       ! No build-in command. Process special command.
@@ -1749,6 +1772,11 @@ contains
         call cmdprs_dospecialcommand (rcmdStatus,p_Sargs,ierror)
         call cmdprs_releaseargs (p_Sargs)
         bmatch = ierror .eq. 0
+        if (ierror .gt. 1) then
+          ! =0: ok, =1: not found. >2: real error, pass to caller
+          rcmdStatus%ierror = ierror
+          bmatch = .true.
+        end if
       end if
       
     end if
@@ -1759,9 +1787,12 @@ contains
       istart = 0
       iend = 0
       call tpsym_evalExpression (scommand,rcmdStatus%rcollection,inestlevel,istart,iend,rvalue)
+      bmatch = rvalue%ctype .ne. STYPE_INVALID
     end if
     
-    if (rcmdStatus%ierror .ne. 0) then
+    if (.not. bmatch) then
+      call output_line ("Invalid command!")
+    else if (rcmdStatus%ierror .ne. 0) then
       call output_line ("Invalid syntax!")
     end if
       
@@ -2196,8 +2227,8 @@ contains
       return
     end if
 
-    if (scmd .eq. "EXEC") then
-      call cmdprs_do_exec (rcmdStatus,Sargs)
+    if (scmd .eq. "RUN") then
+      call cmdprs_do_run (rcmdStatus,Sargs)
       return
     end if
 
@@ -2796,7 +2827,7 @@ contains
       call output_line ("  help               - This help page.")
       call output_line ("  exit               - Exits the command line.")
       call output_line ("  meminfo            - Information about memory management.")
-      call output_line ("  exec               - Execute script.")
+      call output_line ("  run                - Execute script.")
       call output_line ("  print              - Print some text.")
       call output_line ("  set                - Modify/set/print environment.")
       call output_line ("  show               - Show environment variable (if possible).")
@@ -2830,11 +2861,11 @@ contains
         return
       end if
 
-      if (sargformatted .eq. "EXEC") then
-        call output_line ("EXEC - Execute a script on hard disc.")
+      if (sargformatted .eq. "RUN") then
+        call output_line ("RUN - Execute a script on hard disc.")
         call output_lbrk ()
         call output_line ("Usage:")
-        call output_line ("  EXEC ""[filename/path]""")
+        call output_line ("  RUN ""[filename/path]""")
       
         return
       end if
@@ -3289,10 +3320,10 @@ contains
 
   ! ***************************************************************************
 
-  recursive subroutine cmdprs_do_exec (rcmdStatus,Sargs)
+  recursive subroutine cmdprs_do_run (rcmdStatus,Sargs)
   
   !<description>
-    ! Command: EXEC.
+    ! Command: RUN.
   !</description>
   
   !<inputoutput>
