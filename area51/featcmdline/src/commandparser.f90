@@ -37,6 +37,7 @@ module commandparser
   use ucd
   
   use typedsymbol
+  use stdinoutparser
 
   implicit none
   
@@ -324,6 +325,95 @@ contains
   
   end function 
 
+  !************************************************************************
+
+  elemental subroutine cmdprs_dequoteStd (ssource,sdest,ilength)
+  !<description>
+    ! Remove all quotation marks from a string.
+  !</description>
+  
+  !<input>
+    ! A source string.
+    character(len=*), intent(in) :: ssource
+  !</input>
+  
+  !<output>
+    ! Destination string. Non-escaped quotation marks are removed.
+    character(len=*), intent(out) :: sdest
+    
+    ! Length of the string
+    integer, intent(out) :: ilength
+  !</output>
+  
+    character(len=len(ssource)) :: stemp
+    integer :: i, idest, ilen
+    character :: squotechar, scurrentchar
+    logical :: bescape
+    
+    ! Copy the string, remove leading/trailing spaces.
+    stemp = trim(ssource)
+    
+    ! Initialise destination
+    sdest = ""
+    
+    ! Loop through the string. Copy characters.
+    ! Replace quotation marks.
+    i = 1
+    idest = 0
+    bescape = .false.
+    squotechar = ' '
+    ilen = len_trim(stemp)
+    do 
+      if (i .gt. ilen) exit
+      
+      ! Get the current character.
+      scurrentchar = stemp(i:i)
+      
+      if (bescape) then
+      
+        ! Switch off escape mode.
+        bescape = .false.
+        
+      else
+        
+        if (scurrentchar .eq. "\") then
+        
+          ! take the next character as it is.
+          bescape = .true.
+          
+          ! Ignore the escape char.
+          i = i+1
+          cycle
+        
+        else if ((scurrentchar .eq. "'") .or. (scurrentchar .eq. """")) then
+          
+          ! Start quoting or stop it. Only the current quote char
+          ! triggers off the quoting.
+          if (squotechar .eq. scurrentchar) then
+            squotechar = " "
+          else
+            squotechar = scurrentchar
+          end if
+          
+          ! Ignore the quotation char.
+          i = i+1
+          cycle
+          
+        end if
+      end if
+
+      ! Copy the character and go to the next char.
+      idest = idest+1
+      sdest(idest:idest) = scurrentchar
+
+      i = i+1
+    end do
+    
+    ! From the destination, take the actual substring.
+    ilength = idest
+    
+  end subroutine 
+
   ! ***************************************************************************
 
   subroutine cmdprs_getparam (Sargs,iparam,sparam,bupcase,bdequote)
@@ -449,7 +539,7 @@ contains
     !
     ! icharset=1: Splitting on expression boundaries.
     !    Group 1: " "
-    !    Group 2: "!+-*/%()~;{}^<>="
+    !    Group 2: "!+-*/%()~,;{}^<>="
     !    Group 3: subgroup 1: "&|=!<>-+<>"
     !             subgroup 2: "&|==<>-+=="
     !    Group 4: Everything which is not in the other groups
@@ -510,7 +600,7 @@ contains
         end if
         
         if (.not. btriggered) then
-          call trigger_chargroup2 (ccurrchargroup,"!+-*/%()~;{}^<>=",btriggered,ssource,ipos,&
+          call trigger_chargroup2 (ccurrchargroup,"!+-*/%()~,;{}^<>=",btriggered,ssource,ipos,&
               sdest,idest)
         end if
         
@@ -1489,7 +1579,7 @@ contains
     
       ! Get the line and split + dequote it.
       stemp = rcmdblock%p_Rcommands(iline)
-      call cmdprs_complexSplit (stemp,sline,1,.true.)
+      call cmdprs_complexSplit (stemp,sline,1,.false.)
       
       ! Return the first nonempty line
       if (sline .ne. "") return
@@ -2340,7 +2430,8 @@ contains
 
   !<subroutine>
   
-  recursive subroutine tpsym_evalExpression (sstring,rcollection,inestlevel,istart,iend,rvalue)
+  recursive subroutine tpsym_evalExpression (sstring,rcollection,inestlevel,istart,iend,rvalue,&
+      spreviousOperator)
   
   !<description>
     ! Parses a string of symbols and creates a value from it.
@@ -2366,6 +2457,11 @@ contains
 
     ! Level of nesting
     integer, intent(in) :: inestlevel
+    
+    ! OPTIONAL: The operator preceding this expression. Must be specified
+    ! in sequences of expressions. If omitted, the value of the expression
+    ! is just calculated and returned, ignoring any operator precedence.
+    character(len=*), intent(in), optional :: spreviousOperator
   !</input>
   
   !<input
@@ -2379,8 +2475,11 @@ contains
   
     ! local variables
     integer :: iprevopstart,iprevopend,icurropstart,icurropend,isymbolstart,isymbolend
+    integer :: inextsymstart, inextsymend
     type(t_symbolValue) :: rvaluetemp
     integer :: ileftprec, irightprec, ilength
+    logical :: berror
+    type(t_symbolValue), dimension(:), pointer :: p_Rvalues
     
     ilength = len_trim(sstring)
     
@@ -2393,25 +2492,55 @@ contains
     isymbolstart = istart
     isymbolend = iend
     
-    ! Get the previous operator.
-    iprevopstart = istart
-    iprevopend = iend
-    call cmdprs_nexttoken (sstring,iprevopstart,iprevopend,ilength,.true.)
-    
+    ! How does the expression start?
     if (sstring(istart:iend) .eq. "(") then
       ! Evaluate the value in the brackets.
       call tpsym_evalExpressionBrackets (sstring,rcollection,inestlevel,istart,iend,rvalue)
-      ! istart/iend now points to the last token -- the closing bracket.
+      
+      ! istart/iend now points to the next token after the closing bracket.
     else
-      ! Parse the symbol, create a value.
-      call tpsym_parseSymbol (sstring(isymbolstart:isymbolend),rcollection,inestlevel,rvalue)
+      ! Check the following token. If it's a "(", we have a function call!
+      inextsymstart = istart
+      inextsymend = iend
+      call cmdprs_nexttoken (sstring,inextsymstart,inextsymend,ilength)
+      if (inextsymstart .eq. 0) then
+        ! Variable or symbol. Parse the symbol, create a value.
+        call tpsym_parseSymbol (sstring(isymbolstart:isymbolend),rcollection,inestlevel,rvalue)
+        
+        ! Go to the next token
+        call cmdprs_nexttoken (sstring,istart,iend,ilength)
+        
+      else if (sstring(inextsymstart:inextsymend) .eq. "(") then
+      
+        istart = inextsymstart
+        iend = inextsymend
+        
+        ! That's a function. Get the arguments.
+        call tpsym_getArguments (sstring,rcollection,inestlevel,istart,iend,p_Rvalues,berror)
+        
+        if (.not. berror) then
+          ! Evaluate the function behind it.
+          call tpsym_evalFunction (sstring(isymbolstart:isymbolend),rcollection,inestlevel,p_Rvalues,rvalue)
+          
+          ! Release memory.
+          deallocate(p_Rvalues)
+        end if
+        
+        ! istart/iend points to the next token.
+      else
+        ! Variable or symbol. Parse the symbol, create a value.
+        call tpsym_parseSymbol (sstring(isymbolstart:isymbolend),rcollection,inestlevel,rvalue)
+        
+        ! Go to the next token
+        call cmdprs_nexttoken (sstring,istart,iend,ilength)
+        
+      end if
     end if
     if (rvalue%ctype .eq. STYPE_INVALID) return
     
     ! Repeat to evaluate all following operators.
     do while (istart .ne. 0)
       ! We have a value. Get the next operator.
-      call cmdprs_nexttoken (sstring,istart,iend,ilength)
       icurropstart = istart
       icurropend = iend
       
@@ -2420,14 +2549,26 @@ contains
       ! Left more important -> Stop here, return, value will be used.
       ! Right more important -> Recursively evaluate the expression on the right
       !    and evaluate the value of the operator.
-      if (iprevopstart .gt. 0) then
+      if (present(spreviousOperator)) then
         if (icurropstart .eq. 0) return
-        if (getOperatorWeight(sstring(iprevopstart:iprevopend)) .gt. &
+        if (getOperatorWeight(spreviousOperator) .gt. &
             getOperatorWeight(sstring(icurropstart:icurropend))) return
       end if
       
       ! Check for immediate operators.
-      if (sstring(icurropstart:icurropend) .eq. "++") then
+      if (sstring(icurropstart:icurropend) .eq. ",") then
+        ! Cancel, we are done.
+        return
+        
+      else if (sstring(icurropstart:icurropend) .eq. ";") then
+        ! Cancel, we are done.
+        return
+        
+      else if (sstring(icurropstart:icurropend) .eq. ")") then
+        ! Cancel, we are done.
+        return
+        
+      else if (sstring(icurropstart:icurropend) .eq. "++") then
       
         ! Increase variable, return old value.
         rvaluetemp = 1
@@ -2458,7 +2599,8 @@ contains
         call cmdprs_nexttoken (sstring,istart,iend,ilength)
         if (istart .eq. 0) return
         
-        call tpsym_evalExpression (sstring,rcollection,inestlevel,istart,iend,rvaluetemp)
+        call tpsym_evalExpression (sstring,rcollection,inestlevel,istart,iend,rvaluetemp,&
+            spreviousOperator = sstring(icurropstart:icurropend))
         if (rvaluetemp%ctype .eq. STYPE_INVALID) return
         
         ! What is the operator?
@@ -2532,6 +2674,9 @@ contains
         end if
         
       end if
+
+      ! Next token      
+      call cmdprs_nexttoken (sstring,istart,iend,ilength)
       
     end do
     
@@ -2635,7 +2780,6 @@ contains
         ibracket = ibracket + 1
       else if (sstring(istart2:istart2) .eq. ")") then
         ibracket = ibracket - 1
-        if (ibracket .eq. 0) exit
       end if
       
       ! Ignore other tokens.
@@ -2648,15 +2792,144 @@ contains
     ! Evaluate recursively.
     istart = 0
     iend = 0
-    call tpsym_evalExpression (sstring(iend+2:istart2-2),rcollection,inestlevel,&
+    call tpsym_evalExpression (sstring(iend+2:istart2-4),rcollection,inestlevel,&
         istart,iend,rvalue)
     
-    ! Return the position of the closing bracket.
+    ! Hop behind the bracket.
     istart = istart2
     iend = iend2
 
   end subroutine
   
+  ! ***************************************************************************
+
+  !<subroutine>
+  
+  recursive subroutine tpsym_getArguments (ssource,rcollection,inestlevel,istart,iend,p_Rvalues,berror)
+  
+  !<description>
+    ! Evaluates a list of arguments in brackets.
+  !</description>
+
+  !<input>
+    ! String containing symbols. The string must have been split with cmdprs_complexSplit
+    ! and must completely be trimmed!
+    character(len=*), intent(in) :: ssource
+  
+    ! Collection containing symbols.
+    type(t_collection), intent(inout) :: rcollection
+
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
+  !</input>
+  
+  !<inputoutput>
+    ! IN: Start/End of the function name.
+    ! OUT: Start/End of the token behind the closing bracket.
+    integer, intent(inout) :: istart,iend
+  !</inputoutput>
+  
+  !<output>
+    ! Pointer to list of values or NULL if the list is empty.
+    type(t_symbolValue), dimension(:), pointer :: p_Rvalues
+    
+    ! Set to TRUE in case of a format error
+    logical, intent(out) :: berror
+  !</output>
+  
+  !</subroutine>
+  
+    ! local variables
+    integer :: istart2,iend2
+    integer :: iargs,ilength,i,ibracket
+    character(len=SYS_NAMELEN) :: sname
+    
+    berror = .false.
+
+    ! ignore the bracket.
+    ilength = len_trim(ssource)
+    call cmdprs_nexttoken (ssource,istart,iend,ilength)
+    
+    ! Count the number of "," before teh closing bracket.
+    istart2 = istart
+    iend2 = iend
+    iargs = 0
+    if (ssource(istart:iend) .ne. ")") then
+      iargs = 1
+      ibracket = 1
+      do
+        if (istart .eq. 0) return
+        if (ssource(istart:iend) .eq. "(") then
+          ibracket = ibracket+1
+        else if (ssource(istart:iend) .eq. ")") then
+          ibracket = ibracket-1
+          ! Check if we are done.
+          if (ibracket .eq. 0) exit 
+        else if ((ssource(istart:iend) .eq. ",") .and. (ibracket .eq. 1)) then  
+          ! Our argument
+          iargs = iargs + 1
+        end if
+        
+        ! Next token
+        call cmdprs_nexttoken (ssource,istart,iend,ilength)
+      end do
+      if (ibracket .ne. 0) then
+        ! Error
+        berror = .true.
+        return
+      end if
+    end if
+    
+    ! Allocate memory for the subexpressions.
+    if (iargs .gt. 0) then
+      allocate(p_Rvalues(iargs))
+      
+      ! Get the subexpressions
+      istart = istart2
+      iend = iend2
+      do i=1,iargs
+      
+        ! Take a look at the current and next token. If we have the form
+        ! "identifier = ...", this is the specification of an optional
+        ! variable.
+        istart2 = istart
+        iend2 = iend
+        call cmdprs_nexttoken (ssource,istart2,iend2,ilength)
+        if (istart2 .ne. 0) then
+          if (ssource(istart2:iend2) .eq. "=") then
+            ! Skip the name as well as the "=" sign.
+            call cmdprs_nexttoken (ssource,istart,iend,ilength)
+            call cmdprs_nexttoken (ssource,istart,iend,ilength)
+            
+            ! Then evaluate...
+          end if
+        end if
+      
+        ! Evaluate the next expression up to the closing bracket.
+        call tpsym_evalExpression (ssource,&
+            rcollection,inestlevel,istart,iend,p_Rvalues(i))            
+            
+        if (istart2 .ne. 0) then            
+          if (ssource(istart2:iend2) .eq. "=") then
+            ! Optional argument. Get its name as variable tag.
+            ! For that purpose, go one token back from the "=" sign.
+            call cmdprs_nexttoken (ssource,istart2,iend2,ilength,.true.)
+            p_Rvalues(i)%svartag = ssource(istart2:iend2)
+          end if
+        end if
+        
+        ! istart/iend point to the "," or ")".
+        ! Ignore.
+        call cmdprs_nexttoken (ssource,istart,iend,ilength)
+      
+      end do
+      
+    else
+      nullify(p_Rvalues)
+    end if
+
+  end subroutine
+
   ! ***************************************************************************
   ! Work flow command handlers
   ! ***************************************************************************
@@ -6077,4 +6350,99 @@ contains
     
   end subroutine
 
+  ! ***************************************************************************
+
+  !<subroutine>
+  
+  recursive subroutine tpsym_evalFunction (sstring,rcollection,inestlevel,p_Rvalues,rvalue)
+  
+  !<description>
+    ! Evaluates a function.
+  !</description>
+
+  !<input>
+    ! Name of the function
+    character(len=*), intent(in) :: sstring
+  
+    ! Collection containing symbols.
+    type(t_collection), intent(inout) :: rcollection
+
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
+
+    ! Pointer to list of values or NULL if the list is empty.
+    type(t_symbolValue), dimension(:), pointer :: p_Rvalues
+  !</input>
+  
+  !<output>
+    ! Return value of the function.
+    type(t_symbolValue), intent(out) :: rvalue
+  !</output>
+  
+  !</subroutine>
+  
+    character (len=SYS_NAMELEN) :: sname
+    character (len=SYS_STRLEN) :: stemp,stemp2
+    integer :: ilength
+  
+    rvalue%ctype = STYPE_INVALID
+    
+    if (sstring .eq. "printf") then
+      if (associated(p_Rvalues)) then
+        if (p_Rvalues(1)%ctype .eq. STYPE_STRING) then
+        
+          ! Evaluate the arguments.
+          stemp = p_Rvalues(1)%svalue
+          call sioprs_qualifyString (stemp,p_Rvalues(2:))
+          
+          ! Print to terminal
+          call cmdprs_dequoteStd(stemp,stemp2,ilength)
+          call output_line (stemp2)
+          
+          ! Worked.
+          rvalue%ctype = STYPE_INTEGER
+          return
+        end if
+        
+      end if
+
+      ! If we come to here, there is something wrong.
+      call output_line ("Invalid arguments!")
+      return
+      
+    else if (sstring .eq. "sprintf") then
+      if (associated(p_Rvalues)) then
+        if (size(p_Rvalues) .ge. 2) then
+          if ((p_Rvalues(1)%ctype .eq. STYPE_STRING) .and.&
+              (p_Rvalues(2)%ctype .eq. STYPE_STRING)) then
+          
+            ! Evaluate the arguments.
+            stemp = p_Rvalues(2)%svalue
+            if (size(p_Rvalues) .ge. 3) then
+              call sioprs_qualifyString (stemp,p_Rvalues(3:))
+            else
+              call sioprs_qualifyString (stemp)
+            end if
+            
+            ! Print to string
+            p_Rvalues(1)%svalue = trim(stemp)
+            p_Rvalues(1)%ilength = len_trim(stemp)
+            call tpsym_saveSymbol (p_Rvalues(1),inestlevel,rcollection)
+            
+            ! Worked.
+            rvalue%ctype = STYPE_INTEGER
+            return
+          end if
+        end if
+        
+      end if
+
+      ! If we come to here, there is something wrong.
+      call output_line ("Invalid arguments!")
+      return
+
+    end if
+
+  end subroutine
+  
 end module

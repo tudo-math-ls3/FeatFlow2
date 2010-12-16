@@ -45,6 +45,12 @@ module typedsymbol
     ! variable and Xvalue to its value; svarname is set to the variable name.
     character(SYS_NAMELEN) :: svarname = ""
     
+    ! A string tag for a variable. Used for anonymous variables, i.e. for
+    ! variables that have a name but do not exist in a collection. These appear
+    ! e.g. in function calls in the form of optional parameters like
+    ! "myfunction(...,optionalvar=xxx)".
+    character(SYS_NAMELEN) :: svartag = ""
+    
   end type
   
   public :: t_symbolValue
