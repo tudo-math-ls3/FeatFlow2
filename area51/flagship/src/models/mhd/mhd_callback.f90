@@ -1236,22 +1236,19 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildDivVectorTVD(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM1D,&
                 mhd_calcFluxGalNoBdr1d_sim,&
                 mhd_calcCharacteristics1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
             call gfsys_buildDivVectorTVD(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM2D,&
                 mhd_calcFluxGalNoBdr2d_sim,&
                 mhd_calcCharacteristics2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
             call gfsys_buildDivVectorTVD(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM3D,&
                 mhd_calcFluxGalNoBdr3d_sim,&
                 mhd_calcCharacteristics3d_sim, dscale, .true., rrhs)
           end select
@@ -1694,22 +1691,19 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM1D,&
             mhd_calcFluxGalNoBdr1d_sim,&
             mhd_calcCharacteristics1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM2D,&
             mhd_calcFluxGalNoBdr2d_sim,&
             mhd_calcCharacteristics2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM3D,&
             mhd_calcFluxGalNoBdr3d_sim,&
             mhd_calcCharacteristics3d_sim, dscale , .false., rres)
       end select
@@ -2090,22 +2084,19 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM1D,&
             mhd_calcFluxGalNoBdr1d_sim,&
             mhd_calcCharacteristics1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM2D,&
             mhd_calcFluxGalNoBdr2d_sim,&
             mhd_calcCharacteristics2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM3D,&
             mhd_calcFluxGalNoBdr3d_sim,&
             mhd_calcCharacteristics3d_sim, dscale, .false., rrhs)
 

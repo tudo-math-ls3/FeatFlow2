@@ -579,15 +579,15 @@ contains
       
       return   ! -> high-order Galerkin
       
-    elseif ((istabilisation .ne. AFCSTAB_UPWIND)            .and. &
-        (    istabilisation .ne. AFCSTAB_FEMFCT_CLASSICAL)  .and. &
-        (    istabilisation .ne. AFCSTAB_FEMFCT_IMPLICIT)   .and. &
-        (    istabilisation .ne. AFCSTAB_FEMFCT_LINEARISED) .and. &
-        (    istabilisation .ne. AFCSTAB_FEMFCT_ITERATIVE)  .and. &
-        (    istabilisation .ne. AFCSTAB_FEMFCT_MASS)       .and. &
-        (    istabilisation .ne. AFCSTAB_FEMTVD)            .and. &
-        (    istabilisation .ne. AFCSTAB_FEMGP)             .and. &
-        (    istabilisation .ne. AFCSTAB_DMP)               .and. &
+    elseif ((istabilisation .ne. AFCSTAB_UPWIND)            .and.&
+        (    istabilisation .ne. AFCSTAB_FEMFCT_CLASSICAL)  .and.&
+        (    istabilisation .ne. AFCSTAB_FEMFCT_IMPLICIT)   .and.&
+        (    istabilisation .ne. AFCSTAB_FEMFCT_LINEARISED) .and.&
+        (    istabilisation .ne. AFCSTAB_FEMFCT_ITERATIVE)  .and.&
+        (    istabilisation .ne. AFCSTAB_FEMFCT_MASS)       .and.&
+        (    istabilisation .ne. AFCSTAB_FEMTVD)            .and.&
+        (    istabilisation .ne. AFCSTAB_FEMGP)             .and.&
+        (    istabilisation .ne. AFCSTAB_DMP)               .and.&
         (    istabilisation .ne. AFCSTAB_SYMMETRIC)) then 
       
       call output_line('Invalid AFC type!',&
@@ -970,7 +970,7 @@ contains
 
     
     ! Check if block matrix has only one block
-    if ((rmatrixBlockTemplate%nblocksPerCol .eq. 1) .and. &
+    if ((rmatrixBlockTemplate%nblocksPerCol .eq. 1) .and.&
         (rmatrixBlockTemplate%nblocksPerRow .eq. 1)) then
       call afcstab_resizeStabIndScalar(rafcstab,&
           rmatrixBlockTemplate%RmatrixBlock(1,1))
@@ -1880,7 +1880,7 @@ contains
 
 
     ! Check if matrix has only one block
-    if ((rmatrixBlock%nblocksPerCol .eq. 1) .and. &
+    if ((rmatrixBlock%nblocksPerCol .eq. 1) .and.&
         (rmatrixBlock%nblocksPerRow .eq. 1)) then
       call afcstab_isMatrixCompatible(rafcstab,&
           rmatrixBlock%RmatrixBlock(1,1), bcompatible)
@@ -1888,7 +1888,7 @@ contains
     end if
 
     ! Check if number of columns equans number of rows
-    if (rmatrixBlock%nblocksPerCol .ne. &
+    if (rmatrixBlock%nblocksPerCol .ne.&
         rmatrixBlock%nblocksPerRow) then
       call output_line('Block matrix must have equal number of columns and rows!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleBlock')
@@ -2412,8 +2412,8 @@ contains
 
 
     case(LSYSSC_MATRIXD)
-      call output_line('Edge-bases data structure cannot be generated &
-          &from diagonal matrix!',&
+      call output_line('Edge-bases data structure cannot be generated&
+         &from diagonal matrix!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
       call sys_halt()
 
@@ -2738,7 +2738,7 @@ contains
 
     ! Check if edge-based data structure is prepared
     if (iand(rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
-      call output_line('Stabilisation structure does not provide required ' // &
+      call output_line('Stabilisation structure does not provide required ' //&
           'edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
           'afcstab_generateOffdiagEdge')
       call sys_halt()
@@ -3272,8 +3272,8 @@ contains
     baccept = .true.
     
     ! Loop over all edges
-    !$omp parallel do default(shared) private(i,j,ivar) &
-    !$omp if(size(IverticesAtEdge,2) > AFCSTAB_NEDGEMIN_OMP) &
+    !$omp parallel do default(shared) private(i,j,ivar)&
+    !$omp if(size(IverticesAtEdge,2) > AFCSTAB_NEDGEMIN_OMP)&
     !$omp reduction(.and.:baccept)
     do iedge = 1, size(IverticesAtEdge,2)
       

@@ -820,7 +820,7 @@ contains
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
 
-      !$omp parallel default(shared) &
+      !$omp parallel default(shared)&
       !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
       !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
       !$omp         iedge,ii,ij,ji,jj)
@@ -989,7 +989,7 @@ contains
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
 
-      !$omp parallel default(shared) &
+      !$omp parallel default(shared)&
       !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
       !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
       !$omp         iedge,ii,ij,ji,jj)
@@ -2337,8 +2337,8 @@ contains
     
     
     ! Check if stabilisation is prepared
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)  .eq.0) .or. &
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION).eq.0) .or. &
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)  .eq.0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION).eq.0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)     .eq.0)) then
       call output_line('Stabilisation does not provide required structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecTVDScalar')
@@ -2575,8 +2575,8 @@ contains
     
     
     ! Check if stabilisation is prepared
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .or. &
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or. &
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0)) then
       call output_line('Stabilisation does not provide required structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecGPScalar')
@@ -10932,7 +10932,7 @@ contains
       
       
       ! Do we have to store the initial fluxes separately?
-      if (binit .and. (rafcstab%ctypeAFCstabilisation &
+      if (binit .and. (rafcstab%ctypeAFCstabilisation&
                        .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)

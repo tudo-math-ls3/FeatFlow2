@@ -887,7 +887,7 @@ contains
 
 
     ! Impose boundary conditions in strong sence (if any)
-    call bdrf_filterMatrix(rsolver%rboundaryCondition, &
+    call bdrf_filterMatrix(rsolver%rboundaryCondition,&
         rproblemLevel%RmatrixBlock(systemMatrix))
 
     ! Ok, we updated the (nonlinear) system operator successfully. Now we still
@@ -1239,22 +1239,19 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildDivVectorTVD(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM1D,&
                 hydro_calcFluxGalNoBdr1d_sim,&
                 hydro_calcCharacteristics1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
             call gfsys_buildDivVectorTVD(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM2D,&
                 hydro_calcFluxGalNoBdr2d_sim,&
                 hydro_calcCharacteristics2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
             call gfsys_buildDivVectorTVD(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM3D,&
                 hydro_calcFluxGalNoBdr3d_sim,&
                 hydro_calcCharacteristics3d_sim, dscale, .true., rrhs)
           end select
@@ -1745,22 +1742,19 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM1D,&
             hydro_calcFluxGalNoBdr1d_sim,&
             hydro_calcCharacteristics1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM2D,&
             hydro_calcFluxGalNoBdr2d_sim,&
             hydro_calcCharacteristics2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM3D,&
             hydro_calcFluxGalNoBdr3d_sim,&
             hydro_calcCharacteristics3d_sim, dscale , .false., rres)
       end select
@@ -2141,22 +2135,19 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM1D,&
             hydro_calcFluxGalNoBdr1d_sim,&
             hydro_calcCharacteristics1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM2D,&
             hydro_calcFluxGalNoBdr2d_sim,&
             hydro_calcCharacteristics2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
         call gfsys_buildDivVectorTVD(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM3D,&
             hydro_calcFluxGalNoBdr3d_sim,&
             hydro_calcCharacteristics3d_sim, dscale, .false., rrhs)
 
@@ -2678,7 +2669,7 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcCorrectionFCT(rproblemLevel, rsolution, &
+  subroutine hydro_calcCorrectionFCT(rproblemLevel, rsolution,&
       dscale, bclear, ioperationSpec, rresidual, rcollection,&
       rafcstab, slimitingvariableName)
 
@@ -3132,7 +3123,7 @@ contains
 
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
-              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               Dflux(:,IEDGEset:IEDGEmax),&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
 
@@ -3206,7 +3197,7 @@ contains
 
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
-              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               Dflux(:,IEDGEset:IEDGEmax),&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
           
@@ -3368,7 +3359,7 @@ contains
 
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
-              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               Dflux(:,IEDGEset:IEDGEmax),&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
 
@@ -3442,7 +3433,7 @@ contains
 
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
-              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               Dflux(:,IEDGEset:IEDGEmax),&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
           
@@ -3607,7 +3598,7 @@ contains
       deallocate(Ddata)
 
     case default
-      call output_line ('Invalid system format!', &
+      call output_line ('Invalid system format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorFE')
       call sys_halt()
     end select
