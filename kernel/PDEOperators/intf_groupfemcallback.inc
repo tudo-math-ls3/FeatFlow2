@@ -11,7 +11,7 @@
 
 !<subroutine>
 
-  subroutine fcb_calcADIncrements(IverticesAtEdge,&
+  subroutine fcb_calcADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
         Dpp, Dpm, fcb_calcFluxTransformation_sim, Dflux0, rcollection)
 
@@ -47,6 +47,9 @@
     ! Edgewise correction factor
     real(DP), dimension(:), intent(in) :: Dalpha
     
+    ! Index pointer for edge data structure
+    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+
     ! Edge data structure
     integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
@@ -75,8 +78,9 @@
 
 !<subroutine>
 
-  subroutine fcb_calcBounds(IverticesAtEdge, NEDGE, NEQ, NVAR, NVARtransformed,&
-      ndim1, ndim2, Dx, Dqp, Dqm, fcb_calcDiffTransformation_sim, rcollection)
+  subroutine fcb_calcBounds(IverticesAtEdgeIdx, IverticesAtEdge,&
+      NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx,&
+      Dqp, Dqm, fcb_calcDiffTransformation_sim, rcollection)
 
     use fsystem
     use collection
@@ -103,6 +107,9 @@
 
     ! Solution values
     real(DP), dimension(ndim1,ndim2), intent(in) :: Dx
+
+    ! Index pointer for edge data structure
+    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
 
     ! Edge data structure
     integer, dimension(:,:), intent(in) :: IverticesAtEdge
@@ -236,8 +243,8 @@
 
 !<subroutine>
 
-  subroutine fcb_calcCorrection(IverticesAtEdge, NEDGE, NEQ, NVAR,&
-      dscale, Dalpha, Dflux, ndim1, ndim2, Dy, ML, rcollection)
+  subroutine fcb_calcCorrection(IverticesAtEdgeIdx, IverticesAtEdge, NEDGE,&
+      NEQ, NVAR, dscale, Dalpha, Dflux, ndim1, ndim2, Dy, ML, rcollection)
 
     use fsystem
     use collection
@@ -267,6 +274,9 @@
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Index pointer for edge data structure
+    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
 
     ! Edge data structure
     integer, dimension(:,:), intent(in) :: IverticesAtEdge
