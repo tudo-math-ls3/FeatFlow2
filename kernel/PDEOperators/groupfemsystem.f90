@@ -147,6 +147,17 @@ module groupfemsystem
   integer, parameter, public :: GFSYS_NEDGESIM = 64
 #endif
   
+  ! Minimum number of nodes for OpenMP parallelisation: If the number of
+  ! nodes is below this value, then no parallelisation is performed.
+#ifndef GFSYS_NEQMIN_OMP
+  integer, parameter, public :: GFSYS_NEQMIN_OMP = 1000
+#endif
+
+  ! Minimum number of edges for OpenMP parallelisation: If the number of
+  ! edges is below this value, then no parallelisation is performed.
+#ifndef GFSYS_NEDGEMIN_OMP
+  integer, parameter, public :: GFSYS_NEDGEMIN_OMP = 1000
+#endif
 !</constantblock>
 
 !</constants>
@@ -7967,7 +7978,10 @@ contains
     !**************************************************************
     ! Assemble raw antidiffusive mass fluxes
 
-    pure subroutine doMassFluxes(IverticesAtEdge, NEDGE, NEQ, NVAR,&
+#ifndef USE_OPENMP
+    pure &
+#endif
+    subroutine doMassFluxes(IverticesAtEdge, NEDGE, NEQ, NVAR,&
         DmatrixData, Dx,dscale, Dflux)
 
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
@@ -7982,6 +7996,8 @@ contains
       integer :: iedge,ij,i,j
       
       ! Loop over all edges
+      !$omp parallel do default(shared) private(i,j,ij)&
+      !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
 
         ! Get node numbers and matrix positions
@@ -7990,15 +8006,20 @@ contains
         ij = IverticesAtEdge(3, iedge)
 
         ! Compute the raw antidiffusives fluxes
-        Dflux(:,iedge) = Dflux(:,iedge) + dscale*DmatrixData(ij)*(Dx(:,i)-Dx(:,j))
+        Dflux(:,iedge) = Dflux(:,iedge)&
+                       + dscale*DmatrixData(ij)*(Dx(:,i)-Dx(:,j))
       end do
+      !$omp end parallel do
 
     end subroutine doMassFluxes
 
     !**************************************************************
     ! Combine two fluxes: flux2 := flux2+dscale*alpha*flux2
 
-    pure subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
+#ifndef USE_OPENMP
+    pure &
+#endif
+    subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1
       real(DP), dimension(:), intent(in) :: Dalpha
@@ -8010,10 +8031,14 @@ contains
       ! local variables
       integer :: iedge
 
+      ! Loop over all edges
+      !$omp parallel do default(shared)&
+      !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
-        Dflux2(:,iedge) = Dflux2(:,iedge) +&
-            dscale * Dalpha(iedge) * Dflux1(:,iedge)
+        Dflux2(:,iedge) = Dflux2(:,iedge)&
+                        + dscale * Dalpha(iedge) * Dflux1(:,iedge)
       end do
+      !$omp end parallel do
 
     end subroutine doCombineFluxes
 
