@@ -45,41 +45,45 @@
 !#                              afcstab_getbase_arrayBlock
 !#      -> Returns the array of pointers to a given block matrix
 !#
-!# 11.) afcstab_getbase_IverticesAtEdge
+!# 11.) afcstab_getbase_IverticesAtEdgeIdx
+!#      -> Returns pointer to the index pointer for the
+!#         vertices at edge structure
+!#
+!# 12.) afcstab_getbase_IverticesAtEdge
 !#      -> Returns pointer to the vertices at edge structure
 !#
-!# 12.) afcstab_getbase_IsupdiagEdgeIdx
+!# 13.) afcstab_getbase_IsupdiagEdgeIdx
 !#      -> Returns pointer to the index pointer for the
 !#         superdiagonal edge numbers
 !#
-!# 13.) afcstab_getbase_IsubdiagEdgeIdx
+!# 14.) afcstab_getbase_IsubdiagEdgeIdx
 !#      -> Returns pointer to the index pointer for the
 !#         subdiagonal edge numbers
 !#
-!# 14.) afcstab_getbase_IsubdiagEdge
+!# 15.) afcstab_getbase_IsubdiagEdge
 !#      -> Returns pointer to the subdiagonal edge numbers
 !#
-!# 15.) afcstab_getbase_DcoeffsAtEdge
+!# 16.) afcstab_getbase_DcoeffsAtEdge
 !#      -> Returns pointer to edge data
 !#
-!# 16.) afcstab_getbase_DmatCoeffAtNode
+!# 17.) afcstab_getbase_DmatCoeffAtNode
 !#      -> Returns pointer to the diagonal entries
 !#         of the auxiiliary constant matrix coefficients
 !#
-!# 17.) afcstab_getbase_DmatCoeffAtEdge
+!# 18.) afcstab_getbase_DmatCoeffAtEdge
 !#      -> Returns pointer to the off-diagonal entries
 !#         of the auxiiliary constant matrix coefficients
 !#
-!# 18.) afcstab_generateVerticesAtEdge
+!# 19.) afcstab_generateVerticesAtEdge
 !#      -> Generates the standard edge data structure
 !#
-!# 19.) afcstab_generateOffdiagEdges
+!# 20.) afcstab_generateOffdiagEdges
 !#      -> Generates the subdiagonal edge data structure
 !#
-!# 20.) afcstab_generateExtSparsity
+!# 21.) afcstab_generateExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 21.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
+!# 22.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
 !#                                 afcstab_failsafeLimitingArray
 !#      -> Perform failsafe flux correction
 !#
@@ -116,6 +120,7 @@ module afcstabilisation
   public :: afcstab_isMatrixCompatible
   public :: afcstab_isVectorCompatible
   public :: afcstab_getbase_array
+  public :: afcstab_getbase_IverticesAtEdgeIdx
   public :: afcstab_getbase_IverticesAtEdge
   public :: afcstab_getbase_IsupdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdgeIdx
@@ -416,6 +421,11 @@ module afcstabilisation
     ! Flag: compute auxiliary structures for flux prelimiting
     logical :: bprelimiting = .true.
 
+    ! Handle to index pointer for edge structure
+    ! The numbers IverticesAtEdgeIdx(k):IverticesAtEdgeIdx(k+1)-1
+    ! denote the edge numbers of the k-th group of edges.
+    integer :: h_IverticesAtEdgeIdx = ST_NOHANDLE
+
     ! Handle to vertices at edge structure
     ! IverticesAtEdge(1:2,1:NEDGE) : the two end-points of the edge
     ! IverticesAtEdge(3:4,1:NEDGE) : the two matrix position that
@@ -618,9 +628,12 @@ contains
 
 
     ! Release edge structure
-    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE) .and.&
-        (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE))&
-        call storage_free(rafcstab%h_IverticesAtEdge)
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)) then
+      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdge)
+      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+    end if
 
     ! Release edge values
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES) .and.&
@@ -1055,6 +1068,8 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
       ! Copy content from source to destination structure
+      call storage_copy(rafcstabSrc%h_IverticesAtEdgeIdx,&
+          rafcstabDest%h_IverticesAtEdgeIdx)
       call storage_copy(rafcstabSrc%h_IverticesAtEdge,&
           rafcstabDest%h_IverticesAtEdge)
       ! Adjust specifier of the destination structure
@@ -1337,9 +1352,12 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
       ! Remove existing data owned by the destination structure
-      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)))&
-          call storage_free(rafcstabDest%h_IverticesAtEdge)
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE))) then
+        call storage_free(rafcstabDest%h_IverticesAtEdgeIdx)
+        call storage_free(rafcstabDest%h_IverticesAtEdge)
+      end if
       ! Copy handle from source to destination structure
+      rafcstabDest%h_IverticesAtEdgeIdx = rafcstabSrc%h_IverticesAtEdgeIdx
       rafcstabDest%h_IverticesAtEdge = rafcstabSrc%h_IverticesAtEdge
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
@@ -2004,6 +2022,40 @@ contains
 
 !<subroutine>
 
+  subroutine afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+
+!<description>
+    ! Returns a pointer to the index pointer for the vertices at edge structure
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the vertices at edge index structure
+    ! NULL() if the stabilisation structure does not provide it.
+    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+!</output>
+!</subroutine>
+
+    ! Do we vertices at edge structure at all?
+    if (rafcstab%h_IverticesAtEdgeIdx .eq. ST_NOHANDLE) then
+      nullify(p_IverticesAtEdgeIdx)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_int(rafcstab%h_IverticesAtEdgeIdx,&
+        p_IverticesAtEdgeIdx)
+
+  end subroutine afcstab_getbase_IverticesAtEdgeIdx
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
 !<description>
@@ -2235,10 +2287,11 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
-    integer :: h_Ksep
-
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge,p_IverticesAtEdgeAux
+    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal,p_Ksep
+    integer :: h_Ksep,h_IverticesAtEdgeAux
+    !$ integer :: nmaxcolors
 
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -2249,12 +2302,34 @@ contains
     
     ! Set pointer to edge structure
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
 
+    ! If no OpenMP is used, then all edges belong to the same
+    ! group. Otherwise, the edges will be reordered below.
+    p_IverticesAtEdgeIdx     = rafcstab%NEDGE
+    p_IverticesAtEdgeIdx(1)  = 1
+    
     ! What kind of matrix are we?
     select case(rmatrixTemplate%cmatrixFormat)
     case(LSYSSC_MATRIX1)
       ! Generate edge structure for dense matrix
-      call genEdgesMat1(rmatrixTemplate%NEQ+1, p_IverticesAtEdge)
+      call genEdgesMat1(rmatrixTemplate%NEQ, p_IverticesAtEdge)
+
+      ! OpenMP-Extension: Perform edge-coloring to find groups of
+      ! edges which can be processed in parallel, that is, the
+      ! vertices of the edges in the group are all distinct
+      
+      !$ call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+      !$ call storage_new('afcstab_generateVerticesAtEdge','IverticesAtEdgeIdx',&
+      !$     2*(rmatrixTemplate%NEQ-1)+1, ST_INT, rafcstab%h_IverticesAtEdgeIdx,&
+      !$     ST_NEWBLOCK_ZERO)
+      !$ call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      !$ h_IverticesAtEdgeAux = ST_NOHANDLE
+      !$ call storage_copy(rafcstab%h_IverticesAtEdge, h_IverticesAtEdgeAux)
+      !$ call storage_getbase_int2d(h_IverticesAtEdgeAux, p_IverticesAtEdgeAux)
+      !$ call genEdgeIndex(rmatrixTemplate%NEQ, rmatrixTemplate%NEQ+2,&
+      !$     p_IverticesAtEdgeIdx, p_IverticesAtEdgeAux, p_IverticesAtEdge)
+      !$ call storage_free(h_IverticesAtEdgeAux)
 
       ! Set matrix format
       rafcstab%cmatrixFormat = LSYSSC_MATRIX1
@@ -2276,6 +2351,22 @@ contains
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
+
+      ! OpenMP-Extension: Perform edge-coloring to find groups of
+      ! edges which can be processed in parallel, that is, the
+      ! vertices of the edges in the group are all distinct
+      
+      !$ call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+      !$ nmaxcolors = computeMaxEdgeColors(rmatrixTemplate%NEQ, p_IverticesAtEdge)
+      !$ call storage_new('afcstab_generateVerticesAtEdge','IverticesAtEdgeIdx',&
+      !$     nmaxcolors+1, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_ZERO)
+      !$ call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      !$ h_IverticesAtEdgeAux = ST_NOHANDLE
+      !$ call storage_copy(rafcstab%h_IverticesAtEdge, h_IverticesAtEdgeAux)
+      !$ call storage_getbase_int2d(h_IverticesAtEdgeAux, p_IverticesAtEdgeAux)
+      !$ call genEdgeIndex(rmatrixTemplate%NEQ, nmaxcolors,&
+      !$     p_IverticesAtEdgeIdx, p_IverticesAtEdgeAux, p_IverticesAtEdge)
+      !$ call storage_free(h_IverticesAtEdgeAux)
 
       ! Set matrix format
       rafcstab%cmatrixFormat = LSYSSC_MATRIX7
@@ -2299,6 +2390,22 @@ contains
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
+
+      ! OpenMP-Extension: Perform edge-coloring to find groups of
+      ! edges which can be processed in parallel, that is, the
+      ! vertices of the edges in the group are all distinct
+      
+      !$ call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+      !$ nmaxcolors = computeMaxEdgeColors(rmatrixTemplate%NEQ, p_IverticesAtEdge)
+      !$ call storage_new('afcstab_generateVerticesAtEdge','IverticesAtEdgeIdx',&
+      !$     nmaxcolors+1, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_ZERO)
+      !$ call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      !$ h_IverticesAtEdgeAux = ST_NOHANDLE
+      !$ call storage_copy(rafcstab%h_IverticesAtEdge, h_IverticesAtEdgeAux)
+      !$ call storage_getbase_int2d(h_IverticesAtEdgeAux, p_IverticesAtEdgeAux)
+      !$ call genEdgeIndex(rmatrixTemplate%NEQ, nmaxcolors,&
+      !$     p_IverticesAtEdgeIdx, p_IverticesAtEdgeAux, p_IverticesAtEdge)
+      !$ call storage_free(h_IverticesAtEdgeAux)
 
       ! Set matrix format
       rafcstab%cmatrixFormat = LSYSSC_MATRIX9
@@ -2448,6 +2555,157 @@ contains
       end do
 
     end subroutine genEdgesMat9
+
+    !**************************************************************
+    ! Compute the maximum number of colors required to color the
+    ! edges of the matrix such that no two edges with the same color
+    ! share a common node (This is the classical edge-coloring)
+
+    function computeMaxEdgeColors(neq, IverticesAtEdge) result(ncolors)
+      
+      integer, intent(in) :: neq
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+      integer :: ncolors
+
+      integer, dimension(:), pointer :: p_IedgesAtNode
+      integer :: h_IedgesAtNode
+      integer :: i,j,iedge
+
+      ! Allocate temporal memory
+      h_IedgesAtNode = ST_NOHANDLE
+      call storage_new('computeMaxEdgeColors', 'IedgesAtNode', neq,&
+          ST_INT, h_IedgesAtNode, ST_NEWBLOCK_ZERO)
+      call storage_getbase_int(h_IedgesAtNode, p_IedgesAtNode)
+
+      ! First shuffle pass: 
+      ! Compute the number of edges at each node
+      do iedge = 1, size(IverticesAtEdge,2)
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        p_IedgesAtNode(i) = p_IedgesAtNode(i)+1
+        p_IedgesAtNode(j) = p_IedgesAtNode(j)+1
+      end do
+
+      ! Second shuffle pass:
+      ! Compute the maximum number of edges at nodes
+      ncolors = 0
+      do i = 1, neq
+        ncolors = max(ncolors, p_IedgesAtNode(i))
+      end do
+
+      ! Deallocate temporal memory
+      call storage_free(h_IedgesAtNode)
+
+      ! At the moment the greedy edge coloring algorithm is 
+      ! used which may require 2x chromatic index of colors
+      ncolors = 2*ncolors
+
+    end function computeMaxEdgeColors
+
+    !**************************************************************
+    ! Generate index for edge data structure 
+
+    subroutine genEdgeIndex(neq, nmaxcolors, IverticesAtEdgeIdx,&
+        IverticesAtEdge, IverticesAtEdgeGrouped)
+
+      integer, intent(in) :: neq,nmaxcolors
+      integer, dimension(:), intent(inout) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(inout) :: IverticesAtEdgeGrouped
+
+      integer, dimension(size(IverticesAtEdgeIdx)) :: Iaux
+      
+      integer, dimension(:), pointer :: p_InodeColor
+      integer :: h_InodeColor
+      integer :: i,j,iedge,jedge,icolor
+
+      ! Allocate temporal memory
+      h_InodeColor = ST_NOHANDLE
+      call storage_new('genEdgeIndex', 'InodeColor', neq,&
+          ST_INT, h_InodeColor, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int(h_InodeColor, p_InodeColor)
+
+      ! First shuffle pass: Loop over all edges and determine the
+      ! next free color to be used for that edge
+      IverticesAtEdgeIdx = 0
+      call lalg_clearVector(p_InodeColor)
+
+      edge1: do iedge = 1, size(IverticesAtEdge,2)
+        ! Get node numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Find next unused color for nodes I and J
+        color1: do icolor = 0, nmaxcolors
+          
+          if (.not.btest(p_InodeColor(i), icolor) .and.&
+              .not.btest(p_InodeColor(j), icolor)) then
+
+            ! Set color marker for nodes I and J
+            p_InodeColor(i) = ibset(p_InodeColor(i), icolor)
+            p_InodeColor(j) = ibset(p_InodeColor(j), icolor)
+
+            ! Increase number of edges in this color group by one.
+            IverticesAtEdgeIdx(icolor+2) = IverticesAtEdgeIdx(icolor+2)+1
+
+            ! That is it
+            exit color1
+          end if
+        end do color1
+      end do edge1
+
+      ! Second shuffle pass: Compute starting position of each group
+      IverticesAtEdgeIdx(1) = 1
+      do icolor = 2, size(IverticesAtEdgeIdx)
+        IverticesAtEdgeIdx(icolor) = IverticesAtEdgeIdx(icolor)&
+                                   + IverticesAtEdgeIdx(icolor-1)
+      end do
+
+      ! Third shuffle pass: Reorder the edges physically
+      call lalg_clearVector(p_InodeColor)
+
+       edge2: do iedge = 1, size(IverticesAtEdge,2)
+        ! Get node numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Find next unused color for nodes I and J
+        color2: do icolor = 0, nmaxcolors
+          
+          if (.not.btest(p_InodeColor(i), icolor) .and.&
+              .not.btest(p_InodeColor(j), icolor)) then
+
+            ! Set color marker for nodes I and J
+            p_InodeColor(i) = ibset(p_InodeColor(i), icolor)
+            p_InodeColor(j) = ibset(p_InodeColor(j), icolor)
+
+            ! Get next free position
+            jedge = IverticesAtEdgeIdx(icolor+1)
+            
+            ! Increase number of edges in this color group by one
+            IverticesAtEdgeIdx(icolor+1) = IverticesAtEdgeIdx(icolor+1)+1
+           
+            ! Copy edge data
+            IverticesAtEdgeGrouped(:,jedge) = IverticesAtEdge(:,iedge)
+
+            ! That is it
+            exit color2
+          end if
+        end do color2
+      end do edge2
+      
+      ! Fourth shuffle pass:
+      ! Adjust the starting index which was tainted in the third pass
+      do icolor = size(IverticesAtEdgeIdx), 2, -1
+        IverticesAtEdgeIdx(icolor) = IverticesAtEdgeIdx(icolor-1)
+      end do
+      IverticesAtEdgeIdx(1) = 1
+
+      ! Deallocate temporal memory
+      call storage_free(h_InodeColor)
+
+    end subroutine genEdgeIndex
     
   end subroutine afcstab_generateVerticesAtEdge
 
