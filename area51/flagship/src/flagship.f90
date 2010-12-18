@@ -42,6 +42,7 @@ program flagship
 
   ! local variables
   character(LEN=SYS_STRLEN) :: cbuffer, hostname, hosttype, username
+  character(LEN=SYS_STRLEN) :: slogdir, slogfile
   character(LEN=SYS_STRLEN) :: application, sparameterfileName
   character(LEN=10) :: stime
   character(LEN=8)  :: sdate
@@ -55,8 +56,18 @@ program flagship
   sys_haltmode = SYS_HALT_THROWFPE
 
   ! Initialize the output system
+  ! Use $LOGDIR/$LOGFILE if set, otherwise hardcoded setting based on current time
   call date_and_time(sdate, stime)
-  call output_init('./log/flagship_'//sdate//'_'//stime(1:10)//'.log')
+  call getenv('LOGDIR',cbuffer); slogdir = adjustl(cbuffer)
+  call getenv('LOGFILE',cbuffer); slogfile = adjustl(cbuffer)
+  if (trim(slogdir) .eq. '') then
+    call output_init('./log/flagship_'//sdate//'_'//stime(1:10)//'.log')
+  else
+    if (trim(slogfile) .eq. '') then
+      slogfile = 'flagship_' // sdate // '_' // stime(1:10) // '.log'
+    end if
+    call output_init(trim(slogdir) // '/' // trim(slogfile))
+  end if
 
   ! Initialize storage subsystem
   call storage_init(500, 100)
