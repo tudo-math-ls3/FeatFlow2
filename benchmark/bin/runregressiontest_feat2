@@ -528,7 +528,9 @@ fb_customise() {
 	    # the versions 3.2.x randomly crash (typically with a
             #   *** glibc detected *** free(): invalid pointer: 0x00[...] ***
 	    # when trying to load/unload several modules at once.
-	    # Workaround: Load them one by one.
+            # Possible reason and workaround:
+            # see http://sourceforge.net/mailarchive/message.php?msg_id=26674906
+            # Another workaround: Load them one by one.
 	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
 
 	    # Different version of Modules Environment do or do not issue
