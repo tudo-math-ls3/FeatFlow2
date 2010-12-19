@@ -113,90 +113,98 @@ endif
 
 
 # Functions to detect minimal compiler version
+intelminversion_12_0=\
+	$(if $(findstring 12.0.,$(INTELVERSION)),yes,no)
 intelminversion_11_1=\
-	$(if $(findstring 11.1.,$(INTELVERSION)),yes,no)
+	$(if $(findstring yes,\
+	   $(call intelminversion_12_0) \
+	      $(if $(findstring 11.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_11_0=\
 	$(if $(findstring yes,\
-	$(call intelminversion_11_1) \
-	$(if $(findstring 11.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelminversion_11_1) \
+	      $(if $(findstring 11.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_10_1=\
 	$(if $(findstring yes,\
-	$(call intelminversion_11_0) \
-	$(if $(findstring 10.1.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelminversion_11_0) \
+	      $(if $(findstring 10.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_10_0=\
 	$(if $(findstring yes,\
-	$(call intelminversion_10_1) \
-	$(if $(findstring 10.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelminversion_10_1) \
+	      $(if $(findstring 10.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_9_1=\
 	$(if $(findstring yes,\
-	$(call intelminversion_10_0) \
-	$(if $(findstring 9.1.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelminversion_10_0) \
+	      $(if $(findstring 9.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_9_0=\
 	$(if $(findstring yes,\
-	$(call intelminversion_9_1) \
-	$(if $(findstring 9.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelminversion_9_1) \
+	      $(if $(findstring 9.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_8_1=\
 	$(if $(findstring yes,\
-	$(call intelminversion_9_0) \
-	$(if $(findstring 8.1.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelminversion_9_0) \
+	      $(if $(findstring 8.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_8_0=\
 	$(if $(findstring yes,\
-	$(call intelminversion_8_1) \
-	$(if $(findstring 8.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelminversion_8_1) \
+	      $(if $(findstring 8.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_7_1=\
 	$(if $(findstring yes,\
-	$(call intelminversion_8_0) \
-	$(if $(findstring 7.1.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelminversion_8_0) \
+	      $(if $(findstring 7.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_7_0=\
 	$(if $(findstring yes,\
-	$(call intelminversion_7_1) \
-	$(if $(findstring 7.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelminversion_7_1) \
+	      $(if $(findstring 7.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_6_0=\
 	$(if $(findstring yes,\
-	$(call intelminversion_7_0) \
-	$(if $(findstring 6.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelminversion_7_0) \
+	      $(if $(findstring 6.0.,$(INTELVERSION)),yes,no)),yes,no)
 
 # Functions to detect maximal compiler version
+intelmaxversion_12_0=\
+	$(if $(findstring yes,\
+	   $(call intelmaxversion_11_1) \
+	      $(if $(findstring 12.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_11_1=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_11_0) \
-	$(if $(findstring 11.1.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelmaxversion_11_0) \
+	      $(if $(findstring 11.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_11_0=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_10_1) \
-	$(if $(findstring 11.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelmaxversion_10_1) \
+	      $(if $(findstring 11.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_10_1=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_10_0) \
-	$(if $(findstring 10.1.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelmaxversion_10_0) \
+	      $(if $(findstring 10.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_10_0=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_9_1) \
-	$(if $(findstring 10.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelmaxversion_9_1) \
+	      $(if $(findstring 10.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_9_1=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_9_0) \
-	$(if $(findstring 9.1.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelmaxversion_9_0) \
+	      $(if $(findstring 9.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_9_0=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_8_1) \
-	$(if $(findstring 9.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelmaxversion_8_1) \
+	      $(if $(findstring 9.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_8_1=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_8_0) \
-	$(if $(findstring 8.1.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelmaxversion_8_0) \
+	      $(if $(findstring 8.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_8_0=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_7_1) \
-	$(if $(findstring 8.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelmaxversion_7_1) \
+	      $(if $(findstring 8.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_7_1=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_7_0) \
-	$(if $(findstring 7.1.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelmaxversion_7_0) \
+	      $(if $(findstring 7.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_7_0=\
 	$(if $(findstring yes,\
-	$(call intelmaxversion_6_0) \
-	$(if $(findstring 7.0.,$(INTELVERSION)),yes,no)),yes,no)
+	   $(call intelmaxversion_6_0) \
+	      $(if $(findstring 7.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_6_0=\
 	$(if $(findstring 6.0.,$(INTELVERSION)),yes,no)
 
