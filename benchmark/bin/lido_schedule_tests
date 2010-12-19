@@ -7,6 +7,7 @@
 # Initialisations
 ALLTESTS=
 BENCHMARKRUNSCRIPT=runtests
+COMPILERVERSION=
 DOSENDMAIL=
 EMAILADDRESS=
 FORCE_COMPLETE_NODES=1    # If FORCE_COMPLETE_NODES=0, then the term
@@ -588,7 +589,7 @@ EOF
 
     # Create part of job scripts that is identical for all tests (for a given
     # choice of MPI/no MPI and build ID)
-    $GNUMAKE --no-print-directory create-script-header
+    $GNUMAKE --no-print-directory create-script-header COMPILERVERSION=${COMPILERVERSION}
     if test $? -ne 0; then
 	cat <<EOF 1>&2
 $0: Error while creating template for job files.

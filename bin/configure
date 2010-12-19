@@ -3731,6 +3731,7 @@ sub create_feastBenchmarkMakefile {
         "\t\@\$(MAKE) create-script-body\n" .
 	"\n" .
 	".PHONY: create-script-header\n" .
+	"create-script-header:  COMPILERVERSION=\n" .
 	"create-script-header:  DEBUGGER=0\n" .
 	"create-script-header:  KEEPGOING=0\n" .
 	"create-script-header:  MPIENV=\n" .
@@ -3744,7 +3745,8 @@ sub create_feastBenchmarkMakefile {
 	"        # target's variable definition section.\n" .
 	"        # The same mechanism applies to DEBUGGER and MPIENV.\n" .
 	"\t\@cat include/runtests.template | \\\n" .
-        "\t\tsed -e \"s/^DEBUGGER=<SET_VIA_MAKEFILE>/DEBUGGER=\$(DEBUGGER)/; \\\n" .
+        "\t\tsed -e \"s/^COMPILERVERSION=<SET_VIA_MAKEFILE>/COMPILERVERSION=\$(COMPILERVERSION)/; \\\n" .
+        "\t\t\ts/^DEBUGGER=<SET_VIA_MAKEFILE>/DEBUGGER=\$(DEBUGGER)/; \\\n" .
         "\t\t\ts/^KEEPGOING=<SET_VIA_MAKEFILE>/KEEPGOING=\$(KEEPGOING)/; \\\n" .
         "\t\t\ts/^MPIENV=<SET_VIA_MAKEFILE>/MPIENV=\$(MPIENV)/; \\\n" .
         "\t\t\ts/^SUPPRESSOUTPUT=<SET_VIA_MAKEFILE>/SUPPRESSOUTPUT=\$(SUPPRESSOUTPUT)/;\" > \$(SCRIPT)\n".

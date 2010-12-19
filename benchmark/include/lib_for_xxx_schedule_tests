@@ -41,6 +41,18 @@ submits the job file to the scheduler.
       Optional parameter. If specified, the new job(s) is/are executed
       after the job <jobid> is finished. This allows sequential execution
       of jobs that are manually added to the queue system.
+  --compilerversion <string>
+      Optional parameter. If specified, the string is appended to the fourth
+      token in the build ID when constructing the path to the reference file.
+  --corespernode <cores>, -c <cores>
+      Allows to define how many cores should be allocated on the cluster per
+      compute node. If not being set, the standard behaviour is to allocate all
+      cores of a node to prevent a node from being shared by multiple
+      tasks. This is necessary e.g. for correct timings, to avoid getting memory
+      eaten away by others or malicious threaded concurrent jobs.  Manually
+      specifying e.g. a 1 here allows to share one compute node for multiple
+      tasks if e.g. the execution time is not important.
+      Default: $CORESPERNODE
   --email <email address>, -m <email address>
       Optional parameter that allows to specify an email address where
       a notification email is sent after completition of the job.
@@ -63,15 +75,6 @@ submits the job file to the scheduler.
       kills the job if it takes longer. The format is "hours:min:sec",
       e.g. "00:40:00".
       Default: $WALLCLOCKLIMIT
-  --corespernode <cores>, -c <cores>
-      Allows to define how many cores should be allocated on the cluster per
-      compute node. If not being set, the standard behaviour is to allocate all
-      cores of a node to prevent a node from being shared by multiple
-      tasks. This is necessary e.g. for correct timings, to avoid getting memory
-      eaten away by others or malicious threaded concurrent jobs.  Manually
-      specifying e.g. a 1 here allows to share one compute node for multiple
-      tasks if e.g. the execution time is not important.
-      Default: $CORESPERNODE
   --noschedule, --no-schedule
       Creates a job script but does not schedule the job. Used for
       debugging purposes.
@@ -108,6 +111,26 @@ fb_readargs() {
 	      shift
 	      ;;
 
+	  --compiler-version)  # major and minor revision of compiler, used to determine path to reference solution
+	      COMPILERVERSION="$2"
+	      echo "$0: Assuming compiler version $COMPILERVERSION"
+	      shift
+	      ;;
+
+	  --compiler-version=*)  # major and minor revision of compiler, used to determine path to reference solution
+	      COMPILERVERSION="`echo $1 | sed 's/^--compiler-version=//'`"
+	      echo "$0: Assuming compiler version $COMPILERVERSION"
+	      shift
+	      ;;
+
+	  --corespernode|-c*)  # Number of cores per node to use
+	      CORESPERNODE="$2"
+	      CORESPERQUADNODE="$2"
+	      echo "$0: Using $CORESPERNODE nodes"
+	      shift
+	      shift
+	      ;;
+
 	  --email|-m*)  # email address
 	      EMAILADDRESS="$2"
 	      shift
@@ -138,14 +161,6 @@ fb_readargs() {
 	  --wallclocklimit|-w*)  # wallclock time address
 	      WALLCLOCKLIMIT="$2"
 	      echo "$0: Using wallclocklimit $WALLCLOCKLIMIT"
-	      shift
-	      shift
-	      ;;
-
-	  --corespernode|-c*)  # Number of cores per node to use
-	      CORESPERNODE="$2"
-	      CORESPERQUADNODE="$2"
-	      echo "$0: Using $CORESPERNODE nodes"
 	      shift
 	      shift
 	      ;;
@@ -370,7 +385,7 @@ EOF
 	exit 1008
     fi
 
-    $GNUMAKE `echo $tmpfile | sed 's/.fbconf$//'`
+    $GNUMAKE COMPILERVERSION=${COMPILERVERSION} `echo $tmpfile | sed 's/.fbconf$//'`
     # Purposely do not check for errors!
     # Typically, an error is reported if the test ID is unknown or the
     # according test is configured not to be run on the current host. COPROC

@@ -20,11 +20,21 @@
 # Customisation section
 # ===================================================================
 
+## Type:	string
+## Default:     empty (set e.g. by nightly regression test script)
+#
+# Major and minor revision of a compiler. To be able to provide and compare
+# reference solution for more than one particular compiler revision. The
+# string is appended to the fourth token of the build ID.
+#
+COMPILERVERSION=<SET_VIA_MAKEFILE>
+
+
 ## Type:	boolean integer
 ## Default:     <SET_VIA_MAKEFILE>, therein set to 0
 #
-# Whether or not to execute benchmark within a debugger
-# (the particular debugger is hard-coded in fb_runAndEvalBenchmarkTest)
+# Whether or not to execute benchmark within a debugger (the particular
+# debugger is hard-coded in fb_runAndEvalBenchmarkTest)
 #
 # Possible values are:
 #  * 0
@@ -43,7 +53,8 @@ DEBUGGER=<SET_VIA_MAKEFILE>
 ## Type:	boolean
 ## Default:     0/false
 #
-# Whether or not to use a hostfile to e.g. put the master process on a separate node
+# Whether or not to use a hostfile to e.g. put the master process on a
+# separate node
 GENERATE_AND_USE_HOSTFILE=0
 
 
@@ -57,7 +68,8 @@ GENERATE_AND_USE_HOSTFILE=0
 #  * 0
 #        skip subsequently configured refinement levels on error
 #  * 1
-#        try to run all configured refinement levels and any post-run operation
+#        try to run all configured refinement levels and any post-run
+#        operation
 #  * <SET_VIA_MAKEFILE>
 #        the value is set when invoking 'make *test'. The default value (0)
 #        may be overwritten by adding "KEEPGOING=<value>" on the command line,
@@ -86,16 +98,16 @@ KEEPGOING=<SET_VIA_MAKEFILE>
 #  * MPICH2
 #  * MVAPICH
 #  * <SET_VIA_MAKEFILE>
-#        the value is set when invoking 'make *test.fbconf'. The default
-#        value (as hardcoded below, arch-dependent) may be overwritten
-#        by adding "MPIENV <value>" on the command line,
+#        the value is set when invoking 'make *test.fbconf'. The default value
+#        (as hardcoded below, arch-dependent) may be overwritten by adding
+#        "MPIENV <value>" on the command line,
 #        e.g.:         make singletests MPIENV=MPICH2
 #
 # Whenever changing the syntax here, do not forget to adapt
-# bin/lido_schedule_tests as there 'sed' substitutions need to match
-# the line derived from this line after 'make <testsuite> <command line arguments>'
-# has updated it. Currently, with MPIENV not explicitly overwritten
-# on the make command line, it becomes 'MPIENV='.
+# bin/lido_schedule_tests as there 'sed' substitutions need to match the line
+# derived from this line after 'make <testsuite> <command line arguments>' has
+# updated it. Currently, with MPIENV not explicitly overwritten on the make
+# command line, it becomes 'MPIENV='.
 #
 MPIENV=<SET_VIA_MAKEFILE>
 
@@ -117,9 +129,10 @@ MPIENV=<SET_VIA_MAKEFILE>
 #  * NEC_internode
 #          NEC SX jobs entailing more than 8 cpus
 #
-# The scripts used to set up and start batch job scripts (bin/*schedule_*tests)
-# may set/overwrite this value dynamically when creating the batch script.
-# Whenever changing the syntax here, do not forget to adapt them!
+# The scripts used to set up and start batch job scripts
+# (bin/*schedule_*tests) may set/overwrite this value dynamically when
+# creating the batch script.  Whenever changing the syntax here, do not forget
+# to adapt them!
 QUEUEINGSYSTEM=
 
 
@@ -151,7 +164,8 @@ RUNLOGFILE=runlog
 #        declaration of RUNLOGFILE). Display its content in case of error.
 #  * <SET_VIA_MAKEFILE>
 #        the value is set when invoking 'make *test'. The default value (1)
-#        may be overwritten by adding "SUPPRESSOUTPUT=<value>" on the command line,
+#        may be overwritten by adding "SUPPRESSOUTPUT=<value>" on the command
+#        line,
 #        e.g.:         make singletests SUPPRESSOUTPUT=0
 #  * anything else
 #        don't redirect standard output and error. No RUNLOGFILE will be
@@ -1181,7 +1195,12 @@ WARNING! For this application / test class there are no instructions
 			;;
 		esac
 	    fi
-	    test -s results/${BUILDID}/${FILENAME} && rm -f results/${BUILDID}/${FILENAME}
+	    PATHTORESULTFILE=results/${BUILDID}
+	    PATHTOREFERENCEFILE=refsol/${BUILDID}
+	    # Squeeze in COMPILERVERSION
+	    PATHTORESULTFILE=`echo ${PATHTORESULTFILE} | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	    PATHTOREFERENCEFILE=`echo ${PATHTOREFERENCEFILE} | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	    test -s ${PATHTORESULTFILE}/${FILENAME} && rm -f ${PATHTORESULTFILE}/${FILENAME}
 
 	    testall=`expr ${testall} + 1`
 
@@ -1211,7 +1230,7 @@ WARNING! For this application / test class there are no instructions
 		    echo
 
 		    # Store fragmented results to disk
-		    \cp ${LOGDIR}/${RESULTFILE}.all-levels results/${BUILDID}/${FILENAME}
+		    \cp ${LOGDIR}/${RESULTFILE}.all-levels ${PATHTORESULTFILE}/${FILENAME}
 		else
 		    echo "[None available.]"
 		    echo
@@ -1223,24 +1242,24 @@ WARNING! For this application / test class there are no instructions
 		echo "Storing results."
 		# Create directory structure where results are stored
 		# if necessary
-		if test ! -d results/${BUILDID}; then
-		    mkdir -p results/${BUILDID}
+		if test ! -d ${PATHTORESULTFILE}; then
+		    mkdir -p ${PATHTORESULTFILE}
 		fi
 
 		# Store results to disk
-		\cp ${LOGDIR}/${RESULTFILE}.all-levels results/${BUILDID}/${FILENAME}
+		\cp ${LOGDIR}/${RESULTFILE}.all-levels ${PATHTORESULTFILE}/${FILENAME}
 
 		# Compare with reference solution
-		if test -r refsol/${BUILDID}/${FILENAME}; then
+		if test -r ${PATHTOREFERENCEFILE}/${FILENAME}; then
 		    echo "Comparing reference with current solution..."
-		    diff -w refsol/${BUILDID}/${FILENAME} results/${BUILDID}/${FILENAME} 1> ${LOGDIR}/diffresult 2>&1
+		    diff -w ${PATHTOREFERENCEFILE}/${FILENAME} ${PATHTORESULTFILE}/${FILENAME} 1> ${LOGDIR}/diffresult 2>&1
 		    # Check whether reference and current solution match
 		    if test $? -eq 0; then
 			echo "TEST OK"
 			testpass=`expr ${testpass} + 1`
 			echo
 			echo "${TABLE_HEADER}"
-			cat results/${BUILDID}/${FILENAME}
+			cat ${PATHTORESULTFILE}/${FILENAME}
 			echo
 		    else
 			echo "TEST DEVIANT"
@@ -1251,8 +1270,8 @@ WARNING! For this application / test class there are no instructions
 			cat ${LOGDIR}/diffresult
 			echo
 			echo "Difference:"
-#			perl include/diff_refsol_result.pl "${APPL}" refsol/${BUILDID}/${FILENAME} results/${BUILDID}/${FILENAME}
-			diff refsol/${BUILDID}/${FILENAME} results/${BUILDID}/${FILENAME}
+#			perl include/diff_refsol_result.pl "${APPL}" ${PATHTOREFERENCEFILE}/${FILENAME} ${PATHTORESULTFILE}/${FILENAME}
+			diff ${PATHTOREFERENCEFILE}/${FILENAME} ${PATHTORESULTFILE}/${FILENAME}
 			echo
 		    fi
 		else
@@ -1262,7 +1281,7 @@ WARNING! For this application / test class there are no instructions
 		    listOfUnveriTests=`echo ${listOfUnveriTests} ${TESTID}`
 		    echo
 		    echo "${TABLE_HEADER}"
-		    cat results/${BUILDID}/${FILENAME}
+		    cat ${PATHTORESULTFILE}/${FILENAME}
 		    echo
 		fi
 	    fi
@@ -1297,8 +1316,8 @@ WARNING! For this application / test class there are no instructions
 
 		    FEASTnavsto|FEASTstokes)
 			echo "error reduction rates"
-			if test -s results/${BUILDID}/${FILENAME}; then
-			    perl include/comparenavstokes.pl results/${BUILDID}/${FILENAME}
+			if test -s ${PATHTORESULTFILE}/${FILENAME}; then
+			    perl include/comparenavstokes.pl ${PATHTORESULTFILE}/${FILENAME}
 			else
 			    echo "[None available.]"
 			    echo

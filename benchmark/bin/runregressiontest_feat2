@@ -53,6 +53,10 @@ COMPILEONLY=
 # throughout the script
 CONFIGUREOPTIONS=
 #
+# major and minor revision of a compiler that is already determined by the
+# fourth token of the build ID
+COMPILERVERSION=
+#
 # force benchmark run even if COMPAREFEAT2CHECKOUTS resulted
 # in skipping it (--force, "yes"|"no")
 FORCEBENCHMARKRUN=
@@ -241,6 +245,17 @@ fb_readargs() {
 		shift
 		;;
 
+	    --compiler-version)
+		COMPILERVERSION="$2"
+		shift
+		shift
+		;;
+
+	    --compiler-version=*)
+		COMPILERVERSION="`echo $1 | sed 's/^--compiler-version=//'`"
+		shift
+		;;
+
 	    --force|-f*)
 		FORCEBENCHMARKRUN="yes"
 		shift
@@ -343,8 +358,8 @@ fb_customise() {
 	    # via a queueing system, i.e. independent shells,
 	    # the appropriate modules need to be loaded within the
 	    # jobfile. Exactly those modules loaded here are hardcoded
-	    # into the jobfile by bin/lid_schedule_tests later on.
-	    case "$FORCEBUILDID" in
+	    # into the jobfile by bin/lido_schedule_tests later on.
+	    case "$FORCEBUILDID_$COMPILERVERSION" in
 		# G95 compiler suite
 		pc64-penryn-linux-g95-*)
 		    modules=""
@@ -394,19 +409,39 @@ fb_customise() {
 		    COMPILERNAME="SunStudio 12"
 		    ;;
 
-		# default build ID (Intel compiler suite)
-		pc64-penryn-linux-intel-*|*)
+		# Intel compiler suite 10.1.023
+		pc64-penryn-linux-intel-*10.1)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl"
-#		    modules="$modules intel/cce/9.1.051 intel/fce/9.1.051"
-#		    modules="$modules intel/cce/10.1.022 intel/fce/10.1.022"
-#		    modules="$modules intel/cce/11.0.083 intel/fce/11.0.083 intel/mkl"
-#		    modules="$modules intel/cce/11.1.064 intel/fce/11.1.064 intel/mkl"
-		    modules="$modules intel/cce/11.1.072 intel/fce/11.1.072 intel/mkl"
+		    modules="$modules intel/mkl intel/cce/10.1.023 intel/fce/10.1.023"
 		    LIDOJOBNAMEPREFIX=fb-intel
-#		    COMPILERNAME="Intel 10.1"
-#		    COMPILERNAME="Intel 11.0"
+		    COMPILERNAME="Intel 10.1"
+		    ;;
+
+		# Intel compiler suite 11.0.084
+		pc64-penryn-linux-intel-*11.0)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules intel/mkl intel/cce/11.0.084 intel/fce/11.0.084"
+		    LIDOJOBNAMEPREFIX=fb-intel
+		    COMPILERNAME="Intel 11.0"
+		    ;;
+
+		# Intel compiler suite 12.0.1.107
+		pc64-penryn-linux-intel-*12.0)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules intel/mkl intel/cce/12.0.1.107 intel/fce/12.0.1.107"
+		    LIDOJOBNAMEPREFIX=fb-intel
+		    COMPILERNAME="Intel 12.0"
+		    ;;
+
+		# Intel compiler suite 11.1.075 and default build ID
+		pc64-penryn-linux-intel-*11.1|*)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules intel/mkl intel/cce/11.1.075 intel/fce/11.1.075"
+		    LIDOJOBNAMEPREFIX=fb-intel
 		    COMPILERNAME="Intel 11.1"
 		    ;;
 	    esac
@@ -452,7 +487,7 @@ fb_customise() {
 	    # via a queueing system, i.e. independent shells,
 	    # the appropriate modules need to be loaded within the
 	    # jobfile. Exactly those modules loaded here are hardcoded
-	    # into the jobfile by bin/lid_schedule_tests later on.
+	    # into the jobfile by bin/lido_schedule_tests later on.
 	    case "$FORCEBUILDID" in
 		# G95 compiler suite
 		pc64-opteron-linux-g95-*)
@@ -1098,7 +1133,7 @@ fb_createTestSuiteScript() {
     # Benchmark applications have been configured for parallel/serial build.
     # This information is queried by the Makefile, so it even works
     # as intended without specifying the mode
-    make $TESTSUITE > $AUXILIARYLOG 2>&1
+    make $TESTSUITE COMPILERVERSION=${COMPILERVERSION} > $AUXILIARYLOG 2>&1
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
@@ -1136,7 +1171,7 @@ fb_runBenchmarkOnLiDO() {
     # For the queueing there is a separate script, used also
     # interactively.
     cd $BENCHMARKDIR
-    bin/lido_schedule_tests --prefix $LIDOJOBNAMEPREFIX $TESTSUITE.fbconf > $AUXILIARYLOG 2>&1
+    bin/lido_schedule_tests --compiler-version "${COMPILERVERSION}" --prefix $LIDOJOBNAMEPREFIX $TESTSUITE.fbconf > $AUXILIARYLOG 2>&1
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
