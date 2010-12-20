@@ -1868,11 +1868,11 @@ contains
 
       integer :: ieq
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ieq)
+      !$omp parallel do default(shared)
       do ieq = 1, neq
         Du(ieq) = domega*Du(ieq)/Da(ieq)
       end do
-!$OMP END PARALLEL DO
+      !$omp end parallel do
     end subroutine jacobi_MatD_double
 
     !*************************************************************
@@ -1889,11 +1889,11 @@ contains
 
       integer :: ieq
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ieq)
+      !$omp parallel do default(shared)
       do ieq = 1, neq
         Du(ieq) = domega*Du(ieq)/Da(Kdiagonal(ieq))
       end do
-!$OMP END PARALLEL DO
+      !$omp end parallel do
     end subroutine jacobi_Mat79_double
 
     !*************************************************************
@@ -1912,13 +1912,13 @@ contains
 
       integer :: ieq,ivar
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ieq,ivar)
+      !$omp parallel do default(shared) private(ivar)
       do ieq=1,neq
         do ivar=1,nvar
           Du(ivar,ieq)=domega*Du(ivar,ieq)/Da(ivar,Kdiagonal(ieq))
         end do
       end do
-!$OMP END PARALLEL DO
+      !$omp end parallel do
     end subroutine jacobi_Mat79IntlD_double
 
     !*************************************************************
@@ -1937,13 +1937,13 @@ contains
 
       integer :: ieq,ivar
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ieq,ivar)
+      !$omp parallel do default(shared) private(ivar)
       do ieq=1,neq
         do ivar=1,nvar
           Du(ivar,ieq)=domega*Du(ivar,ieq)/Da(ivar,ivar,Kdiagonal(ieq))
         end do
       end do
-!$OMP END PARALLEL DO
+      !$omp end parallel do
     end subroutine jacobi_Mat79Intl1_double
   end subroutine linsol_precondJacobi
 
