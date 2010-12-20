@@ -1109,9 +1109,9 @@ void gmvwrite_cells_amr(void *numcells, void *numtop, void *daughters)
      else
        {
         fprintf(fp,"%ld %ld\n", tmpnumcells64, tmpnumtop64);
-        for (i = 0; i < tmpnumcells64; i++)
+        for (ilong = 0; ilong < tmpnumcells64; ilong++)
           {
-           fprintf(fp,"%ld \n",tmpdaughters64);
+           fprintf(fp,"%ld \n",tmpdaughters64[ilong]);
           }
        }
      free(tmpdaughters64);
@@ -1129,7 +1129,7 @@ void gmvwrite_cells_amr(void *numcells, void *numtop, void *daughters)
         fprintf(fp,"%d %d\n", tmpnumcells, tmpnumtop);
         for (i = 0; i < tmpnumcells; i++)
           {
-           fprintf(fp,"%d \n",tmpdaughters);
+           fprintf(fp,"%d \n",tmpdaughters[i]);
           }
        }
      free(tmpdaughters);
