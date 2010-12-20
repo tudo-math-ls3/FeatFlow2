@@ -373,8 +373,26 @@ fb_customise() {
 		    COMPILERNAME="G95 0.93 (2010-06-17)"
 		    ;;
 
-		# GNU compiler suite
-		pc64-penryn-linux-gcc-*)
+		# GNU compiler suite 4.3.5
+		pc64-penryn-linux-gcc-*4.3)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules gcc/4.3.5"
+		    LIDOJOBNAMEPREFIX=fb-gcc
+		    COMPILERNAME="GCC 4.3.5"
+		    ;;
+
+		# GNU compiler suite 4.4.5
+		pc64-penryn-linux-gcc-*4.4)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules gcc/4.4.5"
+		    LIDOJOBNAMEPREFIX=fb-gcc
+		    COMPILERNAME="GCC 4.4.5"
+		    ;;
+
+		# GNU compiler suite 4.5.2 and default GNU compiler
+		pc64-penryn-linux-gcc-*4.5|pc64-penryn-linux-gcc-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.5.2"
@@ -400,13 +418,22 @@ fb_customise() {
 		    COMPILERNAME="PGI 10.9"
 		    ;;
 
-		# Sun Studio compiler suite
-		pc64-penryn-linux-sunstudio-*)
+		# Sun Studio compiler suite 12.1
+		pc64-penryn-linux-sunstudio-*12.1)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules sunstudio/12.1_update_1"
 		    LIDOJOBNAMEPREFIX=fb-sun
-		    COMPILERNAME="SunStudio 12"
+		    COMPILERNAME="SunStudio 12.1"
+		    ;;
+
+		# Oracle Studio compiler suite 12.2
+		pc64-penryn-linux-sunstudio-*12.2)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules oraclestudio/12.2"
+		    LIDOJOBNAMEPREFIX=fb-sun
+		    COMPILERNAME="OracleStudio 12.2"
 		    ;;
 
 		# Intel compiler suite 10.1.023
