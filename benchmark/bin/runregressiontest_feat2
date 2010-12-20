@@ -377,9 +377,9 @@ fb_customise() {
 		pc64-penryn-linux-gcc-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.5.0"
+		    modules="$modules gcc/4.5.2"
 		    LIDOJOBNAMEPREFIX=fb-gcc
-		    COMPILERNAME="GCC 4.5.0"
+		    COMPILERNAME="GCC 4.5.2"
 		    ;;
 
 		# Pathscale compiler suite
