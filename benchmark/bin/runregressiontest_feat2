@@ -359,7 +359,7 @@ fb_customise() {
 	    # the appropriate modules need to be loaded within the
 	    # jobfile. Exactly those modules loaded here are hardcoded
 	    # into the jobfile by bin/lido_schedule_tests later on.
-	    case "$FORCEBUILDID_$COMPILERVERSION" in
+	    case "${FORCEBUILDID}_${COMPILERVERSION}" in
 		# G95 compiler suite
 		pc64-penryn-linux-g95-*)
 		    modules=""
