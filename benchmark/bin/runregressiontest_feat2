@@ -1001,7 +1001,7 @@ fb_prepareForRun() {
 		    ;;
 		no-mpi)
 		    # Ensure build ID has at most 5 tokens, then take it.
-		    # Fore more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
+		    # For more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
 		    suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
 		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
 		    ;;
@@ -1009,6 +1009,9 @@ fb_prepareForRun() {
 		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$FORCEBUILDID""_""$mpi"
 		    ;;
 	    esac
+	fi
+	if [ -n "$COMPILERVERSION" ]; then
+	    BENCHMARKDIR=`echo ${BENCHMARKDIR} | sed -e "s/_\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
 	fi
 	mkdir $BENCHMARKDIR > $AUXILIARYLOG 2>&1
 	if [ $? -ne 0 ]; then
