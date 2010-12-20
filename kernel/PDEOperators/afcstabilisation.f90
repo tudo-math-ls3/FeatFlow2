@@ -2956,6 +2956,7 @@ contains
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_Dalpha, p_Dbeta
     real(DP), dimension(:), pointer :: p_Ddata, p_DdataTmp
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
     integer :: istep,ivariable, nvariable
 
     ! Get number of control variables
@@ -2979,6 +2980,7 @@ contains
     
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
     call lsyssc_getbase_double(rlumpedMassMatrix, p_DlumpedMassMatrix)
     call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
@@ -2996,8 +2998,8 @@ contains
     end do
     
     ! Compute upper and lower nodal bounds
-    call afcstab_computeBounds(p_IverticesAtEdge, rafcstab%NEQ,&
-        nvariable, p_Dcontrol, p_Dlbound, p_Dubound)
+    call afcstab_computeBounds(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+        rafcstab%NEQ, nvariable, p_Dcontrol, p_Dlbound, p_Dubound)
 
     ! Initialize correction factors to "one time dscale"
     call lalg_setVector(p_Dbeta, dscale)
@@ -3010,12 +3012,12 @@ contains
 
       ! Apply correction factors to solution vector
       if (rvector%nblocks .eq. 1) then
-        call afcstab_applyCorrectionDim2(p_IverticesAtEdge,&
-            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+        call afcstab_applyCorrectionDim2(p_IverticesAtEdgeIdx,&
+            p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
             p_DlumpedMassMatrix, p_Dalpha, p_Dbeta, p_Dflux, p_Ddata)
       else
-        call afcstab_applyCorrectionDim1(p_IverticesAtEdge,&
-            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+        call afcstab_applyCorrectionDim1(p_IverticesAtEdgeIdx,&
+            p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
             p_DlumpedMassMatrix, p_Dalpha, p_Dbeta, p_Dflux, p_Ddata)
       end if
 
@@ -3171,7 +3173,8 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_computeBounds(IverticesAtEdge, neq, nvar, Dx, Dlbound, Dubound)
+  subroutine afcstab_computeBounds(IverticesAtEdgeIdx, IverticesAtEdge,&
+      neq, nvar, Dx, Dlbound, Dubound)
       
 !<description>
     ! This subroutine computes the local upper and lower bounds based on
@@ -3179,6 +3182,9 @@ contains
 !</description>
 
 !<input>
+    ! Index pointer to the edge structure
+    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+
     ! Nodal numbers of edge-neighbours
     integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
@@ -3199,24 +3205,39 @@ contains
 !</subroutine>
     
     ! local variables
-    integer :: iedge,i,j
+    integer :: i,iedge,igroup,j
     
     call lalg_copyVector(Dx, Dlbound)
     call lalg_copyVector(Dx, Dubound)
+
+    !$omp parallel default(shared) private(i,j)&
+    !$omp if (IverticesAtEdgeIdx(size(IverticesAtEdgeIdx)) > AFCSTAB_NEDGEMIN_OMP)
     
-    ! Loop over all edges
-    do iedge = 1, size(IverticesAtEdge,2)
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronize memory access
+    do igroup = 1, size(IverticesAtEdgeIdx)-1
       
-      ! Get node numbers
-      i  = IverticesAtEdge(1, iedge)
-      j  = IverticesAtEdge(2, iedge)
+      ! Do nothing for empty groups
+      if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
       
-      ! Compute minimum/maximum value of neighboring nodes
-      Dlbound(i,:) = min(Dlbound(i,:), Dx(j,:))
-      Dlbound(j,:) = min(Dlbound(j,:), Dx(i,:))
-      Dubound(i,:) = max(Dubound(i,:), Dx(j,:))
-      Dubound(j,:) = max(Dubound(j,:), Dx(i,:))
-    end do
+      ! Loop over all edges
+      !$omp do
+      do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        
+        ! Compute minimum/maximum value of neighboring nodes
+        Dlbound(i,:) = min(Dlbound(i,:), Dx(j,:))
+        Dlbound(j,:) = min(Dlbound(j,:), Dx(i,:))
+        Dubound(i,:) = max(Dubound(i,:), Dx(j,:))
+        Dubound(j,:) = max(Dubound(j,:), Dx(i,:))
+      end do
+      !$omp end do
+
+    end do ! igroup
+    !$omp end parallel
     
   end subroutine afcstab_computeBounds
 
@@ -3301,7 +3322,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_applyCorrectionDim1(IverticesAtEdge,&
+  subroutine afcstab_applyCorrectionDim1(IverticesAtEdgeIdx, IverticesAtEdge,&
       NEDGE, NEQ, NVAR, ML, Dalpha, Dbeta, Dflux, Dx)
 
 !<description>
@@ -3313,6 +3334,9 @@ contains
 !</description>
    
 !<input>
+    ! Index pointer to the edge structure
+    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+
     ! Nodal numbers of edge-neighbours
     integer, dimension(:,:), intent(in) :: IverticesAtEdge
     
@@ -3340,22 +3364,37 @@ contains
     
     ! local variables
     real(DP), dimension(NVAR) :: F_ij
-    integer :: iedge,i,j
-    
-    ! Loop over all edges
-    do iedge = 1, size(IverticesAtEdge,2)
+    integer :: i,iedge,igroup,j
+
+    !$omp parallel default(shared) private(i,j,F_ij)&
+    !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronize memory access
+    do igroup = 1, size(IverticesAtEdgeIdx)-1
       
-      ! Get node numbers
-      i  = IverticesAtEdge(1, iedge)
-      j  = IverticesAtEdge(2, iedge)
+      ! Do nothing for empty groups
+      if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
       
-      ! Compute portion of corrected antidiffusive flux
-      F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
-      
-      ! Remove flux from solution
-      Dx(i,:) = Dx(i,:) + F_ij/ML(i)
-      Dx(j,:) = Dx(j,:) - F_ij/ML(j)
-    end do
+      ! Loop over all edges
+      !$omp do
+      do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        
+        ! Compute portion of corrected antidiffusive flux
+        F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
+        
+        ! Remove flux from solution
+        Dx(i,:) = Dx(i,:) + F_ij/ML(i)
+        Dx(j,:) = Dx(j,:) - F_ij/ML(j)
+      end do
+      !$omp end do
+
+    end do ! igroup
+    !$omp end parallel
     
   end subroutine afcstab_applyCorrectionDim1
 
@@ -3363,7 +3402,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_applyCorrectionDim2(IverticesAtEdge,&
+  subroutine afcstab_applyCorrectionDim2(IverticesAtEdgeIdx, IverticesAtEdge,&
       NEDGE, NEQ, NVAR, ML, Dalpha, Dbeta, Dflux, Dx)
 
 !<description>
@@ -3375,6 +3414,9 @@ contains
 !</description>
    
 !<input>
+    ! Index pointer to the edge structure
+    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+
     ! Nodal numbers of edge-neighbours
     integer, dimension(:,:), intent(in) :: IverticesAtEdge
     
@@ -3402,22 +3444,37 @@ contains
 
     ! local variables
     real(DP), dimension(NVAR) :: F_ij
-    integer :: iedge,i,j
+    integer :: i,iedge,igroup,j
 
-    ! Loop over all edges
-    do iedge = 1, size(IverticesAtEdge,2)
+    !$omp parallel default(shared) private(i,j,F_ij)&
+    !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronize memory access
+    do igroup = 1, size(IverticesAtEdgeIdx)-1
       
-      ! Get node numbers
-      i  = IverticesAtEdge(1, iedge)
-      j  = IverticesAtEdge(2, iedge)
+      ! Do nothing for empty groups
+      if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
       
-      ! Compute portion of corrected antidiffusive flux
-      F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
-      
-      ! Remove flux from solution
-      Dx(:,i) = Dx(:,i) + F_ij/ML(i)
-      Dx(:,j) = Dx(:,j) - F_ij/ML(j)
-    end do
+      ! Loop over all edges
+      !$omp do
+      do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        
+        ! Compute portion of corrected antidiffusive flux
+        F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
+        
+        ! Remove flux from solution
+        Dx(:,i) = Dx(:,i) + F_ij/ML(i)
+        Dx(:,j) = Dx(:,j) - F_ij/ML(j)
+      end do
+      !$omp end do
+
+    end do ! igroup
+    !$omp end parallel
 
   end subroutine afcstab_applyCorrectionDim2
 
