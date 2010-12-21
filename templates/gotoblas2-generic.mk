@@ -28,8 +28,15 @@ endif
 # undefined symbols that stem from the compiler used for the GotoBLAS2
 # library. A GotoBLAS2 library compiled with the Intel compiler, though,
 # contains a reference to symbol __svml_cosf4 from libsvml.
+#
+# Additionally, Intel releases > 11.1.072 require linking against
+# Intel's libirc.{so,a}. Failing to do so, linking will fail with
+#   hidden symbol '__intel_cpu_indicator_init' in libirc.a(cpu_disp.o) is referenced by DSO
 ifeq ($(call match,$(ID),.*-.*-.*-intel.*),yes)
 LIBS     := $(LIBS) -lsvml
+ifeq ($(call intelminversion_11_1),yes)
+LIBS     := $(LIBS) -lirc
+endif
 endif
 
 
