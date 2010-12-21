@@ -7707,8 +7707,8 @@ contains
   
 !</function>
 
-  real(QP) :: QASUM,QNRM2
-  integer :: IQAMAX
+!  real(QP) :: QASUM,QNRM2
+!  integer :: IQAMAX
 
   integer :: isize,iposmaxlocal
   
