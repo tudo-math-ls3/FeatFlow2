@@ -413,6 +413,9 @@ module linearalgebra
     module procedure lalg_vectorLinearCombSngl2D
     module procedure lalg_vectorLinearCombDble2D
     module procedure lalg_vectorLinearCombSnglDble2D
+    module procedure lalg_vectorLinearCombSngl3D
+    module procedure lalg_vectorLinearCombDble3D
+    module procedure lalg_vectorLinearCombSnglDble3D
 #ifdef ENABLE_QUADPREC
     module procedure lalg_vectorLinearCombQuad
     module procedure lalg_vectorLinearCombSnglQuad
@@ -420,6 +423,9 @@ module linearalgebra
     module procedure lalg_vectorLinearCombQuad2D
     module procedure lalg_vectorLinearCombSnglQuad2D
     module procedure lalg_vectorLinearCombDblQuad2D
+    module procedure lalg_vectorLinearCombQuad3D
+    module procedure lalg_vectorLinearCombSnglQuad3D
+    module procedure lalg_vectorLinearCombDblQuad3D
 #endif
   end interface
   
@@ -560,6 +566,15 @@ module linearalgebra
 
 !<constants>
 
+!<constantblock description="Constants defining the OpenMP parallelisation">
+
+  ! Minimum number of entries for OpenMP parallelisation: If the number of
+  ! entries is below this value, then no parallelisation is performed.
+#ifndef LINALG_NMIN_OMP
+  integer, parameter, public :: LINALG_NMIN_OMP = 10000
+#endif
+!</constantblock>
+
 !<constantblock description="Constants identifying vector norms">
 
   ! Sum of the absolute values of entries
@@ -684,24 +699,10 @@ contains
   
 !</subroutine>
 
-  integer :: i
-
     if (.not. present(n)) then
-    
-      do i = 1, size(Qx)
-        Qy(i) = Qx(i)
-      end do
-      
-      !call QCOPY(size(Qx),Qx,1,Qy,1)
-      
+      call QCOPY(size(Qx),Qx,1,Qy,1)
     else
-
-      do i = 1, n
-        Qy(i) = Qx(i)
-      end do
-      
-      !call QCOPY(n,Qx,1,Qy,1)
-
+      call QCOPY(n,Qx,1,Qy,1)
     end if
   
   end subroutine
@@ -734,20 +735,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i
   
     if (.not. present(n)) then
-    
-      do i = 1, size(Fx)
-        Dy(i) = real(Fx(i),DP)
-      end do
-    
+      call SDCOPY(size(Fx),Fx,1,Dy,1)
     else
-
-      do i = 1, n
-        Dy(i) = real(Fx(i),DP)
-      end do
-    
+      call SDCOPY(n,Fx,1,Dy,1)
     end if
 
   end subroutine
@@ -780,20 +772,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i
   
     if (.not. present(n)) then
-    
-      do i = 1, size(Fx)
-        Qy(i) = real(Fx(i),QP)
-      end do
-    
+      call SQCOPY(size(Fx),Fx,1,Qy,1)
     else
-
-      do i = 1, n
-        Qy(i) = real(Fx(i),QP)
-      end do
-    
+      call SQCOPY(n,Fx,1,Qy,1)
     end if
 
   end subroutine
@@ -826,20 +809,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i
   
     if (.not. present(n)) then
-
-      do i = 1, size(Dx)
-        Fy(i) = real(Dx(i),SP)
-      end do
-
+      call DSCOPY(size(Dx),Dx,1,Fy,1)
     else
-    
-      do i = 1, n
-        Fy(i) = real(Dx(i),SP)
-      end do
-
+      call DSCOPY(n,Dx,1,Fy,1)
     end if  
 
   end subroutine
@@ -872,20 +846,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i
   
     if (.not. present(n)) then
-
-      do i = 1, size(Dx)
-        Qy(i) = real(Dx(i),QP)
-      end do
-
+      call DQCOPY(size(Dx),Dx,1,Qy,1)
     else
-    
-      do i = 1, n
-        Qy(i) = real(Dx(i),QP)
-      end do
-
+      call DQCOPY(n,Dx,1,Qy,1)
     end if  
 
   end subroutine
@@ -918,20 +883,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i
   
     if (.not. present(n)) then
-
-      do i = 1, size(Qx)
-        Fy(i) = real(Qx(i),SP)
-      end do
-
+      call QSCOPY(size(Qx),Qx,1,Fy,1)
     else
-    
-      do i = 1, n
-        Fy(i) = real(Qx(i),SP)
-      end do
-
+      call QSCOPY(n,Qx,1,Fy,1)
     end if  
 
   end subroutine
@@ -964,20 +920,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i
   
     if (.not. present(n)) then
-
-      do i = 1, size(Qx)
-        Dy(i) = real(Qx(i),DP)
-      end do
-
+      call QDCOPY(size(Qx),Qx,1,Dy,1)
     else
-    
-      do i = 1, n
-        Dy(i) = real(Qx(i),DP)
-      end do
-
+      call QDCOPY(n,Qx,1,Dy,1)
     end if  
 
   end subroutine
@@ -1929,28 +1876,10 @@ contains
   
 !</subroutine>
 
-  integer :: i,j
-
     if (present(n) .and. present(m)) then
-    
-      do j = 1, m
-        do i = 1, n
-          Qy(i,j) = Qx(i,j)
-        end do
-      end do
-      
-      !call QCOPY(n*m,Qx,1,Qy,1)
-      
+      call QCOPY(n*m,Qx,1,Qy,1)
     else
-
-      do j = 1, size(Qx,2)
-        do i = 1, size(Qx,1)
-          Qy(i,j) = Qx(i,j)
-        end do
-      end do
-
-      !call QCOPY(size(Qx,1)*size(Qx,2),Qx,1,Qy,1)
-      
+      call QCOPY(size(Qx,1)*size(Qx,2),Qx,1,Qy,1)
     end if
   
   end subroutine
@@ -1983,24 +1912,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j
   
     if (present(n) .and. present(m)) then
-
-      do j = 1, m
-        do i = 1, n
-          Dy(i,j) = real(Fx(i,j),DP)
-        end do
-      end do
-
+      call SDCOPY(n*m,Fx,1,Dy,1)
     else
-
-      do j = 1, size(Fx,2)
-        do i = 1, size(Fx,1)
-          Dy(i,j) = real(Fx(i,j),DP)
-        end do
-      end do
-      
+      call SDCOPY(size(Fx,1)*size(Fx,2),Fx,1,Dy,1)
     end if
 
   end subroutine
@@ -2033,24 +1949,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j
-  
+
     if (present(n) .and. present(m)) then
-
-      do j = 1, m
-        do i = 1, n
-          Qy(i,j) = real(Fx(i,j),QP)
-        end do
-      end do
-
+      call SQCOPY(n*m,Fx,1,Qy,1)
     else
-
-      do j = 1, size(Fx,2)
-        do i = 1, size(Fx,1)
-          Qy(i,j) = real(Fx(i,j),QP)
-        end do
-      end do
-      
+      call SQCOPY(size(Fx,1)*size(Fx,2),Fx,1,Qy,1)
     end if
 
   end subroutine
@@ -2083,24 +1986,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j
   
     if (present(n) .and. present(m)) then
-
-      do j = 1, m
-        do i = 1, n
-          Fy(i,j) = real(Dx(i,j),SP)
-        end do
-      end do
-
+      call DSCOPY(n*m,Dx,1,Fy,1)
     else
-
-      do j = 1, size(Dx,2)
-        do i = 1, size(Dx,1)
-          Fy(i,j) = real(Dx(i,j),SP)
-        end do
-      end do
-      
+      call DSCOPY(size(Dx,1)*size(Dx,2),Dx,1,Fy,1)
     end if
 
   end subroutine
@@ -2133,24 +2023,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j
   
     if (present(n) .and. present(m)) then
-
-      do j = 1, m
-        do i = 1, n
-          Qy(i,j) = real(Dx(i,j),QP)
-        end do
-      end do
-
+      call DQCOPY(n*m,Dx,1,Qy,1)
     else
-
-      do j = 1, size(Dx,2)
-        do i = 1, size(Dx,1)
-          Qy(i,j) = real(Dx(i,j),QP)
-        end do
-      end do
-      
+      call DQCOPY(size(Dx,1)*size(Dx,2),Dx,1,Qy,1)
     end if
 
   end subroutine
@@ -2183,24 +2060,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j
   
     if (present(n) .and. present(m)) then
-
-      do j = 1, m
-        do i = 1, n
-          Fy(i,j) = real(Qx(i,j),SP)
-        end do
-      end do
-
+      call QSCOPY(n*m,Qx,1,Fy,1)
     else
-
-      do j = 1, size(Qx,2)
-        do i = 1, size(Qx,1)
-          Fy(i,j) = real(Qx(i,j),SP)
-        end do
-      end do
-      
+      call QSCOPY(size(Qx,1)*size(Qx,2),Qx,1,Fy,1)
     end if
 
   end subroutine
@@ -2233,24 +2097,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j
   
     if (present(n) .and. present(m)) then
-
-      do j = 1, m
-        do i = 1, n
-          Dy(i,j) = real(Qx(i,j),DP)
-        end do
-      end do
-
+      call QDCOPY(n*m,Qx,1,Dy,1)
     else
-
-      do j = 1, size(Qx,2)
-        do i = 1, size(Qx,1)
-          Dy(i,j) = real(Qx(i,j),DP)
-        end do
-      end do
-      
+      call QDCOPY(size(Qx,1)*size(Qx,2),Qx,1,Dy,1)
     end if
 
   end subroutine
@@ -3276,32 +3127,10 @@ contains
   
 !</subroutine>
 
-  integer :: i,j,k
-
     if (present(n) .and. present(m) .and. present(o)) then
-    
-      do k = 1, o
-        do j = 1, m
-          do i = 1, n
-            Qy(i,j,k) = Qx(i,j,k)
-          end do
-        end do
-      end do
-      
-      !call QCOPY(n*m*o,Qx,1,Qy,1)
-      
+      call QCOPY(n*m*o,Qx,1,Qy,1)
     else
-
-      do k = 1, size(Qx,3)
-        do j = 1, size(Qx,2)
-          do i = 1, size(Qx,1)
-            Qy(i,j,k) = Qx(i,j,k)
-          end do
-        end do
-      end do
-
-      !call QCOPY(size(Qx,1)*size(Qx,2)*size(Qx,3),Qx,1,Qy,1)
-      
+      call QCOPY(size(Qx,1)*size(Qx,2)*size(Qx,3),Qx,1,Qy,1)
     end if
   
   end subroutine
@@ -3334,28 +3163,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j,k
   
     if (present(n) .and. present(m) .and. present(o)) then
-
-      do k = 1, o
-        do j = 1, m
-          do i = 1, n
-            Dy(i,j,k) = real(Fx(i,j,k),DP)
-          end do
-        end do
-      end do
-
+      call SDCOPY(n*m*o,Fx,1,Dy,1)
     else
-
-      do k = 1, size(Fx,3)
-        do j = 1, size(Fx,2)
-          do i = 1, size(Fx,1)
-            Dy(i,j,k) = real(Fx(i,j,k),DP)
-          end do
-        end do
-      end do
-      
+      call SDCOPY(size(Fx,1)*size(Fx,2)*size(Fx,3),Fx,1,Dy,1)
     end if
 
   end subroutine
@@ -3388,28 +3200,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j,k
   
     if (present(n) .and. present(m) .and. present(o)) then
-
-      do k = 1, o
-        do j = 1, m
-          do i = 1, n
-            Qy(i,j,k) = real(Fx(i,j,k),QP)
-          end do
-        end do
-      end do
-
+      call SQCOPY(n*m*o,Fx,1,Qy,1)
     else
-
-      do k = 1, size(Fx,3)
-        do j = 1, size(Fx,2)
-          do i = 1, size(Fx,1)
-            Qy(i,j,k) = real(Fx(i,j,k),QP)
-          end do
-        end do
-      end do
-      
+      call SQCOPY(size(Fx,1)*size(Fx,2)*size(Fx,3),Fx,1,Qy,1)
     end if
 
   end subroutine
@@ -3442,28 +3237,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j,k
   
     if (present(n) .and. present(m) .and. present(o)) then
-
-      do k = 1, o
-        do j = 1, m
-          do i = 1, n
-            Fy(i,j,k) = real(Dx(i,j,k),SP)
-          end do
-        end do
-      end do
-
+      call DSCOPY(n*m*o,Dx,1,Fy,1)
     else
-
-      do k = 1, size(Dx,3)
-        do j = 1, size(Dx,2)
-          do i = 1, size(Dx,1)
-            Fy(i,j,k) = real(Dx(i,j,k),SP)
-          end do
-        end do
-      end do
-      
+      call DSCOPY(size(Dx,1)*size(Dx,2)*size(Dx,3),Dx,1,Fy,1)
     end if
 
   end subroutine
@@ -3496,28 +3274,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j,k
   
     if (present(n) .and. present(m) .and. present(o)) then
-
-      do k = 1, o
-        do j = 1, m
-          do i = 1, n
-            Qy(i,j,k) = real(Dx(i,j,k),QP)
-          end do
-        end do
-      end do
-
+      call DQCOPY(n*m*o,Dx,1,Qy,1)
     else
-
-      do k = 1, size(Dx,3)
-        do j = 1, size(Dx,2)
-          do i = 1, size(Dx,1)
-            Qy(i,j,k) = real(Dx(i,j,k),QP)
-          end do
-        end do
-      end do
-      
+      call DQCOPY(size(Dx,1)*size(Dx,2)*size(Dx,3),Dx,1,Qy,1)
     end if
 
   end subroutine
@@ -3550,28 +3311,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j,k
   
     if (present(n) .and. present(m) .and. present(o)) then
-
-      do k = 1, o
-        do j = 1, m
-          do i = 1, n
-            Fy(i,j,k) = real(Qx(i,j,k),SP)
-          end do
-        end do
-      end do
-
+      call QSCOPY(n*m*o,Qx,1,Fy,1)
     else
-
-      do k = 1, size(Qx,3)
-        do j = 1, size(Qx,2)
-          do i = 1, size(Qx,1)
-            Fy(i,j,k) = real(Qx(i,j,k),SP)
-          end do
-        end do
-      end do
-      
+      call QSCOPY(size(Qx,1)*size(Qx,2)*size(Qx,3),Qx,1,Fy,1)
     end if
 
   end subroutine
@@ -3604,28 +3348,11 @@ contains
 !</output>
   
 !</subroutine>
-  integer :: i,j,k
   
     if (present(n) .and. present(m) .and. present(o)) then
-
-      do k = 1, o
-        do j = 1, m
-          do i = 1, n
-            Dy(i,j,k) = real(Qx(i,j,k),DP)
-          end do
-        end do
-      end do
-
+      call QDCOPY(n*m*o,Qx,1,Dy,1)
     else
-
-      do k = 1, size(Qx,3)
-        do j = 1, size(Qx,2)
-          do i = 1, size(Qx,1)
-            Dy(i,j,k) = real(Qx(i,j,k),DP)
-          end do
-        end do
-      end do
-      
+      call QDCOPY(size(Qx,1)*size(Qx,2)*size(Qx,3),Qx,1,Dy,1)
     end if
 
   end subroutine
@@ -4739,29 +4466,17 @@ contains
   
 !</subroutine>
 
-  integer :: i
-  
     if (.not. present(n)) then
       if(qc .eq. 0.0_QP) then
         call lalg_clearVectorQuad(Qx)
       else if(qc .ne. 1.0_QP) then
-      
-        do i = 1, size(Qx)
-          Qx(i) = qc * Qx(i)
-        end do
-      
-        !call QSCAL(size(Qx),qc,Qx,1)
+        call QSCAL(size(Qx),qc,Qx,1)
       end if
     else
       if(qc .eq. 0.0_QP) then
         call lalg_clearVectorQuad(Qx,n)
       else if(qc .ne. 1.0_QP) then
-
-        do i = 1, n
-          Qx(i) = qc * Qx(i)
-        end do
-
-        !call QSCAL(n,qc,Qx,1)
+        call QSCAL(n,qc,Qx,1)
       end if
     end if
   
@@ -4861,19 +4576,10 @@ contains
   
 !</subroutine>
 
-  integer :: i,j
-
     if(qc .eq. 0.0_QP) then
       call lalg_clearVectorQuad2D(Qx)
     else if(qc .ne. 1.0_QP) then
-    
-      do j = 1, size(Qx,2)
-        do i = 1, size(Qx,1)
-          Qx(i,j) = qc*Qx(i,j)
-        end do
-      end do
-    
-      !call QSCAL(size(Qx,1)*size(Qx,2),qc,Qx,1)
+      call QSCAL(size(Qx,1)*size(Qx,2),qc,Qx,1)
     end if
   
   end subroutine
@@ -4972,21 +4678,10 @@ contains
   
 !</subroutine>
 
-  integer :: i,j,k
-
     if(qc .eq. 0.0_QP) then
       call lalg_clearVectorQuad3D(Qx)
     else if(qc .ne. 1.0_QP) then
-    
-      do k = 1, size(Qx,3)
-        do j = 1, size(Qx,2)
-          do i = 1, size(Qx,1)
-            Qx(i,j,k) = qc*Qx(i,j,k)
-          end do
-        end do
-      end do
-    
-      !call QSCAL(size(Qx,1)*size(Qx,2)*size(Qx,3),qc,Qx,1)
+      call QSCAL(size(Qx,1)*size(Qx,2)*size(Qx,3),qc,Qx,1)
     end if
   
   end subroutine
@@ -5012,22 +4707,11 @@ contains
 !</output>
   
 !</subroutine>
-
-  ! local variables
-  integer :: i
   
     if (.not. present(n)) then
-    
-      do i = 1, size(Fx)
-        Fx(i) = 0.0_SP
-      end do
-      
+      call SSET(size(Fx),0.0_SP,Fx,1)
     else
-    
-      do i = 1, n
-        Fx(i) = 0.0_SP
-      end do
-      
+      call SSET(n,0.0_SP,Fx,1)
     end if
   
   end subroutine
@@ -5054,21 +4738,10 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i
-
     if (.not. present(n)) then
-    
-      do i = 1, size(Dx)
-        Dx(i) = 0.0_DP
-      end do
-      
+      call DSET(size(Dx),0.0_DP,Dx,1)
     else
-    
-      do i = 1, n
-        Dx(i) = 0.0_DP
-      end do
-      
+      call DSET(n,0.0_DP,Dx,1)
     end if
   
   end subroutine
@@ -5095,21 +4768,10 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i
-
     if (.not. present(n)) then
-    
-      do i = 1, size(Qx)
-        Qx(i) = 0.0_QP
-      end do
-      
+      call QSET(size(Qx),0.0_QP,Qx,1)
     else
-    
-      do i = 1, n
-        Qx(i) = 0.0_QP
-      end do
-      
+      call QSET(n,0.0_QP,Qx,1)
     end if
   
   end subroutine
@@ -5297,14 +4959,7 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i,j
-
-    do j = 1, size(Fx,2)
-      do i = 1, size(Fx,1)
-        Fx(i,j) = 0.0_SP
-      end do
-    end do
+    call SSET(size(Fx,1)*size(Fx,2),0.0_SP,Fx,1)
   
   end subroutine
 
@@ -5325,15 +4980,8 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i,j
+    call DSET(size(Dx,1)*size(Dx,2),0.0_DP,Dx,1)
 
-    do j = 1, size(Dx,2)
-      do i = 1, size(Dx,1)
-        Dx(i,j) = 0.0_DP
-      end do
-    end do
-  
   end subroutine
 
   ! ***************************************************************************
@@ -5353,15 +5001,8 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i,j
+    call QSET(size(Qx,1)*size(Qx,2),0.0_QP,Qx,1)
 
-    do j = 1, size(Qx,2)
-      do i = 1, size(Qx,1)
-        Qx(i,j) = 0.0_QP
-      end do
-    end do
-  
   end subroutine
 
   ! ***************************************************************************
@@ -5503,17 +5144,8 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i,j,k
+    call SSET(size(Fx,1)*size(Fx,2)*size(Fx,3),0.0_SP,Fx,1)
 
-    do k = 1, size(Fx,3)
-      do j = 1, size(Fx,2)
-        do i = 1, size(Fx,1)
-          Fx(i,j,k) = 0.0_SP
-        end do
-      end do
-    end do
-  
   end subroutine
 
   ! ***************************************************************************
@@ -5533,17 +5165,8 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i,j,k
+    call DSET(size(Dx,1)*size(Dx,2)*size(Dx,3),0.0_DP,Dx,1)
 
-    do k = 1, size(Dx,3)
-      do j = 1, size(Dx,2)
-        do i = 1, size(Dx,1)
-          Dx(i,j,k) = 0.0_DP
-        end do
-      end do
-    end do
-  
   end subroutine
 
   ! ***************************************************************************
@@ -5563,16 +5186,7 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i,j,k
-
-    do k = 1, size(Qx,3)
-      do j = 1, size(Qx,2)
-        do i = 1, size(Qx,1)
-          Qx(i,j,k) = 0.0_QP
-        end do
-      end do
-    end do
+    call QSET(size(Qx,1)*size(Qx,2)*size(Qx,3),0.0_QP,Qx,1)
   
   end subroutine
 
@@ -5729,21 +5343,10 @@ contains
 
 !</subroutine>
 
-  ! local variables
-  integer :: i
-
     if (.not. present(n)) then
-
-      do i = 1, size(Fx)
-        Fx(i) = fvalue
-      end do
-      
+      call SSET(size(Fx),fvalue,Fx,1)
     else
-    
-      do i = 1, n
-        Fx(i) = fvalue
-      end do
-      
+      call SSET(n,fvalue,Fx,1)
     end if
   
   end subroutine
@@ -5773,21 +5376,10 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i
-  
     if (.not. present(n)) then
-
-      do i = 1, size(Dx)
-        Dx(i) = dvalue
-      end do
-      
+      call DSET(size(Dx),dvalue,Dx,1)
     else
-    
-      do i = 1, size(Dx)
-        Dx(i) = dvalue
-      end do
-      
+      call DSET(n,dvalue,Dx,1)
     end if
   
   end subroutine
@@ -5817,21 +5409,10 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i
-  
     if (.not. present(n)) then
-
-      do i = 1, size(Qx)
-        Qx(i) = qvalue
-      end do
-      
+      call QSET(size(Qx),qvalue,Qx,1)
     else
-    
-      do i = 1, size(Qx)
-        Qx(i) = qvalue
-      end do
-      
+      call QSET(n,qvalue,Qx,1)
     end if
   
   end subroutine
@@ -6122,15 +5703,8 @@ contains
 
 !</subroutine>
 
-  ! local variables
-  integer :: i,j
-  
-    do j = 1, size(Fx,2)
-      do i = 1, size(Fx,1)
-        Fx(i,j) = fvalue
-      end do
-    end do
-  
+    call SSET(size(Fx,1)*size(Fx,2),fvalue,Fx,1)
+
   end subroutine
 
   ! ***************************************************************************
@@ -6155,15 +5729,8 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i,j
+    call DSET(size(Dx,1)*size(Dx,2),dvalue,Dx,1)
 
-    do j = 1, size(Dx,2)
-      do i = 1, size(Dx,1)
-        Dx(i,j) = dvalue
-      end do
-    end do
-  
   end subroutine
 
   ! ***************************************************************************
@@ -6188,15 +5755,8 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i,j
+    call QSET(size(Qx,1)*size(Qx,2),qvalue,Qx,1)
 
-    do j = 1, size(Qx,2)
-      do i = 1, size(Qx,1)
-        Qx(i,j) = qvalue
-      end do
-    end do
-  
   end subroutine
   
   ! ***************************************************************************
@@ -6419,16 +5979,7 @@ contains
 
 !</subroutine>
 
-  ! local variables
-  integer :: i,j,k
-  
-    do k = 1, size(Fx,3)
-      do j = 1, size(Fx,2)
-        do i = 1, size(Fx,1)
-          Fx(i,j,k) = fvalue
-        end do
-      end do
-    end do
+    call SSET(size(Fx,1)*size(Fx,2)*size(Fx,3),fvalue,Fx,1)
   
   end subroutine
 
@@ -6454,17 +6005,8 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i,j,k
+    call DSET(size(Dx,1)*size(Dx,2)*size(Dx,3),dvalue,Dx,1)
 
-    do k = 1, size(Dx,3)
-      do j = 1, size(Dx,2)
-        do i = 1, size(Dx,1)
-          Dx(i,j,k) = dvalue
-        end do
-      end do
-    end do
-  
   end subroutine
 
   ! ***************************************************************************
@@ -6489,17 +6031,8 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  integer :: i,j,k
+    call QSET(size(Qx,1)*size(Qx,2)*size(Qx,3),qvalue,Qx,1)
 
-    do k = 1, size(Qx,3)
-      do j = 1, size(Qx,2)
-        do i = 1, size(Qx,1)
-          Qx(i,j,k) = qvalue
-        end do
-      end do
-    end do
-  
   end subroutine
   
   ! ***************************************************************************
@@ -6754,21 +6287,21 @@ contains
 
       if (scy .eq. 0.0_SP) then
         call SCOPY(size(Fx),Fx,1,Fy,1)
-        if (scx .ne. 1.0_SP) call SSCAL(size(Fx),scx,Fy,1)
-      else if (scy .eq. 1.0_DP) then
+        if (scx .ne. 1.0_SP) call SSCAL(size(Fy),scx,Fy,1)
+      else if (scy .eq. 1.0_SP) then
         call SAXPY(size(Fx),scx,Fx,1,Fy,1)
       else
         c=scx/scy
         call SAXPY(size(Fx),c,Fx,1,Fy,1)
-        call SSCAL(size(Fx),scy,Fy,1)
+        call SSCAL(size(Fy),scy,Fy,1)
       endif
       
     else
     
       if (scy .eq. 0.0_SP) then
         call SCOPY(n,Fx,1,Fy,1)
-        if (scx .ne. 1.0_SP) call SSCAL(size(Fx),scx,Fy,1)
-      else if (scy .eq. 1.0_DP) then
+        if (scx .ne. 1.0_SP) call SSCAL(n,scx,Fy,1)
+      else if (scy .eq. 1.0_SP) then
         call SAXPY(n,scx,Fx,1,Fy,1)
       else
         c=scx/scy
@@ -6822,20 +6355,20 @@ contains
     
       if (dcy .eq. 0.0_DP) then
         call DCOPY(size(Dx),Dx,1,Dy,1)
-        if (dcx .ne. 1.0_DP) call DSCAL(size(Dx),dcx,Dy,1)
+        if (dcx .ne. 1.0_DP) call DSCAL(size(Dy),dcx,Dy,1)
       else if (dcy .eq. 1.0_DP) then
         call DAXPY(size(Dx),dcx,Dx,1,Dy,1)
       else
         c=dcx/dcy
         call DAXPY(size(Dx),c,Dx,1,Dy,1)
-        call DSCAL(size(Dx),dcy,Dy,1)
+        call DSCAL(size(Dy),dcy,Dy,1)
       endif
       
     else
     
       if (dcy .eq. 0.0_DP) then
         call DCOPY(n,Dx,1,Dy,1)
-        if (dcx .ne. 1.0_DP) call DSCAL(size(Dx),dcx,Dy,1)
+        if (dcx .ne. 1.0_DP) call DSCAL(n,dcx,Dy,1)
       else if (dcy .eq. 1.0_DP) then
         call DAXPY(n,dcx,Dx,1,Dy,1)
       else
@@ -6884,80 +6417,34 @@ contains
 !</subroutine>
 
   ! local variables
-  ! local variables
-  integer :: i,k
+  real(QP) :: c
   
     if (.not. present(n)) then
-      k = size(Qx)
-    else
-      k = n
-    end if
-  
-    if(qcx .eq. 0.0_QP) then
     
-      if(qcy .eq. 1.0_QP) then
-        
-        ! Nothing to do
-        return
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = 0.0_QP
-        end do
-      
+      if (qcy .eq. 0.0_QP) then
+        call QCOPY(size(Qx),Qx,1,Qy,1)
+        if (qcx .ne. 1.0_QP) call QSCAL(size(Qy),qcx,Qy,1)
+      else if (qcy .eq. 1.0_QP) then
+        call QAXPY(size(Qx),qcx,Qx,1,Qy,1)
       else
+        c=qcx/qcy
+        call QAXPY(size(Qx),c,Qx,1,Qy,1)
+        call QSCAL(size(Qy),qcy,Qy,1)
+      endif
       
-        do i = 1, k
-          Qy(i) = qcy*Qy(i)
-        end do
-      
-      end if
-    
-    else if(qcx .eq. 1.0_QP) then
-    
-      if(qcy .eq. 1.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = Qy(i) + Qx(i)
-        end do
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = Qx(i)
-        end do
-      
-      else
-      
-        do i = 1, k
-          Qy(i) = qcy*Qy(i) + Qx(i)
-        end do
-
-      end if
-    
     else
     
-      if(qcy .eq. 1.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = Qy(i) + qcx*Qx(i)
-        end do
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = qcx*Qx(i)
-        end do
-      
+      if (qcy .eq. 0.0_QP) then
+        call QCOPY(n,Qx,1,Qy,1)
+        if (qcx .ne. 1.0_QP) call QSCAL(n,qcx,Qy,1)
+      else if (qcy .eq. 1.0_QP) then
+        call QAXPY(n,qcx,Qx,1,Qy,1)
       else
+        c=qcx/qcy
+        call QAXPY(n,c,Qx,1,Qy,1)
+        call QSCAL(n,qcy,Qy,1)
+      endif
       
-        do i = 1, k
-          Qy(i) = qcy*Qy(i) + qcx*Qx(i)
-        end do
-
-      end if
-    
     end if
   
   end subroutine
@@ -6998,84 +6485,35 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,k
-  real(DP) :: dcx
+  real(SP) :: c
   
     if (.not. present(n)) then
-      k = size(Fx)
-    else
-      k = n
-    end if
-  
-    if(scx .eq. 0.0_SP) then
-    
-      if(dcy .eq. 1.0_DP) then
-        
-        ! Nothing to do
-        return
-      
-      else if(dcy .eq. 0.0_DP) then
-      
-        ! Simply clear Dy
-        do i = 1, k
-          Dy(i) = 0.0_DP
-        end do
-      
-      else
-      
-        ! Call DSCAL
-        call DSCAL(k,dcy,Dy,1)
-      
-      end if
-    
-    else if(scx .eq. 1.0_SP) then
-    
-      if(dcy .eq. 1.0_DP) then
-      
-        do i = 1, k
-          Dy(i) = Dy(i) + real(Fx(i),DP)
-        end do
-      
-      else if(dcy .eq. 0.0_DP) then
-      
-        do i = 1, k
-          Dy(i) = real(Fx(i),DP)
-        end do
-      
-      else
-      
-        do i = 1, k
-          Dy(i) = dcy*Dy(i) + real(Fx(i),DP)
-        end do
 
-      end if
-    
+      if (dcy .eq. 0.0_DP) then
+        call SDCOPY(size(Fx),Fx,1,Dy,1)
+        if (scx .ne. 1.0_SP) call DSCAL(size(Dy),real(scx,DP),Dy,1)
+      else if (dcy .eq. 1.0_DP) then
+        call SDAXPY(size(Fx),scx,Fx,1,Dy,1)
+      else
+        c=real(scx/dcy,SP)
+        call SDAXPY(size(Fx),c,Fx,1,Dy,1)
+        call DSCAL(size(Dy),dcy,Dy,1)
+      endif
+      
     else
     
-      ! Convert scx to double precision
-      dcx = real(scx,DP)
-
-      if(dcy .eq. 1.0_DP) then
-      
-        do i = 1, k
-          Dy(i) = Dy(i) + dcx*real(Fx(i),DP)
-        end do
-      
-      else if(dcy .eq. 0.0_DP) then
-      
-        do i = 1, k
-          Dy(i) = dcx*real(Fx(i),DP)
-        end do
-      
+      if (dcy .eq. 0.0_DP) then
+        call SDCOPY(n,Fx,1,Dy,1)
+        if (scx .ne. 1.0_SP) call DSCAL(size(Dy),real(scx,DP),Dy,1)
+      else if (dcy .eq. 1.0_DP) then
+        call SDAXPY(n,scx,Fx,1,Dy,1)
       else
-      
-        do i = 1, k
-          Dy(i) = dcy*Dy(i) + dcx*real(Fx(i),DP)
-        end do
+        c=real(scx/dcy,SP)
+        call SDAXPY(n,c,Fx,1,Dy,1)
+        call DSCAL(n,dcy,Dy,1)
+      endif
 
-      end if
-    
-    end if
+    end if  
   
   end subroutine
   
@@ -7115,85 +6553,35 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,k
-  real(QP) :: qcx
+  real(SP) :: c
   
     if (.not. present(n)) then
-      k = size(Fx)
-    else
-      k = n
-    end if
-  
-    if(scx .eq. 0.0_SP) then
-    
-      if(qcy .eq. 1.0_QP) then
-        
-        ! Nothing to do
-        return
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        ! Simply clear Qy
-        do i = 1, k
-          Qy(i) = 0.0_QP
-        end do
-      
-      else
-      
-        do i = 1, k
-          Qy(i) = qcy*Qy(i)
-        end do
-      
-      end if
-    
-    else if(scx .eq. 1.0_SP) then
-    
-      if(qcy .eq. 1.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = Qy(i) + real(Fx(i),QP)
-        end do
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = real(Fx(i),QP)
-        end do
-      
-      else
-      
-        do i = 1, k
-          Qy(i) = qcy*Qy(i) + real(Fx(i),QP)
-        end do
 
-      end if
-    
+      if (qcy .eq. 0.0_QP) then
+        call SQCOPY(size(Fx),Fx,1,Qy,1)
+        if (scx .ne. 1.0_SP) call QSCAL(size(Qy),real(scx,QP),Qy,1)
+      else if (qcy .eq. 1.0_QP) then
+        call SQAXPY(size(Fx),scx,Fx,1,Qy,1)
+      else
+        c=real(scx/qcy,SP)
+        call SQAXPY(size(Fx),c,Fx,1,Qy,1)
+        call QSCAL(size(Qy),qcy,Qy,1)
+      endif
+      
     else
     
-      ! Convert scx to quad precision
-      qcx = real(scx,QP)
-
-      if(qcy .eq. 1.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = Qy(i) + qcx*real(Fx(i),QP)
-        end do
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = qcx*real(Fx(i),QP)
-        end do
-      
+      if (qcy .eq. 0.0_QP) then
+        call SQCOPY(n,Fx,1,Qy,1)
+        if (scx .ne. 1.0_SP) call QSCAL(size(Qy),real(scx,QP),Qy,1)
+      else if (qcy .eq. 1.0_QP) then
+        call SQAXPY(n,scx,Fx,1,Qy,1)
       else
-      
-        do i = 1, k
-          Qy(i) = qcy*Qy(i) + qcx*real(Fx(i),QP)
-        end do
+        c=real(scx/qcy,SP)
+        call SQAXPY(n,c,Fx,1,Qy,1)
+        call QSCAL(n,qcy,Qy,1)
+      endif
 
-      end if
-    
-    end if
+    end if  
   
   end subroutine
 
@@ -7233,85 +6621,35 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,k
-  real(QP) :: qcx
+  real(DP) :: c
   
     if (.not. present(n)) then
-      k = size(Dx)
-    else
-      k = n
-    end if
-  
-    if(dcx .eq. 0.0_DP) then
-    
-      if(qcy .eq. 1.0_QP) then
-        
-        ! Nothing to do
-        return
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        ! Simply clear Qy
-        do i = 1, k
-          Qy(i) = 0.0_QP
-        end do
-      
-      else
-      
-        do i = 1, k
-          Qy(i) = qcy*Qy(i)
-        end do
-      
-      end if
-    
-    else if(dcx .eq. 1.0_DP) then
-    
-      if(qcy .eq. 1.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = Qy(i) + real(Dx(i),QP)
-        end do
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = real(Dx(i),QP)
-        end do
-      
-      else
-      
-        do i = 1, k
-          Qy(i) = qcy*Qy(i) + real(Dx(i),QP)
-        end do
 
-      end if
-    
+      if (qcy .eq. 0.0_QP) then
+        call DQCOPY(size(Dx),Dx,1,Qy,1)
+        if (dcx .ne. 1.0_DP) call QSCAL(size(Qy),real(dcx,QP),Qy,1)
+      else if (qcy .eq. 1.0_QP) then
+        call DQAXPY(size(Dx),dcx,Dx,1,Qy,1)
+      else
+        c=real(dcx/qcy,DP)
+        call DQAXPY(size(Dx),c,Dx,1,Qy,1)
+        call QSCAL(size(Qy),qcy,Qy,1)
+      endif
+      
     else
     
-      ! Convert dcx to quad precision
-      qcx = real(dcx,QP)
-
-      if(qcy .eq. 1.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = Qy(i) + qcx*real(Dx(i),QP)
-        end do
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do i = 1, k
-          Qy(i) = qcx*real(Dx(i),QP)
-        end do
-      
+      if (qcy .eq. 0.0_QP) then
+        call DQCOPY(n,Dx,1,Qy,1)
+        if (dcx .ne. 1.0_DP) call QSCAL(size(Qy),real(dcx,QP),Qy,1)
+      else if (qcy .eq. 1.0_QP) then
+        call DQAXPY(n,dcx,Dx,1,Qy,1)
       else
-      
-        do i = 1, k
-          Qy(i) = qcy*Qy(i) + qcx*real(Dx(i),QP)
-        end do
+        c=real(dcx/qcy,DP)
+        call DQAXPY(n,c,Dx,1,Qy,1)
+        call QSCAL(n,qcy,Qy,1)
+      endif
 
-      end if
-    
-    end if
+    end if  
   
   end subroutine
 
@@ -7349,16 +6687,19 @@ contains
 
   ! local variables
   real(SP) :: c
+  integer :: n
+
+  n = size(Fx,1)*size(Fx,2)
   
     if (scy .eq. 0.0_SP) then
-      call SCOPY(size(Fx,1)*size(Fx,2),Fx,1,Fy,1)
-      if (scx .ne. 1.0_SP) call SSCAL(size(Fx,1)*size(Fx,2),scx,Fy,1)
-    else if (scy .eq. 1.0_DP) then
-      call SAXPY(size(Fx,1)*size(Fx,2),scx,Fx,1,Fy,1)
+      call SCOPY(n,Fx,1,Fy,1)
+      if (scx .ne. 1.0_SP) call SSCAL(n,scx,Fy,1)
+    else if (scy .eq. 1.0_SP) then
+      call SAXPY(n,scx,Fx,1,Fy,1)
     else
       c=scx/scy
-      call SAXPY(size(Fx,1)*size(Fx,2),c,Fx,1,Fy,1)
-      call SSCAL(size(Fx,1)*size(Fx,2),scy,Fy,1)
+      call SAXPY(n,c,Fx,1,Fy,1)
+      call SSCAL(n,scy,Fy,1)
     endif
   
   end subroutine
@@ -7397,16 +6738,19 @@ contains
 
   ! local variables
   real(DP) :: c
+  integer :: n
+
+  n = size(Dx,1)*size(Dx,2)
   
     if (dcy .eq. 0.0_DP) then
-      call DCOPY(size(Dx,1)*size(Dx,2),Dx,1,Dy,1)
-      if (dcx .ne. 1.0_DP) call DSCAL(size(Dx,1)*size(Dx,2),dcx,Dy,1)
+      call DCOPY(n,Dx,1,Dy,1)
+      if (dcx .ne. 1.0_DP) call DSCAL(n,dcx,Dy,1)
     else if (dcy .eq. 1.0_DP) then
-      call DAXPY(size(Dx,1)*size(Dx,2),dcx,Dx,1,Dy,1)
+      call DAXPY(n,dcx,Dx,1,Dy,1)
     else
       c=dcx/dcy
-      call DAXPY(size(Dx,1)*size(Dx,2),c,Dx,1,Dy,1)
-      call DSCAL(size(Dx,1)*size(Dx,2),dcy,Dy,1)
+      call DAXPY(n,c,Dx,1,Dy,1)
+      call DSCAL(n,dcy,Dy,1)
     endif
   
   end subroutine
@@ -7444,14 +6788,22 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,j
-  
-    do j = 1, size(Qx,2)
-      do i = 1, size(Qx,1)
-        Qy(i,j) = qcy*Qy(i,j) + qcx*Qx(i,j)
-      end do
-    end do
-  
+  real(QP) :: c
+  integer :: n
+
+  n = size(Qx,1)*size(Qx,2)
+
+    if (qcy .eq. 0.0_QP) then
+      call QCOPY(n,Qx,1,Qy,1)
+      if (qcx .ne. 1.0_QP) call QSCAL(n,qcx,Qy,1)
+    else if (qcy .eq. 1.0_QP) then
+      call QAXPY(n,qcx,Qx,1,Qy,1)
+    else
+      c=qcx/qcy
+      call QAXPY(n,c,Qx,1,Qy,1)
+      call QSCAL(n,qcy,Qy,1)
+    endif
+
   end subroutine
   
   ! ***************************************************************************
@@ -7486,93 +6838,23 @@ contains
   
 !</subroutine>
 
-  integer :: i,j
-  real(DP) :: dcx
-  
-    if(scx .eq. 0.0_SP) then
-    
-      if(dcy .eq. 1.0_DP) then
-        
-        ! Nothing to do
-        return
-      
-      else if(dcy .eq. 0.0_DP) then
-      
-        ! Simply clear Dy
-        do j = 1, size(Dy,2)
-          do i = 1, size(Dy,1)
-            Dy(i,j) = 0.0_DP
-          end do
-        end do
-      
-      else
-      
-        ! Call DSCAL
-        call DSCAL(size(Dy,1)*size(Dy,2),dcy,Dy,1)
-      
-      end if
-    
-    else if(scx .eq. 1.0_SP) then
-    
-      if(dcy .eq. 1.0_DP) then
-      
-        do j = 1, size(Dy,2)
-          do i = 1, size(Dy,1)
-            Dy(i,j) = Dy(i,j) + real(Fx(i,j),DP)
-          end do
-        end do
-      
-      else if(dcy .eq. 0.0_DP) then
-      
-        do j = 1, size(Dy,2)
-          do i = 1, size(Dy,1)
-            Dy(i,j) = real(Fx(i,j),DP)
-          end do
-        end do
-      
-      else
-      
-        do j = 1, size(Dy,2)
-          do i = 1, size(Dy,1)
-            Dy(i,j) = dcy*Dy(i,j) + real(Fx(i,j),DP)
-          end do
-        end do
+  ! local variables
+  real(SP) :: c
+  integer :: n
 
-      end if
-    
+  n = size(Fx,1)*size(Fx,2)
+
+    if (dcy .eq. 0.0_DP) then
+      call SDCOPY(n,Fx,1,Dy,1)
+      if (scx .ne. 1.0_SP) call DSCAL(n,real(scx,DP),Dy,1)
+    else if (dcy .eq. 1.0_DP) then
+      call SDAXPY(n,scx,Fx,1,Dy,1)
     else
-    
-      ! Convert scx to double precision
-      dcx = real(scx,DP)
+      c=real(scx/dcy,SP)
+      call SDAXPY(n,c,Fx,1,Dy,1)
+      call DSCAL(n,dcy,Dy,1)
+    endif
 
-      if(dcy .eq. 1.0_DP) then
-      
-        do j = 1, size(Dy,2)
-          do i = 1, size(Dy,1)
-            Dy(i,j) = Dy(i,j) + dcx*real(Fx(i,j),DP)
-          end do
-        end do
-      
-      else if(dcy .eq. 0.0_DP) then
-      
-        do j = 1, size(Dy,2)
-          do i = 1, size(Dy,1)
-            Dy(i,j) = dcx*real(Fx(i,j),DP)
-          end do
-        end do
-      
-      else
-      
-        do j = 1, size(Dy,2)
-          do i = 1, size(Dy,1)
-            Dy(i,j) = dcy*Dy(i,j) + dcx*real(Fx(i,j),DP)
-          end do
-        end do
-
-      end if
-    
-    end if
-  
   end subroutine
   
   ! ***************************************************************************
@@ -7606,97 +6888,24 @@ contains
 !</inputoutput>
   
 !</subroutine>
+ 
+  ! local variables
+  real(SP) :: c
+  integer :: n
 
-  integer :: i,j
-  real(QP) :: qcx
-  
-    if(scx .eq. 0.0_SP) then
-    
-      if(qcy .eq. 1.0_QP) then
-        
-        ! Nothing to do
-        return
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        ! Simply clear Qy
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = 0.0_QP
-          end do
-        end do
-      
-      else
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = qcy*Qy(i,j)
-          end do
-        end do
-      
-      end if
-    
-    else if(scx .eq. 1.0_SP) then
-    
-      if(qcy .eq. 1.0_QP) then
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = Qy(i,j) + real(Fx(i,j),QP)
-          end do
-        end do
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = real(Fx(i,j),QP)
-          end do
-        end do
-      
-      else
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = qcy*Qy(i,j) + real(Fx(i,j),QP)
-          end do
-        end do
+  n = size(Fx,1)*size(Fx,2)
 
-      end if
-    
+    if (qcy .eq. 0.0_QP) then
+      call SQCOPY(n,Fx,1,Qy,1)
+      if (scx .ne. 1.0_SP) call QSCAL(n,real(scx,QP),Qy,1)
+    else if (qcy .eq. 1.0_QP) then
+      call SQAXPY(n,scx,Fx,1,Qy,1)
     else
-    
-      ! Convert scx to quad precision
-      qcx = real(scx,QP)
+      c=real(scx/qcy,SP)
+      call SQAXPY(n,c,Fx,1,Qy,1)
+      call QSCAL(n,qcy,Qy,1)
+    endif
 
-      if(qcy .eq. 1.0_QP) then
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = Qy(i,j) + qcx*real(Fx(i,j),QP)
-          end do
-        end do
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = qcx*real(Fx(i,j),QP)
-          end do
-        end do
-      
-      else
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = qcy*Qy(i,j) + qcx*real(Fx(i,j),QP)
-          end do
-        end do
-
-      end if
-    
-    end if
-  
   end subroutine
   
   ! ***************************************************************************
@@ -7730,97 +6939,330 @@ contains
 !</inputoutput>
   
 !</subroutine>
-
-  integer :: i,j
-  real(QP) :: qcx
   
-    if(dcx .eq. 0.0_DP) then
-    
-      if(qcy .eq. 1.0_QP) then
-        
-        ! Nothing to do
-        return
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        ! Simply clear Qy
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = 0.0_QP
-          end do
-        end do
-      
-      else
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = qcy*Qy(i,j)
-          end do
-        end do
-      
-      end if
-    
-    else if(dcx .eq. 1.0_DP) then
-    
-      if(qcy .eq. 1.0_QP) then
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = Qy(i,j) + real(Dx(i,j),QP)
-          end do
-        end do
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = real(Dx(i,j),QP)
-          end do
-        end do
-      
-      else
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = qcy*Qy(i,j) + real(Dx(i,j),QP)
-          end do
-        end do
+  ! local variables
+  real(DP) :: c
+  integer :: n
 
-      end if
-    
+  n = size(Dx,1)*size(Dx,2)
+
+    if (qcy .eq. 0.0_QP) then
+      call DQCOPY(n,Dx,1,Qy,1)
+      if (dcx .ne. 1.0_DP) call QSCAL(n,real(dcx,QP),Qy,1)
+    else if (qcy .eq. 1.0_QP) then
+      call DQAXPY(n,dcx,Dx,1,Qy,1)
     else
-    
-      ! Convert dcx to quad precision
-      qcx = real(dcx,QP)
+      c=real(dcx/qcy,DP)
+      call DQAXPY(n,c,Dx,1,Qy,1)
+      call QSCAL(n,qcy,Qy,1)
+    endif
 
-      if(qcy .eq. 1.0_QP) then
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = Qy(i,j) + qcx*real(Dx(i,j),QP)
-          end do
-        end do
-      
-      else if(qcy .eq. 0.0_QP) then
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = qcx*real(Dx(i,j),QP)
-          end do
-        end do
-      
-      else
-      
-        do j = 1, size(Qy,2)
-          do i = 1, size(Qy,1)
-            Qy(i,j) = qcy*Qy(i,j) + qcx*real(Dx(i,j),QP)
-          end do
-        end do
+  end subroutine
 
-      end if
-    
-    end if
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_vectorLinearCombSngl3D (Fx,Fy,scx,scy)
   
+!<description>
+  ! Performs a linear combination: Fy = scx * Fx  +  scy * Fy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  real(SP), dimension(:,:,:), intent(in) :: Fx
+  
+  ! Scaling factor for Dx
+  real(SP), intent(in)                   :: scx
+
+  ! Scaling factor for Dy
+  real(SP), intent(in)                   :: scy
+  
+!</input>
+
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  real(SP), dimension(:,:,:), intent(inout) :: Fy
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  real(SP) :: c
+  integer :: n
+
+  n = size(Fx,1)*size(Fx,2)*size(Fx,3)
+  
+    if (scy .eq. 0.0_SP) then
+      call SCOPY(n,Fx,1,Fy,1)
+      if (scx .ne. 1.0_SP) call SSCAL(n,scx,Fy,1)
+    else if (scy .eq. 1.0_SP) then
+      call SAXPY(n,scx,Fx,1,Fy,1)
+    else
+      c=scx/scy
+      call SAXPY(n,c,Fx,1,Fy,1)
+      call SSCAL(n,scy,Fy,1)
+    endif
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_vectorLinearCombDble3D (Dx,Dy,dcx,dcy)
+  
+!<description>
+  ! Performs a linear combination: Dy = dcx * Dx  +  dcy * Dy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  real(DP), dimension(:,:,:), intent(in) :: Dx
+  
+  ! Scaling factor for Dx
+  real(DP), intent(in)                   :: dcx
+
+  ! Scaling factor for Dy
+  real(DP), intent(in)                   :: dcy
+  
+!</input>
+
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  real(DP), dimension(:,:,:), intent(inout) :: Dy
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  real(DP) :: c
+  integer :: n
+
+  n = size(Dx,1)*size(Dx,2)*size(Dx,3)
+  
+    if (dcy .eq. 0.0_DP) then
+      call DCOPY(n,Dx,1,Dy,1)
+      if (dcx .ne. 1.0_DP) call DSCAL(n,dcx,Dy,1)
+    else if (dcy .eq. 1.0_DP) then
+      call DAXPY(n,dcx,Dx,1,Dy,1)
+    else
+      c=dcx/dcy
+      call DAXPY(n,c,Dx,1,Dy,1)
+      call DSCAL(n,dcy,Dy,1)
+    endif
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_vectorLinearCombQuad3D (Qx,Qy,qcx,qcy)
+  
+!<description>
+  ! Performs a linear combination: Qy = qcx * Qx  +  qcy * Qy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  real(QP), dimension(:,:,:), intent(in) :: Qx
+  
+  ! Scaling factor for Qx
+  real(QP), intent(in)                   :: qcx
+
+  ! Scaling factor for Qy
+  real(QP), intent(in)                   :: qcy
+  
+!</input>
+
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  real(QP), dimension(:,:,:), intent(inout) :: Qy
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  real(QP) :: c
+  integer :: n
+
+  n = size(Qx,1)*size(Qx,2)*size(Qx,3)
+
+    if (qcy .eq. 0.0_QP) then
+      call QCOPY(n,Qx,1,Qy,1)
+      if (qcx .ne. 1.0_QP) call QSCAL(n,qcx,Qy,1)
+    else if (qcy .eq. 1.0_QP) then
+      call QAXPY(n,qcx,Qx,1,Qy,1)
+    else
+      c=qcx/qcy
+      call QAXPY(n,c,Qx,1,Qy,1)
+      call QSCAL(n,qcy,Qy,1)
+    endif
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_vectorLinearCombSnglDble3D (Fx,Dy,scx,dcy)
+  
+!<description>
+  ! Performs a linear combination: Dy = scx * Fx  +  dcy * Dy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  real(SP), dimension(:,:,:), intent(in) :: Fx
+  
+  ! Scaling factor for Dx
+  real(SP), intent(in)                   :: scx
+
+  ! Scaling factor for Dy
+  real(DP), intent(in)                   :: dcy
+  
+!</input>
+
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  real(DP), dimension(:,:,:), intent(inout) :: Dy
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  real(SP) :: c
+  integer :: n
+
+  n = size(Fx,1)*size(Fx,2)*size(Fx,3)
+
+    if (dcy .eq. 0.0_DP) then
+      call SDCOPY(n,Fx,1,Dy,1)
+      if (scx .ne. 1.0_SP) call DSCAL(n,real(scx,DP),Dy,1)
+    else if (dcy .eq. 1.0_DP) then
+      call SDAXPY(n,scx,Fx,1,Dy,1)
+    else
+      c=real(scx/dcy,SP)
+      call SDAXPY(n,c,Fx,1,Dy,1)
+      call DSCAL(n,dcy,Dy,1)
+    endif
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_vectorLinearCombSnglQuad3D (Fx,Qy,scx,qcy)
+  
+!<description>
+  ! Performs a linear combination: Qy = scx * Fx  +  qcy * Qy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  real(SP), dimension(:,:,:), intent(in) :: Fx
+  
+  ! Scaling factor for Dx
+  real(SP), intent(in)                   :: scx
+
+  ! Scaling factor for Qy
+  real(QP), intent(in)                   :: qcy
+  
+!</input>
+
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  real(QP), dimension(:,:,:), intent(inout) :: Qy
+  
+!</inputoutput>
+  
+!</subroutine>
+ 
+  ! local variables
+  real(SP) :: c
+  integer :: n
+
+  n = size(Fx,1)*size(Fx,2)*size(Fx,3)
+
+    if (qcy .eq. 0.0_QP) then
+      call SQCOPY(n,Fx,1,Qy,1)
+      if (scx .ne. 1.0_SP) call QSCAL(n,real(scx,QP),Qy,1)
+    else if (qcy .eq. 1.0_QP) then
+      call SQAXPY(n,scx,Fx,1,Qy,1)
+    else
+      c=real(scx/qcy,SP)
+      call SQAXPY(n,c,Fx,1,Qy,1)
+      call QSCAL(n,qcy,Qy,1)
+    endif
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_vectorLinearCombDblQuad3D (Dx,Qy,dcx,qcy)
+  
+!<description>
+  ! Performs a linear combination: Qy = dcx * Dx  +  qcy * Qy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  real(DP), dimension(:,:,:), intent(in) :: Dx
+  
+  ! Scaling factor for Dx
+  real(DP), intent(in)                   :: dcx
+
+  ! Scaling factor for Qy
+  real(QP), intent(in)                   :: qcy
+  
+!</input>
+
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  real(QP), dimension(:,:,:), intent(inout) :: Qy
+  
+!</inputoutput>
+  
+!</subroutine>
+  
+  ! local variables
+  real(DP) :: c
+  integer :: n
+
+  n = size(Dx,1)*size(Dx,2)*size(Dx,3)
+
+    if (qcy .eq. 0.0_QP) then
+      call DQCOPY(n,Dx,1,Qy,1)
+      if (dcx .ne. 1.0_DP) call QSCAL(n,real(dcx,QP),Qy,1)
+    else if (qcy .eq. 1.0_QP) then
+      call DQAXPY(n,dcx,Dx,1,Qy,1)
+    else
+      c=real(dcx/qcy,DP)
+      call DQAXPY(n,c,Dx,1,Qy,1)
+      call QSCAL(n,qcy,Qy,1)
+    endif
+
   end subroutine
 
   ! ***************************************************************************
@@ -8265,70 +7707,45 @@ contains
   
 !</function>
 
-  !real(QP) :: QASUM,QNRM2,IQAMAX
+  real(QP) :: QASUM,QNRM2
+  integer :: IQAMAX
 
-  integer :: i,isize
+  integer :: isize,iposmaxlocal
   
     isize = size(Qx)
     if (present(n)) isize = n
     
-    resnorm = 0.0_QP
-
     ! Choose the norm to calculate
     select case (cnorm)
     case (LINALG_NORMSUM)
       ! L1-norm: sum all entries
-      do i = 1, isize
-        resnorm = resnorm + abs(Qx(i))
-      end do
-      !resnorm = QASUM(isize,Qx,1)
+      resnorm = QASUM(isize,Qx,1)
 
     case (LINALG_NORMEUCLID)
       ! Euclidian norm = scalar product (vector,vector)
-      do i = 1, isize
-        resnorm = resnorm + Qx(i)*Qx(i)
-      end do
-      resnorm = sqrt(resnorm)
-      !resnorm = QNRM2(isize,Qx,1)
+      resnorm = QNRM2(isize,Qx,1)
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) has norm = 1.
-      do i = 1, isize
-        resnorm = resnorm + abs(Qx(i))
-      end do
-      resnorm = resnorm / real(isize,QP)
-      !resnorm = QASUM(isize,Dx,1) / real(isize,QP)
+      resnorm = QASUM(isize,Qx,1) / real(isize,QP)
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
-      do i = 1, isize
-        resnorm = resnorm + Qx(i)*Qx(i)
-      end do
-      resnorm = sqrt(resnorm / real(isize,QP))
-      !resnorm = QNRM2(isize,Qx,1) / sqrt(real(isize,QP))
+      resnorm = QNRM2(isize,Qx,1) / sqrt(real(isize,QP))
       
     case (LINALG_NORMMAX)
       ! MAX-norm. Find the absolute largest entry.
+      ! With the BLAS routine, calculate the position. Then get the entry.
+      iposmaxlocal = IQAMAX(isize,Qx,1)
+      resnorm = abs(Qx(iposmaxlocal))
+      
       if(present(iposMax)) then
-        ! iposMax is needed - calculate norm by hand instead of calling
-        ! the BLAS routine.
-        resnorm = abs(Qx(1))
-        iposMax = 1
-        do i=2,isize
-          if (abs(Qx(i)) .gt. resnorm) then
-            iposMax = i
-            resnorm = abs(Qx(i))
-          end if
-        end do
-      else
-        do i = 1, isize
-          resnorm = max(resnorm,abs(Qx(i)))
-        end do
+        iposMax = iposmaxlocal
       end if
         
-    case default
+      case default
       ! Unknown norm
       resnorm = -1.0_QP
       
@@ -9651,5 +9068,1263 @@ contains
     end if
 
   end subroutine
+
+!*******************************************************************************
+! ! !               PRIVATE SUBROUTINE FOR INTERNAL USE ONLY               ! ! !
+!*******************************************************************************
+
+!<subroutine>
+  subroutine qscal(n,qa,qx,incx)
+
+!<description>
+  ! Scales a quad precision vector by a constant qx := qa * qx
+  !
+  ! REMARK: This subroutin is a port of subroutine DSCAL from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<inputoutput>
+  
+  ! Source and destination vector
+  real(QP), dimension(*), intent(inout) :: qx
+  
+!</inputoutput>
+
+!<input>
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increment
+  integer, intent(in) :: incx
+
+  ! Multiplication factor
+  real(QP), intent(in) :: qa
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,m,mp1,nincx
+  
+  if( n.le.0 .or. incx.le.0 )return
+  if(incx.eq.1)go to 20
+
+  ! code for increment not equal to 1
+  nincx = n*incx
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = 1,nincx,incx
+    qx(i) = qa*qx(i)
+  end do
+  !$omp end parallel do
+  return
+  
+  ! code for increment equal to 1
+20 m = mod(n,5)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    qx(i) = qa*qx(i)
+  end do
+  if( n .lt. 5 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,5
+    qx(i) = qa*qx(i)
+    qx(i + 1) = qa*qx(i + 1)
+    qx(i + 2) = qa*qx(i + 2)
+    qx(i + 3) = qa*qx(i + 3)
+    qx(i + 4) = qa*qx(i + 4)
+  end do
+  !$omp end parallel do
+  end subroutine qscal
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine qcopy(n,qx,incx,qy,incy)
+
+!<description>
+  ! Copies a quad precision vector to another vector qy := qx
+  !
+  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Destination vector
+  real(QP), dimension(*), intent(out) :: qy
+  
+!</output>
+
+!<input>
+
+  ! Source vector
+  real(QP), dimension(*), intent(in) :: qx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+  
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    qy(iy) = qx(ix)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,7)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    qy(i) = qx(i)
+  end do
+  if( n .lt. 7 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,7
+    qy(i) = qx(i)
+    qy(i + 1) = qx(i + 1)
+    qy(i + 2) = qx(i + 2)
+    qy(i + 3) = qx(i + 3)
+    qy(i + 4) = qx(i + 4)
+    qy(i + 5) = qx(i + 5)
+    qy(i + 6) = qx(i + 6)
+  end do
+  !$omp end parallel do
+  end subroutine qcopy
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine qaxpy(n,qa,qx,incx,qy,incy)
+
+!<description>
+  ! Computes constant times a quad precision vector plus a vector.
+  !
+  ! REMARK: This subroutin is a port of subroutine DAXPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Second source and destination vector
+  real(QP), dimension(*), intent(out) :: qy
+  
+!</output>
+
+!<input>
+
+  ! First source vector
+  real(QP), dimension(*), intent(in) :: qx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+  ! Multiplication factor
+  real(QP), intent(in) :: qa
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if (qa .eq. 0.0_QP) return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    qy(iy) = qy(iy) + qa*qx(ix)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,4)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    qy(i) = qy(i) + qa*qx(i)
+  end do
+  if( n .lt. 4 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,4
+    qy(i) = qy(i) + qa*qx(i)
+    qy(i + 1) = qy(i + 1) + qa*qx(i + 1)
+    qy(i + 2) = qy(i + 2) + qa*qx(i + 2)
+    qy(i + 3) = qy(i + 3) + qa*qx(i + 3)
+  end do
+  !$omp end parallel do
+  end subroutine qaxpy
+
+! ***************************************************************************
+
+!<subroutine>
+  function qasum(n,qx,incx)
+
+!<description>
+  ! Takes the sum of the absolute values.
+  !
+  ! REMARK: This subroutin is a port of subroutine DASUM from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<input>
+
+  ! First source vector
+  real(QP), dimension(*), intent(in) :: qx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increment
+  integer, intent(in) :: incx
+
+!</input>
+
+!<result>
+  ! Sum of the absolute values
+  real(QP) :: qasum
+!</result>
+!</function>
+
+  ! local variables
+  real(QP) :: qtemp
+  integer i,m,mp1,nincx
+  
+  qasum = 0.0_QP
+  qtemp = 0.0_QP
+  if( n.le.0 .or. incx.le.0 )return
+  if(incx.eq.1)go to 20
+  
+  ! code for increment not equal to 1
+  nincx = n*incx
+  do i = 1,nincx,incx
+    qtemp = qtemp + abs(qx(i))
+  end do
+  qasum = qtemp
+  return
+
+  ! code for increment equal to 1
+20 m = mod(n,6)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    qtemp = qtemp + abs(qx(i))
+  end do
+  if( n .lt. 6 ) go to 60
+40 mp1 = m + 1
+  do i = mp1,n,6
+    qtemp = qtemp + abs(qx(i)) + abs(qx(i + 1)) + abs(qx(i + 2))&
+          + abs(qx(i + 3)) + abs(qx(i + 4)) + abs(qx(i + 5))
+  end do
+60 qasum = qtemp
+  return
+
+  end function qasum
+
+! ***************************************************************************
+
+!<subroutine>
+  function qnrm2(n,qx,incx)
+
+!<description>
+  ! Computes the euclidean norm of quad precision vector
+  !
+  ! REMARK: This subroutin is a port of subroutine DNRM2 from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<input>
+
+  ! First source vector
+  real(QP), dimension(*), intent(in) :: qx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increment
+  integer, intent(in) :: incx
+
+!</input>
+
+!<result>
+  ! Euclidean norm
+  real(QP) :: qnrm2
+!</result>
+!</function>
+
+  ! local variables
+  real(QP), parameter :: ONE = 1.0_QP, ZERO = 0.0_QP
+  real(QP) :: absxi, norm, scale, ssq
+  integer :: ix
+
+  if( n.lt.1 .or. incx.lt.1 )then
+    norm  = zero
+  else if( n.eq.1 )then
+    norm  = abs( qx( 1 ) )
+  else
+    scale = zero
+    ssq   = one
+    do ix = 1, 1 + ( n - 1 )*incx, incx
+      if( qx( ix ).ne.zero )then
+        absxi = abs( qx( ix ) )
+        if( scale.lt.absxi )then
+          ssq   = one   + ssq*( scale/absxi )**2
+          scale = absxi
+        else
+          ssq   = ssq   +     ( absxi/scale )**2
+        end if
+      end if
+    end do
+    norm  = scale * sqrt( ssq )
+  end if
+  
+  qnrm2 = norm
+
+  end function qnrm2
+
+! ***************************************************************************
+
+!<subroutine>
+  function iqamax(n,qx,incx)
+
+!<description>
+  ! Finds the index of element having max. absolute value.
+  !
+  ! REMARK: This subroutin is a port of subroutine IDAMAX from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<input>
+
+  ! First source vector
+  real(QP), dimension(*), intent(in) :: qx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx
+
+!</input>
+
+!<result>
+  ! Index of element having max. absolute value
+  integer :: iqamax
+!</result>
+!</function>
+
+  ! local variables
+  real(QP) :: qmax
+  integer :: i,ix
+
+  iqamax = 0
+  if( n.lt.1 .or. incx.le.0 ) return
+  iqamax = 1
+  if(n.eq.1)return
+  if(incx.eq.1)go to 20
+
+  ! code for increment not equal to 1
+  ix = 1
+  qmax = abs(qx(1))
+  ix = ix + incx
+  do i = 2,n
+    if(abs(qx(ix)).le.qmax) then
+      ix = ix + incx
+      cycle
+    end if
+    iqamax = i
+    qmax = abs(qx(ix))
+    ix = ix + incx
+  end do
+  return
+  
+  ! code for increment equal to 1
+20 qmax = abs(qx(1))
+  do i = 2,n
+    if(abs(qx(i)).le.qmax) cycle
+    iqamax = i
+    qmax = abs(qx(i))
+  end do
+
+  end function iqamax
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine sdcopy(n,sx,incx,dy,incy)
+
+!<description>
+  ! Copies a single precision vector to a double precision vector dy := sx
+  !
+  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Destination vector
+  real(DP), dimension(*), intent(out) :: dy
+  
+!</output>
+
+!<input>
+
+  ! Source vector
+  real(SP), dimension(*), intent(in) :: sx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+  
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    dy(iy) = real(sx(ix),DP)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,7)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    dy(i) = real(sx(i),DP)
+  end do
+  if( n .lt. 7 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,7
+    dy(i) = real(sx(i),DP)
+    dy(i + 1) = real(sx(i + 1),DP)
+    dy(i + 2) = real(sx(i + 2),DP)
+    dy(i + 3) = real(sx(i + 3),DP)
+    dy(i + 4) = real(sx(i + 4),DP)
+    dy(i + 5) = real(sx(i + 5),DP)
+    dy(i + 6) = real(sx(i + 6),DP)
+  end do
+  !$omp end parallel do
+  end subroutine sdcopy
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine dscopy(n,dx,incx,sy,incy)
+
+!<description>
+  ! Copies a single precision vector to a double precision vector sy := dx
+  !
+  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Destination vector
+  real(SP), dimension(*), intent(out) :: sy
+  
+!</output>
+
+!<input>
+
+  ! Source vector
+  real(DP), dimension(*), intent(in) :: dx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+  
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    sy(iy) = real(dx(ix),SP)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,7)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    sy(i) = real(dx(i),SP)
+  end do
+  if( n .lt. 7 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,7
+    sy(i) = real(dx(i),SP)
+    sy(i + 1) = real(dx(i + 1),SP)
+    sy(i + 2) = real(dx(i + 2),SP)
+    sy(i + 3) = real(dx(i + 3),SP)
+    sy(i + 4) = real(dx(i + 4),SP)
+    sy(i + 5) = real(dx(i + 5),SP)
+    sy(i + 6) = real(dx(i + 6),SP)
+  end do
+  !$omp end parallel do
+end subroutine dscopy
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine sqcopy(n,sx,incx,qy,incy)
+
+!<description>
+  ! Copies a single precision vector to a quad precision vector qy := sx
+  !
+  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Destination vector
+  real(QP), dimension(*), intent(out) :: qy
+  
+!</output>
+
+!<input>
+
+  ! Source vector
+  real(SP), dimension(*), intent(in) :: sx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+  
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    qy(iy) = real(sx(ix),QP)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,7)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    qy(i) = real(sx(i),QP)
+  end do
+  if( n .lt. 7 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,7
+    qy(i) = real(sx(i),QP)
+    qy(i + 1) = real(sx(i + 1),QP)
+    qy(i + 2) = real(sx(i + 2),QP)
+    qy(i + 3) = real(sx(i + 3),QP)
+    qy(i + 4) = real(sx(i + 4),QP)
+    qy(i + 5) = real(sx(i + 5),QP)
+    qy(i + 6) = real(sx(i + 6),QP)
+  end do
+  !$omp end parallel do
+  end subroutine sqcopy
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine qscopy(n,qx,incx,sy,incy)
+
+!<description>
+  ! Copies a quad precision vector to a single precision vector sy := qx
+  !
+  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Destination vector
+  real(SP), dimension(*), intent(out) :: sy
+  
+!</output>
+
+!<input>
+
+  ! Source vector
+  real(QP), dimension(*), intent(in) :: qx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+  
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    sy(iy) = real(qx(ix),SP)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,7)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    sy(i) = real(qx(i),SP)
+  end do
+  if( n .lt. 7 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,7
+    sy(i) = real(qx(i),SP)
+    sy(i + 1) = real(qx(i + 1),SP)
+    sy(i + 2) = real(qx(i + 2),SP)
+    sy(i + 3) = real(qx(i + 3),SP)
+    sy(i + 4) = real(qx(i + 4),SP)
+    sy(i + 5) = real(qx(i + 5),SP)
+    sy(i + 6) = real(qx(i + 6),SP)
+  end do
+  !$omp end parallel do
+end subroutine qscopy
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine dqcopy(n,dx,incx,qy,incy)
+
+!<description>
+  ! Copies a double precision vector to a quad precision vector qy := dx
+  !
+  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Destination vector
+  real(QP), dimension(*), intent(out) :: qy
+  
+!</output>
+
+!<input>
+
+  ! Source vector
+  real(DP), dimension(*), intent(in) :: dx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+  
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    qy(iy) = real(dx(ix),QP)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,7)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    qy(i) = real(dx(i),QP)
+  end do
+  if( n .lt. 7 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,7
+    qy(i) = real(dx(i),QP)
+    qy(i + 1) = real(dx(i + 1),QP)
+    qy(i + 2) = real(dx(i + 2),QP)
+    qy(i + 3) = real(dx(i + 3),QP)
+    qy(i + 4) = real(dx(i + 4),QP)
+    qy(i + 5) = real(dx(i + 5),QP)
+    qy(i + 6) = real(dx(i + 6),QP)
+  end do
+  !$omp end parallel do
+  end subroutine dqcopy
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine qdcopy(n,qx,incx,dy,incy)
+
+!<description>
+  ! Copies a quad precision vector to a double precision vector dy := qx
+  !
+  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Destination vector
+  real(DP), dimension(*), intent(out) :: dy
+  
+!</output>
+
+!<input>
+
+  ! Source vector
+  real(QP), dimension(*), intent(in) :: qx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+  
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    dy(iy) = real(qx(ix),DP)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,7)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    dy(i) = real(qx(i),DP)
+  end do
+  if( n .lt. 7 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,7
+    dy(i) = real(qx(i),DP)
+    dy(i + 1) = real(qx(i + 1),DP)
+    dy(i + 2) = real(qx(i + 2),DP)
+    dy(i + 3) = real(qx(i + 3),DP)
+    dy(i + 4) = real(qx(i + 4),DP)
+    dy(i + 5) = real(qx(i + 5),DP)
+    dy(i + 6) = real(qx(i + 6),DP)
+  end do
+  !$omp end parallel do
+  end subroutine qdcopy
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine sdaxpy(n,sa,sx,incx,dy,incy)
+
+!<description>
+  ! Computes constant times a single vector plus a double precision vector.
+  !
+  ! REMARK: This subroutin is a port of subroutine DAXPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Second source and destination vector
+  real(DP), dimension(*), intent(out) :: dy
+  
+!</output>
+
+!<input>
+
+  ! First source vector
+  real(SP), dimension(*), intent(in) :: sx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+  ! Multiplication factor
+  real(SP), intent(in) :: sa
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if (sa .eq. 0.0_SP) return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    dy(iy) = dy(iy) + sa*sx(ix)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,4)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    dy(i) = dy(i) + sa*sx(i)
+  end do
+  if( n .lt. 4 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,4
+    dy(i) = dy(i) + sa*sx(i)
+    dy(i + 1) = dy(i + 1) + sa*sx(i + 1)
+    dy(i + 2) = dy(i + 2) + sa*sx(i + 2)
+    dy(i + 3) = dy(i + 3) + sa*sx(i + 3)
+  end do
+  !$omp end parallel do
+  end subroutine sdaxpy
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine sqaxpy(n,sa,sx,incx,qy,incy)
+
+!<description>
+  ! Computes constant times a single vector plus a quad precision vector.
+  !
+  ! REMARK: This subroutin is a port of subroutine DAXPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Second source and destination vector
+  real(QP), dimension(*), intent(out) :: qy
+  
+!</output>
+
+!<input>
+
+  ! First source vector
+  real(SP), dimension(*), intent(in) :: sx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+  ! Multiplication factor
+  real(SP), intent(in) :: sa
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if (sa .eq. 0.0_SP) return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    qy(iy) = qy(iy) + sa*sx(ix)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,4)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    qy(i) = qy(i) + sa*sx(i)
+  end do
+  if( n .lt. 4 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,4
+    qy(i) = qy(i) + sa*sx(i)
+    qy(i + 1) = qy(i + 1) + sa*sx(i + 1)
+    qy(i + 2) = qy(i + 2) + sa*sx(i + 2)
+    qy(i + 3) = qy(i + 3) + sa*sx(i + 3)
+  end do
+  !$omp end parallel do
+  end subroutine sqaxpy
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine dqaxpy(n,da,dx,incx,qy,incy)
+
+!<description>
+  ! Computes constant times a double vector plus a quad precision vector.
+  !
+  ! REMARK: This subroutin is a port of subroutine DAXPY from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Second source and destination vector
+  real(DP), dimension(*), intent(out) :: qy
+  
+!</output>
+
+!<input>
+
+  ! First source vector
+  real(DP), dimension(*), intent(in) :: dx
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increments
+  integer, intent(in) :: incx,incy
+
+  ! Multiplication factor
+  real(DP), intent(in) :: da
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,ix,iy,m,mp1
+
+  if(n.le.0)return
+  if (da .eq. 0.0_DP) return
+  if(incx.eq.1.and.incy.eq.1)go to 20
+
+  ! code for unequal increments or equal increments not equal to 1
+  ix = 1
+  iy = 1
+  if(incx.lt.0)ix = (-n+1)*incx + 1
+  if(incy.lt.0)iy = (-n+1)*incy + 1
+  do i = 1,n
+    qy(iy) = qy(iy) + da*dx(ix)
+    ix = ix + incx
+    iy = iy + incy
+  end do
+  return
+
+  ! code for both increments equal to 1
+20 m = mod(n,4)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    qy(i) = qy(i) + da*dx(i)
+  end do
+  if( n .lt. 4 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,4
+    qy(i) = qy(i) + da*dx(i)
+    qy(i + 1) = qy(i + 1) + da*dx(i + 1)
+    qy(i + 2) = qy(i + 2) + da*dx(i + 2)
+    qy(i + 3) = qy(i + 3) + da*dx(i + 3)
+  end do
+  !$omp end parallel do
+  end subroutine dqaxpy
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine sset(n,sa,sx,incx)
+
+!<description>
+  ! Sets a single precision vector equal to a constant sx := sa
+  !
+  ! REMARK: This subroutin is an adaptation of subroutine DSCAL from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Destination vector
+  real(SP), dimension(*), intent(out) :: sx
+  
+!</output>
+
+!<input>
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increment
+  integer, intent(in) :: incx
+
+  ! Constant
+  real(SP), intent(in) :: sa
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,m,mp1,nincx
+  
+  if( n.le.0 .or. incx.le.0 )return
+  if(incx.eq.1)go to 20
+
+  ! code for increment not equal to 1
+  nincx = n*incx
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = 1,nincx,incx
+    sx(i) = sa
+  end do
+  !$omp end parallel do
+  return
+  
+  ! code for increment equal to 1
+20 m = mod(n,5)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    sx(i) = sa
+  end do
+  if( n .lt. 5 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,5
+    sx(i) = sa
+    sx(i + 1) = sa
+    sx(i + 2) = sa
+    sx(i + 3) = sa
+    sx(i + 4) = sa
+  end do
+  !$omp end parallel do
+  end subroutine sset
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine dset(n,da,dx,incx)
+
+!<description>
+  ! Sets a double precision vector equal to a constant dx := da
+  !
+  ! REMARK: This subroutin is an adaptation of subroutine DSCAL from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Destination vector
+  real(DP), dimension(*), intent(out) :: dx
+  
+!</output>
+
+!<input>
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increment
+  integer, intent(in) :: incx
+
+  ! Constant
+  real(DP), intent(in) :: da
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,m,mp1,nincx
+  
+  if( n.le.0 .or. incx.le.0 )return
+  if(incx.eq.1)go to 20
+
+  ! code for increment not equal to 1
+  nincx = n*incx
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = 1,nincx,incx
+    dx(i) = da
+  end do
+  !$omp end parallel do
+  return
+  
+  ! code for increment equal to 1
+20 m = mod(n,5)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    dx(i) = da
+  end do
+  if( n .lt. 5 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,5
+    dx(i) = da
+    dx(i + 1) = da
+    dx(i + 2) = da
+    dx(i + 3) = da
+    dx(i + 4) = da
+  end do
+  !$omp end parallel do
+  end subroutine dset
  
+! ***************************************************************************
+
+!<subroutine>
+  subroutine qset(n,qa,qx,incx)
+
+!<description>
+  ! Sets a quad precision vector equal to a constant qx := qa
+  !
+  ! REMARK: This subroutin is an adaptation of subroutine DSCAL from the BLAS 
+  !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
+!</descption>
+
+!<output>
+  
+  ! Destination vector
+  real(QP), dimension(*), intent(out) :: qx
+  
+!</output>
+
+!<input>
+
+  ! Length of the vector
+  integer, intent(in) :: n
+
+  ! Increment
+  integer, intent(in) :: incx
+
+  ! Constant
+  real(QP), intent(in) :: qa
+
+!</input>
+!</subroutine>
+
+  ! local variables
+  integer :: i,m,mp1,nincx
+  
+  if( n.le.0 .or. incx.le.0 )return
+  if(incx.eq.1)go to 20
+
+  ! code for increment not equal to 1
+  nincx = n*incx
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = 1,nincx,incx
+    qx(i) = qa
+  end do
+  !$omp end parallel do
+  return
+  
+  ! code for increment equal to 1
+20 m = mod(n,5)
+  if( m .eq. 0 ) go to 40
+  do i = 1,m
+    qx(i) = qa
+  end do
+  if( n .lt. 5 ) return
+40 mp1 = m + 1
+  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  do i = mp1,n,5
+    qx(i) = qa
+    qx(i + 1) = qa
+    qx(i + 2) = qa
+    qx(i + 3) = qa
+    qx(i + 4) = qa
+  end do
+  !$omp end parallel do
+  end subroutine qset
+
 end module
