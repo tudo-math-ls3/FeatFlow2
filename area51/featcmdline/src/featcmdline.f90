@@ -3,6 +3,7 @@ program featcmdline
   use fsystem
   use genoutput
   use storage
+  use commandparserbase
   use commandparser
 
   ! Variables

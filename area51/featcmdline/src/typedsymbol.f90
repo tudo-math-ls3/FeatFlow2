@@ -4,11 +4,15 @@ module typedsymbol
   use genoutput
   use storage
   use collection
+  use commandparserbase
 
   implicit none
   
   private
   
+  ! Symbol type: Undefined symbol
+  integer, parameter, public :: STYPE_UNDEFINED = -1
+
   ! Symbol type: Invalid symbol
   integer, parameter, public :: STYPE_INVALID = 0
   
@@ -43,13 +47,19 @@ module typedsymbol
     ! Name of the symbol in case it represents a variable in a collection.
     ! For variables in a collection, ctype is set to the type of the
     ! variable and Xvalue to its value; svarname is set to the variable name.
-    character(SYS_NAMELEN) :: svarname = ""
+    character(SYS_STRLEN) :: svarname = ""
+    
+    ! If svarname != 0 and ctype=STYPE_VAR:
+    type(t_collection), pointer :: p_rcollection => null()
+    
+    ! If svarname != 0 and ctype=STYPE_VAR: Section that contains the variable
+    character(SYS_NAMELEN) :: ssection = ""
     
     ! A string tag for a variable. Used for anonymous variables, i.e. for
     ! variables that have a name but do not exist in a collection. These appear
     ! e.g. in function calls in the form of optional parameters like
     ! "myfunction(...,optionalvar=xxx)".
-    character(SYS_NAMELEN) :: svartag = ""
+    character(SYS_STRLEN) :: svartag = ""
     
   end type
   
@@ -116,66 +126,6 @@ module typedsymbol
   end interface
   
 contains
-
-  ! ***************************************************************************
-
-  !<subroutine>
-
-  subroutine cmdprs_getSymbolSection (rcollection,ssymbol,inestlevel,ssection,bfound)
-
-  !<description>
-    ! Tries to find the name of the section containing a symbol.
-  !</description>
-
-  !<inputoutput>
-    ! Collection containing symbols.
-    type(t_collection), intent(inout) :: rcollection
-  !</inputoutput>
-  
-  !<input>
-    ! Name of the symbol (variable,...)
-    character(len=*), intent(in) :: ssymbol
-    
-    ! Level of nesting
-    integer, intent(in) :: inestlevel
-  !</input>
-  
-  !<output>
-    ! Name of the section.
-    character(len=*), intent(out) :: ssection
-    
-    ! Returns if the symbol was found or not.
-    logical, intent(out) :: bfound
-  !</output>
-  
-!</subroutine>
-    
-    ! local variables
-    integer :: ilv
-
-    bfound = .false.
-    ssection = ""
-    
-    ! Start searching from the deepest nesting
-    do ilv = inestlevel,0,-1
-      if (ilv .gt. 0) then
-        ! local variables
-        ssection = trim(sys_siL(ilv,10))
-      else
-        ! Unnamed section, global variables
-        ssection = ""
-      end if
-      
-      if (collct_queryvalue(rcollection,ssymbol,ssectionName=ssection) .gt. 0) then
-        ! Found.
-        bfound = .true.
-        return
-      end if
-    end do
-    
-    ! Not found.
-  
-  end subroutine
 
   ! ***************************************************************************
 
@@ -268,12 +218,17 @@ contains
       
       ! Initialise the variable name
       rvalue%svarname = trim(ssymbol)
+      rvalue%p_rcollection => rcollection
       
       ! Try to get the correct type etc. from the collection.
-      rvalue%ctype = STYPE_INVALID
+      !rvalue%ctype = STYPE_INVALID
       call cmdprs_getSymbolSection (rcollection,ssymbol,inestlevel,ssection,bfound)
+      
       if (bfound) then
         cvartype = collct_gettype(rcollection,ssymbol,ssectionName=ssection)
+        
+        rvalue%ssection = ssection
+        
         ! Fetch the value if possible
         select case (cvartype)
         case (COLLCT_INTEGER)
@@ -297,7 +252,54 @@ contains
 
   !<subroutine>
 
-  subroutine tpsym_saveSymbol (rvalue,inestlevel,rcollection)
+  subroutine tpsym_createNamedSymbol (rvalue,rcollection,inestlevel,sname)
+
+  !<description>
+    ! Creates a named symbol as variable in a collection.
+  !</description>
+
+  !<input>
+
+    ! Nesting level of the symbol
+    integer, intent(in) :: inestlevel
+    
+    ! Reference to a collection for variables
+    type(t_collection), intent(inout), target :: rcollection
+
+    ! Name of the variable in the collection
+    character(len=*), intent(in) :: sname
+  !</input>
+
+  !<output>
+    ! Value to create
+    type(t_symbolValue), intent(out) :: rvalue
+  !</output>
+
+!</subroutine>
+
+    logical :: bfound
+    character(len=SYS_NAMELEN) :: ssection
+  
+    ! Type is variable, name is sname
+    rvalue%ctype = STYPE_VAR
+    rvalue%svarname = sname
+    rvalue%p_rcollection => rcollection
+   
+    ! Find the variable
+    call cmdprs_getSymbolSection (rcollection,rvalue%svarname,inestlevel,&
+        ssection,bfound)
+    
+    if (bfound) then
+      rvalue%ssection = ssection
+    end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine tpsym_saveSymbol (rvalue)
 
   !<description>
     ! Tries to save the value corresponding to a symbol into the collection.
@@ -306,33 +308,29 @@ contains
   !<input>
     ! Value to save
     type(t_symbolValue), intent(in) :: rvalue
-
-    ! Nesting level of the symbol
-    integer, intent(in) :: inestlevel
   !</input>
 
-  !<inputoutput>
-    ! Reference to a collection for variables
-    type(t_collection), intent(inout), target :: rcollection
-  !</inputoutput>
-  
 !</subroutine>
-    character(len=SYS_NAMELEN) :: ssection
-    logical :: bfound
+    type(t_collection), pointer :: p_rcollection
 
     ! The symbol must be from the collection!
-    if (rvalue%svarname .eq. "") return
+    if ((rvalue%svarname .eq. "") .or. (.not. associated(rvalue%p_rcollection))) return
     
-    call cmdprs_getSymbolSection (rcollection,rvalue%svarname,inestlevel,ssection,bfound)
-    if (bfound) then
+    ! Check if the variable exists.
+    p_rcollection => rvalue%p_rcollection
+    
+    if (collct_queryvalue(p_rcollection,rvalue%svarname,ssectionName=rvalue%ssection) .gt. 0) then
       ! Write to the collection
       select case (rvalue%ctype)
       case (STYPE_INTEGER)
-        call collct_setvalue_int (rcollection, rvalue%svarname, rvalue%ivalue, .false., ssectionName=ssection)
+        call collct_setvalue_int (p_rcollection, rvalue%svarname, rvalue%ivalue, &
+            .false., ssectionName=rvalue%ssection)
       case (STYPE_DOUBLE)
-        call collct_setvalue_real (rcollection, rvalue%svarname, rvalue%dvalue, .false., ssectionName=ssection)
+        call collct_setvalue_real (p_rcollection, rvalue%svarname, rvalue%dvalue, &
+            .false., ssectionName=rvalue%ssection)
       case (STYPE_STRING)
-        call collct_setvalue_string (rcollection, rvalue%svarname, rvalue%svalue, .false., ssectionName=ssection)
+        call collct_setvalue_string (p_rcollection, rvalue%svarname, rvalue%svalue, &
+            .false., ssectionName=rvalue%ssection)
       end select
     end if
     
@@ -400,9 +398,12 @@ contains
       case (STYPE_STRING)
         rdest%svalue = rsource%svalue
         rdest%ilength = rsource%ilength
+      case default
+        ! Invalid assignment
+        rdest%ctype = STYPE_INVALID
       end select
     else
-      !hTHere must probably a type conversion be done.
+      ! There must probably a type conversion be done.
       ! Use the routines below to do the assignments.
       select case (rsource%ctype)
       case (STYPE_INTEGER)
@@ -608,7 +609,7 @@ contains
       
       case (STYPE_INTEGER)
         rdest%ctype = STYPE_DOUBLE
-        rdest%ivalue = rsource1%dvalue * real(rsource2%ivalue,DP)
+        rdest%dvalue = rsource1%dvalue * real(rsource2%ivalue,DP)
       
       case (STYPE_DOUBLE)
         rdest%ctype = STYPE_DOUBLE

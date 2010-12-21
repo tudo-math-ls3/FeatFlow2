@@ -7,6 +7,8 @@ module stdinoutparser
   use storage
   use collection
   use typedsymbol
+  
+  use commandparserbase
 
   implicit none
   
@@ -82,7 +84,14 @@ contains
           ! in the output.
           if (present(Rvariables)) then
             if (inextvar .le. ubound(Rvariables,1)) then
-              call formatVariable (Rvariables(inextvar),soutput(iout:),sformat,ilen,berror)
+              if ((Rvariables(inextvar)%ctype .ne. STYPE_INTEGER) .and. &
+                  (Rvariables(inextvar)%ctype .ne. STYPE_DOUBLE) .and. &
+                  (Rvariables(inextvar)%ctype .ne. STYPE_STRING)) then
+                call output_line ("Ignoring invalid variable.");
+                berror = .true.
+              else
+                call formatVariable (Rvariables(inextvar),soutput(iout:),sformat,ilen,berror)
+              end if
               
               ! Ignore wrong qualifiers.
               if (.not. berror) then
@@ -174,6 +183,7 @@ contains
 
     integer :: ilenformat,ipostype,ios
     character (len=SYS_NAMELEN) :: snewformat
+    character (len=SYS_STRLEN) :: stemp
     
     berror = .false.
     ilenformat = len_trim(sformat)
@@ -200,14 +210,14 @@ contains
       ! Just a string.
       if (snewformat .eq. "") then
         ! Without length qualifier
-        write (sstring,"(A)") rvariable%svalue
-        ilen = rvariable%ilength
+        call cmdprs_dequoteStd (rvariable%svalue,sstring,ilen)
       else
         ! With length qualifier
         if (index(snewformat,".") .eq. 0) then
           read (snewformat,*) ilen
           snewformat = "(A"//trim(snewformat)//")"
-          write (sstring,snewformat,IOSTAT=ios) rvariable%svalue
+          call cmdprs_dequoteStd (rvariable%svalue,stemp)
+          write (sstring,snewformat,IOSTAT=ios) stemp
         else
           ! Otherwise: Format invalid.
           ilen = 0

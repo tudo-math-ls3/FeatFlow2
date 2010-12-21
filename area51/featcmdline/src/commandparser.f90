@@ -37,28 +37,12 @@ module commandparser
   use ucd
   
   use typedsymbol
-  use stdinoutparser
+  use commandparserbase
+  use featcommandhandler
 
   implicit none
   
   private
-  
-  ! Type that encapsules the current status.
-  type t_commandstatus
-    
-    ! Set to TRUE to terminate
-    logical :: bterminate = .false.
-    
-    ! Error flag. =0: no error.
-    integer :: ierror = 0
-    
-    ! Echo of the command line.
-    logical :: becho = .false.
-    
-    ! Global collection object with all variables
-    type(t_collection) :: rcollection
-    
-  end type
   
   ! Block of commands.
   type t_commandBlock
@@ -70,7 +54,6 @@ module commandparser
     type(VARYING_STRING), dimension(:), pointer :: p_Rcommands
   end type
   
-  public :: t_commandstatus
   public :: cmdprs_init
   public :: cmdprs_done
   public :: cmdprs_parsestream
@@ -236,183 +219,6 @@ contains
 
   end subroutine
 
-  !************************************************************************
-
-  elemental function cmdprs_dequote (ssource)
-  !<description>
-    ! Remove all quotation marks from a string.
-  !</description>
-  
-  !<input>
-    ! A source string.
-    type(VARYING_STRING), intent(in) :: ssource
-  !</input>
-  
-  !<output>
-    ! Destination string. Non-escaped quotation marks are removed.
-    type(VARYING_STRING) :: cmdprs_dequote
-  !</output>
-  
-    type(VARYING_STRING) :: stemp,sdest
-    integer :: i, idest
-    character :: squotechar, scurrentchar
-    logical :: bescape
-    
-    ! Copy the string, remove leading/trailing spaces.
-    stemp = trim(ssource)
-    
-    ! Initialise destination
-    sdest = stemp
-    
-    ! Loop through the string. Copy characters.
-    ! Replace quotation marks.
-    i = 1
-    idest = 0
-    bescape = .false.
-    squotechar = ' '
-    do 
-      if (i .gt. len(stemp)) exit
-      
-      ! Get the current character.
-      scurrentchar = getchar (stemp,i);
-      
-      if (bescape) then
-      
-        ! Switch off escape mode.
-        bescape = .false.
-        
-      else
-        
-        if (scurrentchar .eq. "\") then
-        
-          ! take the next character as it is.
-          bescape = .true.
-          
-          ! Ignore the escape char.
-          i = i+1
-          cycle
-        
-        else if ((scurrentchar .eq. "'") .or. (scurrentchar .eq. """")) then
-          
-          ! Start quoting or stop it. Only the current quote char
-          ! triggers off the quoting.
-          if (squotechar .eq. scurrentchar) then
-            squotechar = " "
-          else
-            squotechar = scurrentchar
-          end if
-          
-          ! Ignore the quotation char.
-          i = i+1
-          cycle
-          
-        end if
-      end if
-
-      ! Copy the character and go to the next char.
-      idest = idest+1
-      call setchar (sdest,idest,scurrentchar)
-
-      i = i+1
-    end do
-    
-    ! From the destination, take the actual substring.
-    cmdprs_dequote = extract (sdest,1,idest)
-    
-    ! Release memory.
-    sdest = ""
-    stemp = ""
-  
-  end function 
-
-  !************************************************************************
-
-  elemental subroutine cmdprs_dequoteStd (ssource,sdest,ilength)
-  !<description>
-    ! Remove all quotation marks from a string.
-  !</description>
-  
-  !<input>
-    ! A source string.
-    character(len=*), intent(in) :: ssource
-  !</input>
-  
-  !<output>
-    ! Destination string. Non-escaped quotation marks are removed.
-    character(len=*), intent(out) :: sdest
-    
-    ! Length of the string
-    integer, intent(out) :: ilength
-  !</output>
-  
-    character(len=len(ssource)) :: stemp
-    integer :: i, idest, ilen
-    character :: squotechar, scurrentchar
-    logical :: bescape
-    
-    ! Copy the string, remove leading/trailing spaces.
-    stemp = trim(ssource)
-    
-    ! Initialise destination
-    sdest = ""
-    
-    ! Loop through the string. Copy characters.
-    ! Replace quotation marks.
-    i = 1
-    idest = 0
-    bescape = .false.
-    squotechar = ' '
-    ilen = len_trim(stemp)
-    do 
-      if (i .gt. ilen) exit
-      
-      ! Get the current character.
-      scurrentchar = stemp(i:i)
-      
-      if (bescape) then
-      
-        ! Switch off escape mode.
-        bescape = .false.
-        
-      else
-        
-        if (scurrentchar .eq. "\") then
-        
-          ! take the next character as it is.
-          bescape = .true.
-          
-          ! Ignore the escape char.
-          i = i+1
-          cycle
-        
-        else if ((scurrentchar .eq. "'") .or. (scurrentchar .eq. """")) then
-          
-          ! Start quoting or stop it. Only the current quote char
-          ! triggers off the quoting.
-          if (squotechar .eq. scurrentchar) then
-            squotechar = " "
-          else
-            squotechar = scurrentchar
-          end if
-          
-          ! Ignore the quotation char.
-          i = i+1
-          cycle
-          
-        end if
-      end if
-
-      ! Copy the character and go to the next char.
-      idest = idest+1
-      sdest(idest:idest) = scurrentchar
-
-      i = i+1
-    end do
-    
-    ! From the destination, take the actual substring.
-    ilength = idest
-    
-  end subroutine 
 
   ! ***************************************************************************
 
@@ -461,871 +267,6 @@ contains
       call sys_dequote(sparam)
     end if
 
-  end subroutine
-  
-  ! ***************************************************************************
-
-  subroutine cmdprs_complexSplit (ssource,sdest,icharset,bdequote)
-  
-  !<description>
-    ! Subduvides a line into an array of substrings.
-    ! Quotation marks around substrings are removed.
-    ! Escaped character are changed to standard characters.
-    ! The different words are separated by "\0" characters.         
-    ! the string is automatically trimmed.
-  !</description>
-  
-  !<input>
-    ! A source string.
-    character(len=*), intent(in) :: ssource
-    
-    ! Type of character set to use for splitting.
-    ! =0: split on word boundaries
-    ! =1: split on expression boundaries (expression characters
-    !     like brackets are separate words).
-    ! =2: split on parameter boundaries (command line version)
-    ! =3: spöit on parameter boundaries (sourcecode version)
-    integer :: icharset
-
-    ! Determins whether to de-quote substrings or not.
-    logical, intent(in) :: bdequote
-  !</input>
-
-  !<output>
-    ! The output string
-    character(len=*), intent(out) :: sdest
-  !</output>
-  
-    integer :: ipos,idest,imaxlen
-    integer :: ccurrchargroup
-    character :: ccurrentquote
-    logical :: btriggered
-    integer, parameter :: CHARGROUP_WHITESPACE = 1
-    integer, parameter :: CHARGROUP_ONECHAREXP = 2
-    integer, parameter :: CHARGROUP_TWOCHAREXP = 3
-    integer, parameter :: CHARGROUP_INWORD     = 4
-    integer, parameter :: CHARGROUP_INQUOTE    = 5
-    
-    ! The following chargroups are defined:
-    ! Chargroup 1: Whitespaces. Ignored.
-    ! Chargroup 2: One-character words. A character from this group
-    !              triggers this character to be a word and the next character
-    !              to be also a new word.
-    ! Chargroup 3: Two-character words. This group contains actually two character
-    !              groups. If the character from the first subgroup is found,
-    !              The character from the 2nd subgroup must match. In this case,
-    !              both characters together form a 2-character word.
-    !              Examples: Expressions like "&&", "!=" or "==".
-    ! Chargroup 4: Word characters. A word character behind a character from a
-    !              lower chargroup triggers a new word. A "\" character triggers
-    !              an escaped character which is transferred to the destination
-    !              without change.
-    ! Chargroup 5: Quotation marks with de-escape.
-    !              1st occurence triggers start, 2nd occurrence the end.
-    !              Escaped characters in this set are de-escaped.
-    !              All characters in quotation marks are associated to
-    !              this chargroup.
-    ! Chargroup 6: Comment characters.
-    !              These characters immediately stop the parsing.
-    !
-    ! The following character sets are defined:
-    ! icharset=0: Splitting on word boundaries
-    !    Group 1: " "
-    !    Group 2: ""
-    !    Group 3: "" / ""
-    !    Group 4: Everything which is not in the other groups
-    !    Group 5: "'""
-    !    Group 6: "#"
-    !
-    ! icharset=1: Splitting on expression boundaries.
-    !    Group 1: " "
-    !    Group 2: "!+-*/%()~,;{}^<>="
-    !    Group 3: subgroup 1: "&|=!<>-+<>"
-    !             subgroup 2: "&|==<>-+=="
-    !    Group 4: Everything which is not in the other groups
-    !    Group 5: "'""
-    !    Group 6: "#"
-    !
-    ! icharset=2: Splitting on parameters boundaries (command line parameters)
-    !    Group 1: " "
-    !    Group 2: "="
-    !    Group 3: "" / ""
-    !    Group 4: Everything which is not in the other groups
-    !    Group 5: "'""
-    !    Group 6: "#"
-    !
-    ! icharset=3: Splitting on parameters boundaries (sourcecode parameters)
-    !    Group 1: " "
-    !    Group 2: "(),="
-    !    Group 3: "" / ""
-    !    Group 4: Everything which is not in the other groups
-    !    Group 5: "'""
-    !    Group 6: "#"
-    !
-
-    ! Clear the destination.
-    sdest = ""
-
-    ! Loop through the chars.
-    ipos = 1
-    idest = 0
-    imaxlen = len_trim(ssource)
-    
-    ccurrchargroup = CHARGROUP_WHITESPACE
-    btriggered = .false.
-    
-    do 
-    
-      ! Stop is wew are behind the last character.
-      if (ipos .gt. imaxlen) exit
-    
-      ! Behaviour depends on current character group and set.
-      select case (icharset)
-      case (0)
-        call trigger_chargroup5 (ccurrchargroup,"'""",btriggered,ssource,ipos,imaxlen,&
-            sdest,idest,ccurrentquote,bdequote)
-            
-        if (.not. btriggered) then
-          call trigger_chargroup1 (ccurrchargroup," ",btriggered,ssource,ipos)
-        end if
-        
-      case (1)
-        call trigger_chargroup5 (ccurrchargroup,"'""",btriggered,ssource,ipos,imaxlen,&
-            sdest,idest,ccurrentquote,bdequote)
-            
-        if (.not. btriggered) then
-          call trigger_chargroup3 (ccurrchargroup,"&|=!<>-+<>",&
-                                                  "&|==<>-+==",&
-              btriggered,ssource,ipos,imaxlen,sdest,idest)
-        end if
-        
-        if (.not. btriggered) then
-          call trigger_chargroup2 (ccurrchargroup,"!+-*/%()~,;{}^<>=",btriggered,ssource,ipos,&
-              sdest,idest)
-        end if
-        
-        if (.not. btriggered) then
-          call trigger_chargroup1 (ccurrchargroup," ",btriggered,ssource,ipos)
-        end if
-        
-      case (2)
-        call trigger_chargroup5 (ccurrchargroup,"'""",btriggered,ssource,ipos,imaxlen,&
-            sdest,idest,ccurrentquote,bdequote)
-            
-        if (.not. btriggered) then
-          call trigger_chargroup2 (ccurrchargroup,"=",btriggered,ssource,ipos,&
-              sdest,idest)
-        end if
-            
-        if (.not. btriggered) then
-          call trigger_chargroup1 (ccurrchargroup," ",btriggered,ssource,ipos)
-        end if
-        
-      case (3)
-        call trigger_chargroup5 (ccurrchargroup,"'""",btriggered,ssource,ipos,imaxlen,&
-            sdest,idest,ccurrentquote,bdequote)
-            
-        if (.not. btriggered) then
-          call trigger_chargroup2 (ccurrchargroup,",=()",btriggered,ssource,ipos,&
-              sdest,idest)
-        end if
-            
-        if (.not. btriggered) then
-          call trigger_chargroup1 (ccurrchargroup," ",btriggered,ssource,ipos)
-        end if
-        
-      end select
-
-      ! Trigger comment characters
-      if (.not. btriggered) then
-        call trigger_chargroup6 (ccurrchargroup,"#",btriggered,ssource,ipos,imaxlen)
-      end if
-
-      ! Remaining characters belong to group 4.
-      if (.not. btriggered) then
-        call process_chargroup4 (ccurrchargroup,ssource,ipos,imaxlen,sdest,idest)
-      end if
-    
-    end do
-    
-  contains
-  
-    ! -------------------------------------------------------------------------
-    subroutine trigger_chargroup1 (ccurrentgroup,schars,btriggered,ssource,isourcepos)
-    
-      ! Checks if the next token belongs to this character group.
-      ! If that is the case, the destination and the pointers are modified according
-      ! to the current state.
-      
-      ! Current character group
-      integer, intent(inout) :: ccurrentgroup
-
-      ! Characters in this group.
-      character(len=*), intent(in) :: schars
-      
-      ! Returns if the group is triggered.
-      logical, intent(out) :: btriggered
-      
-      ! Source string
-      character(len=*), intent(in) :: ssource
-      
-      ! Source pointer
-      integer, intent(inout) :: isourcepos
-      
-      ! local variables
-      integer :: i
-      
-      i = index(schars,ssource(isourcepos:isourcepos))
-      btriggered = i .ne. 0
-      
-      if (btriggered) then
-        isourcepos = isourcepos+1
-
-        ! We are now in whitespace-mode
-        ccurrentgroup = CHARGROUP_WHITESPACE
-      end if
-    
-    end subroutine
-
-    ! -------------------------------------------------------------------------
-    subroutine trigger_chargroup2 (ccurrentgroup,schars,btriggered,ssource,isourcepos,&
-        sdest,idestpos)
-    
-      ! Checks if the next token belongs to this character group.
-      ! If that is the case, the destination and the pointers are modified according
-      ! to the current state.
-      
-      ! Current character group
-      integer, intent(inout) :: ccurrentgroup
-
-      ! Characters in this group.
-      character(len=*), intent(in) :: schars
-      
-      ! Returns if the group is triggered.
-      logical, intent(out) :: btriggered
-      
-      ! Source string
-      character(len=*), intent(in) :: ssource
-      
-      ! Source pointer
-      integer, intent(inout) :: isourcepos
-      
-      ! Destination string
-      character(len=*), intent(inout) :: sdest
-      
-      ! Destination pointer
-      integer, intent(inout) :: idestpos
-      
-      ! local variables
-      integer :: i
-      
-      i = index(schars,ssource(isourcepos:isourcepos))
-      btriggered = i .ne. 0
-
-      if (btriggered) then
-        ! First character? probably insert a separator.
-        if (idestpos .gt. 0) then
-          idestpos = idestpos + 1;
-          sdest(idestpos:idestpos) = char(0)
-        end if
-
-        ! Transfer the character
-        idestpos = idestpos + 1
-        sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
-        
-        isourcepos = isourcepos+1
-      
-        ! We are now in one-character-expression mode
-        ccurrentgroup = CHARGROUP_ONECHAREXP
-      end if
-    
-    end subroutine
-
-    ! -------------------------------------------------------------------------
-    subroutine trigger_chargroup3 (ccurrentgroup,schars1,schars2,btriggered,ssource,isourcepos,&
-        imaxlen,sdest,idestpos)
-    
-      ! Checks if the next token belongs to this character group.
-      ! If that is the case, the destination and the pointers are modified according
-      ! to the current state.
-
-      ! Current character group
-      integer, intent(inout) :: ccurrentgroup
-      
-      ! Characters in this group. 1st subgroup.
-      character(len=*), intent(in) :: schars1
-
-      ! Characters in this group. 2nd subgroup.
-      character(len=*), intent(in) :: schars2
-      
-      ! Returns if the group is triggered.
-      logical, intent(out) :: btriggered
-      
-      ! Source string
-      character(len=*), intent(in) :: ssource
-      
-      ! Source pointer
-      integer, intent(inout) :: isourcepos
-      
-      ! Length of ssource
-      integer, intent(inout) :: imaxlen
-      
-      ! Destination string
-      character(len=*), intent(inout) :: sdest
-      
-      ! Destination pointer
-      integer, intent(inout) :: idestpos
-      
-      ! local variables
-      integer :: i,j
-      
-      i = 0
-      do
-        ! Find the character. This is a 2-character matching test, so if there
-        ! is only 1 character left, we cannot match!
-        ! Continue the search if the previous 2nd char did not match.
-        j = index(schars1(i+1:),ssource(isourcepos:isourcepos))
-        i = i+j
-        btriggered = (j .ne. 0) .and. (isourcepos .lt. imaxlen)
-
-        if (btriggered) then
-          ! Check if the next character (if it exists) matches the character of
-          ! the next subgroup.
-          btriggered = schars2(i:i) .eq. ssource(isourcepos+1:isourcepos+1)
-          
-          if (btriggered) then
-            ! First character? probably insert a separator.
-            if (idestpos .gt. 0) then
-              idestpos = idestpos + 1;
-              sdest(idestpos:idestpos) = char(0)
-            end if
-
-            ! Transfer the characters
-            idestpos = idestpos + 1
-            sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
-            isourcepos = isourcepos+1
-
-            idestpos = idestpos + 1
-            sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
-            isourcepos = isourcepos+1
-            
-            ! We are now in two-character-expression mode
-            ccurrentgroup = CHARGROUP_TWOCHAREXP
-            
-          end if
-        end if
-        
-        if (j .eq. 0) exit
-        
-      end do
-    
-    end subroutine
-
-    ! -------------------------------------------------------------------------
-    subroutine process_chargroup4 (ccurrentgroup,ssource,isourcepos,imaxlen,sdest,idestpos)
-    
-      ! Processes characters in character group 4.
-      ! The destination and the pointers are modified according
-      ! to the current state.
-      
-      ! Current character group
-      integer, intent(inout) :: ccurrentgroup
-
-      ! Source string
-      character(len=*), intent(in) :: ssource
-      
-      ! Source pointer
-      integer, intent(inout) :: isourcepos
-      
-      ! Length of ssource
-      integer, intent(inout) :: imaxlen
-
-      ! Destination string
-      character(len=*), intent(inout) :: sdest
-      
-      ! Destination pointer
-      integer, intent(inout) :: idestpos
-      
-      ! First character or new word (sequence)? probably insert a separator.
-      if ((idestpos .gt. 1) .and. (ccurrentgroup .lt. CHARGROUP_INWORD)) then
-        idestpos = idestpos + 1;
-        sdest(idestpos:idestpos) = char(0)
-      end if
-
-      ! Is that an escape char?
-      if (ssource(isourcepos:isourcepos) .eq. '\') then
-        ! What about the next char?
-        if (isourcepos .lt. imaxlen) then
-          ! Take the next character as it is.
-          idestpos = idestpos + 1
-          sdest(idestpos:idestpos) = ssource(isourcepos+1:isourcepos+1)
-          isourcepos = isourcepos+2
-        else
-          ! Ignore the character
-          isourcepos = isourcepos+1
-        end if
-      else
-        ! Transfer the character
-        idestpos = idestpos + 1
-        sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
-        
-        isourcepos = isourcepos+1
-      end if
-
-      ! We are now in in-word mode.
-      ccurrentgroup = CHARGROUP_INWORD
-    
-    end subroutine
-
-    ! -------------------------------------------------------------------------
-    subroutine trigger_chargroup5 (ccurrentgroup,schars,btriggered,ssource,isourcepos,imaxlen,&
-        sdest,idestpos,ccurrentquote,bdequote)
-    
-      ! Checks if the next token belongs to this character group.
-      ! If that is the case, the destination and the pointers are modified according
-      ! to the current state.
-      
-      ! Current character group
-      integer, intent(inout) :: ccurrentgroup
-      
-      ! Characters in this group.
-      character(len=*), intent(in) :: schars
-      
-      ! Returns if the group is triggered.
-      logical, intent(out) :: btriggered
-      
-      ! Source string
-      character(len=*), intent(in) :: ssource
-      
-      ! Source pointer
-      integer, intent(inout) :: isourcepos
-      
-      ! Length of ssource
-      integer, intent(inout) :: imaxlen
-
-      ! Destination string
-      character(len=*), intent(inout) :: sdest
-      
-      ! Destination pointer
-      integer, intent(inout) :: idestpos
-      
-      ! Last found quotation character. =0 if no quotation active.
-      character, intent(inout) :: ccurrentquote
-      
-      ! Determins whether to de-quote the string or not.
-      logical, intent(in) :: bdequote
-      
-      ! local variables
-      integer :: i
-      
-      ! Result is the current state of ccurrentquote
-      btriggered = .false.
-      
-      ! Chech the current character for the next state.
-      !
-      ! Are we quoted?
-      if (ccurrentgroup .ne. CHARGROUP_INQUOTE) then
-        i = index(schars,ssource(isourcepos:isourcepos))
-
-        if (i .ne. 0) then
-          ! Quotation character. Start dequoting.
-          ccurrentquote = ssource(isourcepos:isourcepos)
-          
-          ! First character or new word (sequence)? probably insert a separator
-          ! for the characters that follow.
-          if ((idestpos .gt. 1) .and. (ccurrentgroup .lt. CHARGROUP_INWORD)) then
-            idestpos = idestpos + 1;
-            sdest(idestpos:idestpos) = char(0)
-          end if
-          
-          ! We are now in in-quote mode.
-          ccurrentgroup = CHARGROUP_INQUOTE
-          btriggered = .true.
-          
-          if (.not. bdequote) then
-            ! Transfer the character
-            idestpos = idestpos + 1
-            sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
-          end if
-          
-          ! otherwise ignore the quote character.
-          isourcepos = isourcepos+1
-          
-        end if
-      else
-        ! We are in 'quoted' mode. Any "\0" char was put to the string before.
-        btriggered = .true.
-        
-        ! Is that an escape char?
-        if (ssource(isourcepos:isourcepos) .eq. '\') then
-
-          if (.not. bdequote) then
-            ! Transfer this character as it is.
-            idestpos = idestpos + 1
-            sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
-          end if
-        
-          ! What about the next char?
-          if (isourcepos .lt. imaxlen) then
-            ! Take the next character as it is.
-            idestpos = idestpos + 1
-            sdest(idestpos:idestpos) = ssource(isourcepos+1:isourcepos+1)
-            isourcepos = isourcepos+2
-          else
-            ! Ignore the character
-            isourcepos = isourcepos+1
-          end if
-        else
-          ! Stop quoting?
-          if (ssource(isourcepos:isourcepos) .eq. ccurrentquote) then
-            ! Return to 'inword' mode. Next whitespace triggers next word.
-            ccurrentgroup = CHARGROUP_INWORD
-            ccurrentquote = char(0)
-
-            if (.not. bdequote) then
-              ! Transfer the character
-              idestpos = idestpos + 1
-              sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
-            end if
-            
-            ! otherwise ignore the quote character.
-            isourcepos = isourcepos+1
-            
-          else
-            ! Transfer the character
-            idestpos = idestpos + 1
-            sdest(idestpos:idestpos) = ssource(isourcepos:isourcepos)
-            
-            isourcepos = isourcepos+1
-          end if
-        end if
-      end if
-    
-    end subroutine
-
-    ! -------------------------------------------------------------------------
-    subroutine trigger_chargroup6 (ccurrentgroup,schars,btriggered,ssource,isourcepos,imaxlen)
-    
-      ! Checks if the next token belongs to this character group.
-      ! If that is the case, the destination and the pointers are modified according
-      ! to the current state.
-      
-      ! Current character group
-      integer, intent(inout) :: ccurrentgroup
-
-      ! Characters in this group.
-      character(len=*), intent(in) :: schars
-      
-      ! Returns if the group is triggered.
-      logical, intent(out) :: btriggered
-      
-      ! Source string
-      character(len=*), intent(in) :: ssource
-      
-      ! Source pointer
-      integer, intent(inout) :: isourcepos
-      
-      ! Length of ssource
-      integer, intent(inout) :: imaxlen
-      
-      ! local variables
-      integer :: i
-      
-      i = index(schars,ssource(isourcepos:isourcepos))
-      btriggered = i .ne. 0
-      
-      if (btriggered) then
-        ! Skip everything
-        isourcepos = imaxlen
-      end if
-      
-    end subroutine
-
-  end subroutine
-  
-  ! ***************************************************************************
-
-  subroutine cmdprs_nexttoken (ssource,istart,iend,ilength,bback)
-  
-  !<description>
-    ! Determins the bounds of the next token.
-  !</description>
-  
-  !<input>
-    ! A source string. Must have been split with cmdprs_complexSplit.
-    character(len=*), intent(in) :: ssource
-
-    ! OPTIONAL: Trimmed length of the string. Speeds up the routine
-    ! if specified.
-    integer, intent(in), optional :: ilength
-  !</input>
-  
-  !<inputoutput>
-    ! On input: Start index of the previous token or =0, if the first
-    ! token should be determined.
-    ! On output: Start index of the next token or =0 if there is no more
-    ! token.
-    integer, intent(inout) :: istart
-    
-    ! On input: End index of the previous token or =0, if the first
-    ! token should be determined.
-    ! On output: End index of the next token or =0 if there is no more
-    ! token.
-    integer, intent(inout) :: iend
-    
-    ! OPTIONAL: Backward mode. Start from the end of the string.
-    logical, intent(in), optional :: bback
-  !</inputoutput>
-  
-  !</subroutine>
-  
-    integer :: ilen
-    logical :: back
-    if (present(ilength)) then
-      ilen = ilength
-    else
-      ilen = len_trim(ssource)
-    end if
-    
-    back = .false.
-    if (present(bback)) back = bback
-    
-    if (.not. back) then
-      
-      ! Forward mode
-      if (istart .eq. 0) then
-        
-        ! Find first token
-        istart = 1
-        iend = index (ssource,char(0))
-        if (iend .eq. 0) then
-          iend = istart
-        else
-          ! Go one back -- the \0.
-          iend = iend - 1
-        end if
-        
-      else
-      
-        ! Find next token
-        istart = iend + 2
-        if (istart .gt. ilen) then
-          ! Finish
-          istart = 0
-          iend = 0
-        else
-          ! Find next end.
-          iend = index (ssource(istart:),char(0))
-          if (iend .eq. 0) then
-            iend = ilength
-          else
-            ! Go one back -- the \0.
-            iend = istart + iend - 2
-          end if
-        end if
-      end if
-    
-    else
-
-      ! Backward mode. Slightly easier due to well designed indices...
-      
-      if (iend .eq. 0) then
-        
-        ! Find first token
-        iend = ilen
-        istart = index (ssource,char(0),.true.) + 1
-        
-      else
-      
-        ! Find next token
-        iend = istart - 2
-        if (iend .lt. 1) then
-          ! Finish
-          istart = 0
-          iend = 0
-        else
-          ! Find next end.
-          istart = index (ssource(1:iend),char(0),.true.) + 1
-        end if
-      end if
-    
-    end if
-
-  end subroutine
-
-  ! ***************************************************************************
-
-  !</subroutine>
-
-  subroutine cmdprs_counttokens (ssource,ntokens)
-  
-  !<description>
-    ! Calculates the number of tokens in ssource.
-  !</description>
-  
-  !<input>
-    ! A source string. Must have been split with cmdprs_complexSplit.
-    character(len=*), intent(in) :: ssource
-  !</input>
-  
-  !<output>
-    ! Number of tokens. =0 if ssource does not contain text.
-    integer, intent(out) :: ntokens
-  !</output>
-  
-  !</subroutine>
-  
-    integer :: i
-    
-    ntokens = 0
-    
-    ! Return if there is no text.
-    if (ssource .eq. "") return
-  
-    ! Count the number of \0 characters
-    ntokens = 0
-    do i = 1,len_trim(ssource)
-      if (ssource(i:i) .eq. char(0)) then
-        ntokens = ntokens + 1
-      end if
-    end do
-    
-    ! Add 1 for the last token.
-    ntokens = ntokens + 1
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_commandmatch (ssource,ScommandTokens,bmatch)
-  
-  !<description>
-    ! Checks if ssource matches a command.
-    ! ssource must have been prepared with cmdprs_complexSplit.
-    ! ScommandTokens is an array of strings which is compared to the
-    ! substrings in ssource. A string "?" in ScommandTokens match any
-    ! character sequence. A string "*" matches any number of arbitrary
-    ! strings; remaining array entries are checked against the last tokens.
-  !</description>
-  
-  !<input>
-    ! A source string. Must have been split with cmdprs_complexSplit.
-    character(len=*), intent(in) :: ssource
-    
-    ! Command subtokens to match against ssource.
-    ! Examples:
-    !   (/ "if", "(", "*", ")" /) matches an IF command.
-    !   (/ "for", "(", "*" ")" /) matches a for command.
-    ! Parsing stops with the first empty token in ScommandTokens.
-    character(len=*), dimension(:), intent(in) :: ScommandTokens
-  !</input>
-
-  !<output>
-    ! Whether the string matches or not.
-    logical, intent(out) :: bmatch
-  !</output>
-  
-    integer :: icurrenttokenstart, icurrenttokenend
-    integer :: isubtoken1, isubtoken2, ilength
-    
-    bmatch = .true.
-    isubtoken1 = 1
-    
-    ! Start to tokenise.
-    icurrenttokenstart = 0
-    icurrenttokenend = 0
-    ilength = len_trim (ssource)
-    
-    do
-
-      ! Get the next token    
-      call cmdprs_nexttoken (ssource,icurrenttokenstart,icurrenttokenend,ilength)
-      
-      ! Check the token.
-      !
-      ! Was this the last token?
-      if (ScommandTokens(isubtoken1) .eq. "") then
-        if (icurrenttokenstart .eq. 0) then
-          ! Done. String matches.
-          return
-        else
-          ! There are more substrings than tokens. String does not match.
-          bmatch = .false.
-          return
-        end if
-      else if (icurrenttokenstart .eq. 0) then
-        ! There are more tokens than substrings. String does not match.
-        bmatch = .false.
-        return
-      end if
-      
-      ! Is this a placeholder for one word?
-      if (ScommandTokens(isubtoken1) .eq. "?") then
-        ! Go to next token.
-        isubtoken1 = isubtoken1 + 1
-        cycle
-      end if
-      
-      ! Is this a placeholder for arbitrary many words?
-      if (ScommandTokens(isubtoken1) .eq. "*") then
-        ! Scan from the end.
-        exit
-      end if
-
-      ! Does the token match?
-      if (trim(ScommandTokens(isubtoken1)) .ne. &
-          sys_upcase (ssource(icurrenttokenstart:icurrenttokenend))) then
-        ! No! Cancel matching.
-        bmatch = .false.
-        return
-      end if
-      
-      ! Next one.
-      isubtoken1 = isubtoken1 + 1
-      
-    end do
-
-    ! Find the last token to check
-    do isubtoken2 = isubtoken1+1, ubound(ScommandTokens,1)
-      if (ScommandTokens(isubtoken2) .eq. "") exit
-    end do
-    isubtoken2 = isubtoken2 - 1
-
-    ! Start to tokenise from the end
-    icurrenttokenend = 0
-    icurrenttokenstart = 0
-    
-    do
-
-      ! Get the next token    
-      call cmdprs_nexttoken (ssource,icurrenttokenstart,icurrenttokenend,ilength,.true.)
-      
-      ! Is this a placeholder for one word?
-      if (ScommandTokens(isubtoken2) .eq. "?") then
-        ! Go to next token.
-        isubtoken1 = isubtoken1 - 1
-        cycle
-      end if
-      
-      ! Is this a placeholder for arbitrary many words?
-      if (ScommandTokens(isubtoken2) .eq. "*") then
-        ! We reached the "*". String matches.
-        return
-      end if
-
-      ! Does the token match?
-      if (trim(ScommandTokens(isubtoken2)) .ne. &
-          sys_upcase (ssource(icurrenttokenstart:icurrenttokenend))) then
-        ! No! Cancel matching.
-        bmatch = .false.
-        return
-      end if
-      
-      ! Next one.
-      isubtoken2 = isubtoken2 - 1
-      
-    end do
-  
   end subroutine
   
   ! ***************************************************************************
@@ -1618,7 +559,7 @@ contains
     ! the block must at least contain one line.
     type(t_commandBlock), intent(in) :: rcmdblock
     
-    ! Command string. Splitted and dequoted.
+    ! Command string. Splitted.
     character(len=*), intent(in) :: scommand
     
     ! Start of the commands depending on the command in rcmdBlock.
@@ -1640,9 +581,9 @@ contains
   
   !</subroutine>
 
-    integer :: istart, iend, istart2, iend2, istart3, iend3, icmdIndex
-    type(VARYING_STRING), dimension(:), pointer :: p_Sargs
-    logical :: bmatch
+    integer :: istart, iend, istart2, iend2
+    character(len=len_trim(scommand)) :: scommandtrimmed
+    logical :: bmatch,btrailexists
     integer :: ierror
     character(len=SYS_NAMELEN) :: ssectionname
     character(len=*), dimension(5), parameter :: spatternBEGIN = &
@@ -1672,112 +613,122 @@ contains
     
     bmatch = .false.
     
-    ! Name of the section corresponding to the current nesting level
-    if (inestlevel .eq. 0) then
-      ssectionname = ""
-    else
-      ssectionname = trim(sys_siL(inestlevel,10))
-    end if
-
-    ! Try to match the command
-    call cmdprs_commandmatch (scommand,spatternINT,bmatch)
+    scommandtrimmed = scommand
+    call cmdprs_removeTrail (scommandtrimmed,btrailexists)
     
-    if (bmatch) then
-      ! Create INT variable.
-      istart = 0
-      iend = 0
-      call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-      call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-      call collct_setvalue_int (rcmdStatus%rcollection, scommand(istart:iend), &
-          0, .true., ssectionname=ssectionname) 
-    end if
+    ! Name of the section corresponding to the current nesting level
+    istart = 0
+    iend = 0
+    call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
 
     if (.not. bmatch) then
-      call cmdprs_commandmatch (scommand,spatternDOUBLE,bmatch)
+      ! Try to match the command
+      call cmdprs_commandmatch (scommandtrimmed,spatternINT,bmatch)
+
+      if (bmatch) then      
+        ! Create INT variable.
+        istart = 0
+        iend = 0
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
+        call collct_setvalue_int (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
+            0, .true., ssectionname=ssectionname) 
+      end if
+    end if
+    
+    if (.not. bmatch) then
+      call cmdprs_commandmatch (scommandtrimmed,spatternDOUBLE,bmatch)
     
       if (bmatch) then
         ! Create DOUBLE variable.
         istart = 0
         iend = 0
-        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-        call collct_setvalue_real (rcmdStatus%rcollection, scommand(istart:iend), &
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
+        call collct_setvalue_real (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
             0.0_DP, .true., ssectionname=ssectionname) 
       end if
     end if
 
     if (.not. bmatch) then
-      call cmdprs_commandmatch (scommand,spatternSTRING,bmatch)
+      call cmdprs_commandmatch (scommandtrimmed,spatternSTRING,bmatch)
     
       if (bmatch) then
         ! Create STRING variable.
         istart = 0
         iend = 0
-        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-        call collct_setvalue_string (rcmdStatus%rcollection, scommand(istart:iend), &
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
+        call collct_setvalue_string (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
             "", .true., ssectionname=ssectionname) 
       end if
     end if
 
     if (.not. bmatch) then
-      call cmdprs_commandmatch (scommand,spatternINT2,bmatch)
+      call cmdprs_commandmatch (scommandtrimmed,spatternINT2,bmatch)
     
       if (bmatch) then
         ! Create INT variable and assign.
         istart = 0
         iend = 0
-        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-        call collct_setvalue_int (rcmdStatus%rcollection, scommand(istart:iend), &
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
+        call collct_setvalue_int (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
             0, .true., ssectionname=ssectionname)
         istart2 = 0
         iend2 = 0
-        call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
+        call tpsym_evalExpression (scommandtrimmed(istart:),rcmdStatus,inestlevel,istart2,iend2,rvalue)
       end if
     end if
 
     if (.not. bmatch) then
-      call cmdprs_commandmatch (scommand,spatternDOUBLE2,bmatch)
+      call cmdprs_commandmatch (scommandtrimmed,spatternDOUBLE2,bmatch)
     
       if (bmatch) then
         ! Create DOUBLE variable and assign.
         istart = 0
         iend = 0
-        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-        call collct_setvalue_real (rcmdStatus%rcollection, scommand(istart:iend), &
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
+        call collct_setvalue_real (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
             0.0_DP, .true., ssectionname=ssectionname) 
         istart2 = 0
         iend2 = 0
-        call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
+        call tpsym_evalExpression (scommandtrimmed(istart:),rcmdStatus,inestlevel,istart2,iend2,rvalue)
       end if
     end if
 
     if (.not. bmatch) then
-      call cmdprs_commandmatch (scommand,spatternSTRING2,bmatch)
+      call cmdprs_commandmatch (scommandtrimmed,spatternSTRING2,bmatch)
     
       if (bmatch) then
         ! Create STRING variable and assign.
         istart = 0
         iend = 0
-        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-        call cmdprs_nexttoken (scommand,istart,iend,len(scommand))
-        call collct_setvalue_string (rcmdStatus%rcollection, scommand(istart:iend), &
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
+        call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
+        call collct_setvalue_string (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
             "", .true., ssectionname=ssectionname) 
         istart2 = 0
         iend2 = 0
-        call tpsym_evalExpression (scommand(istart:),rcmdStatus%rcollection,inestlevel,istart2,iend2,rvalue)
+        call tpsym_evalExpression (scommandtrimmed(istart:),rcmdStatus,inestlevel,istart2,iend2,rvalue)
       end if
     end if
 
     if (bworkflowAllowed .and. (rcmdStatus%ierror .eq. 0)) then
       
-      ! 2nd chance...
+      ! 2nd chance. Control commands parse the original string, must not contain a ";"
+      ! at the end.
 
       if (.not. bmatch) then
         
-        call cmdprs_commandmatch (scommand,spatternBEGIN,bmatch)
+        call cmdprs_commandmatch (scommandtrimmed,spatternBEGIN,bmatch)
       
         if (bmatch) then
           ! Get the subblock and execute
@@ -1787,7 +738,7 @@ contains
           call collct_addsection (rcmdStatus%rcollection, trim(sys_siL(inestlevel+1,10)))
           
           ! Execute
-          call cmdprs_parsecmdblock (rcmdStatus,rcmdblock,inestlevel+1,istart2,iend2,rvalue)
+          call cmdprs_parsecmdblock (rcmdStatus,rvalue,rcmdblock,inestlevel+1,istart2,iend2)
 
           ! Remove local symbols
           call collct_deletesection (rcmdStatus%rcollection, trim(sys_siL(inestlevel+1,10)))
@@ -1799,14 +750,14 @@ contains
           
       if (.not. bmatch) then
 
-        call cmdprs_commandmatch (scommand,spatternFOR,bmatch)
+        call cmdprs_commandmatch (scommandtrimmed,spatternFOR,bmatch)
       
         if (bmatch) then
           ! For loop. Fetch the command block from the next lines.
           call cmdprs_getNextBlock (rcmdblock,iline+1,istart2,iend2)
           
           ! Process the command
-          call cmdprs_doFor (rcmdStatus,rcmdblock,inestlevel,scommand,iline,istart2,iend2)
+          call cmdprs_doFor (rcmdStatus,rcmdblock,inestlevel,scommandtrimmed,iline,istart2,iend2)
           
           ! Move the current to the end of the block.
           iline = iend2
@@ -1815,7 +766,7 @@ contains
           
       if (.not. bmatch) then
 
-        call cmdprs_commandmatch (scommand,spatternWHILE,bmatch)
+        call cmdprs_commandmatch (scommandtrimmed,spatternWHILE,bmatch)
 
         if (bmatch) then
           ! While loop. Fetch the command block from the next lines.
@@ -1828,7 +779,7 @@ contains
 
       if (.not. bmatch) then
 
-        call cmdprs_commandmatch (scommand,spatternDO,bmatch)
+        call cmdprs_commandmatch (scommandtrimmed,spatternDO,bmatch)
       
         if (bmatch) then
           ! Do-while loop. Fetch the command block from the next lines.
@@ -1841,7 +792,7 @@ contains
 
       if (.not. bmatch) then
 
-        call cmdprs_commandmatch (scommand,spatternIF,bmatch)
+        call cmdprs_commandmatch (scommandtrimmed,spatternIF,bmatch)
       
         if (bmatch) then
           ! If-command. Most complicated. Get one or two subblocks.
@@ -1857,26 +808,30 @@ contains
     if (.not. bmatch) then
       
       ! No build-in command. Process special command.
-      call cmdprs_splitlinedirect (scommand,p_Sargs)
-      if (associated(p_Sargs)) then
-        call cmdprs_dospecialcommand (rcmdStatus,p_Sargs,ierror)
-        call cmdprs_releaseargs (p_Sargs)
-        bmatch = ierror .eq. 0
-        if (ierror .gt. 1) then
-          ! =0: ok, =1: not found. >2: real error, pass to caller
-          rcmdStatus%ierror = ierror
-          bmatch = .true.
-        end if
+      ! These may miss a training ";"!
+      call cmdprs_dospecialcommand (rcmdStatus,scommandtrimmed,ierror)
+      bmatch = ierror .eq. 0
+      if (ierror .gt. 1) then
+        ! =0: ok, =1: not found. >2: real error, pass to caller
+        rcmdStatus%ierror = ierror
+        bmatch = .true.
       end if
       
     end if
     
     if (.not. bmatch) then
+!      if (.not. btrailexists) then
+!        call output_line ("Error. "";"" missing at the end!")
+!        rvalue%ctype = STYPE_INVALID
+!        rcmdStatus%ierror = 1
+!        return
+!      end if
+
       ! Try it as an immediate expression.
       ! Processes e.g. variable assignments etc...
       istart = 0
       iend = 0
-      call tpsym_evalExpression (scommand,rcmdStatus%rcollection,inestlevel,istart,iend,rvalue)
+      call tpsym_evalExpression (scommandtrimmed,rcmdStatus,inestlevel,istart,iend,rvalue)
       bmatch = rvalue%ctype .ne. STYPE_INVALID
     end if
     
@@ -1891,7 +846,7 @@ contains
   ! ***************************************************************************
 
   recursive subroutine cmdprs_parsecmdblock (rcmdStatus,&
-      rcmdblock,inestlevel,iblockstart,iblockend,rreturnValue)
+      rreturnValue,rcmdblock,inestlevel,iblockstart,iblockend)
   
   !<description>
     ! Parses a command block.
@@ -1908,15 +863,15 @@ contains
     ! the block must at least contain one line.
     type(t_commandBlock), intent(in) :: rcmdblock
     
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
+
     ! Start line in the command block. If not specified, the first line is assumed.
     integer, intent(in), optional :: iblockstart
     
     ! End line in the command block. If not specified, the last line is assumed.
     integer, intent(in), optional :: iblockend
     
-    ! Level of nesting
-    integer, intent(in), optional :: inestlevel
-
     ! Structure encapsuling return values.
     ! Initialised with default values by "intent(out)".
     type(t_symbolValue), intent(out) :: rreturnvalue
@@ -2021,7 +976,7 @@ contains
         end if
         
         ! There's no more data. Start executing.
-        call cmdprs_parsecmdblock (rcmdStatus,rcmdblock,inestlevel,rreturnvalue=rreturnvalue)
+        call cmdprs_parsecmdblock (rcmdStatus,rreturnvalue,rcmdblock,inestlevel)
   
         ! Create a new command block
         call cmdprs_donecmdblock (rcmdBlock)
@@ -2063,7 +1018,8 @@ contains
     type(VARYING_STRING) :: sinput
     type(VARYING_STRING), dimension(:), pointer :: p_Sargs
     character(len=SYS_STRLEN) :: sstr
-    integer :: ierror
+    type(t_commandBlock) :: rcmdBlock
+    type(t_symbolValue) :: rreturnvalue
 
     do while (.not. rcmdStatus%bterminate)
     
@@ -2080,23 +1036,20 @@ contains
         call output_line (CHAR(sinput))
       end if
       
-      if (len(sinput) .ne. 0) then
+      if (len(sinput) .gt. 1) then
       
         ! Ignore comments
         if (getchar (sinput,1) .ne. "#") then
 
-          ! Parse the line.
-          call cmdprs_splitline (sinput,p_Sargs)
+          ! Form a command block containing one command.
+          call cmdprs_initcmdblock (rcmdBlock)
+          call cmdprs_addCommand (rcmdBlock,sinput)
           
-          ! A command involved?
-          if (associated(p_Sargs)) then
-          
-            ! Execute the command
-            call cmdprs_dospecialcommand (rcmdStatus,p_Sargs,ierror)
-          
-            ! Release memory
-            call cmdprs_releaseargs(p_Sargs)
-          end if
+          ! Execute the command block
+          call cmdprs_parsecmdblock (rcmdStatus,rreturnvalue,rcmdblock,0)
+            
+          ! Release the command block
+          call cmdprs_donecmdblock (rcmdBlock)
           
         end if
       
@@ -2113,138 +1066,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine cmdprs_parseIndexString1D (sstring,svecname,p_IvecComponents)
-  
-  !<description>
-    ! Parses a string as 1D array. sstring may have the following form:
-    ! "SPECIFIER" - returns svecname="SPECIFIER" and p_IvecComponents => null().
-    ! "SPECIFIER[i]" - returns svecname="SPECIFIER" and p_IvecComponents => [i,1].
-    ! "SPECIFIER[i,j,...]" - returns svecname="SPECIFIER" and p_IvecComponents => [i,j,...].
-    ! "SPECIFIER[i:j]" - returns svecname="SPECIFIER" and p_IvecComponents => [i,...,j].
-  !</description>
-
-  !<input>
-    ! Input string.
-    character(len=SYS_STRLEN), intent(in) :: sstring
-  !</input>
-
-  !<output>
-    ! The specifier in the string. ="" if sstring is invalid.
-    character(len=SYS_STRLEN), intent(out) :: svecname
-    
-    ! Pointer to an array collecting the indices or NULL if no indices are specified.
-    ! Must be released by the caller!
-    integer, dimension(:), pointer :: p_IvecComponents
-  !</output>
-
-    integer :: i,j,k,i1,i2,icount
-    character(len=SYS_STRLEN) :: sstr,ssubstr
-
-    ! Reset the output.
-    svecname = ""
-    nullify(p_IvecComponents)
-    
-    ! Find a bracket.
-    i = index(sstring,"[")
-    if (i .eq. 0) then
-      ! Only the name is given.
-      svecname = trim(adjustl(sstring))
-      return
-    else
-      ! Get the name and the specifier. Remove all spaces from the specifier.
-      svecname = trim(adjustl(sstring(1:i-1)))
-      sstr = ""
-      k = 0
-      do j = i,len_trim(sstring)
-        select case (ichar(sstring(j:j)))
-        case (ichar(' '),ichar('['),ichar(']'))
-          ! Do nothing.
-        case (ichar('A'):ichar('Z'),ichar('_'),ichar('0'):ichar('9'),ichar(':'))
-          ! Copy
-          k=k+1
-          sstr(k:k) = sstring(j:j)
-        case (ichar(','))
-          ! Replace by space
-          k = k+1
-          sstr(k:k) = ' '
-        case default
-          ! Stop here, the string is invalid!
-          svecname = ""
-          return
-        end select
-      end do
-      
-      ! Ok. Now find the number sets. Orient at the whitespaces.
-      i = 1
-      icount = 0
-      do while (i .le. k)
-        
-        ! Get the first substring.
-        read(sstr,'(A)') ssubstr
-        
-        ! ":" included? Replace by ' ' and read in the set.
-        j = index(ssubstr,":")
-        if (j .ne. 0) then
-          ssubstr(j:j) = "  "
-          read(ssubstr,*) i1,i2
-          icount = icount + abs(i2 - i1) + 1
-        else
-          ! Only one entry
-          icount = icount + 1
-        end if
-        
-        ! Next token
-        i = i + len_trim(ssubstr)
-        
-      end do
-      
-      ! Allocate memory for the numbers
-      allocate (p_IvecComponents(icount))
-      
-      ! Get the numbers.
-      icount = 0
-      i = 1
-      do while (i .le. k)
-        
-        ! Get the first substring.
-        read(sstr,'(A)') ssubstr
-        
-        ! ":" included? Replace by ' ' and read in the set.
-        j = index(ssubstr,":")
-        if (j .ne. 0) then
-        
-          ssubstr(j:j) = " "
-          read(ssubstr,*) i1,i2
-          
-          if (i1 .le. i2) then
-            do j = i1,i2
-              icount = icount + 1
-              p_IvecComponents(icount) = j
-            end do
-          else
-            do j = i2,i1,-1
-              icount = icount + 1
-              p_IvecComponents(icount) = j
-            end do
-          end if
-        else
-          ! Only one entry
-          icount = icount + 1
-          read (ssubstr,*) p_IvecComponents(icount)
-        end if
-        
-        ! Next token
-        i = i + len_trim(ssubstr)
-        
-      end do
-      
-    end if
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  recursive subroutine cmdprs_dospecialcommand (rcmdStatus,Sargs,ierror)
+  recursive subroutine cmdprs_dospecialcommand (rcmdStatus,scommand,ierror)
   
   !<description>
     ! Executes a command.
@@ -2254,8 +1076,8 @@ contains
     ! Current status block.
     type(t_commandstatus), intent(inout) :: rcmdStatus
 
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
+    ! Command string.
+    character(len=*), intent(in) :: scommand
   !</inputoutput>
   
   !<output>
@@ -2265,158 +1087,74 @@ contains
     integer, intent(out) :: ierror
   !</output>
 
-    type(VARYING_STRING) :: scmd, sarg
+    character(len=SYS_NAMELEN) :: sargument
+    character(len=SYS_STRLEN) :: snewcommand,stemp
+    integer :: istart,iend,ilength
+    type(t_symbolValue) :: rvalue
     
     ierror = 0
     
     ! Get the command
-    scmd = Sargs(1)
-    call TOUPPER(scmd)
+    istart = 0
+    iend = 0
+    ilength = len_trim(scommand)
+    call cmdprs_nexttoken (scommand,istart,iend,ilength)
     
-    if (scmd .eq. "EXIT") then
-      rcmdStatus%bterminate = .true.
-      return
-    end if
-    
-    if (scmd .eq. "PRINT") then
-      if (size (Sargs) .gt. 1) then
-        sarg = cmdprs_dequote(Sargs(2))
-        call output_line (char(sarg))
-        sarg = ""
-      else
-        call output_lbrk ()
+    ! There must be no "("!
+    call cmdprs_nexttoken (scommand,istart,iend,ilength)
+    if (istart .gt. 0) then
+      if (scommand(istart:iend) .eq. "(") then
+        ierror = 1
+        return
       end if
-      return
     end if
+    
+    call cmdprs_nexttoken (scommand,istart,iend,ilength,.true.)
+    
+    ! For some commands, formulate the correct syntax and evaluate the
+    ! expression behind it.
+    snewcommand = ""
 
-    if (scmd .eq. "MEMINFO") then
-      call output_lbrk ()
-      call storage_info(.true.)
-      return
-    end if
-
-    if (scmd .eq. "SET") then
-      call cmdprs_do_set (rcmdStatus,Sargs)
-      return
-    end if
-
-    if (scmd .eq. "ECHO") then
-      if (size (Sargs) .gt. 1) then
-        if (sys_upcase(char(Sargs(2))) .eq. "ON") then
-          rcmdStatus%becho = .true.
-        else if (sys_upcase(char(Sargs(2))) .eq. "OFF") then
-          rcmdStatus%becho = .false.
-        end if
+    if (scommand(istart:iend) .eq. "exit") then
+      snewcommand = "halt();"
+    
+    else if (scommand(istart:iend) .eq. "print") then
+      call cmdprs_nexttoken (scommand,istart,iend,ilength)
+      if (istart .ne. 0) then
+        sargument = scommand(istart:iend)
+        snewcommand = "printf(""%s"","//trim(sargument)//");"
       else
-        if (rcmdStatus%becho) then
-          call output_line ("Echo is on.")
-        else
-          call output_line ("Echo is off.")
-        end if
+        snewcommand = "printf();"
       end if
-      return
-    end if
 
-    if (scmd .eq. "RUN") then
-      call cmdprs_do_run (rcmdStatus,Sargs)
-      return
-    end if
+    else if (scommand(istart:iend) .eq. "help") then
+      call cmdprs_nexttoken (scommand,istart,iend,ilength)
+      if (istart .ne. 0) then
+        call cmdprs_dequoteStd (scommand(istart:iend),sargument)
+        snewcommand = "help("""//trim(sargument)//""");"
+      else
+        snewcommand = "help();"
+      end if
 
-    if (scmd .eq. "SHOW") then
-      call cmdprs_do_show (rcmdStatus,Sargs)
-      return
-    end if
-
-    if (scmd .eq. "INFO") then
-      call cmdprs_do_info (rcmdStatus,Sargs)
-      return
-    end if
-
-    if (scmd .eq. "DELETE") then
-      call cmdprs_do_delete (rcmdStatus,Sargs)
-      return
-    end if
-
-    if (scmd .eq. "DESTROY") then
-      call cmdprs_do_destroy (rcmdStatus,Sargs)
-      return
-    end if
-
-    if (scmd .eq. "HELP") then
-      call cmdprs_do_help (Sargs)
-      return
-    end if
-
-    if (scmd .eq. "READ2DPRM") then
-      call cmdprs_do_read2dprm (rcmdStatus,Sargs)
-      return
-    end if
-
-    if (scmd .eq. "READ2DTRI") then
-      call cmdprs_do_read2dtri (rcmdStatus,Sargs)
-      return
-    end if
-
-    if (scmd .eq. "MESHREFINE") then
-      call cmdprs_do_meshrefine (rcmdStatus,Sargs)
-      return
+    else if (scommand(istart:iend) .eq. "run") then
+      call cmdprs_nexttoken (scommand,istart,iend,ilength)
+      if (istart .ne. 0) then
+        call cmdprs_dequoteStd (scommand(istart:iend),sargument)
+        snewcommand = "run("""//trim(sargument)//""");"
+      else
+        snewcommand = "run();"
+      end if
     end if
     
-    if (scmd .eq. "MESHHIERARCHY") then
-      call cmdprs_do_meshhierarchy (rcmdStatus,Sargs)
+    ! If a command was created, invoke it.
+    if (snewcommand .ne. "") then
+      call cmdprs_complexSplit (snewcommand,stemp,1,.false.)
+      istart = 0
+      iend = 0
+      call tpsym_evalExpression (stemp,rcmdStatus,0,istart,iend,rvalue)
       return
-    end if
-    
-    if (scmd .eq. "FESPACE") then
-      call cmdprs_do_fespace (rcmdStatus,Sargs)
-      return
-    end if
-    
-    if (scmd .eq. "FEHIERARCHY") then
-      call cmdprs_do_fehierarchy (rcmdStatus,Sargs)
-      return
-    end if
-    
-    if (scmd .eq. "MLEVELPRJHIERARCHY") then
-      call cmdprs_do_mlevelprjhierarchy (rcmdStatus,Sargs)
-      return
-    end if
+    end if    
 
-    if (scmd .eq. "READBLOCKVECTOR") then
-      call cmdprs_do_readblockvector (rcmdStatus,Sargs)
-      return
-    end if
-
-    if (scmd .eq. "WRITEBLOCKVECTOR") then
-      call cmdprs_do_writeblockvector (rcmdStatus,Sargs)
-      return
-    end if
-    
-    if (scmd .eq. "CREATEBLOCKVECTOR") then
-      call cmdprs_do_createblockvector (rcmdStatus,Sargs)
-      return
-    end if
-
-    if (scmd .eq. "COPYVECTOR") then
-      call cmdprs_do_copyvector (rcmdStatus,Sargs)
-      return
-    end if
-
-    if (scmd .eq. "INTERPOLATEVECTOR") then
-      call cmdprs_do_interpolatevector (rcmdStatus,Sargs)
-      return
-    end if
-    
-    if (scmd .eq. "L2PROJECTION") then
-      call cmdprs_do_l2projection (rcmdStatus,Sargs)
-      return
-    end if
-    
-    if (scmd .eq. "WRITEUCD") then
-      call cmdprs_do_writeucd (rcmdStatus,Sargs)
-      return
-    end if
-    
     ! Not found
     ierror = 1
   
@@ -2430,7 +1168,7 @@ contains
 
   !<subroutine>
   
-  recursive subroutine tpsym_evalExpression (sstring,rcollection,inestlevel,istart,iend,rvalue,&
+  recursive subroutine tpsym_evalExpression (sstring,rcmdStatus,inestlevel,istart,iend,rvalue,&
       spreviousOperator)
   
   !<description>
@@ -2452,8 +1190,8 @@ contains
   !</inputoutput>
 
   !<input>
-    ! Collection containing symbols.
-    type(t_collection), intent(inout) :: rcollection
+    ! Command line status object
+    type(t_commandstatus), intent(inout) :: rcmdStatus
 
     ! Level of nesting
     integer, intent(in) :: inestlevel
@@ -2474,10 +1212,10 @@ contains
   !</subroutine>
   
     ! local variables
-    integer :: iprevopstart,iprevopend,icurropstart,icurropend,isymbolstart,isymbolend
+    integer :: icurropstart,icurropend,isymbolstart,isymbolend
     integer :: inextsymstart, inextsymend
-    type(t_symbolValue) :: rvaluetemp
-    integer :: ileftprec, irightprec, ilength
+    type(t_symbolValue) :: rvaluetemp,rvaluemultiplier
+    integer :: ilength, ibracketcount
     logical :: berror
     type(t_symbolValue), dimension(:), pointer :: p_Rvalues
     
@@ -2495,9 +1233,27 @@ contains
     ! How does the expression start?
     if (sstring(istart:iend) .eq. "(") then
       ! Evaluate the value in the brackets.
-      call tpsym_evalExpressionBrackets (sstring,rcollection,inestlevel,istart,iend,rvalue)
+      call tpsym_evalExpressionBrackets (sstring,rcmdStatus,inestlevel,istart,iend,rvalue)
       
       ! istart/iend now points to the next token after the closing bracket.
+    else if (sstring(isymbolstart:isymbolend) .eq. "-") then
+    
+      ! This negates the whole value. Evaluate the rest, then multiply by -1.
+      ! Cancel if there is a previous operator -- we do not allow something like "* -1".
+      if (.not. present(spreviousOperator)) then
+        ! Ignore the "-".
+        call cmdprs_nexttoken (sstring,istart,iend,ilength)
+      
+        ! Evaluate the next stuff
+        call tpsym_evalExpression (sstring,rcmdStatus,inestlevel,istart,iend,rvalue)
+            
+        ! Multiply by -1.
+        rvaluetemp%ctype = STYPE_INTEGER
+        rvaluetemp%ivalue = -1
+        rvalue = rvalue * rvaluetemp
+      
+      end if
+
     else
       ! Check the following token. If it's a "(", we have a function call!
       inextsymstart = istart
@@ -2505,7 +1261,7 @@ contains
       call cmdprs_nexttoken (sstring,inextsymstart,inextsymend,ilength)
       if (inextsymstart .eq. 0) then
         ! Variable or symbol. Parse the symbol, create a value.
-        call tpsym_parseSymbol (sstring(isymbolstart:isymbolend),rcollection,inestlevel,rvalue)
+        call tpsym_parseSymbol (sstring(isymbolstart:isymbolend),rcmdStatus%rcollection,inestlevel,rvalue)
         
         ! Go to the next token
         call cmdprs_nexttoken (sstring,istart,iend,ilength)
@@ -2516,27 +1272,43 @@ contains
         iend = inextsymend
         
         ! That's a function. Get the arguments.
-        call tpsym_getArguments (sstring,rcollection,inestlevel,istart,iend,p_Rvalues,berror)
+        call tpsym_getArguments (sstring,rcmdStatus,inestlevel,istart,iend,p_Rvalues,berror)
         
         if (.not. berror) then
           ! Evaluate the function behind it.
-          call tpsym_evalFunction (sstring(isymbolstart:isymbolend),rcollection,inestlevel,p_Rvalues,rvalue)
+          if (associated(p_Rvalues)) then
+            call tpsym_evalFunction (sstring(isymbolstart:isymbolend),rcmdStatus,inestlevel,&
+                rvalue,p_Rvalues)
+
+            ! Release memory.
+            deallocate(p_Rvalues)
+          else
+            call tpsym_evalFunction (sstring(isymbolstart:isymbolend),rcmdStatus,inestlevel,&
+                rvalue)
+          end if
           
-          ! Release memory.
-          deallocate(p_Rvalues)
         end if
         
         ! istart/iend points to the next token.
       else
         ! Variable or symbol. Parse the symbol, create a value.
-        call tpsym_parseSymbol (sstring(isymbolstart:isymbolend),rcollection,inestlevel,rvalue)
+        call tpsym_parseSymbol (sstring(isymbolstart:isymbolend),&
+            rcmdStatus%rcollection,inestlevel,rvalue)
         
         ! Go to the next token
         call cmdprs_nexttoken (sstring,istart,iend,ilength)
         
       end if
     end if
-    if (rvalue%ctype .eq. STYPE_INVALID) return
+    
+    ! Return if invalid or variable which cannot be evaluated.
+    if (rvalue%ctype .eq. STYPE_INVALID) then
+      ! Return an error.
+      rcmdStatus%ierror = 1
+      rvalue%ctype = STYPE_INTEGER
+      return
+    end if
+    if (rvalue%ctype .eq. STYPE_VAR) return
     
     ! Repeat to evaluate all following operators.
     do while (istart .ne. 0)
@@ -2573,7 +1345,7 @@ contains
         ! Increase variable, return old value.
         rvaluetemp = 1
         rvalue = rvalue + rvaluetemp
-        call tpsym_saveSymbol (rvalue,inestlevel,rcollection)
+        call tpsym_saveSymbol (rvalue)
         rvalue = rvalue - rvaluetemp
         
         ! Next token
@@ -2585,7 +1357,7 @@ contains
         ! Increase variable, return old value.
         rvaluetemp = 1
         rvalue = rvalue - rvaluetemp
-        call tpsym_saveSymbol (rvalue,inestlevel,rcollection)
+        call tpsym_saveSymbol (rvalue)
         rvalue = rvalue + rvaluetemp
 
         ! Next token
@@ -2599,7 +1371,7 @@ contains
         call cmdprs_nexttoken (sstring,istart,iend,ilength)
         if (istart .eq. 0) return
         
-        call tpsym_evalExpression (sstring,rcollection,inestlevel,istart,iend,rvaluetemp,&
+        call tpsym_evalExpression (sstring,rcmdStatus,inestlevel,istart,iend,rvaluetemp,&
             spreviousOperator = sstring(icurropstart:icurropend))
         if (rvaluetemp%ctype .eq. STYPE_INVALID) return
         
@@ -2670,14 +1442,11 @@ contains
         else if (sstring(icurropstart:icurropend) .eq. "=") then
           ! Assign + save.
           rvalue = rvaluetemp
-          call tpsym_saveSymbol (rvalue,inestlevel,rcollection)
+          call tpsym_saveSymbol (rvalue)
         end if
         
       end if
 
-      ! Next token      
-      call cmdprs_nexttoken (sstring,istart,iend,ilength)
-      
     end do
     
   contains
@@ -2730,7 +1499,7 @@ contains
 
   !<subroutine>
   
-  recursive subroutine tpsym_evalExpressionBrackets (sstring,rcollection,inestlevel,istart,iend,rvalue)
+  recursive subroutine tpsym_evalExpressionBrackets (sstring,rcmdStatus,inestlevel,istart,iend,rvalue)
   
   !<description>
     ! Parses an expression in brackets.
@@ -2741,8 +1510,8 @@ contains
     ! and must completely be trimmed!
     character(len=*), intent(in) :: sstring
   
-    ! Collection containing symbols.
-    type(t_collection), intent(inout) :: rcollection
+    ! Command line status object
+    type(t_commandstatus), intent(inout) :: rcmdStatus
 
     ! Level of nesting
     integer, intent(in) :: inestlevel
@@ -2762,7 +1531,7 @@ contains
   !</subroutine>
   
     ! local variables
-    integer :: istart2,iend2
+    integer :: istart2,iend2,iend3
     integer :: ibracket,ilength
     
     ! Get basic information
@@ -2773,8 +1542,9 @@ contains
     ! Search closing bracket -- or inner expression(s) to be evaluated.
     istart2 = istart
     iend2 = iend
+    iend3 = iend
     ibracket = 1
-    call cmdprs_nexttoken (sstring,istart2,iend2,ilength,.true.)
+    call cmdprs_nexttoken (sstring,istart2,iend2,ilength)
     do while ((ibracket .gt. 0) .and. (istart2 .ne. 0))
       if (sstring(istart2:istart2) .eq. "(") then
         ibracket = ibracket + 1
@@ -2783,7 +1553,7 @@ contains
       end if
       
       ! Ignore other tokens.
-      call cmdprs_nexttoken (sstring,istart2,iend2,ilength,.true.)
+      call cmdprs_nexttoken (sstring,istart2,iend2,ilength)
     end do
     
     ! Return if ibracket <> 0, expression invalid.
@@ -2792,7 +1562,7 @@ contains
     ! Evaluate recursively.
     istart = 0
     iend = 0
-    call tpsym_evalExpression (sstring(iend+2:istart2-4),rcollection,inestlevel,&
+    call tpsym_evalExpression (sstring(iend3+2:istart2-4),rcmdStatus,inestlevel,&
         istart,iend,rvalue)
     
     ! Hop behind the bracket.
@@ -2805,7 +1575,7 @@ contains
 
   !<subroutine>
   
-  recursive subroutine tpsym_getArguments (ssource,rcollection,inestlevel,istart,iend,p_Rvalues,berror)
+  recursive subroutine tpsym_getArguments (ssource,rcmdStatus,inestlevel,istart,iend,p_Rvalues,berror)
   
   !<description>
     ! Evaluates a list of arguments in brackets.
@@ -2816,8 +1586,8 @@ contains
     ! and must completely be trimmed!
     character(len=*), intent(in) :: ssource
   
-    ! Collection containing symbols.
-    type(t_collection), intent(inout) :: rcollection
+    ! Command line status object
+    type(t_commandstatus), intent(inout) :: rcmdStatus
 
     ! Level of nesting
     integer, intent(in) :: inestlevel
@@ -2842,7 +1612,6 @@ contains
     ! local variables
     integer :: istart2,iend2
     integer :: iargs,ilength,i,ibracket
-    character(len=SYS_NAMELEN) :: sname
     
     berror = .false.
 
@@ -2907,7 +1676,7 @@ contains
       
         ! Evaluate the next expression up to the closing bracket.
         call tpsym_evalExpression (ssource,&
-            rcollection,inestlevel,istart,iend,p_Rvalues(i))            
+            rcmdStatus,inestlevel,istart,iend,p_Rvalues(i))            
             
         if (istart2 .ne. 0) then            
           if (ssource(istart2:iend2) .eq. "=") then
@@ -2954,7 +1723,7 @@ contains
     ! Current command block containing the program
     type(t_commandBlock), intent(in) :: rcmdBlock
 
-    ! Command string. Splitted and dequoted.
+    ! Command string. Splitted.
     character(len=*), intent(in) :: scommand
     
     ! Number of the line
@@ -3042,8 +1811,8 @@ contains
         if (.not. rcmdStatus%bterminate .and. (rcmdStatus%ierror .eq. 0)) then
         
           ! The actual loop commands.
-          call cmdprs_parsecmdblock (rcmdStatus,rcmdblock,inestlevel,&
-              iblockstart,iblockend,rreturnvalue)
+          call cmdprs_parsecmdblock (rcmdStatus,rreturnvalue,rcmdblock,inestlevel,&
+              iblockstart,iblockend)
 
         end if
 
@@ -3070,3291 +1839,9 @@ contains
   ! Extended command handlers
   ! ***************************************************************************
 
-  ! ***************************************************************************
-
-  !<subroutine>
-
-  subroutine cmdprs_do_help (Sargs)
-  
-  !<description>
-    ! Command: HELP.
-  !</description>
-  
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-  !</subroutine>  
-  
-    character(len=20) :: sargformatted
-  
-    call output_lbrk ()
-
-    if (size(Sargs) .eq. 1) then
-      call output_line ("FEAT2 command parser.")
-      call output_line ("---------------------")
-      call output_line ("The following commands are available. For a specific help")
-      call output_line ("type ""HELP [command]"".")
-      call output_lbrk ()
-      call output_line ("  help               - This help page.")
-      call output_line ("  exit               - Exits the command line.")
-      call output_line ("  meminfo            - Information about memory management.")
-      call output_line ("  run                - Execute script.")
-      call output_line ("  print              - Print some text.")
-      call output_line ("  set                - Modify/set/print environment.")
-      call output_line ("  show               - Show environment variable (if possible).")
-      call output_line ("  delete             - Delete variable from environment.")
-      call output_line ("  destroy            - Destroys an environment structure (extended delete).")
-      call output_line ("  read2dprm          - Read 2D .prm file.")
-      call output_line ("  read2dtri          - Read 2D .tri file.")
-      call output_line ("  meshrefine         - Refine a mesh.")
-      call output_line ("  meshhierarchy      - Create a mesh hierarchy.")
-      call output_line ("  fespace            - Create a FE space.")
-      call output_line ("  fehierarchy        - Create a FE hierarchy.")
-      call output_line ("  mlevelprjhierarchy - Create a multilevel projection hierarchy.")
-      call output_line ("  createblockvector  - Create an empty block vector.")
-      call output_line ("  readblockvector    - Read a block vector from a file.")
-      call output_line ("  writeblockvector   - Write a block vector to a file.")
-      call output_line ("  copyvector         - Copy a vector to another.")
-      call output_line ("  interpolatevector  - Interpolate a vector to another level.")
-      call output_line ("  l2projection       - Appies an L2 projection to a vector.")
-      call output_line ("  writeucd           - Writes a postprocessing file.")
-    
-    else
-    
-      call cmdprs_getparam (Sargs,2,sargformatted,.true.,.false.)
-      
-      if (sargformatted .eq. "EXIT") then
-        call output_line ("EXIT - Close interactive command line, return to terminal.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("  EXIT")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "RUN") then
-        call output_line ("RUN - Execute a script on hard disc.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("  RUN ""[filename/path]""")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "PRINT") then
-        call output_line ("PRINT - prints some text to the terminal.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("  PRINT ""[some text]""")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "SET") then
-        call output_line ("SET - Modify or show environment.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("* To show statistics about the environment:")
-        call output_line ("      SET")
-        call output_lbrk ()
-        call output_line ("*To set/modify an integer variable:")
-        call output_line ("      SET INT [name] [value]")
-        call output_lbrk ()
-        call output_line ("*To set/modify an double precision variable:")
-        call output_line ("      SET DOUBLE [name] [value]")
-        call output_lbrk ()
-        call output_line ("*To set/modify a string variable:")
-        call output_line ("      SET STRING [name] [value]")
-      
-        return
-      end if
-    
-      if (sargformatted .eq. "DELETE") then
-        call output_line ("DELETE - Delete a variable from the environment.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("  DELETE [name]")
-        call output_lbrk ()
-        call output_line ("WARNING: This does not release probably associated memory!")
-      
-        return
-      end if
-    
-      if (sargformatted .eq. "DESTROY") then
-        call output_line ("DESTROY - Releases memory associated to an environment variable.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("  DESTROY [name]")
-        call output_lbrk ()
-        call output_line ("Automatically detects the type of an environment variable and")
-        call output_line ("releases the associated structure from memory (if there is one).")
-        call output_line ("The variable is removed from the environment")
-      
-        return
-      end if
-    
-      if (sargformatted .eq. "SHOW") then
-        call output_line ("SHOW - Show content about an environment vairbale.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("  SHOW [name]")
-        call output_lbrk ()
-        call output_line ("If possible, this routine prints information about an")
-        call output_line ("environment variable to the terminal. For standard types")
-        call output_line ("(int, double, string,...), the value is returned.")
-        call output_line ("For extended types (e.g. meshes), status information")
-        call output_line ("is returned.")
-      
-        return
-      end if
-    
-      if (sargformatted .eq. "INFO") then
-        call output_line ("INFO - Detailed information about environment vairbales.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("  SHOW [name]")
-        call output_lbrk ()
-        call output_line ("Shows detailed information about an environment variable.")
-        call output_line ("This includes type, value,...")
-      
-        return
-      end if
-    
-      if (sargformatted .eq. "READ2DPRM") then
-        call output_line ("READ2DPRM - Read 2D .PRM file.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("  READ2DPRM [varname] [filename]")
-        call output_lbrk ()
-        call output_line ("Read in a .prm file and store it using the name [variable].")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "READ2DTRI") then
-        call output_line ("READ2DTRI - Read 2D .TRI file.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("  READ2DTRI [varname] [filename] [ BOUNDARY varbd ]")
-        call output_lbrk ()
-        call output_line ("Read in a .tri file and store it using the name [variable].")
-        call output_line ("If BOUNDARY is specified, the triangulation is connected")
-        call output_line ("to a boundary object varbd.")
-        call output_lbrk ()
-        call output_line ("Example:")
-        call output_line ("  read2dprm myprm ""myprmfile.prm""")
-        call output_line ("  read2dtri mytri ""mytrifile.tri"" boundary myprm")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "MESHREFINE") then
-        call output_line ("MESHREFINE - Refine a mesh.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   meshrefine [varname] [...options...]")
-        call output_lbrk ()
-        call output_line ("Refine a mesh with a given method one or multiple times.")
-        call output_line ("[varname] identifies the variable to create.")
-        call output_line ("The following options are possible in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  ... --TIMES [varname] ...")
-        call output_line ("      Refine the mesh [varname] times. Default is ""--TIMES 1"".")
-        call output_lbrk ()
-        call output_line ("  ... --BOUNDARY [varname] ...")
-        call output_line ("      Use the specified boundary object [varname] fdor boundary refinement.")
-        call output_line ("      If not specified, no boundary object is used.")
-        call output_lbrk ()
-        call output_line ("  ... --METHOD [varname] ...")
-        call output_line ("      Use a specific method. Default is ""--METHOD 2LEVELORDERED"". Possible choices:")
-        call output_line ("      2LEVELORDERED   - Use 2-level-ordering refinement.")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "MESHHIERARCHY") then
-        call output_line ("MESHHIERARCHY - Create a mesh hierarchy.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   meshhierarchy [varname] [...options...]")
-        call output_lbrk ()
-        call output_line ("Refine a mesh with a given method one or multiple times.")
-        call output_line ("[varname] identifies the variable to create.")
-        call output_line ("The following options are possible in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  ... --MESH [varname] ...")
-        call output_line ("      Use mesh [varname] as coarse mesh of teh hierarchy.")
-        call output_line ("      Mandatory argument")
-        call output_lbrk ()
-        call output_line ("  ... --BOUNDARY [varname] ...")
-        call output_line ("      Use boundary definition [varname] for refinements.")
-        call output_lbrk ()
-        call output_line ("  ... --LEVELS [varname] ...")
-        call output_line ("      Creates a hierarchy of [varname] levels. Default is ""--LEVELS 1"".")
-        call output_lbrk ()
-        call output_line ("  ... --BOUNDARY [varname] ...")
-        call output_line ("      Use the specified boundary object [varname] fdor boundary refinement.")
-        call output_line ("      If not specified, no boundary object is used.")
-        call output_lbrk ()
-        call output_line ("  ... --METHOD [varname] ...")
-        call output_line ("      Use a specific method. Default is ""--METHOD 2LEVELORDERED"". Possible choices:")
-        call output_line ("      2LEVELORDERED   - Use 2-level-ordering refinement.")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "FESPACE") then
-        call output_line ("FESPACE - Create an FE space.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   fespace [varname] [...options...]")
-        call output_lbrk ()
-        call output_line ("Creates an FE space that can be used to set up matrices/vectors.")
-        call output_line ("[varname] identifies the variable to create.")
-        call output_line ("The following options are possible in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  ... --MESH [varname] ...")
-        call output_line ("      Use mesh [varname] as coarse mesh of the hierarchy.")
-        call output_line ("      Mandatory argument")
-        call output_lbrk ()
-        call output_line ("  ... --BOUNDARY [varname] ...")
-        call output_line ("      Use boundary definition [varname] for refinements.")
-        call output_lbrk ()
-        call output_line ("  ... --COMPONENTS [varname] ...")
-        call output_line ("      Creates a FE space with [varname] components. Mandatory argument.")
-        call output_line ("      Must be defined in advance to all element/cubature specifications.")
-        call output_lbrk ()
-        call output_line ("  ... --TRIELEMENTS EL_xxx EL_xxx EL_xxx ...")
-        call output_line ("      Specifies a list of TRI/TETRA elemnent types to be used for")
-        call output_line ("      triangular/tetrahedral elements. There must be one ID per component.")
-        call output_lbrk ()
-        call output_line ("  ... --QUADELEMENTS EL_xxx EL_xxx EL_xxx ...")
-        call output_line ("      Specifies a list of QUAD/HEXA elemnent types to be used for")
-        call output_line ("      quadrilateral/hexahedral elements. There must be one ID per component.")
-        call output_lbrk ()
-        call output_line ("  ... --TRICUB CUB_xxx CUB_xxx CUB_xxx ...")
-        call output_line ("      Specifies a list of TRI/TETRA cubature formulas to be used for")
-        call output_line ("      triangular/tetrahedral elements. There must be one ID per component.")
-        call output_line ("      If not defined, the default cubature formula is used.")
-        call output_lbrk ()
-        call output_line ("  ... --QUADCUB CUB_xxx CUB_xxx CUB_xxx ...")
-        call output_line ("      Specifies a list of QUAD/HEXA cubature formulas to be used for")
-        call output_line ("      quadrilateral/hexahedral elements. There must be one ID per component.")
-        call output_line ("      If not defined, the default cubature formula is used.")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "FEHIERARCHY") then
-        call output_line ("FEHIERARCHY - Create an FE hierarchy.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   fehierarchy [varname] [...options...]")
-        call output_lbrk ()
-        call output_line ("Creates an FE space that can be used to set up matrices/vectors.")
-        call output_line ("[varname] identifies the variable to create.")
-        call output_line ("The following options are possible in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  ... --MESHHIERARCHY [varname] ...")
-        call output_line ("      Use mesh hierarchy [varname] as coarse mesh of the hierarchy.")
-        call output_line ("      Mandatory argument")
-        call output_lbrk ()
-        call output_line ("  ... --BOUNDARY [varname] ...")
-        call output_line ("      Use boundary definition [varname] for refinements.")
-        call output_lbrk ()
-        call output_line ("  ... --COMPONENTS [varname] ...")
-        call output_line ("      Creates a FE space with [varname] components. Mandatory argument.")
-        call output_line ("      Must be defined in advance to all element/cubature specifications.")
-        call output_lbrk ()
-        call output_line ("  ... --TRIELEMENT EL_xxx EL_xxx EL_xxx ...")
-        call output_line ("      Specifies a list of TRI/TETRA elemnent types to be used for")
-        call output_line ("      triangular/tetrahedral elements. There must be one ID per component.")
-        call output_lbrk ()
-        call output_line ("  ... --QUADELEMENT EL_xxx EL_xxx EL_xxx ...")
-        call output_line ("      Specifies a list of QUAD/HEXA elemnent types to be used for")
-        call output_line ("      quadrilateral/hexahedral elements. There must be one ID per component.")
-        call output_lbrk ()
-        call output_line ("  ... --TRICUB CUB_xxx CUB_xxx CUB_xxx ...")
-        call output_line ("      Specifies a list of TRI/TETRA cubature formulas to be used for")
-        call output_line ("      triangular/tetrahedral elements. There must be one ID per component.")
-        call output_lbrk ()
-        call output_line ("  ... --QUADCUB CUB_xxx CUB_xxx CUB_xxx ...")
-        call output_line ("      Specifies a list of QUAD/HEXA cubature formulas to be used for")
-        call output_line ("      quadrilateral/hexahedral elements. There must be one ID per component.")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "MLEVELPRJHIERARCHY") then
-        call output_line ("MLEVELPRJHIERARCHY - Create an multilevel projection hierarchy.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   mlevelprjhierarchy [varname] [...options...]")
-        call output_lbrk ()
-        call output_line ("Creates a multilevel projection hierarchy that can be used to transfer")
-        call output_line ("soltion/rhs vectors from one level to another.")
-        call output_line ("[varname] identifies the variable to create.")
-        call output_line ("The following options are possible in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  ... --FEHIERARCHY [varname] ...")
-        call output_line ("      Create a multilevel projection hierarchy based on the")
-        call output_line ("      FE space hierarchy [varname]. Mandatory argument")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "CREATEBLOCKVECTOR") then
-        call output_line ("CREATEBLOCKVECTOR - Create an empty block vector.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   createblockvector [varname] [...options...]")
-        call output_lbrk ()
-        call output_line ("Creates an empty block vector..")
-        call output_line ("[varname] identifies the variable to create.")
-        call output_line ("The following options are possible in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  ... --FEHIERARCHY [varname] ...")
-        call output_line ("      Defines the FE hierarchy, the vector is based on.")
-        call output_line ("      Mandatory argument")
-        call output_lbrk ()
-        call output_line ("  ... --LEVEL [varname] ...")
-        call output_line ("      Level in the hierarchy specifying the discretisation of the vector.")
-        call output_line ("      Default is max. level.")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "READBLOCKVECTOR") then
-        call output_line ("READBLOCKVECTOR - Read block vector from file.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   readblockvector [varname] [...options...]")
-        call output_lbrk ()
-        call output_line ("Read a block vector from a file.")
-        call output_line ("[varname] identifies the variable where to read data to.")
-        call output_line ("The following options are possible in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  ... --FILENAME [varname] ...")
-        call output_line ("      Defines the filename of the file to read.")
-        call output_line ("      Mandatory argument")
-        call output_lbrk ()
-        call output_line ("  ... --UNFORMATTED ...")
-        call output_line ("      Read a binary file. Default is formatted, human readable file.")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "WRITEBLOCKVECTOR") then
-        call output_line ("WRITEBLOCKVECTOR - Write block vector to file.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   writeblockvector [varname] [...options...]")
-        call output_lbrk ()
-        call output_line ("Write a block vector to a file.")
-        call output_line ("[varname] identifies the vector.")
-        call output_line ("The following options are possible in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  ... --FILENAME [varname] ...")
-        call output_line ("      Defines the filename of the file to read.")
-        call output_line ("      Mandatory argument")
-        call output_lbrk ()
-        call output_line ("  ... --FORMAT [varname] ...")
-        call output_line ("      Defines the format of the numbers in the file.")
-        call output_line ("      Applies only if --UNFORMATTED is not specified.")
-        call output_line ("      Default: E20.10")
-        call output_lbrk ()
-        call output_line ("  ... --UNFORMATTED ...")
-        call output_line ("      Read a binary file. Default is formatted, human readable file.")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "COPYVECTOR") then
-        call output_line ("COPYVECTOR - Copy a vector.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   copyvector [varsource] [vardest]")
-        call output_lbrk ()
-        call output_line ("Copies vector [varsource] to vector [vardest].")
-        call output_line ("The vector may be a full block vector or a single.")
-        call output_line ("subvector.")
-        call output_lbrk ()
-        call output_line ("Example:")
-        call output_line ("    copyvector source dest")
-        call output_line ("    copyvector source[2] dest[1]")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "INTERPOLATEVECTOR") then
-        call output_line ("INTERPOLATEVECTOR - Interpolate a vector.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   interpolatevector [varsource] [lvlsource] [vardest] [lvldest] [...options...]")
-        call output_lbrk ()
-        call output_line ("Interpolates vector [varsource] from level [lvlsource] to")
-        call output_line ("level [lvldest] and writes the result to [vardest].")
-        call output_line ("[mlprj] specifies the projection hierarchy to be used.")
-        call output_line ("The method uses prolongation/interpolation for the level change.")
-        call output_lbrk ()
-        call output_line ("Example:")
-        call output_line ("    interpolatevector source 3 dest 5 --MLPRJHIERARCHY mhier --FEHIERARCHY feh")
-        call output_lbrk ()
-        call output_line ("The following options are possible in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  ... --MLPRJHIERARCHY [varname] ...")
-        call output_line ("      Defines the underlying projection hierarchy.")
-        call output_line ("      Mandatory argument.")
-        call output_lbrk ()
-        call output_line ("  ... --FEHIERARCHY [varname] ...")
-        call output_line ("      Defines the underlying FE hierarchy.")
-        call output_line ("      Mandatory argument if source and destination level differ")
-        call output_line ("      by more than one level.")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "L2PROJECTION") then
-        call output_line ("L2PROJECTION - Applies an L2 projection to a vector.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   l2projection [varsource] [vardest] [...options...]")
-        call output_lbrk ()
-        call output_line ("Interpolates vector [varsource] to [vardest] using an")
-        call output_line ("L2-projection.")
-        call output_lbrk ()
-        call output_line ("Example:")
-        call output_line ("    interpolatevector source dest")
-        call output_lbrk ()
-        call output_line ("The following options are possible in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  ... --VERBOSE ...")
-        call output_line ("      Activate verbose output.")
-        call output_lbrk ()
-        call output_line ("  ... --RELERROR [error] ...")
-        call output_line ("      Defines the relative accuracy of the projection.")
-      
-        return
-      end if
-
-      if (sargformatted .eq. "WRITEUCD") then
-        call output_line ("WRITEUCD - Write a postprocessing file.")
-        call output_lbrk ()
-        call output_line ("Usage:")
-        call output_line ("   writeucd [filename] [mesh] [type] [...options...]")
-        call output_lbrk ()
-        call output_line ("Writes a postproceessing file [filename] based on the")
-        call output_line ("mesh [mesh]. [type] specifies the type of the output.")
-        call output_line ("[mesh] may be either the name of a mesh or in an indexed")
-        call output_line ("form a mesh in a mesh hierarchy, e.g. ""myhier[3]"".")
-        call output_lbrk ()
-        call output_line ("Example:")
-        call output_line ("    writeucd mypostproc.vtk mymesh vtk")
-        call output_lbrk ()
-        call output_line ("The following postprocessing output is possible:")
-        call output_lbrk ()
-        call output_line ("  [type] = ""vtk"": VTK-output")
-        call output_line ("           ""gmv"": GMV output")
-        call output_lbrk ()
-        call output_line ("The following parameters are available in [...options...]:")
-        call output_lbrk ()
-        call output_line ("  --POINTDATASCALAR [name] [vector]")
-        call output_line ("          Writes out subvector of vector [vector]")
-        call output_line ("          as scalar array with the name [name]. May be specified")
-        call output_line ("          more than once. The data is interpreted in the corner")
-        call output_line ("          points of the elements. Example:")
-        call output_line ("              --pointdatascalar vel_y myvec[2] 2")
-        call output_lbrk ()
-        call output_line ("  --POINTDATAVEC [name] [vector]")
-        call output_line ("          Writes out a set of subvectors from vector [vector]")
-        call output_line ("          as a vector field with name [name]. [subveccount] specifies")
-        call output_line ("          the number of subvectors and [subvectors...] is a list")
-        call output_line ("          of subvectors. Example to write out component 1 and 2:")
-        call output_line ("              --pointdatavec velocity myvec[1,2]")
-        call output_line ("          Example to write out component 1 till 3:")
-        call output_line ("              --pointdatavec velocity myvec[1..3]")
-        call output_lbrk ()
-        call output_line ("  --CELLDATASCALAR [name] [vector] [subvector]")
-        call output_line ("          Writes out subvector [subvector] of vector [vector]")
-        call output_line ("          as scalar array with the name [name]. May be specified")
-        call output_line ("          more than once. The data is interpreted in the elements.")
-        call output_line ("          Example:")
-        call output_line ("              --celldatascalar pressure myvec 3")
-      
-        return
-      end if
-
-      call output_line ("No specific help available.")
-    end if
-  
-  end subroutine
-
-  ! ***************************************************************************
-
-  recursive subroutine cmdprs_do_run (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: RUN.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    integer :: iunit
-    logical :: bexists
-    character(len=SYS_STRLEN) :: svalue
-  
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Get the script name
-    call cmdprs_getparam (Sargs,2,svalue,.false.,.true.)
-
-    ! Open the file and read.
-    inquire(file=trim(svalue), exist=bexists)
-    if (.not. bexists) then
-      call output_line ("File not found!")
-    else
-      
-      ! Open
-      call io_openFileForReading(svalue, iunit, .true.)
-
-      ! Interpret the stream
-      call cmdprs_parsestream (rcmdStatus,iunit,0)
-      
-      close (iunit)
-    end if
-
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_set (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: SET.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    integer :: iarg
-    real(DP) :: darg
-    character(len=COLLCT_MLNAME) :: svalname
-    character(len=20) :: sformat
-    character(len=SYS_STRLEN) :: svalue
-  
-    if (size(Sargs) .eq. 1) then
-      call output_lbrk ()
-      call output_line ("Environment statistics:")
-      call output_lbrk ()
-      ! Print the current status of the collection.
-      call collct_printStatistics (rcmdStatus%rcollection)
-      
-    else
-    
-      if (size(Sargs) .lt. 4) then
-        call output_line ("Not enough arguments.")
-        return
-      end if
-      
-      ! Get the next token(s)
-      call cmdprs_getparam (Sargs,2,sformat,.true.,.false.)
-      call cmdprs_getparam (Sargs,3,svalname,.false.,.true.)
-      
-      if (sformat .eq. "INT") then
-        call cmdprs_getparam (Sargs,4,svalue,.false.,.true.)
-        read (svalue,*) iarg
-        call collct_setvalue_int (rcmdStatus%rcollection, &
-            svalname, iarg, .true.)
-        return
-      end if
-    
-      if (sformat .eq. "DOUBLE") then
-        call cmdprs_getparam (Sargs,4,svalue,.false.,.true.)
-        read (svalue,*) darg
-        call collct_setvalue_real (rcmdStatus%rcollection, &
-            svalname, darg, .true.)
-        return
-      end if
-
-      if (sformat .eq. "STRING") then
-        call cmdprs_getparam (Sargs,4,svalue,.true.,.false.)
-        call collct_setvalue_string (rcmdStatus%rcollection, &
-            svalname, trim(svalue), .true.)
-        return
-      end if
-    
-    end if
-  
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_delete (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: SET.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    character(len=COLLCT_MLNAME) :: svalname
-  
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Get the next token(s)
-    call cmdprs_getparam (Sargs,2,svalname,.true.,.false.)
-    
-    call collct_deletevalue (rcmdStatus%rcollection, svalname)
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine do_destroy (rcmdStatus,svalname,bverbose)
-  
-  !<description>
-    ! Command handler: DESTROY.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Name of the variable to destroy
-    character(len=*), intent(in) :: svalname
-    
-    ! Print vebose messages
-    logical, intent(in) :: bverbose
-  !</input>
-  
-    ! local variables
-    integer :: ctype
-    logical :: bexists
-    type(t_boundary), pointer :: p_rboundary
-    type(t_triangulation), pointer :: p_rtriangulation
-    type(t_meshhierarchy), pointer :: p_rmeshhierarchy
-    type(t_feSpaceLevel), pointer :: p_rfeSpace
-    type(t_feHierarchy), pointer :: p_rfeHierarchy
-    type(t_interlevelProjectionHier), pointer :: p_rinterlevelProjectionHier
-    type(t_vectorBlock), pointer :: p_rvectorBlock
-  
-    ! That's an awful task. Figure out the type at first.
-    ! Then get the value and/or print information.
-    ctype = collct_gettype (rcmdStatus%rcollection, svalname, bexists=bexists)
-    
-    if (.not. bexists) then
-      if (bverbose) then
-        call output_line ("Unknown environment variable!")
-      end if
-    else
-      select case (ctype)
-      case (COLLCT_INTEGER,COLLCT_REAL,COLLCT_STRING)
-        ! Primitive type
-        call collct_deletevalue (rcmdStatus%rcollection, svalname)
-          
-      case (COLLCT_BOUNDARY)
-        ! Boundary object
-        p_rboundary => collct_getvalue_bdry (rcmdStatus%rcollection, svalname)
-        call boundary_release(p_rboundary)
-        deallocate(p_rboundary)
-
-        call collct_deletevalue (rcmdStatus%rcollection, svalname)
-          
-      case (COLLCT_TRIA)
-        ! Boundary object
-        p_rtriangulation => collct_getvalue_tria (rcmdStatus%rcollection, svalname)
-        call tria_done(p_rtriangulation)
-        deallocate(p_rtriangulation)
-
-        call collct_deletevalue (rcmdStatus%rcollection, svalname)
-
-      case (COLLCT_MSHHIERARCHY)
-        ! Boundary object
-        p_rmeshhierarchy => collct_getvalue_mshh (rcmdStatus%rcollection, svalname)
-        call mshh_releaseHierarchy(p_rmeshhierarchy)
-        deallocate(p_rmeshhierarchy)
-
-        call collct_deletevalue (rcmdStatus%rcollection, svalname)
-
-      case (COLLCT_FESPACE)
-        ! Boundary object
-        p_rfeSpace => collct_getvalue_fesp (rcmdStatus%rcollection, svalname)
-        call fesph_releaseFEspace(p_rfeSpace)
-        deallocate(p_rfeSpace)
-
-        call collct_deletevalue (rcmdStatus%rcollection, svalname)
-
-      case (COLLCT_FEHIERARCHY)
-        ! Boundary object
-        p_rfeHierarchy => collct_getvalue_feh (rcmdStatus%rcollection, svalname)
-        call fesph_releaseHierarchy(p_rfeHierarchy)
-        deallocate(p_rfeHierarchy)
-
-        call collct_deletevalue (rcmdStatus%rcollection, svalname)
-
-      case (COLLCT_MLPRJHIERARCHY)
-        ! Multilevel projection hierarchy
-        p_rinterlevelProjectionHier => collct_getvalue_mlprjh (rcmdStatus%rcollection, svalname)
-        call mlprj_releasePrjHierarchy(p_rinterlevelProjectionHier)
-        deallocate(p_rinterlevelProjectionHier)
-
-        call collct_deletevalue (rcmdStatus%rcollection, svalname)
-
-      case (COLLCT_BLKVECTOR)
-        ! Multilevel projection hierarchy
-        p_rvectorBlock => collct_getvalue_vec (rcmdStatus%rcollection, svalname)
-        call lsysbl_releaseVector(p_rvectorBlock)
-        deallocate(p_rvectorBlock)
-
-        call collct_deletevalue (rcmdStatus%rcollection, svalname)
-
-      case default
-        call output_line ("Unknown type, variable cannot be destroyed!")         
-      end select
-      
-    end if
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_destroy (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: DESTROY.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    character(len=COLLCT_MLNAME) :: svalname
-  
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Get the next token(s)
-    call cmdprs_getparam (Sargs,2,svalname,.true.,.false.)
-    
-    call do_destroy (rcmdStatus,svalname,.true.)
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_show (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: SHOW.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    character(len=COLLCT_MLNAME) :: svalname
-    character(len=SYS_STRLEN) :: svalue
-    integer :: ctype
-    logical :: bexists
-  
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Get the next token(s)
-    call cmdprs_getparam (Sargs,2,svalname,.true.,.false.)
-    
-    ! That's an awful task. Figure out the type at first.
-    ! Then get the value and/or print information.
-    ctype = collct_gettype (rcmdStatus%rcollection, svalname, bexists=bexists)
-    
-    if (.not. bexists) then
-      call output_line ("Unknown environment variable!")
-    else
-      select case (ctype)
-      case (COLLCT_INTEGER)
-        call output_line (trim(sys_siL(&
-          collct_getvalue_int (rcmdStatus%rcollection, svalname) ,10)))
-          
-      case (COLLCT_REAL)
-        call output_line (trim(sys_sdEL(&
-          collct_getvalue_real (rcmdStatus%rcollection, svalname) ,10)))
-          
-      case (COLLCT_STRING)
-        call collct_getvalue_string (rcmdStatus%rcollection, svalname, svalue)
-        call output_line (svalue)
-          
-      case default
-        call output_line ("No detailed information available.")
-      end select
-      
-    end if
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_info (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: INFO.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    character(len=COLLCT_MLNAME) :: svalname
-    character(len=SYS_STRLEN) :: svalue
-    integer :: ctype
-    logical :: bexists
-    type(t_triangulation), pointer :: p_rtriangulation
-    type(t_meshhierarchy), pointer :: p_rmeshhierarchy
-    type(t_feSpaceLevel), pointer :: p_rfeSpace
-    type(t_feHierarchy), pointer :: p_rfeHierarchy
-    type(t_vectorBlock), pointer :: p_rvectorBlock
-  
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Get the next token(s)
-    call cmdprs_getparam (Sargs,2,svalname,.true.,.false.)
-    
-    ! That's an awful task. Figure out the type at first.
-    ! Then get the value and/or print information.
-    ctype = collct_gettype (rcmdStatus%rcollection, svalname, bexists=bexists)
-    
-    if (.not. bexists) then
-      call output_line ("Unknown environment variable!")
-    else
-      call output_line ("Variable: "//svalname)
-      select case (ctype)
-      case (COLLCT_INTEGER)
-        call output_line ("Type    : Integer")
-        call output_line ("Content : ",bnolinebreak=.true., bnotrim=.true.)
-        call output_line (trim(sys_siL(&
-          collct_getvalue_int (rcmdStatus%rcollection, svalname) ,10)))
-          
-      case (COLLCT_REAL)
-        call output_line ("Type    : Double precision")
-        call output_line ("Content : ",bnolinebreak=.true., bnotrim=.true.)
-        call output_line (trim(sys_sdEL(&
-          collct_getvalue_real (rcmdStatus%rcollection, svalname) ,10)))
-          
-      case (COLLCT_STRING)
-        call output_line ("Type    : string")
-        call output_line ("Content : ",bnolinebreak=.true., bnotrim=.true.)
-        call collct_getvalue_string (rcmdStatus%rcollection, svalname, svalue)
-        call output_line (svalue)
-          
-      case (COLLCT_BOUNDARY)
-        call output_line ("Type    : Boundary object (2D)")
-
-      case (COLLCT_TRIA)
-        call output_line ("Type    : Triangulation object")
-        call output_lbrk ()
-        p_rtriangulation => collct_getvalue_tria (rcmdStatus%rcollection, svalname)
-        call tria_infoStatistics (p_rtriangulation,.true.)
-
-      case (COLLCT_MSHHIERARCHY)
-        call output_line ("Type    : Mesh hierarchy")
-        call output_lbrk ()
-        p_rmeshhierarchy => collct_getvalue_mshh (rcmdStatus%rcollection, svalname)
-        call mshh_printHierStatistics (p_rmeshhierarchy)
-
-      case (COLLCT_FESPACE)
-        call output_line ("Type    : FE space")
-        call output_lbrk ()
-        p_rfeSpace => collct_getvalue_fesp (rcmdStatus%rcollection, svalname)
-        call fesph_infoStatistics (p_rfeSpace,.true.)
-        call spdiscr_infoBlockDiscr (p_rfeSpace%p_rdiscretisation)
-
-      case (COLLCT_FEHIERARCHY)
-        call output_line ("Type    : Mesh hierarchy")
-        call output_lbrk ()
-        p_rfeHierarchy => collct_getvalue_feh (rcmdStatus%rcollection, svalname)
-        call fesph_printHierStatistics (p_rfeHierarchy)
-
-      case (COLLCT_MLPRJHIERARCHY)
-        call output_line ("Type    : Multilevel projection hierarchy")
-        call output_lbrk ()
-
-      case (COLLCT_BLKVECTOR)
-        call output_line ("Type    : Block vector")
-        call output_lbrk ()
-        p_rvectorBlock => collct_getvalue_vec (rcmdStatus%rcollection, svalname)
-        call lsysbl_infoVector (p_rvectorBlock)
-
-      case default
-        call output_line ("Type    : "//sys_siL(ctype,10))
-      end select
-      
-    end if
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_read2dprm (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: READ2DPRM.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    logical :: bexists
-    character(len=SYS_STRLEN) :: sfilename
-    character(len=COLLCT_MLNAME) :: sname
-    type(t_boundary), pointer :: p_rboundary
-  
-    if (size(Sargs) .lt. 3) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Get the identifier and file name 
-    call cmdprs_getparam (Sargs,2,sname,.true.,.false.)
-    call cmdprs_getparam (Sargs,3,sfilename,.false.,.true.)
-
-    ! Open the file and read.
-    inquire(file=trim(sfilename), exist=bexists)
-    if (.not. bexists) then
-      call output_line ("File not found!")
-    else
-      call output_line ("Reading file: "//trim(sfilename))
-    
-      ! Read
-      allocate (p_rboundary)
-      call boundary_read_prm(p_rboundary, sfilename)
-      
-      ! Remove old value from collection if present
-      call do_destroy(rcmdStatus,sname,.false.)
-      
-      ! Add to the collection
-      call collct_setvalue_bdry (rcmdStatus%rcollection, sname, p_rboundary, .true.)
-    end if
-
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_read2dtri (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: READ2DTRI.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    logical :: bexists
-    character(len=SYS_STRLEN) :: sfilename, stoken
-    character(len=COLLCT_MLNAME) :: sname
-    type(t_boundary), pointer :: p_rboundary
-    type(t_triangulation), pointer :: p_rtriangulation
-  
-    if (size(Sargs) .lt. 3) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Get the identifier and file name 
-    call cmdprs_getparam (Sargs,2,sname,.true.,.false.)
-    call cmdprs_getparam (Sargs,3,sfilename,.false.,.true.)
-
-    ! Open the file and read.
-    inquire(file=trim(sfilename), exist=bexists)
-    if (.not. bexists) then
-      call output_line ("File not found!")
-    else
-      nullify(p_rboundary)
-    
-      ! Is there a boundary object attached?
-      if (size(Sargs) .ge. 5) then
-        call cmdprs_getparam (Sargs,4,stoken,.true.,.false.)
-        if (stoken .eq. "--BOUNDARY") then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,5,stoken,.false.,.true.)
-          
-          p_rboundary => collct_getvalue_bdry(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rboundary)
-            call output_line("Warning. Boundary object does not exist!")
-          end if
-        end if
-      end if
-    
-      call output_line ("Reading file: "//trim(sfilename))
-    
-      ! Read
-      allocate (p_rtriangulation)
-      
-      if (associated(p_rboundary)) then
-        call tria_readTriFile2D(p_rtriangulation, sfilename, p_rboundary)
-        
-        ! Create a standard mesh.
-        call tria_initStandardMeshFromRaw (p_rtriangulation, p_rboundary)
-      else
-        call output_line("Warning. No boundary specified!")
-      
-        call tria_readTriFile2D(p_rtriangulation, sfilename)
-        
-        ! Create a standard mesh.
-        call tria_initStandardMeshFromRaw (p_rtriangulation)
-      end if
-      
-      ! Remove old value from collection if present
-      call do_destroy(rcmdStatus,sname,.false.)
-      
-      ! Add to the collection
-      call collct_setvalue_tria (rcmdStatus%rcollection, sname, p_rtriangulation, .true.)
-    end if
-
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_meshrefine (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: MESHREFINE.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    logical :: bexists
-    character(len=SYS_STRLEN) :: stoken
-    integer :: cmethod, icount
-    integer :: i
-    type(t_boundary), pointer :: p_rboundary
-    type(t_triangulation), pointer :: p_rtriangulation
-  
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Get the identifier and file name 
-    call cmdprs_getparam (Sargs,2,stoken,.true.,.false.)
-    p_rtriangulation => collct_getvalue_tria(rcmdStatus%rcollection,stoken,bexists=bexists)
-    if (.not. bexists) then
-      call output_line ("Unknown variable!")
-      return
-    end if
-    
-    ! Read the other parameters
-    cmethod = 0 ! 2-level ordering
-    icount = 1
-    nullify(p_rboundary)
-  
-    i = 3
-    do 
-      if (i .gt. size(Sargs)) exit
-      
-      ! Get the next token.
-      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-      i = i+1
-      
-      if (stoken .eq. "--BOUNDARY") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          p_rboundary => collct_getvalue_bdry(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rboundary)
-            call output_line("Warning. Boundary object does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-      
-      else if (stoken .eq. "--TIMES") then
-        if (i .le. size(Sargs)) then
-          ! Get the method type
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          ! Number of refinements
-          read (stoken,*) icount
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--METHOD") then
-        if (i .le. size(Sargs)) then
-          ! Get the method type
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          if (stoken .eq. "--2LEVELORDERED") then
-            ! 2-level ordering
-            cmethod = 0
-          else
-            call output_line ("Warning: Unknown refinement method! Using default.")
-            cmethod = 0
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-      end if
-    end do
-  
-    call output_line ("Refining mesh... [",bnolinebreak=.true.)
-  
-    ! Refine the mesh
-    select case (cmethod)
-    case (0)
-      ! 2-level ordered
-      
-      do i = 1,icount
-        call output_line (" "//trim(sys_siL(i,10)),bnolinebreak=.true.)
-
-        ! Boundary present?
-        if (associated(p_rboundary)) then
-          call tria_quickRefine2LevelOrdering(1,p_rtriangulation)
-        else
-          call tria_quickRefine2LevelOrdering(1,p_rtriangulation,p_rboundary)
-        end if
-      end do
-
-      ! Create a standard mesh.
-      if (associated(p_rboundary)) then
-        call tria_initStandardMeshFromRaw (p_rtriangulation)
-      else
-        call tria_initStandardMeshFromRaw (p_rtriangulation,p_rboundary)
-      end if
-      
-      call output_line ("]")
-    end select
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_meshhierarchy (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: MESHHIERARCHY.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    logical :: bexists
-    character(len=SYS_STRLEN) :: sname, stoken
-    integer :: cmethod, ilevels
-    integer :: i
-    type(t_boundary), pointer :: p_rboundary
-    type(t_triangulation), pointer :: p_rtriangulation
-    type(t_meshHierarchy), pointer :: p_rmeshHierarchy
-  
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Name of the hierarchy
-    call cmdprs_getparam (Sargs,2,sname,.true.,.false.)
-    
-    ! Parse the options.
-    cmethod = 0 ! 2-level ordering
-    ilevels = 1
-    nullify(p_rboundary)
-    nullify(p_rtriangulation)
-  
-    i = 3
-    do 
-      if (i .gt. size(Sargs)) exit
-      
-      ! Get the next token.
-      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-      i = i+1
-      
-      if (stoken .eq. "--BOUNDARY") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          p_rboundary => collct_getvalue_bdry(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rboundary)
-            call output_line("Warning. Boundary object does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-      
-      else if (stoken .eq. "--MESH") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          p_rtriangulation => collct_getvalue_tria(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rboundary)
-            call output_line("Warning. Mesh object does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-      
-      else if (stoken .eq. "--LEVELS") then
-        if (i .le. size(Sargs)) then
-          ! Get the method type
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          ! Number of refinements
-          read (stoken,*) ilevels
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--METHOD") then
-        if (i .le. size(Sargs)) then
-          ! Get the method type
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          if (stoken .eq. "2LEVELORDERED") then
-            ! 2-level ordering
-            cmethod = 0
-          else
-            call output_line ("Warning: Unknown refinement method! Using default.")
-            cmethod = 0
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-      end if
-    end do
-    
-    if (.not. associated (p_rtriangulation)) then
-      call output_line ("Invalid triangulation!")
-      return
-    end if
-  
-    ! Create the hierarchy.
-    allocate(p_rmeshHierarchy)
-    
-    ! Create the hierarchy
-    select case (cmethod)
-    case (0)
-      ! 2-level ordered
-  
-      ! Boundary present?
-      if (associated(p_rboundary)) then
-        call output_line ("Creating mesh hierarchy... [1",bnolinebreak=.true.)
-        call mshh_initHierarchy (p_rmeshHierarchy,p_rtriangulation,0,ilevels,&
-            rboundary=p_rboundary)
-            
-        call mshh_refineHierarchy2lv (p_rmeshHierarchy,ilevels,&
-            rboundary=p_rboundary,bprint=.true.)
-      else
-        call output_line ("Warning: No boundary present!")
-        
-        call output_line ("Creating mesh hierarchy... [1",bnolinebreak=.true.)
-        call mshh_initHierarchy (p_rmeshHierarchy,p_rtriangulation,0,ilevels)
-
-        call mshh_refineHierarchy2lv (p_rmeshHierarchy,ilevels,bprint=.true.)
-      end if
-
-      call output_line ("]")
-    end select
-    
-    ! Remove old value from collection if present
-    call do_destroy(rcmdStatus,sname,.false.)
-    
-    ! Add to the collection
-    call collct_setvalue_mshh (rcmdStatus%rcollection, sname, p_rmeshHierarchy, .true.)
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-    subroutine fgetDiscr(rtriangulation,rdiscr,rboundary,rcollection)
-    
-    !<description>
-      ! Callback routine to set up a block discretisation.
-    !</description>
-    
-    !<input>
-      ! Triangulation structure
-      type(t_triangulation), intent(in) :: rtriangulation
-  
-      ! Definition of the boundary
-      type(t_boundary), intent(in), optional :: rboundary
-    
-      ! Collection structure with information about the discretisation
-      type(t_collection), intent(inout), optional :: rcollection
-    !</input>
-  
-    !<output>
-      ! Block discretisation structure
-      type(t_blockDiscretisation), intent(out) :: rdiscr
-    !</output>
-
-      ! local variables
-      integer :: i,nspaces
-      integer, dimension(:), allocatable :: p_IelementIdsTri
-      integer, dimension(:), allocatable :: p_IelementIdsQuad
-      integer, dimension(:), allocatable :: p_IcubIdsTri
-      integer, dimension(:), allocatable :: p_IcubIdsQuad
-
-      nspaces = rcollection%IquickAccess(1)
-      allocate(p_IelementIdsTri(nspaces))
-      allocate(p_IelementIdsQuad(nspaces))
-      allocate(p_IcubIdsTri(nspaces))
-      allocate(p_IcubIdsQuad(nspaces))
-      
-      call collct_getvalue_intarr (rcollection, "IelementIdsTri", p_IelementIdsTri)
-      call collct_getvalue_intarr (rcollection, "IelementIdsQuad", p_IelementIdsQuad)
-      call collct_getvalue_intarr (rcollection, "IcubIdsTri", p_IcubIdsTri)
-      call collct_getvalue_intarr (rcollection, "IcubIdsQuad", p_IcubIdsQuad)
-
-      select case (rtriangulation%ndim)
-      case (NDIM2D)
-        ! Create a block discretisation of the specific size.
-        call spdiscr_initBlockDiscr (rdiscr,nspaces,rtriangulation,rboundary)
-        
-        ! Create the sub-discretisation structures.
-        do i=1,nspaces
-          if (p_IelementIdsQuad(i) .eq. 0) then
-            ! Pure tri space
-            call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(i), &
-                INT(p_IelementIdsTri(i),I32),INT(p_IcubIdsTri(i),I32),rtriangulation, &
-                rboundary)
-                
-          else if (p_IelementIdsTri(i) .eq. 0) then
-            ! Pure quad space
-            call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(i), &
-                INT(p_IelementIdsQuad(i),I32),INT(p_IcubIdsQuad(i),I32),rtriangulation, &
-                rboundary)
-          else
-            ! Combined space
-            call spdiscr_initDiscr_triquad (rdiscr%RspatialDiscr(i), &
-                int(p_IelementIdsTri(i),I32), INT(p_IelementIdsQuad(i),I32),&
-                int(p_IcubIdsTri(i),I32), INT(p_IcubIdsQuad(i),I32),rtriangulation, &
-                rboundary)
-          end if
-        end do
-        
-      case default
-        call output_line("Error. Dimension not supported!")
-        call sys_halt()
-      end select
-
-    end subroutine
-
-  ! ***************************************************************************
-
-    subroutine prepare_fgetDiscr(rcollection,rcmdStatus,nspaces,&
-        IelementIdsTri,IelementIdsQuad,IcubIdsTri,IcubIdsQuad)
-    
-    !<description>
-      ! Prepares setting up a discretisation.
-      ! Must be called in advance to fgetDiscr.
-    !</description>
-    
-    !<input>
-      ! Number of components
-      integer, intent(in) :: nspaces
-    
-      ! List of element id's for tri/tetra elements
-      integer, dimension(:), intent(in), target :: IelementIdsTri
-
-      ! List of element id's for quad/hexa elements
-      integer, dimension(:), intent(in), target :: IelementIdsQuad
-
-      ! List of cubature id's for tri/tetra elements
-      integer, dimension(:), intent(in), target :: IcubIdsTri
-
-      ! List of cubature id's for quad/hexa elements
-      integer, dimension(:), intent(in), target :: IcubIdsQuad
-    !</input>
-    
-    !<inputoutput>
-      ! Current status block.
-      type(t_commandstatus), intent(inout), target :: rcmdStatus
-
-      ! Collection structure with information about the discretisation
-      type(t_collection), intent(inout), optional :: rcollection
-    !</inputoutput>
-
-      rcollection%p_rnextCollection => rcmdStatus%rcollection
-      
-      rcollection%IquickAccess(1) = nspaces
-      call collct_setvalue_intarr (rcollection, "IelementIdsTri", IelementIdsTri, .true.)
-      call collct_setvalue_intarr (rcollection, "IelementIdsQuad", IelementIdsQuad, .true.)
-      call collct_setvalue_intarr (rcollection, "IcubIdsTri", IcubIdsTri, .true.)
-      call collct_setvalue_intarr (rcollection, "IcubIdsQuad", IcubIdsQuad, .true.)
-      
-    end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_fespace (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: FESPACE.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    logical :: bexists
-    character(len=SYS_STRLEN) :: sname, stoken
-    integer :: cmethod, ilevels, ncomponents
-    integer :: i,j
-    type(t_boundary), pointer :: p_rboundary
-    type(t_triangulation), pointer :: p_rtriangulation
-    type(t_feSpaceLevel), pointer :: p_rfeSpace
-    type(t_feSpaceLevel), pointer :: p_rfeSpace1,p_rfeSpace2
-    type (t_collection) :: rcollection
-    integer, dimension(:), allocatable :: p_IelementIdsTri,p_IelementIdsQuad
-    integer, dimension(:), allocatable :: p_IcubIdsTri,p_IcubIdsQuad
-    
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Name of the hierarchy
-    call cmdprs_getparam (Sargs,2,sname,.true.,.false.)
-    
-    ! Parse the options.
-    cmethod = 0 ! 2-level ordering
-    ncomponents = 0
-    ilevels = 1
-    nullify(p_rboundary)
-    nullify(p_rtriangulation)
-    
-    ! For concatenation
-    nullify(p_rfeSpace1)
-    nullify(p_rfeSpace2)
-  
-    i = 3
-    do 
-      if (i .gt. size(Sargs)) exit
-      
-      ! Get the next token.
-      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-      i = i+1
-      
-      if (stoken .eq. "--BOUNDARY") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          p_rboundary => collct_getvalue_bdry(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rboundary)
-            call output_line("Warning. Boundary object does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-      
-      else if (stoken .eq. "--MESH") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          p_rtriangulation => collct_getvalue_tria(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rboundary)
-            call output_line("Warning. Mesh object does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--COMPONENTS") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          read (stoken,*) ncomponents
-          
-          if (ncomponents .le. 0) then
-            call output_line("Error. Number of components invalid!")
-            return
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--TRIELEMENTS") then
-        if (ncomponents .le. 0) then
-          call output_line("Error. Number of components undefined!")
-          return
-        end if
-        
-        if (i .le. size(Sargs)-ncomponents+1) then
-          ! Allocate memory for element types and read.
-          allocate (p_IelementIdsTri(ncomponents))
-          do j=1,ncomponents
-            call cmdprs_getparam (Sargs,i,stoken,.false.,.false.)
-            i = i+1
-            
-            ! Parse the Id.
-            p_IelementIdsTri(j) = elem_igetID(stoken,.true.)
-            if (p_IelementIdsTri(j) .eq. 0) then
-              call output_line("Error. Invalid element ID: "//trim(stoken))
-              return
-            end if
-
-            if (elem_igetDimension(p_IelementIdsTri(j)) .ne. NDIM2D) then
-              call output_line("Error. Not a 2D element: "//trim(stoken))
-              return
-            end if
-
-            if (elem_igetNVE(p_IelementIdsTri(j)) .ne. 3) then
-              call output_line("Error. Not a tri element: "//trim(stoken))
-              return
-            end if
-          end do
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--QUADELEMENTS") then
-        if (ncomponents .le. 0) then
-          call output_line("Error. Number of components undefined!")
-          return
-        end if
-        
-        if (i .le. size(Sargs)-ncomponents+1) then
-          ! Allocate memory for element types and read.
-          allocate (p_IelementIdsQuad(ncomponents))
-          do j=1,ncomponents
-            call cmdprs_getparam (Sargs,i,stoken,.false.,.false.)
-            i = i+1
-            
-            ! Parse the Id.
-            p_IelementIdsQuad(j) = elem_igetID(stoken,.true.)
-            if (p_IelementIdsQuad(j) .eq. 0) then
-              call output_line("Error. Invalid element ID: "//trim(stoken))
-              return
-            end if
-
-            if (elem_igetDimension(p_IelementIdsQuad(j)) .ne. NDIM2D) then
-              call output_line("Error. Not a 2D element: "//trim(stoken))
-              return
-            end if
-
-            if (elem_igetNVE(p_IelementIdsQuad(j)) .ne. 4) then
-              call output_line("Error. Not a quad element: "//trim(stoken))
-              return
-            end if
-          end do
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--TRICUB") then
-        if (ncomponents .le. 0) then
-          call output_line("Error. Number of components undefined!")
-          return
-        end if
-        
-        if (i .le. size(Sargs)-ncomponents+1) then
-          ! Allocate memory for element types and read.
-          allocate (p_IcubIdsTri(ncomponents))
-          do j=1,ncomponents
-            call cmdprs_getparam (Sargs,i,stoken,.false.,.false.)
-            i = i+1
-            
-            ! Parse the Id.
-            p_IcubIdsTri(j) = cub_igetID(stoken,.true.)
-            if (p_IelementIdsTri(j) .eq. 0) then
-              call output_line("Error. Invalid cubature ID: "//trim(stoken))
-              return
-            end if
-
-          end do
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--QUADCUB") then
-        if (ncomponents .le. 0) then
-          call output_line("Error. Number of components undefined!")
-          return
-        end if
-        
-        if (i .le. size(Sargs)-ncomponents+1) then
-          ! Allocate memory for element types and read.
-          allocate (p_IcubIdsQuad(ncomponents))
-          do j=1,ncomponents
-            call cmdprs_getparam (Sargs,i,stoken,.false.,.false.)
-            i = i+1
-            
-            ! Parse the Id.
-            p_IcubIdsQuad(j) = cub_igetID(stoken,.true.)
-            if (p_IelementIdsQuad(j) .eq. 0) then
-              call output_line("Error. Invalid cubature ID: "//trim(stoken))
-              return
-            end if
-
-          end do
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--CONCAT") then
-        if (i .lt. size(Sargs)-1) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          if (stoken .eq. sname) then
-            call output_line("Error. Destination variable must be different from source!")
-            return
-          end if
-
-          p_rfeSpace1 => collct_getvalue_fesp(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            call output_line("Error. 1st source FE space does not exist.")
-            return
-          end if
-
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          if (stoken .eq. sname) then
-            call output_line("Error. Destination variable must be different from source!")
-            return
-          end if
-
-          p_rfeSpace2 => collct_getvalue_fesp(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            call output_line("Error. 2nd source FE space does not exist.")
-            return
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      end if      
-
-    end do
-    
-    if (.not. associated (p_rtriangulation)) then
-      call output_line ("Invalid triangulation!")
-      return
-    end if
-  
-    ! Create the fe space.
-    allocate(p_rfeSpace)
-    
-    if (associated (p_rfeSpace1)) then
-      ! Concat two predefined FE spaces.
-      call fesph_concatFeSpaces (p_rfeSpace1,p_rfeSpace2,p_rfeSpace,p_rtriangulation)
-    else
-      if ((.not. allocated(p_IelementIdsTri)) .and. &
-          (.not. allocated(p_IelementIdsQuad))) then
-        call output_line("Error. No element ID's specified!")
-        return
-      end if
-    
-      ! Create missing id arrays.
-      if (.not. allocated(p_IelementIdsTri)) then
-        allocate(p_IelementIdsTri(ncomponents))
-        p_IelementIdsTri(:) = 0
-      end if
-      
-      if (.not. allocated(p_IelementIdsQuad)) then
-        allocate(p_IelementIdsQuad(ncomponents))
-        p_IelementIdsQuad(:) = 0
-      end if
-    
-      if (.not. allocated(p_IcubIdsTri)) then
-        allocate(p_IcubIdsTri(ncomponents))
-        p_IcubIdsTri(:) = 0
-      end if
-
-      ! Probably take the standard cubature formula.      
-      where ((p_IcubIdsTri .eq. 0) .and. (p_IelementIdsTri .ne. 0)) 
-        p_IcubIdsTri = spdiscr_getStdCubature(int(p_IelementIdsTri,I32))
-      end where
-
-      ! Probably take the standard cubature formula.      
-      where ((p_IcubIdsQuad .eq. 0) .and. (p_IelementIdsQuad .ne. 0)) 
-        p_IcubIdsQuad = spdiscr_getStdCubature(int(p_IelementIdsQuad,I32))
-      end where
-    
-      if (.not. allocated(p_IcubIdsQuad)) then
-        allocate(p_IcubIdsQuad(ncomponents))
-        p_IcubIdsQuad(:) = 0
-      end if
-    
-      ! Create the FE space usinf fgetDiscr.
-      call collct_init (rcollection)
-      call prepare_fgetDiscr(rcollection,rcmdStatus,ncomponents,&
-          p_IelementIdsTri,p_IelementIdsQuad,p_IcubIdsTri,p_IcubIdsQuad)
-      if (associated(p_rboundary)) then
-        call fesph_createFEspace (p_rfeSpace,1,&
-            p_rtriangulation,1,fgetDiscr,rcollection,rboundary=p_rboundary)
-      else
-        call output_line ("Warning: No boundary present!")
-        
-        call fesph_createFEspace (p_rfeSpace,1,&
-            p_rtriangulation,1,fgetDiscr,rcollection)
-      end if
-      call collct_done (rcollection)
-    end if
-    
-    ! Remove old value from collection if present
-    call do_destroy(rcmdStatus,sname,.false.)
-    
-    ! Add to the collection
-    call collct_setvalue_fesp (rcmdStatus%rcollection, sname, p_rfeSpace, .true.)
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_fehierarchy (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: FEHIERARCHY.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    logical :: bexists
-    character(len=SYS_STRLEN) :: sname, stoken
-    integer :: cmethod, ilevels, ncomponents
-    integer :: i,j
-    type(t_boundary), pointer :: p_rboundary
-    type(t_meshhierarchy), pointer :: p_rmeshhierarchy
-    type(t_feHierarchy), pointer :: p_rfeHierarchy
-    type (t_collection) :: rcollection
-    integer, dimension(:), allocatable :: p_IelementIdsTri,p_IelementIdsQuad
-    integer, dimension(:), allocatable :: p_IcubIdsTri,p_IcubIdsQuad
-    
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Name of the hierarchy
-    call cmdprs_getparam (Sargs,2,sname,.true.,.false.)
-    
-    ! Parse the options.
-    cmethod = 0 ! 2-level ordering
-    ncomponents = 0
-    ilevels = 1
-    nullify(p_rboundary)
-    nullify(p_rmeshhierarchy)
-    
-    i = 3
-    do 
-      if (i .gt. size(Sargs)) exit
-      
-      ! Get the next token.
-      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-      i = i+1
-      
-      if (stoken .eq. "--BOUNDARY") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          p_rboundary => collct_getvalue_bdry(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rboundary)
-            call output_line("Warning. Boundary object does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-      
-      else if (stoken .eq. "--MESHHIERARCHY") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          p_rmeshhierarchy => collct_getvalue_mshh(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rboundary)
-            call output_line("Warning. Mesh hierarchy object does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--COMPONENTS") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          read (stoken,*) ncomponents
-          
-          if (ncomponents .le. 0) then
-            call output_line("Error. Number of components invalid!")
-            return
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--TRIELEMENTS") then
-        if (ncomponents .le. 0) then
-          call output_line("Error. Number of components undefined!")
-          return
-        end if
-        
-        if (i .le. size(Sargs)-ncomponents+1) then
-          ! Allocate memory for element types and read.
-          allocate (p_IelementIdsTri(ncomponents))
-          do j=1,ncomponents
-            call cmdprs_getparam (Sargs,i,stoken,.false.,.false.)
-            i = i+1
-            
-            ! Parse the Id.
-            p_IelementIdsTri(j) = elem_igetID(stoken,.true.)
-            if (p_IelementIdsTri(j) .eq. 0) then
-              call output_line("Error. Invalid element ID: "//trim(stoken))
-              return
-            end if
-
-            if (elem_igetDimension(p_IelementIdsTri(j)) .ne. NDIM2D) then
-              call output_line("Error. Not a 2D element: "//trim(stoken))
-              return
-            end if
-
-            if (elem_igetNVE(p_IelementIdsTri(j)) .ne. 3) then
-              call output_line("Error. Not a tri element: "//trim(stoken))
-              return
-            end if
-          end do
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--QUADELEMENTS") then
-        if (ncomponents .le. 0) then
-          call output_line("Error. Number of components undefined!")
-          return
-        end if
-        
-        if (i .le. size(Sargs)-ncomponents+1) then
-          ! Allocate memory for element types and read.
-          allocate (p_IelementIdsQuad(ncomponents))
-          do j=1,ncomponents
-            call cmdprs_getparam (Sargs,i,stoken,.false.,.false.)
-            i = i+1
-            
-            ! Parse the Id.
-            p_IelementIdsQuad(j) = elem_igetID(stoken,.true.)
-            if (p_IelementIdsQuad(j) .eq. 0) then
-              call output_line("Error. Invalid element ID: "//trim(stoken))
-              return
-            end if
-
-            if (elem_igetDimension(p_IelementIdsQuad(j)) .ne. NDIM2D) then
-              call output_line("Error. Not a 2D element: "//trim(stoken))
-              return
-            end if
-
-            if (elem_igetNVE(p_IelementIdsQuad(j)) .ne. 4) then
-              call output_line("Error. Not a quad element: "//trim(stoken))
-              return
-            end if
-          end do
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--TRICUB") then
-        if (ncomponents .le. 0) then
-          call output_line("Error. Number of components undefined!")
-          return
-        end if
-        
-        if (i .le. size(Sargs)-ncomponents+1) then
-          ! Allocate memory for element types and read.
-          allocate (p_IcubIdsTri(ncomponents))
-          do j=1,ncomponents
-            call cmdprs_getparam (Sargs,i,stoken,.false.,.false.)
-            i = i+1
-            
-            ! Parse the Id.
-            p_IcubIdsTri(j) = cub_igetID(stoken,.true.)
-            if (p_IelementIdsTri(j) .eq. 0) then
-              call output_line("Error. Invalid cubature ID: "//trim(stoken))
-              return
-            end if
-
-          end do
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--QUADCUB") then
-        if (ncomponents .le. 0) then
-          call output_line("Error. Number of components undefined!")
-          return
-        end if
-        
-        if (i .le. size(Sargs)-ncomponents+1) then
-          ! Allocate memory for element types and read.
-          allocate (p_IcubIdsQuad(ncomponents))
-          do j=1,ncomponents
-            call cmdprs_getparam (Sargs,i,stoken,.false.,.false.)
-            i = i+1
-            
-            ! Parse the Id.
-            p_IcubIdsQuad(j) = cub_igetID(stoken,.true.)
-            if (p_IelementIdsQuad(j) .eq. 0) then
-              call output_line("Error. Invalid cubature ID: "//trim(stoken))
-              return
-            end if
-
-          end do
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      end if      
-
-    end do
-    
-    if (.not. associated (p_rmeshhierarchy)) then
-      call output_line ("Invalid mesh hierarchy!")
-      return
-    end if
-  
-    ! Create the fe space.
-    allocate(p_rfeHierarchy)
-    
-    if ((.not. allocated(p_IelementIdsTri)) .and. &
-        (.not. allocated(p_IelementIdsQuad))) then
-      call output_line("Error. No element ID's specified!")
-      return
-    end if
-  
-    ! Create missing id arrays.
-    if (.not. allocated(p_IelementIdsTri)) then
-      allocate(p_IelementIdsTri(ncomponents))
-      p_IelementIdsTri(:) = 0
-    end if
-    
-    if (.not. allocated(p_IelementIdsQuad)) then
-      allocate(p_IelementIdsQuad(ncomponents))
-      p_IelementIdsQuad(:) = 0
-    end if
-  
-    if (.not. allocated(p_IcubIdsTri)) then
-      allocate(p_IcubIdsTri(ncomponents))
-      p_IcubIdsTri(:) = 0
-    end if
-
-    ! Probably take the standard cubature formula.      
-    where ((p_IcubIdsTri .eq. 0) .and. (p_IelementIdsTri .ne. 0)) 
-      p_IcubIdsTri = spdiscr_getStdCubature(int(p_IelementIdsTri,I32))
-    end where
-
-    ! Probably take the standard cubature formula.      
-    where ((p_IcubIdsQuad .eq. 0) .and. (p_IelementIdsQuad .ne. 0)) 
-      p_IcubIdsQuad = spdiscr_getStdCubature(int(p_IelementIdsQuad,I32))
-    end where
-  
-    if (.not. allocated(p_IcubIdsQuad)) then
-      allocate(p_IcubIdsQuad(ncomponents))
-      p_IcubIdsQuad(:) = 0
-    end if
-  
-    call output_line ("Creating FE hierarchy.")
-  
-    ! Create the FE space usinf fgetDiscr.
-    call collct_init (rcollection)
-    call prepare_fgetDiscr(rcollection,rcmdStatus,ncomponents,&
-        p_IelementIdsTri,p_IelementIdsQuad,p_IcubIdsTri,p_IcubIdsQuad)
-    if (associated(p_rboundary)) then
-      call fesph_createHierarchy (p_rfeHierarchy,p_rmeshHierarchy%nlevels,&
-          p_rmeshHierarchy,fgetDiscr,rcollection,rboundary=p_rboundary)
-    else
-      call output_line ("Warning: No boundary present!")
-      
-      call fesph_createHierarchy (p_rfeHierarchy,p_rmeshHierarchy%nlevels,&
-          p_rmeshHierarchy,fgetDiscr,rcollection)
-    end if
-    call collct_done (rcollection)
-    
-    ! Remove old value from collection if present
-    call do_destroy(rcmdStatus,sname,.false.)
-    
-    ! Add to the collection
-    call collct_setvalue_feh (rcmdStatus%rcollection, sname, p_rfeHierarchy, .true.)
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_mlevelprjhierarchy (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: MLEVELPRJHIERARCHY.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    logical :: bexists
-    character(len=SYS_STRLEN) :: sname, stoken
-    integer :: i
-    type(t_feHierarchy), pointer :: p_rfeHierarchy
-    type(t_interlevelProjectionHier), pointer :: p_rprjHier
-    
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Name of the hierarchy
-    call cmdprs_getparam (Sargs,2,sname,.true.,.false.)
-    
-    ! Parse the options.
-    nullify(p_rfeHierarchy)
-    
-    i = 3
-    do 
-      if (i .gt. size(Sargs)) exit
-      
-      ! Get the next token.
-      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-      i = i+1
-      
-      if (stoken .eq. "--FEHIERARCHY") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          p_rfeHierarchy => collct_getvalue_feh(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rfeHierarchy)
-            call output_line("Warning. FE hierarchy object does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      end if      
-
-    end do
-    
-    if (.not. associated (p_rfeHierarchy)) then
-      call output_line ("Invalid mesh hierarchy!")
-      return
-    end if
-  
-    ! Create the fe space.
-    allocate(p_rprjHier)
-    
-    call output_line ("Creating multilevel projection hierarchy.")
-  
-    ! Create the FE space usinf fgetDiscr.
-    call mlprj_initPrjHierarchy(p_rprjHier,1,p_rfeHierarchy%nlevels)
-    do i = 1,p_rfeHierarchy%nlevels
-      call mlprj_initPrjHierarchyLevel(p_rprjHier,i,&
-          p_rfeHierarchy%p_rfeSpaces(i)%p_rdiscretisation)
-    end do
-    call mlprj_commitPrjHierarchy (p_rprjHier)
-
-    ! Remove old value from collection if present
-    call do_destroy(rcmdStatus,sname,.false.)
-    
-    ! Add to the collection
-    call collct_setvalue_mlprjh (rcmdStatus%rcollection, sname, p_rprjHier, .true.)
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_createblockvector (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: READBLOCKVECTOR.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    logical :: bexists
-    character(len=SYS_STRLEN) :: sname, stoken, sfilename
-    integer :: i,ilevel
-    type(t_feHierarchy), pointer :: p_rfeHierarchy
-    type(t_vectorBlock), pointer :: p_rvectorBlock
-    logical :: bformatted
-    
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Name of the hierarchy
-    call cmdprs_getparam (Sargs,2,sname,.true.,.false.)
-    
-    ! Parse the options.
-    ilevel = 0
-    nullify(p_rfeHierarchy)
-    bformatted = .true.
-    
-    i = 3
-    do 
-      if (i .gt. size(Sargs)) exit
-      
-      ! Get the next token.
-      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-      i = i+1
-      
-      if (stoken .eq. "--FEHIERARCHY") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          p_rfeHierarchy => collct_getvalue_feh(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rfeHierarchy)
-            call output_line("Warning. FE hierarchy object does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--LEVEL") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          read (stoken,*) ilevel
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      end if      
-
-    end do
-    
-    if (.not. associated (p_rfeHierarchy)) then
-      call output_line ("Invalid mesh hierarchy!")
-      return
-    end if
-    
-    if (ilevel .eq. 0) ilevel = p_rfeHierarchy%nlevels
-  
-    inquire(file=trim(sfilename), exist=bexists)
-    
-    call output_line ("Creating block vector.")
-
-    ! Create the vector.
-    allocate(p_rvectorBlock)
-    call lsysbl_createVectorBlock (p_rfeHierarchy%p_rfeSpaces(ilevel)%p_rdiscretisation,&
-        p_rvectorBlock,.true.)
-
-    ! Remove old value from collection if present
-    call do_destroy(rcmdStatus,sname,.false.)
-    
-    ! Add to the collection
-    call collct_setvalue_vec (rcmdStatus%rcollection, sname, p_rvectorBlock, .true.)
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_readblockvector (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: READBLOCKVECTOR.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    logical :: bexists
-    character(len=SYS_STRLEN) :: sname, stoken, sfilename
-    integer :: i,ilevel
-    type(t_feHierarchy), pointer :: p_rfeHierarchy
-    type(t_vectorBlock), pointer :: p_rvectorBlock
-    logical :: bformatted
-    
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Name of the hierarchy
-    call cmdprs_getparam (Sargs,2,sname,.true.,.false.)
-    
-    ! Parse the options.
-    ilevel = 1
-    nullify(p_rfeHierarchy)
-    bformatted = .true.
-    
-    i = 3
-    do 
-      if (i .gt. size(Sargs)) exit
-      
-      ! Get the next token.
-      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-      i = i+1
-      
-      if (stoken .eq. "--FILENAME") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          sfilename = trim(stoken)
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--UNFORMATTED") then
-
-        bformatted = .false.
-
-      end if      
-
-    end do
-    
-    if (sfilename .eq. "") then
-      call output_line ("Invalid filename!")
-      return
-    end if
-
-    inquire(file=trim(sfilename), exist=bexists)
-    
-    if (.not. bexists) then
-      call output_line ("File not found!")
-    end if
-    
-    p_rvectorBlock => collct_getvalue_vec (rcmdStatus%rcollection, sname)
-    if (.not. associated(p_rvectorBlock)) then
-      call output_line ("Invalid vector!")
-      return
-    end if
-    
-    call output_line ("Reading vector: "//trim(sfilename))
-
-    ! Create the vector.
-    call vecio_readBlockVectorHR (p_rvectorBlock, stoken, .true.,&
-        0, sfilename, bformatted)
-
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_writeblockvector (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: WRITEBLOCKVECTOR.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    character(len=SYS_STRLEN) :: sname, stoken, sfilename, sformat
-    integer :: i,ilevel
-    type(t_feHierarchy), pointer :: p_rfeHierarchy
-    type(t_vectorBlock), pointer :: p_rvectorBlock
-    logical :: bformatted
-    
-    if (size(Sargs) .lt. 2) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Name of the hierarchy
-    call cmdprs_getparam (Sargs,2,sname,.true.,.false.)
-    
-    ! Parse the options.
-    ilevel = 1
-    nullify(p_rfeHierarchy)
-    bformatted = .true.
-    sformat = "(E20.10)"
-    
-    i = 3
-    do 
-      if (i .gt. size(Sargs)) exit
-      
-      ! Get the next token.
-      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-      i = i+1
-      
-      if (stoken .eq. "--FILENAME") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          sfilename = trim(stoken)
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--UNFORMATTED") then
-
-        bformatted = .false.
-
-      else if (stoken .eq. "--FORMAT") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          sformat = "("//trim(adjustl(stoken))//")"
-          
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      end if      
-
-    end do
-    
-    if (sfilename .eq. "") then
-      call output_line ("Invalid filename!")
-      return
-    end if
-    
-    p_rvectorBlock => collct_getvalue_vec (rcmdStatus%rcollection, sname)
-    if (.not. associated(p_rvectorBlock)) then
-      call output_line ("Invalid vector!")
-      return
-    end if
-    
-    call output_line ("Writing vector: "//trim(sfilename))
-    
-    if (bformatted) then
-      call vecio_writeBlockVectorHR (p_rvectorBlock, "vector", .true.,&
-          0, sfilename, sformat)
-    else
-      call vecio_writeBlockVectorHR (p_rvectorBlock, "vector", .true.,&
-          0, sfilename)
-    end if
-
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_copyvector (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: WRITEBLOCKVECTOR.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    type(t_vectorBlock), pointer :: p_rvectorBlock1,p_rvectorBlock2
-    character(len=SYS_STRLEN) :: ssourceall, sdestall, ssource, sdest
-    integer, dimension(:), pointer :: p_IdxSource,p_IdxDest
-    logical :: bsourcescalar, bdestscalar
-    integer :: icomp1, icomp2
-    
-    if (size(Sargs) .lt. 3) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Source and destination vector
-    call cmdprs_getparam (Sargs,2,ssourceall,.true.,.false.)
-    call cmdprs_getparam (Sargs,3,sdestall,.true.,.false.)
-    
-    ! Vector name and components
-    call cmdprs_parseIndexString1D (ssourceall,ssource,p_IdxSource)
-    call cmdprs_parseIndexString1D (sdestall,sdest,p_IdxDest)
-    
-    bsourcescalar = associated(p_IdxSource)
-    bdestscalar = associated(p_IdxDest)
-    if (bsourcescalar .neqv. bdestscalar) then
-      if (bsourcescalar) deallocate(p_IdxSource)
-      if (bdestscalar) deallocate(p_IdxDest)
-      call output_line ("Both vectors must be block or scalar")
-      return
-    end if
-
-    p_rvectorBlock1 => collct_getvalue_vec (rcmdStatus%rcollection, ssource)
-    if (.not. associated(p_rvectorBlock1)) then
-      if (bsourcescalar) deallocate(p_IdxSource)
-      if (bdestscalar) deallocate(p_IdxDest)
-      call output_line ("Invalid source vector!")
-      return
-    end if
-    
-    p_rvectorBlock2 => collct_getvalue_vec (rcmdStatus%rcollection, sdest)
-    if (.not. associated(p_rvectorBlock2)) then
-      if (bsourcescalar) deallocate(p_IdxSource)
-      if (bdestscalar) deallocate(p_IdxDest)
-      call output_line ("Invalid destination vector!")
-      return
-    end if
-
-    if (.not. bsourcescalar) then
-      ! Block copy
-      call lsysbl_copyVector (p_rvectorBlock1,p_rvectorBlock2)
-    else
-      if ((ubound(p_IdxSource,1) .ne. 1) .or. (ubound(p_IdxDest,1) .ne. 1)) then
-        deallocate(p_IdxSource)
-        deallocate(p_IdxDest)
-        call output_line ("Only one component allowed!")
-        return
-      end if
-      
-      icomp1 = p_IdxSource(1)
-      icomp2 = p_IdxDest(1)
-    
-      if ((icomp1 .lt. 1) .or. (icomp1 .gt. p_rvectorBlock1%nblocks)) then
-        deallocate(p_IdxSource)
-        deallocate(p_IdxDest)
-        call output_line ("Invalid source component!")
-        return
-      end if
-
-      if ((icomp2 .lt. 1) .or. (icomp2 .gt. p_rvectorBlock1%nblocks)) then
-        deallocate(p_IdxSource)
-        deallocate(p_IdxDest)
-        call output_line ("Invalid destination component!")
-        return
-      end if
-      
-      call lsyssc_copyVector (p_rvectorBlock1%RvectorBlock(icomp1),&
-          p_rvectorBlock2%RvectorBlock(icomp2))
-
-      deallocate(p_IdxSource)
-      deallocate(p_IdxDest)
-    end if
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_interpolatevector (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: INTERPOLATEVECTOR.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    logical :: bexists
-    type(t_vectorBlock), pointer :: p_rvectorBlock1,p_rvectorBlock2
-    character(len=COLLCT_MLNAME) :: ssource, sdest, stoken
-    type(t_interlevelProjectionHier), pointer :: p_rprjHier
-    type(t_feHierarchy), pointer :: p_rfeHierarchy
-    integer :: i,isource,idest
-    type(t_vectorBlock), pointer :: p_rtemp1,p_rtemp2
-    
-    if (size(Sargs) .lt. 6) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Source vector and component
-    call cmdprs_getparam (Sargs,2,ssource,.true.,.false.)
-    call cmdprs_getparam (Sargs,3,stoken,.true.,.false.)
-    read (stoken,*) isource
-    
-    ! Destination
-    call cmdprs_getparam (Sargs,4,sdest,.true.,.false.)
-    call cmdprs_getparam (Sargs,5,stoken,.true.,.false.)
-    read (stoken,*) idest
-
-    p_rvectorBlock1 => collct_getvalue_vec (rcmdStatus%rcollection, ssource)
-    if (.not. associated(p_rvectorBlock1)) then
-      call output_line ("Invalid source vector!")
-      return
-    end if
-
-    p_rvectorBlock2 => collct_getvalue_vec (rcmdStatus%rcollection, sdest)
-    if (.not. associated(p_rvectorBlock2)) then
-      call output_line ("Invalid destination vector!")
-      return
-    end if
-
-    nullify(p_rfeHierarchy)
-    nullify(p_rprjHier)
-
-    i = 5
-    do 
-      if (i .gt. size(Sargs)) exit
-      
-      ! Get the next token.
-      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-      i = i+1
-      
-      if (stoken .eq. "--MLPRJHIERARCHY") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-
-          p_rprjHier => collct_getvalue_mlprjh(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rprjHier)
-            call output_line("Warning. Multilevel projection hierarchy does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      else if (stoken .eq. "--FEHIERARCHY") then
-        if (i .le. size(Sargs)) then
-          ! Get the name of the attached boundary object -- and the object
-          call cmdprs_getparam (Sargs,i,stoken,.false.,.true.)
-          i = i+1
-          
-          p_rfeHierarchy => collct_getvalue_feh(rcmdStatus%rcollection,stoken,bexists=bexists)
-          if (.not. bexists) then
-            nullify(p_rfeHierarchy)
-            call output_line("Warning. FE hierarchy object does not exist!")
-          end if
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-
-      end if      
-
-    end do
-    
-    if (.not. associated (p_rprjHier)) then
-      call output_line ("Invalid multilevel projection hierarchy!")
-      return
-    end if
-    
-    if ((isource .lt. p_rprjHier%nlmin) .or. (isource .gt. p_rprjHier%nlmax)) then
-      call output_line ("Invalid source level!")
-      return
-    end if
-    
-    if ((idest .lt. p_rprjHier%nlmin) .or. (idest .gt. p_rprjHier%nlmax)) then
-      call output_line ("Invalid destination level!")
-      return
-    end if
-    
-    ! Go either up or down - or copy.
-    if (isource .eq. idest) then
-    
-      call lsysbl_copyVector (p_rvectorBlock1,p_rvectorBlock2)
-      
-    else if (isource .lt. idest) then
-    
-      if (isource .eq. idest-1) then
-      
-        ! One prolongation
-        p_rtemp1 => p_rvectorBlock1
-      
-      else
-      
-        if (.not. associated (p_rfeHierarchy)) then
-          call output_line ("Invalid FE hierarchy!")
-          return
-        end if
-      
-        ! Multiple prolongations
-        allocate (p_rtemp1)
-        call lsysbl_createVectorBlock (p_rvectorBlock1,p_rtemp1,.false.)
-        call lsysbl_copyVector (p_rvectorBlock1,p_rtemp1)
-        
-        ! Create the temp vectors using the FE hierarchy.
-        do i=isource+1,idest-1
-          allocate (p_rtemp2)
-          call lsysbl_createVectorBlock (p_rfeHierarchy%p_rfeSpaces(i)%p_rdiscretisation,&
-              p_rtemp2,.false.)
-          call mlprj_performProlongationHier (p_rprjHier,&
-              i,p_rtemp1,p_rtemp2)
-          call lsysbl_releaseVector (p_rtemp1)
-          deallocate (p_rtemp1)
-          p_rtemp1 => p_rtemp2
-        end do
-      end if
-
-      ! Final prolongation
-      call mlprj_performProlongationHier (p_rprjHier,&
-          idest,p_rtemp1,p_rvectorBlock2)
-          
-      if (isource .eq. idest-1) then
-        ! Cleanup
-        call lsysbl_releaseVector (p_rtemp1)
-        deallocate(p_rtemp1)
-      end if
-    
-    else
-      ! Interpolation. NOT RESTRICTION!!!
-    
-      if (isource-1 .eq. idest) then
-      
-        ! One prolongation
-        p_rtemp1 => p_rvectorBlock1
-      
-      else
-      
-        if (.not. associated (p_rfeHierarchy)) then
-          call output_line ("Invalid FE hierarchy!")
-          return
-        end if
-        
-        ! Multiple interpolations
-        allocate (p_rtemp1)
-        call lsysbl_createVectorBlock (p_rvectorBlock1,p_rtemp1,.false.)
-        call lsysbl_copyVector (p_rvectorBlock1,p_rtemp1)
-        
-        ! Create the temp vectors using the FE hierarchy.
-        do i=idest-1,isource+1,-1
-          allocate (p_rtemp2)
-          call lsysbl_createVectorBlock (p_rfeHierarchy%p_rfeSpaces(i)%p_rdiscretisation,&
-              p_rtemp2,.false.)
-          call mlprj_performInterpolationHier (p_rprjHier,&
-              i+1,p_rtemp2,p_rtemp1)
-          call lsysbl_releaseVector (p_rtemp1)
-          deallocate (p_rtemp1)
-          p_rtemp1 => p_rtemp2
-        end do
-      end if
-
-      ! Final interpolation
-      call mlprj_performInterpolationHier (p_rprjHier,&
-          idest+1,p_rvectorBlock2,p_rtemp1)
-          
-      if (isource-1 .eq. idest) then
-        ! Cleanup
-        call lsysbl_releaseVector (p_rtemp1)
-        deallocate(p_rtemp1)
-      end if
-      
-    end if
-
-  end subroutine
-
-  ! ***************************************************************************
-
-    subroutine fcoeff_analytPrj (rdiscretisation, rform, &
-                  nelements, npointsPerElement, Dpoints, &
-                  IdofsTest, rdomainIntSubset, &
-                  Dcoefficients, rcollection)
-    
-    ! Returns values of an FE function in cubature points.
-    
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    type(t_linearForm), intent(in) :: rform
-    integer, intent(in) :: nelements
-    integer, intent(in) :: npointsPerElement
-    real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    integer, dimension(:,:), intent(in) :: IdofsTest
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset    
-    type(t_collection), intent(inout), optional :: rcollection
-    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-
-      ! local variables
-      integer :: icomponent
-      type(t_vectorBlock), pointer :: p_rvectorBlock
-      
-      ! Get the component and the FE function
-      p_rvectorBlock => rcollection%p_rvectorQuickAccess1
-      icomponent = rcollection%IquickAccess(1)
-
-      ! Evaluate the FE function      
-      call fevl_evaluate_sim (p_rvectorBlock%RvectorBlock(icomponent), &
-          rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-  
-    end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_l2projection (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: INTERPOLATEVECTOR.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    type(t_vectorBlock), pointer :: p_rvectorBlock1,p_rvectorBlock2
-    character(len=COLLCT_MLNAME) :: ssource, sdest, stoken
-    type(t_matrixScalar) :: rmatrixMass
-    integer :: i
-    logical :: bverbose
-    type(t_collection) :: rcollection
-    type(t_configL2ProjectionByMass) :: rL2ProjectionConfig
-    
-    if (size(Sargs) .lt. 3) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Source vector and destination
-    call cmdprs_getparam (Sargs,2,ssource,.true.,.false.)
-    call cmdprs_getparam (Sargs,3,sdest,.true.,.false.)
-
-    p_rvectorBlock1 => collct_getvalue_vec (rcmdStatus%rcollection, ssource)
-    if (.not. associated(p_rvectorBlock1)) then
-      call output_line ("Invalid source vector!")
-      return
-    end if
-
-    p_rvectorBlock2 => collct_getvalue_vec (rcmdStatus%rcollection, sdest)
-    if (.not. associated(p_rvectorBlock2)) then
-      call output_line ("Invalid destination vector!")
-      return
-    end if
-
-    i = 4
-    do 
-      if (i .gt. size(Sargs)) exit
-      
-      ! Get the next token.
-      call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-      i = i+1
-      
-      if (stoken .eq. "--VERBOSE") then
-        bverbose = .true.
-      end if      
-
-      if (stoken .eq. "--RELERROR") then
-        if (i .le. size(Sargs)) then
-          call cmdprs_getparam (Sargs,i,stoken,.true.,.false.)
-          i = i+1
-          read (stoken,*) rL2ProjectionConfig%depsrel
-        else
-          call output_line("Error. Invalid parameters!")
-          return
-        end if
-      end if      
-
-    end do
-
-    ! Clear the destination
-    call lsysbl_clearVector (p_rvectorBlock2)
-
-    ! Loop through the components
-    do i=1,min(p_rvectorBlock1%nblocks,p_rvectorBlock2%nblocks)
-      if (bverbose) then
-        call output_lbrk ()
-        call output_line ("Component : "//trim(sys_siL(i,10)))
-        call output_line ("Creating mass matrix - structure...")
-      end if
-
-      ! Create a mass matrix in that space
-      call bilf_createMatrixStructure (p_rvectorBlock2%p_rblockDiscr%RspatialDiscr(i),&
-          LSYSSC_MATRIX9,rmatrixMass)
-
-      if (bverbose) then
-        call output_line ("Creating mass matrix - content...")
-      end if
-
-      call stdop_assembleSimpleMatrix (rmatrixMass,DER_FUNC,DER_FUNC,1.0_DP,.true.)
-      
-      if (bverbose) then
-        call output_line ("Projecting...")
-      end if
-
-      ! Do the L2 projection
-      rcollection%p_rvectorQuickAccess1 => p_rvectorBlock1
-      rcollection%IquickAccess(1) = i
-      call anprj_analytL2projectionByMass (p_rvectorBlock2%RvectorBlock(i), rmatrixMass,&
-          fcoeff_analytPrj, rcollection, rL2ProjectionConfig)
-
-      if (bverbose) then
-        call output_line ("Rel. error: "//trim(sys_sdEL(rL2ProjectionConfig%drelError,10)))
-        call output_line ("Abs. error: "//trim(sys_sdEL(rL2ProjectionConfig%dabsError,10)))
-        call output_line ("Iteraions : "//trim(sys_siL(rL2ProjectionConfig%iiterations,10)))
-      end if
-          
-      ! Release the mass matrix
-      call lsyssc_releaseMatrix (rmatrixMass)
-    end do
-
-  end subroutine
-
-  ! ***************************************************************************
-
-  subroutine cmdprs_do_writeucd (rcmdStatus,Sargs)
-  
-  !<description>
-    ! Command: WRITEUCD.
-  !</description>
-  
-  !<inputoutput>
-    ! Current status block.
-    type(t_commandstatus), intent(inout) :: rcmdStatus
-  !</inputoutput>
-
-  !<input>
-    ! Command line arguments.
-    type(VARYING_STRING), dimension(:), intent(in) :: Sargs
-  !</input>
-  
-    ! local variables
-    character(len=SYS_STRLEN) :: sfilename,smesh,stype,stoken,svecname,sname
-    type(t_triangulation), pointer :: p_rtriangulation
-    type(t_vectorBlock), pointer :: p_rvectorBlock
-    integer, dimension(:), pointer :: p_IdxVec
-    real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
-    type(t_meshHierarchy), pointer :: p_rmeshHierarchy
-    type(t_ucdExport) :: rexport
-    integer :: iparam
-    logical :: bexists
-    
-    if (size(Sargs) .lt. 4) then
-      call output_line ("Not enough arguments.")
-      return
-    end if
-    
-    ! Source vector and destination
-    call cmdprs_getparam (Sargs,2,sfilename,.false.,.true.)
-    call cmdprs_getparam (Sargs,3,stoken,.true.,.false.)
-    call cmdprs_getparam (Sargs,4,stype,.true.,.false.)
-
-    ! Get the mesh. Probably an index in a mesh hierarchy.
-    call cmdprs_parseIndexString1D (stoken,smesh,p_IdxVec)
-    if (.not. associated (p_IdxVec)) then
-      p_rtriangulation => collct_getvalue_tria(rcmdStatus%rcollection,smesh,bexists=bexists)
-      if (.not. bexists) then
-        call output_line ("Unknown variable!")
-        return
-      end if
-    else
-      ! A mesh in a hierarchy.
-      p_rmeshHierarchy => collct_getvalue_mshh(rcmdStatus%rcollection,smesh,bexists=bexists)
-      if (.not. bexists) then
-        deallocate(p_IdxVec)
-        call output_line ("Unknown variable!")
-        return
-      end if
-      
-      if ((p_IdxVec(1) .lt. 1) .or. (p_IdxVec(1) .gt. p_rmeshHierarchy%nlevels)) then
-        deallocate(p_IdxVec)
-        call output_line ("Invalid mesh level!")
-        return
-      end if
-      
-      ! Get the mesh
-      p_rtriangulation => p_rmeshHierarchy%p_Rtriangulations(p_IdxVec(1))
-      deallocate(p_IdxVec)
-    end if
-    
-    ! Open the UCD file.
-    if (stype .eq. "VTK") then
-      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfilename)
-    else if (stype .eq. "GMV") then
-      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfilename)
-    else
-      call output_line ("Unknown output format!")
-      return
-    end if
-    
-    ! Loop through the parameters
-    iparam = 5
-    do while (iparam .le. size(Sargs))
-      ! Next token
-      call cmdprs_getparam (Sargs,iparam,stoken,.true.,.false.)
-      iparam = iparam + 1
-      
-      if (stoken .eq. "--POINTDATASCALAR") then 
-        
-        ! Write scalar subvector for points
-        
-        if (iparam .ge. size(Sargs)) then
-          ! Exit the loop, write the file.
-          call output_line ("Invalid argument!")
-          exit
-        else
-          ! Next tokens
-          call cmdprs_getparam (Sargs,iparam,sname,.false.,.true.)
-          call cmdprs_getparam (Sargs,iparam+1,stoken,.true.,.false.)
-          iparam = iparam + 2
-          
-          ! Get the vector. Array specifier must be given.
-          call cmdprs_parseIndexString1D (stoken,svecname,p_IdxVec)
-          if ((svecname .eq. "") .or. (.not. associated(p_IdxVec))) then
-            call output_line ("Invalid data vector!")
-            exit
-          end if
-          
-          p_rvectorBlock => collct_getvalue_vec (rcmdStatus%rcollection, svecname)
-          if (.not. associated(p_rvectorBlock)) then
-            deallocate(p_IdxVec)
-            call output_line ("Invalid data vector!")
-            exit
-          end if
-          
-          if ((p_IdxVec(1) .lt. 1) .or. (p_IdxVec(1) .gt. p_rvectorBlock%nblocks)) then
-            deallocate(p_IdxVec)
-            call output_line ("Invalid component!")
-            exit
-          end if
-          
-          ! Write the block
-          call spdp_projectToVertices (p_rvectorBlock%RvectorBlock(p_IdxVec(1)),p_Ddata1)
-          call ucd_addVariableVertexBased (rexport,trim(sname),UCD_VAR_STANDARD,p_Ddata1)
-          deallocate(p_Ddata1)
-          
-          deallocate(p_IdxVec)
-          
-        end if        
-
-      else if (stoken .eq. "--POINTDATAVEC") then 
-      
-        ! Write vector field for points
-
-        if (iparam .ge. size(Sargs)) then
-          ! Exit the loop, write the file.
-          call output_line ("Invalid argument!")
-          exit
-        else
-          ! Next tokens
-          call cmdprs_getparam (Sargs,iparam,sname,.false.,.true.)
-          call cmdprs_getparam (Sargs,iparam+1,stoken,.true.,.false.)
-          iparam = iparam + 2
-          
-          ! Get the vector. Array specifier must be given.
-          call cmdprs_parseIndexString1D (stoken,svecname,p_IdxVec)
-          if ((svecname .eq. "") .or. (.not. associated(p_IdxVec))) then
-            call output_line ("Invalid data vector!")
-            exit
-          end if
-          
-          p_rvectorBlock => collct_getvalue_vec (rcmdStatus%rcollection, svecname)
-          if (.not. associated(p_rvectorBlock)) then
-            deallocate(p_IdxVec)
-            call output_line ("Invalid data vector!")
-            exit
-          end if
-          
-          ! Up to three components
-          nullify(p_Ddata1)
-          nullify(p_Ddata2)
-          nullify(p_Ddata3)
-          
-          if (size(p_IdxVec) .ge. 1) then
-            if ((p_IdxVec(1) .lt. 1) .or. (p_IdxVec(1) .gt. p_rvectorBlock%nblocks)) then
-              deallocate(p_IdxVec)
-              call output_line ("Invalid component!")
-              exit
-            end if
-            call spdp_projectToVertices (p_rvectorBlock%RvectorBlock(p_IdxVec(1)),p_Ddata1)
-          end if  
-
-          if (size(p_IdxVec) .ge. 2) then
-            if ((p_IdxVec(2) .lt. 1) .or. (p_IdxVec(2) .gt. p_rvectorBlock%nblocks)) then
-              deallocate(p_Ddata1)
-              deallocate(p_IdxVec)
-              call output_line ("Invalid component!")
-              exit
-            end if
-            call spdp_projectToVertices (p_rvectorBlock%RvectorBlock(p_IdxVec(1)),p_Ddata2)
-          end if  
-
-          if (size(p_IdxVec) .ge. 3) then
-            if ((p_IdxVec(2) .lt. 1) .or. (p_IdxVec(2) .gt. p_rvectorBlock%nblocks)) then
-              deallocate(p_Ddata2)
-              deallocate(p_Ddata1)
-              deallocate(p_IdxVec)
-              call output_line ("Invalid component!")
-              exit
-            end if
-            call spdp_projectToVertices (p_rvectorBlock%RvectorBlock(p_IdxVec(1)),p_Ddata3)
-          end if  
-          
-          ! Write the block
-          select case (size(p_IdxVec))
-          case (1)
-            call ucd_addVarVertBasedVec (rexport,trim(sname),p_Ddata1)
-            deallocate(p_Ddata1)
-          case (2)
-            call ucd_addVarVertBasedVec (rexport,trim(sname),p_Ddata1,p_Ddata2)
-            deallocate(p_Ddata2)
-            deallocate(p_Ddata1)
-          case (3:)
-            call ucd_addVarVertBasedVec (rexport,trim(sname),p_Ddata1,p_Ddata2,p_Ddata3)
-            deallocate(p_Ddata3)
-            deallocate(p_Ddata2)
-            deallocate(p_Ddata1)
-          end select
-          
-          deallocate(p_IdxVec)
-          
-        end if
-
-      else if (stoken .eq. "--CELLDATASCALAR") then 
-
-        ! Write scalar subvector for cells
-
-        if (iparam .ge. size(Sargs)) then
-          ! Exit the loop, write the file.
-          call output_line ("Invalid argument!")
-          exit
-        else
-          ! Next tokens
-          call cmdprs_getparam (Sargs,iparam,sname,.false.,.true.)
-          call cmdprs_getparam (Sargs,iparam+1,stoken,.true.,.false.)
-          iparam = iparam + 2
-          
-          ! Get the vector. Array specifier must be given.
-          call cmdprs_parseIndexString1D (stoken,svecname,p_IdxVec)
-          if ((svecname .eq. "") .or. (.not. associated(p_IdxVec))) then
-            call output_line ("Invalid data vector!")
-            exit
-          end if
-          
-          p_rvectorBlock => collct_getvalue_vec (rcmdStatus%rcollection, svecname)
-          if (.not. associated(p_rvectorBlock)) then
-            deallocate(p_IdxVec)
-            call output_line ("Invalid data vector!")
-            exit
-          end if
-          
-          if ((p_IdxVec(1) .lt. 1) .or. (p_IdxVec(1) .gt. p_rvectorBlock%nblocks)) then
-            deallocate(p_IdxVec)
-            call output_line ("Invalid component!")
-            exit
-          end if
-          
-          ! Write the block
-          call spdp_projectToCells (p_rvectorBlock%RvectorBlock(p_IdxVec(1)),p_Ddata1)
-          call ucd_addVariableElementBased (rexport,trim(sname),UCD_VAR_STANDARD,p_Ddata1)
-          deallocate(p_Ddata1)
-          
-          deallocate(p_IdxVec)
-          
-        end if        
-
-      else
-        call output_line ("Invalid parameter!")
-        exit
-      end if
-    end do
-    
-    ! Write the file, done.
-    call ucd_write(rexport)
-    call ucd_release(rexport)
-    
-  end subroutine
-
-  ! ***************************************************************************
-
   !<subroutine>
   
-  recursive subroutine tpsym_evalFunction (sstring,rcollection,inestlevel,p_Rvalues,rvalue)
+  recursive subroutine tpsym_evalFunction (sstring,rcmdStatus,inestlevel,rvalue,Rvalues)
   
   !<description>
     ! Evaluates a function.
@@ -6364,14 +1851,14 @@ contains
     ! Name of the function
     character(len=*), intent(in) :: sstring
   
-    ! Collection containing symbols.
-    type(t_collection), intent(inout) :: rcollection
+    ! Current status block.
+    type(t_commandstatus), intent(inout) :: rcmdStatus
 
     ! Level of nesting
     integer, intent(in) :: inestlevel
 
-    ! Pointer to list of values or NULL if the list is empty.
-    type(t_symbolValue), dimension(:), pointer :: p_Rvalues
+    ! OPTIONAL: list of values or NULL if the list is empty.
+    type(t_symbolValue), dimension(:), optional :: Rvalues
   !</input>
   
   !<output>
@@ -6381,53 +1868,36 @@ contains
   
   !</subroutine>
   
-    character (len=SYS_NAMELEN) :: sname
-    character (len=SYS_STRLEN) :: stemp,stemp2
-    integer :: ilength
-  
+    character (len=SYS_STRLEN) :: stemp
+    logical :: bunknown
+    integer :: iunit
+    logical :: bexists
+
     rvalue%ctype = STYPE_INVALID
     
-    if (sstring .eq. "printf") then
-      if (associated(p_Rvalues)) then
-        if (p_Rvalues(1)%ctype .eq. STYPE_STRING) then
-        
-          ! Evaluate the arguments.
-          stemp = p_Rvalues(1)%svalue
-          call sioprs_qualifyString (stemp,p_Rvalues(2:))
+    bunknown = .false.
+    
+    if (sstring .eq. "run") then
+    
+      if (present(Rvalues)) then
+        if (size(Rvalues) .eq. 1) then
+          if (Rvalues(1)%ctype .eq. STYPE_STRING) then
           
-          ! Print to terminal
-          call cmdprs_dequoteStd(stemp,stemp2,ilength)
-          call output_line (stemp2)
-          
-          ! Worked.
-          rvalue%ctype = STYPE_INTEGER
-          return
-        end if
-        
-      end if
-
-      ! If we come to here, there is something wrong.
-      call output_line ("Invalid arguments!")
-      return
-      
-    else if (sstring .eq. "sprintf") then
-      if (associated(p_Rvalues)) then
-        if (size(p_Rvalues) .ge. 2) then
-          if ((p_Rvalues(1)%ctype .eq. STYPE_STRING) .and.&
-              (p_Rvalues(2)%ctype .eq. STYPE_STRING)) then
-          
-            ! Evaluate the arguments.
-            stemp = p_Rvalues(2)%svalue
-            if (size(p_Rvalues) .ge. 3) then
-              call sioprs_qualifyString (stemp,p_Rvalues(3:))
+            ! Open the file and read.
+            call cmdprs_dequoteStd(Rvalues(1)%svalue,stemp)
+            inquire(file=trim(stemp), exist=bexists)
+            if (.not. bexists) then
+              call output_line ("File not found!")
             else
-              call sioprs_qualifyString (stemp)
+              
+              ! Open
+              call io_openFileForReading(trim(stemp), iunit, .true.)
+
+              ! Interpret the stream
+              call cmdprs_parsestream (rcmdStatus,iunit,0)
+              
+              close (iunit)
             end if
-            
-            ! Print to string
-            p_Rvalues(1)%svalue = trim(stemp)
-            p_Rvalues(1)%ilength = len_trim(stemp)
-            call tpsym_saveSymbol (p_Rvalues(1),inestlevel,rcollection)
             
             ! Worked.
             rvalue%ctype = STYPE_INTEGER
@@ -6441,6 +1911,16 @@ contains
       call output_line ("Invalid arguments!")
       return
 
+    else 
+    
+      ! Try to evaluate a FEAT command
+      call fcmd_evalCommand (sstring,rcmdStatus,inestlevel,rvalue,bunknown,Rvalues)
+
+    end if
+    
+    if (bunknown) then
+      call output_line ("Command not found!")
+      return
     end if
 
   end subroutine
