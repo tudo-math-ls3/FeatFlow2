@@ -160,6 +160,12 @@
 !# 13.) collct_deletesection
 !#      -> Removes a section from the collection, deletes all its content
 !#
+!# 14.) collct_settag
+!#      -> Sets the user defined tag of a value
+!#
+!# 15.) collct_gettag
+!#      -> Returns the user defined tag of a value
+!#
 !# Auxiliary routines:
 !#
 !#  1.) collct_cleanupvalue
@@ -463,8 +469,11 @@ module collection
   
     private
    
-    ! The type of the section (COLLCT_UNDEFINED, COLLCT_CHARACTER,...)
+    ! The type of the value (COLLCT_UNDEFINED, COLLCT_CHARACTER,...)
     integer :: itype = COLLCT_UNDEFINED
+    
+    ! A user defined tag. Standard value is =0.
+    integer :: itag = 0
     
     ! Name of the value
     character(LEN=COLLCT_MLNAME) :: sname
@@ -479,7 +488,7 @@ module collection
     integer :: ivalue = 0
     
     ! Double precision value 
-    real(DP)     :: dvalue = 0.0_DP
+    real(DP) :: dvalue = 0.0_DP
 
     ! Pointer to a spatial discretisation structure
     type(t_spatialDiscretisation), pointer      :: p_rdiscretisation => null()
@@ -801,7 +810,9 @@ module collection
   public :: collct_getmaxlevel_indir 
   public :: collct_queryvalue_indir 
   public :: collct_queryvalue_direct 
-  public :: collct_gettype 
+  public :: collct_gettype
+  public :: collct_settag
+  public :: collct_gettag
   public :: collct_getvalue_char 
   public :: collct_getvalue_int 
   public :: collct_getvalue_real 
@@ -2364,6 +2375,148 @@ contains
     end if
     
   end function collct_gettype
+
+  ! ***************************************************************************
+  
+!<function>
+
+  integer function collct_gettag (rcollection, sparameter, &
+                        ilevel, ssectionName, bexists) result (itag)
+!<description>
+  ! Returns the user defined tag of the parameter sparameter.
+!</description>  
+  
+!<result>
+  ! User defined integer tag.
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(in) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    integer :: ilv
+    
+    ilv = 0
+    if (present(ilevel)) ilv = ilevel
+    
+    ! Get the parameter
+    if (present(ssectionName)) then
+      call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                         sparameter, p_rvalue) 
+    else
+      call collct_fetchparameter_direct (rcollection, '', ilv, &
+                                         sparameter, p_rvalue) 
+    end if
+    
+    ! Return whether or not that thing exists
+    if (present(bexists)) bexists = associated(p_rvalue)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      itag = p_rvalue%itag
+    else
+      itag = 0
+    end if
+    
+  end function
+
+  ! ***************************************************************************
+  
+!<function>
+
+  subroutine collct_settag (rcollection, sparameter, itag, &
+                        ilevel, ssectionName, bexists)
+!<description>
+  ! Sets the user defined tag of the parameter sparameter.
+!</description>  
+  
+!<result>
+  ! User defined integer tag.
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(in) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! Tag that should be associated to the parameter.
+  ! User defined integer value.
+  integer, intent(in) :: itag
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    integer :: ilv
+    
+    ilv = 0
+    if (present(ilevel)) ilv = ilevel
+    
+    ! Get the parameter
+    if (present(ssectionName)) then
+      call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                         sparameter, p_rvalue) 
+    else
+      call collct_fetchparameter_direct (rcollection, '', ilv, &
+                                         sparameter, p_rvalue) 
+    end if
+    
+    ! Return whether or not that thing exists
+    if (present(bexists)) bexists = associated(p_rvalue)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      p_rvalue%itag = itag
+    end if
+    
+  end subroutine
 
   ! ***************************************************************************
   
