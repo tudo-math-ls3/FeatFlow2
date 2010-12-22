@@ -192,6 +192,17 @@ module groupfemscalar
   integer, parameter, public :: GFSC_NEDGESIM = 64
 #endif
   
+  ! Minimum number of nodes for OpenMP parallelisation: If the number of
+  ! nodes is below this value, then no parallelisation is performed.
+#ifndef GFSC_NEQMIN_OMP
+  integer, parameter, public :: GFSC_NEQMIN_OMP = 1000
+#endif
+
+  ! Minimum number of edges for OpenMP parallelisation: If the number of
+  ! edges is below this value, then no parallelisation is performed.
+#ifndef GFSC_NEDGEMIN_OMP
+  integer, parameter, public :: GFSC_NEDGEMIN_OMP = 1000
+#endif
 !</constantblock>
 
 !</constants>
@@ -1625,6 +1636,7 @@ contains
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_Dflux0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
 
     ! Check if stabilisation is prepeared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -1695,7 +1707,8 @@ contains
       call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
       call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-
+      call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      
       ! Special treatment for semi-implicit FEM-FCT algorithm
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
@@ -1706,10 +1719,10 @@ contains
       ! Compute sums of antidiffusive increments
       if (rafcstab%bprelimiting) then
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
-        call doPreADIncrements(p_IverticesAtEdge,&
+        call doPreADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
       else
-        call doADIncrements(p_IverticesAtEdge,&
+        call doADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
       end if
 
@@ -1737,9 +1750,10 @@ contains
       call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
       call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+      call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
 
       ! Compute bounds
-      call doBounds(p_IverticesAtEdge,&
+      call doBounds(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
           rafcstab%NEDGE, p_Dx, p_Dqp, p_Dqm)
 
       ! Set specifiers
@@ -1861,6 +1875,7 @@ contains
       call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
       call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+      call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
 
       ! Clear convective vector?
       if (bclear) call lsyssc_clearVector(ry)
@@ -1868,10 +1883,10 @@ contains
       ! Apply antidiffusive fluxes
       if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
         call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
-        call doCorrectScaleByMass(p_IverticesAtEdge,&
+        call doCorrectScaleByMass(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
       else
-        call doCorrect(p_IverticesAtEdge,&
+        call doCorrect(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_Dy)
       end if
     end if
@@ -1884,11 +1899,12 @@ contains
     ! Assemble sums of antidiffusive increments
     ! for the given antidiffusive fluxes
     
-    subroutine doADIncrements(IverticesAtEdge,&
+    subroutine doADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
         NEDGE, Dflux, Dalpha, Dpp, Dpm)
       
       real(DP), dimension(:), intent(in) :: Dflux
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
       integer, intent(in) :: NEDGE
 
       real(DP), dimension(:), intent(inout) :: Dalpha
@@ -1896,39 +1912,56 @@ contains
       
       ! local variables
       real(DP) :: f_ij
-      integer :: iedge,i,j
+      integer :: i,iedge,igroup,j
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
       
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+      !$omp parallel default(shared) private(i,j,f_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
         
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-        ! Apply multiplicative correction factor
-        f_ij = Dalpha(iedge)*Dflux(iedge)
-        
-        ! Compute the sums of antidiffusive increments
-        Dpp(i) = Dpp(i)+max(0.0_DP, f_ij)
-        Dpp(j) = Dpp(j)+max(0.0_DP,-f_ij)
-        Dpm(i) = Dpm(i)+min(0.0_DP, f_ij)
-        Dpm(j) = Dpm(j)+min(0.0_DP,-f_ij)
-      end do
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          
+          ! Get node numbers
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
+          
+          ! Apply multiplicative correction factor
+          f_ij = Dalpha(iedge)*Dflux(iedge)
+          
+          ! Compute the sums of antidiffusive increments
+          Dpp(i) = Dpp(i)+max(0.0_DP, f_ij)
+          Dpp(j) = Dpp(j)+max(0.0_DP,-f_ij)
+          Dpm(i) = Dpm(i)+min(0.0_DP, f_ij)
+          Dpm(j) = Dpm(j)+min(0.0_DP,-f_ij)
+        end do
+        !$omp end do
+
+      end do ! igroup
+      !$omp end parallel
+
     end subroutine doADIncrements
 
     !**************************************************************
     ! Assemble sums of antidiffusive increments for the given
     ! antidiffusive fluxes without transformation and with prelimiting
 
-    subroutine doPreADIncrements(IverticesAtEdge,&
+    subroutine doPreADIncrements(IverticesAtEdgeIdx,IverticesAtEdge,&
         NEDGE, Dflux, Dflux0, Dalpha, Dpp, Dpm)
       
       real(DP), dimension(:), intent(in) :: Dflux,Dflux0
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
       integer, intent(in) :: NEDGE
 
       real(DP), dimension(:), intent(inout) :: Dalpha
@@ -1936,75 +1969,108 @@ contains
       
       ! local variables
       real(DP) :: f_ij,alpha_ij
-      integer :: iedge,i,j
+      integer :: i,iedge,igroup,j
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
+
+      !$omp parallel default(shared) private(i,j,alpha_ij,f_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+        
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
       
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+          ! Get node numbers
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
         
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-        ! Apply multiplicative correction factor
-        f_ij = Dalpha(iedge)*Dflux(iedge)
-        
-        ! MinMod prelimiting
-        alpha_ij = mprim_minmod3(f_ij, Dflux0(iedge), f_ij)
+          ! Apply multiplicative correction factor
+          f_ij = Dalpha(iedge)*Dflux(iedge)
+          
+          ! MinMod prelimiting
+          alpha_ij = mprim_minmod3(f_ij, Dflux0(iedge), f_ij)
+          
+          ! Synchronisation of correction factors
+          Dalpha(iedge) = Dalpha(iedge) * alpha_ij
+          
+          ! Update the raw antidiffusive Dflux
+          F_ij = alpha_ij * F_ij
+          
+          ! Compute the sums of antidiffusive increments
+          Dpp(i) = Dpp(i)+max(0.0_DP, f_ij)
+          Dpp(j) = Dpp(j)+max(0.0_DP,-f_ij)
+          Dpm(i) = Dpm(i)+min(0.0_DP, f_ij)
+          Dpm(j) = Dpm(j)+min(0.0_DP,-f_ij)
+        end do
+        !$omp end do
 
-        ! Synchronisation of correction factors
-        Dalpha(iedge) = Dalpha(iedge) * alpha_ij
-
-        ! Update the raw antidiffusive Dflux
-        F_ij = alpha_ij * F_ij
-
-        ! Compute the sums of antidiffusive increments
-        Dpp(i) = Dpp(i)+max(0.0_DP, f_ij)
-        Dpp(j) = Dpp(j)+max(0.0_DP,-f_ij)
-        Dpm(i) = Dpm(i)+min(0.0_DP, f_ij)
-        Dpm(j) = Dpm(j)+min(0.0_DP,-f_ij)
-      end do
+      end do ! igroup
+      !$omp end parallel
+      
     end subroutine doPreADIncrements
 
     !**************************************************************
     ! Assemble local bounds from the predicted solution
     
-    subroutine doBounds(IverticesAtEdge, NEDGE, Dx, Dqp, Dqm)
+    subroutine doBounds(IverticesAtEdgeIdx, IverticesAtEdge, NEDGE, Dx, Dqp, Dqm)
       
       real(DP), dimension(:), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(out) :: Dqp,Dqm
       
       ! local variables
-      real(DP) :: Dx_ij
-      integer :: iedge,i,j
+      real(DP) :: diff
+      integer :: i,iedge,igroup,j
 
       ! Clear Q`s
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+      !$omp parallel default(shared) private(i,j,diff)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
         
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-              
-        ! Compute solution difference
-        Dx_ij = Dx(j)-Dx(i)
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          
+          ! Get node numbers
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
+          
+          ! Compute solution difference
+          diff = Dx(j)-Dx(i)
         
-        ! Compute the distance to a local extremum
-        ! of the predicted solution
-        Dqp(i) = max(Dqp(i), Dx_ij)
-        Dqp(j) = max(Dqp(j),-Dx_ij)
-        Dqm(i) = min(Dqm(i), Dx_ij)
-        Dqm(j) = min(Dqm(j),-Dx_ij)
-      end do
+          ! Compute the distance to a local extremum
+          ! of the predicted solution
+          Dqp(i) = max(Dqp(i), diff)
+          Dqp(j) = max(Dqp(j),-diff)
+          Dqm(i) = min(Dqm(i), diff)
+          Dqm(j) = min(Dqm(j),-diff)
+        end do
+        !$omp end do
+
+      end do ! igroup
+      !$omp end parallel
+      
     end subroutine doBounds
 
     !**************************************************************
@@ -2025,7 +2091,6 @@ contains
 
       ! Loop over all vertices
       do ieq = 1, NEQ
-!!$        Drp(ieq) = ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)+AFCSTAB_EPSABS)
         if (dscale*Dpp(ieq) .gt. AFCSTAB_EPSABS) then
           Drp(ieq) = ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq))
         else
@@ -2035,7 +2100,6 @@ contains
 
       ! Loop over all vertices
       do ieq = 1, NEQ
-!!$        Drm(ieq) = ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)-AFCSTAB_EPSABS)
         if (dscale*Dpm(ieq) .lt. -AFCSTAB_EPSABS) then
           Drm(ieq) = ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq))
         else
@@ -2062,7 +2126,6 @@ contains
 
       ! Loop over all vertices
       do ieq = 1, NEQ
-!!$        Drp(ieq) = min(1.0_DP, ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)+AFCSTAB_EPSABS))
         if (dscale*Dpp(ieq) .gt. AFCSTAB_EPSABS) then
           Drp(ieq) = min(1.0_DP, ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)))
         else
@@ -2072,7 +2135,6 @@ contains
 
       ! Loop over all vertices
       do ieq = 1, NEQ
-!!$        Drm(ieq) = min(1.0_DP, ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)-AFCSTAB_EPSABS))
         if (dscale*Dpm(ieq) .lt. -AFCSTAB_EPSABS) then
           Drm(ieq) = min(1.0_DP, ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)))
         else
@@ -2100,6 +2162,8 @@ contains
       integer :: iedge,i,j
       
       ! Loop over all edges
+      !$omp parallel do default(shared) private(i,j,f_ij,r_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
@@ -2121,6 +2185,8 @@ contains
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * r_ij
       end do
+      !$omp end parallel do
+
     end subroutine doLimitEdgewise
 
     !**************************************************************
@@ -2143,6 +2209,8 @@ contains
       integer :: iedge,i,j
       
       ! Loop over all edges
+      !$omp parallel do default(shared) private(i,j,f1_ij,f2_ij,r_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
@@ -2167,73 +2235,110 @@ contains
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * r_ij
       end do
+      !$omp end parallel do
+
     end subroutine doLimitEdgewiseConstrained
 
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
     
-    subroutine doCorrect(IverticesAtEdge,&
+    subroutine doCorrect(IverticesAtEdgeIdx, IverticesAtEdge,&
         NEDGE, dscale, Dalpha, Dflux, Dy)
       
       real(DP), dimension(:), intent(in) :: Dalpha,Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(inout) :: Dy
       
       ! local variables
       real(DP) :: f_ij
-      integer :: iedge,i,j
+      integer :: i,iedge,igroup,j
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+      !$omp parallel default(shared) private(i,j,F_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
 
-        ! Correct antidiffusive flux
-        f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
-        
-        ! Apply limited antidiffusive fluxes
-        Dy(i) = Dy(i) + f_ij
-        Dy(j) = Dy(j) - f_ij
-      end do
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          
+          ! Get node numbers
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
+          
+          ! Correct antidiffusive flux
+          f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
+          
+          ! Apply limited antidiffusive fluxes
+          Dy(i) = Dy(i) + f_ij
+          Dy(j) = Dy(j) - f_ij
+        end do
+        !$omp end do
+
+      end do ! igroup
+      !$omp end parallel
+      
     end subroutine doCorrect
 
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
     ! scaled by the inverse of the lumped mass matrix
     
-    subroutine doCorrectScaleByMass(IverticesAtEdge,&
+    subroutine doCorrectScaleByMass(IverticesAtEdgeIdx,IverticesAtEdge,&
         NEDGE, dscale, ML, Dalpha, Dflux, Dy)
       
       real(DP), dimension(:), intent(in) :: ML,Dalpha,Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(inout) :: Dy
       
       ! local variables
       real(DP) :: f_ij
-      integer :: iedge,i,j
+      integer :: i,iedge,igroup,j
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
 
-        ! Correct antidiffusive flux
-        f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
+      !$omp parallel default(shared) private(i,j,f_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
         
-        ! Apply limited antidiffusive fluxes
-        Dy(i) = Dy(i) + f_ij/ML(i)
-        Dy(j) = Dy(j) - f_ij/ML(j)
-      end do
+          ! Get node numbers
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
+          
+          ! Correct antidiffusive flux
+          f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
+          
+          ! Apply limited antidiffusive fluxes
+          Dy(i) = Dy(i) + f_ij/ML(i)
+          Dy(j) = Dy(j) - f_ij/ML(j)
+        end do
+        !$omp end do
+
+      end do ! igroup
+      !$omp end parallel
+
     end subroutine doCorrectScaleByMass
 
   end subroutine gfsc_buildConvVecFCTScalar
