@@ -5442,7 +5442,7 @@ contains
       !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
 
-        ! Get node numbers and matrix positions
+        ! Get node numbers
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
 
@@ -5586,7 +5586,7 @@ contains
       !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
 
-        ! Get node numbers and matrix positions
+        ! Get node numbers
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
 
@@ -5825,7 +5825,7 @@ contains
         !$omp do
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
 
-          ! Get node numbers and matrix positions
+          ! Get node numbers
           i  = IverticesAtEdge(1, iedge)
           j  = IverticesAtEdge(2, iedge)
           
@@ -6984,7 +6984,7 @@ contains
       !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
 
-        ! Get node numbers and matrix positions
+        ! Get node numbers
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
 
