@@ -63,14 +63,25 @@ endif
 # Set default compile flags
 ifeq ($(call optimise), YES)
 # Don't specify -ipo here. IPO optimisation is enabled by the flag opt=expensive.
+# Description of compiler flags:
+#  -O3                   : enables aggressive optimization
+#  -align records        : aligns derived-type components and record structure fields on default natural boundaries
+#  -assume buffered_io   : data is buffered before written to disk
+#  -assume underscore    : append an underscore character to external user-defined names
+#  -fp-model precise     : strictly adhere to value-safe  optimizations  when implementing floaing-point calculations
+#  -funroll-loops        : enables loop unrolling
+#  -ip                   : enables interprocedural optimizations for single-file compilation
+#  -no-prec-div          : improves precision of floating-point  divides
+#  -opt-malloc-options=3 : enables optimal malloc algorithm
+#  -pad                  : enables the changing of the variable and array memory layout.
+#  -unroll               : enables aggressive loop unrolling
 CFLAGSF77LIBS := -DUSE_COMPILER_INTEL $(CFLAGSF77LIBS) -O3 \
-		 -funroll-loops -ip -assume underscore \
-                 -fp-model precise \
-		 -no-prec-div -pad 
+		 -unroll-aggressive -ip -fp-model precise \
+		 -assume underscore -no-prec-div -pad -opt-malloc-options=3
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77LIBS) \
 		 -module $(OBJDIR) -align records -assume buffered_io
-CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll -ip -fp-model precise
+CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll-aggressive -ip -fp-model precise
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) 
 else
