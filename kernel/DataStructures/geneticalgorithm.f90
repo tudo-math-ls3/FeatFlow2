@@ -130,10 +130,6 @@ contains
     ! local variables
     integer :: ichromosome,isystemclock
 
-    ! Initialise random number generator
-    call system_clock(isystemclock)
-    call random_seed(isystemclock)
-
     ! Initialisation
     if(present(dcrossoverrate)) rpopulation%dcrossoverrate = dcrossoverrate
     if(present(dmutationrate))  rpopulation%dmutationrate  = dmutationrate
@@ -376,7 +372,6 @@ contains
     
     ! Compute bound for fitness level
     call random_number(dfitnessBound)
-    if (dfitnessBound .eq. 0.0_DP) dfitnessBound = SYS_EPSREAL
     dfitnessBound = dfitnessBound*dtotalFitness
 
     ! Roulette wheel selection
@@ -416,13 +411,18 @@ contains
 
     ! local variables
     real(DP), dimension(:), pointer :: Drandom
-    integer :: idna
+    integer :: idna,isystemClock
 
     rchromosome%dfitness = 0.0_DP
     allocate(rchromosome%p_DNA(ndnaLength))
 
+    ! Generate pseudo-random number
     allocate(Drandom(ndnaLength))
+    call system_clock(isystemClock)
+    call random_seed(put=(/isystemclock/))
     call random_number(Drandom)
+
+    ! Reformat random number into DNA string
     do idna = 1, ndnaLength
       rchromosome%p_DNA(idna) = merge ('1','0', Drandom(idna) .ge. 0.5_DP)
     end do
@@ -512,7 +512,7 @@ contains
 
 !<description>
     ! This subroutine generates a new chromosome based on two parent
-    ! cromosomes by single point crossover. That is, a random position
+    ! cromosomes by two point crossover. That is, a random position
     ! ipos is determined and DNA(1:ipos) is copied from the first
     ! parent chromosome, whereas DNA(ipos+1:end) is copied from the
     ! second parent chromosome.
@@ -530,20 +530,27 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: drandom
-    integer :: idna,ndnaLength
+    real(DP), dimension(2) :: Drandom
+    integer, dimension(2) :: Idna
+    integer :: ndnaLength,isystemclock
 
     rchromosomeDest%dfitness = 0.0_DP
     
     ndnaLength = min(size(rchromosomeSrc1%p_DNA),&
                      size(rchromosomeSrc2%p_DNA),&
                      size(rchromosomeDest%p_DNA))
-    call random_number(drandom)
-    idna = min(ceiling(ndnaLength/drandom),ndnaLength)
+    
+    ! Generate random crossover points
+    call system_clock(isystemclock)
+    call random_seed(put=(/isystemclock/))
+    call random_number(Drandom)
+    if (Drandom(1) .gt. Drandom(2)) Drandom(1:2) = Drandom(2:1:-1)
+    Idna = int(Drandom*(ndnaLength))+1
 
-    rchromosomeDest%p_DNA(1:idna)            = rchromosomeSrc1%p_DNA(1:idna)
-    rchromosomeDest%p_DNA(idna+1:ndnaLength) = rchromosomeSrc2%p_DNA(idna+1:ndnaLength)
-    rchromosomeDest%p_DNA(ndnaLength+1:)     = '0'
+    ! Crossover parent chromosomes
+    rchromosomeDest%p_DNA(1:Idna(1))         = rchromosomeSrc1%p_DNA(1:Idna(1))
+    rchromosomeDest%p_DNA(Idna(1)+1:Idna(2)) = rchromosomeSrc2%p_DNA(Idna(1)+1:Idna(2))
+    rchromosomeDest%p_DNA(Idna(2)+1:)        = rchromosomeSrc1%p_DNA(Idna(2)+1:)
 
   end subroutine ga_crossoverChromosome
 
@@ -569,17 +576,19 @@ contains
 !</subroutine>    
 
     real(DP) :: drandom
-    integer :: idna,ndnaLength,imutation,nmutations
+    integer :: idna,ndnaLength,imutation,nmutations,isystemclock
 
     rchromosome%dfitness = 0.0_DP
 
     ndnaLength = size(rchromosome%p_DNA)
-    nmutations = max(1,ceiling(ndnaLength/100*dmutationrate))
+    nmutations = max(1,ceiling(ndnaLength*dmutationrate))
+
+    call system_clock(isystemclock)
+    call random_seed(put=(/isystemclock/))
 
     do imutation = 1, nmutations
       call random_number(drandom)
-      idna = min(ceiling(ndnaLength/drandom),ndnaLength)
-
+      idna = int(drandom*ndnaLength)+1
       rchromosome%p_DNA(idna:idna) = merge('0','1', rchromosome%p_DNA(idna:idna).eq.'1')
     end do
 
