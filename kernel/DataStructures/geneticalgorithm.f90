@@ -130,6 +130,10 @@ contains
     ! local variables
     integer :: ichromosome,isystemclock
 
+    ! Initialise pseudo-random generator
+    call system_clock(isystemClock)
+    call random_seed(put=(/isystemclock/))
+
     ! Initialisation
     if(present(dcrossoverrate)) rpopulation%dcrossoverrate = dcrossoverrate
     if(present(dmutationrate))  rpopulation%dmutationrate  = dmutationrate
@@ -289,58 +293,116 @@ contains
     
     ! local variables
     type(t_population) :: rpopulationTmp
-    integer :: ichromosome,nbestchromosomes,isrc1,isrc2
+    integer :: ichromosome,ioffset,isrc1,isrc2
     
-    ! Make a copy of the old population
-    call ga_copyPopulation(rpopulation,rpopulationTmp)
+    ! Sort the population according to the fitness levels
+    call ga_sortPopulation(rpopulation)
 
-    ! Sort the old population according to the fitness levels
-    call ga_sortPopulation(rpopulationTmp)
-    
-    ! Step 1: Copy the best chromosomes
-    nbestchromosomes = min(rpopulationTmp%nchromosomes,&
-                           ceiling(rpopulationTmp%nchromosomes*&
-                                   rpopulationTmp%delitismrate))
-
-    do ichromosome = 1, nbestchromosomes
-      call ga_copyChromosome(rpopulationTmp%p_Rchromosomes(ichromosome),&
-                             rpopulation%p_Rchromosomes(ichromosome))
+    ! Step 1: Replace lower population half by upper population half (natural selection)
+    ioffset = floor(rpopulation%nchromosomes/2.0)
+    do ichromosome = 1, ioffset
+      call ga_copyChromosome(rpopulation%p_Rchromosomes(ichromosome),&
+                             rpopulation%p_Rchromosomes(ioffset+ichromosome))
     end do
     
-    ! Step 2: Generate new chromosomes by crossover and mutation
-    do ichromosome = nbestchromosomes+1, min(rpopulationTmp%nchromosomes,&
-                                             ceiling(rpopulationTmp%nchromosomes*&
-                                                     rpopulationTmp%dcrossoverrate))
-      ! Select two parent chromosomes
-      isrc1 = ga_selectChromosome(rpopulationTmp)
-      isrc2 = ga_selectChromosome(rpopulationTmp)
+    ! Make a copy of the population
+    call ga_copyPopulation(rpopulation,rpopulationTmp)
+
+    ! Step 2: Randomly blend 1st quarter chromosomes into 4th quarter (crossover)
+    do ichromosome = floor(3.0*rpopulation%nchromosomes/4.0)+1,&
+                     rpopulation%nchromosomes
+
+      ! Select parent chromosome from first quarter
+      isrc1 = ga_selectChromosome(rpopulationTmp,&
+                1, floor(rpopulation%nchromosomes/4.0))
+
+      ! Select parent chromosome from fourth quarter
+      isrc2 = ga_selectChromosome(rpopulationTmp,&
+                floor(3.0*rpopulation%nchromosomes/4.0)+1,&
+                rpopulation%nchromosomes)
 
       ! Generate new chromosome by crossover of parents
       call ga_crossoverChromosome(rpopulationTmp%p_Rchromosomes(isrc1),&
                                   rpopulationTmp%p_Rchromosomes(isrc2),&
                                   rpopulation%p_Rchromosomes(ichromosome))
-      ! Mutate new chromosome
-      if (rpopulation%dmutationrate .ne. 0.0_DP) &
-          call ga_mutateChromosome(rpopulation%p_Rchromosomes(ichromosome),&
-                                   rpopulation%dmutationrate)
     end do
 
-    ! Step 3: Generate new chromosomes randomly
-    do ichromosome = ceiling(rpopulationTmp%nchromosomes*&
-                             rpopulationTmp%dcrossoverrate), rpopulationTmp%nchromosomes
-      call ga_initChromosome(rpopulation%p_Rchromosomes(ichromosome),&
-                             size(rpopulationTmp%p_Rchromosomes(1)%p_DNA))
+    ! Step 3: Randomly blend 2nd quarter chromosomes into 3rd quarter (crossover)
+    do ichromosome = floor(rpopulation%nchromosomes/2.0)+1,&
+                     floor(3.0*rpopulation%nchromosomes/4.0)
+
+      ! Select parent chromosome from second quarter
+      isrc1 = ga_selectChromosome(rpopulationTmp,&
+                floor(rpopulation%nchromosomes/4.0)+1,&
+                floor(rpopulation%nchromosomes/2.0))
+
+      ! Select parent chromosome from third quarter
+      isrc2 = ga_selectChromosome(rpopulationTmp,&
+                floor(rpopulation%nchromosomes/2.0)+1,&
+                floor(3.0*rpopulation%nchromosomes/4.0))
+
+      ! Generate new chromosome by crossover of parents
+      call ga_crossoverChromosome(rpopulationTmp%p_Rchromosomes(isrc1),&
+                                  rpopulationTmp%p_Rchromosomes(isrc2),&
+                                  rpopulation%p_Rchromosomes(ichromosome))
     end do
+
+    ! Step 4: Mutate lower 3/4 of population
+    if (rpopulation%dmutationrate .ne. 0.0_DP) then
+      do ichromosome = floor(rpopulation%nchromosomes/4.0),&
+                       rpopulation%nchromosomes
+        call ga_mutateChromosome(rpopulation%p_Rchromosomes(ichromosome),&
+                                 rpopulation%dmutationrate)
+      end do
+    end if
 
     ! Release temporal copy of population
     call ga_releasePopulation(rpopulationTmp)
+
+!!$    ! Step 1: Copy the best chromosomes
+!!$    nbestchromosomes = min(rpopulationTmp%nchromosomes,&
+!!$                           ceiling(rpopulationTmp%nchromosomes*&
+!!$                                   rpopulationTmp%delitismrate))
+!!$
+!!$    do ichromosome = 1, nbestchromosomes
+!!$      call ga_copyChromosome(rpopulationTmp%p_Rchromosomes(ichromosome),&
+!!$                             rpopulation%p_Rchromosomes(ichromosome))
+!!$    end do
+!!$    
+!!$    ! Step 2: Generate new chromosomes by crossover and mutation
+!!$    do ichromosome = nbestchromosomes+1, min(rpopulationTmp%nchromosomes,&
+!!$                                             ceiling(rpopulationTmp%nchromosomes*&
+!!$                                                     rpopulationTmp%dcrossoverrate))
+!!$      ! Select two parent chromosomes
+!!$      isrc1 = ga_selectChromosome(rpopulationTmp)
+!!$      isrc2 = ga_selectChromosome(rpopulationTmp)
+!!$
+!!$      ! Generate new chromosome by crossover of parents
+!!$      call ga_crossoverChromosome(rpopulationTmp%p_Rchromosomes(isrc1),&
+!!$                                  rpopulationTmp%p_Rchromosomes(isrc2),&
+!!$                                  rpopulation%p_Rchromosomes(ichromosome))
+!!$      ! Mutate new chromosome
+!!$      if (rpopulation%dmutationrate .ne. 0.0_DP) &
+!!$          call ga_mutateChromosome(rpopulation%p_Rchromosomes(ichromosome),&
+!!$                                   rpopulation%dmutationrate)
+!!$    end do
+!!$
+!!$    ! Step 3: Generate new chromosomes randomly
+!!$    do ichromosome = ceiling(rpopulationTmp%nchromosomes*&
+!!$                             rpopulationTmp%dcrossoverrate), rpopulationTmp%nchromosomes
+!!$      call ga_initChromosome(rpopulation%p_Rchromosomes(ichromosome),&
+!!$                             size(rpopulationTmp%p_Rchromosomes(1)%p_DNA))
+!!$    end do
+!!$
+!!$    ! Release temporal copy of population
+!!$    call ga_releasePopulation(rpopulationTmp)
 
   end subroutine ga_renewPopulation
 
   !************************************************************************
 
 !<function>
-  function ga_selectChromosome(rpopulation) result(ichromosome)
+  function ga_selectChromosome(rpopulation, ifirst, ilast) result(ichromosome)
 
 !<description>
     ! This function selects a chromosome from the population by the
@@ -352,6 +414,9 @@ contains
 !<input>
     ! Population of chromosomes
     type(t_population), intent(in) :: rpopulation
+
+    ! OPTIONAL: First and last chromosome to consider
+    integer, intent(in), optional :: ifirst,ilast
 !</input>
 
 !<result>
@@ -362,10 +427,17 @@ contains
     
     ! local variables
     real(DP) :: dtotalFitness, dfitnessBound
+    integer :: ifirstChromosome,ilastChromosome
+
+    ! Initialisation
+    ifirstChromosome = 1
+    ilastChromosome  = rpopulation%nchromosomes
+    if (present(ifirst)) ifirstChromosome = ifirst
+    if (present(ilast))  ilastChromosome  = ilast
 
     ! Compute total fitness level
     dtotalFitness = 0.0_DP
-    do ichromosome = 1, rpopulation%nchromosomes
+    do ichromosome = ifirstChromosome, ilastChromosome
       dtotalFitness = dtotalFitness +&
           rpopulation%p_Rchromosomes(ichromosome)%dfitness
     end do
@@ -376,14 +448,14 @@ contains
 
     ! Roulette wheel selection
     dtotalFitness = 0.0_DP
-    do ichromosome = 1, rpopulation%nchromosomes
+    do ichromosome = ifirstChromosome, ilastChromosome
       dtotalFitness = dtotalFitness +&
           rpopulation%p_Rchromosomes(ichromosome)%dfitness
       if (dtotalFitness .gt. dfitnessBound) return
     end do
     
     ! Return selected chromosome
-    ichromosome = rpopulation%nchromosomes
+    ichromosome = ilastChromosome
     
   end function ga_selectChromosome
 
@@ -411,15 +483,13 @@ contains
 
     ! local variables
     real(DP), dimension(:), pointer :: Drandom
-    integer :: idna,isystemClock
+    integer :: idna
 
     rchromosome%dfitness = 0.0_DP
     allocate(rchromosome%p_DNA(ndnaLength))
 
     ! Generate pseudo-random number
     allocate(Drandom(ndnaLength))
-    call system_clock(isystemClock)
-    call random_seed(put=(/isystemclock/))
     call random_number(Drandom)
 
     ! Reformat random number into DNA string
@@ -532,7 +602,7 @@ contains
     ! local variables
     real(DP), dimension(2) :: Drandom
     integer, dimension(2) :: Idna
-    integer :: ndnaLength,isystemclock
+    integer :: ndnaLength
 
     rchromosomeDest%dfitness = 0.0_DP
     
@@ -541,8 +611,6 @@ contains
                      size(rchromosomeDest%p_DNA))
     
     ! Generate random crossover points
-    call system_clock(isystemclock)
-    call random_seed(put=(/isystemclock/))
     call random_number(Drandom)
     if (Drandom(1) .gt. Drandom(2)) Drandom(1:2) = Drandom(2:1:-1)
     Idna = int(Drandom*(ndnaLength))+1
@@ -576,15 +644,12 @@ contains
 !</subroutine>    
 
     real(DP) :: drandom
-    integer :: idna,ndnaLength,imutation,nmutations,isystemclock
+    integer :: idna,ndnaLength,imutation,nmutations
 
     rchromosome%dfitness = 0.0_DP
 
     ndnaLength = size(rchromosome%p_DNA)
     nmutations = max(1,ceiling(ndnaLength*dmutationrate))
-
-    call system_clock(isystemclock)
-    call random_seed(put=(/isystemclock/))
 
     do imutation = 1, nmutations
       call random_number(drandom)
