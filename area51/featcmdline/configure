@@ -5,5 +5,5 @@
 #
 
 ../../bin/configure \
-	--appname=elemdbg \
+	--appname=featcmdline \
 	$@
