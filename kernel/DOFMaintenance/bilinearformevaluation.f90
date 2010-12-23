@@ -402,7 +402,11 @@ module bilinearformevaluation
 
   ! Number of elements to handle simultaneously when building matrices
 #ifndef BILF_NELEMSIM
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: BILF_NELEMSIM = 128
+#else
+  integer, public            :: BILF_NELEMSIM = 128
+#endif
 #endif
   
 !</constantblock>

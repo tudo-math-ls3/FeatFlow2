@@ -309,7 +309,11 @@ module linearsystemscalar
   ! Minimum number of equations for OpenMP parallelisation: If the number of
   ! equations is below this value, then no parallelisation is performed.
 #ifndef LSYSSC_NEQMIN_OMP
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: LSYSSC_NEQMIN_OMP = 1000
+#else
+  integer, public            :: LSYSSC_NEQMIN_OMP = 1000
+#endif
 #endif
   
 !</constantblock>

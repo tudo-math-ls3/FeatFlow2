@@ -30,7 +30,11 @@ module elementbase
   ! Minimum number of elements for OpenMP parallelisation: If the number of
   ! elements is below this value, then no parallelisation is performed.
 #ifndef EL_NELEMMIN_OMP
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: EL_NELEMMIN_OMP = 1000
+#else
+  integer, public            :: EL_NELEMMIN_OMP = 1000
+#endif
 #endif
   
 !</constantblock>

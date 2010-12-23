@@ -179,7 +179,11 @@ module trilinearformevaluation
 
   ! Number of elements to handle simultaneously when building matrices
 #ifndef TRILF_NELEMSIM
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: TRILF_NELEMSIM = 128
+#else
+  integer, public            :: TRILF_NELEMSIM = 128
+#endif
 #endif
   
 !</constantblock>

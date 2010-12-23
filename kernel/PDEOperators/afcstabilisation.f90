@@ -357,7 +357,11 @@ module afcstabilisation
   ! Minimum number of edges for OpenMP parallelisation: If the number of
   ! edges is below this value, then no parallelisation is performed.
 #ifndef AFCSTAB_NEDGEMIN_OMP
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: AFCSTAB_NEDGEMIN_OMP = 1000
+#else
+  integer, public            :: AFCSTAB_NEDGEMIN_OMP = 1000
+#endif
 #endif
   
 !</constantblock>

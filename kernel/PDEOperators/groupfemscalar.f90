@@ -184,24 +184,40 @@ module groupfemscalar
 
   ! Number of nodes to handle simultaneously when building matrices
 #ifndef GFSC_NEQSIM
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: GFSC_NEQSIM = 128
+#else
+  integer, public            :: GFSC_NEQSIM = 128
+#endif
 #endif
 
   ! Number of edges to handle simultaneously when building matrices
 #ifndef GFSC_NEDGESIM
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: GFSC_NEDGESIM = 64
+#else
+  integer, public            :: GFSC_NEDGESIM = 64
+#endif
 #endif
   
   ! Minimum number of nodes for OpenMP parallelisation: If the number of
   ! nodes is below this value, then no parallelisation is performed.
 #ifndef GFSC_NEQMIN_OMP
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: GFSC_NEQMIN_OMP = 1000
+#else
+  integer, public            :: GFSC_NEQMIN_OMP = 1000
+#endif
 #endif
 
   ! Minimum number of edges for OpenMP parallelisation: If the number of
   ! edges is below this value, then no parallelisation is performed.
 #ifndef GFSC_NEDGEMIN_OMP
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: GFSC_NEDGEMIN_OMP = 1000
+#else
+  integer, public            :: GFSC_NEDGEMIN_OMP = 1000
+#endif
 #endif
 !</constantblock>
 

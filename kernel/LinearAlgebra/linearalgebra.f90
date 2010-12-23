@@ -571,7 +571,11 @@ module linearalgebra
   ! Minimum number of entries for OpenMP parallelisation: If the number of
   ! entries is below this value, then no parallelisation is performed.
 #ifndef LINALG_NMIN_OMP
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: LINALG_NMIN_OMP = 10000
+#else
+  integer, public            :: LINALG_NMIN_OMP = 10000
+#endif
 #endif
 !</constantblock>
 

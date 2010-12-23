@@ -115,7 +115,11 @@ module multileveloperators
 
   ! Number of elements to handle simultaneously when building matrices
 #ifndef MLOP_NELEMSIM
-  integer, parameter :: MLOP_NELEMSIM = 100
+#ifndef ENABLE_AUTOTUNE
+  integer, parameter, public :: MLOP_NELEMSIM = 100
+#else
+  integer, public            :: MLOP_NELEMSIM = 100
+#endif
 #endif
   
 !</constantblock>

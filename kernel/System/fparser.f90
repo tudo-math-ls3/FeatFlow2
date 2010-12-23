@@ -404,7 +404,11 @@ module fparser
 
   ! Number of items to handle simultaneously when evaluating functions
 #ifndef FPAR_NITEMSIM
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: FPAR_NITEMSIM       = 256
+#else
+  integer, public            :: FPAR_NITEMSIM       = 256
+#endif
 #endif
 
   ! Length of string

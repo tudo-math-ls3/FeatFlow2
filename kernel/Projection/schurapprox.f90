@@ -113,7 +113,11 @@ public :: schur_assembleApprox2D
   ! Minimum number of equations for OpenMP parallelisation: If the number of
   ! equations is below this value, then no parallelisation is performed.
 #ifndef SCHUR_NEQMIN_OMP
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: SCHUR_NEQMIN_OMP = 1000
+#else
+  integer, public            :: SCHUR_NEQMIN_OMP = 1000
+#endif
 #endif
   
 !</constantblock>

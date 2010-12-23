@@ -300,7 +300,11 @@ module linearformevaluation
 
   ! Number of elements to handle simultaneously when building vectors
 #ifndef LINF_NELEMSIM
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: LINF_NELEMSIM = 256
+#else
+  integer, public            :: LINF_NELEMSIM = 256
+#endif
 #endif
   
 !</constantblock>

@@ -26,7 +26,11 @@ public :: t_ufciData
 
   ! Maximum number of functions which may be evaluated simultaneously
 #ifndef UFCI_MAX_SIM
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: UFCI_MAX_SIM = 32
+#else
+  integer, public            :: UFCI_MAX_SIM = 32
+#endif
 #endif
 
 !</constantblock>

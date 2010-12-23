@@ -149,7 +149,13 @@ module bcassembly
 
   ! Number of entries to handle simultaneously (-> number of points or edges,
   ! depending on the situation what to discretise)
+#ifndef FBCASM_MAXSIM
+#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: FBCASM_MAXSIM   = 1000
+#else
+  integer, public            :: FBCASM_MAXSIM   = 1000
+#endif
+#endif
   
 !</constantblock>
 
