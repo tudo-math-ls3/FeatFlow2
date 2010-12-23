@@ -14,7 +14,7 @@ OBJDIR  = object
 
 #-------------------------------------------------------------------------------
 # From here till the end of the file are additional instructions added for
-# smooth FEAST integration:
+# smooth FEAT2 integration:
 #-------------------------------------------------------------------------------
 
 .PHONY:	default

@@ -2,7 +2,7 @@
 #
 # short description:
 #   script to be able to use the GNU C preprocessor even for Fortran90 source files
-#   on every platform we are developing FEAST on.
+#   on every platform we are developing FEAT2 on.
 #   The original source file is piped through the GNU C preprocessor,
 #   the resulting temporary file is stored to the directory of the first
 #   object file or program name found on the command line, the compile
@@ -67,7 +67,7 @@ do
     # in the command line arguments given to
     # the compiler.
     expin*):
-	# Special token FEAST compile command contains on NEC SX-8
+	# Special token FEAT2 compile command contains on NEC SX-8
         # for code optimisation. Add the string back to the command line
         # options.
 	ttf=`echo $1 | sed 's/expin=//; s/,/ /g;'`
@@ -107,7 +107,7 @@ do
 	;;
 
     -o)
-	# When not using this script in FEAST context (e.g. to test
+	# When not using this script in FEAT2 context (e.g. to test
 	# some small debug program with preprocessor statements),
 	# usually no separate object file needs to be created, the
 	# executable name is directly given on the command line.
@@ -204,7 +204,7 @@ fi
 
 perlscript=""
 
-# Perl command (1) to turn all calls of FEAST kernel routine storagegetbase*
+# Perl command (1) to turn all calls of FEAT2 kernel routine storagegetbase*
 # on-the-fly into macros that are subsequently expanded by the C preprocessor
 # directly to the appropriate commands.
 # Note: These particular instructions are sed compatible.

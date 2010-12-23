@@ -55,7 +55,7 @@
 #  Susan Ostrouchov,  September 30, 1994
 #  Julie Langou, March 2007
 #
-#  Adapted to the needs of the FEAST library by
+#  Adapted to the needs of the FEAT2 library by
 #  Sven Buijssen, University of Dortmund
 #  Last updated February 23, 2009
 #
@@ -203,7 +203,7 @@ include ../create_library.mk
 $(BLASLIB):  LOCKFILE = ../LOCK.creating.libblas.a
 $(BLASLIB):  WAITTIME = 10
 $(BLASLIB):  RETRIES  = 24
-# Separate target for those parts of blas that are needed for FEAST.
+# Separate target for those parts of blas that are needed for FEAT2.
 # You should not just use 'make single double' as this would result
 # in the library being rebuilt every time you invoke 'make'.
 # This because 'single' and 'double' are phony targets.

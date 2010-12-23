@@ -122,7 +122,7 @@ $(OBJDIR):
 # This Makefile is potentially called simultaneously from multiple make processes,
 # e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent
 # attempts to create the archive should not happen. Try to avoid it with the
-# usual FEAST lock file mechanism.
+# usual FEAT2 lock file mechanism.
 include ../create_library.mk
 $(LAPACKLIB):  LOCKFILE = ../LOCK.creating.liblapack.a
 $(LAPACKLIB):  WAITTIME = 15

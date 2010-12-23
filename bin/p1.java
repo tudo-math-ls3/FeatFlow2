@@ -436,7 +436,7 @@ class p1
 //        out.writeBytes("</HEAD>\n");
 
 //           out.writeBytes("<BODY>\n");
-//           out.writeBytes("<H1>FEAST Dokumentation</H1>\n<br><br>");
+//           out.writeBytes("<H1>FEAT2 Dokumentation</H1>\n<br><br>");
           break;
       }
 

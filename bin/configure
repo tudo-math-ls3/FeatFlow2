@@ -521,9 +521,10 @@ if (! defined($cachedtests{'build-id'})) {
 # updating whenever this is modified. Simply search for the next occurence of
 # 'coproc-bail-out' (without the quotation marks)
 my $entry = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
-# no support for *-*-*-psc-*, sx*-none-superux-f90-*
+# no support for *-*-*-psc-*, sx*-none-superux-f90-*, *-*-*-open64-*
 if ($#{$entry} >= 0 &&
     ($buildID_lib =~ m/^[^-]+-[^-]+-[^-]+-(psc)-[^-]+$/ ||
+     $buildID_lib =~ m/^[^-]+-[^-]+-[^-]+-(open64)-[^-]+$/ ||
      $buildID_lib =~ m/^sx[^-]+-none-superux-f90-[^-]+$/)) {
     # Create an empty Makefile to prevent breaking compilation of
     # complete benchmark just because configuring one application
@@ -550,7 +551,7 @@ if ($#{$entry} >= 0 &&
     $! = 15;
     die "\n$progname: ERROR:\n".
 	"Coprocessor support is not available in combination with\n" .
-	"Pathscale and NEC compiler suites. Simply because the respective\n" .
+	"Pathscale, Open64 and NEC compiler suites. Simply because the respective\n" .
 	"Fortran compilers create symbol names that can not be cross-language\n" .
 	"referenced in C code. I purposely refuse to create a Makefile.\n";
 }
@@ -1602,7 +1603,7 @@ sub create_feastAppMakefile {
 	# write out general coproc-specific variable additions
         print MAKEFILE_HDL
             "# Coprocessor-specific special options\n" .
-	    "SRCEXTRA     := \$(SRCEXTRA) \$(SRCDIR_ARCH)/coproc.c \$(SRCDIR_ARCH)/coproc_solver.c \$(SRCDIR_ARCH)/coproc_standalone.c\n" .
+	    "SRCEXTRA     := \$(SRCEXTRA)\n" .
 	    "BUILDLIB     := \$(BUILDLIB) coproc\n" .
 	    "LIBS         := -lcoproc \$(LIBS)\n" .
 	    "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
@@ -1689,6 +1690,7 @@ sub create_feastAppMakefile {
 		"MESSAGE  := \$(MESSAGE) \\\n" .
 		"\t    echo '*** Warning: GLEW_INC_PATH unset. Only standard include paths will'; \\\n" .
 		"\t    echo '*** Warning: be searched for the file <GL/glew.h>.';\n" .
+		"APPONLYFLAGS := -DHAS_OPENGL \$(APPONLYFLAGS)\n" .
 		"else\n" .
 		"APPONLYFLAGS := -DHAS_OPENGL \$(APPONLYFLAGS) -I\$(GLEW_INC_PATH)\n" .
 		"endif\n" .
@@ -1696,6 +1698,7 @@ sub create_feastAppMakefile {
 		"MESSAGE  := \$(MESSAGE) \\\n" .
 		"\t    echo '*** Warning: GLEW_LIB_PATH unset. Only standard library paths will'; \\\n" .
 		"\t    echo '*** Warning: be searched for the library <libGLEW.{a,so}>.';\n" .
+		"LDFLAGS      := \$(LDFLAGS) -lGLEW -lGL -lGLU -lX11\n" .
 		"else\n" .
 		"LDFLAGS      := \$(LDFLAGS) -L\$(GLEW_LIB_PATH) -lGLEW -lGL -lGLU -lX11\n" .
 		"endif\n";
@@ -2090,6 +2093,10 @@ sub create_feastAppMakefile {
 	"ifneq (, \$(findstring -DUSE_COMPILER_PATHSCALE ,\\\n" .
 	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCXX) ))\n" .
 	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with the Pathscale compiler suite:';\n" .
+	"endif\n" .
+	"ifneq (, \$(findstring -DUSE_COMPILER_OPEN64 ,\\\n" .
+	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCXX) ))\n" .
+	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with the Open64 compiler suite:';\n" .
 	"endif\n" .
 	"ifneq (, \$(findstring -DUSE_COMPILER_NEC ,\\\n" .
 	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCXX) ))\n" .
@@ -3311,7 +3318,7 @@ sub create_feastAppMakefile {
         "\t\@echo; \\\n" .
         "\t echo '*** Error: Build ID \$(ID)'; \\\n" .
         "\t echo '***        is *not* valid for current host!'; \\\n" .
-        "\t echo '***        \$(FEASTBASEDIR)/bin/guess_id reported a host of type \$(REALID_SHORT).'; \\\n" .
+        "\t echo '***        \$(FEAT2BASEDIR)/bin/guess_id reported a host of type \$(REALID_SHORT).'; \\\n" .
         "\t echo '***        Cowardly refusing compilation.'; \\\n" .
         "\t echo;\n" .
 	"\t\@exit 1;\n" .

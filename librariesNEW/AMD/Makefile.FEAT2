@@ -2,19 +2,19 @@
 
 #-------------------------------------------------------------------------------
 # AMD Makefile for compiling on Unix systems (for GNU make only)
-# (adapted for the FEAST package, based on Lib/GNUmakefile from AMD 2.2)
+# (adapted for the FEAT2 package, based on Lib/GNUmakefile from AMD 2.2)
 #
 # Whereever AMD Makefile instructions have been altered, the original
-# ones immediately precede the new ones and carry the prefix #FEAST#.
+# ones immediately precede the new ones and carry the prefix #FEAT2#.
 #-------------------------------------------------------------------------------
 
-#FEAST# default: ../Lib/libamd.a
+#FEAT2# default: ../Lib/libamd.a
 .PHONY:	default
 default: $(OBJDIR)/libamd.a
 
-#FEAST# include ../../UFconfig/UFconfig.mk
+#FEAT2# include ../../UFconfig/UFconfig.mk
 
-#FEAST# C = $(CC) $(CFLAGS) $(CONFIG) -I../Include -I../../UFconfig
+#FEAT2# C = $(CC) $(CFLAGS) $(CONFIG) -I../Include -I../../UFconfig
 C = $(CC) $(CFLAGS) $(CONFIG) -IInclude -I../UFconfig
 
 #-------------------------------------------------------------------------------
@@ -24,19 +24,19 @@ C = $(CC) $(CFLAGS) $(CONFIG) -IInclude -I../UFconfig
 AMD = amd_aat amd_1 amd_2 amd_dump amd_postorder amd_post_tree amd_defaults \
 	amd_order amd_control amd_info amd_valid amd_preprocess
 
-#FEAST# UFCONFIG = ../../UFconfig/UFconfig.h
+#FEAT2# UFCONFIG = ../../UFconfig/UFconfig.h
 UFCONFIG = ../UFconfig/UFconfig.h
 
-#FEAST# INC = ../Include/amd.h ../Include/amd_internal.h $(UFCONFIG)
+#FEAT2# INC = ../Include/amd.h ../Include/amd_internal.h $(UFCONFIG)
 INC = Include/amd.h Include/amd_internal.h $(UFCONFIG)
 
 #-------------------------------------------------------------------------------
 # object files for each version
 #-------------------------------------------------------------------------------
 
-#FEAST# AMDI = $(addsuffix .o, $(subst amd_,amd_i_,$(AMD)))
+#FEAT2# AMDI = $(addsuffix .o, $(subst amd_,amd_i_,$(AMD)))
 AMDI = $(addsuffix .o, $(subst amd_,$(OBJDIR)/amd_i_,$(AMD)))
-#FEAST# AMDL = $(addsuffix .o, $(subst amd_,amd_l_,$(AMD)))
+#FEAT2# AMDL = $(addsuffix .o, $(subst amd_,amd_l_,$(AMD)))
 AMDL = $(addsuffix .o, $(subst amd_,$(OBJDIR)/amd_l_,$(AMD)))
 
 
@@ -44,15 +44,15 @@ AMDL = $(addsuffix .o, $(subst amd_,$(OBJDIR)/amd_l_,$(AMD)))
 # compile each int and long routine (with no real/complex version)
 #-------------------------------------------------------------------------------
 
-#FEAST# amd_global.o: ../Source/amd_global.c $(INC)
+#FEAT2# amd_global.o: ../Source/amd_global.c $(INC)
 $(OBJDIR)/amd_global.o: Source/amd_global.c $(INC)
 	$(C) -c $< -o $@
 
-#FEAST# amd_i_%.o: ../Source/amd_%.c $(INC)
+#FEAT2# amd_i_%.o: ../Source/amd_%.c $(INC)
 $(OBJDIR)/amd_i_%.o: Source/amd_%.c $(INC)
 	$(C) -DDINT -c $< -o $@
 
-#FEAST# amd_l_%.o: ../Source/amd_%.c $(INC)
+#FEAT2# amd_l_%.o: ../Source/amd_%.c $(INC)
 $(OBJDIR)/amd_l_%.o: Source/amd_%.c $(INC)
 	$(C) -DDLONG -c $< -o $@
 
@@ -60,34 +60,34 @@ $(OBJDIR)/amd_l_%.o: Source/amd_%.c $(INC)
 # Create the libamd.a library (C versions only)
 #-------------------------------------------------------------------------------
 
-#FEAST# ../Lib/libamd.a: amd_global.o $(AMDI) $(AMDL)
-#FEAST#	$(AR) ../Lib/libamd.a $^
-#FEAST#	- $(RANLIB) ../Lib/libamd.a
+#FEAT2# ../Lib/libamd.a: amd_global.o $(AMDI) $(AMDL)
+#FEAT2#	$(AR) ../Lib/libamd.a $^
+#FEAT2#	- $(RANLIB) ../Lib/libamd.a
 
 #-------------------------------------------------------------------------------
 # compile the Fortran versions and the libamdf77.a library
 #-------------------------------------------------------------------------------
 
-#FEAST# fortran: ../Lib/libamdf77.a
+#FEAT2# fortran: ../Lib/libamdf77.a
 .PHONY:	fortran
 fortran: $(OBJDIR)/libamdf77.a
 
-#FEAST# AMDF77 = amd.o amdbar.o
+#FEAT2# AMDF77 = amd.o amdbar.o
 AMDF77 = $(OBJDIR)/amd.o $(OBJDIR)/amdbar.o
 
-#FEAST# amd.o: ../Source/amd.f
-#FEAST# 	$(F77) $(F77FLAGS) -c ../Source/amd.f -o amd.o
+#FEAT2# amd.o: ../Source/amd.f
+#FEAT2# 	$(F77) $(F77FLAGS) -c ../Source/amd.f -o amd.o
 $(OBJDIR)/amd.o: Source/amd.f
 	$(F77) $(F77FLAGS) -c Source/amd.f -o $(OBJDIR)/amd.o
 
-#FEAST# amdbar.o: ../Source/amdbar.f
-#FEAST# 	$(F77) $(F77FLAGS) -c ../Source/amdbar.f -o amdbar.o
+#FEAT2# amdbar.o: ../Source/amdbar.f
+#FEAT2# 	$(F77) $(F77FLAGS) -c ../Source/amdbar.f -o amdbar.o
 $(OBJDIR)/amdbar.o: Source/amdbar.f
 	$(F77) $(F77FLAGS) -c Source/amdbar.f -o $(OBJDIR)/amdbar.o
 
-#FEAST# ../Lib/libamdf77.a: $(AMDF77)
-#FEAST# 	$(AR) ../Lib/libamdf77.a $^
-#FEAST# 	- $(RANLIB) ../Lib/libamdf77.a
+#FEAT2# ../Lib/libamdf77.a: $(AMDF77)
+#FEAT2# 	$(AR) ../Lib/libamdf77.a $^
+#FEAT2# 	- $(RANLIB) ../Lib/libamdf77.a
 $(OBJDIR)/libamdf77.a: $(AMDF77)
 	$(AR) $(OBJDIR)/libamdf77.a $^
 	- $(RANLIB) $(OBJDIR)/libamdf77.a
@@ -96,18 +96,18 @@ $(OBJDIR)/libamdf77.a: $(AMDF77)
 # Remove all but the files in the original distribution
 #-------------------------------------------------------------------------------
 
-#FEAST# clean:
-#FEAST#	- $(RM) $(CLEAN)
-#FEAST#
-#FEAST# purge: distclean
-#FEAST#
-#FEAST# distclean: clean
-#FEAST#	- $(RM) ../Lib/libamd.a ../Lib/libamdf77.a
+#FEAT2# clean:
+#FEAT2#	- $(RM) $(CLEAN)
+#FEAT2#
+#FEAT2# purge: distclean
+#FEAT2#
+#FEAT2# distclean: clean
+#FEAT2#	- $(RM) ../Lib/libamd.a ../Lib/libamdf77.a
 
 
 #-------------------------------------------------------------------------------
 # From here till the end of the file are additional instructions added for
-# smooth FEAST integration:
+# smooth FEAT2 integration:
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------

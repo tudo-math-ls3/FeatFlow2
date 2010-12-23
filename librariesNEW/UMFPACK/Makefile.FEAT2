@@ -2,21 +2,21 @@
 
 #-------------------------------------------------------------------------------
 # UMFPACK Makefile for compiling on Unix systems (for GNU Make)
-# (adapted for the FEAST package, based on Lib/GNUmakefile from UMFPACK 5.2)
+# (adapted for the FEAT2 package, based on Lib/GNUmakefile from UMFPACK 5.2)
 #
 # Whereever UMFPACK Makefile instructions have been altered, the original
-# ones immediately precede the new ones and carry the prefix #FEAST#.
+# ones immediately precede the new ones and carry the prefix #FEAT2#.
 #-------------------------------------------------------------------------------
 
-#FEAST# default: ../Lib/libumfpack.a
+#FEAT2# default: ../Lib/libumfpack.a
 .PHONY:	default
 default: $(OBJDIR)/libumfpack.a
 
-#FEAST# include ../UFconfig/UFconfig.mk
+#FEAT2# include ../UFconfig/UFconfig.mk
 
 C = $(CC) $(CFLAGS) $(UMFPACK_CONFIG) -DNO_TIMER \
     -IInclude -ISource -I../AMD/Include -I../UFconfig
-#FEAST#    -I../Include -I../Source -I../../AMD/Include -I../../UFconfig
+#FEAT2#    -I../Include -I../Source -I../../AMD/Include -I../../UFconfig
 
 UFCONFIG = ../UFconfig/UFconfig.h
 
@@ -65,7 +65,7 @@ UMFPACK = umfpack_col_to_triplet umfpack_defaults umfpack_free_numeric \
 
 # user-callable, created from umfpack_solve.c (umfpack_wsolve.h exists, though):
 # with int/UF_long and real/complex versions:
-UMFPACKW = #FEAST# umfpack_wsolve
+UMFPACKW = #FEAT2# umfpack_wsolve
 
 USER = $(UMFPACKW) $(UMFPACK)
 
@@ -76,9 +76,9 @@ GENERIC = umfpack_timer umfpack_tictoc umfpack_global
 # include files:
 #-------------------------------------------------------------------------------
 
-#FEAST Substitution Rule# ../Include/ => Include/
-#FEAST Substitution Rule# ../Source/  => Source/
-#FEAST Substitution Rule# ../../AMD/  => ../AMD/
+#FEAT2 Substitution Rule# ../Include/ => Include/
+#FEAT2 Substitution Rule# ../Source/  => Source/
+#FEAT2 Substitution Rule# ../../AMD/  => ../AMD/
 INC = Include/umfpack.h $(UFCONFIG) \
 	Source/umf_config.h Source/umf_version.h \
 	Source/umf_internal.h Source/umf_triplet.h \
@@ -92,23 +92,23 @@ INC = Include/umfpack.h $(UFCONFIG) \
 # object files for each version
 #-------------------------------------------------------------------------------
 
-#FEAST# DI = $(addsuffix .o, $(subst umf_,umf_di_,$(UMF)) $(subst umfpack_,umfpack_di_,$(USER)))
+#FEAT2# DI = $(addsuffix .o, $(subst umf_,umf_di_,$(UMF)) $(subst umfpack_,umfpack_di_,$(USER)))
 ifeq (,$(findstring -DENABLE_64BIT_UMFPACK, $(CFLAGS)))
 # 32bit interface
 DI = $(addsuffix .o, $(subst umf_,$(OBJDIR)/umf_di_,$(UMF)) $(subst umfpack_,$(OBJDIR)/umfpack_di_,$(USER)))
-DL = #FEAST#
+DL = #FEAT2#
 else
 # 64bit interface
-DI = #FEAST#
+DI = #FEAT2#
 DL = $(addsuffix .o, $(subst umf_,$(OBJDIR)/umf_dl_,$(UMF)) $(subst umfpack_,$(OBJDIR)/umfpack_dl_,$(USER)))
 endif
-ZI = #FEAST# $(addsuffix .o, $(subst umf_,umf_zi_,$(UMF)) $(subst umfpack_,umfpack_zi_,$(USER)))
-ZL = #FEAST# $(addsuffix .o, $(subst umf_,umf_zl_,$(UMF)) $(subst umfpack_,umfpack_zl_,$(USER)))
-#FEAST# II = $(addsuffix .o, $(subst umf_,umf_i_,$(UMFINT)))
+ZI = #FEAT2# $(addsuffix .o, $(subst umf_,umf_zi_,$(UMF)) $(subst umfpack_,umfpack_zi_,$(USER)))
+ZL = #FEAT2# $(addsuffix .o, $(subst umf_,umf_zl_,$(UMF)) $(subst umfpack_,umfpack_zl_,$(USER)))
+#FEAT2# II = $(addsuffix .o, $(subst umf_,umf_i_,$(UMFINT)))
 II = $(addsuffix .o, $(subst umf_,$(OBJDIR)/umf_i_,$(UMFINT)))
-#FEAST# LL = $(addsuffix .o, $(subst umf_,umf_l_,$(UMFINT)))
+#FEAT2# LL = $(addsuffix .o, $(subst umf_,umf_l_,$(UMFINT)))
 LL = $(addsuffix .o, $(subst umf_,$(OBJDIR)/umf_l_,$(UMFINT)))
-#FEAST# GN = $(addsuffix .o, $(subst umfpack_,umfpack_gn_,$(GENERIC)))
+#FEAT2# GN = $(addsuffix .o, $(subst umfpack_,umfpack_gn_,$(GENERIC)))
 GN = $(addsuffix .o, $(subst umfpack_,$(OBJDIR)/umfpack_gn_,$(GENERIC)))
 
 
@@ -116,8 +116,8 @@ GN = $(addsuffix .o, $(subst umfpack_,$(OBJDIR)/umfpack_gn_,$(GENERIC)))
 # compile each int and UF_long routine (with no real/complex version)
 #-------------------------------------------------------------------------------
 
-#FEAST Substitution Rule# All object files got a '$(OBJDIR)/' prefix
-#FEAST Substitution Rule# All source files got the '../' stripped
+#FEAT2 Substitution Rule# All object files got a '$(OBJDIR)/' prefix
+#FEAT2 Substitution Rule# All source files got the '../' stripped
 $(OBJDIR)/umf_i_%.o: Source/umf_%.c $(INC)
 	$(C) -DNCHOLMOD -DDINT -c $< -o $@
 
@@ -165,15 +165,15 @@ $(OBJDIR)/umfpack_di_%.o: Source/umfpack_%.c $(INC)
 $(OBJDIR)/umf_dl_%.o: Source/umf_%.c $(INC)
 	$(C) -DDLONG -c $< -o $@
 
-#FEAST# Workaround:
-#FEAST# Compiling umf_dl_garbage_collection.o and umf_dl_blas3_update.o on a
-#FEAST# NEC gateway Itanium2 server gives an internal compiler error with
-#FEAST# NEC C IA-64 Compiler, Revision 6.1 if -O3 and -DLONG are used together.
-#FEAST# Lowering optimisation to -O2 helps.
-#FEAST# Note: It would be natural to test the version of the C compiler in here.
-#FEAST# But unfortunately, the MPI wrapper command mpicc for NEC C IA-64 Compiler,
-#FEAST# Revision 6.1 does report nothing when command line argument -V is used.
-#FEAST# The c++ cousin, however, does report the version.
+#FEAT2# Workaround:
+#FEAT2# Compiling umf_dl_garbage_collection.o and umf_dl_blas3_update.o on a
+#FEAT2# NEC gateway Itanium2 server gives an internal compiler error with
+#FEAT2# NEC C IA-64 Compiler, Revision 6.1 if -O3 and -DLONG are used together.
+#FEAT2# Lowering optimisation to -O2 helps.
+#FEAT2# Note: It would be natural to test the version of the C compiler in here.
+#FEAT2# But unfortunately, the MPI wrapper command mpicc for NEC C IA-64 Compiler,
+#FEAT2# Revision 6.1 does report nothing when command line argument -V is used.
+#FEAT2# The c++ cousin, however, does report the version.
 COMPILERVERSION := $(shell eval $(CXXVERSION) )
 ifneq (,$(findstring NEC C++ IA-64 Compiler,$(COMPILERVERSION)))
 ifneq (,$(findstring Revision 6.1,$(COMPILERVERSION)))
@@ -291,27 +291,27 @@ $(OBJDIR)/umfpack_gn_%.o: Source/umfpack_%.c $(INC)
 # Create the Lib/libumfpack.a library
 #-------------------------------------------------------------------------------
 
-#FEAST# ../Lib/libumfpack.a: $(II) $(LL) $(GN) $(DI) $(DL) $(ZI) $(ZL)
-#FEAST# 	$(AR) ../Lib/libumfpack.a $^
-#FEAST# 	- $(RANLIB) ../Lib/libumfpack.a
+#FEAT2# ../Lib/libumfpack.a: $(II) $(LL) $(GN) $(DI) $(DL) $(ZI) $(ZL)
+#FEAT2# 	$(AR) ../Lib/libumfpack.a $^
+#FEAT2# 	- $(RANLIB) ../Lib/libumfpack.a
 
 #-------------------------------------------------------------------------------
 # Remove all but the files in the original distribution
 #-------------------------------------------------------------------------------
 
-#FEAST# purge: clean
-#FEAST# 	- $(RM) ../Lib/libumfpack.a
-#FEAST#
-#FEAST# clean:
-#FEAST# 	- $(RM) $(CLEAN)
+#FEAT2# purge: clean
+#FEAT2# 	- $(RM) ../Lib/libumfpack.a
+#FEAT2#
+#FEAT2# clean:
+#FEAT2# 	- $(RM) $(CLEAN)
 
 
 #-------------------------------------------------------------------------------
 # From here till the end of the file are additional instructions added for
-# smooth FEAST integration:
+# smooth FEAT2 integration:
 #-------------------------------------------------------------------------------
 
-# FEAST's Fortran to C interface (32 or 64bit)
+# FEAT2's Fortran to C interface (32 or 64bit)
 $(OBJDIR)/umf4_f77wrapper_feast.o: umf4_f77wrapper_feast.c $(INC)
 ifeq (,$(findstring -DENABLE_64BIT_UMFPACK, $(CFLAGS)))
             # 32bit interface
