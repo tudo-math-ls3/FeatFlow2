@@ -218,7 +218,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  subroutine ga_outputPopulation(rpopulation)
+  subroutine ga_outputPopulation(rpopulation, iunit)
 
 !<description>
     ! This subroutine writes out a population of cromosomes
@@ -227,6 +227,9 @@ contains
 !<input>
     ! Population of chromosomes
     type(t_population), intent(in) :: rpopulation
+
+    ! OPTIONAL: number of the output unit
+    integer, intent(in), optional :: iunit
 !</input>
 !</subroutine>
 
@@ -234,7 +237,7 @@ contains
     integer :: ichromosome
 
     do ichromosome = 1, rpopulation%nchromosomes
-      call ga_outputChromosome(rpopulation%p_Rchromosomes(ichromosome))
+      call ga_outputChromosome(rpopulation%p_Rchromosomes(ichromosome), iunit)
     end do
 
   end subroutine ga_outputPopulation
@@ -553,7 +556,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  subroutine ga_outputChromosome(rchromosome)
+  subroutine ga_outputChromosome(rchromosome, iunit)
     
 !<description>
     ! This subroutine writes out a chromosome
@@ -562,17 +565,29 @@ contains
 !<input>
     ! Chromosome
     type(t_chromosome), intent(in) :: rchromosome
+
+    ! OPTIONAL: number of the output unit
+    integer, intent(in), optional :: iunit
 !</input>
 !</subroutine>
 
     ! local variables
     integer :: idna
 
-    do idna = 1, size(rchromosome%p_DNA)
-      write(*,fmt='(A)', advance='no') rchromosome%p_DNA(idna)
-    end do
-    write(*,fmt='(3X,F5.3)') rchromosome%dfitness
-
+    if (present(iunit)) then
+      write(iunit,fmt='(G12.4)', advance='no') rchromosome%dfitness
+      do idna = 1, size(rchromosome%p_DNA)
+        write(iunit,fmt='(A)', advance='no') rchromosome%p_DNA(idna)
+      end do
+      write(iunit,*)
+    else
+      write(*,fmt='(G12.4)', advance='no') rchromosome%dfitness
+      do idna = 1, size(rchromosome%p_DNA)
+        write(*,fmt='(A)', advance='no') rchromosome%p_DNA(idna)
+      end do
+      write(*,*)
+    end if
+      
   end subroutine ga_outputChromosome
 
   !************************************************************************
