@@ -3,6 +3,9 @@
 # Include configuration file
 . ./flagship.conf
 
+# Enable auto-tuning using genetic algorithms.
+# APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AUTOTUNE"
+
 # Use system-wide configure
 ../../bin/configure \
     --appname=flagship \

@@ -141,6 +141,11 @@ module hydro_application
   use timestepaux
   use ucd
 
+#ifdef ENABLE_AUTOTUNE
+  use geneticalgorithm
+  use io
+#endif
+
   implicit none
 
   private
@@ -245,9 +250,13 @@ contains
     character(LEN=SYS_STRLEN) :: sbdrcondName
     character(LEN=SYS_STRLEN) :: algorithm
 
+#ifdef ENABLE_AUTOTUNE
+    ! Auto-Tune: Use genetic algorithm
+    type(t_population) :: rpopulation
+#endif
+
     ! local variables
     integer :: isystemFormat, systemMatrix, ndimension
-
 
     ! Start total time measurement
     call stat_startTimer(rtimerTotal)
@@ -356,10 +365,16 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#ifndef ENABLE_AUTOTUNE
         call hydro_solveTransientPrimal(rparlist, ssectionName,&
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
-
+#else
+        call ga_initPopulation(rpopulation, 20, 84)
+        call profile_subroutine(rpopulation, 10000)
+        call ga_releasePopulation(rpopulation)
+#endif
+        
         call hydro_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
@@ -418,6 +433,93 @@ contains
 
     ! Release collection
     call collct_done(rcollection)
+    
+  contains
+
+#ifdef ENABLE_AUTOTUNE
+
+    !************************************************************************
+    ! Profiling routines
+    !************************************************************************
+    
+    subroutine profile_subroutine(rpopulation, ngenerations)
+    
+      type(t_population), intent(inout) :: rpopulation
+      integer, intent(in) :: ngenerations
+      
+      real(DP) :: dtimeStart, dtimeStop
+      integer :: clock,clockrate,iunit
+      integer :: ichromosome,igeneration
+      
+      ! Open new output file
+      iunit = sys_getFreeUnit()
+      call io_openFileForWriting('ga.log', iunit, SYS_REPLACE, bformatted=.true.)
+
+      ! Iterate genetic algorithm
+      do igeneration = 1, ngenerations
+        
+        ! Loop over all chromosomes in population
+        do ichromosome = 1, rpopulation%nchromosomes
+          
+          ! Set variables from chromosome
+          call OMP_set_num_threads(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(1:4)))
+          
+          LINALG_NMIN_OMP      = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(5:12)))
+          LSYSSC_NEQMIN_OMP    = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(13:20)))
+          AFCSTAB_NEDGEMIN_OMP = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(21:28)))
+          GFSYS_NEQMIN_OMP     = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(29:36)))
+          GFSYS_NEDGEMIN_OMP   = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(37:44)))
+          BILF_NELEMSIM        = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(45:52)))
+          LINF_NELEMSIM        = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(53:60)))
+          GFSYS_NEQSIM         = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(61:68)))
+          GFSYS_NEDGESIM       = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(69:76)))
+          FPAR_NITEMSIM        = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(77:84)))
+
+          call system_clock(clock,clockrate); dtimeStart = real(clock,DP)/clockrate
+          
+          call hydro_solveTransientPrimal(rparlist, ssectionName,&
+              rbdrCondPrimal, rproblem, rtimestep, rsolver,&
+              rsolutionPrimal, rcollection)
+          call tstep_resetTimestep(rtimestep, .true.)
+          call lsysbl_releaseVector(rsolutionPrimal)
+
+          call system_clock(clock,clockrate); dtimeStop = real(clock,DP)/clockrate
+          rpopulation%p_Rchromosomes(ichromosome)%dfitness = 1.0/(dtimeStop-dtimeStart)          
+        end do
+        
+        ! Output statistics and renew population
+        call ga_sortPopulation(rpopulation)
+        call ga_outputPopulation(rpopulation)
+        call ga_outputPopulation(rpopulation, iunit)
+        call ga_renewPopulation(rpopulation)
+
+      end do
+
+      ! Close output unit
+      close(iunit)
+    
+    end subroutine profile_subroutine
+
+#endif
+
+    !************************************************************************
+    
+    function char2int(cstring) result(ivalue)
+      
+      character, dimension(:), intent(in) :: cstring
+      integer :: ivalue,i
+      
+      ivalue = 0
+      
+      do i = size(cstring),1,-1
+        if (cstring(i) .eq. '1') then
+          ivalue = ibset(ivalue, size(cstring)-i)
+        else
+          ivalue = ibclr(ivalue, size(cstring)-i)
+        end if
+      end do
+      
+    end function char2Int
 
   end subroutine hydro_app
 

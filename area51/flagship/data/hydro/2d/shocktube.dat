@@ -135,10 +135,10 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/rect_01x0.1_trias.prm
+prmfile = grids/2d/shocktube1.prm
 
 # file which contains the triangulation
-trifile = grids/2d/rect_01x0.1_trias.tri
+trifile = grids/2d/shocktube1.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -147,7 +147,7 @@ trifile = grids/2d/rect_01x0.1_trias.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = 1
+celement = 11
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -241,7 +241,7 @@ sucdvariable(4) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 0
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -266,16 +266,16 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.231
+dfinalTime = 0.001
 
 # initial time step size
-dinitialStep = 0.001
+dinitialStep = 0.0001
 
 # lower bound for the admissible time step
-dminStep = 0.001
+dminStep = 0.0001
 
 # upper bound for the admissible time step
-dmaxStep = 0.001
+dmaxStep = 0.0001
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -313,7 +313,7 @@ depsSteady = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 0
 
 # minimum multigrid level number
 nlmin = 1
@@ -435,7 +435,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 0
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -595,7 +595,7 @@ depsStag = 0.0
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 50 = ILU
-isolver = 4
+isolver = 2
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 15
@@ -624,7 +624,7 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 0
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -646,7 +646,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 5
+isolver = 2
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
