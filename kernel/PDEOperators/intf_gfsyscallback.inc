@@ -1,4 +1,4 @@
-  ! -*- mode: f90; -*-
+   ! -*- mode: f90; -*-
   
   ! This file describes the interfaces of the callback routines
   ! of the discrete operators for hyperbolic systems
@@ -10,7 +10,7 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixDiagonal_sim(DdataAtNode, DmatrixCoeffsAtNode,&
-      IverticesAtNode, dscale, DcoefficientsAtNode, rcollection)
+      IverticesAtNode, dscale, nnodes, DcoefficientsAtNode, rcollection)
 
     use fsystem
     use collection
@@ -40,6 +40,9 @@
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of nodes
+  integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -70,7 +73,7 @@
 !<subroutine>
     
   subroutine fcb_calcMatrix_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DcoefficientsAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DcoefficientsAtEdge, rcollection)
 
     use fsystem
     use collection
@@ -101,6 +104,8 @@
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
 !</input>
 
 !<inputoutput>
@@ -131,7 +136,7 @@
 !<subroutine>
     
   subroutine fcb_calcFlux_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
     use fsystem
     use collection
@@ -164,6 +169,9 @@
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -191,7 +199,7 @@
 !<subroutine>
     
   subroutine fcb_calcFlux2_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
     use fsystem
     use collection
@@ -222,6 +230,9 @@
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -249,7 +260,7 @@
 !<subroutine>
 
   subroutine fcb_calcFluxTransformation_sim(DdataAtEdge,&
-      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
+      DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
     use fsystem
     use collection
@@ -268,6 +279,9 @@
   !   DIMENSION(nvar,nedges)
   ! with nvar the number of variables at each endpoint
   real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -295,7 +309,7 @@
 !<subroutine>
 
   subroutine fcb_calcDiffTransformation_sim(DdataAtEdge,&
-      DtransformedDataAtEdge, rcollection)
+      nedges, DtransformedDataAtEdge, rcollection)
 
     use fsystem
     use collection
@@ -309,6 +323,9 @@
   !   DIMENSION(nvar,2,nedges)
   ! with nvar the number of variables at each endpoint
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -336,7 +353,7 @@
 !<subroutine>
 
   subroutine fcb_calcCharacteristics_sim(Dweight, DdataAtEdge,&
-      DcharVariablesAtEdge, DeigenvaluesAtEdge,&
+      nedges, DcharVariablesAtEdge, DeigenvaluesAtEdge,&
       DrightEigenvectorsAtEdge, DleftEigenvectorsAtEdge, rcollection)
 
     use fsystem
@@ -371,6 +388,9 @@
   !   DIMENSION(nvar,2,nedges)
   ! with nvar the number of variables at each endpoint
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -380,22 +400,22 @@
 
 !<output>
   ! OPTIONAL: Characteristic variables for all edges under consideration
-  !   DIMENSION(nvar,nedge)
+  !   DIMENSION(nvar,nedges)
   ! with nvar the number of variables at each edge
   real(DP), dimension(:,:), intent(out), optional :: DcharVariablesAtEdge
 
   ! OPTIONAL: Eigenvalues for all edges under consideration
-  !   DIMENSION(nvar,nedge)
+  !   DIMENSION(nvar,nedges)
   ! with nvar the number of variables at each edge
   real(DP), dimension(:,:), intent(out), optional :: DeigenvaluesAtEdge
 
   ! OPTIONAL: Matrices of left eigenvectors for all edges under consideration
-  !   DIMENSION(nvar*nvar,nedge)
+  !   DIMENSION(nvar*nvar,nedges)
   ! with nvar the number of variables at each edge
   real(DP), dimension(:,:), intent(out), optional :: DleftEigenvectorsAtEdge
 
   ! OPTIONAL: Matrices of right eigenvectors for all edges under consideration
-  !   DIMENSION(nvar*nvar,nedge)
+  !   DIMENSION(nvar*nvar,nedges)
   ! with nvar the number of variables at each edge
   real(DP), dimension(:,:), intent(out), optional :: DrightEigenvectorsAtEdge
 !</output>

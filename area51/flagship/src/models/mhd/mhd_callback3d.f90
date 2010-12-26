@@ -290,7 +290,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxGal3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the standard Galerkin
@@ -314,6 +314,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -340,7 +343,7 @@ contains
     integer :: idx
 
     
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -414,7 +417,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxGalNoBdr3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the TVD discretisation
@@ -441,6 +444,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -463,7 +469,7 @@ contains
   integer :: idx
   
     
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
 
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -513,7 +519,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxScDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -538,6 +544,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -566,7 +575,7 @@ contains
     integer :: idx
 
     
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -653,7 +662,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxScDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
     
 
 !<description>
@@ -680,6 +689,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -709,7 +721,7 @@ contains
     integer :: idx
 
     
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -800,7 +812,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxRoeDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -824,6 +836,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -853,7 +868,7 @@ contains
     integer :: idx
 
     
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -967,7 +982,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxRoeDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
     
 
 !<description>
@@ -993,6 +1008,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1022,7 +1040,7 @@ contains
     integer :: idx
     
 
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -1139,7 +1157,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxRusDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -1163,6 +1181,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1192,7 +1213,7 @@ contains
     integer :: idx
 
     
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes      
@@ -1346,7 +1367,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxRusDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -1371,6 +1392,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1400,7 +1424,7 @@ contains
     integer :: idx
 
     
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -1554,7 +1578,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatDiagMatD3d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
-      IverticesAtNode, dscale, DcoefficientsAtNode, rcollection)
+      IverticesAtNode, dscale, nnodes, DcoefficientsAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1573,6 +1597,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of nodes
+  integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -1594,7 +1621,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatDiag3d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -1614,6 +1641,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of nodes
+  integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -1635,7 +1665,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatGalMatD3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1654,6 +1684,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+  
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1675,7 +1708,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatGal3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1694,6 +1727,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1714,7 +1750,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatScDissMatD3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -1735,6 +1771,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1756,7 +1795,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatScDiss3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1777,6 +1816,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1798,7 +1840,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRoeDissMatD3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1818,6 +1860,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1839,7 +1884,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRoeDiss3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1859,6 +1904,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1880,7 +1928,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRusDissMatD3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1900,6 +1948,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1921,7 +1972,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRusDiss3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1941,6 +1992,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1962,7 +2016,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcCharacteristics3d_sim(Dweight, DdataAtEdge,&
-      DcharVariablesAtEdge, DeigenvaluesAtEdge,&
+      nedges, DcharVariablesAtEdge, DeigenvaluesAtEdge,&
       DrightEigenvectorsAtEdge, DleftEigenvectorsAtEdge, rcollection)
 
 !<description>
@@ -1977,6 +2031,9 @@ contains
     !   DIMENSION(nvar,2,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2015,7 +2072,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxFCTScDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes for FCT
@@ -2040,6 +2097,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2064,7 +2124,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxFCTRoeDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes forFCT
@@ -2088,6 +2148,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2111,7 +2174,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxFCTRusDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes for FCT
@@ -2135,6 +2198,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2158,7 +2224,7 @@ contains
     integer :: idx
     
 
-    do idx = 1, size(DfluxesAtEdge,2)
+    do idx = 1, nedges
 
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)

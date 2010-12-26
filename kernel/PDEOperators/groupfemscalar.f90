@@ -879,16 +879,17 @@ contains
           ii = Kdiagonal(i)
           
           ! Fill auxiliary arrays
-          IverticesAtNode(1,idx)     = i
-          IverticesAtNode(2,idx)     = ii
-          DdataAtNode(idx)           = Dx(i)
+          IverticesAtNode(1,idx) = i
+          IverticesAtNode(2,idx) = ii
+          DdataAtNode(idx)       = Dx(i)
         end do
 
         ! Use callback function to compute diagonal entries
         call fcb_calcMatrixDiagonal_sim(&
             DdataAtNode(1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
-            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            IverticesAtNode(:,1:IEQmax-IEQset+1),&
+            dscale, IEQmax-IEQset+1,&
             DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
 
         ! Loop through all equations in the current set
@@ -936,15 +937,16 @@ contains
           iedge = idx+IEDGEset-1
 
           ! Fill auxiliary arrays
-          DdataAtEdge(1,idx)           = Dx(IverticesAtEdge(1,iedge))
-          DdataAtEdge(2,idx)           = Dx(IverticesAtEdge(2,iedge))
+          DdataAtEdge(1,idx) = Dx(IverticesAtEdge(1,iedge))
+          DdataAtEdge(2,idx) = Dx(IverticesAtEdge(2,iedge))
         end do
 
         ! Use callback function to compute off-diagonal entries
         call fcb_calcMatrix_sim(&
             DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-            IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+            IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+            dscale, IEDGEmax-IEDGEset+1,&
             DcoefficientsAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
 
         ! Loop through all edges in the current set
@@ -1048,16 +1050,17 @@ contains
           ii = Kdiagonal(i)
           
           ! Fill auxiliary arrays
-          IverticesAtNode(1,idx)     = i
-          IverticesAtNode(2,idx)     = ii
-          DdataAtNode(idx)           = Dx(i)
+          IverticesAtNode(1,idx) = i
+          IverticesAtNode(2,idx) = ii
+          DdataAtNode(idx)       = Dx(i)
         end do
 
         ! Use callback function to compute diagonal entries
         call fcb_calcMatrixDiagonal_sim(&
             DdataAtNode(1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
-            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            IverticesAtNode(:,1:IEQmax-IEQset+1),&
+            dscale, IEQmax-IEQset+1,&
             DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
         
         ! Loop through all equations in the current set
@@ -1107,15 +1110,16 @@ contains
           iedge = idx+IEDGEset-1
           
           ! Fill auxiliary arrays
-          DdataAtEdge(1,idx)           = Dx(IverticesAtEdge(1,iedge))
-          DdataAtEdge(2,idx)           = Dx(IverticesAtEdge(2,iedge))
+          DdataAtEdge(1,idx) = Dx(IverticesAtEdge(1,iedge))
+          DdataAtEdge(2,idx) = Dx(IverticesAtEdge(2,iedge))
         end do
         
         ! Use callback function to compute off-diagonal entries
         call fcb_calcMatrix_sim(&
             DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
             DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-            IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+            IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+            dscale, IEDGEmax-IEDGEset+1,&
             DcoefficientsAtEdge(:,IEDGEset:IEDGEmax), rcollection)
         
         ! Loop through all edges in the current set

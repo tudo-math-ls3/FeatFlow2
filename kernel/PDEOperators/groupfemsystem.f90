@@ -1024,7 +1024,8 @@ contains
         call fcb_calcMatrixDiagonal_sim(&
             DdataAtNode(:,1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
-            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            IverticesAtNode(:,1:IEQmax-IEQset+1),&
+            dscale, IEQmax-IEQset+1,&
             DcoefficientsAtNode(:,:,1:IEQmax-IEQset+1), rcollection)
         
         ! Loop through all equations in the current set
@@ -1091,7 +1092,8 @@ contains
           call fcb_calcMatrix_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DcoefficientsAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -1209,7 +1211,8 @@ contains
         call fcb_calcMatrixDiagonal_sim(&
             DdataAtNode(:,1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
-            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            IverticesAtNode(:,1:IEQmax-IEQset+1),&
+            dscale, IEQmax-IEQset+1,&
             DcoefficientsAtNode(:,:,1:IEQmax-IEQset+1), rcollection)
 
         ! Loop through all equations in the current set
@@ -1279,7 +1282,8 @@ contains
           call fcb_calcMatrix_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DcoefficientsAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -1542,7 +1546,8 @@ contains
         call fcb_calcMatrixDiagonal_sim(&
             DdataAtNode(:,1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
-            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            IverticesAtNode(:,1:IEQmax-IEQset+1),&
+            dscale, IEQmax-IEQset+1,&
             DcoefficientsAtNode(:,:,1:IEQmax-IEQset+1), rcollection)
 
         ! Loop through all equations in the current set
@@ -1606,7 +1611,8 @@ contains
           call fcb_calcMatrix_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DcoefficientsAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -1799,7 +1805,8 @@ contains
           call fcb_calcFlux_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -1978,7 +1985,8 @@ contains
           call fcb_calcFlux_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -2212,7 +2220,8 @@ contains
           call fcb_calcFlux_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -2239,6 +2248,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir1D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -2310,6 +2320,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir1D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -2423,7 +2434,8 @@ contains
           call fcb_calcFlux_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -2450,6 +2462,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir2D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -2527,6 +2540,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir2D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -2548,6 +2562,7 @@ contains
           ! and corresponding eigenvalues along the Y-direction
           call fcb_calcCharacteristics_sim(YDir2D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -2613,6 +2628,7 @@ contains
           ! and corresponding eigenvalues along the Y-direction
           call fcb_calcCharacteristics_sim(YDir2D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -2726,7 +2742,8 @@ contains
           call fcb_calcFlux_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -2753,6 +2770,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -2830,6 +2848,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -2851,6 +2870,7 @@ contains
           ! and corresponding eigenvalues along the Y-direction
           call fcb_calcCharacteristics_sim(YDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -2922,6 +2942,7 @@ contains
           ! and corresponding eigenvalues along the Y-direction
           call fcb_calcCharacteristics_sim(YDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -2943,6 +2964,7 @@ contains
           ! and corresponding eigenvalues along the Z-direction
           call fcb_calcCharacteristics_sim(ZDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -3008,6 +3030,7 @@ contains
           ! and corresponding eigenvalues along the Z-direction
           call fcb_calcCharacteristics_sim(ZDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -3380,7 +3403,8 @@ contains
           call fcb_calcFlux_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -3407,6 +3431,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir1D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -3478,6 +3503,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir1D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -3591,7 +3617,8 @@ contains
           call fcb_calcFlux_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -3618,6 +3645,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir2D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -3695,6 +3723,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir2D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -3716,6 +3745,7 @@ contains
           ! and corresponding eigenvalues along the Y-direction
           call fcb_calcCharacteristics_sim(YDir2D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -3781,6 +3811,7 @@ contains
           ! and corresponding eigenvalues along the Y-direction
           call fcb_calcCharacteristics_sim(YDir2D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -3894,7 +3925,8 @@ contains
           call fcb_calcFlux_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
@@ -3921,6 +3953,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -3998,6 +4031,7 @@ contains
           ! and corresponding eigenvalues along the X-direction
           call fcb_calcCharacteristics_sim(XDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -4019,6 +4053,7 @@ contains
           ! and corresponding eigenvalues along the Y-direction
           call fcb_calcCharacteristics_sim(YDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -4090,6 +4125,7 @@ contains
           ! and corresponding eigenvalues along the Y-direction
           call fcb_calcCharacteristics_sim(YDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -4111,6 +4147,7 @@ contains
           ! and corresponding eigenvalues along the Z-direction
           call fcb_calcCharacteristics_sim(ZDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection=rcollection)
@@ -4176,6 +4213,7 @@ contains
           ! and corresponding eigenvalues along the Z-direction
           call fcb_calcCharacteristics_sim(ZDir3D,&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -4950,6 +4988,7 @@ contains
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
           
@@ -5136,6 +5175,7 @@ contains
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
           
@@ -5143,7 +5183,7 @@ contains
           ! for the explicit part for prelimiting
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              Dflux0(:,IEDGEset:IEDGEmax),&
+              Dflux0(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedPrelFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
           
@@ -5322,6 +5362,7 @@ contains
           ! Use callback function to compute transformed differences
           call fcb_calcDiffTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DtransformedDataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
           
@@ -5541,7 +5582,7 @@ contains
         ! Use callback function to compute transformed fluxes
         call fcb_calcFluxTransformation_sim(&
             DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-            Dflux(:,IEDGEset:IEDGEmax),&
+            Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
             DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             rcollection)
 
@@ -5693,14 +5734,14 @@ contains
         ! Use callback function to compute transformed fluxes
         call fcb_calcFluxTransformation_sim(&
             DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-            Dflux1(:,IEDGEset:IEDGEmax),&
+            Dflux1(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
             DtransformedFluxes1AtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             rcollection)
 
         ! Use callback function to compute transformed fluxes
         call fcb_calcFluxTransformation_sim(&
             DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-            Dflux2(:,IEDGEset:IEDGEmax),&
+            Dflux2(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
             DtransformedFluxes2AtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             rcollection)
 
@@ -6492,6 +6533,7 @@ contains
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
           
@@ -6678,6 +6720,7 @@ contains
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
           
@@ -6685,7 +6728,7 @@ contains
           ! for the explicit part for prelimiting
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              Dflux0(:,IEDGEset:IEDGEmax),&
+              Dflux0(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedPrelFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
           
@@ -6864,6 +6907,7 @@ contains
           ! Use callback function to compute transformed differences
           call fcb_calcDiffTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              IEDGEmax-IEDGEset+1,&
               DtransformedDataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
           
@@ -7083,7 +7127,7 @@ contains
         ! Use callback function to compute transformed fluxes
         call fcb_calcFluxTransformation_sim(&
             DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-            Dflux(:,IEDGEset:IEDGEmax),&
+            Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
             DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             rcollection)
 
@@ -7235,14 +7279,14 @@ contains
         ! Use callback function to compute transformed fluxes
         call fcb_calcFluxTransformation_sim(&
             DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-            Dflux1(:,IEDGEset:IEDGEmax),&
+            Dflux1(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
             DtransformedFluxes1AtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             rcollection)
 
         ! Use callback function to compute transformed fluxes
         call fcb_calcFluxTransformation_sim(&
             DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-            Dflux2(:,IEDGEset:IEDGEmax),&
+            Dflux2(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
             DtransformedFluxes2AtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             rcollection)
 
@@ -7783,7 +7827,8 @@ contains
         call fcb_calcFlux2_sim(&
             DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-            IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+            IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+            dscale, IEDGEmax-IEDGEset+1,&
             Dflux(:,IEDGEset:IEDGEmax), rcollection)
       end do
       !$omp end do
@@ -8222,7 +8267,8 @@ contains
         call fcb_calcFlux2_sim(&
             DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-            IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+            IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+            dscale, IEDGEmax-IEDGEset+1,&
             Dflux(:,IEDGEset:IEDGEmax), rcollection)
       end do
       !$omp end do

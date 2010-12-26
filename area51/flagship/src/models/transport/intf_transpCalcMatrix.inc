@@ -10,7 +10,7 @@
 !<subroutine>
     
   pure subroutine fcb_calcMatrixDiagonalPrimal_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
     use fsystem
@@ -36,6 +36,9 @@
 
   ! Scaling paramter
   real(DP), intent(in) :: dscale
+
+  ! Number of nodes
+  integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -61,7 +64,7 @@
 !<subroutine>
     
   pure subroutine fcb_calcMatrixPrimal_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
     use fsystem
@@ -88,6 +91,9 @@
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -113,7 +119,7 @@
 !<subroutine>
     
   pure subroutine fcb_calcMatrixDiagonalDual_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
     use fsystem
@@ -139,6 +145,9 @@
 
   ! Scaling paremter
   real(DP), intent(in) :: dscale
+
+  ! Number of nodes
+  integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -164,7 +173,7 @@
 !<subroutine>
     
   pure subroutine fcb_calcMatrixDual_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
     use fsystem
@@ -191,6 +200,9 @@
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>

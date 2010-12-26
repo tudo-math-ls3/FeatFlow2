@@ -236,7 +236,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxGal1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the standard Galerkin
@@ -260,6 +260,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -286,7 +289,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin flux
@@ -326,7 +329,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxGalNoBdr1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the TVD discretisation
@@ -353,6 +356,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -375,7 +381,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
 
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin flux
@@ -405,7 +411,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxScDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -430,6 +436,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -459,7 +468,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
           
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin flux
@@ -538,7 +547,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxRoeDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -562,6 +571,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -592,7 +604,7 @@ contains
     integer :: idx
     
     
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
           
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin flux
@@ -707,7 +719,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxRusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 
 !<description>
@@ -732,6 +744,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -760,7 +775,7 @@ contains
     integer :: idx
 
     
-    do idx = 1, size(DfluxesAtEdge,3)
+    do idx = 1, nedges
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin flux
@@ -828,7 +843,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatDiagMatD1d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
-      IverticesAtNode, dscale, DcoefficientsAtNode, rcollection)
+      IverticesAtNode, dscale, nnodes, DcoefficientsAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -847,6 +862,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+  
+  ! Number of nodes
+  integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -865,7 +883,7 @@ contains
     integer :: inode
 
 
-    do inode = 1, size(DcoefficientsAtNode,3)
+    do inode = 1, nnodes
       
       ! Compute velocity
       ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
@@ -888,7 +906,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatDiag1d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -908,6 +926,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of nodes
+  integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -926,7 +947,7 @@ contains
     integer :: inode
 
 
-    do inode = 1, size(DcoefficientsAtNode,3)
+    do inode = 1, nnodes
       
       ! Compute auxiliary variables
       ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
@@ -950,7 +971,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatGalMatD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -969,6 +990,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -987,7 +1011,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, nedges
       
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -1022,7 +1046,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatGal1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1041,6 +1065,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1059,7 +1086,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, nedges
       
       ! Compute auxiliary variables
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -1097,7 +1124,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatScDissMatD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -1118,6 +1145,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1138,7 +1168,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, nedges
       
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -1218,7 +1248,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatScDiss1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1239,6 +1269,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1259,7 +1292,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, nedges
     
       ! Compute auxiliary variables
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -1340,7 +1373,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRoeDissMatD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1360,6 +1393,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1382,7 +1418,7 @@ contains
     integer :: idx
     
 
-    do idx = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, nedges
 
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -1505,7 +1541,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRoeDiss1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1525,6 +1561,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1547,7 +1586,7 @@ contains
     integer :: idx,i,j,k
 
 
-    do idx = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, nedges
 
       ! Compute auxiliary variables
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -1669,7 +1708,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRusDissMatD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1689,6 +1728,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1707,7 +1749,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, nedges
       
       ! Compute auxiliary variables
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -1761,7 +1803,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRusDiss1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1781,6 +1823,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1799,7 +1844,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, nedges
 
       ! Compute auxiliary variables
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -1857,7 +1902,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcCharacteristics1d_sim(Dweight, DdataAtEdge,&
-      DcharVariablesAtEdge, DeigenvaluesAtEdge,&
+      nedges, DcharVariablesAtEdge, DeigenvaluesAtEdge,&
       DrightEigenvectorsAtEdge, DleftEigenvectorsAtEdge, rcollection)
 
 !<description>
@@ -1872,6 +1917,9 @@ contains
     !   DIMENSION(nvar,2,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1926,7 +1974,7 @@ contains
     
     ! Do we have to compute characteristic variables
     if (present(DcharVariablesAtEdge)) then
-      do idx = 1, size(DdataAtEdge,3)
+      do idx = 1, nedges
         
         ! Compute velocities
         ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -1981,7 +2029,7 @@ contains
 
     ! Do we have to compute eigenvalues
     if (present(DeigenvaluesAtEdge)) then
-      do idx = 1, size(DdataAtEdge,3)
+      do idx = 1, nedges
         
         ! Compute velocities
         ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -2017,7 +2065,7 @@ contains
 
     ! Do we have to compute right eigenvectors
     if (present(DrightEigenvectorsAtEdge)) then
-      do idx = 1, size(DdataAtEdge,3)
+      do idx = 1, nedges
         
         ! Compute velocities
         ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -2062,7 +2110,7 @@ contains
 
     ! Do we have to compute left eigenvectors
     if (present(DleftEigenvectorsAtEdge)) then
-      do idx = 1, size(DdataAtEdge,3)
+      do idx = 1, nedges
         
         ! Compute velocities
         ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -2115,7 +2163,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxFCTScDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes for FCT
@@ -2140,6 +2188,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2163,7 +2214,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DfluxesAtEdge,2)
+    do idx = 1, nedges
 
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -2213,8 +2264,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxFCTRoeDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
-
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes forFCT
@@ -2238,6 +2288,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2263,7 +2316,7 @@ contains
     integer :: idx
 
 
-    do idx = 1, size(DfluxesAtEdge,2)
+    do idx = 1, nedges
 
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -2342,7 +2395,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxFCTRusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes for FCT
@@ -2366,6 +2419,9 @@ contains
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2387,7 +2443,7 @@ contains
     real(DP) :: d_ij
     integer :: idx
 
-    do idx = 1, size(DfluxesAtEdge,2)
+    do idx = 1, nedges
       
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -2423,7 +2479,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoFluxDensity1d_sim(DdataAtEdge,&
-      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
+      DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2440,6 +2496,9 @@ contains
     !   DIMENSION(nvar,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2458,7 +2517,7 @@ contains
     ! local variables
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Transformed density fluxes
       DtransformedFluxesAtEdge(1,1,idx) =&
@@ -2474,7 +2533,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoDiffDensity1d_sim(DdataAtEdge,&
-      DtransformedDataAtEdge, rcollection)
+      nedges, DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2486,6 +2545,9 @@ contains
     !   DIMENSION(nvar,2,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2504,7 +2566,7 @@ contains
     ! local variables
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Transformed density difference
       DtransformedDataAtEdge(1,idx) =&
@@ -2519,7 +2581,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoFluxEnergy1d_sim(DdataAtEdge,&
-      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
+      DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2536,6 +2598,9 @@ contains
     !   DIMENSION(nvar,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2554,7 +2619,7 @@ contains
     ! local variables
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Transformed total energy fluxes
       DtransformedFluxesAtEdge(1,1,idx) =&
@@ -2570,7 +2635,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoDiffEnergy1d_sim(DdataAtEdge,&
-      DtransformedDataAtEdge, rcollection)
+      nedges, DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2582,6 +2647,9 @@ contains
     !   DIMENSION(nvar,2,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2600,7 +2668,7 @@ contains
     ! local variables
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Transformed total density difference
       DtransformedDataAtEdge(1,idx) =&
@@ -2615,7 +2683,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoFluxPressure1d_sim(DdataAtEdge,&
-      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
+      DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2632,6 +2700,9 @@ contains
     !   DIMENSION(nvar,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2651,7 +2722,7 @@ contains
     real(DP) :: ui,uj
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -2679,7 +2750,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoDiffPressure1d_sim(DdataAtEdge,&
-      DtransformedDataAtEdge, rcollection)
+      nedges, DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2691,6 +2762,9 @@ contains
     !   DIMENSION(nvar,2,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2709,7 +2783,7 @@ contains
     ! local variables
     integer :: idx
 
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Transformed pressure difference
       DtransformedDataAtEdge(1,idx) =&
@@ -2724,7 +2798,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoFluxVelocity1d_sim(DdataAtEdge,&
-      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
+      DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2741,6 +2815,9 @@ contains
     !   DIMENSION(nvar,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2760,7 +2837,7 @@ contains
     integer :: idx
     real(DP) :: ui,uj
 
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -2784,7 +2861,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoDiffVelocity1d_sim(DdataAtEdge,&
-      DtransformedDataAtEdge, rcollection)
+      nedges, DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2796,6 +2873,9 @@ contains
     !   DIMENSION(nvar,2,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2814,7 +2894,7 @@ contains
     ! local variables
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
 
       ! Transformed velocity difference in x-direction
       DtransformedDataAtEdge(1,idx) =&
@@ -2829,7 +2909,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoFluxMomentum1d_sim(DdataAtEdge,&
-      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
+      DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2846,6 +2926,9 @@ contains
     !   DIMENSION(nvar,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
+    
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2864,7 +2947,7 @@ contains
     ! local variables
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Transformed momentum fluxes in x-direction
       DtransformedFluxesAtEdge(1,1,idx) =&
@@ -2880,7 +2963,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoDiffMomentum1d_sim(DdataAtEdge,&
-      DtransformedDataAtEdge, rcollection)
+      nedges, DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2892,6 +2975,9 @@ contains
     !   DIMENSION(nvar,2,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2910,7 +2996,7 @@ contains
      ! local variables
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Transformed momentum difference in x-direction
       DtransformedDataAtEdge(1,idx) =&
@@ -2925,7 +3011,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoFluxDenEng1d_sim(DdataAtEdge,&
-      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
+      DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2942,6 +3028,9 @@ contains
     !   DIMENSION(nvar,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2960,7 +3049,7 @@ contains
     ! local variables
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Transformed density fluxes
       DtransformedFluxesAtEdge(1,1,idx) =&
@@ -2982,7 +3071,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoDiffDenEng1d_sim(DdataAtEdge,&
-      DtransformedDataAtEdge, rcollection)
+      nedges, DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -2994,6 +3083,9 @@ contains
     !   DIMENSION(nvar,2,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -3012,7 +3104,7 @@ contains
     ! local variables
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
 
       ! Transformed density difference
       DtransformedDataAtEdge(1,idx) =&
@@ -3032,7 +3124,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoFluxDenPre1d_sim(DdataAtEdge,&
-      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
+      DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -3049,6 +3141,9 @@ contains
     !   DIMENSION(nvar,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -3068,7 +3163,7 @@ contains
     real(DP) :: ui,uj
     integer :: idx
 
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -3102,7 +3197,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoDiffDenPre1d_sim(DdataAtEdge,&
-      DtransformedDataAtEdge, rcollection)
+      nedges, DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -3114,6 +3209,9 @@ contains
     !   DIMENSION(nvar,2,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -3132,7 +3230,7 @@ contains
     ! local variables
     integer :: idx
     
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Transformed density difference
       DtransformedDataAtEdge(1,idx) = &
@@ -3152,7 +3250,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoFluxDenPreVel1d_sim(DdataAtEdge,&
-      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
+      DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -3169,6 +3267,9 @@ contains
     !   DIMENSION(nvar,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -3188,7 +3289,7 @@ contains
     real(DP) :: ui,uj
     integer :: idx
 
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Compute velocities
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
@@ -3232,7 +3333,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_trafoDiffDenPreVel1d_sim(DdataAtEdge,&
-      DtransformedDataAtEdge, rcollection)
+      nedges, DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of the given
@@ -3244,6 +3345,9 @@ contains
     !   DIMENSION(nvar,2,nedges)
     ! with nvar the number of variables at each endpoint
     real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -3262,7 +3366,7 @@ contains
     ! local variables
     integer :: idx
 
-    do idx = 1, size(DdataAtEdge,3)
+    do idx = 1, nedges
       
       ! Transformed density difference
       DtransformedDataAtEdge(1,idx) =&

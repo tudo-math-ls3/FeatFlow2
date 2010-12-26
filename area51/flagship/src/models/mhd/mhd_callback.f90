@@ -3096,7 +3096,7 @@ contains
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
-              Dflux(:,IEDGEset:IEDGEmax),&
+              Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
 
           ! Loop through all edges in the current set
@@ -3170,7 +3170,7 @@ contains
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
-              Dflux(:,IEDGEset:IEDGEmax),&
+              Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
           
           ! Loop through all edges in the current set
@@ -3332,7 +3332,7 @@ contains
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
-              Dflux(:,IEDGEset:IEDGEmax),&
+              Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
 
           ! Loop through all edges in the current set
@@ -3406,7 +3406,7 @@ contains
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
-              Dflux(:,IEDGEset:IEDGEmax),&
+              Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
           
           ! Loop through all edges in the current set
@@ -3568,7 +3568,7 @@ contains
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
-              Dflux(:,IEDGEset:IEDGEmax),&
+              Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
 
           ! Loop through all edges in the current set
@@ -3642,7 +3642,7 @@ contains
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
-              Dflux(:,IEDGEset:IEDGEmax),&
+              Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
           
           ! Loop through all edges in the current set

@@ -323,9 +323,8 @@ contains
   
 !<subroutine>
 
-
   pure subroutine transp_calcMatDiagConvP1d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -346,6 +345,9 @@ contains
     
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -366,7 +368,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do inode = 1, size(DcoefficientsAtNode,2)
+    do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
@@ -386,7 +388,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatGalConvP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -407,6 +409,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -427,7 +432,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
@@ -456,7 +461,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatUpwConvP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -478,6 +483,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -498,7 +506,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
@@ -1639,7 +1647,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatDiagConvD1d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -1660,6 +1668,9 @@ contains
     
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -1680,7 +1691,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do inode = 1, size(DcoefficientsAtNode,2)
+    do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
@@ -1700,7 +1711,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatGalConvD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1721,6 +1732,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1741,7 +1755,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
@@ -1770,7 +1784,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatUpwConvD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1792,6 +1806,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1812,7 +1829,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
@@ -1842,7 +1859,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatDiagBurgersP1d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -1862,6 +1879,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -1878,7 +1898,7 @@ contains
     ! local variables
     integer :: inode
 
-    do inode = 1, size(DcoefficientsAtNode,2)
+    do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficients  $k_{ii} = 0.5*u_i*C_{ii}$
@@ -1898,7 +1918,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatGalBurgersP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1918,6 +1938,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1934,7 +1957,7 @@ contains
     ! local variables
     integer :: iedge
 
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ij} = 0.5*u_j*C_{ji}$
@@ -1965,7 +1988,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatUpwBurgersP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1986,6 +2009,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2002,7 +2028,7 @@ contains
     ! local variables
     integer :: iedge
 
-    do iedge  = 1, size(DcoefficientsAtEdge,2)
+    do iedge  = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ij} = 0.5*u_j*C_{ji}$
@@ -2570,7 +2596,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatDiagBuckLevP1d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -2592,6 +2618,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -2609,7 +2638,7 @@ contains
     real(DP) :: ui
     integer :: inode
     
-    do inode = 1, size(DcoefficientsAtNode,2)
+    do inode = 1, nnodes
 
       ui = DdataAtNode(inode)
 
@@ -2632,7 +2661,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatGalBuckLevP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2654,6 +2683,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2671,7 +2703,7 @@ contains
     real(DP) :: ui,uj
     integer :: iedge
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
       ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
 
@@ -2704,7 +2736,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatUpwBuckLevP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2728,6 +2760,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -2745,7 +2780,7 @@ contains
     real(DP) :: ui,uj
     integer :: iedge
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
       ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
 

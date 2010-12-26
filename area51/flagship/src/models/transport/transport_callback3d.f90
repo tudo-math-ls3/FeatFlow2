@@ -246,7 +246,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatDiagConvP3d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -267,6 +267,9 @@ contains
     
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -287,7 +290,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do inode = 1, size(DcoefficientsAtNode,2)
+    do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
@@ -311,7 +314,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatGalConvP3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -332,6 +335,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -352,7 +358,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
@@ -389,7 +395,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatUpwConvP3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -411,7 +417,10 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
-    !</input>
+
+    ! Number of edges
+    integer, intent(in) :: nedges
+!</input>
 
 !<inputoutput>
     ! OPTIONAL: collection structure
@@ -431,7 +440,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
@@ -469,7 +478,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatDiagConvD3d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -490,6 +499,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -510,7 +522,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do inode = 1, size(DcoefficientsAtNode,2)
+    do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
@@ -534,7 +546,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatGalConvD3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -555,6 +567,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -575,7 +590,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
@@ -612,7 +627,7 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatUpwConvD3d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -634,7 +649,10 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
-    !</input>
+
+    ! Number of edges
+    integer, intent(in) :: nedges
+!</input>
 
 !<inputoutput>
     ! OPTIONAL: collection structure
@@ -654,7 +672,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$

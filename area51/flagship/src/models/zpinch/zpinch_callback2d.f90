@@ -577,7 +577,7 @@ contains
 !<subroutine>
 
   pure subroutine zpinch_calcMatDiagConvIntlP2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
 !<description>
@@ -601,6 +601,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -621,7 +624,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do inode = 1, size(DcoefficientsAtNode,2)
+    do inode = 1, nnodes
       ! Compute convective coefficient  $-v_i*Cx_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
           (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
@@ -635,7 +638,7 @@ contains
 !<subroutine>
 
   pure subroutine zpinch_calcMatRusConvIntlP2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -660,6 +663,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -684,7 +690,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
       ! Compute convective coefficient  $-v_j*Cx_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
@@ -801,7 +807,7 @@ contains
 !<subroutine>
 
   pure subroutine zpinch_calcMatDiagConvIntlD2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
 !<description>
@@ -825,6 +831,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -845,7 +854,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do inode = 1, size(DcoefficientsAtNode,2)
+    do inode = 1, nnodes
       ! Compute convective coefficient  $-v_i*Cx_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
           (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
@@ -859,7 +868,7 @@ contains
 !<subroutine>
 
   pure subroutine zpinch_calcMatRusConvIntlD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -884,6 +893,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -908,7 +920,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
       ! Compute convective coefficient  $-v_j*Cx_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
           (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
@@ -999,7 +1011,7 @@ contains
 !<subroutine>
 
   pure subroutine zpinch_calcMatDiagConvBlockP2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
 !<description>
@@ -1023,6 +1035,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -1043,7 +1058,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do inode = 1, size(DcoefficientsAtNode,2)
+    do inode = 1, nnodes
       ! Compute convective coefficient  $-v_i*Cx_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
           (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
@@ -1057,7 +1072,7 @@ contains
 !<subroutine>
 
   pure subroutine zpinch_calcMatRusConvBlockP2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -1082,6 +1097,9 @@ contains
     
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1106,7 +1124,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
       ! Compute convective coefficient  $-v_j*Cx_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
@@ -1226,7 +1244,7 @@ contains
 !<subroutine>
 
   pure subroutine zpinch_calcMatDiagConvBlockD2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
 !<description>
@@ -1250,6 +1268,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -1270,7 +1291,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do inode = 1, size(DcoefficientsAtNode,2)
+    do inode = 1, nnodes
       ! Compute convective coefficient  $-v_i*Cx_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
           (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
@@ -1284,7 +1305,7 @@ contains
 !<subroutine>
 
   pure subroutine zpinch_calcMatRusConvBlockD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -1309,6 +1330,9 @@ contains
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Number of edges
+    integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
@@ -1333,7 +1357,7 @@ contains
 !!!    ! Set pointer to velocity vector
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
-    do iedge = 1, size(DcoefficientsAtEdge,2)
+    do iedge = 1, nedges
       ! Compute convective coefficient  $-v_j*Cx_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
           (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&

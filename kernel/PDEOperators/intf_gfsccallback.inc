@@ -10,7 +10,7 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixDiagonal_sim(DdataAtNode, DmatrixCoeffsAtNode,&
-      IverticesAtNode, dscale, DcoefficientsAtNode, rcollection)
+      IverticesAtNode, dscale, nnodes, DcoefficientsAtNode, rcollection)
 
     use fsystem
     use collection
@@ -39,6 +39,9 @@
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of nodes
+  integer, intent(in) :: nnodes
 !</input>
 
 !<inputoutput>
@@ -66,7 +69,7 @@
 !<subroutine>
     
   subroutine fcb_calcMatrix_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DcoefficientsAtEdge, rcollection)
+      IverticesAtEdge, dscale, nedges, DcoefficientsAtEdge, rcollection)
 
     use fsystem
     use collection
@@ -96,6 +99,9 @@
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
+
+  ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
