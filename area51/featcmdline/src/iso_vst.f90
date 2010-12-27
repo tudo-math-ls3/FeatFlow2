@@ -1,4 +1,4 @@
-MODULE ISO_VARYING_STRING
+MODULE iso_vst
   
 ! Written by J.L.Schonfelder 
 ! Incorporating suggestions by members of the committee ISO/IEC JTC1/SC22/WG5
@@ -3749,4 +3749,4 @@ elemental function GETCHAR (string,ipos)
   end if
  end function 
  
-ENDMODULE ISO_VARYING_STRING
+ENDMODULE
