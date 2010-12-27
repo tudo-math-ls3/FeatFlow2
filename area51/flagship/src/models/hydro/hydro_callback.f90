@@ -304,6 +304,7 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    real(DP) :: dscale
     integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, inviscidAFC
     integer :: isystemCoupling, isystemPrecond, isystemFormat, imasstype, ivar, jvar
@@ -364,10 +365,9 @@ contains
           call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
           do ivar = 1, hydro_getNVAR(rproblemLevel)
             call lsyssc_matrixLinearComb(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
-                rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar), 1.0_DP,&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                .false., .false., .true., .true.)
+                1.0_DP, 1.0_DP, .false., .false., .true., .true.)
           end do
 
         case (MASS_CONSISTENT)
@@ -376,7 +376,7 @@ contains
             call lsyssc_matrixLinearComb(&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                1.0_DP,1.0_DP, .false., .false., .true., .true.)
+                1.0_DP, 1.0_DP, .false., .false., .true., .true.)
           end do
 
         case DEFAULT
@@ -852,7 +852,7 @@ contains
                   rproblemLevel%Rmatrix(consistentMassMatrix),&
                   rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                   1.0_DP, rtimestep%theta*rtimestep%dStep,&
-                  .false., .false., .true.,.true.)
+                  .false., .false., .true., .true.)
 
             elseif (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
 
