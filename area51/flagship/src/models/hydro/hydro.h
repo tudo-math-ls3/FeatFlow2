@@ -24,7 +24,7 @@
 #endif
 
 #if 0
-! Compute density from conservative variables in 1D,2D, and 3D
+! Compute density from conservative variables in 1D, 2D, and 3D
 #endif
 #define DENSITY_FROM_CONSVAR(U,nvar) (U(1))
 #define DENSITY_1T_FROM_CONSVAR(U,nvar,i1) (U(1,i1))
