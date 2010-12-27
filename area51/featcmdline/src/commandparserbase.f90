@@ -2,7 +2,7 @@ module commandparserbase
 
   use fsystem
   use collection
-  use ISO_VARYING_STRING
+  use iso_vst
 
   implicit none
   

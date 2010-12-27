@@ -1,6 +1,6 @@
 module commandparser
 
-  use ISO_VARYING_STRING
+  use iso_vst
   
   use fsystem
   use genoutput
