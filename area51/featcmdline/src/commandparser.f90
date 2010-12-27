@@ -1483,7 +1483,7 @@ contains
         getOperatorWeight = 10
       else if ((soperator .eq. "+") .or. (soperator .eq. "-")) then
         getOperatorWeight = 11
-      else if ((soperator .eq. "+") .or. (soperator .eq. "-") .or. &
+      else if ((soperator .eq. "*") .or. (soperator .eq. "/") .or. &
                (soperator .eq. "%")) then
         getOperatorWeight = 12
       else if ((soperator .eq. "++") .or. (soperator .eq. "--") .or. &

@@ -258,9 +258,18 @@ contains
 
     else
     
-      ! Unknown command
-      bunknown = .true.
+      ! Mathematical function with 1 parameter?
+      call fcmd_mathfunction (rcmdStatus,inestlevel,rvalue,FCMD_EXECSTD,Rvalues,&
+          sstring,bunknown)
+          
+      if (bunknown) then
 
+        ! Mathematical function with 2 parameter?
+        call fcmd_math2function (rcmdStatus,inestlevel,rvalue,FCMD_EXECSTD,Rvalues,&
+            sstring,bunknown)
+
+      end if
+    
     end if
 
   end subroutine
@@ -470,7 +479,8 @@ contains
 
   !<subroutine>
 
-  subroutine fcmd_getparameters (Rvarspec,Iindex,bsuccess,rcollection,inestlevel,Rvalues)
+  subroutine fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,rcollection,&
+      inestlevel,Rvalues)
   
   !<description>
     ! Checks parameters and finds indices of optional parameters.
@@ -504,8 +514,10 @@ contains
     integer, dimension(:), intent(out) :: Iindex
 
     ! Returns TRUE if the parameters match in number and type the definitions
-    ! in Snames/Itypes.
+    ! in Snames/Itypes. if FALSE, serrormsg gets an error message.
     logical, intent(out) :: bsuccess
+    
+    character(len=*), intent(out) :: serrormsg
   !</output>
   
   !</subroutine>
@@ -518,6 +530,7 @@ contains
     
     bsuccess = .false.
     Iindex(:) = 0
+    serrormsg = ""
     
     ! Figure out the number of untagged variables
     do nuntagged = 1,size(Rvarspec)
@@ -529,12 +542,12 @@ contains
     if (nuntagged .gt. 0) then
       if (.not. present (Rvalues)) return
       if (ubound(Rvalues,1) .lt. nuntagged) then
-        call output_line ("Not enough arguments.")
+        serrormsg = "Not enough arguments."
         return
       end if
       do i=1,nuntagged
         if (Rvalues(i)%svartag .ne. "") then
-          call output_line ("Not enough arguments.")
+          serrormsg = "Not enough arguments."
           return
         end if
       end do
@@ -550,7 +563,7 @@ contains
     do i=1,nuntagged
       if (Rvarspec(i)%ctype .ne. STYPE_UNDEFINED) then
         if (Rvalues(i)%ctype .ne. Rvarspec(i)%ctype) then
-          call output_line ("Invalid arguments.")
+          serrormsg = "Invalid arguments."
           return
         end if
       end if
@@ -564,7 +577,7 @@ contains
           if (Rvarspec(i)%ctype .ne. STYPE_UNDEFINED) then
             ! Cancel if the type is wrong.
             if (Rvarspec(i)%ctype .ne. Rvalues(j)%ctype) then
-              call output_line ("Invalid arguments.")
+              serrormsg = "Invalid arguments."
               return
             end if
           end if
@@ -587,7 +600,7 @@ contains
         
           ! Is this a parameter from the collection?
           if (Rvalues(Iindex(i))%svarname .eq. "") then
-            call output_line ("Unknown variable")
+            serrormsg = "Unknown variable"
             return
           end if
           
@@ -595,14 +608,14 @@ contains
               inestlevel,ssection,bexists)
 
           if (.not. bexists) then
-            call output_line ("Unknown variable: "//trim(Rvalues(Iindex(i))%svarname))
+            serrormsg = "Unknown variable: "//trim(Rvalues(Iindex(i))%svarname)
             return
           end if
         
           ! Is this parameter present in the collection?
           ctype = collct_gettype (rcollection, Rvalues(Iindex(i))%svarname, ssectionName=ssection)
           if (ctype .ne. Rvarspec(i)%ccollectionType) then
-            call output_line ("Invalid type: "//trim(Rvalues(Iindex(i))%svarname))
+            serrormsg = "Invalid type: "//trim(Rvalues(Iindex(i))%svarname)
             return
           end if
         
@@ -903,6 +916,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=SYS_NAMELEN) :: svalname,ssection
@@ -951,9 +965,12 @@ contains
     else
   
       ! Check parameters
-      call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+      call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
           rcmdStatus%rcollection,inestlevel,Rvalues)
-      if (.not. bsuccess) return
+      if (.not. bsuccess) then
+        call output_line (serrormsg)
+        return
+      end if
 
       ! Get the identifiers
       svalname = Rvalues(1)%svarname
@@ -1037,6 +1054,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=COLLCT_MLNAME) :: ssection
@@ -1076,9 +1094,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     svalname = Rvalues(1)%svarname
@@ -1212,6 +1233,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=COLLCT_MLNAME) :: ssection
@@ -1242,9 +1264,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     svalname = Rvalues(1)%svarname
@@ -1299,6 +1324,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=COLLCT_MLNAME) :: ssection
@@ -1328,9 +1354,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     svalname = Rvalues(1)%svarname
@@ -1668,9 +1697,10 @@ contains
          t_varspec("", STYPE_STRING, COLLCT_UNDEFINED)  &    ! File name
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
+    logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
-    logical :: bsuccess
     logical :: bexists
     character(len=SYS_STRLEN) :: sfilename
     character(len=COLLCT_MLNAME) :: sname, ssection
@@ -1699,9 +1729,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifier and file name 
     sname = Rvalues(1)%svarname
@@ -1778,9 +1811,10 @@ contains
          t_varspec("boundary", STYPE_VAR, COLLCT_BOUNDARY)  &
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
+    logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
-    logical :: bsuccess
     logical :: bexists
     character(len=SYS_STRLEN) :: sfilename, stoken
     character(len=COLLCT_MLNAME) :: sname,ssection
@@ -1827,9 +1861,12 @@ contains
     end if
 
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
     
     ! Get the identifier and file name 
     sname = Rvalues(1)%svarname
@@ -1925,6 +1962,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=SYS_STRLEN) :: stoken
@@ -1971,9 +2009,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifier and file name 
     nullify(p_rboundary)
@@ -2085,6 +2126,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=SYS_STRLEN) :: stoken
@@ -2135,9 +2177,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifier and file name 
     nullify(p_rboundary)
@@ -2410,6 +2455,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     logical :: bexists,berror
@@ -2486,9 +2532,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     sname = Rvalues(1)%svarname
@@ -2819,6 +2868,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     logical :: bexists,berror
@@ -2906,9 +2956,12 @@ contains
     nullify(p_rmeshHierarchy)
     
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
     
     if (Iindex(2) .ne. 0) then
       ! Get the triangulation object.
@@ -3220,6 +3273,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
     integer :: ilevel
 
     ! local variables
@@ -3251,9 +3305,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     sname = Rvalues(1)%svarname
@@ -3327,6 +3384,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
     integer :: ilevel
 
     ! local variables
@@ -3358,9 +3416,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     sname = Rvalues(1)%svarname
@@ -3434,6 +3495,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
     integer :: icomponent
 
     ! local variables
@@ -3465,9 +3527,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     sname = Rvalues(1)%svarname
@@ -3540,6 +3605,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
   
     ! local variables
     logical :: bexists
@@ -3579,9 +3645,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     sname = Rvalues(1)%svarname
@@ -3664,6 +3733,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     logical :: bexists
@@ -3697,9 +3767,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     sname = Rvalues(1)%svarname
@@ -3766,6 +3839,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=SYS_STRLEN) :: sfilename
@@ -3803,9 +3877,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     sname = Rvalues(1)%svarname
@@ -3871,6 +3948,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=SYS_STRLEN) :: sfilename,sformat
@@ -3911,9 +3989,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     ! Get the identifiers
     sname = Rvalues(1)%svarname
@@ -3985,6 +4066,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=COLLCT_MLNAME) :: ssection
@@ -4021,9 +4103,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
 
     stoken = Rvalues(1)%svarname
     call cmdprs_getSymbolSection (rcmdStatus%rcollection,stoken,inestlevel,ssection)
@@ -4121,6 +4206,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=COLLCT_MLNAME) :: ssection
@@ -4158,9 +4244,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
     
     ! Get the variables.
     stoken = Rvalues(1)%svarname
@@ -4359,6 +4448,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=COLLCT_MLNAME) :: ssection
@@ -4406,9 +4496,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
     
     ! Get the parameters
     nullify(p_rvectorBlock1)
@@ -4598,6 +4691,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=COLLCT_MLNAME) :: ssection
@@ -4664,9 +4758,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
     
     call cmdprs_dequoteStd(Rvalues(1)%svalue,sfilename)
     
@@ -4967,6 +5064,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=COLLCT_MLNAME) :: ssection
@@ -5004,9 +5102,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
     
     
     ! Get the parameters
@@ -5106,6 +5207,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=COLLCT_MLNAME) :: ssection
@@ -5144,9 +5246,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
     
     ! Get the parameters
     
@@ -5229,6 +5334,7 @@ contains
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
 
     ! local variables
     character(len=COLLCT_MLNAME) :: ssection
@@ -5265,9 +5371,12 @@ contains
     end select
   
     ! Check parameters
-    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,&
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
         rcmdStatus%rcollection,inestlevel,Rvalues)
-    if (.not. bsuccess) return
+    if (.not. bsuccess) then
+      call output_line (serrormsg)
+      return
+    end if
     
     ! Get the parameters
     
@@ -5298,6 +5407,300 @@ contains
     
     ! Ok.
     rreturn%ctype = STYPE_INTEGER
+
+  end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine fcmd_mathfunction (rcmdStatus,inestlevel,rreturn,cexecmode,Rvalues,&
+      sfunction,bunknown)
+  
+  !<description>
+    ! Command: simple math function.
+  !</description>
+  
+  !<inputoutput>
+    ! Current status block.
+    type(t_commandstatus), intent(inout) :: rcmdStatus
+    
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
+
+    ! Type of execution mode. One of the FCMD_EXECxxxx constants.
+    integer, intent(in) :: cexecmode
+    
+    ! String identifying a function. Must be lower case.
+    character(len=*), intent(in) :: sfunction
+  !</inputoutput>
+
+  !<input>
+    ! OPTIONAL: Command line arguments.
+    type(t_symbolValue), dimension(:), intent(in), optional :: Rvalues
+  !</input>
+
+  !<output>
+    ! Return value
+    type(t_symbolValue), intent(inout) :: rreturn
+    
+    ! Set to TRUE if the command is unknown.
+    logical, intent(out) :: bunknown
+  !</output>
+  
+  !</subroutine>
+  
+    ! Command arguments
+    type(t_varspec), dimension(1), parameter :: Rvarspec1 = &
+      (/ t_varspec("", STYPE_DOUBLE, COLLCT_UNDEFINED)  &
+       /)
+    type(t_varspec), dimension(1), parameter :: Rvarspec2 = &
+      (/ t_varspec("", STYPE_INTEGER, COLLCT_UNDEFINED)  &
+       /)
+    integer, dimension(size(Rvarspec1)) :: Iindex
+    logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
+
+    ! local variables
+    real(DP) :: dvalue
+        
+    select case (cexecmode)
+    case (FCMD_EXECSHORTHELP)
+      ! Print a short help message and return
+      !call output_line ("  scalevector()      - Scales a vector by a value.")
+      call output_line ("  sin()              - ")
+      call output_line ("  cos()              - ")
+      call output_line ("  asin()             - ")
+      call output_line ("  acos()             - ")
+      call output_line ("  sinh()             - ")
+      call output_line ("  cosh()             - ")
+      call output_line ("  exp()              - ")
+      call output_line ("  floor()            - ")
+      call output_line ("  ceil()             - ")
+      call output_line ("  log()              - ")
+      call output_line ("  log10()            - ")
+      call output_line ("  sqrt()             - ")
+      call output_line ("  abs()              - ")
+      call output_line ("  tan()              - ")
+      call output_line ("  tanh()             - ")
+      call output_line ("  cot()              - ")
+      call output_line ("  aint()             - ")
+      call output_line ("  round()            - ")
+      
+      ! Ok.
+      rreturn%ctype = STYPE_INTEGER
+      return
+    case (FCMD_EXECLONGHELP)
+      ! Print a long help message and return
+      !call output_line ("scalevector - Scales a vector by a value.")
+    
+      ! Ok.
+      rreturn%ctype = STYPE_INTEGER
+      return
+    end select
+    
+    bunknown = .false.
+  
+    ! Check parameters. 1st try: double value
+    call fcmd_getparameters (Rvarspec1,Iindex,bsuccess,serrormsg,&
+        rcmdStatus%rcollection,inestlevel,Rvalues)
+    if (bsuccess) then
+      ! Get the value
+      dvalue = Rvalues(1)%dvalue
+    else
+      ! 2nd try: integer. Type conversion.
+      call fcmd_getparameters (Rvarspec2,Iindex,bsuccess,serrormsg,&
+          rcmdStatus%rcollection,inestlevel,Rvalues)
+      if (bsuccess) then
+        ! Get the value
+        dvalue = real(Rvalues(1)%ivalue,dp)
+      else
+        ! Invalid value.
+        return
+      end if
+    end if
+
+    if (sfunction .eq. "sin") then
+      rreturn%dvalue = sin(dvalue)
+
+    else if (sfunction .eq. "cos") then
+      rreturn%dvalue = cos(dvalue)
+
+    else if (sfunction .eq. "asin") then
+      rreturn%dvalue = asin(dvalue)
+
+    else if (sfunction .eq. "acos") then
+      rreturn%dvalue = acos(dvalue)
+
+    else if (sfunction .eq. "sinh") then
+      rreturn%dvalue = sinh(dvalue)
+
+    else if (sfunction .eq. "cosh") then
+      rreturn%dvalue = cosh(dvalue)
+
+    else if (sfunction .eq. "exp") then
+      rreturn%dvalue = exp(dvalue)
+
+    else if (sfunction .eq. "floor") then
+      rreturn%dvalue = floor(dvalue)
+
+    else if (sfunction .eq. "ceil") then
+      rreturn%dvalue = ceiling(dvalue)
+
+    else if (sfunction .eq. "log") then
+      rreturn%dvalue = log(dvalue)
+
+    else if (sfunction .eq. "log10") then
+      rreturn%dvalue = log10(dvalue)
+
+    else if (sfunction .eq. "sqrt") then
+      rreturn%dvalue = sqrt(dvalue)
+
+    else if (sfunction .eq. "abs") then
+      rreturn%dvalue = abs(dvalue)
+
+    else if (sfunction .eq. "tan") then
+      rreturn%dvalue = tan(dvalue)
+
+    else if (sfunction .eq. "tanh") then
+      rreturn%dvalue = tanh(dvalue)
+
+    else if (sfunction .eq. "aint") then
+      rreturn%dvalue = aint(dvalue)
+
+    else if (sfunction .eq. "round") then
+      rreturn%dvalue = aint(dvalue+0.5_DP)
+
+    else
+      ! Unknown command
+      bunknown = .true.
+      
+      return
+    end if
+    
+    ! Ok.
+    bunknown = .false.
+    rreturn%ctype = STYPE_DOUBLE
+
+  end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine fcmd_math2function (rcmdStatus,inestlevel,rreturn,cexecmode,Rvalues,&
+      sfunction,bunknown)
+  
+  !<description>
+    ! Command: math function with two arguments
+  !</description>
+  
+  !<inputoutput>
+    ! Current status block.
+    type(t_commandstatus), intent(inout) :: rcmdStatus
+    
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
+
+    ! Type of execution mode. One of the FCMD_EXECxxxx constants.
+    integer, intent(in) :: cexecmode
+    
+    ! String identifying a function. Must be lower case.
+    character(len=*), intent(in) :: sfunction
+  !</inputoutput>
+
+  !<input>
+    ! OPTIONAL: Command line arguments.
+    type(t_symbolValue), dimension(:), intent(in), optional :: Rvalues
+  !</input>
+
+  !<output>
+    ! Return value
+    type(t_symbolValue), intent(inout) :: rreturn
+    
+    ! Set to TRUE if the command is unknown.
+    logical, intent(out) :: bunknown
+  !</output>
+  
+  !</subroutine>
+  
+    ! Command arguments
+    type(t_varspec), dimension(1), parameter :: Rvarspec = &
+      (/ t_varspec("", STYPE_UNDEFINED, COLLCT_UNDEFINED)  &
+       /)
+    integer, dimension(size(Rvarspec)) :: Iindex
+    logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
+
+    ! local variables
+    real(DP) :: dvalue1,dvalue2
+        
+    select case (cexecmode)
+    case (FCMD_EXECSHORTHELP)
+      ! Print a short help message and return
+      !call output_line ("  scalevector()      - Scales a vector by a value.")
+      call output_line ("  min()              - ")
+      call output_line ("  max()              - ")
+      
+      ! Ok.
+      rreturn%ctype = STYPE_INTEGER
+      return
+    case (FCMD_EXECLONGHELP)
+      ! Print a long help message and return
+      !call output_line ("scalevector - Scales a vector by a value.")
+    
+      ! Ok.
+      rreturn%ctype = STYPE_INTEGER
+      return
+    end select
+    
+    bunknown = .false.
+  
+    ! Check parameters.
+    call fcmd_getparameters (Rvarspec,Iindex,bsuccess,serrormsg,&
+        rcmdStatus%rcollection,inestlevel,Rvalues)
+    if (.not. bsuccess) then
+      ! No error message
+      return
+    end if
+    
+    select case (Rvalues(1)%ctype)
+    case (STYPE_INTEGER)
+      dvalue1 = real(Rvalues(1)%ivalue,dp)
+    case (STYPE_DOUBLE)
+      dvalue1 = Rvalues(1)%dvalue
+    case default
+      call output_line ("Invalid type!")
+      return
+    end select
+
+    select case (Rvalues(2)%ctype)
+    case (STYPE_INTEGER)
+      dvalue2 = real(Rvalues(2)%ivalue,dp)
+    case (STYPE_DOUBLE)
+      dvalue2 = Rvalues(2)%dvalue
+    case default
+      call output_line ("Invalid type!")
+      return
+    end select
+    
+    
+    if (sfunction .eq. "min") then
+      rreturn%dvalue = min(dvalue1,dvalue2)
+
+    else if (sfunction .eq. "max") then
+      rreturn%dvalue = max(dvalue1,dvalue2)
+
+    else
+      ! Unknown command
+      bunknown = .true.
+      
+      return
+    end if
+    
+    ! Ok.
+    bunknown = .false.
+    rreturn%ctype = STYPE_DOUBLE
 
   end subroutine
 

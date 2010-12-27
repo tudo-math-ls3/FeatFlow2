@@ -215,33 +215,42 @@ contains
       read(ssymbol,"(A)") rvalue%svalue
       rvalue%ilength = len_trim(ssymbol)
     case (STYPE_VAR)
-      
-      ! Initialise the variable name
-      rvalue%svarname = trim(ssymbol)
-      rvalue%p_rcollection => rcollection
-      
-      ! Try to get the correct type etc. from the collection.
-      !rvalue%ctype = STYPE_INVALID
-      call cmdprs_getSymbolSection (rcollection,ssymbol,inestlevel,ssection,bfound)
-      
-      if (bfound) then
-        cvartype = collct_gettype(rcollection,ssymbol,ssectionName=ssection)
+      ! Is this a constant?
+      if (ssymbol .eq. "pi") then
         
-        rvalue%ssection = ssection
+        rvalue%ctype = STYPE_DOUBLE
+        rvalue%dvalue = SYS_PI
         
-        ! Fetch the value if possible
-        select case (cvartype)
-        case (COLLCT_INTEGER)
-          rvalue%ctype = STYPE_INTEGER
-          rvalue%ivalue = collct_getvalue_int (rcollection, ssymbol, ssectionName=ssection)
-        case (COLLCT_REAL)
-          rvalue%ctype = STYPE_DOUBLE
-          rvalue%ivalue = collct_getvalue_real (rcollection, ssymbol, ssectionName=ssection)
-        case (COLLCT_STRING)
-          rvalue%ctype = STYPE_STRING
-          call collct_getvalue_string (rcollection, ssymbol, rvalue%svalue, ssectionName=ssection)
-          rvalue%ilength = len_trim(rvalue%svalue)
-        end select
+      else
+      
+        ! Initialise the variable name
+        rvalue%svarname = trim(ssymbol)
+        rvalue%p_rcollection => rcollection
+        
+        ! Try to get the correct type etc. from the collection.
+        !rvalue%ctype = STYPE_INVALID
+        call cmdprs_getSymbolSection (rcollection,ssymbol,inestlevel,ssection,bfound)
+        
+        if (bfound) then
+          cvartype = collct_gettype(rcollection,ssymbol,ssectionName=ssection)
+          
+          rvalue%ssection = ssection
+          
+          ! Fetch the value if possible
+          select case (cvartype)
+          case (COLLCT_INTEGER)
+            rvalue%ctype = STYPE_INTEGER
+            rvalue%ivalue = collct_getvalue_int (rcollection, ssymbol, ssectionName=ssection)
+          case (COLLCT_REAL)
+            rvalue%ctype = STYPE_DOUBLE
+            rvalue%ivalue = collct_getvalue_real (rcollection, ssymbol, ssectionName=ssection)
+          case (COLLCT_STRING)
+            rvalue%ctype = STYPE_STRING
+            call collct_getvalue_string (rcollection, ssymbol, rvalue%svalue, ssectionName=ssection)
+            rvalue%ilength = len_trim(rvalue%svalue)
+          end select
+        end if
+        
       end if
       
     end select
