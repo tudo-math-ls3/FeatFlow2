@@ -307,7 +307,7 @@ contains
     real(DP) :: dscale
     integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, inviscidAFC
-    integer :: isystemCoupling, isystemPrecond, isystemFormat, imasstype, ivar, jvar
+    integer :: isystemCoupling, isystemPrecond, isystemFormat, imasstype, ivar
 
     ! Start time measurement for matrix evaluation
     p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
@@ -433,6 +433,18 @@ contains
         rcollection%SquickAccess(1), 'isystemCoupling', isystemCoupling)
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1), 'isystemPrecond', isystemPrecond)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1), 'isystemformat', isystemFormat)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1), 'imasstype', imasstype)
+
+    ! Compute scaling parameter
+    select case (imasstype)
+    case (MASS_LUMPED, MASS_CONSISTENT)
+      dscale = -rtimestep%theta*rtimestep%dStep
+    case default
+      dscale = -1.0_DP
+    end select
 
     ! What kind of coupling is applied?
     select case(isystemCoupling)
@@ -455,19 +467,19 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatGalMatD1d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatGalMatD2d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatGalMatD3d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -485,19 +497,19 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatScDissMatD1d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatScDissMatD2d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatScDissMatD3d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -515,19 +527,19 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatRoeDissMatD1d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatRoeDissMatD2d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatRoeDissMatD3d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -545,19 +557,19 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatRusDissMatD1d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatRusDissMatD2d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatRusDissMatD3d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -590,19 +602,19 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatGal1d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatGal2d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatGal3d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -620,19 +632,19 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatScDiss1d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatScDiss2d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatScDiss3d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -650,19 +662,19 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatRoeDiss1d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatRoeDiss2d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatRoeDiss3d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -680,19 +692,19 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatRusDiss1d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatRusDiss2d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatRusDiss3d_sim,&
-              -1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
+              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -717,12 +729,7 @@ contains
     !---------------------------------------------------------------------------
     ! Assemble the global system operator
     !---------------------------------------------------------------------------
-
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'isystemformat', isystemFormat)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'imasstype', imasstype)
-
+    
     select case(isystemFormat)
 
     case (SYSTEM_INTERLEAVEFORMAT)
@@ -749,8 +756,7 @@ contains
         call lsyssc_MatrixLinearComb(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rmatrix(systemMatrix),&
-            1.0_DP, rtimestep%theta*rtimestep%dStep,&
-            .false., .false., .true., .true.)
+            1.0_DP, 1.0_DP, .false., .false., .true., .true.)
 
       case (MASS_CONSISTENT)
 
@@ -769,8 +775,7 @@ contains
         call lsyssc_MatrixLinearComb(&
             rproblemLevel%Rmatrix(consistentMassMatrix),&
             rproblemLevel%Rmatrix(systemMatrix),&
-            1.0_DP, rtimestep%theta*rtimestep%dStep,&
-            .false., .false., .true., .true.)
+            1.0_DP, 1.0_DP, .false., .false., .true., .true.)
 
       case DEFAULT
 
@@ -807,26 +812,11 @@ contains
             rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
 
         do ivar = 1, hydro_getNVAR(rproblemLevel)
-          do jvar = 1, hydro_getNVAR(rproblemLevel)
-
-            if (ivar .eq. jvar) then
-
-              call lsyssc_MatrixLinearComb(&
-                  rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                  1.0_DP, rtimestep%theta*rtimestep%dStep,&
-                  .false., .false., .true., .true.)
-
-            elseif (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
-
-              call lsyssc_scaleMatrix(&
-                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
-                  rtimestep%theta*rtimestep%dStep)
-
-            end if
-
-          end do ! jvar
-        end do ! ivar
+          call lsyssc_MatrixLinearComb(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
+              1.0_DP, 1.0_DP, .false., .false., .true., .true.)
+        end do
 
 
       case (MASS_CONSISTENT)
@@ -844,26 +834,11 @@ contains
             rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
 
         do ivar = 1, hydro_getNVAR(rproblemLevel)
-          do jvar = 1, hydro_getNVAR(rproblemLevel)
-
-            if (ivar .eq. jvar) then
-
-              call lsyssc_MatrixLinearComb(&
-                  rproblemLevel%Rmatrix(consistentMassMatrix),&
-                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                  1.0_DP, rtimestep%theta*rtimestep%dStep,&
-                  .false., .false., .true., .true.)
-
-            elseif (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
-
-              call lsyssc_scaleMatrix(&
-                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
-                  rtimestep%theta*rtimestep%dStep)
-
-            end if
-
-          end do ! jvar
-        end do ! ivar
+          call lsyssc_MatrixLinearComb(&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
+              1.0_DP, 1.0_DP, .false., .false., .true., .true.)
+        end do
 
 
       case DEFAULT
