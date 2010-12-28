@@ -885,7 +885,7 @@ contains
       
       if (btriggered) then
         ! Skip everything
-        isourcepos = imaxlen
+        isourcepos = imaxlen+1
       end if
       
     end subroutine

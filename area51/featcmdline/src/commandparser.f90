@@ -922,7 +922,7 @@ contains
     end do
     
     ! Error if the block end cannot be found.
-    if (iblock .gt. 0) then
+    if ((rcmdStatus%ierror .eq. 0) .and. (iblock .gt. 0)) then
       call output_line ("Cannot find end of block!")
       rcmdStatus%ierror = 1
     end if

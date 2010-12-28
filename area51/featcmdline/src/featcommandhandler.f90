@@ -259,14 +259,22 @@ contains
     else
     
       ! Mathematical function with 1 parameter?
-      call fcmd_mathfunction (rcmdStatus,inestlevel,rvalue,FCMD_EXECSTD,Rvalues,&
-          sstring,bunknown)
+      call fcmd_mathfunction (rcmdStatus,inestlevel,rvalue,FCMD_EXECSTD,&
+          sstring,bunknown,Rvalues)
           
       if (bunknown) then
 
         ! Mathematical function with 2 parameter?
-        call fcmd_math2function (rcmdStatus,inestlevel,rvalue,FCMD_EXECSTD,Rvalues,&
-            sstring,bunknown)
+        call fcmd_math2function (rcmdStatus,inestlevel,rvalue,FCMD_EXECSTD,&
+            sstring,bunknown,Rvalues)
+
+      end if
+    
+      if (bunknown) then
+
+        ! Simple function with 1 parameter
+        call fcmd_simplefunction (rcmdStatus,inestlevel,rvalue,FCMD_EXECSTD,&
+            sstring,bunknown,Rvalues)
 
       end if
     
@@ -309,6 +317,7 @@ contains
   
     ! local variables
     character(len=COLLCT_MLNAME) :: scommand
+    logical :: bunknown
     
     select case (cexecmode)
     case (FCMD_EXECSHORTHELP)
@@ -366,6 +375,9 @@ contains
       call fcmd_daxpyvector (rcmdStatus,inestlevel,rreturn,FCMD_EXECSHORTHELP)
       call fcmd_clearvector (rcmdStatus,inestlevel,rreturn,FCMD_EXECSHORTHELP)
       call fcmd_scalevector (rcmdStatus,inestlevel,rreturn,FCMD_EXECSHORTHELP)
+      call fcmd_mathfunction (rcmdStatus,inestlevel,rreturn,FCMD_EXECSHORTHELP,"",bunknown)
+      call fcmd_math2function (rcmdStatus,inestlevel,rreturn,FCMD_EXECSHORTHELP,"",bunknown)
+      call fcmd_simplefunction (rcmdStatus,inestlevel,rreturn,FCMD_EXECSHORTHELP,"",bunknown)
 
     else
       ! Get the command.
@@ -2548,6 +2560,10 @@ contains
     nullify(p_rfeSpace)
     nullify(p_rfeSpace1)
     nullify(p_rfeSpace2)
+    strielements = ""
+    squadelements = ""
+    stricub = ""
+    squadcub = ""
     
     if (Iindex(2) .ne. 0) then
       ! Get the triangulation object.
@@ -2571,22 +2587,22 @@ contains
     
     if (Iindex(5) .ne. 0) then
       ! tri-elements
-      strielements = Rvalues(Iindex(5))%svalue
+      call cmdprs_dequoteStd(Rvalues(Iindex(5))%svalue,strielements)
     end if
 
     if (Iindex(6) .ne. 0) then
       ! Quad-elements
-      squadelements = Rvalues(Iindex(6))%svalue
+      call cmdprs_dequoteStd(Rvalues(Iindex(6))%svalue,squadelements)
     end if
 
     if (Iindex(7) .ne. 0) then
       ! Tri-cubature
-      stricub = Rvalues(Iindex(7))%svalue
+      call cmdprs_dequoteStd(Rvalues(Iindex(7))%svalue,stricub)
     end if
 
     if (Iindex(8) .ne. 0) then
       ! Quad-Cubature
-      squadcub = Rvalues(Iindex(8))%svalue
+      call cmdprs_dequoteStd(Rvalues(Iindex(8))%svalue,squadcub)
     end if
 
     if (Iindex(9) .ne. 0) then
@@ -2707,21 +2723,21 @@ contains
           do i=1,ncomponents
             ! Parse the Id.
             call cmdprs_nexttoken (squadelements,istart,iend,ilength,cseparator=" ")
-            p_IelementIdsTri(j) = elem_igetID(squadelements(istart:iend),.true.)
+            p_IelementIdsQuad(i) = elem_igetID(squadelements(istart:iend),.true.)
             
-            if (p_IelementIdsquad(j) .eq. 0) then
+            if (p_IelementIdsQuad(i) .eq. 0) then
               call output_line("Error. Invalid element ID: "//trim(stoken))
               berror = .true.
               exit
             end if
 
-            if (elem_igetDimension(p_IelementIdsquad(j)) .ne. NDIM2D) then
+            if (elem_igetDimension(p_IelementIdsquad(i)) .ne. NDIM2D) then
               call output_line("Error. Not a 2D element: "//trim(stoken))
               berror = .true.
               exit
             end if
 
-            if (elem_igetNVE(p_IelementIdsquad(j)) .ne. 3) then
+            if (elem_igetNVE(p_IelementIdsquad(i)) .ne. 4) then
               call output_line("Error. Not a quad element: "//trim(stoken))
               berror = .true.
               exit
@@ -2742,9 +2758,9 @@ contains
           do i=1,ncomponents
             ! Parse the Id.
             call cmdprs_nexttoken (stricub,istart,iend,ilength,cseparator=" ")
-            p_IcubIdsTri(j) = cub_igetID(stricub(istart:iend))
+            p_IcubIdsTri(i) = cub_igetID(stricub(istart:iend))
             
-            if (p_IcubIdsTri(j) .eq. 0) then
+            if (p_IcubIdsTri(i) .eq. 0) then
               call output_line("Error. Invalid cubature ID: "//trim(stoken))
               berror = .true.
               exit
@@ -2765,9 +2781,9 @@ contains
           do i=1,ncomponents
             ! Parse the Id.
             call cmdprs_nexttoken (squadcub,istart,iend,ilength,cseparator=" ")
-            p_IcubIdsquad(j) = cub_igetID(squadcub(istart:iend))
+            p_IcubIdsQuad(i) = cub_igetID(squadcub(istart:iend))
             
-            if (p_IcubIdsquad(j) .eq. 0) then
+            if (p_IcubIdsQuad(i) .eq. 0) then
               call output_line("Error. Invalid cubature ID: "//trim(stoken))
               berror = .true.
               exit
@@ -2780,25 +2796,28 @@ contains
       end if
 
       ! Create the FE space usinf fgetDiscr.
-      call collct_init (rcollection)
-      call prepare_fgetDiscr(rcollection,rcmdStatus,ncomponents,&
-          p_IelementIdsTri,p_IelementIdsQuad,p_IcubIdsTri,p_IcubIdsQuad)
-      if (associated(p_rboundary)) then
-        call fesph_createFEspace (p_rfeSpace,1,&
-            p_rtriangulation,1,fgetDiscr,rcollection,rboundary=p_rboundary)
-      else
-        call output_line ("Warning: No boundary present!")
-        
-        call fesph_createFEspace (p_rfeSpace,1,&
-            p_rtriangulation,1,fgetDiscr,rcollection)
+      if (.not. berror) then
+        call collct_init (rcollection)
+        call prepare_fgetDiscr(rcollection,rcmdStatus,ncomponents,&
+            p_IelementIdsTri,p_IelementIdsQuad,p_IcubIdsTri,p_IcubIdsQuad)
+        allocate(p_rfeSpace)
+        if (associated(p_rboundary)) then
+          call fesph_createFEspace (p_rfeSpace,1,&
+              p_rtriangulation,1,fgetDiscr,rcollection,rboundary=p_rboundary)
+        else
+          call output_line ("Warning: No boundary present!")
+          
+          call fesph_createFEspace (p_rfeSpace,1,&
+              p_rtriangulation,1,fgetDiscr,rcollection)
+        end if
+        call collct_done (rcollection)
       end if
-      call collct_done (rcollection)
 
     end if
 
     if (.not. berror) then
       ! Remove old value from collection if present
-      call cmdprs_getSymbolSection (rcollection,sname,inestlevel,ssection)
+      call cmdprs_getSymbolSection (rcmdStatus%rcollection,sname,inestlevel,ssection)
       call do_destroy(rcmdStatus,sname,ssection,.false.)
       
       ! Add to the collection
@@ -3516,7 +3535,7 @@ contains
       call output_line ("extractsubvector - Extract a subvector from a block vector.")
       call output_lbrk ()
       call output_line ("Usage:")
-      call output_line ("   extractsubvector ([varname], [varblock], [vecidx])")
+      call output_line ("   extractsubvector ([varname], [vecidx], [varblock])")
       call output_lbrk ()
       call output_line ("Extracts subvector [vecidx] from the block vector [varblock]")
       call output_line ("and stores it to the variable [varname].")
@@ -4141,7 +4160,7 @@ contains
       stoken = Rvalues(2)%svarname
       call cmdprs_getSymbolSection (rcmdStatus%rcollection,stoken,inestlevel,ssection)
       ctype2 = collct_gettype (rcmdStatus%rcollection, Rvalues(2)%svarname, ssectionName=ssection)
-      if (ctype2 .ne. COLLCT_BLKVECTOR) then
+      if (ctype2 .ne. COLLCT_SCAVECTOR) then
         call output_line ("Source and destination not compatible.")
         return
       end if
@@ -5414,8 +5433,8 @@ contains
 
   !<subroutine>
 
-  subroutine fcmd_mathfunction (rcmdStatus,inestlevel,rreturn,cexecmode,Rvalues,&
-      sfunction,bunknown)
+  subroutine fcmd_mathfunction (rcmdStatus,inestlevel,rreturn,cexecmode,&
+      sfunction,bunknown,Rvalues)
   
   !<description>
     ! Command: simple math function.
@@ -5516,6 +5535,7 @@ contains
         dvalue = real(Rvalues(1)%ivalue,dp)
       else
         ! Invalid value.
+        bunknown = .true.
         return
       end if
     end if
@@ -5588,8 +5608,120 @@ contains
 
   !<subroutine>
 
-  subroutine fcmd_math2function (rcmdStatus,inestlevel,rreturn,cexecmode,Rvalues,&
-      sfunction,bunknown)
+  subroutine fcmd_simplefunction (rcmdStatus,inestlevel,rreturn,cexecmode,&
+      sfunction,bunknown,Rvalues)
+  
+  !<description>
+    ! Command: simple math function.
+  !</description>
+  
+  !<inputoutput>
+    ! Current status block.
+    type(t_commandstatus), intent(inout) :: rcmdStatus
+    
+    ! Level of nesting
+    integer, intent(in) :: inestlevel
+
+    ! Type of execution mode. One of the FCMD_EXECxxxx constants.
+    integer, intent(in) :: cexecmode
+    
+    ! String identifying a function. Must be lower case.
+    character(len=*), intent(in) :: sfunction
+  !</inputoutput>
+
+  !<input>
+    ! OPTIONAL: Command line arguments.
+    type(t_symbolValue), dimension(:), intent(in), optional :: Rvalues
+  !</input>
+
+  !<output>
+    ! Return value
+    type(t_symbolValue), intent(inout) :: rreturn
+    
+    ! Set to TRUE if the command is unknown.
+    logical, intent(out) :: bunknown
+  !</output>
+  
+  !</subroutine>
+  
+    ! Command arguments
+    type(t_varspec), dimension(1), parameter :: Rvarspec1 = &
+      (/ t_varspec("", STYPE_DOUBLE, COLLCT_UNDEFINED)  &
+       /)
+    type(t_varspec), dimension(1), parameter :: Rvarspec2 = &
+      (/ t_varspec("", STYPE_INTEGER, COLLCT_UNDEFINED)  &
+       /)
+    integer, dimension(size(Rvarspec1)) :: Iindex
+    logical :: bsuccess
+    character(len=SYS_STRLEN) :: serrormsg
+
+    ! local variables
+    real(DP) :: dvalue
+        
+    select case (cexecmode)
+    case (FCMD_EXECSHORTHELP)
+      ! Print a short help message and return
+      !call output_line ("  scalevector()      - Scales a vector by a value.")
+      call output_line ("  double()          - ")
+      call output_line ("  int()             - ")
+      
+      ! Ok.
+      rreturn%ctype = STYPE_INTEGER
+      return
+    case (FCMD_EXECLONGHELP)
+      ! Print a long help message and return
+      !call output_line ("scalevector - Scales a vector by a value.")
+    
+      ! Ok.
+      rreturn%ctype = STYPE_INTEGER
+      return
+    end select
+    
+    bunknown = .false.
+  
+    ! Check parameters. 1st try: double value
+    call fcmd_getparameters (Rvarspec1,Iindex,bsuccess,serrormsg,&
+        rcmdStatus%rcollection,inestlevel,Rvalues)
+    if (bsuccess) then
+      ! Get the value
+      dvalue = Rvalues(1)%dvalue
+    else
+      ! 2nd try: integer. Type conversion.
+      call fcmd_getparameters (Rvarspec2,Iindex,bsuccess,serrormsg,&
+          rcmdStatus%rcollection,inestlevel,Rvalues)
+      if (bsuccess) then
+        ! Get the value
+        dvalue = real(Rvalues(1)%ivalue,dp)
+      else
+        ! Invalid value.
+        bunknown = .true.
+        return
+      end if
+    end if
+
+    if (sfunction .eq. "double") then
+      rreturn%dvalue = dvalue
+      rreturn%ctype = STYPE_DOUBLE
+
+    else if (sfunction .eq. "int") then
+      rreturn%ivalue = int(dvalue)
+      rreturn%ctype = STYPE_INTEGER
+
+    else
+      ! Unknown command
+      bunknown = .true.
+      
+      return
+    end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine fcmd_math2function (rcmdStatus,inestlevel,rreturn,cexecmode,&
+      sfunction,bunknown,Rvalues)
   
   !<description>
     ! Command: math function with two arguments
@@ -5625,8 +5757,9 @@ contains
   !</subroutine>
   
     ! Command arguments
-    type(t_varspec), dimension(1), parameter :: Rvarspec = &
-      (/ t_varspec("", STYPE_UNDEFINED, COLLCT_UNDEFINED)  &
+    type(t_varspec), dimension(2), parameter :: Rvarspec = &
+      (/ t_varspec("", STYPE_UNDEFINED, COLLCT_UNDEFINED), &
+         t_varspec("", STYPE_UNDEFINED, COLLCT_UNDEFINED)  &
        /)
     integer, dimension(size(Rvarspec)) :: Iindex
     logical :: bsuccess
@@ -5639,8 +5772,8 @@ contains
     case (FCMD_EXECSHORTHELP)
       ! Print a short help message and return
       !call output_line ("  scalevector()      - Scales a vector by a value.")
-      call output_line ("  min()              - ")
-      call output_line ("  max()              - ")
+      call output_line ("  min()               - ")
+      call output_line ("  max()               - ")
       
       ! Ok.
       rreturn%ctype = STYPE_INTEGER
@@ -5661,6 +5794,7 @@ contains
         rcmdStatus%rcollection,inestlevel,Rvalues)
     if (.not. bsuccess) then
       ! No error message
+      bunknown = .true.
       return
     end if
     
