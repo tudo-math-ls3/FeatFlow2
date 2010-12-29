@@ -243,7 +243,7 @@ contains
             rvalue%ivalue = collct_getvalue_int (rcollection, ssymbol, ssectionName=ssection)
           case (COLLCT_REAL)
             rvalue%ctype = STYPE_DOUBLE
-            rvalue%ivalue = collct_getvalue_real (rcollection, ssymbol, ssectionName=ssection)
+            rvalue%dvalue = collct_getvalue_real (rcollection, ssymbol, ssectionName=ssection)
           case (COLLCT_STRING)
             rvalue%ctype = STYPE_STRING
             call collct_getvalue_string (rcollection, ssymbol, rvalue%svalue, ssectionName=ssection)

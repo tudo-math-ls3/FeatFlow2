@@ -91,6 +91,7 @@ contains
                 berror = .true.
               else
                 call formatVariable (Rvariables(inextvar),soutput(iout:),sformat,ilen,berror)
+                inextvar = inextvar + 1
               end if
               
               ! Ignore wrong qualifiers.
