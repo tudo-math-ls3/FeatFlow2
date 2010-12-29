@@ -330,6 +330,9 @@ fb_readargs() {
     if [ -n "$FORCEBUILDID" ]; then
         AUXILIARYLOG="$AUXILIARYLOG""_""$FORCEBUILDID"
     fi
+    if [ -n "$COMPILERVERSION" ]; then
+	AUXILIARYLOG=`echo ${AUXILIARYLOG} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+    fi
 }
 
 
@@ -872,6 +875,9 @@ fb_initialiseGlobalLogFile() {
 		GLOBALLOG=$GLOBALLOG"_""$mpi"
 		;;
 	esac
+	if [ -n "$COMPILERVERSION" ]; then
+	    GLOBALLOG=`echo ${GLOBALLOG} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	fi
     else
 	GLOBALLOG=$GLOBALLOG"_""$mpi"
     fi
@@ -1038,7 +1044,7 @@ fb_prepareForRun() {
 	    esac
 	fi
 	if [ -n "$COMPILERVERSION" ]; then
-	    BENCHMARKDIR=`echo ${BENCHMARKDIR} | sed -e "s/_\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
+	    BENCHMARKDIR=`echo ${BENCHMARKDIR} | sed -e "s/\(_[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)\(.*\$\)/\1${COMPILERVERSION}\2/"`
 	fi
 	mkdir $BENCHMARKDIR > $AUXILIARYLOG 2>&1
 	if [ $? -ne 0 ]; then
