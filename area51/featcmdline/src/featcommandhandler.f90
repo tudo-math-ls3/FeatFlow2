@@ -2684,6 +2684,11 @@ contains
 
       berror = .false.
       
+      nullify(p_IcubIdsTri)
+      nullify(p_IcubIdsQuad)
+      nullify(p_IelementIdsTri)
+      nullify(p_IelementIdsQuad)
+      
       if ((strielements .ne. "") .and. (cmdprs_counttokens(strielements," ") .eq. ncomponents)) then
         allocate (p_IelementIdsTri(ncomponents))
         istart = 0
