@@ -899,9 +899,6 @@ contains
       call sys_halt()
     end if
 
-    ! Clear matrix?
-    if (bclear) call lsysbl_clearMatrix(rdivMatrix)
-
     ! Set pointers
     call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -929,13 +926,13 @@ contains
         
         call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEQ, rx%nblocks, p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge,&
-            p_Dx, dscale, rarray)
+            p_Dx, dscale, bclear, rarray)
      
       else   ! bisFullMatrix == no
 
         call doOperatorMat79Diag(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEQ, rx%nblocks, p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge,&
-            p_Dx, dscale, rarray)
+            p_Dx, dscale, bclear, rarray)
 
       end if   ! bisFullMatrix
 
@@ -954,13 +951,14 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doOperatorMat79Diag(Kdiagonal, IverticesAtEdgeIdx, IverticesAtEdge,&
-        NEQ, NVAR, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, K)
+        NEQ, NVAR, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, bclear, K)
       
       ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
       real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: IverticesAtEdgeIdx,Kdiagonal
       integer, intent(in) :: NEQ,NVAR
@@ -1007,10 +1005,10 @@ contains
         ! Loop through all equations in the current set
         ! and prepare the auxiliary arrays
         do idx = 1, IEQmax-IEQset+1
-          
+
           ! Get actual equation number
           i = idx+IEQset-1
-
+          
           ! Get position of diagonal entry
           ii = Kdiagonal(i)
           
@@ -1030,17 +1028,32 @@ contains
         
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
-        do idx = 1, IEQmax-IEQset+1
+        if (bclear) then
+          do idx = 1, IEQmax-IEQset+1
 
-          ! Get position of diagonal entry
-          ii = IverticesAtNode(2,idx)
-
-          ! Update the diagonal coefficient
-          do ivar = 1, NVAR
-            K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)+&
-                DcoefficientsAtNode(ivar,1,idx)
+            ! Get position of diagonal entry
+            ii = IverticesAtNode(2,idx)
+            
+            ! Update the diagonal coefficient
+            do ivar = 1, NVAR
+              K(ivar,ivar)%p_Ddata(ii) = DcoefficientsAtNode(ivar,1,idx)
+            end do
           end do
-        end do
+
+        else   ! do not clear matrix
+          do idx = 1, IEQmax-IEQset+1
+
+            ! Get position of diagonal entry
+            ii = IverticesAtNode(2,idx)
+            
+            ! Update the diagonal coefficient
+            do ivar = 1, NVAR
+              K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)+&
+                  DcoefficientsAtNode(ivar,1,idx)
+            end do
+          end do
+
+        end if
       end do
       !$omp end do
       
@@ -1098,31 +1111,61 @@ contains
           
           ! Loop through all edges in the current set
           ! and scatter the entries to the global matrix
-          do idx = 1, IEDGEmax-IEDGEset+1
-            
-            ! Get actual edge number
-            iedge = idx+IEDGEset-1
-            
-            ! Get position of diagonal entries
-            ii = Kdiagonal(IverticesAtEdge(1,iedge))
-            jj = Kdiagonal(IverticesAtEdge(2,iedge))
-            
-            ! Get position of off-diagonal entries
-            ij = IverticesAtEdge(3,iedge)
-            ji = IverticesAtEdge(4,iedge)
-            
-            ! Update the global operator
-            do ivar = 1, NVAR
-              K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)-&
-                  DcoefficientsAtEdge(ivar,1,idx)
-              K(ivar,ivar)%p_Ddata(jj) = K(ivar,ivar)%p_Ddata(jj)-&
-                  DcoefficientsAtEdge(ivar,1,idx)
-              K(ivar,ivar)%p_Ddata(ij) = K(ivar,ivar)%p_Ddata(ij)+&
-                  DcoefficientsAtEdge(ivar,2,idx) + DcoefficientsAtEdge(ivar,1,idx) 
-              K(ivar,ivar)%p_Ddata(ji) = K(ivar,ivar)%p_Ddata(ji)+&
-                  DcoefficientsAtEdge(ivar,3,idx) + DcoefficientsAtEdge(ivar,1,idx) 
+          if (bclear) then
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IverticesAtEdge(1,iedge))
+              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IverticesAtEdge(3,iedge)
+              ji = IverticesAtEdge(4,iedge)
+              
+              ! Update the global operator
+              do ivar = 1, NVAR
+                K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)-&
+                    DcoefficientsAtEdge(ivar,1,idx)
+                K(ivar,ivar)%p_Ddata(jj) = K(ivar,ivar)%p_Ddata(jj)-&
+                    DcoefficientsAtEdge(ivar,1,idx)
+                K(ivar,ivar)%p_Ddata(ij) = &
+                    DcoefficientsAtEdge(ivar,2,idx) + DcoefficientsAtEdge(ivar,1,idx) 
+                K(ivar,ivar)%p_Ddata(ji) = &
+                    DcoefficientsAtEdge(ivar,3,idx) + DcoefficientsAtEdge(ivar,1,idx) 
+              end do
             end do
-          end do
+
+          else   ! do not clear matrix
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IverticesAtEdge(1,iedge))
+              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IverticesAtEdge(3,iedge)
+              ji = IverticesAtEdge(4,iedge)
+              
+              ! Update the global operator
+              do ivar = 1, NVAR
+                K(ivar,ivar)%p_Ddata(ii) = K(ivar,ivar)%p_Ddata(ii)-&
+                    DcoefficientsAtEdge(ivar,1,idx)
+                K(ivar,ivar)%p_Ddata(jj) = K(ivar,ivar)%p_Ddata(jj)-&
+                    DcoefficientsAtEdge(ivar,1,idx)
+                K(ivar,ivar)%p_Ddata(ij) = K(ivar,ivar)%p_Ddata(ij)+&
+                    DcoefficientsAtEdge(ivar,2,idx) + DcoefficientsAtEdge(ivar,1,idx) 
+                K(ivar,ivar)%p_Ddata(ji) = K(ivar,ivar)%p_Ddata(ji)+&
+                    DcoefficientsAtEdge(ivar,3,idx) + DcoefficientsAtEdge(ivar,1,idx) 
+              end do
+            end do
+
+          end if
         end do
         !$omp end do
 
@@ -1141,13 +1184,14 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doOperatorMat79(Kdiagonal, IverticesAtEdgeIdx, IverticesAtEdge,&
-        NEQ, NVAR, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, K)
+        NEQ, NVAR, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, bclear, K)
 
       ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
       real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: IverticesAtEdgeIdx,Kdiagonal
       integer, intent(in) :: NEQ,NVAR
@@ -1194,7 +1238,7 @@ contains
         ! Loop through all equations in the current set
         ! and prepare the auxiliary arrays
         do idx = 1, IEQmax-IEQset+1
-          
+
           ! Get actual equation number
           i = idx+IEQset-1
 
@@ -1217,20 +1261,38 @@ contains
 
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
-        do idx = 1, IEQmax-IEQset+1
-
-          ! Get position of diagonal entry
-          ii = IverticesAtNode(2,idx)
-
-          ! Update the diagonal coefficient
-          do ivar = 1, NVAR
-            do jvar = 1, NVAR
-              ijpos = NVAR*(ivar-1)+jvar
-              K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)+&
-                  DcoefficientsAtNode(ijpos,1,idx)
+        if (bclear) then
+          do idx = 1, IEQmax-IEQset+1
+            
+            ! Get position of diagonal entry
+            ii = IverticesAtNode(2,idx)
+            
+            ! Update the diagonal coefficient
+            do ivar = 1, NVAR
+              do jvar = 1, NVAR
+                ijpos = NVAR*(ivar-1)+jvar
+                K(jvar,ivar)%p_Ddata(ii) = DcoefficientsAtNode(ijpos,1,idx)
+              end do
             end do
           end do
-        end do
+
+        else   ! do not clear matrix
+          do idx = 1, IEQmax-IEQset+1
+            
+            ! Get position of diagonal entry
+            ii = IverticesAtNode(2,idx)
+            
+            ! Update the diagonal coefficient
+            do ivar = 1, NVAR
+              do jvar = 1, NVAR
+                ijpos = NVAR*(ivar-1)+jvar
+                K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)+&
+                    DcoefficientsAtNode(ijpos,1,idx)
+              end do
+            end do
+          end do
+
+        end if
       end do
       !$omp end do
 
@@ -1287,35 +1349,68 @@ contains
               DcoefficientsAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
-          ! and prepare the auxiliary arrays
-          do idx = 1, IEDGEmax-IEDGEset+1
-            
-            ! Get actual edge number
-            iedge = idx+IEDGEset-1
-            
-            ! Get position of diagonal entries
-            ii = Kdiagonal(IverticesAtEdge(1,iedge))
-            jj = Kdiagonal(IverticesAtEdge(2,iedge))
-            
-            ! Get position of off-diagonal entries
-            ij = IverticesAtEdge(3,iedge)
-            ji = IverticesAtEdge(4,iedge)
-            
-            ! Update the global operator
-            do ivar = 1, NVAR
-              do jvar = 1, NVAR
-                ijpos = NVAR*(ivar-1)+jvar
-                K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)-&
+          ! and scatter the entries to the global matrix
+          if (bclear) then
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IverticesAtEdge(1,iedge))
+              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IverticesAtEdge(3,iedge)
+              ji = IverticesAtEdge(4,iedge)
+              
+              ! Update the global operator
+              do ivar = 1, NVAR
+                do jvar = 1, NVAR
+                  ijpos = NVAR*(ivar-1)+jvar
+                  K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)-&
                     DcoefficientsAtEdge(ijpos,1,idx)
-                K(jvar,ivar)%p_Ddata(jj) = K(jvar,ivar)%p_Ddata(jj)-&
-                    DcoefficientsAtEdge(ijpos,1,idx)
-                K(jvar,ivar)%p_Ddata(ij) = K(jvar,ivar)%p_Ddata(ij)+&
-                    DcoefficientsAtEdge(ijpos,2,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
-                K(jvar,ivar)%p_Ddata(ji) = K(jvar,ivar)%p_Ddata(ji)+&
-                    DcoefficientsAtEdge(ijpos,3,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
+                  K(jvar,ivar)%p_Ddata(jj) = K(jvar,ivar)%p_Ddata(jj)-&
+                      DcoefficientsAtEdge(ijpos,1,idx)
+                  K(jvar,ivar)%p_Ddata(ij) = &
+                      DcoefficientsAtEdge(ijpos,2,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
+                  K(jvar,ivar)%p_Ddata(ji) = &
+                      DcoefficientsAtEdge(ijpos,3,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
+                end do
               end do
             end do
-          end do
+
+          else   ! do not clear matrix
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IverticesAtEdge(1,iedge))
+              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IverticesAtEdge(3,iedge)
+              ji = IverticesAtEdge(4,iedge)
+              
+              ! Update the global operator
+              do ivar = 1, NVAR
+                do jvar = 1, NVAR
+                  ijpos = NVAR*(ivar-1)+jvar
+                  K(jvar,ivar)%p_Ddata(ii) = K(jvar,ivar)%p_Ddata(ii)-&
+                    DcoefficientsAtEdge(ijpos,1,idx)
+                  K(jvar,ivar)%p_Ddata(jj) = K(jvar,ivar)%p_Ddata(jj)-&
+                      DcoefficientsAtEdge(ijpos,1,idx)
+                  K(jvar,ivar)%p_Ddata(ij) = K(jvar,ivar)%p_Ddata(ij)+&
+                      DcoefficientsAtEdge(ijpos,2,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
+                  K(jvar,ivar)%p_Ddata(ji) = K(jvar,ivar)%p_Ddata(ji)+&
+                      DcoefficientsAtEdge(ijpos,3,idx) + DcoefficientsAtEdge(ijpos,1,idx) 
+                end do
+              end do
+            end do
+
+          end if
         end do
         !$omp end do
 
@@ -1417,9 +1512,6 @@ contains
       call sys_halt()
     end if
 
-    ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rdivMatrix)
-
     ! Set pointers
     call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -1448,12 +1540,12 @@ contains
       case (LSYSSC_MATRIX1)
         call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEQ, rdivMatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
-            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx, dscale, p_DivOp)
+            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx, dscale, bclear, p_DivOp)
         
       case (LSYSSC_MATRIXD)
         call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEQ, rdivMatrix%NA, rx%NVAR, rx%NVAR,&
-            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx, dscale, p_DivOp)
+            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx, dscale, bclear, p_DivOp)
 
       case DEFAULT
         call output_line('Unsupported interleave matrix format!',&
@@ -1476,13 +1568,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doOperatorMat79(Kdiagonal, IverticesAtEdgeIdx, IverticesAtEdge,&
-        NEQ, NA, NVAR, MVAR, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, K)
+        NEQ, NA, NVAR, MVAR, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx,&
+        dscale, bclear, K)
 
       ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
       real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal,IverticesAtEdgeIdx
       integer, intent(in) :: NEQ,NA,NVAR,MVAR
@@ -1529,7 +1623,7 @@ contains
         ! Loop through all equations in the current set
         ! and prepare the auxiliary arrays
         do idx = 1, IEQmax-IEQset+1
-          
+
           ! Get actual equation number
           i = idx+IEQset-1
 
@@ -1552,14 +1646,27 @@ contains
 
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
-        do idx = 1, IEQmax-IEQset+1
+        if (bclear) then
+          do idx = 1, IEQmax-IEQset+1
 
-          ! Get position of diagonal entry
-          ii = IverticesAtNode(2,idx)
+            ! Get position of diagonal entry
+            ii = IverticesAtNode(2,idx)
+            
+            ! Update the diagonal coefficient
+            K(:,ii) = DcoefficientsAtNode(:,1,idx)
+          end do
 
-          ! Update the diagonal coefficient
-          K(:,ii) = K(:,ii) + DcoefficientsAtNode(:,1,idx)
-        end do
+        else   ! do not clear matrix
+          do idx = 1, IEQmax-IEQset+1
+
+            ! Get position of diagonal entry
+            ii = IverticesAtNode(2,idx)
+            
+            ! Update the diagonal coefficient
+            K(:,ii) = K(:,ii) + DcoefficientsAtNode(:,1,idx)
+          end do
+
+        end if
       end do
       !$omp end do
 
@@ -1616,26 +1723,50 @@ contains
               DcoefficientsAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
-          ! and prepare the auxiliary arrays
-          do idx = 1, IEDGEmax-IEDGEset+1
-            
-            ! Get actual edge number
-            iedge = idx+IEDGEset-1
-            
-            ! Get position of diagonal entries
-            ii = Kdiagonal(IverticesAtEdge(1,iedge))
-            jj = Kdiagonal(IverticesAtEdge(2,iedge))
-            
-            ! Get position of off-diagonal entries
-            ij = IverticesAtEdge(3,iedge)
-            ji = IverticesAtEdge(4,iedge)
-            
-            ! Update the global operator
-            K(:,ii) = K(:,ii) - DcoefficientsAtEdge(:,1,idx)
-            K(:,jj) = K(:,jj) - DcoefficientsAtEdge(:,1,idx)
-            K(:,ij) = K(:,ij) + DcoefficientsAtEdge(:,2,idx) + DcoefficientsAtEdge(:,1,idx) 
-            K(:,ji) = K(:,ji) + DcoefficientsAtEdge(:,3,idx) + DcoefficientsAtEdge(:,1,idx) 
-          end do
+          ! and scatter the entries to the global matrix
+          if (bclear) then
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IverticesAtEdge(1,iedge))
+              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IverticesAtEdge(3,iedge)
+              ji = IverticesAtEdge(4,iedge)
+              
+              ! Update the global operator
+              K(:,ii) = K(:,ii) - DcoefficientsAtEdge(:,1,idx)
+              K(:,jj) = K(:,jj) - DcoefficientsAtEdge(:,1,idx)
+              K(:,ij) = DcoefficientsAtEdge(:,2,idx) + DcoefficientsAtEdge(:,1,idx) 
+              K(:,ji) = DcoefficientsAtEdge(:,3,idx) + DcoefficientsAtEdge(:,1,idx) 
+            end do
+
+          else   ! do not clear matrix
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IverticesAtEdge(1,iedge))
+              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IverticesAtEdge(3,iedge)
+              ji = IverticesAtEdge(4,iedge)
+              
+              ! Update the global operator
+              K(:,ii) = K(:,ii) - DcoefficientsAtEdge(:,1,idx)
+              K(:,jj) = K(:,jj) - DcoefficientsAtEdge(:,1,idx)
+              K(:,ij) = K(:,ij) + DcoefficientsAtEdge(:,2,idx) + DcoefficientsAtEdge(:,1,idx) 
+              K(:,ji) = K(:,ji) + DcoefficientsAtEdge(:,3,idx) + DcoefficientsAtEdge(:,1,idx) 
+            end do
+
+          end if
         end do
         !$omp end do
 
