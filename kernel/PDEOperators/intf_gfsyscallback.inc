@@ -106,6 +106,7 @@
   real(DP), intent(in) :: dscale
 
   ! Number of edges
+  integer, intent(in) :: nedges
 !</input>
 
 !<inputoutput>
