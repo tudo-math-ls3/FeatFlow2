@@ -1727,7 +1727,7 @@ contains
       call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
       call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
       
       ! Special treatment for semi-implicit FEM-FCT algorithm
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
@@ -1770,7 +1770,7 @@ contains
       call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
       call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
 
       ! Compute bounds
       call doBounds(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
@@ -1895,7 +1895,7 @@ contains
       call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
       call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
 
       ! Clear convective vector?
       if (bclear) call lsyssc_clearVector(ry)

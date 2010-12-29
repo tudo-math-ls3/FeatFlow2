@@ -68,24 +68,24 @@
 !# The following routines for Burgers` equation
 !# in space-time are available:
 !#
-!# 1.) transp_calcMatDiagBurgersP1d_sim
+!# 1.) transp_calcMatDiagBurgP1d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for Burger`s equation in 1D (primal formulation)
 !#
-!# 2.) transp_calcMatGalBurgersP1d_sim
+!# 2.) transp_calcMatGalBurgP1d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        for Burger`s equation in 1D (primal formulation)
 !#
-!# 3.) transp_calcMatUpwBurgersP1d_sim
+!# 3.) transp_calcMatUpwBurgP1d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Burger`s equation in 1D (primal formulation)
 !#
-!# 4.) transp_coeffVecBdrBurgersP1d_sim
+!# 4.) transp_coeffVecBdrBurgP1d_sim
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrBurgersP1d_sim
+!# 5.) transp_coeffMatBdrBurgP1d_sim
 !#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
@@ -95,24 +95,24 @@
 !# The following routines for the Buckley-Leverett
 !#  equation in space-time are available:
 !#
-!# 1.) transp_calcMatDiagBuckLevP1d_sim
+!# 1.) transp_calcMatDiagBLevP1d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for Buckley-Leverett equation in 1D (primal formulation)
 !#
-!# 2.) transp_calcMatGalBuckLevP1d_sim
+!# 2.) transp_calcMatGalBLevP1d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        for Buckley-Leverett equation in 1D (primal formulation)
 !#
-!# 3.) transp_calcMatUpwBuckLevP1d_sim
+!# 3.) transp_calcMatUpwBLevP1d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Buckley-Leverett equation in 1D (primal formulation)
 !#
-!# 4.) transp_coeffVecBdrBuckLevP1d_sim
+!# 4.) transp_coeffVecBdrBLevP1d_sim
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrBuckLevP1d_sim
+!# 5.) transp_coeffMatBdrBLevP1d_sim
 !#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
@@ -157,17 +157,17 @@ module transport_callback1d
   public :: transp_coeffMatBdrConvD1d_sim
   public :: transp_coeffVecBdrConvD1d_sim
 
-  public :: transp_calcMatDiagBurgersP1d_sim
-  public :: transp_calcMatGalBurgersP1d_sim
-  public :: transp_calcMatUpwBurgersP1d_sim
-  public :: transp_coeffVecBdrBurgersP1d_sim
-  public :: transp_coeffMatBdrBurgersP1d_sim
+  public :: transp_calcMatDiagBurgP1d_sim
+  public :: transp_calcMatGalBurgP1d_sim
+  public :: transp_calcMatUpwBurgP1d_sim
+  public :: transp_coeffVecBdrBurgP1d_sim
+  public :: transp_coeffMatBdrBurgP1d_sim
 
-  public :: transp_calcMatDiagBuckLevP1d_sim
-  public :: transp_calcMatGalBuckLevP1d_sim
-  public :: transp_calcMatUpwBuckLevP1d_sim
-  public :: transp_coeffVecBdrBuckLevP1d_sim
-  public :: transp_coeffMatBdrBuckLevP1d_sim
+  public :: transp_calcMatDiagBLevP1d_sim
+  public :: transp_calcMatGalBLevP1d_sim
+  public :: transp_calcMatUpwBLevP1d_sim
+  public :: transp_coeffVecBdrBLevP1d_sim
+  public :: transp_coeffMatBdrBLevP1d_sim
 
 !<globals>
 
@@ -1858,7 +1858,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagBurgersP1d_sim(DdataAtNode,&
+  pure subroutine transp_calcMatDiagBurgP1d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -1911,13 +1911,13 @@ contains
 #endif
     end do
     
-  end subroutine transp_calcMatDiagBurgersP1d_sim
+  end subroutine transp_calcMatDiagBurgP1d_sim
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalBurgersP1d_sim(DdataAtEdge,&
+  pure subroutine transp_calcMatGalBurgP1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1981,13 +1981,13 @@ contains
       DcoefficientsAtEdge(1,iedge) = 0
     end do
 
-  end subroutine transp_calcMatGalBurgersP1d_sim
+  end subroutine transp_calcMatGalBurgP1d_sim
   
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwBurgersP1d_sim(DdataAtEdge,&
+  pure subroutine transp_calcMatUpwBurgP1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2053,13 +2053,13 @@ contains
           max(abs(DcoefficientsAtEdge(2,iedge)), abs(DcoefficientsAtEdge(3,iedge)))
     end do
 
-  end subroutine transp_calcMatUpwBurgersP1d_sim
+  end subroutine transp_calcMatUpwBurgP1d_sim
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrBurgersP1d_sim(rdiscretisation, rform,&
+  subroutine transp_coeffVecBdrBurgP1d_sim(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, ibct, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -2143,7 +2143,7 @@ contains
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrBurgersP1d_sim')
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrBurgP1d_sim')
     call sys_halt()
 #endif
 
@@ -2185,7 +2185,7 @@ contains
       Dcoefficients = 0.0_DP
 
       call output_line('Redundant assembly of vanishing boundary term!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrBurgersP1d_sim')
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrBurgP1d_sim')
 
 
     case (BDRC_INHOMNEUMANN)
@@ -2367,18 +2367,18 @@ contains
       
     case default
       call output_line('Invalid type of boundary conditions!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrBurgersP1d_sim')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrBurgP1d_sim')
       call sys_halt()
       
     end select
 
-  end subroutine transp_coeffVecBdrBurgersP1d_sim
+  end subroutine transp_coeffVecBdrBurgP1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrBurgersP1d_sim(rdiscretisationTrial,&
+  subroutine transp_coeffMatBdrBurgP1d_sim(rdiscretisationTrial,&
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, IdofsTrial, IdofsTest, rdomainIntSubset,&
       Dcoefficients, rcollection)
@@ -2464,7 +2464,7 @@ contains
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrBurgersP1d_sim')
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrBurgP1d_sim')
     call sys_halt()
 #endif
 
@@ -2541,7 +2541,7 @@ contains
       ! This routine should not be called at all for homogeneous Neumann boundary
       ! conditions since it corresponds to an expensive assembly of "zero".
       call output_line('Redundant assembly of vanishing boundary term!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrBurgersP1d_sim')
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrBurgP1d_sim')
 
       
     case(BDRC_FLUX)
@@ -2584,18 +2584,18 @@ contains
     
     case default
       call output_line('Invalid type of boundary conditions!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrBurgersP1d_sim')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrBurgP1d_sim')
       call sys_halt()
       
     end select
     
-  end subroutine transp_coeffMatBdrBurgersP1d_sim
+  end subroutine transp_coeffMatBdrBurgP1d_sim
   
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagBuckLevP1d_sim(DdataAtNode,&
+  pure subroutine transp_calcMatDiagBLevP1d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -2654,13 +2654,13 @@ contains
 
     end do
     
-  end subroutine transp_calcMatDiagBuckLevP1d_sim
+  end subroutine transp_calcMatDiagBLevP1d_sim
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalBuckLevP1d_sim(DdataAtEdge,&
+  pure subroutine transp_calcMatGalBLevP1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2729,13 +2729,13 @@ contains
       DcoefficientsAtEdge(1,iedge) = 0
     end do
     
-  end subroutine transp_calcMatGalBuckLevP1d_sim
+  end subroutine transp_calcMatGalBLevP1d_sim
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwBuckLevP1d_sim(DdataAtEdge,&
+  pure subroutine transp_calcMatUpwBLevP1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2807,13 +2807,13 @@ contains
           max(abs(DcoefficientsAtEdge(2,iedge)), abs(DcoefficientsAtEdge(3,iedge)))
     end do
     
-  end subroutine transp_calcMatUpwBuckLevP1d_sim
+  end subroutine transp_calcMatUpwBLevP1d_sim
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrBuckLevP1d_sim(rdiscretisation, rform,&
+  subroutine transp_coeffVecBdrBLevP1d_sim(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, ibct, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -2897,7 +2897,7 @@ contains
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrBuckLevP1d_sim')
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrBLevP1d_sim')
     call sys_halt()
 #endif
 
@@ -2939,7 +2939,7 @@ contains
       Dcoefficients = 0.0_DP
 
       call output_line('Redundant assembly of vanishing boundary term!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrBuckLevP1d_sim')
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrBLevP1d_sim')
 
 
     case (BDRC_INHOMNEUMANN)
@@ -3132,18 +3132,18 @@ contains
       
     case default
       call output_line('Invalid type of boundary conditions!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrBuckLevP1d_sim')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrBLevP1d_sim')
       call sys_halt()
       
     end select
 
-  end subroutine transp_coeffVecBdrBuckLevP1d_sim
+  end subroutine transp_coeffVecBdrBLevP1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrBuckLevP1d_sim(rdiscretisationTrial,&
+  subroutine transp_coeffMatBdrBLevP1d_sim(rdiscretisationTrial,&
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, IdofsTrial, IdofsTest, rdomainIntSubset,&
       Dcoefficients, rcollection)
@@ -3229,7 +3229,7 @@ contains
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrBuckLevP1d_sim')
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrBLevP1d_sim')
     call sys_halt()
 #endif
 
@@ -3307,7 +3307,7 @@ contains
       ! This routine should not be called at all for homogeneous Neumann boundary
       ! conditions since it corresponds to an expensive assembly of "zero".
       call output_line('Redundant assembly of vanishing boundary term!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrBuckLevP1d_sim')
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrBLevP1d_sim')
 
       
     case(BDRC_FLUX)
@@ -3351,11 +3351,11 @@ contains
     
     case default
       call output_line('Invalid type of boundary conditions!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrBuckLevP1d_sim')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrBLevP1d_sim')
       call sys_halt()
       
     end select
     
-  end subroutine transp_coeffMatBdrBuckLevP1d_sim
+  end subroutine transp_coeffMatBdrBLevP1d_sim
 
 end module transport_callback1d

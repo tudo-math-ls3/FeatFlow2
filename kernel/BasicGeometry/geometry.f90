@@ -5340,7 +5340,7 @@ end subroutine
    case (GEOM_POLYGON)
      call geom_polygon_calcSignedDistance(rgeomObject, Dcoords, ddistance)
    case (GEOM_ELLIPSOID)
-     call geom_ellipsoid_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+     call geom_ellipsoid_calcSignedDist(rgeomObject, Dcoords, ddistance)
    case DEFAULT
      ddistance = 0.0_DP
    end select
@@ -6050,7 +6050,7 @@ end subroutine
 
 !<subroutine>
 
-  subroutine geom_ellipsoid_calcSignedDistance (rgeomObject, Dcoord, ddistance)
+  subroutine geom_ellipsoid_calcSignedDist (rgeomObject, Dcoord, ddistance)
 
 !<description>
   ! This routine calculates the signed distance of a given point and an ellipsoid.

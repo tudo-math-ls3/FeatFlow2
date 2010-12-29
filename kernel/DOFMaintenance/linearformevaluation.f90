@@ -52,22 +52,22 @@
 !# 11.) linf_assembleSubmeshVectorBdr2D
 !#      -> Assembles the vector entries for a submesh in 2D.
 !#
-!# 12.) linf_assembleSubmeshVecIntl
+!# 12.) linf_assembleSubmeshVecSc
 !#      -> Assembles the vector entries for a submesh.
 !#
-!# 13.) linf_assembleSubmeshVecIntlBdr1D
+!# 13.) linf_assembleSubmeshVecScBdr1D
 !#      -> Assembles the vector entries for a submesh in 1D.
 !#
-!# 14.) linf_assembleSubmeshVecIntlBdr2D
+!# 14.) linf_assembleSubmeshVecScBdr2D
 !#      -> Assembles the vector entries for a submesh in 2D.
 !#
-!# 15.) linf_assembleSubmeshVectorBlock
+!# 15.) linf_assembleSubmeshVecBl
 !#     -> Assembles the vector entries for a submesh.
 !#
-!# 16.) linf_assembleSubmeshVectorBlockBdr1D
+!# 16.) linf_assembleSubmeshVecBlBdr1D
 !#     -> Assembles the vector entries for a submesh in 1D.
 !#
-!# 17.) linf_assembleSubmeshVectorBlockBdr2D
+!# 17.) linf_assembleSubmeshVecBlBdr2D
 !#     -> Assembles the vector entries for a submesh in 2D.
 !#
 !# 18.) linf_buildVectorScalar2
@@ -325,12 +325,12 @@ module linearformevaluation
   public :: linf_assembleSubmeshVector
   public :: linf_assembleSubmeshVectorBdr1D
   public :: linf_assembleSubmeshVectorBdr2D
-  public :: linf_assembleSubmeshVecIntl
-  public :: linf_assembleSubmeshVecIntlBdr1D
-  public :: linf_assembleSubmeshVecIntlBdr2D
-  public :: linf_assembleSubmeshVectorBlock
-  public :: linf_assembleSubmeshVectorBlockBdr1D
-  public :: linf_assembleSubmeshVectorBlockBdr2D
+  public :: linf_assembleSubmeshVecSc
+  public :: linf_assembleSubmeshVecScBdr1D
+  public :: linf_assembleSubmeshVecScBdr2D
+  public :: linf_assembleSubmeshVecBl
+  public :: linf_assembleSubmeshVecBlBdr1D
+  public :: linf_assembleSubmeshVecBlBdr2D
   public :: linf_allocAssemblyData
   public :: linf_releaseAssemblyData
 
@@ -1578,7 +1578,7 @@ contains
           end do
           
           ! Assemble the data for all elements
-          call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvector,&
+          call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
               iboundaryComp, IelementList, IelementOrientation,&
               fcoeff_buildVectorBlBdr1D_sim, rcollection)
 
@@ -1629,7 +1629,7 @@ contains
             end do
             
             ! Assemble the data for all element
-            call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvector,&
+            call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
                 ibdc, IelementList, IelementOrientation,&
                 fcoeff_buildVectorBlBdr1D_sim, rcollection)
 
@@ -1690,7 +1690,7 @@ contains
             call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
             
             ! Assemble the data for one element
-            call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvector,&
+            call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
                 iboundaryComp, IelementList, IelementOrientation,&
                 fcoeff_buildVectorBlBdr1D_sim, rcollection)
             
@@ -1737,7 +1737,7 @@ contains
               call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
               
               ! Assemble the data for one element
-              call linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvector,&
+              call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
                   ibdc, IelementList, IelementOrientation,&
                   fcoeff_buildVectorBlBdr1D_sim, rcollection)
               
@@ -1899,7 +1899,7 @@ contains
                 ccubType, min(LINF_NELEMSIM, NELbdc))
             
             ! Assemble the data for all elements in this element distribution
-            call linf_assembleSubmeshVecIntlBdr2D (rvectorAssembly, rvector,&
+            call linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim, rcollection)
             
@@ -1949,7 +1949,7 @@ contains
               if (NELbdc .gt. 0) then
                 
                 ! Assemble the data for all elements in this element distribution
-                call linf_assembleSubmeshVecIntlBdr2D (rvectorAssembly, rvector,&
+                call linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim, rcollection)
                 
@@ -2504,7 +2504,7 @@ contains
   
 !<subroutine>  
   
-  subroutine linf_assembleSubmeshVecIntl (rvectorAssembly, rvector, IelementList,&
+  subroutine linf_assembleSubmeshVecSc (rvectorAssembly, rvector, IelementList,&
       fcoeff_buildVectorBl_sim, rcollection)
 
 !<description>
@@ -3436,7 +3436,7 @@ contains
 
 !<subroutine>  
   
-  subroutine linf_assembleSubmeshVecIntlBdr1D (rvectorAssembly, rvector,&
+  subroutine linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
       iboundaryComp, IelementList, IelementOrientation, &
       fcoeff_buildVectorBlBdr1D_sim, rcollection)
 
@@ -3513,7 +3513,7 @@ contains
     ! node. Therefore, the use of a one-point cubature rule is mandatory.
     if (ncubp .ne. 1) then
       call output_line('Assembly structure must be initialised for 1-point cubature rule!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_assembleSubmeshVecIntlBdr1D')
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_assembleSubmeshVecScBdr1D')
       call sys_halt()
     end if
    
@@ -3673,7 +3673,7 @@ contains
   
 !<subroutine>  
   
-  subroutine linf_assembleSubmeshVecIntlBdr2D (rvectorAssembly, rvector,&
+  subroutine linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
       fcoeff_buildVectorBlBdr2D_sim, rcollection)
 
@@ -4058,7 +4058,7 @@ contains
   
 !<subroutine>  
   
-  subroutine linf_assembleSubmeshVectorBlock (rvectorAssembly, rvector,&
+  subroutine linf_assembleSubmeshVecBl (rvectorAssembly, rvector,&
       IelementList, fcoeff_buildVectorBl_sim, rcollection)
 
 !<description>
@@ -4382,7 +4382,7 @@ contains
 
 !<subroutine>  
   
-  subroutine linf_assembleSubmeshVectorBlockBdr1D (rvectorAssembly, rvector,&
+  subroutine linf_assembleSubmeshVecBlBdr1D (rvectorAssembly, rvector,&
       iboundaryComp, IelementList, IelementOrientation, &
       fcoeff_buildVectorBlBdr1D_sim, rcollection)
 
@@ -4459,7 +4459,7 @@ contains
     ! node. Therefore, the use of a one-point cubature rule is mandatory.
     if (ncubp .ne. 1) then
       call output_line('Assembly structure must be initialised for 1-point cubature rule!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_assembleSubmeshVectorBlockBdr1D')
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_assembleSubmeshVecBlBdr1D')
       call sys_halt()
     end if
    
@@ -4621,7 +4621,7 @@ contains
   
 !<subroutine>  
   
-  subroutine linf_assembleSubmeshVectorBlockBdr2D (rvectorAssembly, rvector,&
+  subroutine linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
       fcoeff_buildVectorBlBdr2D_sim, rcollection)
 
@@ -5244,7 +5244,7 @@ contains
               min(LINF_NELEMSIM, size(p_IelementList)))
           
           ! Assemble the data for all elements in this element distribution
-          call linf_assembleSubmeshVecIntl (rvectorAssembly,rvector,&
+          call linf_assembleSubmeshVecSc (rvectorAssembly,rvector,&
               p_IelementList,fcoeff_buildVectorBl_sim,rcollection)
           
           ! Release the assembly structure.
@@ -5390,7 +5390,7 @@ contains
               min(LINF_NELEMSIM, size(p_IelementList)))
 
           ! Assemble the data for all elements in this element distribution
-          call linf_assembleSubmeshVectorBlock (rvectorAssembly,rvectorBlock,&
+          call linf_assembleSubmeshVecBl (rvectorAssembly,rvectorBlock,&
               p_IelementList,fcoeff_buildVectorBl_sim,rcollection)
           
           ! Release the assembly structure.
@@ -5576,7 +5576,7 @@ contains
           end do
           
           ! Assemble the data for all elements
-          call linf_assembleSubmeshVectorBlockBdr1D (rvectorAssembly,&
+          call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
               rvectorBlock, iboundaryComp, IelementList, IelementOrientation,&
               fcoeff_buildVectorBlBdr1D_sim, rcollection)
 
@@ -5626,7 +5626,7 @@ contains
             end do
             
             ! Assemble the data for all element
-            call linf_assembleSubmeshVectorBlockBdr1D (rvectorAssembly,&
+            call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
                 rvectorBlock, ibdc, IelementList, IelementOrientation,&
                 fcoeff_buildVectorBlBdr1D_sim, rcollection)
 
@@ -5686,7 +5686,7 @@ contains
             call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
             
             ! Assemble the data for one element
-            call linf_assembleSubmeshVectorBlockBdr1D (rvectorAssembly,&
+            call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
                 rvectorBlock, iboundaryComp, IelementList, IelementOrientation,&
                 fcoeff_buildVectorBlBdr1D_sim, rcollection)
 
@@ -5733,7 +5733,7 @@ contains
               call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
               
               ! Assemble the data for one element
-              call linf_assembleSubmeshVectorBlockBdr1D (rvectorAssembly,&
+              call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
                   rvectorBlock, ibdc, IelementList, IelementOrientation,&
                   fcoeff_buildVectorBlBdr1D_sim, rcollection)
 
@@ -5913,7 +5913,7 @@ contains
                 ccubType, min(LINF_NELEMSIM, NELbdc))
             
             ! Assemble the data for all elements in this element distribution
-            call linf_assembleSubmeshVectorBlockBdr2D (rvectorAssembly, rvectorBlock,&
+            call linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvectorBlock,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim, rcollection)
             
@@ -5963,7 +5963,7 @@ contains
               if (NELbdc .gt. 0) then
                 
                 ! Assemble the data for all elements in this element distribution
-                call linf_assembleSubmeshVectorBlockBdr2D (rvectorAssembly, rvectorBlock,&
+                call linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvectorBlock,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim, rcollection)
                 

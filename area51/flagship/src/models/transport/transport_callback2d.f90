@@ -80,24 +80,24 @@
 !#
 !# The following routines for Burgers` equation in space-time are available:
 !#
-!# 1.) transp_calcMatDiagSTBurgersP2d_sim
+!# 1.) transp_calcMatDiagSTBurgP2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 2.) transp_calcMatGalSTBurgersP2d_sim
+!# 2.) transp_calcMatGalSTBurgP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 3.) transp_calcMatUpwSTBurgersP2d_sim
+!# 3.) transp_calcMatUpwSTBurgP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 4.) transp_coeffVecBdrSTBurgersP2d_sim
+!# 4.) transp_coeffVecBdrSTBurgP2d_sim
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrSTBurgersP2d_sim
+!# 5.) transp_coeffMatBdrSTBurgP2d_sim
 !#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
@@ -106,24 +106,24 @@
 !# The following routines for the Buckley-Leverett equation in
 !# space-time are available:
 !#
-!# 1.) transp_calcMatDiagSTBuckLevP2d_sim
+!# 1.) transp_calcMatDiagSTBLevP2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 2.) transp_calcMatGalSTBuckLevP2d_sim
+!# 2.) transp_calcMatGalSTBLevP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 3.) transp_calcMatUpwSTBuckLevP2d_sim
+!# 3.) transp_calcMatUpwSTBLevP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 4.) transp_coeffVecBdrSTBuckLevP2d_sim
+!# 4.) transp_coeffVecBdrSTBLevP2d_sim
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrSTBuckLevP2d_sim
+!# 5.) transp_coeffMatBdrSTBLevP2d_sim
 !#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
@@ -131,24 +131,24 @@
 !#
 !# The following routines for the Burgers` equation in 2D are available:
 !#
-!# 1.) transp_calcMatDiagBurgersP2d_sim
+!# 1.) transp_calcMatDiagBurgP2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 2.) transp_calcMatGalBurgersP2d_sim
+!# 2.) transp_calcMatGalBurgP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 3.) transp_calcMatUpwBurgersP2d_sim
+!# 3.) transp_calcMatUpwBurgP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 4.) transp_coeffVecBdrBurgersP2d_sim
+!# 4.) transp_coeffVecBdrBurgP2d_sim
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrBurgersP2d_sim
+!# 5.) transp_coeffMatBdrBurgP2d_sim
 !#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
@@ -198,23 +198,23 @@ module transport_callback2d
   public :: transp_coeffMatBdrConvD2d_sim
   public :: transp_coeffVecBdrConvD2d_sim
 
-  public :: transp_calcMatDiagSTBurgersP2d_sim
-  public :: transp_calcMatGalSTBurgersP2d_sim
-  public :: transp_calcMatUpwSTBurgersP2d_sim
-  public :: transp_coeffMatBdrSTBurgersP2d_sim
-  public :: transp_coeffVecBdrSTBurgersP2d_sim
+  public :: transp_calcMatDiagSTBurgP2d_sim
+  public :: transp_calcMatGalSTBurgP2d_sim
+  public :: transp_calcMatUpwSTBurgP2d_sim
+  public :: transp_coeffMatBdrSTBurgP2d_sim
+  public :: transp_coeffVecBdrSTBurgP2d_sim
   
-  public :: transp_calcMatDiagSTBuckLevP2d_sim
-  public :: transp_calcMatGalSTBuckLevP2d_sim
-  public :: transp_calcMatUpwSTBuckLevP2d_sim
-  public :: transp_coeffMatBdrSTBuckLevP2d_sim
-  public :: transp_coeffVecBdrSTBuckLevP2d_sim
+  public :: transp_calcMatDiagSTBLevP2d_sim
+  public :: transp_calcMatGalSTBLevP2d_sim
+  public :: transp_calcMatUpwSTBLevP2d_sim
+  public :: transp_coeffMatBdrSTBLevP2d_sim
+  public :: transp_coeffVecBdrSTBLevP2d_sim
 
-  public :: transp_calcMatDiagBurgersP2d_sim
-  public :: transp_calcMatGalBurgersP2d_sim
-  public :: transp_calcMatUpwBurgersP2d_sim
-  public :: transp_coeffMatBdrBurgersP2d_sim
-  public :: transp_coeffVecBdrBurgersP2d_sim
+  public :: transp_calcMatDiagBurgP2d_sim
+  public :: transp_calcMatGalBurgP2d_sim
+  public :: transp_calcMatUpwBurgP2d_sim
+  public :: transp_coeffMatBdrBurgP2d_sim
+  public :: transp_coeffVecBdrBurgP2d_sim
 
 !<globals>
 
@@ -2433,7 +2433,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagSTBurgersP2d_sim(DdataAtNode,&
+  pure subroutine transp_calcMatDiagSTBurgP2d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -2490,13 +2490,13 @@ contains
 #endif
     end do
     
-  end subroutine transp_calcMatDiagSTBurgersP2d_sim
+  end subroutine transp_calcMatDiagSTBurgP2d_sim
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalSTBurgersP2d_sim(DdataAtEdge,&
+  pure subroutine transp_calcMatGalSTBurgP2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2566,13 +2566,13 @@ contains
       DcoefficientsAtEdge(1,iedge) = 0
     end do
 
-  end subroutine transp_calcMatGalSTBurgersP2d_sim
+  end subroutine transp_calcMatGalSTBurgP2d_sim
   
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwSTBurgersP2d_sim(DdataAtEdge,&
+  pure subroutine transp_calcMatUpwSTBurgP2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -2644,13 +2644,13 @@ contains
           max(abs(DcoefficientsAtEdge(2,iedge)), abs(DcoefficientsAtEdge(3,iedge)))
     end do
 
-  end subroutine transp_calcMatUpwSTBurgersP2d_sim
+  end subroutine transp_calcMatUpwSTBurgP2d_sim
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrSTBurgersP2d_sim(rdiscretisation,&
+  subroutine transp_coeffVecBdrSTBurgP2d_sim(rdiscretisation,&
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -2740,7 +2740,7 @@ contains
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrSTBurgersP2d_sim')
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrSTBurgP2d_sim')
     call sys_halt()
 #endif
 
@@ -2782,7 +2782,7 @@ contains
       Dcoefficients = 0.0_DP
 
       call output_line('Redundant assembly of vanishing boundary term!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrSTBurgersP2d_sim')
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrSTBurgP2d_sim')
 
 
     case (BDRC_INHOMNEUMANN)
@@ -2959,18 +2959,18 @@ contains
 
     case default
       call output_line('Invalid type of boundary conditions!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrSTBurgersP2d_sim')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrSTBurgP2d_sim')
       call sys_halt()
       
     end select
     
-  end subroutine transp_coeffVecBdrSTBurgersP2d_sim
+  end subroutine transp_coeffVecBdrSTBurgP2d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrSTBurgersP2d_sim(&
+  subroutine transp_coeffMatBdrSTBurgP2d_sim(&
       rdiscretisationTrial, rdiscretisationTest, rform, nelements,&
       npointsPerElement, Dpoints, ibct, DpointPar, IdofsTrial,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
@@ -3063,7 +3063,7 @@ contains
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrSTBurgersP2d_sim')
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrSTBurgP2d_sim')
     call sys_halt()
 #endif
 
@@ -3143,7 +3143,7 @@ contains
       ! This routine should not be called at all for homogeneous Neumann boundary
       ! conditions since it corresponds to an expensive assembly of "zero".
       call output_line('Redundant assembly of vanishing boundary term!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrSTBurgersP2d_sim')
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrSTBurgP2d_sim')
 
       
     case(BDRC_FLUX)
@@ -3189,18 +3189,18 @@ contains
 
     case default
       call output_line('Invalid type of boundary conditions!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrSTBurgersP2d_sim')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrSTBurgP2d_sim')
       call sys_halt()
 
     end select
 
-  end subroutine transp_coeffMatBdrSTBurgersP2d_sim
+  end subroutine transp_coeffMatBdrSTBurgP2d_sim
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagSTBuckLevP2d_sim(DdataAtNode,&
+  pure subroutine transp_calcMatDiagSTBLevP2d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -3260,13 +3260,13 @@ contains
 #endif
     end do
     
-  end subroutine transp_calcMatDiagSTBuckLevP2d_sim
+  end subroutine transp_calcMatDiagSTBLevP2d_sim
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalSTBuckLevP2d_sim(DdataAtEdge,&
+  pure subroutine transp_calcMatGalSTBLevP2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -3339,13 +3339,13 @@ contains
       DcoefficientsAtEdge(1,iedge) = 0
     end do
     
-  end subroutine transp_calcMatGalSTBuckLevP2d_sim
+  end subroutine transp_calcMatGalSTBLevP2d_sim
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwSTBuckLevP2d_sim(DdataAtEdge,&
+  pure subroutine transp_calcMatUpwSTBLevP2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -3421,13 +3421,13 @@ contains
           max(abs(DcoefficientsAtEdge(2,iedge)), abs(DcoefficientsAtEdge(3,iedge)))
     end do
     
-  end subroutine transp_calcMatUpwSTBuckLevP2d_sim
+  end subroutine transp_calcMatUpwSTBLevP2d_sim
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrSTBuckLevP2d_sim(rdiscretisation,&
+  subroutine transp_coeffVecBdrSTBLevP2d_sim(rdiscretisation,&
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -3517,7 +3517,7 @@ contains
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrSTBuckLevP2d_sim')
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrSTBLevP2d_sim')
     call sys_halt()
 #endif
 
@@ -3559,7 +3559,7 @@ contains
       Dcoefficients = 0.0_DP
 
       call output_line('Redundant assembly of vanishing boundary term!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrSTBuckLevP2d_sim')
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrSTBLevP2d_sim')
 
 
     case (BDRC_INHOMNEUMANN)
@@ -3746,18 +3746,18 @@ contains
 
     case default
       call output_line('Invalid type of boundary conditions!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrSTBuckLevP2d_sim')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrSTBLevP2d_sim')
       call sys_halt()
       
     end select
 
-  end subroutine transp_coeffVecBdrSTBuckLevP2d_sim
+  end subroutine transp_coeffVecBdrSTBLevP2d_sim
 
     !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrSTBuckLevP2d_sim(&
+  subroutine transp_coeffMatBdrSTBLevP2d_sim(&
       rdiscretisationTrial, rdiscretisationTest, rform, nelements,&
       npointsPerElement, Dpoints, ibct, DpointPar, IdofsTrial,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
@@ -3851,7 +3851,7 @@ contains
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrSTBuckLevP2d_sim')
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrSTBLevP2d_sim')
     call sys_halt()
 #endif
 
@@ -3932,7 +3932,7 @@ contains
       ! This routine should not be called at all for homogeneous Neumann boundary
       ! conditions since it corresponds to an expensive assembly of "zero".
       call output_line('Redundant assembly of vanishing boundary term!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrSTBuckLevP2d_sim')
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrSTBLevP2d_sim')
 
       
     case(BDRC_FLUX)
@@ -3979,18 +3979,18 @@ contains
 
     case default
       call output_line('Invalid type of boundary conditions!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrSTBuckLevP2d_sim')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrSTBLevP2d_sim')
       call sys_halt()
 
     end select
 
-  end subroutine transp_coeffMatBdrSTBuckLevP2d_sim
+  end subroutine transp_coeffMatBdrSTBLevP2d_sim
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagBurgersP2d_sim(DdataAtNode,&
+  pure subroutine transp_calcMatDiagBurgP2d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -4045,13 +4045,13 @@ contains
 #endif
     end do
     
-  end subroutine transp_calcMatDiagBurgersP2d_sim
+  end subroutine transp_calcMatDiagBurgP2d_sim
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalBurgersP2d_sim(DdataAtEdge,&
+  pure subroutine transp_calcMatGalBurgP2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -4117,13 +4117,13 @@ contains
       DcoefficientsAtEdge(1,iedge) = 0
     end do
 
-  end subroutine transp_calcMatGalBurgersP2d_sim
+  end subroutine transp_calcMatGalBurgP2d_sim
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwBurgersP2d_sim(DdataAtEdge,&
+  pure subroutine transp_calcMatUpwBurgP2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -4191,13 +4191,13 @@ contains
           max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
     end do
 
-  end subroutine transp_calcMatUpwBurgersP2d_sim
+  end subroutine transp_calcMatUpwBurgP2d_sim
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrBurgersP2d_sim(rdiscretisation,&
+  subroutine transp_coeffVecBdrBurgP2d_sim(rdiscretisation,&
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -4277,20 +4277,20 @@ contains
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrBurgersP2d_sim')
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrBurgP2d_sim')
     call sys_halt()
 #endif
 
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffVecBdrBurgersP2d_sim
+  end subroutine transp_coeffVecBdrBurgP2d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrBurgersP2d_sim( rdiscretisationTrial,&
+  subroutine transp_coeffMatBdrBurgP2d_sim( rdiscretisationTrial,&
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
@@ -4375,13 +4375,13 @@ contains
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrBurgersP2d_sim')
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffMatBdrBurgP2d_sim')
     call sys_halt()
 #endif
 
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffMatBdrBurgersP2d_sim
+  end subroutine transp_coeffMatBdrBurgP2d_sim
 
 end module transport_callback2d

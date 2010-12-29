@@ -4403,7 +4403,7 @@ contains
 
       cup  = rho*c
       ppv  = p+0.5*(vn-vn_b)*cup
-      ppv  = max(0.0, ppv)
+      ppv  = max(0.0_DP, ppv)
 
       if (ppv .eq. p) then
 

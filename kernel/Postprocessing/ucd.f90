@@ -4066,21 +4066,21 @@ contains
           select case (p_InumVertsPerCell(j))
           case (2)
             ! Quadratic edge
-            write(mfile, '(4I10)') 3, (p_IverticesAtElement(1,j)-1), &
-                (p_IverticesAtElement(2,j)-1), k + j
+            write(mfile, '(4I10)') 3, p_IverticesAtElement(1,j)-1, &
+                p_IverticesAtElement(2,j)-1, k + j
                 
           case (3)
             ! Quadratic triangle
-            write(mfile, '(7I10)') 6,(p_IverticesAtElement(1,j)-1), &
-                (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1), &
+            write(mfile, '(7I10)') 6, p_IverticesAtElement(1,j)-1, &
+                p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1, &
                 k + p_IedgesAtElement(1,j), k + p_IedgesAtElement(2,j), &
                 k + p_IedgesAtElement(3,j)
             
           case (4)
             ! Quadratic quadrilateral
-            write(mfile, '(9I10)') 8, (p_IverticesAtElement(1,j)-1), &
-                (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1), &
-                (p_IverticesAtElement(4,j)-1), k + p_IedgesAtElement(1,j), &
+            write(mfile, '(9I10)') 8, p_IverticesAtElement(1,j)-1, &
+                p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1, &
+                p_IverticesAtElement(4,j)-1, k + p_IedgesAtElement(1,j), &
                 k + p_IedgesAtElement(2,j), k + p_IedgesAtElement(3,j), &
                 k + p_IedgesAtElement(4,j)
             
@@ -4117,27 +4117,27 @@ contains
           select case (p_InumVertsPerCell(j))
           case (2)
             ! edge
-            write(mfile, '(3I10)') 2, (p_IverticesAtElement(1,j)-1), &
-                (p_IverticesAtElement(2,j)-1)
+            write(mfile, '(3I10)') 2, p_IverticesAtElement(1,j)-1, &
+                p_IverticesAtElement(2,j)-1
 
           case (3)
             ! triangle
-            write(mfile, '(4I10)') 3, (p_IverticesAtElement(1,j)-1), &
-                (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1)
+            write(mfile, '(4I10)') 3, p_IverticesAtElement(1,j)-1, &
+                p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1
 
           case (4)
             ! quadrilateral
-            write(mfile, '(5I10)') 4, (p_IverticesAtElement(1,j)-1), &
-                (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1), &
-                (p_IverticesAtElement(4,j)-1)
+            write(mfile, '(5I10)') 4, p_IverticesAtElement(1,j)-1, &
+                p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1, &
+                p_IverticesAtElement(4,j)-1
           
           case (8)
             ! hexahedron
-            write(mfile, '(9I10)') 8, (p_IverticesAtElement(1,j)-1), &
-                (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1), &
-                (p_IverticesAtElement(4,j)-1), (p_IverticesAtElement(5,j)-1), &
-                (p_IverticesAtElement(6,j)-1), (p_IverticesAtElement(7,j)-1), &
-                (p_IverticesAtElement(8,j)-1)
+            write(mfile, '(9I10)') 8, p_IverticesAtElement(1,j)-1, &
+                p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1, &
+                p_IverticesAtElement(4,j)-1, p_IverticesAtElement(5,j)-1, &
+                p_IverticesAtElement(6,j)-1, p_IverticesAtElement(7,j)-1, &
+                p_IverticesAtElement(8,j)-1
                 
           case DEFAULT
             call output_line ('Invalid element!',&

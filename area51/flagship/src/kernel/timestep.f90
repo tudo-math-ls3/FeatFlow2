@@ -31,22 +31,22 @@
 !# 5.) tstep_removeTempFromTimestep
 !#     -> Removes temporal storage from time-stepping structure
 !#
-!# 6.) tstep_performThetaStep = tstep_performThetaStepScalar /
-!#                              tstep_performThetaStepScalarCpl /
-!#                              tstep_performThetaStepBlock /
-!#                              tstep_performThetaStepBlockCpl
+!# 6.) tstep_performThetaStep = tstep_performThetaStepSc /
+!#                              tstep_performThetaStepScCpl /
+!#                              tstep_performThetaStepBl /
+!#                              tstep_performThetaStepBlCpl
 !#     -> Performs one step by the two-level theta scheme to compute the
 !#        solution for the time interval dTime..dTime+dStep.
 !#
-!# 7.) tstep_performRKStep = tstep_performRKStepScalar /
-!#                           tstep_performRKStepScalarCpl /
-!#                           tstep_performRKStepBlock /
-!#                           tstep_performRKStepBlockCpl /
+!# 7.) tstep_performRKStep = tstep_performRKStepSc /
+!#                           tstep_performRKStepScCpl /
+!#                           tstep_performRKStepBl /
+!#                           tstep_performRKStepBlCpl /
 !#     -> Performs one step of an explicit Runge-Kutta scheme to compute the
 !#        solution for the time interval dTime..dTime+dStep
 !#
-!# 8.) tstep_performPseudoStepping = tstep_performPseudoStepScalar /
-!#                                   tstep_performPseudoStepBlock
+!# 8.) tstep_performPseudoStepping = tstep_performPseudoStepSc /
+!#                                   tstep_performPseudoStepBl
 !#     -> Performs pseudo time-stepping to compute the steady state solution
 !#
 !#
@@ -95,22 +95,22 @@ module timestep
   end interface
 
   interface tstep_performThetaStep
-    module procedure tstep_performThetaStepScalar
-    module procedure tstep_performThetaStepBlock
-    module procedure tstep_performThetaStepScalarCpl
-    module procedure tstep_performThetaStepBlockCpl
+    module procedure tstep_performThetaStepSc
+    module procedure tstep_performThetaStepBl
+    module procedure tstep_performThetaStepScCpl
+    module procedure tstep_performThetaStepBlCpl
   end interface
 
   interface tstep_performRKStep
-    module procedure tstep_performRKStepScalar
-    module procedure tstep_performRKStepBlock
-    module procedure tstep_performRKStepScalarCpl
-    module procedure tstep_performRKStepBlockCpl
+    module procedure tstep_performRKStepSc
+    module procedure tstep_performRKStepBl
+    module procedure tstep_performRKStepScCpl
+    module procedure tstep_performRKStepBlCpl
   end interface
 
   interface tstep_performPseudoStepping
-    module procedure tstep_performPseudoSteppingScalar
-    module procedure tstep_performPseudoSteppingBlock
+    module procedure tstep_performPseudoSteppingSc
+    module procedure tstep_performPseudoSteppingBl
   end interface
 
   interface tstep_checkTimestep
@@ -678,7 +678,7 @@ contains
 
 !<subroutine>
 
-  subroutine tstep_performThetaStepScalar(rproblemLevel, rtimestep,&
+  subroutine tstep_performThetaStepSc(rproblemLevel, rtimestep,&
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
@@ -740,7 +740,7 @@ contains
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
       call lsysbl_createVecFromScalar(rsource, rsourceBlock)
 
-      call tstep_performThetaStepBlock(rproblemLevel, rtimestep,&
+      call tstep_performThetaStepBl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
           rsourceBlock)
 
@@ -752,20 +752,20 @@ contains
       ! Call block version without right-hand side vector
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
 
-      call tstep_performThetaStepBlock(rproblemLevel, rtimestep,&
+      call tstep_performThetaStepBl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
 
       call lsysbl_releaseVector(rsolutionBlock)
 
     end if
 
-  end subroutine tstep_performThetaStepScalar
+  end subroutine tstep_performThetaStepSc
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine tstep_performThetaStepBlock(rproblemLevel, rtimestep,&
+  subroutine tstep_performThetaStepBl(rproblemLevel, rtimestep,&
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
@@ -827,7 +827,7 @@ contains
 
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBl')
       call sys_halt()
     end if
 
@@ -971,13 +971,13 @@ contains
       end if
     end do timeadapt
 
-  end subroutine tstep_performThetaStepBlock
+  end subroutine tstep_performThetaStepBl
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine tstep_performThetaStepScalarCpl(rproblemLevel, rtimestep,&
+  subroutine tstep_performThetaStepScCpl(rproblemLevel, rtimestep,&
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
@@ -999,7 +999,7 @@ contains
     ! unstable. It is therefore highly recommended to use an explicit
     ! Runge-Kutta scheme instead.
     !
-    ! In contrast to routine tstep_performThetaStepScalar this routine
+    ! In contrast to routine tstep_performThetaStepSc this routine
     ! is applicable to a sequence of coupled problems which are
     ! solved repeatedly until convergence.
     !
@@ -1055,7 +1055,7 @@ contains
         call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
       end do
 
-      call tstep_performThetaStepBlockCpl(rproblemLevel, rtimestep,&
+      call tstep_performThetaStepBlCpl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
           rsourceBlock)
 
@@ -1080,7 +1080,7 @@ contains
         call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
       end do
 
-      call tstep_performThetaStepBlockCpl(rproblemLevel, rtimestep,&
+      call tstep_performThetaStepBlCpl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
 
       do i = 1, size(rsolution)
@@ -1092,13 +1092,13 @@ contains
 
     end if
 
-  end subroutine tstep_performThetaStepScalarCpl
+  end subroutine tstep_performThetaStepScCpl
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine tstep_performThetaStepBlockCpl(rproblemLevel, rtimestep,&
+  subroutine tstep_performThetaStepBlCpl(rproblemLevel, rtimestep,&
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
@@ -1120,7 +1120,7 @@ contains
     ! unstable. It is therefore highly recommended to use an explicit
     ! Runge-Kutta scheme instead.
     !
-    ! In contrast to routine tstep_performThetaStepBlock this routine
+    ! In contrast to routine tstep_performThetaStepBl this routine
     ! is applicable to a sequence of coupled problems which are
     ! solved repeatedly until convergence.
 !</description>
@@ -1166,7 +1166,7 @@ contains
     if (present(rsource)) then
       if (size(rsource) .ne. ncomponent) then
         call output_line('Dimensione of coupled problem mismatch!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlockCpl')
+            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlCpl')
         call sys_halt()
       end if
     end if
@@ -1176,7 +1176,7 @@ contains
 
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlockCpl')
+          OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlCpl')
       call sys_halt()
     end if
 
@@ -1336,13 +1336,13 @@ contains
       end if
     end do timeadapt
 
-  end subroutine tstep_performThetaStepBlockCpl
+  end subroutine tstep_performThetaStepBlCpl
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine tstep_performRKStepScalar(rproblemLevel, rtimestep,&
+  subroutine tstep_performRKStepSc(rproblemLevel, rtimestep,&
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
@@ -1388,7 +1388,7 @@ contains
       call lsysbl_createVecFromScalar(rsource, rsourceBlock)
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
 
-      call tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
+      call tstep_performRKStepBl(rproblemLevel, rtimestep, rsolver,&
           rsolutionBlock, fcb_nlsolverCallback, rcollection, rsourceBlock)
 
       call lsysbl_releaseVector(rsourceBlock)
@@ -1398,20 +1398,20 @@ contains
 
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
 
-      call tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
+      call tstep_performRKStepBl(rproblemLevel, rtimestep, rsolver,&
           rsolutionBlock, fcb_nlsolverCallback, rcollection)
 
       call lsysbl_releaseVector(rsolutionBlock)
 
     end if
 
-  end subroutine tstep_performRKStepScalar
+  end subroutine tstep_performRKStepSc
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine tstep_performRKStepBlock(rproblemLevel, rtimestep,&
+  subroutine tstep_performRKStepBl(rproblemLevel, rtimestep,&
       rsolver, rsolution,  fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
@@ -1462,7 +1462,7 @@ contains
 
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'tstep_performRKStepBlock')
+                       OU_CLASS_ERROR,OU_MODE_STD,'tstep_performRKStepBl')
       call sys_halt()
     end if
 
@@ -1694,13 +1694,13 @@ contains
         exit timeadapt
       end if
     end do timeadapt
-  end subroutine tstep_performRKStepBlock
+  end subroutine tstep_performRKStepBl
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine tstep_performRKStepScalarCpl(rproblemLevel, rtimestep,&
+  subroutine tstep_performRKStepScCpl(rproblemLevel, rtimestep,&
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
@@ -1709,7 +1709,7 @@ contains
     ! to time level $t^{n+1}$.  Note that this subroutine serves as
     ! wrapper for scalar solution vectors only.
     !
-    ! In contrast to routine tstep_performRKStepScalar this routine
+    ! In contrast to routine tstep_performRKStepSc this routine
     ! is applicable to a sequence of coupled problems which are
     ! solved repeatedly until convergence.
 !</description>
@@ -1759,7 +1759,7 @@ contains
         call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
       end do
 
-      call tstep_performRKStepBlockCpl(rproblemLevel, rtimestep,&
+      call tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
           rsourceBlock)
 
@@ -1784,7 +1784,7 @@ contains
         call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
       end do
 
-      call tstep_performRKStepBlockCpl(rproblemLevel, rtimestep,&
+      call tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
 
       do i = 1, size(rsolution)
@@ -1796,13 +1796,13 @@ contains
 
     end if
     
-  end subroutine tstep_performRKStepScalarCpl
+  end subroutine tstep_performRKStepScCpl
 
 ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine tstep_performRKStepBlockCpl(rproblemLevel, rtimestep,&
+  subroutine tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
       rsolver, rsolution,  fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
@@ -1812,7 +1812,7 @@ contains
     ! suggested by Richtmyer and Morton is implemented so that no
     ! artificial diffusion needs to be constructed.
     !
-    ! In contrast to routine tstep_performRKStepBlock this routine
+    ! In contrast to routine tstep_performRKStepBl this routine
     ! is applicable to a sequence of coupled problems which are
     ! solved repeatedly until convergence.
 !</description>
@@ -1843,16 +1843,16 @@ contains
 !</inputoutput>
 !</subroutine>  
 
-    print *, "Subroutine tstep_performRKStepBlockCpl is not implemented"
+    print *, "Subroutine tstep_performRKStepBlCpl is not implemented"
     stop
 
-  end subroutine tstep_performRKStepBlockCpl
+  end subroutine tstep_performRKStepBlCpl
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine tstep_performPseudoSteppingBlock(rproblemLevel,&
+  subroutine tstep_performPseudoSteppingBl(rproblemLevel,&
       rtimestep, rsolver, rsolution, fcb_nlsolverCallback,&
       rcollection, rsource)
 
@@ -1911,7 +1911,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingBl')
         call sys_halt()
       end select
 
@@ -1928,13 +1928,13 @@ contains
 
     end do timeloop
 
-  end subroutine tstep_performPseudoSteppingBlock
+  end subroutine tstep_performPseudoSteppingBl
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine tstep_performPseudoSteppingScalar(rproblemLevel,&
+  subroutine tstep_performPseudoSteppingSc(rproblemLevel,&
       rtimestep, rsolver, rsolution, fcb_nlsolverCallback,&
       rcollection, rsource)
 
@@ -1992,7 +1992,7 @@ contains
 
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingSc')
         call sys_halt()
       end select
 
@@ -2009,7 +2009,7 @@ contains
 
     end do timeloop
 
-  end subroutine tstep_performPseudoSteppingScalar
+  end subroutine tstep_performPseudoSteppingSc
 
 
   ! *****************************************************************************

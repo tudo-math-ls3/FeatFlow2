@@ -33,19 +33,19 @@
 !# 7.) afcstab_copyMatrixCoeffs
 !#     -> Copies auxiliary matrix coefficients into stabilisation structure
 !#
-!# 8.) afcstab_isMatrixCompatible = afcstab_isMatrixCompatibleScalar /
-!#                                  afcstab_isMatrixCompatibleBlock
+!# 8.) afcstab_isMatrixCompatible = afcstab_isMatrixCompatibleSc /
+!#                                  afcstab_isMatrixCompatibleBl
 !#     -> Checks wether a matrix and a stabilisation structure are compatible
 !#
-!# 9.) afcstab_isVectorCompatible = afcstab_isVectorCompatibleScalar /
-!#                                  afcstab_isVectorCompatibleBlock
+!# 9.) afcstab_isVectorCompatible = afcstab_isVectorCompatibleSc /
+!#                                  afcstab_isVectorCompatibleBl
 !#     -> Checks wether a vector and a stabilisation structure are compatible
 !#
 !# 10.) afcstab_getbase_array = afcstab_getbase_arrayScalar /
 !#                              afcstab_getbase_arrayBlock
 !#      -> Returns the array of pointers to a given block matrix
 !#
-!# 11.) afcstab_getbase_IverticesAtEdgeIdx
+!# 11.) afcstab_getbase_IvertAtEdgeIdx
 !#      -> Returns pointer to the index pointer for the
 !#         vertices at edge structure
 !#
@@ -120,7 +120,7 @@ module afcstabilisation
   public :: afcstab_isMatrixCompatible
   public :: afcstab_isVectorCompatible
   public :: afcstab_getbase_array
-  public :: afcstab_getbase_IverticesAtEdgeIdx
+  public :: afcstab_getbase_IvertAtEdgeIdx
   public :: afcstab_getbase_IverticesAtEdge
   public :: afcstab_getbase_IsupdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdgeIdx
@@ -520,13 +520,13 @@ module afcstabilisation
   end interface
 
   interface afcstab_isMatrixCompatible
-    module procedure afcstab_isMatrixCompatibleScalar
-    module procedure afcstab_isMatrixCompatibleBlock
+    module procedure afcstab_isMatrixCompatibleSc
+    module procedure afcstab_isMatrixCompatibleBl
   end interface
   
   interface afcstab_isVectorCompatible
-    module procedure afcstab_isVectorCompatibleScalar
-    module procedure afcstab_isVectorCompatibleBlock
+    module procedure afcstab_isVectorCompatibleSc
+    module procedure afcstab_isVectorCompatibleBl
   end interface
 
   interface afcstab_failsafeLimiting
@@ -1809,7 +1809,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_isMatrixCompatibleScalar(rafcstab, rmatrix, bcompatible)
+  subroutine afcstab_isMatrixCompatibleSc(rafcstab, rmatrix, bcompatible)
 
 !<description>
     ! This subroutine checks if a scalar matrix and a discrete 
@@ -1843,17 +1843,17 @@ contains
         return
       else
         call output_line('Matrix/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleSc')
         call sys_halt()
       end if
     end if
-  end subroutine afcstab_isMatrixCompatibleScalar
+  end subroutine afcstab_isMatrixCompatibleSc
   
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_isMatrixCompatibleBlock(rafcstab, rmatrixBlock, bcompatible)
+  subroutine afcstab_isMatrixCompatibleBl(rafcstab, rmatrixBlock, bcompatible)
 
 !<description>
     ! This subroutine checks whether a block matrix and a discrete
@@ -1895,7 +1895,7 @@ contains
     if (rmatrixBlock%nblocksPerCol .ne.&
         rmatrixBlock%nblocksPerRow) then
       call output_line('Block matrix must have equal number of columns and rows!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleBl')
       call sys_halt()
     end if
 
@@ -1906,7 +1906,7 @@ contains
         return
       else
         call output_line('Block matrix must have group structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleBl')
         call sys_halt()
       end if
     end if
@@ -1921,17 +1921,17 @@ contains
         return
       else
         call output_line('Matrix/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleBl')
         call sys_halt()
       end if
     end if
-  end subroutine afcstab_isMatrixCompatibleBlock
+  end subroutine afcstab_isMatrixCompatibleBl
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_isVectorCompatibleScalar(rafcstab, rvector, bcompatible)
+  subroutine afcstab_isVectorCompatibleSc(rafcstab, rvector, bcompatible)
 
 !<description>
     ! This subroutine checks if a vector and a stabilisation
@@ -1964,17 +1964,17 @@ contains
         return
       else
         call output_line('Vector/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isVectorCompatibleScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isVectorCompatibleSc')
         call sys_halt()
       end if
     end if
-  end subroutine afcstab_isVectorCompatibleScalar
+  end subroutine afcstab_isVectorCompatibleSc
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_isVectorCompatibleBlock(rafcstab, rvectorBlock, bcompatible)
+  subroutine afcstab_isVectorCompatibleBl(rafcstab, rvectorBlock, bcompatible)
 
 !<description>
     ! This subroutine checks whether a block vector and a stabilisation
@@ -2016,17 +2016,17 @@ contains
         return
       else
         call output_line('Vector/Operator not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isVectorCompatibleBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isVectorCompatibleBl')
         call sys_halt()
       end if
     end if
-  end subroutine afcstab_isVectorCompatibleBlock
+  end subroutine afcstab_isVectorCompatibleBl
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+  subroutine afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
 
 !<description>
     ! Returns a pointer to the index pointer for the vertices at edge structure
@@ -2054,7 +2054,7 @@ contains
     call storage_getbase_int(rafcstab%h_IverticesAtEdgeIdx,&
         p_IverticesAtEdgeIdx)
 
-  end subroutine afcstab_getbase_IverticesAtEdgeIdx
+  end subroutine afcstab_getbase_IvertAtEdgeIdx
 
   !*****************************************************************************
 
@@ -2306,7 +2306,7 @@ contains
     
     ! Set pointer to edge structure
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
 
     ! If no OpenMP is used, then all edges belong to the same
     ! group. Otherwise, the edges will be reordered below.
@@ -2327,7 +2327,7 @@ contains
       !$ call storage_new('afcstab_generateVerticesAtEdge','IverticesAtEdgeIdx',&
       !$     2*(rmatrixTemplate%NEQ-1)+1, ST_INT, rafcstab%h_IverticesAtEdgeIdx,&
       !$     ST_NEWBLOCK_ZERO)
-      !$ call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      !$ call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
       !$ h_IverticesAtEdgeAux = ST_NOHANDLE
       !$ call storage_copy(rafcstab%h_IverticesAtEdge, h_IverticesAtEdgeAux)
       !$ call storage_getbase_int2d(h_IverticesAtEdgeAux, p_IverticesAtEdgeAux)
@@ -2364,7 +2364,7 @@ contains
       !$ nmaxcolors = computeMaxEdgeColors(rmatrixTemplate%NEQ, p_IverticesAtEdge)
       !$ call storage_new('afcstab_generateVerticesAtEdge','IverticesAtEdgeIdx',&
       !$     nmaxcolors+1, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_ZERO)
-      !$ call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      !$ call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
       !$ h_IverticesAtEdgeAux = ST_NOHANDLE
       !$ call storage_copy(rafcstab%h_IverticesAtEdge, h_IverticesAtEdgeAux)
       !$ call storage_getbase_int2d(h_IverticesAtEdgeAux, p_IverticesAtEdgeAux)
@@ -2403,7 +2403,7 @@ contains
       !$ nmaxcolors = computeMaxEdgeColors(rmatrixTemplate%NEQ, p_IverticesAtEdge)
       !$ call storage_new('afcstab_generateVerticesAtEdge','IverticesAtEdgeIdx',&
       !$     nmaxcolors+1, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_ZERO)
-      !$ call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      !$ call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
       !$ h_IverticesAtEdgeAux = ST_NOHANDLE
       !$ call storage_copy(rafcstab%h_IverticesAtEdge, h_IverticesAtEdgeAux)
       !$ call storage_getbase_int2d(h_IverticesAtEdgeAux, p_IverticesAtEdgeAux)
@@ -2984,7 +2984,7 @@ contains
     
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IverticesAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
     call lsyssc_getbase_double(rlumpedMassMatrix, p_DlumpedMassMatrix)
     call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)

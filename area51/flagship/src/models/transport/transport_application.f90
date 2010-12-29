@@ -128,15 +128,15 @@
 !#      -> Solves the primal formulation of the time-dependent
 !#         convection-diffusion-reaction equation.
 !#
-!# 15.) transp_solveTransientPrimalDual
+!# 15.) transp_solveTransientPrimDual
 !#      -> Solves the primal and the dual formulation of the time-dependent
 !#         convection-diffusion-reaction equation using pseudo time-stepping.
 !#
-!# 16.) transp_solvePseudoTransientPrimal
+!# 16.) transp_solvePseudoTransPrimal
 !#      -> Solves the primal formulation of the steady
 !#         convection-diffusion-reaction equation using pseudo time-stepping.
 !#
-!# 17.) transp_solvePseudoTransientPrimalDual
+!# 17.) transp_solvePseudoTransPrimDual
 !#      -> Solves the primal and the dual formulation of the steady
 !#         convection-diffusion-reaction equation using pseudo time-stepping.
 !#
@@ -144,7 +144,7 @@
 !#      -> Solves the primal formulation of the steady
 !#         convection-diffusion-reaction equation directly
 !#
-!# 19.) transp_solveSteadyStatePrimalDual
+!# 19.) transp_solveSteadyStatePrimDual
 !#      -> Solves the primal and the dual formulation of the steady
 !#         convection-diffusion-reaction equation directly
 !#
@@ -242,11 +242,11 @@ module transport_application
   public :: transp_outputSolution
   public :: transp_outputStatistics
   public :: transp_solveTransientPrimal
-  public :: transp_solveTransientPrimalDual
-  public :: transp_solvePseudoTransientPrimal
-  public :: transp_solvePseudoTransientPrimalDual
+  public :: transp_solveTransientPrimDual
+  public :: transp_solvePseudoTransPrimal
+  public :: transp_solvePseudoTransPrimDual
   public :: transp_solveSteadyStatePrimal
-  public :: transp_solveSteadyStatePrimalDual
+  public :: transp_solveSteadyStatePrimDual
 
 contains
 
@@ -467,7 +467,7 @@ contains
             sindatfileName, '['//trim(sbdrcondName)//']',&
             ndimension, transp_parseBoundaryCondition)
 
-        call transp_solveTransientPrimalDual(rparlist, ssectionName,&
+        call transp_solveTransientPrimDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
@@ -481,7 +481,7 @@ contains
         ! Solve the primal formulation for
         ! the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call transp_solvePseudoTransientPrimal(rparlist, ssectionName,&
+        call transp_solvePseudoTransPrimal(rparlist, ssectionName,&
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
@@ -502,7 +502,7 @@ contains
             sindatfileName, '['//trim(sbdrcondName)//']',&
             ndimension, transp_parseBoundaryCondition)
 
-        call transp_solvePseudoTransientPrimalDual(rparlist, ssectionName,&
+        call transp_solvePseudoTransPrimDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
@@ -537,7 +537,7 @@ contains
             sindatfileName, '['//trim(sbdrcondName)//']',&
             ndimension, transp_parseBoundaryCondition)
 
-        call transp_solveSteadyStatePrimalDual(rparlist, ssectionName,&
+        call transp_solveSteadyStatePrimDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
@@ -3780,7 +3780,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_solveTransientPrimalDual(rparlist, ssectionName,&
+  subroutine transp_solveTransientPrimDual(rparlist, ssectionName,&
       rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep, rsolver,&
       rsolutionPrimal, rsolutionDual, rcollection)
 
@@ -3834,13 +3834,13 @@ contains
     print *, "time-dependent flows is not implemented yet"
     stop
 
-  end subroutine transp_solveTransientPrimalDual
+  end subroutine transp_solveTransientPrimDual
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_solvePseudoTransientPrimal(rparlist, ssectionName,&
+  subroutine transp_solvePseudoTransPrimal(rparlist, ssectionName,&
       rbdrCond, rproblem, rtimestep, rsolver, rsolution, rcollection)
 
 !<description>
@@ -4129,13 +4129,13 @@ contains
       call grph_releaseGraph(rgraph)
     end if
 
-  end subroutine transp_solvePseudoTransientPrimal
+  end subroutine transp_solvePseudoTransPrimal
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_solvePseudoTransientPrimalDual(rparlist, ssectionName,&
+  subroutine transp_solvePseudoTransPrimDual(rparlist, ssectionName,&
       rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep, rsolver,&
       rsolutionPrimal, rsolutionDual, rcollection)
 
@@ -4521,7 +4521,7 @@ contains
       call grph_releaseGraph(rgraph)
     end if
 
-  end subroutine transp_solvePseudoTransientPrimalDual
+  end subroutine transp_solvePseudoTransPrimDual
 
   !*****************************************************************************
 
@@ -4827,7 +4827,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_solveSteadyStatePrimalDual(rparlist, ssectionName,&
+  subroutine transp_solveSteadyStatePrimDual(rparlist, ssectionName,&
       rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep, rsolver,&
       rsolutionPrimal, rsolutionDual, rcollection)
 
@@ -5220,7 +5220,7 @@ contains
       call grph_releaseGraph(rgraph)
     end if
 
-  end subroutine transp_solveSteadyStatePrimalDual
+  end subroutine transp_solveSteadyStatePrimDual
 
   !*****************************************************************************
   ! AUXILIARY ROUTINES
