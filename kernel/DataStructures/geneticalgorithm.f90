@@ -128,11 +128,16 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ichromosome,isystemclock
+    integer :: ichromosome,isystemclock,i,isize
+    integer, dimension(:), allocatable :: Iseed
 
     ! Initialise pseudo-random generator
     call system_clock(isystemClock)
-    call random_seed(put=(/isystemclock/))
+    call random_seed(size=isize)
+    allocate(Iseed(isize))
+    Iseed = isystemClock + 37 * (/ (i - 1, i = 1, isize) /)
+    call random_seed(put=Iseed)
+    deallocate(Iseed)
 
     ! Initialisation
     if(present(dcrossoverrate)) rpopulation%dcrossoverrate = dcrossoverrate
