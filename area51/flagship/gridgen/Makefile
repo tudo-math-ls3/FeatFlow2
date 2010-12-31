@@ -18,11 +18,11 @@ BIN = ./bin/
 
 # CC should be set to the name of your favorite C compiler.
 
-CC = cc
+CC =gcc
 
 # F90 should be set to the name of your favorite Fortran compiler.
 
-F90 = g95 
+F90 = gfortran
 
 # CSWITCHES is a list of all switches passed to the C compiler.  I strongly
 #   recommend using the best level of optimization.  I also strongly
@@ -94,26 +94,19 @@ TRILIBDEFS = -DTRILIBRARY
 
 # The action starts here.
 
-all: $(BIN)triangle $(BIN)gridgen
+all: $(BIN)triangle $(BIN)gridgen1d $(BIN)gridgencirc2d $(BIN)showme
 
-trilibrary: $(BIN)triangle.o $(BIN)tricall
+$(BIN)gridgen1d: $(SRC)gridgen1d.f90
+	$(F90) -o $(BIN)gridgen1d $(SRC)gridgen1d.f90
 
-$(BIN)gridgen: $(SRC)gridgen.f90
-	$(F90) $(F90SWITCHES) -o $(BIN)gridgen $(SRC)gridgen.f90
+$(BIN)gridgencirc2d: $(SRC)gridgencirc2d.f90
+	$(F90) $(F90SWITCHES) -o $(BIN)gridgencirc2d $(SRC)gridgencirc2d.f90
 
 $(BIN)triangle: $(SRC)triangle.c
 	$(CC) $(CSWITCHES) -o $(BIN)triangle $(SRC)triangle.c -lm
-
-$(BIN)tricall: $(BIN)tricall.c $(BIN)triangle.o
-	$(CC) $(CSWITCHES) -o $(BIN)tricall $(SRC)tricall.c \
-		$(BIN)triangle.o -lm
-
-$(BIN)triangle.o: $(SRC)triangle.c $(SRC)triangle.h
-	$(CC) $(CSWITCHES) $(TRILIBDEFS) -c -o $(BIN)triangle.o \
-		$(SRC)triangle.c
 
 $(BIN)showme: $(SRC)showme.c
 	$(CC) $(CSWITCHES) -o $(BIN)showme $(SRC)showme.c -lX11
 
 clean:
-	rm -f $(BIN)triangle $(BIN)showme $(BIN)gridgen
+	rm -f $(BIN)triangle $(BIN)showme $(BIN)gridgen1d $(BIN)gridgencirc2d
