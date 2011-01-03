@@ -977,14 +977,15 @@ contains
       integer :: IEDGEmax,IEDGEset,IEQmax,IEQset,idx,igroup
       integer :: i,iedge,ii,ij,ivar,ji,jj
 
-      !-------------------------------------------------------------------------
-      ! Assemble diagonal entries
-      !-------------------------------------------------------------------------
-
+      
       !$omp parallel default(shared)&
       !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
       !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
       !$omp         iedge,ii,ij,ivar,ji,jj)
+
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
 
       ! Allocate temporal memory
       allocate(IverticesAtNode(2,GFSYS_NEQSIM))
@@ -1210,14 +1211,15 @@ contains
       integer :: IEDGEmax,IEDGEset,IEQmax,IEQset,idx,igroup
       integer :: i,iedge,ii,ij,ijpos,ivar,ji,jj,jvar
 
-      !-------------------------------------------------------------------------
-      ! Assemble diagonal entries
-      !-------------------------------------------------------------------------
-
+      
       !$omp parallel default(shared)&
       !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
       !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
       !$omp         iedge,ii,ij,ijpos,ivar,jvar,ji,jj)
+
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
 
       ! Allocate temporal memory
       allocate(IverticesAtNode(2,GFSYS_NEQSIM))
@@ -1595,14 +1597,15 @@ contains
       integer :: igroup,idx,IEQset,IEQmax,IEDGEset,IEDGEmax
       integer :: i,ii,jj,ij,ji,iedge
 
-      !-------------------------------------------------------------------------
-      ! Assemble diagonal entries
-      !-------------------------------------------------------------------------
-
+      
       !$omp parallel default(shared)&
       !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
       !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
       !$omp         iedge,ii,ij,ji,jj)
+
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
 
       ! Allocate temporal memory
       allocate(IverticesAtNode(2,GFSYS_NEQSIM))
