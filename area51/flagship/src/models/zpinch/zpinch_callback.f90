@@ -1070,68 +1070,85 @@ contains
     ! Linearised FEM-FCT algorithm
     !---------------------------------------------------------------------------
 
-    ! Initialize dummy timestep
-    rtimestepAux%dStep = 1.0_DP
-    rtimestepAux%theta = 0.0_DP
-    
-    !--- compressible hydrodynamic model ----------------------------------------------
+    ! Should we apply consistent mass antidiffusion?
+    if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
 
-    ! Set pointer to predictor
-    p_rpredictorHydro => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
-
-    ! Set the first string quick access array to the section name
-    ! of the hydrodynamic model which is stored in the third array
-    rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
-
-    ! Compute low-order "right-hand side" without theta parameter
-    call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection, Rsource(1))
-
-    ! Compute low-order predictor
-    call lsysbl_invertedDiagMatVec(&
-        rproblemLevel%Rmatrix(lumpedMassMatrix),&
-        p_rpredictorHydro, 1.0_DP, p_rpredictorHydro)
-
-    ! Compute the raw antidiffusive fluxes
-    call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-        1.0_DP, 1.0_DP, .true., p_rpredictorHydro, rcollection)
+      ! Initialize dummy timestep
+      rtimestepAux%dStep = 1.0_DP
+      rtimestepAux%theta = 0.0_DP
+      
+      !--- compressible hydrodynamic model -------------------------------------
+      
+      ! Set pointer to predictor
+      p_rpredictorHydro => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+      
+      ! Set the first string quick access array to the section name
+      ! of the hydrodynamic model which is stored in the third array
+      rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
+      
+      ! Compute low-order "right-hand side" without theta parameter
+      call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+          rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection, Rsource(1))
+      
+      ! Compute low-order predictor
+      call lsysbl_invertedDiagMatVec(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          p_rpredictorHydro, 1.0_DP, p_rpredictorHydro)
+      
+      ! Compute the raw antidiffusive fluxes with contribution from
+      ! consistent mass matrix
+      call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
+          1.0_DP, 1.0_DP, .true., p_rpredictorHydro, rcollection)
+    else
+      ! Compute the raw antidiffusive fluxes without contribution from
+      ! consistent mass matrix
+      call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
+          1.0_DP, 1.0_DP, .true., Rsolution(1), rcollection)
+    end if
         
 
     !--- transport model -------------------------------------------------------
 
-    ! Set pointer to predictor
-    p_rpredictorTransport => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
-
-    ! Set the first string quick access array to the section name
-    ! of the transport model which is stored in the fourth array
-    rcollection%SquickAccess(1) = rcollection%SquickAccess(4)
-
-    ! Compute the preconditioner
-    call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-        rsolverTransport, Rsolution(2), rcollection)
-
-    ! Compute low-order "right-hand side" without theta parameter
-    call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolverTransport, Rsolution(2), p_rpredictorTransport,&
-        rcollection,&
-        fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
-        fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
-
-    ! Compute low-order predictor
-    call lsysbl_invertedDiagMatVec(&
-        rproblemLevel%Rmatrix(lumpedMassMatrix),&
-        p_rpredictorTransport, 1.0_DP, p_rpredictorTransport)
-
     ! Should we apply consistent mass antidiffusion?
     if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+      
+      ! Initialize dummy timestep
+      rtimestepAux%dStep = 1.0_DP
+      rtimestepAux%theta = 0.0_DP
+      
+      ! Set pointer to predictor
+      p_rpredictorTransport => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
+      
+      ! Set the first string quick access array to the section name
+      ! of the transport model which is stored in the fourth array
+      rcollection%SquickAccess(1) = rcollection%SquickAccess(4)
+      
+      ! Compute the preconditioner
+      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+          rsolverTransport, Rsolution(2), rcollection)
+      
+      ! Compute low-order "right-hand side" without theta parameter
+      call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+          rsolverTransport, Rsolution(2), p_rpredictorTransport,&
+          rcollection,&
+          fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
+          fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
+      
+      ! Compute low-order predictor
+      call lsysbl_invertedDiagMatVec(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          p_rpredictorTransport, 1.0_DP, p_rpredictorTransport)
+      
+      ! Build antidiffusive fluxes with contribution from consistent
+      ! mass matrix
       call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
-          p_rpredictorTransport, Rsolution(2),&
-          rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
-          rproblemLevel%Rmatrix(consistentMassMatrix))
+          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
+          rproblemLevel%Rmatrix(consistentMassMatrix), p_rpredictorTransport)
     else
+      ! Build antidiffusive fluxes without contribution from
+      ! consistent mass matrix
       call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
-          p_rpredictorTransport, Rsolution(2),&
-          rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
+          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.)
     end if
 
     !---------------------------------------------------------------------------

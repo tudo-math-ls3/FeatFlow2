@@ -1836,8 +1836,8 @@ contains
         call afcstab_generateVerticesAtEdge(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
 
         ! Compute the raw antidiffusive mass fluxes
-        call gfsc_buildFluxFCT(rafcstab, rvectorHigh, rvectorHigh,&
-            0.0_DP, 0.0_DP, 1.0_DP, .true., p_rconsistentMassMatrix)
+        call gfsc_buildFluxFCT(rafcstab, rvectorHigh, 0.0_DP, 0.0_DP, 1.0_DP,&
+            .true., p_rconsistentMassMatrix, rvectorHigh)
 
         ! Attach section name to collection structure
         rcollection%SquickAccess(1) = ssectionName

@@ -1,3 +1,4 @@
+
 !##############################################################################
 !# ****************************************************************************
 !# <Name> transport_callback </name>
@@ -2730,14 +2731,12 @@ contains
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
         call gfsc_buildFluxFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rsolution, rsolution, rtimestep%theta,&
-            rtimestep%dStep, 1.0_DP, .true.,&
-            rproblemLevel%Rmatrix(consistentMassMatrix))
+            rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP, .true.,&
+            rproblemLevel%Rmatrix(consistentMassMatrix), rsolution)
       else
         call gfsc_buildFluxFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rsolution, rsolution, rtimestep%theta,&
-            rtimestep%dStep, 1.0_DP, .true.)
+            rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP, .true.)
         
         ! Perform flux correction
         call gfsc_buildConvectionVectorFCT(&
@@ -2749,8 +2748,8 @@ contains
 
     case (AFCSTAB_FEMTVD)
       call gfsc_buildConvectionVectorTVD(&
-          rsolution, dweight, rrhs,&
-          rproblemLevel%Rafcstab(convectionAFC))
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolution, dweight, rrhs)
 
     case (AFCSTAB_FEMGP)
 
@@ -2762,13 +2761,13 @@ contains
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
         call gfsc_buildConvectionVectorGP(&
             rproblemLevel%Rmatrix(consistentMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, rsolution0,&
-            rtimestep%theta, dweight, rrhs,&
-            rproblemLevel%Rafcstab(convectionAFC))
+            rtimestep%theta, dweight, rrhs)
       else
         call gfsc_buildConvectionVectorTVD(&
-            rsolution, dweight, rrhs,&
-            rproblemLevel%Rafcstab(convectionAFC))
+            rproblemLevel%Rafcstab(convectionAFC),&
+            rsolution, dweight, rrhs)
       end if
     end select
 
@@ -2786,8 +2785,8 @@ contains
 
     case (AFCSTAB_SYMMETRIC)
       call gfsc_buildConvectionVectorSymm(&
-          rsolution, 1.0_DP, rrhs,&
-          rproblemLevel%Rafcstab(diffusionAFC))
+          rproblemLevel%Rafcstab(diffusionAFC), rsolution, 1.0_DP, rrhs)
+         
     end select
 
     ! Apply the given load vector to the residual
@@ -3224,14 +3223,12 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
-              rsolution, rsolution, rtimestep%theta,&
-              rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
+              rproblemLevel%Rmatrix(consistentMassMatrix), rsolution)
         else
           call gfsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
-              rsolution, rsolution, rtimestep%theta,&
-              rtimestep%dStep, 1.0_DP, (ite .eq. 0))
+              rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
         end if
 
         ! Set operation specifier
@@ -3277,9 +3274,8 @@ contains
 
       case (AFCSTAB_FEMTVD)
         call gfsc_buildConvectionVectorTVD(&
-            rsolution, rtimestep%dStep, rres,&
-            rproblemLevel%Rafcstab(convectionAFC))
-
+            rproblemLevel%Rafcstab(convectionAFC),&
+            rsolution, rtimestep%dStep, rres)
 
       case (AFCSTAB_FEMGP)
 
@@ -3291,13 +3287,13 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildConvectionVectorGP(&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, rsolution0,&
-              rtimestep%theta, rtimestep%dStep, rres,&
-              rproblemLevel%Rafcstab(convectionAFC))
+              rtimestep%theta, rtimestep%dStep, rres)
         else
           call gfsc_buildConvectionVectorTVD(&
-              rsolution, rtimestep%dStep, rres,&
-              rproblemLevel%Rafcstab(convectionAFC))
+              rproblemLevel%Rafcstab(convectionAFC),&
+              rsolution, rtimestep%dStep, rres)
         end if
       end select
 
@@ -3320,8 +3316,8 @@ contains
 
       case (AFCSTAB_SYMMETRIC)
         call gfsc_buildConvectionVectorSymm(&
-            rsolution, 1.0_DP, rres,&
-            rproblemLevel%Rafcstab(diffusionAFC))
+            rproblemLevel%Rafcstab(diffusionAFC), rsolution, 1.0_DP, rres)
+            
       end select
 
     end if   ! diffusionAFC > 0
@@ -4795,38 +4791,41 @@ contains
     ! Linearised FEM-FCT algorithm
     !---------------------------------------------------------------------------
 
-    ! Initialize dummy timestep
-    rtimestepAux%dStep = 1.0_DP
-    rtimestepAux%theta = 0.0_DP
-
-    ! Set pointer to predictor
-    p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
-
-    ! Compute the preconditioner
-    call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-        rsolver, rsolution, rcollection)
-
-    ! Compute low-order "right-hand side" without theta parameter
-    call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolver, rsolution, p_rpredictor, rcollection, rsource)
-
-    ! Compute low-order predictor
-    call lsysbl_invertedDiagMatVec(&
-        rproblemLevel%Rmatrix(lumpedMassMatrix),&
-        p_rpredictor, 1.0_DP, p_rpredictor)
-
     ! Should we apply consistent mass antidiffusion?
     if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+      
+      ! Initialize dummy timestep
+      rtimestepAux%dStep = 1.0_DP
+      rtimestepAux%theta = 0.0_DP
+      
+      ! Set pointer to predictor
+      p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
+      
+      ! Compute the preconditioner
+      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rcollection)
+      
+      ! Compute low-order "right-hand side" without theta parameter
+      call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+          rsolver, rsolution, p_rpredictor, rcollection, rsource)
+      
+      ! Compute low-order predictor
+      call lsysbl_invertedDiagMatVec(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          p_rpredictor, 1.0_DP, p_rpredictor)
+      
+      ! Build antidiffusive fluxes with contribution from consistent
+      ! mass matrix
       call gfsc_buildFluxFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
-          p_rpredictor, rsolution, rtimestepAux%theta,&
-          rtimestepAux%dStep, 1.0_DP, .true.,&
-          rproblemLevel%Rmatrix(consistentMassMatrix))
+          rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
+          rproblemLevel%Rmatrix(consistentMassMatrix), p_rpredictor)
     else
+      ! Build antidiffusive fluxes without contribution from
+      ! consistent mass matrix
       call gfsc_buildFluxFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
-          p_rpredictor, rsolution, rtimestepAux%theta,&
-          rtimestepAux%dStep, 1.0_DP, .true.)
+          rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true.)
     end if
 
     ! Apply linearised FEM-FCT correction
