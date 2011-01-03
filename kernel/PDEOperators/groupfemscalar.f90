@@ -344,6 +344,12 @@ contains
           AFCSTAB_UPWIND,&
           AFCSTAB_DMP)
       
+      ! Handle for IverticesAtEdgeIdx
+      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+      call storage_new('gfsc_initStabilisation', 'IverticesAtEdgeIdx',&
+          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
+
       ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
@@ -356,6 +362,12 @@ contains
           AFCSTAB_FEMFCT_IMPLICIT,&
           AFCSTAB_FEMFCT_ITERATIVE)
       
+      ! Handle for IverticesAtEdgeIdx
+      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+      call storage_new('gfsc_initStabilisation', 'IverticesAtEdgeIdx',&
+          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
+
       ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
@@ -415,6 +427,12 @@ contains
     case (AFCSTAB_FEMTVD,&
           AFCSTAB_FEMGP)
       
+      ! Handle for IverticesAtEdgeIdx
+      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+      call storage_new('gfsc_initStabilisation', 'IverticesAtEdgeIdx',&
+          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
+
       ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
@@ -457,6 +475,12 @@ contains
     case (AFCSTAB_FEMFCT_LINEARISED,&
           AFCSTAB_FEMFCT_MASS)
       
+      ! Handle for IverticesAtEdgeIdx
+      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+      call storage_new('gfsc_initStabilisation', 'IverticesAtEdgeIdx',&
+          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
+
       ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
@@ -511,6 +535,12 @@ contains
 
 
     case (AFCSTAB_SYMMETRIC)
+
+      ! Handle for IverticesAtEdgeIdx
+      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+      call storage_new('gfsc_initStabilisation', 'IverticesAtEdgeIdx',&
+          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
 
       ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
