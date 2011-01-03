@@ -750,7 +750,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
     real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_Kdiagonal
+    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx,p_Kdiagonal
 
 
     ! Check if stabilisation has been initialised
@@ -767,11 +767,9 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
       call sys_halt()
     end if
-    
-    ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rconvMatrix)
 
     ! Set pointers
+    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call afcstab_getbase_DmatCoeffAtNode(rafcstab, p_DmatrixCoeffsAtNode)
     call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
@@ -799,9 +797,10 @@ contains
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
         
         ! Assemble Galerkin operator with stabilisation
-        call doOperatorAFCMat79(p_Kdiagonal, p_IverticesAtEdge, rafcstab%NEDGE,&
-            rconvMatrix%NEQ, p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge,&
-            p_Dx, dscale, p_ConvOp, p_DcoefficientsAtEdge)
+        call doOperatorAFCMat79(p_Kdiagonal, p_IverticesAtEdgeIdx,&
+            p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
+            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx,&
+            dscale, bclear, p_ConvOp, p_DcoefficientsAtEdge)
         
         ! Set state of stabilisation
         rafcstab%istabilisationSpec =&
@@ -809,8 +808,8 @@ contains
         
         ! Do we need edge orientation?
         if (gfsc_hasOrientation(rafcstab)) then
-          call doUpwindOrientation(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_DmatrixCoeffsAtEdge)
+          call doUpwindOrientation(rafcstab%NEDGE, p_IverticesAtEdge,&
+              p_DcoefficientsAtEdge, p_DmatrixCoeffsAtEdge)
           rafcstab%istabilisationSpec =&
               ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION)
         else
@@ -821,9 +820,10 @@ contains
       else   ! bbuildStabilisation == no
         
         ! Apply standard discretisation without stabilisation
-        call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdge, rafcstab%NEDGE,&
-            rconvMatrix%NEQ, p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge,&
-            p_Dx, dscale, p_ConvOp)
+        call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx,&
+            p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
+            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx,&
+            dscale, bclear, p_ConvOp)
           
         ! Set state of stabilisation
         rafcstab%istabilisationSpec =&
@@ -847,16 +847,17 @@ contains
     ! Assemble convection operator K
     ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorMat79(Kdiagonal, IverticesAtEdge, NEDGE, NEQ,&
-        DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, K)
+    subroutine doOperatorMat79(Kdiagonal, IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, bclear, K)
       
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
       real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx,Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
       ! input/output parameters
@@ -871,7 +872,7 @@ contains
 
       ! local variables
       integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
-      integer :: i,ii,jj,ij,ji,iedge
+      integer :: i,iedge,igroup,ii,ij,ji,jj
       
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
@@ -924,14 +925,27 @@ contains
 
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
-        do idx = 1, IEQmax-IEQset+1
+        if (bclear) then
+          do idx = 1, IEQmax-IEQset+1
+            
+            ! Get position of diagonal entry
+            ii = IverticesAtNode(2,idx)
+            
+            ! Update the diagonal coefficient
+            K(ii) = DcoefficientsAtNode(1,idx)
+          end do
 
-          ! Get position of diagonal entry
-          ii = IverticesAtNode(2,idx)
+        else   ! do not clear matrix
+          do idx = 1, IEQmax-IEQset+1
+            
+            ! Get position of diagonal entry
+            ii = IverticesAtNode(2,idx)
+            
+            ! Update the diagonal coefficient
+            K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
+          end do
 
-          ! Update the diagonal coefficient
-          K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
-        end do       
+        end if
       end do
       !$omp end do
 
@@ -948,62 +962,94 @@ contains
       allocate(DdataAtEdge(2,GFSC_NEDGESIM))
       allocate(DcoefficientsAtEdge(3,GFSC_NEDGESIM))
 
-      ! Loop over the edges
-      !$omp do schedule(static,1)
-      do IEDGEset = 1, NEDGE, GFSC_NEDGESIM
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
 
-        ! We always handle GFSC_NEDGESIM edges simultaneously.
-        ! How many edges have we actually here?
-        ! Get the maximum edge number, such that we handle 
-        ! at most GFSC_NEDGESIM edges simultaneously.
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+
+        ! Loop over the edges
+        !$omp do schedule(static,1)
+        do IEDGEset = IverticesAtEdgeIdx(igroup),&
+                      IverticesAtEdgeIdx(igroup+1)-1, GFSC_NEDGESIM
+
+          ! We always handle GFSC_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSC_NEDGESIM edges simultaneously.
         
-        IEDGEmax = min(NEDGE, IEDGEset-1+GFSC_NEDGESIM)
+          IEDGEmax = min(IverticesAtEdgeIdx(igroup+1)-1,IEDGEset-1+GFSC_NEDGESIM)
         
-        ! Loop through all edges in the current set
-        ! and prepare the auxiliary arrays
-        do idx = 1, IEDGEmax-IEDGEset+1
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(1,idx) = Dx(IverticesAtEdge(1,iedge))
+            DdataAtEdge(2,idx) = Dx(IverticesAtEdge(2,iedge))
+          end do
+          
+          ! Use callback function to compute off-diagonal entries
+          call fcb_calcMatrix_sim(&
+              DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
+          
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global matrix
+          if (bclear) then
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IverticesAtEdge(1,iedge))
+              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IverticesAtEdge(3,iedge)
+              ji = IverticesAtEdge(4,iedge)
+              
+              ! Update the global operator
+              K(ii) = K(ii) - DcoefficientsAtEdge(1,idx)
+              K(jj) = K(jj) - DcoefficientsAtEdge(1,idx)
+              K(ij) = DcoefficientsAtEdge(2,idx) + DcoefficientsAtEdge(1,idx) 
+              K(ji) = DcoefficientsAtEdge(3,idx) + DcoefficientsAtEdge(1,idx) 
+            end do
 
-          ! Get actual edge number
-          iedge = idx+IEDGEset-1
+          else   ! do not clear matrix
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IverticesAtEdge(1,iedge))
+              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IverticesAtEdge(3,iedge)
+              ji = IverticesAtEdge(4,iedge)
+              
+              ! Update the global operator
+              K(ii) = K(ii) - DcoefficientsAtEdge(1,idx)
+              K(jj) = K(jj) - DcoefficientsAtEdge(1,idx)
+              K(ij) = K(ij) + DcoefficientsAtEdge(2,idx) + DcoefficientsAtEdge(1,idx) 
+              K(ji) = K(ji) + DcoefficientsAtEdge(3,idx) + DcoefficientsAtEdge(1,idx) 
+            end do
 
-          ! Fill auxiliary arrays
-          DdataAtEdge(1,idx) = Dx(IverticesAtEdge(1,iedge))
-          DdataAtEdge(2,idx) = Dx(IverticesAtEdge(2,iedge))
+          end if
         end do
+        !$omp end do
 
-        ! Use callback function to compute off-diagonal entries
-        call fcb_calcMatrix_sim(&
-            DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
-            DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-            IverticesAtEdge(:,IEDGEset:IEDGEmax),&
-            dscale, IEDGEmax-IEDGEset+1,&
-            DcoefficientsAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
-
-        ! Loop through all edges in the current set
-        ! and scatter the entries to the global matrix
-        !$omp critical(MATRIX)
-        do idx = 1, IEDGEmax-IEDGEset+1
-
-          ! Get actual edge number
-          iedge = idx+IEDGEset-1
-
-          ! Get position of diagonal entries
-          ii = Kdiagonal(IverticesAtEdge(1,iedge))
-          jj = Kdiagonal(IverticesAtEdge(2,iedge))
-
-          ! Get position of off-diagonal entries
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
-
-          ! Update the global operator
-          K(ii) = K(ii) - DcoefficientsAtEdge(1,idx)
-          K(jj) = K(jj) - DcoefficientsAtEdge(1,idx)
-          K(ij) = K(ij) + DcoefficientsAtEdge(2,idx) + DcoefficientsAtEdge(1,idx) 
-          K(ji) = K(ji) + DcoefficientsAtEdge(3,idx) + DcoefficientsAtEdge(1,idx) 
-        end do
-        !$omp end critical(MATRIX)
-      end do
-      !$omp end do
+      end do ! igroup
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -1016,16 +1062,18 @@ contains
     ! Assemble convection operator K and AFC data.
     ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorAFCMat79(Kdiagonal, IverticesAtEdge, NEDGE, NEQ,&
-        DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, K, DcoefficientsAtEdge)
+    subroutine doOperatorAFCMat79(Kdiagonal, IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, bclear,&
+        K, DcoefficientsAtEdge)
 
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
       real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx,Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
       ! input/output parameters
@@ -1042,16 +1090,15 @@ contains
       
       ! local variables
       integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
-      integer :: i,ii,jj,ij,ji,iedge
+      integer :: i,iedge,igroup,ii,ij,ji,jj
             
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
 
       !$omp parallel default(shared)&
-      !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
-      !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
-      !$omp         iedge,ii,ij,ji,jj)
+      !$omp private(DcoefficientsAtNode,DdataAtEdge,DdataAtNode,IEDGEmax,&
+      !$omp         IEQmax,IverticesAtNode,i,idx,iedge,ii,ij,ji,jj)
 
       ! Allocate temporal memory
       allocate(IverticesAtNode(2,GFSC_NEQSIM))
@@ -1095,14 +1142,27 @@ contains
         
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
-        do idx = 1, IEQmax-IEQset+1
+        if (bclear) then
+          do idx = 1, IEQmax-IEQset+1
+            
+            ! Get position of diagonal entry
+            ii = IverticesAtNode(2,idx)
+            
+            ! Update the diagonal coefficient
+            K(ii) = DcoefficientsAtNode(1,idx)
+          end do
 
-          ! Get position of diagonal entry
-          ii = IverticesAtNode(2,idx)
-
-          ! Update the diagonal coefficient
-          K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
-        end do      
+        else   ! do not clear matrix
+          
+          do idx = 1, IEQmax-IEQset+1
+            
+            ! Get position of diagonal entry
+            ii = IverticesAtNode(2,idx)
+            
+            ! Update the diagonal coefficient
+            K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
+          end do
+        end if
       end do
       !$omp end do
       
@@ -1118,71 +1178,110 @@ contains
       ! Allocate temporal memory
       allocate(DdataAtEdge(2,GFSC_NEDGESIM))
 
-      ! Loop over the edges
-      !$omp do schedule(static,1)
-      do IEDGEset = 1, NEDGE, GFSC_NEDGESIM
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
 
-        ! We always handle GFSC_NEDGESIM edges simultaneously.
-        ! How many edges have we actually here?
-        ! Get the maximum edge number, such that we handle 
-        ! at most GFSC_NEDGESIM edges simultaneously.
-        
-        IEDGEmax = min(NEDGE, IEDGEset-1+GFSC_NEDGESIM)
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
 
-        ! DcoefficientsAtEdge is not allocated as temporal array
-        ! since it is given as global output parameter.
-      
-        ! Loop through all edges in the current set
-        ! and prepare the auxiliary arrays
-        do idx = 1, IEDGEmax-IEDGEset+1
+        ! Loop over the edges
+        !$omp do schedule(static,1)
+        do IEDGEset = IverticesAtEdgeIdx(igroup),&
+                      IverticesAtEdgeIdx(igroup+1)-1, GFSC_NEDGESIM
 
-          ! Get actual edge number
-          iedge = idx+IEDGEset-1
+          ! We always handle GFSC_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSC_NEDGESIM edges simultaneously.
           
-          ! Fill auxiliary arrays
-          DdataAtEdge(1,idx) = Dx(IverticesAtEdge(1,iedge))
-          DdataAtEdge(2,idx) = Dx(IverticesAtEdge(2,iedge))
-        end do
-        
-        ! Use callback function to compute off-diagonal entries
-        call fcb_calcMatrix_sim(&
-            DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
-            DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-            IverticesAtEdge(:,IEDGEset:IEDGEmax),&
-            dscale, IEDGEmax-IEDGEset+1,&
-            DcoefficientsAtEdge(:,IEDGEset:IEDGEmax), rcollection)
-        
-        ! Loop through all edges in the current set
-        ! and scatter the entries to the global matrix
-        !$omp critical(MATRIX)
-        do idx = 1, IEDGEmax-IEDGEset+1
+          IEDGEmax = min(IverticesAtEdgeIdx(igroup+1)-1,IEDGEset-1+GFSC_NEDGESIM)
           
-          ! Get actual edge number
-          iedge = idx+IEDGEset-1
+          ! DcoefficientsAtEdge is not allocated as temporal array
+          ! since it is given as global output parameter.
+          
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(1,idx) = Dx(IverticesAtEdge(1,iedge))
+            DdataAtEdge(2,idx) = Dx(IverticesAtEdge(2,iedge))
+          end do
+          
+          ! Use callback function to compute off-diagonal entries
+          call fcb_calcMatrix_sim(&
+              DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsAtEdge(:,IEDGEset:IEDGEmax), rcollection)
+          
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global matrix
+          if (bclear) then
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IverticesAtEdge(1,iedge))
+              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IverticesAtEdge(3,iedge)
+              ji = IverticesAtEdge(4,iedge)
+              
+              ! Compute entries of low-order operator
+              DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(2,iedge) +&
+                                             DcoefficientsAtEdge(1,iedge)
+              DcoefficientsAtEdge(3,iedge) = DcoefficientsAtEdge(3,iedge) +&
+                                             DcoefficientsAtEdge(1,iedge)
 
-          ! Get position of diagonal entries
-          ii = Kdiagonal(IverticesAtEdge(1,iedge))
-          jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              ! Update the global operator
+              K(ii) = K(ii) - DcoefficientsAtEdge(1,iedge)
+              K(jj) = K(jj) - DcoefficientsAtEdge(1,iedge)
+              K(ij) = DcoefficientsAtEdge(2,iedge)
+              K(ji) = DcoefficientsAtEdge(3,iedge)
+            end do
 
-          ! Get position of off-diagonal entries
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          else   ! do not clear matrix
 
-          ! Compute entries of low-order operator
-          DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(2,iedge) +&
-                                         DcoefficientsAtEdge(1,iedge)
-          DcoefficientsAtEdge(3,iedge) = DcoefficientsAtEdge(3,iedge) +&
-                                         DcoefficientsAtEdge(1,iedge)
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IverticesAtEdge(1,iedge))
+              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IverticesAtEdge(3,iedge)
+              ji = IverticesAtEdge(4,iedge)
+              
+              ! Compute entries of low-order operator
+              DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(2,iedge) +&
+                                             DcoefficientsAtEdge(1,iedge)
+              DcoefficientsAtEdge(3,iedge) = DcoefficientsAtEdge(3,iedge) +&
+                                             DcoefficientsAtEdge(1,iedge)
 
-          ! Update the global operator
-          K(ii) = K(ii) - DcoefficientsAtEdge(1,iedge)
-          K(jj) = K(jj) - DcoefficientsAtEdge(1,iedge)
-          K(ij) = K(ij) + DcoefficientsAtEdge(2,iedge)
-          K(ji) = K(ji) + DcoefficientsAtEdge(3,iedge)
+              ! Update the global operator
+              K(ii) = K(ii) - DcoefficientsAtEdge(1,iedge)
+              K(jj) = K(jj) - DcoefficientsAtEdge(1,iedge)
+              K(ij) = K(ij) + DcoefficientsAtEdge(2,iedge)
+              K(ji) = K(ji) + DcoefficientsAtEdge(3,iedge)
+            end do
+
+          end if
         end do
-        !$omp end critical(MATRIX)
-      end do
-      !$omp end do
+        !$omp end do
+
+      end do ! igroup
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
@@ -1192,24 +1291,29 @@ contains
     
     !**************************************************************
     ! Enforce edge orientation for upwind-based AFC
-    subroutine doUpwindOrientation(IverticesAtEdge, DcoefficientsAtEdge,&
-        DmatrixCoeffsAtEdge)
+    subroutine doUpwindOrientation(nedge, IverticesAtEdge,&
+        DcoefficientsAtEdge, DmatrixCoeffsAtEdge)
       
       ! inout/output parameters
       integer, dimension(:,:), intent(inout) :: IverticesAtEdge
       real(DP), dimension(:,:), intent(inout) :: DcoefficientsAtEdge
       real(DP), dimension(:,:,:), intent(inout) :: DmatrixCoeffsAtEdge
+      integer, intent(in) :: nedge
 
       ! local variables
-      real(DP), dimension(:), allocatable :: Daux1
+      real(DP), dimension(:), allocatable :: DauxCoeffs
       real(DP) :: daux
       integer :: iedge,iaux
+
+      !$omp parallel default(shared) private(iaux,daux,DauxCoeffs)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
       
       ! Allocate temporal memory
-      allocate(Daux1(size(DmatrixCoeffsAtEdge,1)))
+      allocate(DauxCoeffs(size(DmatrixCoeffsAtEdge,1)))
 
-      ! Impose edge orientation
-      do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Set up edge orientation
+      !$omp do
+      do iedge = 1, nedge
         if (DcoefficientsAtEdge(2,iedge) > DcoefficientsAtEdge(3,iedge)) then
           ! Swap nodes i <-> j
           iaux = IverticesAtEdge(1,iedge)
@@ -1227,14 +1331,16 @@ contains
           DcoefficientsAtEdge(3,iedge) = daux
 
           ! Swap edgewise matrix coefficients ij <-> ji
-          Daux1 = DmatrixCoeffsAtEdge(:,1,iedge)
+          DauxCoeffs = DmatrixCoeffsAtEdge(:,1,iedge)
           DmatrixCoeffsAtEdge(:,1,iedge) = DmatrixCoeffsAtEdge(:,2,iedge)
-          DmatrixCoeffsAtEdge(:,2,iedge) = Daux1
+          DmatrixCoeffsAtEdge(:,2,iedge) = DauxCoeffs
         end if
       end do
-
+      !$omp end do
+      
       ! Deallocate temporal memory
-      deallocate(Daux1)
+      deallocate(DauxCoeffs)
+      !$omp end parallel
 
     end subroutine doUpwindOrientation
     
@@ -1308,7 +1414,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
     real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_Kdiagonal
+    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx,p_Kdiagonal
 
 
     ! Check if stabilisation has been initialised
@@ -1326,10 +1432,8 @@ contains
       call sys_halt()
     end if
     
-    ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rdiffMatrix)
-
     ! Set pointers
+    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call afcstab_getbase_DmatCoeffAtNode(rafcstab, p_DmatrixCoeffsAtNode)
     call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
@@ -1356,9 +1460,10 @@ contains
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
         
         ! Assemble Galerkin operator with stabilisation
-        call doOperatorAFCMat79(p_Kdiagonal, p_IverticesAtEdge, rafcstab%NEDGE,&
-            rdiffMatrix%NEQ, p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge,&
-            dscale, p_DiffOp, p_DcoefficientsAtEdge)
+        call doOperatorAFCMat79(p_Kdiagonal, p_IverticesAtEdgeIdx,&
+            p_IverticesAtEdge, rafcstab%NEDGE, rdiffMatrix%NEQ,&
+            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, dscale,&
+            bclear, p_DiffOp, p_DcoefficientsAtEdge)
         
         ! Set state of stabilisation
         rafcstab%istabilisationSpec =&
@@ -1367,9 +1472,10 @@ contains
       else   ! bbuildStabilisation == no
         
         ! Assemble Galerkin operator with stabilisation
-        call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdge, rafcstab%NEDGE,&
-            rdiffMatrix%NEQ, p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge,&
-            dscale, p_DiffOp)
+        call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, &
+            p_IverticesAtEdge, rafcstab%NEDGE, rdiffMatrix%NEQ,&
+            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, dscale,&
+            bclear, p_DiffOp)
 
         ! Set state of stabilisation
         rafcstab%istabilisationSpec =&
@@ -1391,58 +1497,112 @@ contains
     ! Assemble low-order diffusion operator S.
     ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorMat79(Kdiagonal, IverticesAtEdge, NEDGE, NEQ,&
-        DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, dscale, K)
-
-      real(DP), intent(in) :: dscale
+    subroutine doOperatorMat79(Kdiagonal, IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, dscale, bclear, K)
+      
       real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx,Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
       real(DP), dimension(:), intent(inout) :: K
 
       ! local variables
       real(DP) :: d_ij
-      integer :: iedge,ieq,ii,ij,ji,jj
+      integer :: iedge,ieq,igroup,ii,ij,ji,jj
       
+
+      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij)&
+      !$omp if (NEQ > GFSC_NEQMIN_OMP .or. NEDGE > GFSC_NEDGEMIN_OMP)
+
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
 
-      ! Loop over the equations
-      do ieq = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(ieq)
+      if (bclear) then
+        ! Loop over the equations
+        !$omp do
+        do ieq = 1, NEQ
+          
+          ! Get position of diagonal entry
+          ii = Kdiagonal(ieq)
+          
+          ! Update the diagonal coefficient
+          K(ii) = dscale*DmatrixCoeffsAtNode(1,ieq)
+        end do
+        !$omp end do
 
-        ! Update the diagonal coefficient
-        K(ii) = K(ii) + dscale*DmatrixCoeffsAtNode(1,ieq)
-      end do
+      else   ! do not clear matrix
+        ! Loop over the equations
+        !$omp do
+        do ieq = 1, NEQ
+          
+          ! Get position of diagonal entry
+          ii = Kdiagonal(ieq)
+          
+          ! Update the diagonal coefficient
+          K(ii) = K(ii) + dscale*DmatrixCoeffsAtNode(1,ieq)
+        end do
+        !$omp end do
+      end if
 
       !-------------------------------------------------------------------------
       ! Assemble off-diagonal entries
       !-------------------------------------------------------------------------
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
         
-        ! Get node numbers and matrix positions
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(IverticesAtEdge(1, iedge))
-        jj = Kdiagonal(IverticesAtEdge(2, iedge))
+        if (bclear) then
+          !$omp do
+          do iedge = 1, IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
         
-        ! Artificial diffusion coefficient
-        d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
+            ! Get node numbers and matrix positions
+            ij = IverticesAtEdge(3, iedge)
+            ji = IverticesAtEdge(4, iedge)
+            ii = Kdiagonal(IverticesAtEdge(1, iedge))
+            jj = Kdiagonal(IverticesAtEdge(2, iedge))
+            
+            ! Artificial diffusion coefficient
+            d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
+            
+            ! Update the global operator
+            K(ii) = K(ii) - d_ij
+            K(jj) = K(jj) - d_ij
+            K(ij) = dscale*(DmatrixCoeffsAtEdge(1,1,iedge) + d_ij)
+            K(ji) = dscale*(DmatrixCoeffsAtEdge(1,2,iedge) + d_ij)
+          end do
+          !$omp end do
+
+        else   ! do not clear matrix
+          ! Loop over all edges
+          !$omp do
+          do iedge = 1, IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
         
-        ! Update the global operator
-        K(ii) = K(ii) - d_ij
-        K(jj) = K(jj) - d_ij
-        K(ij) = K(ij) + dscale * (DmatrixCoeffsAtEdge(1,1,iedge) + d_ij)
-        K(ji) = K(ji) + dscale * (DmatrixCoeffsAtEdge(1,2,iedge) + d_ij)
-      end do
+            ! Get node numbers and matrix positions
+            ij = IverticesAtEdge(3, iedge)
+            ji = IverticesAtEdge(4, iedge)
+            ii = Kdiagonal(IverticesAtEdge(1, iedge))
+            jj = Kdiagonal(IverticesAtEdge(2, iedge))
+            
+            ! Artificial diffusion coefficient
+            d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
+            
+            ! Update the global operator
+            K(ii) = K(ii) - d_ij
+            K(jj) = K(jj) - d_ij
+            K(ij) = K(ij) + dscale*(DmatrixCoeffsAtEdge(1,1,iedge) + d_ij)
+            K(ji) = K(ji) + dscale*(DmatrixCoeffsAtEdge(1,2,iedge) + d_ij)
+          end do
+          !$omp end do
+        end if
+
+      end do ! igroup
+      !$omp end parallel
 
     end subroutine doOperatorMat79
 
@@ -1450,14 +1610,16 @@ contains
     ! Assemble low-order diffusion operator S and AFC data.
     ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorAFCMat79(Kdiagonal, IverticesAtEdge, NEDGE, NEQ,&
-        DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, dscale, K, DcoefficientsAtEdge)
+    subroutine doOperatorAFCMat79(Kdiagonal, IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, dscale, bclear,&
+        K, DcoefficientsAtEdge)
 
-      real(DP), intent(in) :: dscale
       real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx,Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
       real(DP), dimension(:), intent(inout) :: K
@@ -1466,48 +1628,103 @@ contains
       
       ! local variables
       real(DP) :: d_ij,s_ij
-      integer :: iedge,ieq,ii,ij,ji,jj
+      integer :: iedge,ieq,igroup,ii,ij,ji,jj
       
+      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij,s_ij)&
+      !$omp if (NEQ > GFSC_NEQMIN_OMP .or. NEDGE > GFSC_NEDGEMIN_OMP)
+
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
 
-      ! Loop over the equations
-      do ieq = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(ieq)
+      if (bclear) then
+        ! Loop over the equations
+        !$omp do
+        do ieq = 1, NEQ
+          
+          ! Get position of diagonal entry
+          ii = Kdiagonal(ieq)
+          
+          ! Update the diagonal coefficient
+          K(ii) = dscale*DmatrixCoeffsAtNode(1,ieq)
+        end do
+        !$omp end do
 
-        ! Update the diagonal coefficient
-        K(ii) = K(ii) + dscale*DmatrixCoeffsAtNode(1,ieq)
-      end do
+      else   ! do not clear matrix
+        ! Loop over the equations
+        !$omp do
+        do ieq = 1, NEQ
+          
+          ! Get position of diagonal entry
+          ii = Kdiagonal(ieq)
+          
+          ! Update the diagonal coefficient
+          K(ii) = K(ii) + dscale*DmatrixCoeffsAtNode(1,ieq)
+        end do
+        !$omp end do
+      end if
 
       !-------------------------------------------------------------------------
       ! Assemble off-diagonal entries
       !-------------------------------------------------------------------------
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
         
-        ! Get node numbers and matrix positions
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(IverticesAtEdge(1, iedge))
-        jj = Kdiagonal(IverticesAtEdge(2, iedge))
+        if (bclear) then
+          !$omp do
+          do iedge = 1, IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IverticesAtEdge(3, iedge)
+            ji = IverticesAtEdge(4, iedge)
+            ii = Kdiagonal(IverticesAtEdge(1, iedge))
+            jj = Kdiagonal(IverticesAtEdge(2, iedge))
+            
+            ! Artificial diffusion coefficient
+            d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
+            s_ij = max(0.0_DP,  DmatrixCoeffsAtEdge(1,1,iedge))
+            
+            ! AFC w/o edge orientation
+            DcoefficientsAtEdge(1:2,iedge) = (/d_ij, s_ij/)
+            
+            ! Update the global operator
+            K(ii) = K(ii) - d_ij
+            K(jj) = K(jj) - d_ij
+            K(ij) = dscale*(DmatrixCoeffsAtEdge(1,1,iedge) + d_ij)
+            K(ji) = dscale*(DmatrixCoeffsAtEdge(1,2,iedge) + d_ij)
+          end do
+          !$omp end do
+
+        else   ! do not clear matrix
+          !$omp do
+          do iedge = 1, IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IverticesAtEdge(3, iedge)
+            ji = IverticesAtEdge(4, iedge)
+            ii = Kdiagonal(IverticesAtEdge(1, iedge))
+            jj = Kdiagonal(IverticesAtEdge(2, iedge))
+            
+            ! Artificial diffusion coefficient
+            d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
+            s_ij = max(0.0_DP,  DmatrixCoeffsAtEdge(1,1,iedge))
+            
+            ! AFC w/o edge orientation
+            DcoefficientsAtEdge(1:2,iedge) = (/d_ij, s_ij/)
+            
+            ! Update the global operator
+            K(ii) = K(ii) - d_ij
+            K(jj) = K(jj) - d_ij
+            K(ij) = K(ij) + dscale*(DmatrixCoeffsAtEdge(1,1,iedge) + d_ij)
+            K(ji) = K(ji) + dscale*(DmatrixCoeffsAtEdge(1,2,iedge) + d_ij)
+          end do
+          !$omp end do
+        end if
         
-        ! Artificial diffusion coefficient
-        d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
-        s_ij = max(0.0_DP,  DmatrixCoeffsAtEdge(1,1,iedge))
-        
-        ! AFC w/o edge orientation
-        DcoefficientsAtEdge(1:2,iedge) = (/d_ij, s_ij/)
-        
-        ! Update the global operator
-        K(ii) = K(ii) - d_ij
-        K(jj) = K(jj) - d_ij
-        K(ij) = K(ij) + dscale * (DmatrixCoeffsAtEdge(1,1,iedge) + d_ij)
-        K(ji) = K(ji) + dscale * (DmatrixCoeffsAtEdge(1,2,iedge) + d_ij)
-      end do
+      end do ! igroup
+      !$omp end parallel
 
     end subroutine doOperatorAFCMat79
 
