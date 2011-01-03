@@ -1514,7 +1514,7 @@ contains
             p_Ddata(1:p_rtriangulation%NEL))
       else
         ! If this is QP1 or something else, project to Q1.
-        call lsyssc_getbase_double (rvector%RvectorBlock(1),p_Ddata)
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
         call spdp_projectToVertices (rvector%RvectorBlock(3),p_Ddata)
         call ucd_addVariableVertexBased (rexport,'pressure',UCD_VAR_STANDARD, &
             p_Ddata(1:p_rtriangulation%NEL))
