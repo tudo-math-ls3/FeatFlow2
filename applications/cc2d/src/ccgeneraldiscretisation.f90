@@ -1709,10 +1709,16 @@ contains
                 rrhs%RvectorBlock(1),coeff_RHS_x,&
                 rproblem%rcollection)
 
-      ! And the Y-velocity part:
+      ! The Y-velocity part:
       call linf_buildVectorScalar (&
                 p_rdiscretisation%RspatialDiscr(2),rlinform,.false.,&
                 rrhs%RvectorBlock(2),coeff_RHS_y,&
+                rproblem%rcollection)
+
+      ! The pressure/divergence part:
+      call linf_buildVectorScalar (&
+                p_rdiscretisation%RspatialDiscr(3),rlinform,.false.,&
+                rrhs%RvectorBlock(3),coeff_RHS_p,&
                 rproblem%rcollection)
                              
       ! Is the moving-frame formulatino active?
