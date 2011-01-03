@@ -2370,6 +2370,9 @@ contains
         'sumfpackMatrixFilename',rdebugFlags%sumfpackMatrixFilename,&
         "./matrix.txt",bdequote=.true.)
 
+    call parlst_getvalue_double (rparlist,ssection,&
+        'dweightConvection',rdebugFlags%dweightConvection,1.0_DP)
+
   end subroutine
 
   ! ***************************************************************************

@@ -228,6 +228,8 @@ module spacematvecassembly
   public :: smva_projectControlTstepVec
   public :: smva_getDiscrData
   public :: smva_initNonlinearData
+  public :: smva_addBdEOJvector
+  public :: smva_addBdEOJOperator
 
 !<types>
 
@@ -281,6 +283,9 @@ module spacematvecassembly
 
     ! Assembly template data on that level for the optimal control problem.
     type(t_staticSpaceAsmTemplatesOptC), pointer :: p_rstaticAsmTemplatesOptC => null()
+
+    ! Pointer to program wide debug flags.
+    type(t_optcDebugFlags), pointer :: p_rdebugFlags => null()
 
   end type
 
@@ -479,6 +484,8 @@ contains
 
     rdiscrData%p_rstaticAsmTemplatesOptC => &
         rsettings%rspaceAsmHierarchyOptC%p_RasmTemplList(ilevel)
+
+    rdiscrData%p_rdebugFlags => rsettings%rdebugFlags
 
   end subroutine
   
@@ -1181,9 +1188,13 @@ contains
     type(t_vectorBlock), pointer :: p_rprimalSol, p_rdualSol
     type(t_blockDiscretisation) :: rvelDiscr
     real(dp), dimension(:), pointer :: p_Ddata
+    real(DP) :: dweightConvection
     
     logical, parameter :: bnewmethod = .false.
     
+    ! Debug weight for the convection
+    dweightConvection = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection
+
     ballocate = .false.
     if ((rmatrix%NEQ .le. 0) .or. &
         iand(coperation,CCMASM_ALLOCMEM) .ne. 0) then
@@ -1621,16 +1632,16 @@ contains
         
         ! Nonlinearity
         if (rnonlinearSpatialMatrix%Dgamma(1,1) .ne. 0.0_DP) then
-          roptcoperator%dprimalDelta = rnonlinearSpatialMatrix%Dgamma(1,1)
-          roptcoperator%ddualDelta   = rnonlinearSpatialMatrix%Dgamma(2,2)
-          roptcoperator%ddualNewtonTrans = rnonlinearSpatialMatrix%DnewtonT(2,2)
+          roptcoperator%dprimalDelta = dweightconvection * rnonlinearSpatialMatrix%Dgamma(1,1)
+          roptcoperator%ddualDelta   = dweightconvection * rnonlinearSpatialMatrix%Dgamma(2,2)
+          roptcoperator%ddualNewtonTrans = dweightconvection * rnonlinearSpatialMatrix%DnewtonT(2,2)
           
           ! Whether or not Newton is active has no influence to the
           ! defect, so the following lines are commented out.
           ! if (rparams%bnewton) then
-          roptcoperator%dprimalNewton    = rnonlinearSpatialMatrix%Dnewton(1,1)
-          roptcoperator%ddualRDeltaTrans = rnonlinearSpatialMatrix%DgammaT(2,1)
-          roptcoperator%ddualRNewton     = rnonlinearSpatialMatrix%Dnewton(2,1)
+          roptcoperator%dprimalNewton    = dweightconvection * rnonlinearSpatialMatrix%Dnewton(1,1)
+          roptcoperator%ddualRDeltaTrans = dweightconvection * rnonlinearSpatialMatrix%DgammaT(2,1)
+          roptcoperator%ddualRNewton     = dweightconvection * rnonlinearSpatialMatrix%Dnewton(2,1)
           ! end if
           
         end if
@@ -2140,6 +2151,10 @@ contains
     type(t_jumpStabilisation) :: rjumpStabil
     type(t_convUpwind) :: rupwindStabil
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
+    real(DP) :: dweightConvection
+    
+      ! Debug weight for the convection
+      dweightConvection = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection
     
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
@@ -2182,10 +2197,10 @@ contains
           rstreamlineDiffusion%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion%ddelta            = dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
-          rstreamlineDiffusion%dnewton           = dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
+          rstreamlineDiffusion%ddelta            = dweightConvection * dgamma
+          rstreamlineDiffusion%ddeltaTransposed  = dweightConvection * dgammaT
+          rstreamlineDiffusion%dnewton           = dweightConvection * dnewton
+          rstreamlineDiffusion%dnewtonTransposed = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2206,10 +2221,10 @@ contains
           rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion2%ddelta  = dgamma
-          rstreamlineDiffusion2%ddeltaT = dgammaT
-          rstreamlineDiffusion2%dnewton = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta  = dweightConvection * dgamma
+          rstreamlineDiffusion2%ddeltaT = dweightConvection * dgammaT
+          rstreamlineDiffusion2%dnewton = dweightConvection * dnewton
+          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2228,9 +2243,9 @@ contains
           
           ! Matrix weights
           rstreamlineDiffusion2%ddelta  = 0.0_DP
-          rstreamlineDiffusion2%ddeltaT = dgammaT
-          rstreamlineDiffusion2%dnewton = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddeltaT = dweightConvection * dgammaT
+          rstreamlineDiffusion2%dnewton = dweightConvection * dnewton
+          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity for everything except
           ! for the convection. As velocity vector, specify rvector!
@@ -2244,7 +2259,7 @@ contains
           ! is added or subtracted!
           rupwindStabil%dupsam = abs(rstabilisation%dupsam)
           rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-          rupwindStabil%dtheta = dgamma
+          rupwindStabil%dtheta = dweightConvection*dgamma
           
           ! Apply the upwind operator.
           call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
@@ -2280,10 +2295,10 @@ contains
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion%ddelta            = dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
-          rstreamlineDiffusion%dnewton           = dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
+          rstreamlineDiffusion%ddelta            = dweightConvection * dgamma
+          rstreamlineDiffusion%ddeltaTransposed  = dweightConvection * dgammaT
+          rstreamlineDiffusion%dnewton           = dweightConvection * dnewton
+          rstreamlineDiffusion%dnewtonTransposed = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2310,12 +2325,14 @@ contains
           ! convective parts...
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODMATRIX, &
-                              rmatrix%RmatrixBlock(1,1))   
+                              rmatrix%RmatrixBlock(1,1))
+          call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2))   
+            call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
           end if
 
         case (CCMASM_STAB_EDGEORIENTED2)
@@ -2330,10 +2347,10 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dgamma
-          rstreamlineDiffusion2%ddeltaT  = dgammaT
-          rstreamlineDiffusion2%dnewton  = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta   = dweightConvection * dgamma
+          rstreamlineDiffusion2%ddeltaT  = dweightConvection * dgammaT
+          rstreamlineDiffusion2%dnewton  = dweightConvection * dnewton
+          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2356,12 +2373,14 @@ contains
           ! convective parts...
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODMATRIX, &
-                              rmatrix%RmatrixBlock(1,1))   
+                              rmatrix%RmatrixBlock(1,1))
+          call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(2,2))   
+                                rmatrix%RmatrixBlock(2,2))
+            call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
           end if
 
         case (CCMASM_STAB_EDGEORIENTED3)
@@ -2376,10 +2395,10 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dgamma
-          rstreamlineDiffusion2%ddeltaT  = dgammaT
-          rstreamlineDiffusion2%dnewton  = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta   = dweightConvection * dgamma
+          rstreamlineDiffusion2%ddeltaT  = dweightConvection * dgammaT
+          rstreamlineDiffusion2%dnewton  = dweightConvection * dnewton
+          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2434,12 +2453,14 @@ contains
             ! convective parts...
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(1,1))   
+                                rmatrix%RmatrixBlock(1,1))
+            call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
 
             if (.not. bshared) then
               call conv_jumpStabilisation2d (&
                                   rjumpStabil, CONV_MODMATRIX, &
-                                  rmatrix%RmatrixBlock(2,2))   
+                                  rmatrix%RmatrixBlock(2,2))
+              call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
             end if
             
           case (CCMASM_STAB_EDGEORIENTED3)
@@ -3544,12 +3565,15 @@ contains
     type(t_convStreamDiff2) :: rstreamlineDiffusion3
     type(t_jumpStabilisation) :: rjumpStabil
     type(t_convupwind) :: rupwindStabil
+    real(DP) :: dweightConvection
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2
     call lsysbl_getbase_double (rx,p_Ddata1)
     call lsysbl_getbase_double (rb,p_Ddata2)
     
+      ! Debug weight for the convection
+      dweightConvection = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection
     
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
@@ -3570,10 +3594,10 @@ contains
           rstreamlineDiffusion%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion%ddelta            = dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
-          rstreamlineDiffusion%dnewton           = dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
+          rstreamlineDiffusion%ddelta            = dweightConvection * dgamma
+          rstreamlineDiffusion%ddeltaTransposed  = dweightConvection * dgammaT
+          rstreamlineDiffusion%dnewton           = dweightConvection * dnewton
+          rstreamlineDiffusion%dnewtonTransposed = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -3596,10 +3620,10 @@ contains
           rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion2%ddelta  = dgamma
-          rstreamlineDiffusion2%ddeltaT = dgammaT
-          rstreamlineDiffusion2%dnewton = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta  = dweightConvection * dgamma
+          rstreamlineDiffusion2%ddeltaT = dweightConvection * dgammaT
+          rstreamlineDiffusion2%dnewton = dweightConvection * dnewton
+          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -3621,9 +3645,9 @@ contains
           
           ! Matrix weights
           rstreamlineDiffusion2%ddelta  = 0.0_DP
-          rstreamlineDiffusion2%ddeltaT = dgammaT
-          rstreamlineDiffusion2%dnewton = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddeltaT = dweightConvection * dgammaT
+          rstreamlineDiffusion2%dnewton = dweightConvection * dnewton
+          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity except for the
           ! convection part. As velocity vector, specify rvector!
@@ -3671,10 +3695,10 @@ contains
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion%ddelta            = dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
-          rstreamlineDiffusion%dnewton           = dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
+          rstreamlineDiffusion%ddelta            = dweightConvection * dgamma
+          rstreamlineDiffusion%ddeltaTransposed  = dweightConvection * dgammaT
+          rstreamlineDiffusion%dnewton           = dweightConvection * dnewton
+          rstreamlineDiffusion%dnewtonTransposed = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -3701,7 +3725,8 @@ contains
           ! convective parts...
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODDEFECT, &
-                              rmatrix%RmatrixBlock(1,1),rx,rb)   
+                              rmatrix%RmatrixBlock(1,1),rx,rb)
+          call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
 
 !          if (.not. bshared) then
 !            call conv_jumpStabilisation2d (&
@@ -3723,10 +3748,10 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dgamma
-          rstreamlineDiffusion2%ddeltaT  = dgammaT
-          rstreamlineDiffusion2%dnewton  = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta   = dweightConvection * dgamma
+          rstreamlineDiffusion2%ddeltaT  = dweightConvection * dgammaT
+          rstreamlineDiffusion2%dnewton  = dweightConvection * dnewton
+          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -3752,7 +3777,8 @@ contains
           ! The routine processes the X as well as the Y velocity!
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODDEFECT, &
-                              rmatrix%RmatrixBlock(1,1),rx,rb)   
+                              rmatrix%RmatrixBlock(1,1),rx,rb)
+          call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
 
         case (CCMASM_STAB_EDGEORIENTED3)
         
@@ -3770,10 +3796,10 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dgamma
-          rstreamlineDiffusion2%ddeltaT  = dgammaT
-          rstreamlineDiffusion2%dnewton  = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta   = dweightConvection * dgamma
+          rstreamlineDiffusion2%ddeltaT  = dweightConvection * dgammaT
+          rstreamlineDiffusion2%dnewton  = dweightConvection * dnewton
+          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -3822,7 +3848,8 @@ contains
             ! convective parts...
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODDEFECT, &
-                                rmatrix%RmatrixBlock(1,1),rx,rb)   
+                                rmatrix%RmatrixBlock(1,1),rx,rb)
+            call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
 
 !            if (.not. bshared) then
 !              call conv_jumpStabilisation2d (&
@@ -4330,6 +4357,146 @@ contains
     rnonlinearData%p_rvector1 => rvector1
     rnonlinearData%p_rvector2 => rvector2
     rnonlinearData%p_rvector3 => rvector3
+
+  end subroutine   
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine smva_addBdEOJOperator (rjumpStabil,dweight,rmatrix)
+
+!<description>
+  ! Adds the jump stabilisation on all boundary edges to a matrix.
+!</description>
+
+!<input>
+    ! Jump stabilisation structure that defines the jump stabilisation operator.
+    type(t_jumpStabilisation), intent(in) :: rjumpStabil
+    
+    ! Weight of the operator. Default = 1.0
+    real(DP), intent(in) :: dweight
+!</input>
+
+!<inputoutput>
+    ! Matrix to be modified.
+    type(t_matrixScalar), intent(inout), target :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_jumpStabilisation) :: rjumpStabilLocal
+    type(t_boundaryRegion) :: rboundaryRegion
+    integer, dimension(:), allocatable :: p_Iedges, p_Itemp
+    integer :: iedge,ibc,nedgecount
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_boundary), pointer :: p_rboundary
+    
+    p_rtriangulation => rmatrix%p_rspatialDiscrTrial%p_rtriangulation
+    p_rboundary => rmatrix%p_rspatialDiscrTrial%p_rboundary
+    
+    ! prepare a negative operator.
+    rjumpStabilLocal = rjumpStabil
+    
+    rjumpStabilLocal%dtheta = rjumpStabilLocal%dtheta*dweight
+
+    allocate (p_Iedges(p_rtriangulation%NMT))
+    allocate (p_Itemp(p_rtriangulation%NMT))
+
+    ! Loop over the edges and boundary components
+    do ibc = 1,boundary_igetNBoundComp(p_rboundary)
+      do iedge = 1,boundary_igetNsegments(p_rboundary, ibc)
+
+        ! Get a region identifying that boundary edge
+        call boundary_createRegion(p_rboundary,ibc,iedge,rboundaryRegion)
+
+        ! Get triangulation edges on that boundary edge
+        call bcasm_getEdgesInBdRegion (p_rtriangulation,rboundaryRegion, &
+            nedgecount, p_Iedges, p_Itemp)
+
+        ! Subtract the jump
+        call conv_JumpStabilisation2d(rjumpStabilLocal,CONV_MODMATRIX,rmatrix, &
+            InodeList=p_Iedges(1:nedgecount))
+
+      end do
+    end do
+
+    deallocate (p_Iedges,p_Itemp)
+
+  end subroutine   
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine smva_addBdEOJvector (rjumpStabil,dweight,rmatrix,rx,rb)
+
+!<description>
+  ! Adds the jump stabilisation on all boundary edges.
+!</description>
+
+!<input>
+    ! Jump stabilisation structure that defines the jump stabilisation operator.
+    type(t_jumpStabilisation), intent(in) :: rjumpStabil
+    
+    ! Weight of the operator. Default = 1.0.
+    real(DP), intent(in) :: dweight
+
+    ! Solution vector.
+    type(t_vectorBlock), intent(in) :: rx
+    
+    ! Matrix that specifies the sparsity pattern of the operator.
+    type(t_matrixScalar), intent(inout) :: rmatrix
+!</input>
+
+!<inputoutput>
+    ! Defect vector to be modified.
+    type(t_vectorBlock), intent(inout), target :: rb
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_jumpStabilisation) :: rjumpStabilLocal
+    type(t_boundaryRegion) :: rboundaryRegion
+    integer, dimension(:), allocatable :: p_Iedges, p_Itemp
+    integer :: iedge,ibc,nedgecount
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_boundary), pointer :: p_rboundary
+    
+    p_rtriangulation => rmatrix%p_rspatialDiscrTrial%p_rtriangulation
+    p_rboundary => rmatrix%p_rspatialDiscrTrial%p_rboundary
+    
+    ! prepare a negative operator.
+    rjumpStabilLocal = rjumpStabil
+    
+    rjumpStabilLocal%dtheta = rjumpStabilLocal%dtheta*dweight
+
+    allocate (p_Iedges(p_rtriangulation%NMT))
+    allocate (p_Itemp(p_rtriangulation%NMT))
+
+    ! Loop over the edges and boundary components
+    do ibc = 1,boundary_igetNBoundComp(p_rboundary)
+      do iedge = 1,boundary_igetNsegments(p_rboundary, ibc)
+
+        ! Get a region identifying that boundary edge
+        call boundary_createRegion(p_rboundary,ibc,iedge,rboundaryRegion)
+
+        ! Get triangulation edges on that boundary edge
+        call bcasm_getEdgesInBdRegion (p_rtriangulation,rboundaryRegion, &
+            nedgecount, p_Iedges, p_Itemp)
+
+        ! Add the jump
+        call conv_jumpStabilisation2d (&
+                              rjumpStabil, CONV_MODDEFECT, &
+                              rmatrix,rx,rb,&
+                              InodeList=p_Iedges(1:nedgecount))   
+
+      end do
+    end do
+
+    deallocate (p_Iedges,p_Itemp)
 
   end subroutine   
 

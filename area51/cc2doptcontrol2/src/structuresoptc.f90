@@ -294,6 +294,11 @@ module structuresoptc
     ! Filename of the file in which UMFPACK should write the global matrix
     character(len=SYS_STRLEN) :: sumfpackMatrixFilename = "./matrix.txt"
   
+    ! Additional weight for the convective operator. May be used to
+    ! switch off the convection.
+    ! Standard value = 1.0
+
+    real(DP) :: dweightConvection = 1.0  
   end type
 
 !</typeblock>

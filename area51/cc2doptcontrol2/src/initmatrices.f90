@@ -59,6 +59,7 @@ module initmatrices
   use assemblytemplatesoptc
   use structuresoptc
   use structuresoptflow
+  use spacematvecassembly
   use user_callback
   
   implicit none
@@ -517,6 +518,9 @@ contains
       ! convective parts...
       call conv_jumpStabilisation2d (&
           rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplatesOptC%rmatrixEOJ1)   
+          
+      ! Subtract the boundary operator.
+      call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rstaticAsmTemplatesOptC%rmatrixEOJ1)
     end if
 
     if ((rstabilPrimal%cupwind .eq. CCSTAB_EDGEORIENTED3)) then
@@ -550,6 +554,10 @@ contains
         ! convective parts...
         call conv_jumpStabilisation2d (&
             rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplatesOptC%rmatrixEOJ2)   
+            
+        ! Subtract the boundary operator.
+        call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rstaticAsmTemplatesOptC%rmatrixEOJ2)
+            
       end if
     end if
 
