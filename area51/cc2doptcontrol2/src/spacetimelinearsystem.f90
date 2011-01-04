@@ -534,7 +534,7 @@ contains
   
 !<subroutine>
 
-  subroutine stlin_initSpaceAssembly (rspaceTimeDiscr,dconstrainsTime,rspaceDiscr)
+  subroutine stlin_initSpaceAssembly (rspaceTimeDiscr,rdebugFlags,dconstrainsTime,rspaceDiscr)
 
 !<description>
   ! Creates a space-assembly data structure from the space-time assembly
@@ -548,6 +548,9 @@ contains
   
   ! Current time where the constraints should be applied
   real(DP), intent(in) :: dconstrainsTime
+  
+  ! Debug flags
+  type(t_optcDebugFlags), target :: rdebugFlags
 !</input>
 
 !<output>
@@ -571,6 +574,8 @@ contains
     
     rspaceDiscr%p_rstaticAsmTemplates => rspaceTimeDiscr%p_rstaticSpaceAsmTempl
     rspaceDiscr%p_rstaticAsmTemplatesOptC => rspaceTimeDiscr%p_rstaticSpaceAsmTemplOptC
+
+    rspaceDiscr%p_rdebugFlags => rdebugFlags
 
     ! Initialise the constraints.
     call stlin_initSpaceConstraints (rspaceTimeDiscr%p_rconstraints,dconstrainsTime,&
@@ -1438,7 +1443,8 @@ contains
       
       ! Get a space-assembly structure from our space-time assembly structure.
       ! Necessary for assembling matrices.
-      call stlin_initSpaceAssembly (rspaceTimeMatrix%rdiscrData,dtimeDual,rspaceDiscr)
+      call stlin_initSpaceAssembly (rspaceTimeMatrix%rdiscrData,&
+          rspaceTimeMatrix%p_rdebugFlags,dtimeDual,rspaceDiscr)
       
       ! Get the part of rd which is to be modified.
       if (cy .ne. 0.0_DP) then
