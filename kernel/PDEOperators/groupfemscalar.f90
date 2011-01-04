@@ -11172,7 +11172,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildFluxFCTBlock(rafcstab, rx, theta, tstep, dscale,&
+  subroutine gfsc_buildFluxFCTBlock(rafcstab, rxBlock, theta, tstep, dscale,&
       binit, rmatrix, ry)
 
 !<description>
@@ -11184,7 +11184,7 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorBlock), intent(in) :: rx
+    type(t_vectorBlock), intent(in) :: rxBlock
 
     ! implicitness parameter
     real(DP), intent(in) :: theta
@@ -11214,7 +11214,7 @@ contains
 !</subroutine>
 
     ! Check if block vector contains exactly one block
-    if (rx%nblocks .ne. 1) then
+    if (rxBlock%nblocks .ne. 1) then
       call output_line('Solution vector must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTBlock')
       call sys_halt()
@@ -11225,11 +11225,11 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTBlock')
           call sys_halt()
         else
-          call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
+          call gfsc_buildFluxFCTScalar(rafcstab, rxBlock%RvectorBlock(1),&
               theta, tstep, dscale, binit, rmatrix, ry%RvectorBlock(1))
         end if
       else
-        call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
+        call gfsc_buildFluxFCTScalar(rafcstab, rxBlock%RvectorBlock(1),&
             theta, tstep, dscale, binit)
       end if
     end if
