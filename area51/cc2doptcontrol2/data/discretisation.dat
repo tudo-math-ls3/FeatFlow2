@@ -75,6 +75,12 @@ iUpwind2           = 0
 dUpsam1            = 0.0
 dUpsam2            = 0.0
 
+# Defines whether or not the EOJ stabilisation is applied to the boundary.
+# =0: Stabilisation is not applied to the boundary.
+# =1: Stabilisation is applied to all bonudary edges (default).
+
+ceojStabilOnBoundary = 1
+
 # Type of bdry. conditions.
 # 0=DIRICHLET stationary, 
 # 1=Pressure drop nonstationary, 

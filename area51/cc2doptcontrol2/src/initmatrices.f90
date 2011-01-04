@@ -520,7 +520,9 @@ contains
           rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplatesOptC%rmatrixEOJ1)   
           
       ! Subtract the boundary operator.
-      call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rstaticAsmTemplatesOptC%rmatrixEOJ1)
+      if (rstabilPrimal%ceojStabilOnBoundary .eq. 0) then
+        call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rstaticAsmTemplatesOptC%rmatrixEOJ1)
+      end if
     end if
 
     if ((rstabilPrimal%cupwind .eq. CCSTAB_EDGEORIENTED3)) then
@@ -556,7 +558,9 @@ contains
             rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplatesOptC%rmatrixEOJ2)   
             
         ! Subtract the boundary operator.
-        call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rstaticAsmTemplatesOptC%rmatrixEOJ2)
+        if (rstabilDual%ceojStabilOnBoundary .eq. 0) then
+          call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rstaticAsmTemplatesOptC%rmatrixEOJ2)
+        end if
             
       end if
     end if

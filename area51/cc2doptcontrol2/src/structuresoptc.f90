@@ -251,6 +251,11 @@ module structuresoptc
     ! dUpsam1 holds for the primal equation, dUpsam2 for the dual one.
     real(DP) :: dupsam = 0.0_DP
     
+    ! Defines whether or not the EOJ stabilisation is applied to the boundary.
+    ! =0: Stabilisation is not applied to the boundary.
+    ! =1: Stabilisation is applied to all bonudary edges (default).
+    integer :: ceojStabilOnBoundary = 1
+
   end type
 
 !</typeblock>

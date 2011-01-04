@@ -90,8 +90,8 @@
 		<File RelativePath="..\src\timeevaluation.f90"/></Filter>
 		<Filter Name="spacetimesolver">
 		<File RelativePath="..\src\forwardbackwardsimulation.f90"/>
-		<File RelativePath="..\src\spacetimelinearsolver.f90"/>
-		<File RelativePath="..\src\nonlinearoneshotspacetimesolver.f90"/></Filter>
+		<File RelativePath="..\src\nonlinearoneshotspacetimesolver.f90"/>
+		<File RelativePath="..\src\spacetimelinearsolver.f90"/></Filter>
 		<Filter Name="template assembly">
 		<File RelativePath="..\src\assemblytemplatesoptc.f90"/>
 		<File RelativePath="..\src\initmatrices.f90"/></Filter></Filter>
@@ -115,7 +115,10 @@
 			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
 		<File RelativePath="..\src\spacetimevanca.f90">
 			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File></Filter></Filter></Filter>
+			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File></Filter></Filter>
+		<File RelativePath="..\src\vanka_optcontrol2.f90">
+			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File></Filter>
 		<File RelativePath="..\log\output.log">
 			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File></Files>
 	<Globals/></VisualStudioProject>

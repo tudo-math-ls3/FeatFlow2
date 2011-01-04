@@ -84,3 +84,9 @@ ssectionSpaceTimePostprocessing = TIME-POSTPROCESSING
 # Difference can only be seen for higher order time-discretisation.
 
 # ipressureFullyImplicit = 1
+
+# Additional weight for the convective operator. May be used to
+# switch off the convection.
+# Standard value = 1.0
+
+dweightConvection = 1.0

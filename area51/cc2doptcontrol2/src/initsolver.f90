@@ -635,6 +635,9 @@ contains
         'DUPSAM1', rstabilPrimal%dupsam)
     call parlst_getvalue_double (rparlist, ssection, &
         'DUPSAM2', rstabilDual%dupsam)
+    call parlst_getvalue_int (rparlist, ssection, &
+        'CEOJSTABILONBOUNDARY', rstabilPrimal%ceojStabilOnBoundary,1)
+    rstabilDual%ceojStabilOnBoundary = rstabilPrimal%ceojStabilOnBoundary
 
   end subroutine
   

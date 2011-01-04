@@ -2326,13 +2326,17 @@ contains
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(1,1))
-          call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
+          if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+            call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
+          end if
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2))   
-            call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
+            if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+              call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
+            end if
           end if
 
         case (CCMASM_STAB_EDGEORIENTED2)
@@ -2374,13 +2378,17 @@ contains
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(1,1))
-          call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
+          if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+            call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
+          end if
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2))
-            call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
+            if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+              call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
+            end if
           end if
 
         case (CCMASM_STAB_EDGEORIENTED3)
@@ -2454,13 +2462,17 @@ contains
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(1,1))
-            call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
+            if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+              call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
+            end if
 
             if (.not. bshared) then
               call conv_jumpStabilisation2d (&
                                   rjumpStabil, CONV_MODMATRIX, &
                                   rmatrix%RmatrixBlock(2,2))
-              call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
+              if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+                call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
+              end if
             end if
             
           case (CCMASM_STAB_EDGEORIENTED3)
@@ -3726,7 +3738,9 @@ contains
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),rx,rb)
-          call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
+          if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+            call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
+          end if
 
 !          if (.not. bshared) then
 !            call conv_jumpStabilisation2d (&
@@ -3778,7 +3792,9 @@ contains
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),rx,rb)
-          call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
+          if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+            call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
+          end if
 
         case (CCMASM_STAB_EDGEORIENTED3)
         
@@ -3849,7 +3865,9 @@ contains
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODDEFECT, &
                                 rmatrix%RmatrixBlock(1,1),rx,rb)
-            call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
+            if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+              call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
+            end if
 
 !            if (.not. bshared) then
 !              call conv_jumpStabilisation2d (&
