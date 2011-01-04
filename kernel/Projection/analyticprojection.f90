@@ -1113,8 +1113,8 @@ contains
     call afcstab_generateVerticesAtEdge(rmatrixMass, rafcstab)
 
     ! Compute the fluxes for the raw mass antidiffusion
-    call gfsc_buildFluxFCT(rafcstab, rvectorAux, rvectorAux,&
-        0.0_DP, 0.0_DP, 1.0_DP, .true., rmatrixMass)
+    call gfsc_buildFluxFCT(rafcstab, rvectorAux,&
+        0.0_DP, 0.0_DP, 1.0_DP, .true., rmatrixMass, rvectorAux)
 
     ! Apply flux correction to improve the low-order L2-projection
     call gfsc_buildConvectionVectorFCT(p_rmatrixMassLumped, rafcstab, rvector, 1._DP,&
