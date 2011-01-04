@@ -421,149 +421,149 @@ integer :: ielement, ipoint
 !  end select  
   
   
-  ! Quarter circular convection
-  select case (cderivative)
-  case (DER_FUNC)
-    
-                    
-    do i = 1, size(Dvalues,1)
-    do j = 1, size(Dvalues,2)
-      dx = Dpoints(1,i,j)
-      dy = Dpoints(2,i,j)
-       
-       dr = abs( sqrt((dx-1.0_dp)*(dx-1.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
-!       dr = abs( sqrt((dx-1.0_dp-dy)*(dx-1.0_dp-dy)) -0.5_dp)
-       
-       Dvalues(i,j) = 0.3_DP*exp(-25.0_dp*dr*dr)
-          
-    end do
-    end do
-                              
-  case (DER_DERIV_X)
-  write(*,*) 'Error in calculating L2-error'
-    
-  case (DER_DERIV_Y)
-  write(*,*) 'Error in calculating L2-error'
-    
-  case DEFAULT
-    ! Unknown. Set the result to 0.0.
-    Dvalues = 0.0_DP
-  end select  
+!  ! Quarter circular convection
+!  select case (cderivative)
+!  case (DER_FUNC)
+!    
+!                    
+!    do i = 1, size(Dvalues,1)
+!    do j = 1, size(Dvalues,2)
+!      dx = Dpoints(1,i,j)
+!      dy = Dpoints(2,i,j)
+!       
+!       dr = abs( sqrt((dx-1.0_dp)*(dx-1.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
+!!       dr = abs( sqrt((dx-1.0_dp-dy)*(dx-1.0_dp-dy)) -0.5_dp)
+!       
+!       Dvalues(i,j) = 0.3_DP*exp(-25.0_dp*dr*dr)
+!          
+!    end do
+!    end do
+!                              
+!  case (DER_DERIV_X)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case (DER_DERIV_Y)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case DEFAULT
+!    ! Unknown. Set the result to 0.0.
+!    Dvalues = 0.0_DP
+!  end select  
   
   
   
   
 
-!    ! Compare to less refined solution
-!
-!      ! An object for saving the domain:
-!    type(t_boundary) :: rboundary
-!    
-!    ! An object for saving the triangulation on the domain
-!    type(t_triangulation) :: rtriangulation
-!    
-!    type(t_vectorScalar) :: rsolLoaded
-!    
-!    ! An object specifying the discretisation.
-!    ! This contains also information about trial/test functions,...
-!    type(t_blockDiscretisation) :: rdiscretisation2
-!    
-!    integer :: NLMAX
-!    
-!    real(DP), dimension(:), pointer :: p_Ddata
-!    
-!    integer :: ielementtype, iel,i1,i2,i3
-!    
-!    character (LEN=SYS_STRLEN) :: sofile
-!    
-!    integer :: ilength
-!  
-!  
-!  
-!    
-!    
-!    ielementtype = EL_DG_T2_2D
-!    
-!    NLMAX = 8
-!    
-!    sofile = 'l8.data'
-!    
-!    call boundary_read_prm(rboundary, './pre/quad.PRM')
-!    
-!    ! Now read in the basic triangulation.
-!    call tria_readTriFile2D (rtriangulation, './pre/quad.TRI', rboundary, .true.)  
-!    
-!    
-!      
-!    
-!    ! Refine it.
-!    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
-!    
-!    ! And create information about adjacencies and everything one needs from
-!    ! a triangulation.
-!    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
-!  
-!    ! Now we can start to initialise the discretisation. At first, set up
-!    ! a block discretisation structure that specifies the blocks in the
-!    ! solution vector. In this simple problem, we only have one block.
-!    call spdiscr_initBlockDiscr (rdiscretisation2,1,&
-!                                 rtriangulation, rboundary)
-!    
-!    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
-!    ! structures for every component of the solution vector.
-!    ! Initialise the first element of the list to specify the element
-!    ! and cubature rule for this solution component:
-!    call spdiscr_initDiscr_simple (rdiscretisation2%RspatialDiscr(1), &
-!                                   ielementType,CUB_G5X5,rtriangulation, rboundary)
-!                 
-!    
-!    
-!    call lsyssc_createVecByDiscr (rdiscretisation2%RspatialDiscr(1),rsolloaded ,.true.,ST_DOUBLE)
-!    
-!    
-!    
-!  ! Get pointers to the data form the truangulation
-!  call lsyssc_getbase_double(rsolloaded,p_Ddata)
-!
-!  ! Get the length of the data array
-!  ilength = size(p_Ddata,1)  
-!  
-!  
-!  ! ************ WRITE TO FILE PHASE *******************
-!  
-!  iunit = sys_getFreeUnit()
-!  open(iunit, file=trim(sofile))
-! 
-!  
-!  read(iunit,'(I10)') ilength
-!
-!  do i=1, ilength
-!    read(iunit,'(E25.16E3)') p_Ddata(i)
-!  end do
-!  
-!  close(iunit)
-!    
-!    
-!    
-!    do iel = 1, nelements
-!      ielement=0
-!      call tsrch_getElem_raytrace2D (&
-!            Dpoints(:,1,iel),rtriangulation,ielement,i1,i2,i3,100000)
-!      call fevl_evaluate_mult1 (DER_FUNC, Dvalues(:,iel), rsolloaded, ielement, &
-!                                Dpoints=Dpoints(:,:,iel))
-!    end do
-!
-!            
-!    
-!    call lsyssc_releaseVector (rsolloaded)
-!        
-!    call spdiscr_releaseBlockDiscr(rdiscretisation2)
-!
-!    ! Release the triangulation. 
-!    call tria_done (rtriangulation)
-!        
-!    ! Finally release the domain, that is it.
-!    call boundary_release (rboundary)
+    ! Compare to less refined solution
+
+      ! An object for saving the domain:
+    type(t_boundary) :: rboundary
+    
+    ! An object for saving the triangulation on the domain
+    type(t_triangulation) :: rtriangulation
+    
+    type(t_vectorScalar) :: rsolLoaded
+    
+    ! An object specifying the discretisation.
+    ! This contains also information about trial/test functions,...
+    type(t_blockDiscretisation) :: rdiscretisation2
+    
+    integer :: NLMAX
+    
+    real(DP), dimension(:), pointer :: p_Ddata
+    
+    integer :: ielementtype, iel,i1,i2,i3
+    
+    character (LEN=SYS_STRLEN) :: sofile
+    
+    integer :: ilength
+  
+  
+  
+    
+    
+    ielementtype = EL_DG_T2_2D
+    
+    NLMAX = 8
+    
+    sofile = 'l8.data'
+    
+    call boundary_read_prm(rboundary, './pre/quad.PRM')
+    
+    ! Now read in the basic triangulation.
+    call tria_readTriFile2D (rtriangulation, './pre/quad.TRI', rboundary, .true.)  
+    
+    
+      
+    
+    ! Refine it.
+    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
+    
+    ! And create information about adjacencies and everything one needs from
+    ! a triangulation.
+    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+  
+    ! Now we can start to initialise the discretisation. At first, set up
+    ! a block discretisation structure that specifies the blocks in the
+    ! solution vector. In this simple problem, we only have one block.
+    call spdiscr_initBlockDiscr (rdiscretisation2,1,&
+                                 rtriangulation, rboundary)
+    
+    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
+    ! structures for every component of the solution vector.
+    ! Initialise the first element of the list to specify the element
+    ! and cubature rule for this solution component:
+    call spdiscr_initDiscr_simple (rdiscretisation2%RspatialDiscr(1), &
+                                   ielementType,CUB_G5X5,rtriangulation, rboundary)
+                 
+    
+    
+    call lsyssc_createVecByDiscr (rdiscretisation2%RspatialDiscr(1),rsolloaded ,.true.,ST_DOUBLE)
+    
+    
+    
+  ! Get pointers to the data form the truangulation
+  call lsyssc_getbase_double(rsolloaded,p_Ddata)
+
+  ! Get the length of the data array
+  ilength = size(p_Ddata,1)  
+  
+  
+  ! ************ WRITE TO FILE PHASE *******************
+  
+  iunit = sys_getFreeUnit()
+  open(iunit, file=trim(sofile))
+ 
+  
+  read(iunit,'(I10)') ilength
+
+  do i=1, ilength
+    read(iunit,'(E25.16E3)') p_Ddata(i)
+  end do
+  
+  close(iunit)
+    
+    
+    
+    do iel = 1, nelements
+      ielement=0
+      call tsrch_getElem_raytrace2D (&
+            Dpoints(:,1,iel),rtriangulation,ielement,i1,i2,i3,100000)
+      call fevl_evaluate_mult1 (DER_FUNC, Dvalues(:,iel), rsolloaded, ielement, &
+                                Dpoints=Dpoints(:,:,iel))
+    end do
+
+            
+    
+    call lsyssc_releaseVector (rsolloaded)
+        
+    call spdiscr_releaseBlockDiscr(rdiscretisation2)
+
+    ! Release the triangulation. 
+    call tria_done (rtriangulation)
+        
+    ! Finally release the domain, that is it.
+    call boundary_release (rboundary)
 
 
 
@@ -1667,7 +1667,8 @@ integer :: iel
 !      if ((dx.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.0_dp !0.3_DP*exp(-25.0_dp*(dy-0.5_dp)*(dy-0.5_dp))
 !      if ((dy.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.3_DP*exp(-25.0_dp*(dx-0.5_dp)*(dx-0.5_dp))
 
-      dr = abs( sqrt((dx-1.0_dp)*(dx-1.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
+      dr = abs( sqrt((dx-1.00_dp)*(dx-1.00_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
+      !dr = abs( sqrt((dx-1.00_dp-1.0_dp/64.0_dp)*(dx-1.00_dp-1.0_dp/64.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
       ! if ((dy.le.0.0_dp)) 
       if (IelementList(iel)==0) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.3_DP*exp(-25.0_dp*dr*dr)
       

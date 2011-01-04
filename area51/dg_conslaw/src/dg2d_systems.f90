@@ -198,6 +198,10 @@ contains
     real(dp) :: dtheta
     
     integer :: iinsertSourceTerm = 0
+    
+    integer :: ilimitEveryStep = 1
+    
+    real(dp) , dimension(:), pointer :: p_DiMCdata, p_DMCdata
      
     ! Start time measurement
     call cpu_time(dtime1)
@@ -403,6 +407,16 @@ contains
          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
     call lsyssc_copyMatrix (rmatrixMC, rmatrixiMC)
     call dg_invertMassMatrix(rmatrixiMC)  
+    
+!    ! Calculate the condition number of MC    
+!    call lsyssc_getbase_double (rmatrixMC, p_DMCdata)
+!    call lsyssc_getbase_double (rmatrixiMC, p_DiMCdata)
+!    write(*,*) p_DMCdata
+!    pause
+!    write(*,*) p_DiMCdata
+!    pause
+!    write(*,*) 'Konditionszahl: ', maxval(p_DiMCdata)*maxval(p_DMCdata)
+!    pause
     
     ! First create an empty block matrix structur with nvar2d x nvar2d blocks
     call lsysbl_createEmptyMatrix (rmatrixiBlock, nvar2d)
@@ -722,7 +736,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        
        ! Implement source term
        if (iinsertSourceTerm==1) call lsysbl_vectorLinearComb (rsourceTermBlock,rrhsBlock,1.0_dp,1.0_dp)
-       
+ 
        call profiler_measure(rprofiler,4)
        ! Solve for solution update
        !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
@@ -738,6 +752,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        call profiler_measure(rprofiler,5)
               ! Limit the solution vector
               
+       if (ilimitEveryStep.eq.1) then
        !if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
        !if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
        if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsoltempBlock, 1)
@@ -749,7 +764,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
        if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
        if (ilimiter .eq. 12) call dg_realKuzmin (rsolTempBlock, raddTriaData)
-!    
+       end if
        
 !       ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
 !       call lsysbl_copyVector (rsoltempBlock,rsolBlock)
@@ -797,7 +812,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        
        ! Implement source term
        if (iinsertSourceTerm==1) call lsysbl_vectorLinearComb (rsourceTermBlock,rrhsBlock,1.0_dp,1.0_dp)
-              
+
        ! Solve for solution update
        call profiler_measure(rprofiler,4)
        !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
@@ -812,6 +827,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        call lsysbl_vectorLinearComb (rsolBlock,rsolUpBlock,0.75_DP,0.25_DP,rsoltempBlock)
        
        call profiler_measure(rprofiler,5)
+       if (ilimitEveryStep.eq.1) then
 !              ! Limit the solution vector
 !       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
@@ -824,7 +840,7 @@ if (iwithoutlimiting==2) ilimiter = 0
         if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
         if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
         if (ilimiter .eq. 12) call dg_realKuzmin (rsolTempBlock, raddTriaData)
-
+       end if
 
        ! Step 3/3
        
@@ -1487,30 +1503,30 @@ if (iwithoutlimiting==2) ilimiter = 0
       
     ifilenumber = -1
     
-!    sofile = 'l5'
+!    sofile = 'l6'
 !    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
 !    sofile = './gmv/u2d' 
     
-    !select case (ioutputtype)
-    !  case (1)
-        ! Output solution to gmv file
-        call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-    !  case (2)
-        ! Output solution to vtk file
-        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-    !end select
+!    !select case (ioutputtype)
+!    !  case (1)
+!        ! Output solution to gmv file
+!        call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+!    !  case (2)
+!        ! Output solution to vtk file
+!        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+!    !end select
       
 !    write(*,*) 'Writing steady solution to file'
 !    ! And output the steady projection
 !     call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
      
-    ! Saving the solution DOFs to file
-    write(*,*) 'Writing DOFs to file'
-    call saveSolutionData(rsolBlock%Rvectorblock(1),sofile,ifilenumber)
+!    ! Saving the solution DOFs to file
+!    write(*,*) 'Writing DOFs to file'
+!    call saveSolutionData(rsolBlock%Rvectorblock(1),sofile,ifilenumber)
 
     
-!    sofile = 'l9'
-!    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
+    sofile = 'l9'
+    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
    
  
     ! Calculate the error to the reference function.

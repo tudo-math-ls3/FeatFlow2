@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 5
+nlmax = 6
 
 
 # Name of the parametrisation file
@@ -40,10 +40,10 @@ FEkind = 2
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.001
+dt = 0.005
 
 # Final time
-ttfinal = 2.0
+ttfinal = 3.0
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -91,7 +91,7 @@ gravconst = 1.0
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 1
+extrapoints = 3
 
 # Name of output file
 ofile = ./gmv/u2d
@@ -107,4 +107,4 @@ outtype = 2
 makevideo = 0
 
 # Make gmv snapshot every ... seconds (should be n*dt)
-videotimestep = 0.1
+videotimestep = 0.01

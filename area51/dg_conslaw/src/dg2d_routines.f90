@@ -2512,7 +2512,7 @@ end subroutine
         call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
     
     
-        ! Multiply the linear part of the solution vector with the correction factor
+        ! Multiply the quadratic part of the solution vector with the correction factor
         p_Ddata(IdofGlob(4:6)) = p_Ddata(IdofGlob(4:6))*Dalpha(1,iel)
         
         p_rAlpha_Ddata(IdofGlob(1)) = Dalpha(1,iel)
@@ -7778,7 +7778,7 @@ end subroutine
             
             ! Extremumfix
             !if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL) Dalphaei(ivar,ivt) = 1.0_dp
-            if ((ilim==3).and.(abs(dwstar-DWc(ivar))<abs(0.001*DWc(ivar)))) Dalphaei(ivar,ivt) = 1.0_dp
+            !if ((ilim==3).and.(abs(dwstar-DWc(ivar))<abs(0.001*DWc(ivar)))) Dalphaei(ivar,ivt) = 1.0_dp
             
           elseif (DtIi(ivar) < -100.0_dp*SYS_EPSREAL) then
             dWstar = minval(DtLin(ivar,1:iidx))
@@ -7787,7 +7787,7 @@ end subroutine
             
             ! Extremeumfix
             !if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL) Dalphaei(ivar,ivt) = 1.0_dp
-            if ((ilim==3).and.(abs(dwstar-DWc(ivar))<abs(0.001*DWc(ivar)))) Dalphaei(ivar,ivt) = 1.0_dp
+            !if ((ilim==3).and.(abs(dwstar-DWc(ivar))<abs(0.001*DWc(ivar)))) Dalphaei(ivar,ivt) = 1.0_dp
             
           else
             !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt),1.0_dp)
