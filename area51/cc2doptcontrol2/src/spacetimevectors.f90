@@ -1630,16 +1630,18 @@ contains
         if (.not. present(rblockDiscretisation)) then
           ! Read the file into rvector. The first read command creates rvector
           ! in the correct size.
-          call vecio_readVectorHR (rvectorScalar, sarray, .false.,&
+          !call vecio_readVectorHR (rvectorScalar, sarray, .false.,&
+          !  0, sfile, bformatted)
+          call vecio_readBlockVectorHR (rvector, sarray, .false.,&
             0, sfile, bformatted)
 
           if ((i .eq. istart) .and. (rx%NEQtime .eq. 0)) then
             ! At the first file, create a space-time vector holding the data.
-            call sptivec_initVectorPlain (rx,rvectorScalar%NEQ,(iend-istart+1)/max(1,idelta))
+            call sptivec_initVectorPlain (rx,rvector%NEQ,(iend-istart+1)/max(1,idelta))
           end if
           
           if (i .eq. istart) then
-            call storage_getbase_double (rvectorScalar%h_Ddata,p_Ddata2)
+            call lsysbl_getbase_double (rvector,p_Ddata2)
           end if         
 
           ! Save the data
@@ -1649,7 +1651,7 @@ contains
             call lalg_copyVector(p_Ddata2,p_Ddata,min(size(p_Ddata2),size(p_Ddata)))
             call exstor_setdata_storage (rx%p_IdataHandleList(1+ifileidx),hdata)
           else
-            call exstor_setdata_storage (rx%p_IdataHandleList(1+ifileidx),rvectorScalar%h_Ddata)
+            call exstor_setdata_storage (rx%p_IdataHandleList(1+ifileidx),rvector%h_Ddata)
           end if
     
         else
