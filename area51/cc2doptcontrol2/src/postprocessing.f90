@@ -978,6 +978,12 @@ contains
           else
             call ucd_addVariableElementBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
                 p_Ddata(1:p_rtriangulation%NEL))
+                
+            ! Project pressure to Q1 in the vertices.
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+            call spdp_projectToVertices (rvector%RvectorBlock(3), p_Ddata)
+            call ucd_addVariableVertexBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
+                p_Ddata(1:p_rtriangulation%NVT))
           end if
           
           ! Dual velocity field
@@ -999,6 +1005,12 @@ contains
           else
             call ucd_addVariableElementBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
                 p_Ddata(1:p_rtriangulation%NEL))
+           
+            ! Project pressure to Q1 in the vertices.
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+            call spdp_projectToVertices (rvector%RvectorBlock(6), p_Ddata)
+            call ucd_addVariableVertexBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
+                p_Ddata(1:p_rtriangulation%NVT))
           end if
 
           ! Control u = P[min/max](-1/alpha lambda)

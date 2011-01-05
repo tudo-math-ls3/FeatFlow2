@@ -3156,6 +3156,12 @@ contains
       else
         call ucd_addVariableElementBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
             p_Ddata(1:p_rtriangulation%NEL))
+
+        ! Project pressure to Q1 in the vertices.
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+        call spdp_projectToVertices (rvector%RvectorBlock(3), p_Ddata)
+        call ucd_addVariableVertexBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
+            p_Ddata(1:p_rtriangulation%NVT))
       end if
      
     case (CCSPACE_DUAL)
@@ -3178,6 +3184,12 @@ contains
       else
         call ucd_addVariableElementBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
             p_Ddata(1:p_rtriangulation%NEL))
+
+        ! Project pressure to Q1 in the vertices.
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+        call spdp_projectToVertices (rvector%RvectorBlock(6), p_Ddata)
+        call ucd_addVariableVertexBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
+            p_Ddata(1:p_rtriangulation%NVT))
       end if
 
     case default
@@ -3191,7 +3203,7 @@ contains
       
       ! Write pressure
       call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-      call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, &
+      call ucd_addVariableElementBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
           p_Ddata(1:p_rtriangulation%NEL))
 
       ! If we have a simple Q1 discretisation in the pressure, write it out as it is
@@ -3201,8 +3213,14 @@ contains
                   
         if (elem_getPrimaryElement(ieltype) .eq. EL_Q1) then
           call lsyssc_getbase_double (rvector%RvectorBlock(3),p_Ddata)
-          call ucd_addVariableVertexBased (rexport,'pressure',UCD_VAR_STANDARD, &
+          call ucd_addVariableVertexBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
               p_Ddata(1:p_rtriangulation%NEL))
+        else
+          ! Project pressure to Q1 in the vertices.
+          call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+          call spdp_projectToVertices (rvector%RvectorBlock(3), p_Ddata)
+          call ucd_addVariableVertexBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
+              p_Ddata(1:p_rtriangulation%NVT))
         end if
       end if
 
@@ -3228,6 +3246,12 @@ contains
           call lsyssc_getbase_double (rvector%RvectorBlock(6),p_Ddata)
           call ucd_addVariableVertexBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
               p_Ddata(1:p_rtriangulation%NEL))
+        else
+          ! Project pressure to Q1 in the vertices.
+          call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+          call spdp_projectToVertices (rvector%RvectorBlock(6), p_Ddata)
+          call ucd_addVariableVertexBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
+              p_Ddata(1:p_rtriangulation%NVT))
         end if
       end if
 

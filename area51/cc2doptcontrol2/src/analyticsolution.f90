@@ -1958,6 +1958,7 @@ contains
     ! local variables
     type(t_collection) :: rcollection
     integer :: imeth,istart,iend,idim2, i
+    type(t_configL2ProjectionByMass) :: rL2ProjectionConfig
     
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Ddata
@@ -1995,8 +1996,10 @@ contains
         
         ! Evaluate
         !call anprj_discrDirect (rvector%RvectorBlock(idim2),ffunctionPrj,rcollection)
+        rL2ProjectionConfig%depsRel = 1E-14_DP
         call anprj_analytL2projectionByMass (rvector%RvectorBlock(idim2),&
-            rmassMatrix%RmatrixBlock(idim2,idim2),ffunctionPrj2,rcollection)
+            rmassMatrix%RmatrixBlock(idim2,idim2),ffunctionPrj2,rcollection,&
+            rL2ProjectionConfig)
         
       end do
     
