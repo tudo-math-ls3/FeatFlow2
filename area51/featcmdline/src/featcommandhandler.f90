@@ -4029,7 +4029,7 @@ contains
     if (Iindex(3) .ne. 0) then
       call cmdprs_dequoteStd(Rvalues(Iindex(3))%svalue,stoken)
       bformatted = sys_upcase(stoken) .ne. "UNFORMATTED"
-      if (bformatted) sfornat = stoken
+      if (bformatted) sformat = stoken
     end if
     
     stoken = Rvalues(2)%svarname
