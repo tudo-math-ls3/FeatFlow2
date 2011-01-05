@@ -608,8 +608,9 @@ program gridgencirc2d
   if (danisotropy .eq. 1.0_DP) then
     dr0 = (douterRadius-dinnerRadius)/nlayers
   else
-    dr0 = (danisotropy-1) / (danisotropy**nlayers-1)*&
-        (douterRadius-dinnerRadius)
+    ! Compute local anisotropy factor
+    danisotropy = exp(log(danisotropy)/(nlayers-1.0_DP))
+    dr0 = (douterRadius-dinnerRadius)*(danisotropy-1)/(danisotropy**nlayers-1)
   end if
   
   
@@ -623,9 +624,9 @@ program gridgencirc2d
       
       ! Compute radius
       if (danisotropy .eq. 1.0_DP) then
-        r = dinnerRadius + j*dr0
+        r = dinnerRadius + dr0*j
       else
-        r = dinnerRadius + (danisotropy**j-1)/(danisotropy-1)*dr0
+        r = dinnerRadius + dr0*(danisotropy**(j)-1)/(danisotropy-1)
       end if
       
       ! Compute azimuth
