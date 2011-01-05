@@ -17,84 +17,93 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientMatrixSc.inc'
 !#
-!# 1.) coeff_Pressure
+!# 2.) coeff_Pressure
 !#     -> Returns the coefficients for the pressure matrix. This routine is
 !#        only used if the problem to calculate has nonconstant coefficients!
 !#        Otherwise the routine is dead.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientMatrixSc.inc'
 !#
-!# 2.) coeff_RHS_x
+!# 3.) coeff_RHS_x
 !#     -> Returns analytical values for the right hand side of the X-velocity
 !#        equation.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 3.) coeff_RHS_y
+!# 4.) coeff_RHS_y
 !#     -> Returns analytical values for the right hand side of the Y-velocity
 !#        equation.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) coeff_AnalyticSolution_X
+!# 5.) coeff_RHS_p
+!#     -> Returns analytical values for the right hand side of the pressure/
+!#        divergence equation.
+!#     -> Corresponds to the interface defined in the file
+!#        'intf_coefficientVectorSc.inc'
+!#
+!# 6.) coeff_AnalyticSolution_X
 !#     -> Returns analytical values for the desired flow field in X-direction.
 !#     -> Is used for setting up the initial solution.
 !#     -> In the basic implementation, this calls ffunction_TargetX. 
 !#
-!# 5.) coeff_AnalyticSolution_Y
+!# 7.) coeff_AnalyticSolution_Y
 !#     -> Returns analytical values for the desired flow field in Y-direction.
 !#     -> Is used for setting up the initial solution.
 !#     -> In the basic implementation, this calls ffunction_TargetY. 
 !#
-!# 6.) coeff_AnalyticSolution_P
+!# 8.) coeff_AnalyticSolution_P
 !#     -> Returns analytical values for the desired pressure.
 !#     -> Is used for setting up the initial solution.
 !#     -> In the basic implementation, this calls ffunction_TargetP.
 !#
-!# 7.) ffunction_TargetX
+!# 9.) ffunction_TargetX
 !#     -> Returns analytical values for the desired flow field in X-direction.
 !#     -> Is used for error analysis during the postprocessing.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 8.) ffunction_TargetY
-!#     -> Returns analytical values for the desired flow field in Y-direction.
-!#     -> Is used for error analysis during the postprocessing.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!# 10.) ffunction_TargetY
+!#      -> Returns analytical values for the desired flow field in Y-direction.
+!#      -> Is used for error analysis during the postprocessing.
+!#      -> Corresponds to the interface defined in the file
+!#         'intf_coefficientVectorSc.inc'
 !#
-!# 9.) ffunction_TargetP
-!#     -> Returns analytical values for the desired pressure.
-!#     -> Is used for error analysis during the postprocessing.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!# 11.) ffunction_TargetP
+!#      -> Returns analytical values for the desired pressure.
+!#      -> Is used for error analysis during the postprocessing.
+!#      -> Corresponds to the interface defined in the file
+!#         'intf_coefficientVectorSc.inc'
 !#
-!# 10.) getBoundaryValues
+!# 12.) getBoundaryValues
 !#     -> Returns analytical values on the boundary of the
 !#        problem to solve.
 !#
-!# 11.) getBoundaryValuesFBC
+!# 13.) getBoundaryValuesFBC
 !#     -> Returns analytical values on the fictitious boundary components
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_fbcassembly.inc'
 !#
-!# 12.) cc_initCollectForAssembly
+!# 14.) cc_initCollectForAssembly
 !#     -> Is called prior to the assembly process.
 !#     -> Stores some information from the problem structure to a collection
 !#        such that it can be accessed in callback routines
 !#
-!# 13.) cc_doneCollectForAssembly
+!# 15.) cc_doneCollectForAssembly
 !#      -> Is called after the assembly process.
 !#      -> Releases information stored in the collection by 
 !#         cc_initCollectForAssembly.
 !#
-!# 14.) getMovingFrameVelocity
+!# 16.) getMovingFrameVelocity
 !#      -> If the moving frame formulation is activated, this routine
 !#         returns the velocity and acceleration of the moving frame.
 !#
-!# 15.) getNonconstantViscosity
+!# 17.) getNonconstantViscosity
 !#      -> If nonconstant viscosity is activated, this routine calculates
 !#         the viscosity.
+!#
+!# 18.) calcAdaptiveTimestep
+!#      -> Calculate a user defined timestep length.
 !#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
@@ -563,6 +572,94 @@ contains
     ! This subroutine is called during the vector assembly. It has to compute
     ! the coefficients in front of the terms of the linear form of the
     ! Y-velocity part of the right hand side vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    ! local variables
+    real(DP) :: dtime
+    
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    if (present(rcollection)) then
+      dtime = rcollection%Dquickaccess(1)
+    else
+      dtime = 0.0_DP
+    end if
+    
+    Dcoefficients(:,:,:) = 0.0_DP
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_RHS_p (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form of the
+    ! pressure/divergence part of the right hand side vector.
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points) in real coordinates.
