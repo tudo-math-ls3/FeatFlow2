@@ -797,15 +797,23 @@ contains
       ! Writing out of the final solution
       ! -------------------------------------------------------------------------
       
-      if (rpostproc%sfinalSolutionFileName .ne. "") then
+      if ((rpostproc%sfinalSolutionFileName .ne. "") .and. &
+          (rpostproc%cwriteFinalSolution .gt. 0)) then
         ! Write the current solution to disc as it is.
         sfilename = trim(rpostproc%sfinalSolutionFileName)//'.'//sys_si0(ifileid,5)
         
         call output_lbrk ()
         call output_line ('Writing solution file: '//trim(sfilename))
         
-        call vecio_writeBlockVectorHR (rvector, "vector"//sys_si0(ifileid,5), .false.,&
-            0, sfilename,  "(E20.10)")
+        if (rpostproc%cwriteFinalSolution .eq. 1) then
+          ! Formatted output
+          call vecio_writeBlockVectorHR (rvector, "vector"//sys_si0(ifileid,5), .false.,&
+              0, sfilename,  "(E20.10)")
+        else
+          ! Unformatted output
+          call vecio_writeBlockVectorHR (rvector, "vector"//sys_si0(ifileid,5), .false.,&
+              0, sfilename)
+        end if
       end if
 
       ! -------------------------------------------------------------------------
@@ -813,7 +821,8 @@ contains
       ! from the final dual solution.
       ! -------------------------------------------------------------------------
       
-      if (rpostproc%sfinalControlFileName .ne. "") then
+      if ((rpostproc%sfinalControlFileName .ne. "") .and. &
+          (rpostproc%cwriteFinalControl .gt. 0)) then
       
         ! Do the projection into a vector in the discretisation
         ! if the primal space.
@@ -829,8 +838,15 @@ contains
         call output_lbrk ()
         call output_line ('Writing control file: '//trim(sfilename))
         
-        call vecio_writeBlockVectorHR (rcontrolVector, "vector"//sys_si0(ifileid,5), .false.,&
-            0, sfilename,  "(E20.10)")
+        if (rpostproc%cwriteFinalControl .eq. 1) then
+          ! Formatted output
+          call vecio_writeBlockVectorHR (rcontrolVector, "vector"//sys_si0(ifileid,5), .false.,&
+              0, sfilename,  "(E20.10)")
+        else
+          ! Unformatted output
+          call vecio_writeBlockVectorHR (rcontrolVector, "vector"//sys_si0(ifileid,5), .false.,&
+              0, sfilename)
+        end if
             
         call lsysbl_releaseVector (rcontrolVector)
       end if

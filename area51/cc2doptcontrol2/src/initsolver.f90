@@ -3220,9 +3220,16 @@ contains
     call parlst_getvalue_string (rparlist,ssection,&
         "sfilenameUCD",rpostproc%sfilenameUCD,"",bdequote=.true.)
 
+    ! Export of solution and control.
+    call parlst_getvalue_int (rparlist,ssection,&
+        "cwriteFinalSolution",rpostproc%cwriteFinalSolution,1)
+
     call parlst_getvalue_string (rparlist,ssection,&
         "sfinalSolutionFileName",rpostproc%sfinalSolutionFileName,&
         "",bdequote=.true.)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "cwriteFinalControl",rpostproc%cwriteFinalControl,1)
 
     call parlst_getvalue_string (rparlist,ssection,&
         "sfinalControlFileName",rpostproc%sfinalControlFileName,&

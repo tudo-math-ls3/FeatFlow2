@@ -76,9 +76,21 @@ module structuresoptflow
     ! A timestep index '.0001','.0002',... is appended to this.
     character(len=SYS_STRLEN) :: sfilenameUCD = "./gmv/u"
     
+    ! Output format for the final solution.
+    ! =0: don't write
+    ! =1: write out, use formatted output (default).
+    ! =2: write out, use unformatted output.
+    integer :: cwriteFinalSolution = 1
+
     ! Filename of a file sequence where the final solution is saved to.
     ! ="": Disable.
     character(len=SYS_STRLEN) :: sfinalSolutionFileName = ""
+
+    ! Output format for the final control.
+    ! =0: don't write
+    ! =1: write out, use formatted output (default).
+    ! =2: write out, use unformatted output.
+    integer :: cwriteFinalControl = 1
 
     ! Filename of a file sequence where the final control is saved to.
     ! ="": Disable.
