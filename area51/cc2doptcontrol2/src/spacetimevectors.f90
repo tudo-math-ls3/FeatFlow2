@@ -1595,7 +1595,6 @@ contains
 
     ! Local variables
     type(t_vectorBlock) :: rvector
-    type(t_vectorScalar) :: rvectorScalar
     character(SYS_STRLEN) :: sfile,sarray
     integer :: i,ilast,ifileidx
     logical :: bexists,brepeat
@@ -1630,8 +1629,6 @@ contains
         if (.not. present(rblockDiscretisation)) then
           ! Read the file into rvector. The first read command creates rvector
           ! in the correct size.
-          !call vecio_readVectorHR (rvectorScalar, sarray, .false.,&
-          !  0, sfile, bformatted)
           call vecio_readBlockVectorHR (rvector, sarray, .false.,&
             0, sfile, bformatted)
 
@@ -1702,11 +1699,7 @@ contains
     call lalg_setVectorDble(rx%p_Dscale(:),1.0_DP)
     
     ! Remove the temp vector
-    if (present(rblockDiscretisation)) then
-      call lsysbl_releaseVector (rvector)
-    else
-      call lsyssc_releaseVector (rvectorScalar)
-    end if
+    call lsysbl_releaseVector (rvector)
 
   end subroutine
 
