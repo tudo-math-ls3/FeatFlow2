@@ -949,12 +949,14 @@ contains
           call output_separator(OU_SEP_MINUS)
           call output_line('Type of boundary condition:                '//&
               trim(sys_siL(p_IbdrCondType(icomp),15)))
-          if (p_BisSegClosed(icomp)) then
-            call output_line('Type of boundary segment in 2D:            '//&
-                merge('( ]','[ ]', p_BisSegClosed(p_IbdrCondCpIdx(ibct+1)-1)))
-          else
-            call output_line('Type of boundary segment in 2D:            '//&
-                merge('( )','[ )', p_BisSegClosed(p_IbdrCondCpIdx(ibct+1)-1)))
+          if (rboundaryCondition%ndimension .eq. 2) then
+            if (p_BisSegClosed(icomp)) then
+              call output_line('Type of boundary segment in 2D:            '//&
+                  merge('( ]','[ ]', p_BisSegClosed(p_IbdrCondCpIdx(ibct+1)-1)))
+            else
+              call output_line('Type of boundary segment in 2D:            '//&
+                  merge('( )','[ )', p_BisSegClosed(p_IbdrCondCpIdx(ibct+1)-1)))
+            end if
           end if
           call output_line('Component number of the periodic neighbor: '//&
               trim(sys_siL(p_IbdrCompPeriodic(icomp),15)))
@@ -968,12 +970,14 @@ contains
           call output_separator(OU_SEP_MINUS)
           call output_line('Type of boundary condition:                '//&
               trim(sys_siL(p_IbdrCondType(icomp),15)))
-          if (p_BisSegClosed(icomp)) then
-            call output_line('Type of boundary segment in 2D:            '//&
-                merge('( ]','[ ]', p_BisSegClosed(icomp-1)))
-          else
-            call output_line('Type of boundary segment in 2D:            '//&
-                merge('( )','[ )', p_BisSegClosed(icomp-1)))
+          if (rboundaryCondition%ndimension .eq. 2) then
+            if (p_BisSegClosed(icomp)) then
+              call output_line('Type of boundary segment in 2D:            '//&
+                  merge('( ]','[ ]', p_BisSegClosed(icomp-1)))
+            else
+              call output_line('Type of boundary segment in 2D:            '//&
+                  merge('( )','[ )', p_BisSegClosed(icomp-1)))
+            end if
           end if
           call output_line('Component number of the periodic neighbor: '//&
               trim(sys_siL(p_IbdrCompPeriodic(icomp),15)))
