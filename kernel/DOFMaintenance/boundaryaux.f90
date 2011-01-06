@@ -339,7 +339,7 @@ contains
 
       ! Convert parameter values in length parametrisation
       call boundary_convertParameterList(rdiscretisation%p_rboundary,&
-          ibdc, DedgePosition(:,1::iel), DedgePosition(:,1::iel),&
+          ibdc, DedgePosition(:,1:iel), DedgePosition(:,1:iel),&
           rboundaryRegion%cparType, BDR_PAR_LENGTH)
 
       ! Handle the last edge differently
