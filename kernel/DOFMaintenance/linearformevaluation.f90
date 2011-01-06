@@ -924,16 +924,10 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistr
     type(t_linfVectorAssembly) :: rvectorAssembly
     type(t_triangulation), pointer :: p_rtriangulation
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:), pointer :: p_IelementDistr
-    integer, dimension(:), pointer :: p_IelementsAtBoundary
-    integer, dimension(:), pointer :: p_InodalProperty
-    integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer, dimension(:), pointer :: IelementList, IelementOrientation
-    integer :: ibdc,idx,iel,NELbdc
+    integer :: ibdc,ielementDistr,NELbdc
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
@@ -967,233 +961,99 @@ contains
     
     ! Set pointer for quicker access
     p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
-
-    ! Set pointers
-    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-    call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary,&
-        p_IelementsAtBoundary)
-    call storage_getbase_int (p_rtriangulation%h_InodalProperty,&
-        p_InodalProperty)
-    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
-        p_IboundaryCpIdx)
     
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+    if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
       
       select case(rvector%cdataType)
         
       case(ST_DOUBLE)
         
         if (present(iboundaryComp)) then
-
+          
           ! Number of elements on that boundary component?
-          NELbdc = p_IboundaryCpIdx(iboundaryComp+1)-p_IboundaryCpIdx(iboundaryComp)
+          NELbdc = bdraux_getNELAtBdrComp(iboundaryComp, p_rtriangulation)
           
           ! Allocate memory for element list and element orientation
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
 
-          ! Initialise a vector assembly structure for all elements
-          call linf_initAssembly(rvectorAssembly, rform,&
-              rvector%p_rspatialDiscr%RelementDistr(1)%celement,&
-              CUB_G1_1D, NELbdc)
-          call linf_allocAssemblyData(rvectorAssembly)
-          
-          ! Determine the element numbers and their orientation at the boundary
-          iel = 0
-          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
-
-            iel = iel+1
-
-            ! Element number
-            IelementList(iel) = p_IelementsAtBoundary(idx)
-
-            ! Element orientation, i.e. the local number of the boundary vertex
-            if (p_InodalProperty(&
-                p_IverticesAtElement(1,IelementList(iel))).eq. iboundaryComp) then
-              IelementOrientation(iel) = 1
-            elseif (p_InodalProperty(&
-                p_IverticesAtElement(2,IelementList(iel))).eq. iboundaryComp) then
-              IelementOrientation(iel) = 2
-            else
-              call output_line('Unable to determine element orientation!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
-            end if
-          end do
-
-          ! Assemble the data all elements
-          call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
-              rvector, iboundaryComp, IelementList, IelementOrientation,&
-              fcoeff_buildVectorScBdr1D_sim, rcollection)
-
-          ! Release the assembly structure.
-          call linf_doneAssembly(rvectorAssembly)
-
-          ! Release memory
-          deallocate(IelementList, IelementOrientation)
-          
-        else
-          
-          ! Loop over all boundary components and call 
-          ! the calculation routines for that
-          do ibdc = 1, p_rtriangulation%nbct
+          ! Loop over the element distributions.
+          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
             
-            ! Number of elements on that boundary component?
-            NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
-
-            ! Allocate memory for element list and element orientation
-            allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+            ! Calculate the list of elements adjacent to the boundary component
+            call bdraux_getElementsAtBdrComp(iboundaryComp,&
+                rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
+                celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+            
+            ! Check if element distribution is empty
+            if (NELbdc .le. 0) cycle
             
             ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvector%p_rspatialDiscr%RelementDistr(1)%celement,&
+                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 CUB_G1_1D, NELbdc)
             call linf_allocAssemblyData(rvectorAssembly)
-
-            ! Determine the element numbers and their orientation at the boundary
-            iel = 0
-            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
-
-              iel = iel+1
-
-              ! Element number
-              IelementList(iel) = p_IelementsAtBoundary(idx)
-
-              ! Element orientation, i.e. the local number of the boundary vertex
-              if (p_InodalProperty(&
-                  p_IverticesAtElement(1,IelementList(iel))).eq. ibdc) then
-                IelementOrientation(iel) = 1
-              elseif (p_InodalProperty(&
-                  p_IverticesAtElement(2,IelementList(iel))).eq. ibdc) then
-                IelementOrientation(iel) = 2
-              else
-                call output_line('Unable to determine element orientation!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
-              end if
-            end do
             
-            ! Assemble the data for all elements
-            call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
-                rvector, ibdc, IelementList, IelementOrientation,&
+            ! Assemble the data all elements
+            call linf_assembleSubmeshVectorBdr1D (rvectorAssembly, rvector,&
+                iboundaryComp, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 fcoeff_buildVectorScBdr1D_sim, rcollection)
-            
+          
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
-            
-            ! Release memory
-            deallocate(IelementList, IelementOrientation)
-            
-          end do
-
-        end if
-        
-      case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
-      end select
-      
-    else
-      
-      ! Set pointers
-      p_RelementDistr => rvector%p_rspatialDiscr%RelementDistr
-      call storage_getbase_int (rvector%p_rspatialDiscr%h_IelementDistr,&
-          p_IelementDistr)
-
-      select case(rvector%cdataType)
-        
-      case(ST_DOUBLE)
-        
-        if (present(iboundaryComp)) then
           
-          ! Allocate memory for element list and element orientation
-          allocate(IelementList(1), IelementOrientation(1))
-
-          ! Process each element separately; this is not the most
-          ! efficient way but in general there is exactly one element
-          ! per boundary so that a more efficient/complicated
-          ! implementatio n will not pay-off in practice
-          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
-
-            ! Determine the element number and its orientation at the boundary
-            IelementList(1) = p_IelementsAtBoundary(idx)
-            if (p_InodalProperty(&
-                p_IverticesAtElement(1,IelementList(1))) .eq. iboundaryComp) then
-              IelementOrientation(1) = 1
-            elseif (p_InodalProperty(&
-                p_IverticesAtElement(2,IelementList(1))) .eq. iboundaryComp) then
-              IelementOrientation(1) = 2
-            else
-              call output_line('Unable to determine element orientation!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
-            end if
-            
-            ! Initialise a vector assembly structure for one element
-            call linf_initAssembly(rvectorAssembly, rform,&
-                p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
-                CUB_G1_1D, 1)
-            call linf_allocAssemblyData(rvectorAssembly)
-          
-            ! Assemble the data for one element
-            call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
-                rvector, iboundaryComp, IelementList, IelementOrientation,&
-                fcoeff_buildVectorScBdr1D_sim, rcollection)
-            
-            ! Release the assembly structure.
-            call linf_doneAssembly(rvectorAssembly)
-
           end do
-
+          
           ! Release memory
           deallocate(IelementList, IelementOrientation)
-
-        else
-
-          ! Allocate memory for element list and element orientation
-          allocate(IelementList(1), IelementOrientation(1))
           
-          ! Loop over all boundary components and call 
-          ! the calculation routines for that
-          do ibdc = 1, p_rtriangulation%nbct
+        else
+          
+          ! Loop over the element distributions.
+          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
             
-            ! Process each element separately; this is not the most
-            ! efficient way but in general there is exactly one element
-            ! per boundary so that a more efficient/complicated
-            ! implementatio n will not pay-off in practice
-            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+            ! Check if element distribution is empty
+            if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            
+            ! Loop over all boundary components and call 
+            ! the calculation routines for that
+            do ibdc = 1, p_rtriangulation%nbct
+            
+              ! Calculate total number of elements adjacent to the boundary
+              NELbdc = bdraux_getNELAtBdrComp(ibdc, p_rtriangulation)
               
-              ! Determine the element number and its orientation at the boundary
-              IelementList(1) = p_IelementsAtBoundary(idx)
-              if (p_InodalProperty(&
-                  p_IverticesAtElement(1,IelementList(1))) .eq. ibdc) then
-                IelementOrientation(1) = 1
-              elseif (p_InodalProperty(&
-                  p_IverticesAtElement(2,IelementList(1))) .eq. ibdc) then
-                IelementOrientation(1) = 2
-              else
-                call output_line('Unable to determine element orientation!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
-              end if
+              ! Allocate memory for element list and element orientation
+              allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+              
+              ! Calculate the list of elements adjacent to the boundary component
+              call bdraux_getElementsAtBdrComp(ibdc,&
+                  rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
+                  celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+              
+              ! Check if element distribution is empty
+              if (NELbdc .le. 0) cycle
               
               ! Initialise a vector assembly structure for one element
               call linf_initAssembly(rvectorAssembly, rform,&
-                  p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
-                  CUB_G1_1D, 1)
+                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                  CUB_G1_1D, NELbdc)
               call linf_allocAssemblyData(rvectorAssembly)
               
               ! Assemble the data for one element
-              call linf_assembleSubmeshVectorBdr1D (rvectorAssembly,&
-                  rvector, ibdc, IelementList, IelementOrientation,&
+              call linf_assembleSubmeshVectorBdr1D (rvectorAssembly, rvector,&
+                  iboundaryComp, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                   fcoeff_buildVectorScBdr1D_sim, rcollection)
               
               ! Release the assembly structure.
               call linf_doneAssembly(rvectorAssembly)
+              
+              ! Release memory
+              deallocate(IelementList, IelementOrientation)
 
-            end do
-            
-          end do
+            end do ! ibdc
 
-          ! Release memory
-          deallocate(IelementList, IelementOrientation)
+          end do ! ielementDistr
           
         end if
         
@@ -1480,16 +1340,10 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistr
     type(t_linfVectorAssembly) :: rvectorAssembly
     type(t_triangulation), pointer :: p_rtriangulation
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:), pointer :: p_IboundaryCpIdx
-    integer, dimension(:), pointer :: p_IelementDistr
-    integer, dimension(:), pointer :: p_IelementsAtBoundary
-    integer, dimension(:), pointer :: p_InodalProperty
     integer, dimension(:), pointer :: IelementList, IelementOrientation
-    integer :: ibdc,idx,iel,NELbdc
+    integer :: ibdc,ielementDistr,NELbdc
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
@@ -1523,19 +1377,10 @@ contains
     
     ! Set pointer for quicker access
     p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
-
-    ! Set pointers
-    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-    call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary,&
-        p_IelementsAtBoundary)
-    call storage_getbase_int (p_rtriangulation%h_InodalProperty,&
-        p_InodalProperty)
-    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
-        p_IboundaryCpIdx)
-
+    
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+    if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
       
       select case(rvector%cdataType)
         
@@ -1544,209 +1389,87 @@ contains
         if (present(iboundaryComp)) then
           
           ! Number of elements on that boundary component?
-          NELbdc = p_IboundaryCpIdx(iboundaryComp+1)-p_IboundaryCpIdx(iboundaryComp)
+          NELbdc = bdraux_getNELAtBdrComp(iboundaryComp, p_rtriangulation)
           
           ! Allocate memory for element list and element orientation
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+
+          ! Loop over the element distributions.
+          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
+
+            ! Calculate the list of elements adjacent to the boundary component
+            call bdraux_getElementsAtBdrComp(iboundaryComp,&
+                rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
+                celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
           
-          ! Initialise a vector assembly structure for all elements
-          call linf_initAssembly(rvectorAssembly, rform,&
-              rvector%p_rspatialDiscr%RelementDistr(1)%celement,&
-              CUB_G1_1D, NELbdc)
-          call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
-          
-          ! Determine the element numbers and their orientation at the boundary
-          iel = 0
-          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
-
-            iel = iel+1
-
-            ! Element number
-            IelementList(iel) = p_IelementsAtBoundary(idx)
-
-            ! Element orientation, i.e. the local number of the boundary vertex
-            if (p_InodalProperty(&
-                p_IverticesAtElement(1,IelementList(iel))).eq. iboundaryComp) then
-              IelementOrientation(iel) = 1
-            elseif (p_InodalProperty(&
-                p_IverticesAtElement(2,IelementList(iel))).eq. iboundaryComp) then
-              IelementOrientation(iel) = 2
-            else
-              call output_line('Unable to determine element orientation!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
-            end if
-          end do
-          
-          ! Assemble the data for all elements
-          call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
-              iboundaryComp, IelementList, IelementOrientation,&
-              fcoeff_buildVectorBlBdr1D_sim, rcollection)
-
-          ! Release the assembly structure.
-          call linf_doneAssembly(rvectorAssembly)
-
-          ! Release memory
-          deallocate(IelementList, IelementOrientation)
-
-        else
-          
-          ! Loop over all boundary components and call 
-          ! the calculation routines for that
-          do ibdc = 1, p_rtriangulation%nbct
+            ! Check if element distribution is empty
+            if (NELbdc .le. 0) cycle
             
-            ! Number of elements on that boundary component?
-            NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
-
-            ! Allocate memory for element list and element orientation
-            allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
-            
-            ! Initialise a vector assembly structure for all element
+            ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
-                rvector%p_rspatialDiscr%RelementDistr(1)%celement,&
+                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 CUB_G1_1D, NELbdc)
-            call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
-
-            ! Determine the element numbers and their orientation at the boundary
-            iel = 0
-            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
-
-              iel = iel+1
-
-              ! Element number
-              IelementList(iel) = p_IelementsAtBoundary(idx)
-
-              ! Element orientation, i.e. the local number of the boundary vertex
-              if (p_InodalProperty(&
-                  p_IverticesAtElement(1,IelementList(iel))).eq. ibdc) then
-                IelementOrientation(iel) = 1
-              elseif (p_InodalProperty(&
-                  p_IverticesAtElement(2,IelementList(iel))).eq. ibdc) then
-                IelementOrientation(iel) = 2
-              else
-                call output_line('Unable to determine element orientation!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
-              end if
-            end do
+            call linf_allocAssemblyData(rvectorAssembly)
             
-            ! Assemble the data for all element
+            ! Assemble the data all elements
             call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
-                ibdc, IelementList, IelementOrientation,&
-                fcoeff_buildVectorBlBdr1D_sim, rcollection)
-
-            ! Release the assembly structure.
-            call linf_doneAssembly(rvectorAssembly)
-            
-            ! Release memory
-            deallocate(IelementList, IelementOrientation)
-
-          end do
-
-        end if
-        
-      case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
-      end select
-      
-    else
-      
-      ! Set pointers
-      p_RelementDistr => rvector%p_rspatialDiscr%RelementDistr
-      call storage_getbase_int (rvector%p_rspatialDiscr%h_IelementDistr,&
-          p_IelementDistr)
-
-      select case(rvector%cdataType)
-        
-      case(ST_DOUBLE)
-        
-        if (present(iboundaryComp)) then
-          
-          ! Allocate memory for element list and element orientation
-          allocate(IelementList(1), IelementOrientation(1))
-
-          ! Process each element separately; this is not the most
-          ! efficient way but in general there is exactly one element
-          ! per boundary so that a more efficient/complicated
-          ! implementatio n will not pay-off in practice
-          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
-
-            ! Determine the element number and its orientation at the boundary
-            IelementList(1) = p_IelementsAtBoundary(idx)
-            if (p_InodalProperty(&
-                p_IverticesAtElement(1,IelementList(1))) .eq. iboundaryComp) then
-              IelementOrientation(1) = 1
-            elseif (p_InodalProperty(&
-                p_IverticesAtElement(2,IelementList(1))) .eq. iboundaryComp) then
-              IelementOrientation(1) = 2
-            else
-              call output_line('Unable to determine element orientation!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
-            end if
-            
-            ! Initialise a vector assembly structure for one element
-            call linf_initAssembly(rvectorAssembly, rform,&
-                p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
-                CUB_G1_1D, 1)
-            call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
-            
-            ! Assemble the data for one element
-            call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
-                iboundaryComp, IelementList, IelementOrientation,&
+                iboundaryComp, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 fcoeff_buildVectorBlBdr1D_sim, rcollection)
             
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
-
+            
           end do
 
           ! Release memory
           deallocate(IelementList, IelementOrientation)
-          
+
         else
-
-          ! Allocate memory for element list and element orientation
-          allocate(IelementList(1), IelementOrientation(1))
-
-          ! Loop over all boundary components and call 
-          ! the calculation routines for that
-          do ibdc = 1, p_rtriangulation%nbct
+          
+          ! Loop over the element distributions.
+          do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
             
-            ! Process each element separately; this is not the most
-            ! efficient way but in general there is exactly one element
-            ! per boundary so that a more efficient/complicated
-            ! implementatio n will not pay-off in practice
-            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+            ! Check if element distribution is empty
+            if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            
+            ! Loop over all boundary components and call 
+            ! the calculation routines for that
+            do ibdc = 1, p_rtriangulation%nbct
               
-              ! Determine the element number and its orientation at the boundary
-              IelementList(1) = p_IelementsAtBoundary(idx)
-              if (p_InodalProperty(&
-                  p_IverticesAtElement(1,IelementList(1))) .eq. ibdc) then
-                IelementOrientation(1) = 1
-              elseif (p_InodalProperty(&
-                  p_IverticesAtElement(2,IelementList(1))) .eq. ibdc) then
-                IelementOrientation(1) = 2
-              else
-                call output_line('Unable to determine element orientation!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
-              end if
+              ! Calculate total number of elements adjacent to the boundary
+              NELbdc = bdraux_getNELAtBdrComp(ibdc, p_rtriangulation)
+              
+              ! Allocate memory for element list and element orientation
+              allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+              
+              ! Calculate the list of elements adjacent to the boundary component
+              call bdraux_getElementsAtBdrComp(ibdc,&
+                  rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
+                  celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+              
+              ! Check if element distribution is empty
+              if (NELbdc .le. 0) cycle
               
               ! Initialise a vector assembly structure for one element
               call linf_initAssembly(rvectorAssembly, rform,&
-                  p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
-                  CUB_G1_1D, 1)
-              call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
+                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                  CUB_G1_1D, NELbdc)
+              call linf_allocAssemblyData(rvectorAssembly)
               
               ! Assemble the data for one element
               call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
-                  ibdc, IelementList, IelementOrientation,&
+                  ibdc, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                   fcoeff_buildVectorBlBdr1D_sim, rcollection)
               
               ! Release the assembly structure.
               call linf_doneAssembly(rvectorAssembly)
+              
+              ! Release memory
+              deallocate(IelementList, IelementOrientation)
 
-            end do
-          
-          end do
+            end do ! ibdc
+
+          end do ! ielementDistr
           
           ! Release memory
           deallocate(IelementList, IelementOrientation)
@@ -5461,17 +5184,11 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistr
     type(t_linfVectorAssembly) :: rvectorAssembly
     type(t_triangulation), pointer :: p_rtriangulation
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:), pointer :: p_IboundaryCpIdx
-    integer, dimension(:), pointer :: p_IelementDistr
-    integer, dimension(:), pointer :: p_IelementsAtBoundary
-    integer, dimension(:), pointer :: p_InodalProperty
     integer, dimension(:), pointer :: IelementList, IelementOrientation
-    integer :: ibdc,idx,iel,iblock,NELbdc
+    integer :: ibdc,ielementDistr,NELbdc,iblock
     logical :: bcompatible
 
     ! If the vector does not exist, stop here.
@@ -5522,19 +5239,10 @@ contains
 
     ! Set pointer for quicker access
     p_rtriangulation => p_rspatialDiscr%p_rtriangulation
-
-    ! Set pointers
-    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-    call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary,&
-        p_IelementsAtBoundary)
-    call storage_getbase_int (p_rtriangulation%h_InodalProperty,&
-        p_InodalProperty)
-    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
-        p_IboundaryCpIdx)
     
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+    if ((p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
+        (p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
       
       select case(rvectorBlock%cdataType)
         
@@ -5543,209 +5251,84 @@ contains
         if (present(iboundaryComp)) then
           
           ! Number of elements on that boundary component?
-          NELbdc = p_IboundaryCpIdx(iboundaryComp+1)-p_IboundaryCpIdx(iboundaryComp)
+          NELbdc = bdraux_getNELAtBdrComp(iboundaryComp, p_rtriangulation)
           
           ! Allocate memory for element list and element orientation
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
 
-          ! Initialise a vector assembly structure for all elements
-          call linf_initAssembly(rvectorAssembly, rform,&
-              p_rspatialDiscr%RelementDistr(1)%celement, CUB_G1_1D, NELbdc)
-          call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
+          ! Loop over the element distributions.
+          do ielementDistr = 1,p_rspatialDiscr%inumFESpaces
 
-          ! Determine the element numbers and their orientation
-          iel = 0
-          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
-
-            iel = iel+1
-
-            ! Element number
-            IelementList(iel) = p_IelementsAtBoundary(idx)
-
-            ! Element orientation, i.e. the local number of the boundary vertex
-            if (p_InodalProperty(&
-                p_IverticesAtElement(1,IelementList(iel))).eq. iboundaryComp) then
-              IelementOrientation(iel) = 1
-            elseif (p_InodalProperty(&
-                p_IverticesAtElement(2,IelementList(iel))).eq. iboundaryComp) then
-              IelementOrientation(iel) = 2
-            else
-              call output_line('Unable to determine element orientation!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
-            end if
-          end do
-          
-          ! Assemble the data for all elements
-          call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
-              rvectorBlock, iboundaryComp, IelementList, IelementOrientation,&
-              fcoeff_buildVectorBlBdr1D_sim, rcollection)
-
-          ! Release the assembly structure.
-          call linf_doneAssembly(rvectorAssembly)
-
-          ! Release memory
-          deallocate(IelementList, IelementOrientation)
-
-        else
-          
-          ! Loop over all boundary components and call 
-          ! the calculation routines for that
-          do ibdc = 1, p_rtriangulation%nbct
-
-            ! Number of elements on that boundary component?
-            NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
-
-            ! Allocate memory for element list and element orientation
-            allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
-
+            ! Calculate the list of elements adjacent to the boundary component
+            call bdraux_getElementsAtBdrComp(iboundaryComp,&
+                p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
+                celement=p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+            
             ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
-                p_rspatialDiscr%RelementDistr(1)%celement, CUB_G1_1D, NELbdc)
-            call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
-
-            ! Determine the element numbers and their orientation at the boundary
-            iel = 0
-            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
-
-              iel = iel+1
-
-              ! Element number
-              IelementList(iel) = p_IelementsAtBoundary(idx)
-
-              ! Element orientation, i.e. the local number of the boundary vertex
-              if (p_InodalProperty(&
-                  p_IverticesAtElement(1,IelementList(iel))).eq. ibdc) then
-                IelementOrientation(iel) = 1
-              elseif (p_InodalProperty(&
-                  p_IverticesAtElement(2,IelementList(iel))).eq. ibdc) then
-                IelementOrientation(iel) = 2
-              else
-                call output_line('Unable to determine element orientation!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
-              end if
-            end do
+                p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                CUB_G1_1D, NELbdc)
+            call linf_allocAssemblyData(rvectorAssembly)
             
-            ! Assemble the data for all element
-            call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
-                rvectorBlock, ibdc, IelementList, IelementOrientation,&
-                fcoeff_buildVectorBlBdr1D_sim, rcollection)
-
-            ! Release the assembly structure.
-            call linf_doneAssembly(rvectorAssembly)
-            
-            ! Release memory
-            deallocate(IelementList, IelementOrientation)
-
-          end do
-
-        end if
-        
-      case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
-      end select
-      
-    else
-      
-      ! Set pointers
-      p_RelementDistr => p_rspatialDiscr%RelementDistr
-      call storage_getbase_int (p_rspatialDiscr%h_IelementDistr, p_IelementDistr)
-
-      select case(rvectorBlock%cdataType)
-        
-      case(ST_DOUBLE)
-        
-        if (present(iboundaryComp)) then
-      
-          ! Allocate memory for element list and element orientation
-          allocate(IelementList(1), IelementOrientation(1))
-
-          ! Process each element separately; this is not the most
-          ! efficient way but in general there is exactly one element
-          ! per boundary so that a more efficient/complicated
-          ! implementatio n will not pay-off in practice
-          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
-
-            ! Determine the element number and its orientation at the boundary
-            IelementList(1) = p_IelementsAtBoundary(idx)
-            if (p_InodalProperty(&
-                p_IverticesAtElement(1,IelementList(1))) .eq. iboundaryComp) then
-              IelementOrientation(1) = 1
-            elseif (p_InodalProperty(&
-                p_IverticesAtElement(2,IelementList(1))) .eq. iboundaryComp) then
-              IelementOrientation(1) = 2
-            else
-              call output_line('Unable to determine element orientation!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
-            end if
-            
-            ! Initialise a vector assembly structure for one element
-            call linf_initAssembly(rvectorAssembly, rform,&
-                p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
-                CUB_G1_1D, 1)
-            call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
-            
-            ! Assemble the data for one element
+            ! Assemble the data all elements
             call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
                 rvectorBlock, iboundaryComp, IelementList, IelementOrientation,&
                 fcoeff_buildVectorBlBdr1D_sim, rcollection)
-
+            
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
-
+            
           end do
 
           ! Release memory
           deallocate(IelementList, IelementOrientation)
-          
+
         else
           
-          ! Allocate memory for element list and element orientation
-          allocate(IelementList(1), IelementOrientation(1))
-
-          ! Loop over all boundary components and call 
-          ! the calculation routines for that
-          do ibdc = 1, p_rtriangulation%nbct
+          ! Loop over the element distributions.
+          do ielementDistr = 1,p_rspatialDiscr%inumFESpaces
             
-            ! Process each element separately; this is not the most
-            ! efficient way but in general there is exactly one element
-            ! per boundary so that a more efficient/complicated
-            ! implementatio n will not pay-off in practice
-            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+            ! Check if element distribution is empty
+            if (p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+            
+            ! Loop over all boundary components and call 
+            ! the calculation routines for that
+            do ibdc = 1, p_rtriangulation%nbct
+            
+              ! Calculate total number of elements adjacent to the boundary
+              NELbdc = bdraux_getNELAtBdrComp(ibdc, p_rtriangulation)
               
-              ! Determine the element number and its orientation at the boundary
-              IelementList(1) = p_IelementsAtBoundary(idx)
-              if (p_InodalProperty(&
-                  p_IverticesAtElement(1,IelementList(1))) .eq. ibdc) then
-                IelementOrientation(1) = 1
-              elseif (p_InodalProperty(&
-                  p_IverticesAtElement(2,IelementList(1))) .eq. ibdc) then
-                IelementOrientation(1) = 2
-              else
-                call output_line('Unable to determine element orientation!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
-              end if
+              ! Allocate memory for element list and element orientation
+              allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+              
+              ! Calculate the list of elements adjacent to the boundary component
+              call bdraux_getElementsAtBdrComp(ibdc,&
+                  p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
+                  celement=p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+              
+              ! Check if element distribution is empty
+              if (NELbdc .le. 0) cycle
               
               ! Initialise a vector assembly structure for one element
               call linf_initAssembly(rvectorAssembly, rform,&
-                  p_RelementDistr(p_IelementDistr(IelementList(1)))%celement,&
-                  CUB_G1_1D, 1)
-              call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
+                  p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                  CUB_G1_1D, NELbdc)
+              call linf_allocAssemblyData(rvectorAssembly)
               
               ! Assemble the data for one element
-              call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
-                  rvectorBlock, ibdc, IelementList, IelementOrientation,&
+              call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly, rvectorBlock,&
+                  ibdc, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                   fcoeff_buildVectorBlBdr1D_sim, rcollection)
-
+              
               ! Release the assembly structure.
               call linf_doneAssembly(rvectorAssembly)
+              
+              ! Release memory
+              deallocate(IelementList, IelementOrientation)
 
-            end do
+            end do ! ibdc
 
-          end do
-
-          ! Release memory
-          deallocate(IelementList, IelementOrientation)
+          end do ! ielementDistr
           
         end if
 

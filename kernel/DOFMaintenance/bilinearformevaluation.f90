@@ -6987,17 +6987,10 @@ contains
 !</subroutine>
   
   ! local variables
-  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistrTest
-  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistrTrial
   type(t_bilfMatrixAssembly) :: rmatrixAssembly
   type(t_triangulation), pointer :: p_rtriangulation
-  integer, dimension(:,:), pointer :: p_IverticesAtElement
-  integer, dimension(:), pointer :: p_IboundaryCpIdx
-  integer, dimension(:), pointer :: p_IelementDistrTest, p_IelementDistrTrial
-  integer, dimension(:), pointer :: p_InodalProperty
-  integer, dimension(:), pointer :: p_IelementsAtBoundary
   integer, dimension(:), pointer :: IelementList, IelementOrientation
-  integer :: ibdc,idx,iel,NELbdc,ccType
+  integer :: ibdc,ielementDistr,NELbdc,ccType
 
   ! The matrix must be unsorted, otherwise we can not set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
@@ -7033,23 +7026,13 @@ contains
     call sys_halt()
   end if
 
-  ! Set pointers
-  call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
-      p_IverticesAtElement)
-  call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary,&
-      p_IelementsAtBoundary)
-  call storage_getbase_int (p_rtriangulation%h_InodalProperty,&
-      p_InodalProperty)
-  call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
-      p_IboundaryCpIdx)
-  
   ccType = BILF_MATC_ELEMENTBASED
   if (present(cconstrType)) ccType = cconstrType
 
   ! Do we have a uniform triangulation? Would simplify a lot...
   select case (rmatrix%p_rspatialDiscrTest%ccomplexity)
-  case (SPDISC_UNIFORM)
-    ! Uniform discretisations
+  case (SPDISC_UNIFORM,SPDISC_CONFORMAL)
+    ! Uniform and conformal discretisations
     select case (rmatrix%cdataType)
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
@@ -7066,237 +7049,90 @@ contains
         if (present(iboundaryComp)) then
 
           ! Number of elements on that boundary component?
-          NELbdc = p_IboundaryCpIdx(iboundaryComp+1)-p_IboundaryCpIdx(iboundaryComp)
+          NELbdc = bdraux_getNELAtBdrComp(iboundaryComp, p_rtriangulation)
 
           ! Allocate memory for element list and element orientation
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
 
-          ! Initialise a matrix assembly structure for all elements
-          call bilf_initAssembly(rmatrixAssembly, rform,&
-              rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement,&
-              rmatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement,&
-              CUB_G1_1D, NELbdc)
-          call bilf_allocAssemblyData(rmatrixAssembly)
-          
-          ! Determine the element numbers and their orientation at the boundary
-          iel = 0
-          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
+          ! Loop over the element distributions.
+          do ielementDistr = 1,rmatrix%p_rspatialDiscrTrial%inumFESpaces
             
-            iel = iel+1
-            
-            ! Element number
-            IelementList(iel) = p_IelementsAtBoundary(idx)
-            
-            ! Element orientation, i.e. the local number of the boundary vertex
-            if (p_InodalProperty(&
-                p_IverticesAtElement(1,IelementList(iel))).eq. iboundaryComp) then
-              IelementOrientation(iel) = 1
-            elseif (p_InodalProperty(&
-                p_IverticesAtElement(2,IelementList(iel))).eq. iboundaryComp) then
-              IelementOrientation(iel) = 2
-            else
-              call output_line('Unable to determine element orientation!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
-            end if
-          end do
-          
-          ! Assemble the data for all elements
-          call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
-              iboundaryComp, IelementList, IelementOrientation,&
-              ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
-          
-          ! Release the assembly structure.
-          call bilf_doneAssembly(rmatrixAssembly)
+            ! Calculate the list of elements adjacent to the boundary component
+            call bdraux_getElementsAtBdrComp(iboundaryComp,&
+                rmatrix%p_rspatialDiscrTest, NELbdc, IelementList, IelementOrientation,&
+                celement=rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
 
-          ! Release memory
-          deallocate(IelementList, IelementOrientation)
-          
-        else
-          
-          ! Loop over all boundary components and call 
-          ! the calculation routines for that
-          do ibdc = 1, p_rtriangulation%nbct
+            ! Check if element distribution is empty
+            if (NELbdc .le. 0) cycle
             
-            ! Number of elements on that boundary component?
-            NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
-            
-            ! Allocate memory for element list and element orientation
-            allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
-
             ! Initialise a matrix assembly structure for all elements
             call bilf_initAssembly(rmatrixAssembly, rform,&
-                rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement,&
-                rmatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement,&
+                rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
+                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
                 CUB_G1_1D, NELbdc)
             call bilf_allocAssemblyData(rmatrixAssembly)
-
-            ! Determine the element numbers and their orientation at the boundary
-            iel = 0
-            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
-              
-              iel = iel+1
-
-              ! Element number
-              IelementList(iel) = p_IelementsAtBoundary(idx)
-
-              ! Element orientation, i.e. the local number of the boundary vertex
-              if (p_InodalProperty(&
-                  p_IverticesAtElement(1,IelementList(iel))).eq. ibdc) then
-                IelementOrientation(iel) = 1
-              elseif (p_InodalProperty(&
-                  p_IverticesAtElement(2,IelementList(iel))).eq. ibdc) then
-                IelementOrientation(iel) = 2
-              else
-                call output_line('Unable to determine element orientation!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
-              end if
-            end do
-
+            
             ! Assemble the data for all elements
             call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
-                ibdc, IelementList, IelementOrientation,&
+                iboundaryComp, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
-
+          
             ! Release the assembly structure.
             call bilf_doneAssembly(rmatrixAssembly)
-            
-            ! Release memory
-            deallocate(IelementList, IelementOrientation)
-            
+
           end do
-          
-        end if
 
-      case default
-        call output_line ('Not supported matrix structure!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
-        call sys_halt()
-      end select
-      
-    case default
-      call output_line ('Single precision matrices currently not supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
-      call sys_halt()
-    end select
-
-  case(SPDISC_CONFORMAL)
-    ! Conformal discretisations
-    
-    ! Set pointers
-    p_RelementDistrTest => rmatrix%p_rspatialDiscrTest%RelementDistr
-    p_RelementDistrTrial => rmatrix%p_rspatialDiscrTrial%RelementDistr
-    call storage_getbase_int (rmatrix%p_rspatialDiscrTest%h_IelementDistr,&
-        p_IelementDistrTest)
-    call storage_getbase_int (rmatrix%p_rspatialDiscrTrial%h_IelementDistr,&
-        p_IelementDistrTrial)
-
-    select case (rmatrix%cdataType)
-    case (ST_DOUBLE) 
-      ! Which matrix structure do we have?
-      select case (rmatrix%cmatrixFormat) 
-      case (LSYSSC_MATRIX9)
-        
-        ! Probably allocate/clear the matrix
-        if (rmatrix%h_DA .eq. ST_NOHANDLE) then
-          call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
-        else
-          if (bclear) call lsyssc_clearMatrix (rmatrix)
-        end if
-        
-        if (present(iboundaryComp)) then
-          
-          ! Allocate memory for element list and element orientation
-          allocate(IelementList(1), IelementOrientation(1))
-          
-          ! Process each element separately; this is not the most
-          ! efficient way but in general there is exactly one element
-          ! per boundary so that a more efficient/complicated
-          ! implementatio n will not pay-off in practice
-          do idx = p_IboundaryCpIdx(iboundaryComp),p_IboundaryCpIdx(iboundaryComp+1)-1
-            
-            ! Determine the element number and its orientation at the boundary
-            IelementList(1) = p_IelementsAtBoundary(idx)
-            if (p_InodalProperty(&
-                p_IverticesAtElement(1,IelementList(1))) .eq. iboundaryComp) then
-              IelementOrientation(1) = 1
-            elseif (p_InodalProperty(&
-                p_IverticesAtElement(2,IelementList(1))) .eq. iboundaryComp) then
-              IelementOrientation(1) = 2
-            else
-              call output_line('Unable to determine element orientation!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
-            end if
-            
-            ! Initialise a matrix assembly structure for one element
-            call bilf_initAssembly(rmatrixAssembly, rform,&
-                p_RelementDistrTest(p_IelementDistrTest(IelementList(1)))%celement,&
-                p_RelementDistrTrial(p_IelementDistrTrial(IelementList(1)))%celement,&
-                CUB_G1_1D, 1)
-            
-            ! Assemble the data for one element
-            call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
-                iboundaryComp, IelementList, IelementOrientation,&
-                ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
-            call bilf_allocAssemblyData(rmatrixAssembly)
-            
-            ! Release the assembly structure.
-            call bilf_doneAssembly(rmatrixAssembly)
-            
-          end do
-          
           ! Release memory
           deallocate(IelementList, IelementOrientation)
           
         else
           
-          ! Allocate memory for element list and element orientation
-          allocate(IelementList(1), IelementOrientation(1))
-          
-          ! Loop over all boundary components and call 
-          ! the calculation routines for that
-          do ibdc = 1, p_rtriangulation%nbct
+          ! Loop over the element distributions.
+          do ielementDistr = 1,rmatrix%p_rspatialDiscrTrial%inumFESpaces
+            
+            ! Check if element distribution is empty
+            if (rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%NEL .le. 0) cycle
 
-            ! Process each element separately; this is not the most
-            ! efficient way but in general there is exactly one element
-            ! per boundary so that a more efficient/complicated
-            ! implementatio n will not pay-off in practice
-            do idx = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+            ! Loop over all boundary components and call 
+            ! the calculation routines for that
+            do ibdc = 1, p_rtriangulation%nbct
               
-              ! Determine the element number and its orientation at the boundary
-              IelementList(1) = p_IelementsAtBoundary(idx)
-              if (p_InodalProperty(&
-                  p_IverticesAtElement(1,IelementList(1))) .eq. ibdc) then
-                IelementOrientation(1) = 1
-              elseif (p_InodalProperty(&
-                  p_IverticesAtElement(2,IelementList(1))) .eq. ibdc) then
-                IelementOrientation(1) = 2
-              else
-                call output_line('Unable to determine element orientation!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
-              end if
+              ! Calculate total number of elements adjacent to the boundary
+              NELbdc = bdraux_getNELAtBdrComp(ibdc, p_rtriangulation)
               
-              ! Initialise a matrix assembly structure for one element
+              ! Allocate memory for element list and element orientation
+              allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+              
+              ! Calculate the list of elements adjacent to the boundary component
+              call bdraux_getElementsAtBdrComp(ibdc, rmatrix%p_rspatialDiscrTest,&
+                  NELbdc, IelementList, IelementOrientation,&
+                  celement=rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
+              
+              ! Check if element distribution is empty
+              if (NELbdc .le. 0) cycle
+              
+              ! Initialise a matrix assembly structure for all elements
               call bilf_initAssembly(rmatrixAssembly, rform,&
-                  p_RelementDistrTest(p_IelementDistrTest(IelementList(1)))%celement,&
-                  p_RelementDistrTrial(p_IelementDistrTrial(IelementList(1)))%celement,&
-                  CUB_G1_1D, 1)
-              
-              ! Assemble the data for one element
-              call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
-                  ibdc, IelementList, IelementOrientation,&
-                  ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
+                  rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
+                  rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+                  CUB_G1_1D, NELbdc)
               call bilf_allocAssemblyData(rmatrixAssembly)
               
+              ! Assemble the data for all elements
+              call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
+                  ibdc, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
+                  ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
+
               ! Release the assembly structure.
               call bilf_doneAssembly(rmatrixAssembly)
               
-            end do
+              ! Release memory
+              deallocate(IelementList, IelementOrientation)
+            
+            end do ! ibdc
 
-          end do
-        
-          ! Release memory
-          deallocate(IelementList, IelementOrientation)
-        
+          end do ! ielementDistr
+          
         end if
 
       case default
