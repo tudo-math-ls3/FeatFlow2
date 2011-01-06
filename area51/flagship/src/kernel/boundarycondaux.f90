@@ -398,6 +398,7 @@ contains
         read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&
             p_BisSegClosed(icomp), keyword,&
             p_IbdrCompPeriodic(icomp), p_IbdrCondPeriodic(icomp)
+        rboundaryCondition%bPeriodic = .true.
       elseif (nexpr .gt. 0) then
         ! Reread parameters from file to obtain mathematical expressions
         backspace iunit
