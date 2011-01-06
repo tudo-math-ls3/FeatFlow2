@@ -1395,7 +1395,7 @@ contains
         ! Co stabilisation in the convective parts here.            
         ! rstabilisation = t_convecStabilisation(&
         !    rnonlinearSpatialMatrix%iupwind2,rnonlinearSpatialMatrix%dupsam2)
-        rstabilisation = t_settings_stabil(0,0.0_DP)
+        rstabilisation = t_settings_stabil(0,0.0_DP,1)
 
         select case (rnonlinearSpatialMatrix%idualSol)
         case (1)
@@ -3244,7 +3244,7 @@ contains
       ! No stabilisation here
       ! rstabilisation = t_convecStabilisation(&
       !     rnonlinearSpatialMatrix%iupwind2,rnonlinearSpatialMatrix%dupsam2)
-      rstabilisation = t_settings_stabil(0,0.0_DP)
+      rstabilisation = t_settings_stabil(0,0.0_DP,1)
       
       call lsysbl_deriveSubvector(rx,rtempVectorX,1,2,.true.)
       call lsysbl_deriveSubvector(rd,rtempVectorB,4,5,.true.)
@@ -3258,7 +3258,7 @@ contains
       ! There is probably a 2nd reactive term involved stemming from
       ! the next timestep when Crank-Nicolson is used.
 
-      rstabilisation = t_settings_stabil(0,0.0_DP)
+      rstabilisation = t_settings_stabil(0,0.0_DP,1)
       
       call assembleConvectionDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorDual2,rtempVectorX,rtempVectorB,&
