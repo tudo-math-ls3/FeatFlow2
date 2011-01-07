@@ -3110,13 +3110,16 @@ contains
     
     select case (rpostprocessing%ioutputUCD)
     case (1)
-      call ucd_startGMV (rexport,UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS,p_rtriangulation,sfile)
+      call ucd_startGMV (rexport,&
+          UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS+UCD_FLAG_IGNOREDEADNODES,p_rtriangulation,sfile)
 
     case (2)
-      call ucd_startAVS (rexport,UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS,p_rtriangulation,sfile)
+      call ucd_startAVS (rexport,&
+          UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS+UCD_FLAG_IGNOREDEADNODES,p_rtriangulation,sfile)
           
     case (3)
-      call ucd_startVTK (rexport,UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS,p_rtriangulation,sfile)
+      call ucd_startVTK (rexport,&
+          UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS+UCD_FLAG_IGNOREDEADNODES,p_rtriangulation,sfile)
           
     case default
       call output_line ('Invalid UCD ooutput type.', &
