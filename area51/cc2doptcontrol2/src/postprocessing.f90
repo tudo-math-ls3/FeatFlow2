@@ -938,13 +938,13 @@ contains
           
           select case (rpostproc%ioutputUCD)
           case (1)
-            call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfilename)
+            call ucd_startGMV (rexport,UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS,p_rtriangulation,sfilename)
 
           case (2)
-            call ucd_startAVS (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfilename)
+            call ucd_startAVS (rexport,UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS,p_rtriangulation,sfilename)
                 
           case (3)
-            call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfilename)
+            call ucd_startVTK (rexport,UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS,p_rtriangulation,sfilename)
                 
           case default
             call output_line ('Invalid UCD ooutput type.', &
