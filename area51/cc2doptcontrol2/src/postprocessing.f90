@@ -503,7 +503,7 @@ contains
       call output_line ('Point values')
       call output_line ('------------')
       do i=1,npoints
-        write (sstr,"(A10,A,F9.4,A,F9.4,A,E16.10)") &
+        write (sstr,"(A10,A,F9.4,A,F9.4,A,E17.10)") &
             Sfctnames(1+rpostproc%p_ItypePointEval(2,i),&
             rpostproc%p_ItypePointEval(1,i)),&
             "(",rpostproc%p_DcoordsPointEval(1,i),",",rpostproc%p_DcoordsPointEval(2,i),") = ",Dvalues(i)
