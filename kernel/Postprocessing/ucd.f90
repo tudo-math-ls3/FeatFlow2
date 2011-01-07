@@ -203,6 +203,11 @@ module ucd
   ! Cannot be used with UCD_FLAG_BULBQUADRATIC.
   integer(I32), parameter, public :: UCD_FLAG_ONCEREFINED         = 2**3
 
+  ! Can be specified additionally to UCD_FLAG_USEEDGEMIDPOINTS and/or
+  ! UCD_FLAG_USEELEMENTMIDPOINTS. Prevents a warning if missing nodes are
+  ! not specified.
+  integer(I32), parameter, public :: UCD_FLAG_IGNOREDEADNODES = 2**4
+
 !</constantblock>
 
 !<constantblock description="Specification flags for variables. Bitfield.">
@@ -4602,9 +4607,9 @@ contains
             DdataMid(1:rexport%p_rtriangulation%NMT), &
             p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
                                                    rexport%p_rtriangulation%NMT))
-      else
+      else if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
         call output_line ('Warning. No edge midpoint data available!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased')
+            OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased')
       end if
     end if
     
@@ -4617,9 +4622,9 @@ contains
             p_Ddata(rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+1: &
                     rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+ &
                     rexport%p_rtriangulation%NEL))
-      else
+      else if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
         call output_line ('Warning. No element midpoint data available!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased')
+            OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased')
       end if
     end if    
 
