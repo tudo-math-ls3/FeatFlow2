@@ -264,7 +264,8 @@ contains
       end do
 
       ! Convert parameter values in length parametrisation
-      call boundary_convertParameterList(rdiscretisation%p_rboundary,&
+      if (present(DedgePosition))&
+          call boundary_convertParameterList(rdiscretisation%p_rboundary,&
           ibdc, DedgePosition(:,1:iel), DedgePosition(:,1:iel),&
           rboundaryRegion%cparType, BDR_PAR_LENGTH)
       
@@ -286,13 +287,15 @@ contains
         end do
         IelementOrientation(iel) = ilocaledge
         
-        ! Save the start parameter value of the edge -- in length parametrisation.
-        DedgePosition(1,iel) = boundary_convertParameter(rdiscretisation%p_rboundary,&
-            ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, BDR_PAR_LENGTH)
-        
-        ! Save the end parameter value of the edge -- in length parametrisation.
-        DedgePosition(2,iel) = boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
-            ibdc, BDR_PAR_LENGTH)
+        if (present(DedgePosition)) then
+          ! Save the start parameter value of the edge -- in length parametrisation.
+          DedgePosition(1,iel) = boundary_convertParameter(rdiscretisation%p_rboundary,&
+              ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, BDR_PAR_LENGTH)
+          
+          ! Save the end parameter value of the edge -- in length parametrisation.
+          DedgePosition(2,iel) = boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
+              ibdc, BDR_PAR_LENGTH)
+        end if
       end if
       
     else
@@ -337,10 +340,12 @@ contains
         end if
       end do
 
-      ! Convert parameter values in length parametrisation
-      call boundary_convertParameterList(rdiscretisation%p_rboundary,&
-          ibdc, DedgePosition(:,1:iel), DedgePosition(:,1:iel),&
-          rboundaryRegion%cparType, BDR_PAR_LENGTH)
+      if (present(DedgePosition)) then
+        ! Convert parameter values in length parametrisation
+        call boundary_convertParameterList(rdiscretisation%p_rboundary,&
+            ibdc, DedgePosition(:,1:iel), DedgePosition(:,1:iel),&
+            rboundaryRegion%cparType, BDR_PAR_LENGTH)
+      end if
 
       ! Handle the last edge differently
       if (boundary_isInRegion(rboundaryRegion, ibdc,&
