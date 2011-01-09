@@ -4847,8 +4847,8 @@ contains
         !
         ! Compute the Riemann invariants based on the computed (internal)
         ! state vector and the given freestream state vector and select
-        ! the Riemman invariant for each characteristic fields based on 
-        ! the sign of the corresponding eigenvalue.
+        ! the Riemman invariant for each characteristic field based on the
+        ! sign of the corresponding eigenvalue.
         
         ! Initialize values for function parser
         Dvalue = 0.0
@@ -4896,9 +4896,9 @@ contains
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-(2.0/(GAMMA-1.0))*cM
+              DstateM(1) = dvnM-2.0/(GAMMA-1.0)*cM
             else
-              DstateM(1) = dvnI-(2.0/(GAMMA-1.0))*cI
+              DstateM(1) = dvnI-2.0/(GAMMA-1.0)*cI
             end if
 
             if (dvnI .lt. SYS_EPSREAL) then
@@ -5012,7 +5012,7 @@ contains
             end do
 
             ! Compute convervative variables
-            DstateM(4) = DstateM(4)*(1.0/(GAMMA-1.0))&
+            DstateM(4) = DstateM(4)/(GAMMA-1.0)&
                        + DstateM(1)*0.5*(DstateM(2)**2+DstateM(3)**2)
             DstateM(2) = DstateM(1)*DstateM(2)
             DstateM(3) = DstateM(1)*DstateM(3)
@@ -5062,7 +5062,7 @@ contains
         ! Subsonic pressure-density inlet boundary conditions:
         !
         ! Prescribe the density, pressure and tangential velocity at the inlet
-        
+
         ! Initialize values for function parser
         Dvalue = 0.0
         Dvalue(NDIM3D+1) = dtime
@@ -5108,13 +5108,15 @@ contains
             ! invariant and the prescribed boundary values
             w1 = w4-4.0/(GAMMA-1.0)*cM
 
+            ! Compute the normal velocity based on the first and fourth Riemann
+            ! invarient
+            dvnM = 0.5*(w1+w4)
+
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*(Dnx(ipoint,iel)*0.5*(w1+w4)-Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(Dny(ipoint,iel)*0.5*(w1+w4)+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = (1.0/(GAMMA-1.0))*pM+&
-                0.5*rM*((Dnx(ipoint,iel)*0.5*(w1+w4)-Dny(ipoint,iel)*dvtM)**2+&
-                        (Dny(ipoint,iel)*0.5*(w1+w4)+Dnx(ipoint,iel)*dvtM)**2)
+            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
@@ -5178,12 +5180,12 @@ contains
             
             ! Compute first Riemann invariant based on fourth Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(4)-4.0/(GAMMA-1.0)*sqrt(max(SYS_EPSREAL,&
-                GAMMA*pM/Daux1((ipoint-1)*NVAR2D+1,iel)*(pI/pM)**(1.0/GAMMA)))
+            DstateM(1) = DstateM(4)-4.0/(GAMMA-1.0)*sqrt(&
+                GAMMA*pM/Daux1((ipoint-1)*NVAR2D+1,iel)*(pI/pM)**(1.0/GAMMA))
 
             ! Convert Riemann invariants into conservative state variables
             cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
-            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
+            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
             pM = rM*cM*cM/GAMMA
             dvnM = 0.5*(DstateM(1)+DstateM(4))
             dvtM = DstateM(3)
@@ -5244,8 +5246,8 @@ contains
         !
         ! Compute the Riemann invariants based on the computed (internal)
         ! state vector and the given freestream state vector and select
-        ! the Riemman invariant for each characteristic fields based on 
-        ! the sign of the corresponding eigenvalue.
+        ! the Riemman invariant for each characteristic field based on the
+        ! sign of the corresponding eigenvalue.
 
         ! Initialize values for function parser
         Dvalue = 0.0
@@ -5290,9 +5292,9 @@ contains
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-(2.0/(GAMMA-1.0))*cM
+              DstateM(1) = dvnM-2.0/(GAMMA-1.0)*cM
             else
-              DstateM(1) = dvnI-(2.0/(GAMMA-1.0))*cI
+              DstateM(1) = dvnI-2.0/(GAMMA-1.0)*cI
             end if
 
             if (dvnI .lt. SYS_EPSREAL) then
@@ -5311,7 +5313,7 @@ contains
 
             ! Convert Riemann invariants into conservative state variables
             cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
-            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
+            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
             pM = rM*cM*cM/GAMMA
             dvnM = 0.5*(DstateM(1)+DstateM(4))
             dvtM = DstateM(3)
@@ -5359,7 +5361,7 @@ contains
             dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
                      Dny(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
             dvtI = (-Dny(ipoint,iel)*Daux2(ipoint,iel,2)+&
-                      Dnx(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
+                     Dnx(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
 
             ! Compute the mirrored state vector
             DstateM(1) = DstateI(1)
@@ -5404,7 +5406,7 @@ contains
             end do
 
             ! Compute convervative variables
-            DstateM(4) = DstateM(4)*(1.0/(GAMMA-1.0))&
+            DstateM(4) = DstateM(4)/(GAMMA-1.0)&
                        + DstateM(1)*0.5*(DstateM(2)**2+DstateM(3)**2)
             DstateM(2) = DstateM(1)*DstateM(2)
             DstateM(3) = DstateM(1)*DstateM(3)
@@ -5498,13 +5500,15 @@ contains
             ! invariant and the prescribed boundary values
             w1 = w4-4.0/(GAMMA-1.0)*cM
 
+            ! Compute the normal velocity based on the first and fourth Riemann
+            ! invarient
+            dvnM = 0.5*(w1+w4)
+
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*(Dnx(ipoint,iel)*0.5*(w1+w4)-Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(Dny(ipoint,iel)*0.5*(w1+w4)+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = (1.0/(GAMMA-1.0))*pM+&
-                0.5*rM*((Dnx(ipoint,iel)*0.5*(w1+w4)-Dny(ipoint,iel)*dvtM)**2+&
-                        (Dny(ipoint,iel)*0.5*(w1+w4)+Dnx(ipoint,iel)*dvtM)**2)
+            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5565,12 +5569,12 @@ contains
             
             ! Compute first Riemann invariant based on fourth Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(4)-2*(2.0/(GAMMA-1.0))*sqrt(max(SYS_EPSREAL,&
-                GAMMA*pM/Daux2(ipoint,iel,1)*(pI/pM)**(1.0/GAMMA)))
+            DstateM(1) = DstateM(4)-4.0/(GAMMA-1.0)*sqrt(&
+                GAMMA*pM/Daux2(ipoint,iel,1)*(pI/pM)**(1.0/GAMMA))
 
             ! Convert Riemann invariants into conservative state variables
             cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
-            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
+            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
             pM = rM*cM*cM/GAMMA
             dvnM = 0.5*(DstateM(1)+DstateM(4))
             dvtM = DstateM(3)
