@@ -4878,10 +4878,10 @@ contains
             dvtM = -Dny(ipoint,iel)*DstateM(2)+Dnx(ipoint,iel)*DstateM(3)
             
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-0.5*&
-                (Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
-                Daux1((ipoint-1)*NVAR2D+3,iel)**2))/&
-                 Daux1((ipoint-1)*NVAR2D+1,iel)
+            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)&
+               - 0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
+                      Daux1((ipoint-1)*NVAR2D+3,iel)**2))/&
+                     Daux1((ipoint-1)*NVAR2D+1,iel)
             cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
 
             ! Compute the normal and tangential velocities based
@@ -4910,14 +4910,14 @@ contains
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(4) = dvnM+(2.0/(GAMMA-1.0))*cM
+              DstateM(4) = dvnM+2.0/(GAMMA-1.0)*cM
             else
-              DstateM(4) = dvnI+(2.0/(GAMMA-1.0))*cI
+              DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
             end if
 
             ! Convert Riemann invariants into conservative state variables
             cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
-            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
+            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
             pM = rM*cM*cM/GAMMA
             dvnM = 0.5*(DstateM(1)+DstateM(4))
             dvtM = DstateM(3)
@@ -5089,20 +5089,24 @@ contains
             cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
             dvtM = DstateM(3)
 
+            ! Compute auxiliary quantities based on internal state vector
+            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)&
+               - 0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
+                      Daux1((ipoint-1)*NVAR2D+3,iel)**2))/&
+                     Daux1((ipoint-1)*NVAR2D+1,iel)
+            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
+
             ! Compute the normal velocity based on the internal state vector
             dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
                      Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
                      Daux1((ipoint-1)*NVAR2D+1,iel)
 
-            ! Compute the speed of sound based on the internal state vector
-            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
-
             ! Compute fourth Riemann invariant based on the internal state vector
-            w4 = dvnI+(2.0/(GAMMA-1.0))*cI
+            w4 = dvnI+2.0/(GAMMA-1.0)*cI
 
             ! Compute the first Riemann invariant based on the fourth Riemann
             ! invariant and the prescribed boundary values
-            w1 = w4-2*(2.0/(GAMMA-1.0))*cM
+            w1 = w4-4.0/(GAMMA-1.0)*cM
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
@@ -5152,10 +5156,10 @@ contains
                 nmaxExpr*(isegment-1)+1, Dvalue, pM)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-0.5*&
-                     (Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
+            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)&
+               - 0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
                       Daux1((ipoint-1)*NVAR2D+3,iel)**2))/&
-                 Daux1((ipoint-1)*NVAR2D+1,iel)
+                     Daux1((ipoint-1)*NVAR2D+1,iel)
             cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
 
             ! Compute the normal and tangential velocities based
@@ -5170,11 +5174,11 @@ contains
             ! Compute three Riemann invariants based on internal state vector
             DstateM(2) = pI/(Daux1((ipoint-1)*NVAR2D+1,iel)**GAMMA)
             DstateM(3) = dvtI
-            DstateM(4) = dvnI+(2.0/(GAMMA-1.0))*cI
+            DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
             
             ! Compute first Riemann invariant based on fourth Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(4)-2*(2.0/(GAMMA-1.0))*sqrt(max(SYS_EPSREAL,&
+            DstateM(1) = DstateM(4)-4.0/(GAMMA-1.0)*sqrt(max(SYS_EPSREAL,&
                 GAMMA*pM/Daux1((ipoint-1)*NVAR2D+1,iel)*(pI/pM)**(1.0/GAMMA)))
 
             ! Convert Riemann invariants into conservative state variables
@@ -5271,8 +5275,8 @@ contains
             dvtM = -Dny(ipoint,iel)*DstateM(2)+Dnx(ipoint,iel)*DstateM(3)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-0.5*&
-                     (Daux2(ipoint,iel,2)**2+&
+            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)&
+               - 0.5*(Daux2(ipoint,iel,2)**2+&
                       Daux2(ipoint,iel,3)**2))/Daux2(ipoint,iel,1)
             cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
 
@@ -5300,9 +5304,9 @@ contains
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(4) = dvnM+(2.0/(GAMMA-1.0))*cM
+              DstateM(4) = dvnM+2.0/(GAMMA-1.0)*cM
             else
-              DstateM(4) = dvnI+(2.0/(GAMMA-1.0))*cI
+              DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
             end if
 
             ! Convert Riemann invariants into conservative state variables
@@ -5477,19 +5481,22 @@ contains
             cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
             dvtM = DstateM(3)
 
+            ! Compute auxiliary quantities based on internal state vector
+            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)&
+               - 0.5*(Daux2(ipoint,iel,2)**2+&
+                      Daux2(ipoint,iel,3)**2))/Daux2(ipoint,iel,1)
+            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
+
             ! Compute the normal velocity based on the internal state vector
             dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
                      Dny(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
 
-            ! Compute the speed of sound based on the internal state vector
-            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
-
             ! Compute fourth Riemann invariant based on the internal state vector
-            w4 = dvnI+(2.0/(GAMMA-1.0))*cI
+            w4 = dvnI+2.0/(GAMMA-1.0)*cI
 
-            ! Compute the first Riemann invariant based on the first Riemann
+            ! Compute the first Riemann invariant based on the fourth Riemann
             ! invariant and the prescribed boundary values
-            w1 = w4-2*(2.0/(GAMMA-1.0))*cM
+            w1 = w4-4.0/(GAMMA-1.0)*cM
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
@@ -5539,8 +5546,8 @@ contains
                 nmaxExpr*(isegment-1)+1, Dvalue, pM)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-0.5*&
-                     (Daux2(ipoint,iel,2)**2+&
+            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)&
+               - 0.5*(Daux2(ipoint,iel,2)**2+&
                       Daux2(ipoint,iel,3)**2))/Daux2(ipoint,iel,1)
             cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
 
@@ -5554,7 +5561,7 @@ contains
             ! Compute three Riemann invariants based on internal state vector
             DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
             DstateM(3) = dvtI
-            DstateM(4) = dvnI+(2.0/(GAMMA-1.0))*cI
+            DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
             
             ! Compute first Riemann invariant based on fourth Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
