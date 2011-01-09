@@ -4873,15 +4873,15 @@ contains
             ! Compute auxiliary quantities based on free stream state vector
             rM = DstateM(1)
             pM = DstateM(4)
-            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
+            cM = sqrt(GAMMA*pM/rM)
             dvnM =  Dnx(ipoint,iel)*DstateM(2)+Dny(ipoint,iel)*DstateM(3)
             dvtM = -Dny(ipoint,iel)*DstateM(2)+Dnx(ipoint,iel)*DstateM(3)
             
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)&
-               - 0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
-                      Daux1((ipoint-1)*NVAR2D+3,iel)**2))/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
+            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
+                              0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
+                                   Daux1((ipoint-1)*NVAR2D+3,iel)**2)/&
+                                   Daux1((ipoint-1)*NVAR2D+1,iel))
             cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
 
             ! Compute the normal and tangential velocities based
@@ -4943,7 +4943,7 @@ contains
           end do
         end do
 
-        
+
       case (BDRC_FREESLIP)
         !-----------------------------------------------------------------------
         ! Free-slip boundary condition:
@@ -5090,10 +5090,10 @@ contains
             dvtM = DstateM(3)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)&
-               - 0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
-                      Daux1((ipoint-1)*NVAR2D+3,iel)**2))/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
+            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
+                              0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
+                                   Daux1((ipoint-1)*NVAR2D+3,iel)**2)/&
+                                   Daux1((ipoint-1)*NVAR2D+1,iel))
             cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
 
             ! Compute the normal velocity based on the internal state vector
@@ -5158,10 +5158,10 @@ contains
                 nmaxExpr*(isegment-1)+1, Dvalue, pM)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)&
-               - 0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
-                      Daux1((ipoint-1)*NVAR2D+3,iel)**2))/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
+            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
+                              0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
+                                   Daux1((ipoint-1)*NVAR2D+3,iel)**2)/&
+                                   Daux1((ipoint-1)*NVAR2D+1,iel))
             cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
 
             ! Compute the normal and tangential velocities based
@@ -5210,7 +5210,7 @@ contains
             Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
           end do
         end do
-                
+
       case default
         call output_line('Invalid type of boundary conditions!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr2d_sim')
@@ -5272,14 +5272,14 @@ contains
             ! Compute auxiliary quantities based on free stream state vector
             rM = DstateM(1)
             pM = DstateM(4)
-            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
+            cM = sqrt(GAMMA*pM/rM)
             dvnM =  Dnx(ipoint,iel)*DstateM(2)+Dny(ipoint,iel)*DstateM(3)
             dvtM = -Dny(ipoint,iel)*DstateM(2)+Dnx(ipoint,iel)*DstateM(3)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)&
-               - 0.5*(Daux2(ipoint,iel,2)**2+&
-                      Daux2(ipoint,iel,3)**2))/Daux2(ipoint,iel,1)
+            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-&
+                              0.5*(Daux2(ipoint,iel,2)**2+&
+                                   Daux2(ipoint,iel,3)**2)/Daux2(ipoint,iel,1))
             cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
 
             ! Compute the normal and tangential velocities based
@@ -5484,9 +5484,9 @@ contains
             dvtM = DstateM(3)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)&
-               - 0.5*(Daux2(ipoint,iel,2)**2+&
-                      Daux2(ipoint,iel,3)**2))/Daux2(ipoint,iel,1)
+            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-&
+                              0.5*(Daux2(ipoint,iel,2)**2+&
+                                   Daux2(ipoint,iel,3)**2)/Daux2(ipoint,iel,1))
             cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
 
             ! Compute the normal velocity based on the internal state vector
@@ -5550,9 +5550,9 @@ contains
                 nmaxExpr*(isegment-1)+1, Dvalue, pM)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)&
-               - 0.5*(Daux2(ipoint,iel,2)**2+&
-                      Daux2(ipoint,iel,3)**2))/Daux2(ipoint,iel,1)
+            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-&
+                              0.5*(Daux2(ipoint,iel,2)**2+&
+                                   Daux2(ipoint,iel,3)**2)/Daux2(ipoint,iel,1))
             cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
 
             ! Compute the normal and tangential velocities based
@@ -5634,8 +5634,8 @@ contains
 
       ! local variables
       real(DP) :: uI,vI,pI,uM,vM,pM
-      real(DP) :: cPow2,c_IM,H_IM,q_IM,u_IM,v_IM
-      real(DP) :: l1,l2,l3,l4,w1,w2,w3,w4,aux,aux1,aux2,dveln
+      real(DP) :: H_IM,c2_IM,c_IM,q_IM,u_IM,v_IM,vel_IM
+      real(DP) :: l1,l2,l3,l4,w1,w2,w3,w4,aux,aux1,aux2
       
       ! Compute auxiliary quantities
       uI = X_VELOCITY_FROM_CONSVAR(DstateI, NVAR2D)
@@ -5670,44 +5670,42 @@ contains
              DENSITY_FROM_CONSVAR(DstateM,NVAR2D),aux)
       
       ! Compute auxiliary variables
-      q_IM  = 0.5*(u_IM*u_IM+v_IM*v_IM)
+      vel_IM = dnx*u_IM + dny*v_IM
+      q_IM   = 0.5*(u_IM*u_IM+v_IM*v_IM)
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      cPow2 = max((GAMMA-1.0)*(H_IM-q_IM), SYS_EPSREAL)
+      c2_IM = max((GAMMA-1.0)*(H_IM-q_IM), SYS_EPSREAL)
 #else
 #error "Speed of sound must be implemented!"
 #endif
-      c_IM  = sqrt(cPow2)
-
-      ! Compute normal velocity
-      dveln =  dnx*uI+dny*vI
+      c_IM = sqrt(c2_IM)
 
       ! Compute eigenvalues
-      l1 = abs(dveln-c_IM)
-      l2 = abs(dveln)
-      l3 = abs(dveln+c_IM)
-      l4 = abs(dveln)
+      l1 = abs(vel_IM-c_IM)
+      l2 = abs(vel_IM)
+      l3 = abs(vel_IM+c_IM)
+      l4 = abs(vel_IM)
       
       ! Compute solution difference U_M-U_I
       Diff = DstateM-DstateI
       
       ! Compute auxiliary quantities for characteristic variables
-      aux1 = (GAMMA-1.0)/2.0/cPow2*(q_IM*Diff(1)&
+      aux1 = (GAMMA-1.0)/2.0/c2_IM*(q_IM*Diff(1)&
                                    -u_IM*Diff(2)&
                                    -v_IM*Diff(3)&
                                         +Diff(4))
-      aux2 = 0.5*(aux*Diff(1)&
-                 -dnx*Diff(2)&
-                 -dny*Diff(3))/c_IM
+      aux2 = 0.5*(vel_IM*Diff(1)&
+                    -dnx*Diff(2)&
+                    -dny*Diff(3))/c_IM
       
       ! Compute characteristic variables multiplied by the
       ! corresponding eigenvalue
       w1 = l1 * (aux1 + aux2)
-      w2 = l2 * ((1.0-(GAMMA-1.0)*q_IM/cPow2)*Diff(1)&
+      w2 = l2 * ((1.0-(GAMMA-1.0)*q_IM/c2_IM)*Diff(1)&
                            +(GAMMA-1.0)*(u_IM*Diff(2)&
                                         +v_IM*Diff(3)&
-                                             -Diff(4))/cPow2)
+                                             -Diff(4))/c2_IM)
       w3 = l3 * (aux1 - aux2)
       w4 = l4 * ((dnx*v_IM-dny*u_IM)*Diff(1)&
                                 +dny*Diff(2)&
@@ -5716,11 +5714,11 @@ contains
       ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
       Diff(1) = w1 + w2 + w3
       Diff(2) = (u_IM-c_IM*dnx)*w1 + u_IM*w2 +&
-                (u_IM+c_IM*dnx)*w3 + dny*w4
+                (u_IM+c_IM*dnx)*w3 +  dny*w4
       Diff(3) = (v_IM-c_IM*dny)*w1 + v_IM*w2 +&
-                (v_IM+c_IM*dny)*w3 - dnx*w4
-      Diff(4) = (H_IM-c_IM*dveln)*w1  + q_IM*w2 +&
-                (H_IM+c_IM*dveln)*w3  + (u_IM*dny-v_IM*dnx)*w4
+                (v_IM+c_IM*dny)*w3 -  dnx*w4
+      Diff(4) = (H_IM-c_IM*vel_IM)*w1 + q_IM*w2 +&
+                (H_IM+c_IM*vel_IM)*w3 + (u_IM*dny-v_IM*dnx)*w4
 
     end subroutine doRiemannSolver
 
