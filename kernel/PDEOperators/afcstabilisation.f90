@@ -2310,7 +2310,7 @@ contains
 
     ! If no OpenMP is used, then all edges belong to the same
     ! group. Otherwise, the edges will be reordered below.
-    p_IverticesAtEdgeIdx     = rafcstab%NEDGE
+    p_IverticesAtEdgeIdx     = rafcstab%NEDGE+1
     p_IverticesAtEdgeIdx(1)  = 1
     
     ! What kind of matrix are we?
