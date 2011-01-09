@@ -403,7 +403,7 @@ contains
         ! Reread parameters from file to obtain mathematical expressions
         backspace iunit
         read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&
-            p_BisSegClosed(icomp), keyword, cMathExpression
+            p_BisSegClosed(icomp), keyword, cMathExpression(1:nexpr)
         
         ! Loop over all expressions and apply them to function parser
         do iexpr = 1, nexpr
