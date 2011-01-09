@@ -135,10 +135,10 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/shocktube1.prm
+prmfile = grids/2d/rect_01x0.1_trias.prm
 
 # file which contains the triangulation
-trifile = grids/2d/shocktube1.tri
+trifile = grids/2d/rect_01x0.1_trias.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -147,7 +147,7 @@ trifile = grids/2d/shocktube1.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = 11
+celement = 1
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -241,7 +241,7 @@ sucdvariable(4) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -266,16 +266,16 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.001
+dfinalTime = 0.231
 
 # initial time step size
-dinitialStep = 0.0001
+dinitialStep = 1e-3
 
 # lower bound for the admissible time step
-dminStep = 0.0001
+dminStep = 1e-3
 
 # upper bound for the admissible time step
-dmaxStep = 0.0001
+dmaxStep = 1e-3
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -435,7 +435,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -624,7 +624,7 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = 2
 
 # norm to use for defect checking
 # 0 = Euclidian norm

@@ -21,21 +21,21 @@
 #  p0  = 101000 Pa                                                             #
 #                                                                              #
 # Normalized initial and boundary conditions:                                  #
-#  rho=1.0               rho0/rhoN                                             #
-#  u  =1.0               u0/uN                                                 #
-#  v  =0.0               v0/uN                                                 #
-#  p  =1.59119116656413  p0/(rhoN*uN^2)                                        #
+#  rho= 1.0                                                                    #
+#  u  = 0.67                                                                   #
+#  v  = 0.0                                                                    #
+#  p  = 1.0/1.4                                                                #
 #                                                                              #
 ################################################################################
 
 # Specify the initial solution
 deffunc: @initsol_rho   = 1.0 ; x,y,z,t
-deffunc: @initsol_vel_x = 1.0 ; x,y,z,t
+deffunc: @initsol_vel_x = 0.67 ; x,y,z,t
 deffunc: @initsol_vel_y = 0.0 ; x,y,z,t
-deffunc: @initsol_Etot  = 1.59119116656413/0.4+0.5 ; x,y,z,t
+deffunc: @initsol_Etot  = 1/0.56+0.22445 ; x,y,z,t
 
 # Specify the boundary conditions
-[bdrcond_weak1_primal]
+[bdrcond_weak_primal]
 NBCT
 1
 NEXPR
@@ -46,22 +46,6 @@ NCOMP
 4
 PARAMETERS
 3.0  F  'FREESLIP_WEAK'
-4.0  T  'FREESTREAM_WEAK'  1.0  1.0  0.0  1.59119116656413
+4.0  T  'SUBOUTLET_WEAK'  '1.0/1.4'
 5.0  F  'FREESLIP_WEAK'
-6.0  T  'FREESTREAM_WEAK'  1.0  1.0  0.0  1.59119116656413
-
-# Specify the boundary conditions
-[bdrcond_weak1_primal]
-NBCT
-1
-NEXPR
-4
-IBCT
-1
-NCOMP
-4
-PARAMETERS
-3.0  F  'FREESLIP_WEAK
-4.0  T  'SUBOUTLET_WEAK'  1.59119116656413 0.0 0.0 0.0
-5.0  F  'FREESLIP_WEAK'
-6.0  T  'SUBINLET_WEAK'   1.0  1.0  1.59119116656413
+6.0  T  'SUBINLET_WEAK'   1.0  '1.0/1.4'  0.0
