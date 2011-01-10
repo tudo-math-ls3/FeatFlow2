@@ -1163,12 +1163,12 @@ contains
     rregion%cparType = BDR_PAR_01
     rregion%dminParam = dcurrentpar
     rregion%dmaxParam = dendpar
+    rregion%dmaxParamBC = dmaxpar
     rregion%ctype = BDR_TP_CURVE
     rregion%iproperties = iproperties
     rregion%iboundCompIdx = iboundCompIdx
-    rregion%iboundSegIdx = iboundSegIdx
-    rregion%dmaxParamBC = dmaxpar
-
+    rregion%iboundSegIdx = 0
+    
   end subroutine bdrc_createRegion
 
 end module boundarycondaux
