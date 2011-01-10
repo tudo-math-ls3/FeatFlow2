@@ -1,0 +1,626 @@
+
+Calculating Poisson-1D-Problem with method 0 - simple
+-----------------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 4.027479141509503E+00
+BiCGStab: Iteration 1,  !!RES!! = 1.330699618691326E+00
+BiCGStab: Iteration 2,  !!RES!! = 8.614724307897189E-01
+BiCGStab: Iteration 3,  !!RES!! = 6.804831665924014E-01
+BiCGStab: Iteration 4,  !!RES!! = 5.793568212986533E-01
+BiCGStab: Iteration 5,  !!RES!! = 5.036208397813209E-01
+BiCGStab: Iteration 6,  !!RES!! = 4.263987008416757E-01
+BiCGStab: Iteration 7,  !!RES!! = 3.434259351163418E-01
+BiCGStab: Iteration 8,  !!RES!! = 2.663084871984276E-01
+BiCGStab: Iteration 9,  !!RES!! = 2.076057093647688E-01
+BiCGStab: Iteration 10,  !!RES!! = 1.591266884534326E-01
+BiCGStab: Iteration 11,  !!RES!! = 1.151824632467654E-01
+BiCGStab: Iteration 12,  !!RES!! = 7.551064592746100E-02
+BiCGStab: Iteration 13,  !!RES!! = 4.202541156810895E-02
+BiCGStab: Iteration 14,  !!RES!! = 1.663833233469032E-02
+BiCGStab: Iteration 15,  !!RES!! = 1.281394813482198E-13
+
+BiCGStab statistics:
+
+Iterations              : 15
+!!INITIAL RES!!         : 4.027479141509503E+00
+!!RES!!                 : 1.281394813482198E-13
+!!RES!!/!!INITIAL RES!! : 3.181629919011648E-14
+
+Rate of convergence     : 1.259437568927178E-01
+L2-error: 5.7791381278E-01
+H1-error: 1.0307764064E+00
+
+Calculating Poisson-1D-Problem with method 1 - multigrid
+--------------------------------------------------------
+Multigrid: Iteration 0,  !!RES!! = 1.127544361139383E+01
+Multigrid: Iteration 1,  !!RES!! = 1.136793229637478E-01
+Multigrid: Iteration 2,  !!RES!! = 2.891443821785963E-03
+Multigrid: Iteration 3,  !!RES!! = 8.026365804594075E-05
+Multigrid: Iteration 4,  !!RES!! = 2.304092042165660E-06
+
+Multigrid statistics:
+
+Iterations              : 4
+!!INITIAL RES!!         : 1.127544361139383E+01
+!!RES!!                 : 2.304092042165660E-06
+!!RES!!/!!INITIAL RES!! : 2.043460214582934E-07
+
+Rate of convergence     : 2.126138475085930E-02
+L2-error: 5.7735906906E-01
+H1-error: 1.0004881621E+00
+
+Calculating Poisson-2D-Problem with method 0 - simple
+-----------------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 2.676879331135164E-03
+BiCGStab: Iteration 1,  !!RES!! = 7.408389459700920E-03
+BiCGStab: Iteration 2,  !!RES!! = 6.223543835740447E-03
+BiCGStab: Iteration 3,  !!RES!! = 4.928547408944812E-03
+BiCGStab: Iteration 4,  !!RES!! = 3.995137739385296E-03
+BiCGStab: Iteration 5,  !!RES!! = 3.320632793341982E-03
+BiCGStab: Iteration 6,  !!RES!! = 2.816046522403510E-03
+BiCGStab: Iteration 7,  !!RES!! = 2.423306889093988E-03
+BiCGStab: Iteration 8,  !!RES!! = 2.107784322829707E-03
+BiCGStab: Iteration 9,  !!RES!! = 1.847388453254513E-03
+BiCGStab: Iteration 10,  !!RES!! = 1.627858464878223E-03
+BiCGStab: Iteration 11,  !!RES!! = 1.439426823426406E-03
+BiCGStab: Iteration 12,  !!RES!! = 1.275318516725213E-03
+BiCGStab: Iteration 13,  !!RES!! = 1.130609539066611E-03
+BiCGStab: Iteration 14,  !!RES!! = 1.001690718044573E-03
+BiCGStab: Iteration 15,  !!RES!! = 8.858038659406616E-04
+BiCGStab: Iteration 16,  !!RES!! = 7.808210467791187E-04
+BiCGStab: Iteration 17,  !!RES!! = 6.850227439738657E-04
+BiCGStab: Iteration 18,  !!RES!! = 5.969912229541624E-04
+BiCGStab: Iteration 19,  !!RES!! = 5.154870433194465E-04
+BiCGStab: Iteration 20,  !!RES!! = 4.394240689674221E-04
+BiCGStab: Iteration 21,  !!RES!! = 3.679211626567417E-04
+BiCGStab: Iteration 22,  !!RES!! = 3.005006166154275E-04
+BiCGStab: Iteration 23,  !!RES!! = 2.373662265228490E-04
+BiCGStab: Iteration 24,  !!RES!! = 1.794244910446045E-04
+BiCGStab: Iteration 25,  !!RES!! = 1.281859710885715E-04
+BiCGStab: Iteration 26,  !!RES!! = 8.519098191370444E-05
+BiCGStab: Iteration 27,  !!RES!! = 5.165057967575904E-05
+BiCGStab: Iteration 28,  !!RES!! = 2.797922984159939E-05
+BiCGStab: Iteration 29,  !!RES!! = 1.389247396941336E-05
+BiCGStab: Iteration 30,  !!RES!! = 8.164342907728210E-06
+BiCGStab: Iteration 31,  !!RES!! = 6.860376189853527E-06
+BiCGStab: Iteration 32,  !!RES!! = 1.690709358971867E-06
+BiCGStab: Iteration 33,  !!RES!! = 1.622131351934848E-06
+BiCGStab: Iteration 34,  !!RES!! = 1.320364517629127E-06
+BiCGStab: Iteration 35,  !!RES!! = 5.464651088278322E-07
+BiCGStab: Iteration 36,  !!RES!! = 3.163110599274912E-07
+BiCGStab: Iteration 37,  !!RES!! = 2.458374387756515E-07
+BiCGStab: Iteration 38,  !!RES!! = 2.305131211180106E-07
+BiCGStab: Iteration 39,  !!RES!! = 2.344311421176546E-07
+BiCGStab: Iteration 40,  !!RES!! = 1.964643432871993E-07
+BiCGStab: Iteration 41,  !!RES!! = 6.646337329939693E-08
+BiCGStab: Iteration 42,  !!RES!! = 5.556175953562050E-08
+BiCGStab: Iteration 43,  !!RES!! = 3.503104321308919E-08
+BiCGStab: Iteration 44,  !!RES!! = 1.796798397626913E-08
+
+BiCGStab statistics:
+
+Iterations              : 44
+!!INITIAL RES!!         : 2.676879331135164E-03
+!!RES!!                 : 1.796798397626913E-08
+!!RES!!/!!INITIAL RES!! : 6.712287613147501E-06
+
+Rate of convergence     : 7.628319531845957E-01
+L2-error: 1.2751498167E-04
+H1-error: 3.7268393418E-02
+
+Calculating Poisson-2D-Problem with method 1 - ncc
+--------------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 2.485912987618349E-02
+BiCGStab: Iteration 1,  !!RES!! = 9.445407118223437E-03
+BiCGStab: Iteration 2,  !!RES!! = 8.187536974364433E-03
+BiCGStab: Iteration 3,  !!RES!! = 7.244255428287482E-03
+BiCGStab: Iteration 4,  !!RES!! = 6.059937430382976E-03
+BiCGStab: Iteration 5,  !!RES!! = 5.029348872144314E-03
+BiCGStab: Iteration 6,  !!RES!! = 4.191083977657519E-03
+BiCGStab: Iteration 7,  !!RES!! = 3.465491827563619E-03
+BiCGStab: Iteration 8,  !!RES!! = 2.874594610605068E-03
+BiCGStab: Iteration 9,  !!RES!! = 2.519451252929910E-03
+BiCGStab: Iteration 10,  !!RES!! = 2.130622937367577E-03
+BiCGStab: Iteration 11,  !!RES!! = 1.583642350443015E-03
+BiCGStab: Iteration 12,  !!RES!! = 1.191738766986962E-03
+BiCGStab: Iteration 13,  !!RES!! = 8.704684650732667E-04
+BiCGStab: Iteration 14,  !!RES!! = 6.419189754842807E-04
+BiCGStab: Iteration 15,  !!RES!! = 4.186136684367163E-04
+BiCGStab: Iteration 16,  !!RES!! = 2.924806759754887E-04
+BiCGStab: Iteration 17,  !!RES!! = 2.223295804982578E-04
+BiCGStab: Iteration 18,  !!RES!! = 1.701263076010187E-04
+BiCGStab: Iteration 19,  !!RES!! = 1.263561533908899E-04
+BiCGStab: Iteration 20,  !!RES!! = 9.072090930242850E-05
+BiCGStab: Iteration 21,  !!RES!! = 6.562632094962831E-05
+BiCGStab: Iteration 22,  !!RES!! = 4.687111748697107E-05
+BiCGStab: Iteration 23,  !!RES!! = 3.322024776049575E-05
+BiCGStab: Iteration 24,  !!RES!! = 2.298892300579673E-05
+BiCGStab: Iteration 25,  !!RES!! = 1.553901171367791E-05
+BiCGStab: Iteration 26,  !!RES!! = 1.024392888056894E-05
+BiCGStab: Iteration 27,  !!RES!! = 6.768014104876495E-06
+BiCGStab: Iteration 28,  !!RES!! = 4.388847378051129E-06
+BiCGStab: Iteration 29,  !!RES!! = 2.874366180453457E-06
+BiCGStab: Iteration 30,  !!RES!! = 1.906010596776682E-06
+BiCGStab: Iteration 31,  !!RES!! = 1.302183994094136E-06
+BiCGStab: Iteration 32,  !!RES!! = 8.959111346312397E-07
+BiCGStab: Iteration 33,  !!RES!! = 6.101534227491583E-07
+BiCGStab: Iteration 34,  !!RES!! = 4.057255149956355E-07
+BiCGStab: Iteration 35,  !!RES!! = 2.677251050581474E-07
+BiCGStab: Iteration 36,  !!RES!! = 1.845326026953601E-07
+
+BiCGStab statistics:
+
+Iterations              : 36
+!!INITIAL RES!!         : 2.485912987618349E-02
+!!RES!!                 : 1.845326026953601E-07
+!!RES!!/!!INITIAL RES!! : 7.423132008821968E-06
+
+Rate of convergence     : 7.203048029943143E-01
+
+Calculating Poisson-2D-Problem with method 1 - multigrid
+--------------------------------------------------------
+Multigrid: Iteration 0,  !!RES!! = 2.676879331135164E-03
+Multigrid: Iteration 1,  !!RES!! = 4.824468426210239E-05
+Multigrid: Iteration 2,  !!RES!! = 6.535012481373662E-07
+Multigrid: Iteration 3,  !!RES!! = 1.675248794855787E-08
+
+Multigrid statistics:
+
+Iterations              : 3
+!!INITIAL RES!!         : 2.676879331135164E-03
+!!RES!!                 : 1.675248794855787E-08
+!!RES!!/!!INITIAL RES!! : 6.258215584732303E-06
+
+Rate of convergence     : 1.842822501877932E-02
+L2-error: 1.2758160628E-04
+H1-error: 3.7268393199E-02
+
+Calculating Poisson-2D-Problem with method 1 - EM30
+---------------------------------------------------
+UMFPACK: !!Initial RES!! = 2.098843860710978E-02
+UMFPACK: !!solution!!    = 5.182340172412562E-01 Status = 0
+L2-error: 1.8029470064E-03
+H1-error: 1.9708230651E-01
+
+Calculating Poisson-2D-Problem with method 1 - Robin BC
+-------------------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 1.557757976461175E-01
+BiCGStab: Iteration 1,  !!RES!! = 3.362909565705415E-02
+BiCGStab: Iteration 2,  !!RES!! = 1.537276547803551E-02
+BiCGStab: Iteration 3,  !!RES!! = 9.554297588233875E-03
+BiCGStab: Iteration 4,  !!RES!! = 6.848348704391156E-03
+BiCGStab: Iteration 5,  !!RES!! = 5.208266592331721E-03
+BiCGStab: Iteration 6,  !!RES!! = 4.108852047503623E-03
+BiCGStab: Iteration 7,  !!RES!! = 3.352137335333506E-03
+BiCGStab: Iteration 8,  !!RES!! = 2.779663676020574E-03
+BiCGStab: Iteration 9,  !!RES!! = 2.342784111893620E-03
+BiCGStab: Iteration 10,  !!RES!! = 1.999344120789721E-03
+BiCGStab: Iteration 11,  !!RES!! = 1.731405351829380E-03
+BiCGStab: Iteration 12,  !!RES!! = 1.525888494148491E-03
+BiCGStab: Iteration 13,  !!RES!! = 1.350864854059003E-03
+BiCGStab: Iteration 14,  !!RES!! = 1.202620704072678E-03
+BiCGStab: Iteration 15,  !!RES!! = 1.068741843483018E-03
+BiCGStab: Iteration 16,  !!RES!! = 9.419148068186388E-04
+BiCGStab: Iteration 17,  !!RES!! = 8.227436818476571E-04
+BiCGStab: Iteration 18,  !!RES!! = 7.311384819816860E-04
+BiCGStab: Iteration 19,  !!RES!! = 6.622223467339683E-04
+BiCGStab: Iteration 20,  !!RES!! = 6.001701533380325E-04
+BiCGStab: Iteration 21,  !!RES!! = 5.472766527881012E-04
+BiCGStab: Iteration 22,  !!RES!! = 4.980235311920313E-04
+BiCGStab: Iteration 23,  !!RES!! = 4.564638857620860E-04
+BiCGStab: Iteration 24,  !!RES!! = 4.166487651410748E-04
+BiCGStab: Iteration 25,  !!RES!! = 3.814942927651971E-04
+BiCGStab: Iteration 26,  !!RES!! = 3.454930934680041E-04
+BiCGStab: Iteration 27,  !!RES!! = 3.109150962167130E-04
+BiCGStab: Iteration 28,  !!RES!! = 2.761115588759306E-04
+BiCGStab: Iteration 29,  !!RES!! = 2.403016920688760E-04
+BiCGStab: Iteration 30,  !!RES!! = 2.046499820326338E-04
+BiCGStab: Iteration 31,  !!RES!! = 1.702828245470879E-04
+BiCGStab: Iteration 32,  !!RES!! = 1.374095980690482E-04
+BiCGStab: Iteration 33,  !!RES!! = 1.100468154824073E-04
+BiCGStab: Iteration 34,  !!RES!! = 8.870163717049656E-05
+BiCGStab: Iteration 35,  !!RES!! = 7.308469162585924E-05
+BiCGStab: Iteration 36,  !!RES!! = 6.073636652939720E-05
+BiCGStab: Iteration 37,  !!RES!! = 5.092052901550469E-05
+BiCGStab: Iteration 38,  !!RES!! = 4.266902385364486E-05
+BiCGStab: Iteration 39,  !!RES!! = 3.565480461914083E-05
+BiCGStab: Iteration 40,  !!RES!! = 2.971384576052683E-05
+BiCGStab: Iteration 41,  !!RES!! = 2.439659129886934E-05
+BiCGStab: Iteration 42,  !!RES!! = 8.386648893531422E-06
+BiCGStab: Iteration 43,  !!RES!! = 6.819743830972014E-06
+BiCGStab: Iteration 44,  !!RES!! = 5.999234179074790E-06
+BiCGStab: Iteration 45,  !!RES!! = 4.397417065314114E-06
+BiCGStab: Iteration 46,  !!RES!! = 3.640346254030434E-06
+BiCGStab: Iteration 47,  !!RES!! = 3.925624271632790E-06
+BiCGStab: Iteration 48,  !!RES!! = 2.520871833790865E-06
+BiCGStab: Iteration 49,  !!RES!! = 1.443262872286546E-06
+
+BiCGStab statistics:
+
+Iterations              : 49
+!!INITIAL RES!!         : 1.557757976461175E-01
+!!RES!!                 : 1.443262872286546E-06
+!!RES!!/!!INITIAL RES!! : 9.265000687496186E-06
+
+Rate of convergence     : 7.893735321499871E-01
+L2-error: 3.5092223053E-04
+H1-error: 7.5985346916E-01
+
+Calculating Poisson-2D-Problem with method 1 - FBC
+--------------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 2.132664092880505E-03
+BiCGStab: Iteration 1,  !!RES!! = 2.646163882990262E-03
+BiCGStab: Iteration 2,  !!RES!! = 2.133460220390117E-03
+BiCGStab: Iteration 3,  !!RES!! = 1.588035366636861E-03
+BiCGStab: Iteration 4,  !!RES!! = 1.282667918923765E-03
+BiCGStab: Iteration 5,  !!RES!! = 1.099367779592614E-03
+BiCGStab: Iteration 6,  !!RES!! = 9.266807125108437E-04
+BiCGStab: Iteration 7,  !!RES!! = 7.539005309299747E-04
+BiCGStab: Iteration 8,  !!RES!! = 6.050779082589352E-04
+BiCGStab: Iteration 9,  !!RES!! = 4.826073614890478E-04
+BiCGStab: Iteration 10,  !!RES!! = 3.935392282890304E-04
+BiCGStab: Iteration 11,  !!RES!! = 3.320352206506088E-04
+BiCGStab: Iteration 12,  !!RES!! = 2.790128712379013E-04
+BiCGStab: Iteration 13,  !!RES!! = 2.234168488586766E-04
+BiCGStab: Iteration 14,  !!RES!! = 1.730634453041168E-04
+BiCGStab: Iteration 15,  !!RES!! = 1.337268279186578E-04
+BiCGStab: Iteration 16,  !!RES!! = 1.038382356948697E-04
+BiCGStab: Iteration 17,  !!RES!! = 8.296442963756730E-05
+BiCGStab: Iteration 18,  !!RES!! = 6.553904546366109E-05
+BiCGStab: Iteration 19,  !!RES!! = 5.033854577406442E-05
+BiCGStab: Iteration 20,  !!RES!! = 3.937181634476512E-05
+BiCGStab: Iteration 21,  !!RES!! = 3.168748634694259E-05
+BiCGStab: Iteration 22,  !!RES!! = 2.475359050625231E-05
+BiCGStab: Iteration 23,  !!RES!! = 1.944502062993155E-05
+BiCGStab: Iteration 24,  !!RES!! = 1.608277207104411E-05
+BiCGStab: Iteration 25,  !!RES!! = 1.376600541885153E-05
+BiCGStab: Iteration 26,  !!RES!! = 1.191119385876485E-05
+BiCGStab: Iteration 27,  !!RES!! = 1.049016402023492E-05
+BiCGStab: Iteration 28,  !!RES!! = 9.077907732151291E-06
+BiCGStab: Iteration 29,  !!RES!! = 7.730201726289241E-06
+BiCGStab: Iteration 30,  !!RES!! = 6.536194598548319E-06
+BiCGStab: Iteration 31,  !!RES!! = 5.470855811748561E-06
+BiCGStab: Iteration 32,  !!RES!! = 4.496495184697851E-06
+BiCGStab: Iteration 33,  !!RES!! = 3.604109572983775E-06
+BiCGStab: Iteration 34,  !!RES!! = 2.784987138106516E-06
+BiCGStab: Iteration 35,  !!RES!! = 2.094001585125725E-06
+BiCGStab: Iteration 36,  !!RES!! = 1.495529160942649E-06
+BiCGStab: Iteration 37,  !!RES!! = 1.109145769561537E-06
+BiCGStab: Iteration 38,  !!RES!! = 7.203697477272737E-07
+BiCGStab: Iteration 39,  !!RES!! = 7.075517235174412E-07
+BiCGStab: Iteration 40,  !!RES!! = 4.969085635846071E-07
+BiCGStab: Iteration 41,  !!RES!! = 3.638906499854311E-07
+BiCGStab: Iteration 42,  !!RES!! = 2.401399256438643E-07
+BiCGStab: Iteration 43,  !!RES!! = 2.294423927066460E-07
+BiCGStab: Iteration 44,  !!RES!! = 2.171604052895799E-07
+BiCGStab: Iteration 45,  !!RES!! = 1.251230020831494E-07
+BiCGStab: Iteration 46,  !!RES!! = 7.220889927813931E-08
+BiCGStab: Iteration 47,  !!RES!! = 5.138718962197553E-08
+BiCGStab: Iteration 48,  !!RES!! = 3.394727353086647E-08
+BiCGStab: Iteration 49,  !!RES!! = 2.362522925152545E-08
+
+BiCGStab statistics:
+
+Iterations              : 50
+!!INITIAL RES!!         : 2.132664092880505E-03
+!!RES!!                 : 9.929240958668251E-09
+!!RES!!/!!INITIAL RES!! : 4.655792251491991E-06
+
+Rate of convergence     : 7.822757576261585E-01
+
+Calculating Poisson-2D-Problem with method 1 - hadapt
+-----------------------------------------------------
+UMFPACK: !!Initial RES!! = 1.111111111111111E+00
+UMFPACK: !!solution!!    = 4.166666666666666E-01 Status = 0
+UMFPACK: !!Initial RES!! = 4.776243293635700E-01
+UMFPACK: !!solution!!    = 4.480259991544769E-01 Status = 0
+UMFPACK: !!Initial RES!! = 1.468565409736916E-01
+UMFPACK: !!solution!!    = 4.801422615914687E-01 Status = 0
+UMFPACK: !!Initial RES!! = 5.032753177455979E-02
+UMFPACK: !!solution!!    = 5.178358619296243E-01 Status = 0
+UMFPACK: !!Initial RES!! = 3.694232952830823E-02
+UMFPACK: !!solution!!    = 4.636731570627289E-01 Status = 0
+UMFPACK: !!Initial RES!! = 3.694232952830823E-02
+UMFPACK: !!solution!!    = 4.636731570627289E-01 Status = 0
+UMFPACK: !!Initial RES!! = 3.694232952830823E-02
+UMFPACK: !!solution!!    = 4.636731570627289E-01 Status = 0
+UMFPACK: !!Initial RES!! = 3.694232952830823E-02
+UMFPACK: !!solution!!    = 4.636731570627289E-01 Status = 0
+UMFPACK: !!Initial RES!! = 3.694232952830823E-02
+UMFPACK: !!solution!!    = 4.636731570627289E-01 Status = 0
+L2-error: 2.4290446677E-03
+H1-error: 1.5800847079E-01
+
+Calculating Poisson-2D-Problem with method 1 - L2-projection
+------------------------------------------------------------
+Multigrid: Iteration 0,  !!RES!! = 4.394091213836493E-03
+Multigrid: Iteration 1,  !!RES!! = 1.808654767229914E-04
+Multigrid: Iteration 2,  !!RES!! = 5.683552541532884E-06
+Multigrid: Iteration 3,  !!RES!! = 4.824621616061064E-07
+Multigrid: Iteration 4,  !!RES!! = 4.407834615116219E-08
+Multigrid: Iteration 5,  !!RES!! = 4.163000008501182E-09
+
+Multigrid statistics:
+
+Iterations              : 5
+!!INITIAL RES!!         : 4.394091213836493E-03
+!!RES!!                 : 4.163000008501182E-09
+!!RES!!/!!INITIAL RES!! : 9.474086462730608E-07
+
+Rate of convergence     : 6.241765792714735E-02
+L2-error: 5.3515824224E-04
+H1-error: 9.8590865453E-02
+
+Performing L2-projection of solution to Q1 space
+
+L2prj: Iteration 1,  !!RES!! = 5.042494373739818E-04
+L2prj: Iteration 2,  !!RES!! = 3.865134807864970E-06
+L2prj: Iteration 3,  !!RES!! = 1.061781122098131E-06
+L2prj: Iteration 4,  !!RES!! = 5.714912463577146E-07
+L2prj: Iteration 5,  !!RES!! = 3.392675486972975E-07
+L2prj: Iteration 6,  !!RES!! = 2.091010258538842E-07
+L2prj: Iteration 7,  !!RES!! = 1.314190097768343E-07
+L2prj: Iteration 8,  !!RES!! = 8.358738981476978E-08
+
+Calculating Poisson-2D-Problem with method 1 - Prol.-Matrix
+-----------------------------------------------------------
+Multigrid: Iteration 0,  !!RES!! = 2.676838518739046E-03
+Multigrid: Iteration 1,  !!RES!! = 5.577552768728369E-05
+Multigrid: Iteration 2,  !!RES!! = 7.138149142737921E-07
+Multigrid: Iteration 3,  !!RES!! = 1.689449866919563E-08
+
+Multigrid statistics:
+
+Iterations              : 3
+!!INITIAL RES!!         : 2.676838518739046E-03
+!!RES!!                 : 1.689449866919563E-08
+!!RES!!/!!INITIAL RES!! : 6.311362658197986E-06
+
+Rate of convergence     : 1.848024446584417E-02
+L2-error: 3.3435835611E-04
+H1-error: 5.6542638326E-02
+
+Calculating Poisson-2D-Problem with method 2
+--------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 2.676879331135164E-03
+BiCGStab: Iteration 1,  !!RES!! = 7.408389459700920E-03
+BiCGStab: Iteration 2,  !!RES!! = 6.223543835740447E-03
+BiCGStab: Iteration 3,  !!RES!! = 4.928547408944812E-03
+BiCGStab: Iteration 4,  !!RES!! = 3.995137739385296E-03
+BiCGStab: Iteration 5,  !!RES!! = 3.320632793341982E-03
+BiCGStab: Iteration 6,  !!RES!! = 2.816046522403510E-03
+BiCGStab: Iteration 7,  !!RES!! = 2.423306889093988E-03
+BiCGStab: Iteration 8,  !!RES!! = 2.107784322829707E-03
+BiCGStab: Iteration 9,  !!RES!! = 1.847388453254513E-03
+BiCGStab: Iteration 10,  !!RES!! = 1.627858464878223E-03
+BiCGStab: Iteration 11,  !!RES!! = 1.439426823426406E-03
+BiCGStab: Iteration 12,  !!RES!! = 1.275318516725213E-03
+BiCGStab: Iteration 13,  !!RES!! = 1.130609539066611E-03
+BiCGStab: Iteration 14,  !!RES!! = 1.001690718044573E-03
+BiCGStab: Iteration 15,  !!RES!! = 8.858038659406616E-04
+BiCGStab: Iteration 16,  !!RES!! = 7.808210467791187E-04
+BiCGStab: Iteration 17,  !!RES!! = 6.850227439738657E-04
+BiCGStab: Iteration 18,  !!RES!! = 5.969912229541624E-04
+BiCGStab: Iteration 19,  !!RES!! = 5.154870433194465E-04
+BiCGStab: Iteration 20,  !!RES!! = 4.394240689674221E-04
+BiCGStab: Iteration 21,  !!RES!! = 3.679211626567417E-04
+BiCGStab: Iteration 22,  !!RES!! = 3.005006166154275E-04
+BiCGStab: Iteration 23,  !!RES!! = 2.373662265228490E-04
+BiCGStab: Iteration 24,  !!RES!! = 1.794244910446045E-04
+BiCGStab: Iteration 25,  !!RES!! = 1.281859710885715E-04
+BiCGStab: Iteration 26,  !!RES!! = 8.519098191370444E-05
+BiCGStab: Iteration 27,  !!RES!! = 5.165057967575904E-05
+BiCGStab: Iteration 28,  !!RES!! = 2.797922984159939E-05
+BiCGStab: Iteration 29,  !!RES!! = 1.389247396941336E-05
+BiCGStab: Iteration 30,  !!RES!! = 8.164342907728210E-06
+BiCGStab: Iteration 31,  !!RES!! = 6.860376189853527E-06
+BiCGStab: Iteration 32,  !!RES!! = 1.690709358971867E-06
+BiCGStab: Iteration 33,  !!RES!! = 1.622131351934848E-06
+BiCGStab: Iteration 34,  !!RES!! = 1.320364517629127E-06
+BiCGStab: Iteration 35,  !!RES!! = 5.464651088278322E-07
+BiCGStab: Iteration 36,  !!RES!! = 3.163110599274912E-07
+BiCGStab: Iteration 37,  !!RES!! = 2.458374387756515E-07
+BiCGStab: Iteration 38,  !!RES!! = 2.305131211180106E-07
+BiCGStab: Iteration 39,  !!RES!! = 2.344311421176546E-07
+BiCGStab: Iteration 40,  !!RES!! = 1.964643432871993E-07
+BiCGStab: Iteration 41,  !!RES!! = 6.646337329939693E-08
+BiCGStab: Iteration 42,  !!RES!! = 5.556175953562050E-08
+BiCGStab: Iteration 43,  !!RES!! = 3.503104321308919E-08
+BiCGStab: Iteration 44,  !!RES!! = 1.796798397626913E-08
+
+BiCGStab statistics:
+
+Iterations              : 44
+!!INITIAL RES!!         : 2.676879331135164E-03
+!!RES!!                 : 1.796798397626913E-08
+!!RES!!/!!INITIAL RES!! : 6.712287613147501E-06
+
+Rate of convergence     : 7.628319531845957E-01
+L2-error: 1.2751498167E-04
+H1-error: 3.7268393418E-02
+
+Remaining collection statistics:
+--------------------------------
+
+[]
+
+Calculating Poisson-2D-Problem with method 2 - CM-sorting
+---------------------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 6.586453135709212E-03
+BiCGStab: Iteration 1,  !!RES!! = 5.268384515026516E-03
+BiCGStab: Iteration 2,  !!RES!! = 4.441391057095399E-03
+BiCGStab: Iteration 3,  !!RES!! = 3.491010721921933E-03
+BiCGStab: Iteration 4,  !!RES!! = 2.625321705569623E-03
+BiCGStab: Iteration 5,  !!RES!! = 1.850450554951640E-03
+BiCGStab: Iteration 6,  !!RES!! = 1.208717533757958E-03
+BiCGStab: Iteration 7,  !!RES!! = 7.728796416951657E-04
+BiCGStab: Iteration 8,  !!RES!! = 4.447279923021023E-04
+BiCGStab: Iteration 9,  !!RES!! = 1.955620271698276E-04
+BiCGStab: Iteration 10,  !!RES!! = 9.311246971703081E-05
+BiCGStab: Iteration 11,  !!RES!! = 6.026392169131100E-05
+BiCGStab: Iteration 12,  !!RES!! = 4.819124579130728E-05
+BiCGStab: Iteration 13,  !!RES!! = 4.096326914909989E-05
+BiCGStab: Iteration 14,  !!RES!! = 3.462378162938930E-05
+BiCGStab: Iteration 15,  !!RES!! = 2.524017381916152E-05
+BiCGStab: Iteration 16,  !!RES!! = 1.587654814633820E-05
+BiCGStab: Iteration 17,  !!RES!! = 1.029569937787722E-05
+BiCGStab: Iteration 18,  !!RES!! = 6.213644828634343E-06
+BiCGStab: Iteration 19,  !!RES!! = 3.355737541979193E-06
+BiCGStab: Iteration 20,  !!RES!! = 8.793039403560775E-07
+BiCGStab: Iteration 21,  !!RES!! = 2.969822286357366E-07
+BiCGStab: Iteration 22,  !!RES!! = 9.130317718379158E-08
+BiCGStab: Iteration 23,  !!RES!! = 3.499233762672950E-08
+
+BiCGStab statistics:
+
+Iterations              : 23
+!!INITIAL RES!!         : 6.586453135709212E-03
+!!RES!!                 : 3.499233762672950E-08
+!!RES!!/!!INITIAL RES!! : 5.312774099464024E-06
+
+Rate of convergence     : 5.897475503917593E-01
+L2-error: 1.2761656821E-04
+H1-error: 3.7268394098E-02
+
+Remaining collection statistics:
+--------------------------------
+
+[]
+
+Calculating Poisson-2D-Problem with method 2 - multigrid
+--------------------------------------------------------
+Multigrid: Iteration 0,  !!RES!! = 2.676879331135155E-03
+Multigrid: Iteration 1,  !!RES!! = 3.324216215230867E-05
+Multigrid: Iteration 2,  !!RES!! = 1.157390393101250E-07
+Multigrid: Iteration 3,  !!RES!! = 8.264477709108161E-10
+
+Multigrid statistics:
+
+Iterations              : 3
+!!INITIAL RES!!         : 2.676879331135155E-03
+!!RES!!                 : 8.264477709108161E-10
+!!RES!!/!!INITIAL RES!! : 3.087355344330570E-07
+
+Rate of convergence     : 6.758685002909002E-03
+L2-error: 1.2750678608E-04
+H1-error: 3.7268393121E-02
+
+Remaining collection statistics:
+--------------------------------
+
+[]
+
+Calculating Poisson-2D-Problem with method 2 - collection
+---------------------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 2.676879331135164E-03
+BiCGStab: Iteration 1,  !!RES!! = 7.408389459700920E-03
+BiCGStab: Iteration 2,  !!RES!! = 6.223543835740447E-03
+BiCGStab: Iteration 3,  !!RES!! = 4.928547408944812E-03
+BiCGStab: Iteration 4,  !!RES!! = 3.995137739385296E-03
+BiCGStab: Iteration 5,  !!RES!! = 3.320632793341982E-03
+BiCGStab: Iteration 6,  !!RES!! = 2.816046522403510E-03
+BiCGStab: Iteration 7,  !!RES!! = 2.423306889093988E-03
+BiCGStab: Iteration 8,  !!RES!! = 2.107784322829707E-03
+BiCGStab: Iteration 9,  !!RES!! = 1.847388453254513E-03
+BiCGStab: Iteration 10,  !!RES!! = 1.627858464878223E-03
+BiCGStab: Iteration 11,  !!RES!! = 1.439426823426406E-03
+BiCGStab: Iteration 12,  !!RES!! = 1.275318516725213E-03
+BiCGStab: Iteration 13,  !!RES!! = 1.130609539066611E-03
+BiCGStab: Iteration 14,  !!RES!! = 1.001690718044573E-03
+BiCGStab: Iteration 15,  !!RES!! = 8.858038659406616E-04
+BiCGStab: Iteration 16,  !!RES!! = 7.808210467791187E-04
+BiCGStab: Iteration 17,  !!RES!! = 6.850227439738657E-04
+BiCGStab: Iteration 18,  !!RES!! = 5.969912229541624E-04
+BiCGStab: Iteration 19,  !!RES!! = 5.154870433194465E-04
+BiCGStab: Iteration 20,  !!RES!! = 4.394240689674221E-04
+BiCGStab: Iteration 21,  !!RES!! = 3.679211626567417E-04
+BiCGStab: Iteration 22,  !!RES!! = 3.005006166154275E-04
+BiCGStab: Iteration 23,  !!RES!! = 2.373662265228490E-04
+BiCGStab: Iteration 24,  !!RES!! = 1.794244910446045E-04
+BiCGStab: Iteration 25,  !!RES!! = 1.281859710885715E-04
+BiCGStab: Iteration 26,  !!RES!! = 8.519098191370444E-05
+BiCGStab: Iteration 27,  !!RES!! = 5.165057967575904E-05
+BiCGStab: Iteration 28,  !!RES!! = 2.797922984159939E-05
+BiCGStab: Iteration 29,  !!RES!! = 1.389247396941336E-05
+BiCGStab: Iteration 30,  !!RES!! = 8.164342907728210E-06
+BiCGStab: Iteration 31,  !!RES!! = 6.860376189853527E-06
+BiCGStab: Iteration 32,  !!RES!! = 1.690709358971867E-06
+BiCGStab: Iteration 33,  !!RES!! = 1.622131351934848E-06
+BiCGStab: Iteration 34,  !!RES!! = 1.320364517629127E-06
+BiCGStab: Iteration 35,  !!RES!! = 5.464651088278322E-07
+BiCGStab: Iteration 36,  !!RES!! = 3.163110599274912E-07
+BiCGStab: Iteration 37,  !!RES!! = 2.458374387756515E-07
+BiCGStab: Iteration 38,  !!RES!! = 2.305131211180106E-07
+BiCGStab: Iteration 39,  !!RES!! = 2.344311421176546E-07
+BiCGStab: Iteration 40,  !!RES!! = 1.964643432871993E-07
+BiCGStab: Iteration 41,  !!RES!! = 6.646337329939693E-08
+BiCGStab: Iteration 42,  !!RES!! = 5.556175953562050E-08
+BiCGStab: Iteration 43,  !!RES!! = 3.503104321308919E-08
+BiCGStab: Iteration 44,  !!RES!! = 1.796798397626913E-08
+
+BiCGStab statistics:
+
+Iterations              : 44
+!!INITIAL RES!!         : 2.676879331135164E-03
+!!RES!!                 : 1.796798397626913E-08
+!!RES!!/!!INITIAL RES!! : 6.712287613147501E-06
+
+Rate of convergence     : 7.628319531845957E-01
+L2-error: 1.2751498167E-04
+H1-error: 3.7268393418E-02
+
+Remaining collection statistics:
+--------------------------------
+
+[]
+
+Calculating Poisson-3D-Problem with method 0 - simple
+-----------------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 1.858528455875082E-02
+BiCGStab: Iteration 1,  !!RES!! = 3.946746228649794E-03
+BiCGStab: Iteration 2,  !!RES!! = 7.925380031569334E-04
+BiCGStab: Iteration 3,  !!RES!! = 4.498156820256622E-05
+BiCGStab: Iteration 4,  !!RES!! = 7.843936835712933E-08
+
+BiCGStab statistics:
+
+Iterations              : 4
+!!INITIAL RES!!         : 1.858528455875082E-02
+!!RES!!                 : 7.843936835712933E-08
+!!RES!!/!!INITIAL RES!! : 4.220509409429323E-06
+
+Rate of convergence     : 4.532535540942869E-02
+L2-error: 7.6477990637E-03
+H1-error: 2.6788335910E-01
+
+Calculating Poisson-3D-Problem with method 1 - multigrid
+--------------------------------------------------------
+Multigrid: Iteration 0,  !!RES!! = 1.858528455875082E-02
+Multigrid: Iteration 1,  !!RES!! = 2.919247337852943E-04
+Multigrid: Iteration 2,  !!RES!! = 3.772292992266141E-06
+Multigrid: Iteration 3,  !!RES!! = 4.872152104707122E-08
+
+Multigrid statistics:
+
+Iterations              : 3
+!!INITIAL RES!!         : 1.858528455875082E-02
+!!RES!!                 : 4.872152104707122E-08
+!!RES!!/!!INITIAL RES!! : 2.621510630792621E-06
+
+Rate of convergence     : 1.378850585089088E-02
+L2-error: 7.6480393177E-03
+H1-error: 2.6788335907E-01
+
+Calculating Poisson-3D-Problem with method 1 - EM30
+---------------------------------------------------
+UMFPACK: !!Initial RES!! = 7.347758326277163E-03
+UMFPACK: !!solution!!    = 3.719143328888579E-01 Status = 0
+L2-error: 1.0895696483E-02
+H1-error: 4.2596145537E-01
+
+Heap statistics:
+----------------
+Number of handles in use:        0
+Memory in use:                   0 Bytes
+Current total number of handles: 999
+Maximum number of handles used:  312
+Maximum used memory:             3.02 MB
