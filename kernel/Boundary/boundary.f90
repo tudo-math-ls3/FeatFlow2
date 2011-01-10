@@ -209,6 +209,8 @@ module boundary
     real(DP) :: dmaxParamBC = 0.0_DP
     
     ! Number of the boundary segment that corresponds to this region
+    ! =0 if the boundary region does not correspond to a specific
+    ! boundary segment.
     integer :: iboundSegIdx = 0
 
     ! Bitfield specifying properties of the region. A combination
