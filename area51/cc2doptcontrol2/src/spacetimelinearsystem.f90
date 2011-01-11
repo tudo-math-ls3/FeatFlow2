@@ -882,7 +882,7 @@ contains
         if (cthetaschemetype .eq. 0) then
           ! Activate the old timestep scheme. The coupling to the dual must be
           ! weighted by 1-dtheta.
-          rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
+          rnonlinearSpatialMatrix%Dalpha(1,2) = dtimeCoupling * dprimalDualCoupling * &
               (-dequationType) * (1.0_DP-dtheta) &
                           / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
         end if
@@ -1092,7 +1092,7 @@ contains
         if (cthetaschemetype .eq. 0) then
           ! Activate the old timestep scheme. The coupling to the dual must be
           ! weighted by 1-dtheta.
-          rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
+          rnonlinearSpatialMatrix%Dalpha(2,1) = dtimeCoupling * ddualPrimalCoupling * &
               ( dequationType) * (1.0_DP-dtheta)
         end if
             

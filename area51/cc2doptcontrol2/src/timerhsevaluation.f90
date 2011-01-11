@@ -874,6 +874,13 @@ contains
       ! Component 5: dual Y-velocity.
       ! Component 6: dual pressure.
     
+      ! The third subvector must be zero initially - as it represents the RHS of
+      ! the equation "div(u) = 0".
+      call lsyssc_clearVector(rrhsDiscrete%RvectorBlock(3))
+      
+      ! Dual pressure RHS is =0 as well.
+      call lsyssc_clearVector(rrhsDiscrete%RvectorBlock(6))
+      
       if (rrhs%ctype .eq. ANSOL_TP_ANALYTICAL) then
       
         ! Evaluate the RHS using the user defined callback functions
@@ -911,6 +918,12 @@ contains
         call linf_buildVectorScalar (&
             p_rdiscretisation%RspatialDiscr(2),rlinform,bclear,&
             rrhsDiscrete%RvectorBlock(2),trhsevl_evalFunction,rcollection)
+
+        ! Dual pressure RHS.
+        rcollection%IquickAccess(1) = 6
+        call linf_buildVectorScalar (&
+            p_rdiscretisation%RspatialDiscr(6),rlinform,bclear,&
+            rrhsDiscrete%RvectorBlock(6),trhsevl_evalFunction,rcollection)
         
         call ansol_doneEval (rcollection,"RHS")
         
@@ -960,7 +973,7 @@ contains
         call linf_buildVectorScalar (&
             p_rdiscretisation%RspatialDiscr(5),rlinform,bclear,&
             rrhsDiscrete%RvectorBlock(5),trhsevl_evalFunction,rcollection)
-            
+
         call ansol_doneEval (rcollection,"RHS")
       
       end if
@@ -1016,18 +1029,17 @@ contains
             p_rdiscretisation%RspatialDiscr(5),rlinform,.false.,&
             rrhsDiscrete%RvectorBlock(5),trhsevl_evalFunction,rcollection)
 
+        ! Primal pressure:
+        rcollection%IquickAccess(1) = 3
+        call linf_buildVectorScalar (&
+            p_rdiscretisation%RspatialDiscr(3),rlinform,.false.,&
+            rrhsDiscrete%RvectorBlock(3),trhsevl_evalFunction,rcollection)
+
         call ansol_doneEval (rcollection,"RHS")
       
       end if
 
 
-      ! The third subvector must be zero initially - as it represents the RHS of
-      ! the equation "div(u) = 0".
-      call lsyssc_clearVector(rrhsDiscrete%RvectorBlock(3))
-      
-      ! Dual pressure RHS is =0 as well.
-      call lsyssc_clearVector(rrhsDiscrete%RvectorBlock(6))
-      
     end select
                                 
     ! Clean up the collection (as we are done with the assembly, that's it.

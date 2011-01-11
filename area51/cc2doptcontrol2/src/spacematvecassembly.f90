@@ -2202,6 +2202,11 @@ contains
           rstreamlineDiffusion%dnewton           = dweightConvection * dnewton
           rstreamlineDiffusion%dnewtonTransposed = dweightConvection * dnewtonT
           
+          if (rstabilisation%dupsam .ne. 0) then
+            call output_line ("assembleConvection: Warning. Please use the")
+            call output_line ("alternative SD method for setting up the stabilised operator!!!")
+          end if
+          
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling

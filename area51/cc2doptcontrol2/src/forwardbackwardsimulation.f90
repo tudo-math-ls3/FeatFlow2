@@ -4181,6 +4181,9 @@ contains
               iiterate,1,rnonlinearSpatialMatrix)
           call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
           call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+  
+          ! DEBUG!!!        
+          call lsysbl_getbase_double (p_rprevsol,p_Dsol)
           
           call smva_assembleDefect (rnonlinearSpatialMatrix,p_rprevsol,&
               rdefect,1.0_DP)
@@ -4205,6 +4208,12 @@ contains
 
         end if
 
+        ! DEBUG!!!
+        call lsysbl_getbase_double (p_roseensol1,p_Doseen1)
+        call lsysbl_getbase_double (p_roseensol2,p_Doseen2)
+        call lsysbl_getbase_double (p_roseensol3,p_Doseen3)
+        call lsysbl_getbase_double (p_rcurrentsol,p_Dsol)
+
         ! Subtract A*primal/dual solution from the rhs to create the primal defect.
         call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
             rsimsolver%rdiscrData,rnonlinearData)
@@ -4212,9 +4221,20 @@ contains
             iiterate,0,rnonlinearSpatialMatrix)
         call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
         call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
         
         call smva_assembleDefect (rnonlinearSpatialMatrix,p_rcurrentsol,&
             rdefect,1.0_DP)
+
+        call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
+            iiterate,0,rnonlinearSpatialMatrix)
+        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
+        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+        
+        call smva_assembleDefect (rnonlinearSpatialMatrix,p_rcurrentsol,&
+            rdefect,1.0_DP)
+
         call stat_stopTimer(rtimerDefectCalc)
         
         ! Implement the boundary conditions        

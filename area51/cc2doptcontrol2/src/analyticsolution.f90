@@ -1996,7 +1996,7 @@ contains
         
         ! Evaluate
         !call anprj_discrDirect (rvector%RvectorBlock(idim2),ffunctionPrj,rcollection)
-        rL2ProjectionConfig%depsRel = 1E-14_DP
+        rL2ProjectionConfig%depsRel = 1E-20_DP
         call anprj_analytL2projectionByMass (rvector%RvectorBlock(idim2),&
             rmassMatrix%RmatrixBlock(idim2,idim2),ffunctionPrj2,rcollection,&
             rL2ProjectionConfig)

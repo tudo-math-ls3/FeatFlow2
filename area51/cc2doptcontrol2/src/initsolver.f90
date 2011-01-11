@@ -2905,7 +2905,7 @@ contains
         
     ! Create a mass matrix for the projection
     call imnat_getL2PrjMatrix(rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),&
-        CCSPACE_PRIMAL,rvector%p_rspaceDiscr,rmassMatrix)
+        CCSPACE_PRIMALDUAL,rvector%p_rspaceDiscr,rmassMatrix)
 
     select case (rsettings%rphysicsPrimal%cequation)
     case (0,1)
@@ -2951,7 +2951,8 @@ contains
         ! Project it down to all timesteps.
         do i=1,rvector%neqTime
           call tdiscr_getTimestep(rvector%p_rtimeDiscr,i-1,dtime)
-          call ansol_prjToVector (rlocalsolution,dtime,rvectorSpace,1,3,rmassMatrix)
+          call ansol_prjToVector (rlocalsolution,dtime,rvectorSpace,&
+              1,min(rlocalsolution%ncomponents,6),rmassMatrix)
           call sptivec_setTimestepData (rvector, i, rvectorSpace)
         end do
         
