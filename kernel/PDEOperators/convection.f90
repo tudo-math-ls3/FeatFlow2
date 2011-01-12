@@ -11215,8 +11215,8 @@ contains
 
               ! Nonlinearity:
               !    ddelta * u_1 * grad(.)
-              !  = ddelta * [ (DU1) (dx)            ]
-              !             [            (DU2) (dy) ]
+              !  = ddelta * [ (DU1 dx + DU2 dy)                   ]
+              !             [                   (DU1 dx + DU2 dy) ]
               !
               ! Loop over all cubature points on the current element
               do ICUBP = 1, ncubp
@@ -11738,8 +11738,8 @@ contains
         ! Transposed convection operator
         !
         !  ddeltaTransposed * grad(.)^T * u_1
-        !  = ddeltaTransposed * [ (DU1+DU2) dx               ]
-        !                       [               (DU1+DU2) dy ]
+        !  = ddeltaTransposed * [ (DU1 dx) (DU2 dx) ]
+        !                       [ (DU1 dy) (DU2 dy) ]
         !
         ! Should we assemble the transposed convection matrices?
         if (rconfig%ddeltaT .ne. 0.0_DP) then
