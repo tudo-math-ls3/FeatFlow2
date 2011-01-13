@@ -98,6 +98,7 @@ module spacematvecassembly
   use basicgeometry
   use boundary
   use cubature
+  use element
   use derivatives
   use matrixfilters
   use vectorfilters
@@ -122,6 +123,7 @@ module spacematvecassembly
   use convection
   use collection
   use mprimitives
+  use dofmapping
   
   use constantsoptc
   use assemblytemplates
@@ -2152,6 +2154,8 @@ contains
     type(t_convUpwind) :: rupwindStabil
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
     real(DP) :: dweightConvection
+    integer, dimension(:), pointer :: p_Idofs
+    type(t_matrixBlock) :: rmatrixtemp
     
       ! Debug weight for the convection
       dweightConvection = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection
@@ -2160,6 +2164,12 @@ contains
       bshared = lsyssc_isMatrixContentShared(&
                     rmatrix%RmatrixBlock(1,1),&
                     rmatrix%RmatrixBlock(2,2))
+                    
+      if (rstabilisation%cconvectionOnBoundaryMatrix .eq. 0) then
+        ! Copy the matrix so we can restore rows if necessary
+        call lsysbl_duplicateMatrix (rmatrix,rmatrixtemp,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      end if
                     
       call lsysbl_getbase_double (rvector,p_Ddata1)
       call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Ddata2)
@@ -2503,6 +2513,32 @@ contains
           end select
         end if
         
+      end if
+      
+      if (rstabilisation%cconvectionOnBoundaryMatrix .eq. 0) then
+        ! Restore the matrix values on the boundary.
+        call smva_getDOFsOnBoundary (&
+            rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimal%RspatialDiscr(1), p_Idofs)
+        if (associated(p_Idofs)) then
+          call lsyssc_replaceRowsMatrix9 (&
+              rmatrixtemp%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,1),p_Idofs)
+
+          call lsyssc_replaceRowsMatrix9 (&
+              rmatrixtemp%RmatrixBlock(1,2),&
+              rmatrix%RmatrixBlock(1,2),p_Idofs)
+
+          call lsyssc_replaceRowsMatrix9 (&
+              rmatrixtemp%RmatrixBlock(1,1),&
+              rmatrix%RmatrixBlock(1,1),p_Idofs)
+
+          call lsyssc_replaceRowsMatrix9 (&
+              rmatrixtemp%RmatrixBlock(2,2),&
+              rmatrix%RmatrixBlock(2,2),p_Idofs)
+              
+          deallocate(p_Idofs)
+        end if
+        call lsysbl_releaseMatrix (rmatrixtemp)
       end if
       
     end subroutine  
@@ -3583,6 +3619,8 @@ contains
     type(t_jumpStabilisation) :: rjumpStabil
     type(t_convupwind) :: rupwindStabil
     real(DP) :: dweightConvection
+    type(t_vectorBlock) :: rbtemp
+    integer, dimension(:), pointer :: p_Idofs
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2
@@ -3596,6 +3634,11 @@ contains
       bshared = lsyssc_isMatrixContentShared(&
                     rmatrix%RmatrixBlock(1,1),&
                     rmatrix%RmatrixBlock(2,2))
+
+      if (rstabilisation%cconvectionOnBoundaryDefect .eq. 0) then
+        ! Copy the RHS vector so we can restore the values 
+        call lsysbl_copyVector (rb,rbtemp)
+      end if
                     
       if ((dgamma .ne. 0.0_DP) .or. (dgammaT .ne. 0.0_DP) .or. &
           (dnewton .ne. 0.0_DP) .or. (dnewtonT .ne. 0.0_DP)) then
@@ -3648,7 +3691,7 @@ contains
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
               rx,rb,rvector)
-
+              
         case (CCMASM_STAB_UPWIND)
         
           ! Set up the SD structure for the creation of the defect.
@@ -3901,6 +3944,18 @@ contains
           end select
         end if
         
+      end if
+      
+      if (rstabilisation%cconvectionOnBoundaryDefect .eq. 0) then
+        ! Restore the RHS values on the boundary.
+        call smva_getDOFsOnBoundary (&
+            rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimal%RspatialDiscr(1), p_Idofs)
+        if (associated(p_Idofs)) then
+          call lsyssc_replaceVectorEntries (rbtemp%RvectorBlock(1),rb%RvectorBlock(1),p_Idofs)
+          call lsyssc_replaceVectorEntries (rbtemp%RvectorBlock(2),rb%RvectorBlock(2),p_Idofs)
+          deallocate(p_Idofs)
+        end if
+        call lsysbl_releaseVector (rbtemp)
       end if
       
     end subroutine  
@@ -4522,5 +4577,567 @@ contains
     deallocate (p_Iedges,p_Itemp)
 
   end subroutine   
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_getDOFsOnBoundary (rspatialDiscr, p_Idofs)
+  
+!<description>
+  ! Calculates the DOF's on the whole boundary.
+!</description>
+
+!<input>
+  ! The discretisation structure of the underlying discretisation. 
+  type(t_spatialDiscretisation), intent(in), target :: rspatialDiscr
+!</input>  
+
+!<inputoutput>
+  ! A pointer to an array that contains the DOF's.
+  ! =NULL if there are no DOF's on the region.
+  ! The caller must deallocate the memory!
+  integer, dimension(:), pointer :: p_Idofs
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: icount,icounttotal,ibc,iseg
+    type(t_boundaryRegion) :: rboundaryRegion
+    integer, dimension(:), pointer :: p_IdofsLocal
+
+    ! Initialise the output
+    nullify(p_Idofs)
+    
+    icounttotal = 0
+    
+    ! Loop through the boundary components and segments.
+    do ibc = 1,boundary_igetNBoundComp(rspatialDiscr%p_rboundary)
+    
+      do iseg = 1,boundary_igetNsegments(rspatialDiscr%p_rboundary,ibc)
+      
+        ! Calculate the number of DOF's there.
+        call boundary_createRegion (rspatialDiscr%p_rboundary, &
+            ibc, iseg, rboundaryRegion)
+            
+        call bcasm_getDOFsInBDRegion (rspatialDiscr, &
+            rboundaryRegion, ndofs=icount)
+            
+        ! Sum up.
+        icounttotal = icounttotal+icount
+      
+      end do
+    
+    end do
+    
+    ! Calcel if there are no DOF's.
+    if (icounttotal .eq. 0) return
+    
+    ! Allocate and fetch the DOF's.
+    allocate(p_Idofs(icounttotal))
+    
+    icounttotal = 0
+    do ibc = 1,boundary_igetNBoundComp(rspatialDiscr%p_rboundary)
+    
+      do iseg = 1,boundary_igetNsegments(rspatialDiscr%p_rboundary,ibc)
+      
+        ! Calculate the DOF's there.
+        call boundary_createRegion (rspatialDiscr%p_rboundary, &
+            ibc, iseg, rboundaryRegion)
+            
+        ! Store in a subarray of p_Idofs.
+        p_IdofsLocal => p_Idofs(icounttotal+1:)
+        call bcasm_getDOFsInBDRegion (rspatialDiscr, &
+            rboundaryRegion, p_Idofs=p_IdofsLocal,ndofs=icount)
+            
+        icounttotal = icounttotal+icount
+      
+      end do
+    
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine bcasm_getDOFsInBDRegion (rspatialDiscr, &
+      rboundaryRegion, p_Idofs, ndofs)
+  
+!<description>
+  ! Calculates all DOF's associated to edges/vertices on the boundary
+  ! in the boundary region rboundaryRegion.
+!</description>
+
+!<input>
+  ! The discretisation structure of the underlying discretisation. 
+  type(t_spatialDiscretisation), intent(in), target :: rspatialDiscr
+
+  ! A boundary-condition-region object, describing the position on the
+  ! boundary where boundary conditions should be imposed.
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+!</input>  
+
+!<inputoutput>
+  ! OPTIONAL: A pointer to an array that contains the DOF's.
+  ! If the pointer points to NULL, memory is automatically allocated.
+  ! Otherwise, the memory must be large enough to hold all DOF's.
+  ! If the pointer is NULL, it stays =NULL if there are no DOF's on the region.
+  ! The caller must deallocate the memory!
+  integer, dimension(:), pointer, optional :: p_Idofs
+  
+  ! OPTIONAL: Number of DOF's in the boundary region.
+  integer, intent(out), optional :: ndofs
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,i2,j,ilocalEdge,icount,ielidx
+    integer(I32) :: celement
+    integer :: ielement
+    integer :: iedge,ipoint1,ipoint2,NVT
+    integer, dimension(1) :: Icomponents
+    type(t_triangulation), pointer              :: p_rtriangulation
+    type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
+    integer, dimension(:), pointer              :: p_IelementDistr
+    integer, dimension(:,:), allocatable :: Idofs
+    real(DP), dimension(:), pointer             :: p_DedgeParameterValue,p_DvertexParameterValue
+    real(DP), dimension(:), pointer             :: p_DdirichletValues
+    integer, dimension(:,:), pointer            :: p_IedgesAtElement
+    integer, dimension(:,:), pointer            :: p_IverticesAtElement
+    integer, dimension(:), pointer              :: p_IdirichletDOFs
+    integer, dimension(:), pointer              :: p_IboundaryCpIdx
+    integer, dimension(:), allocatable          :: IverticesAtBoundaryIdx
+    integer, dimension(:), allocatable          :: IedgesAtBoundaryIdx
+    integer, dimension(:), allocatable          :: IelementsAtBoundary
+    integer, dimension(:), allocatable          :: IelementsAtBoundaryIdx
+    
+    real(DP) :: dpar,dpar1,dpar2,dval,dval1,dval2
+    integer :: nve,nnve,nvbd
+    
+    integer ::iidx
+    
+    ! Position of cubature points for 2-point Gauss formula on an edge.
+    ! Used for Q2T. 
+    real(DP), parameter :: Q2G1 = -0.577350269189626_DP !-SQRT(1.0_DP/3.0_DP)
+    real(DP), parameter :: Q2G2 =  0.577350269189626_DP ! SQRT(1.0_DP/3.0_DP)
+    
+    ! List of element distributions in the discretisation structure
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
+
+    integer(I32) :: casmComplexity, cmyoptions
+    
+    ! For easier access:
+    p_rtriangulation => rspatialDiscr%p_rtriangulation
+    call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    call storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
+
+    p_RelementDistribution => rspatialDiscr%RelementDistr
+    
+    ! The parameter value arrays may not be initialised.
+    if (p_rtriangulation%h_DedgeParameterValue .ne. ST_NOHANDLE) then
+      call storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
+          p_DedgeParameterValue)
+    else
+      nullify(p_DedgeParameterValue)
+    end if
+
+    if (p_rtriangulation%h_DvertexParameterValue .ne. ST_NOHANDLE) then
+      call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,&
+          p_DvertexParameterValue)
+    else
+      nullify(p_DvertexParameterValue)
+    end if
+
+    NVT = p_rtriangulation%NVT
+    nnve = p_rtriangulation%NNVE
+
+    if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
+      ! Every element can be of different type.
+      call storage_getbase_int(rspatialDiscr%h_IelementDistr,&
+          p_IelementDistr)
+    else
+      ! All elements are of the samne type. Get it in advance.
+      celement = rspatialDiscr%RelementDistr(1)%celement
+      nve = elem_igetNVE (celement)
+    end if
+    
+    ! We have to deal with all DOF`s on the boundary. This is highly element
+    ! dependent and therefore a little bit tricky :(
+    !
+    ! As we are in 2D, we can use parameter values at first to figure out,
+    ! which points and which edges are on the boundary.
+    ! What we have is a boundary segment. Now ask the boundary-index routine
+    ! to give us the vertices and edges on the boundary that belong to 
+    ! this boundary segment.
+    
+    allocate(IverticesAtBoundaryIdx(p_rtriangulation%NVBD))
+    allocate(IedgesAtBoundaryIdx(p_rtriangulation%NVBD))
+    allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
+    allocate(IelementsAtBoundaryIdx(p_rtriangulation%NVBD))
+    
+    call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
+        icount, IelementsAtBoundary, IelementsAtBoundaryIdx, &
+        IverticesAtBoundaryIdx,IedgesAtBoundaryIdx)
+                                   
+    if (icount .eq. 0) then
+      deallocate(IverticesAtBoundaryIdx)
+      deallocate(IedgesAtBoundaryIdx)
+      deallocate(IelementsAtBoundary)
+      deallocate(IelementsAtBoundaryIdx)
+      return
+    end if
+                                   
+    ! Reserve some memory to save temporarily all DOF`s of all boundary
+    ! elements.
+    ! We handle all boundary elements simultaneously - let us hope that there are 
+    ! never so many elements on the boundary that our memory runs out :-)
+    allocate (Idofs(EL_MAXNBAS,icount))
+    
+    Idofs(:,:) = 0
+
+    ! Now the elements with indices iminidx..imaxidx in the ItrialElements
+    ! of the triangulation are on the boundary. Some elements may appear
+    ! twice (on edges e.g.) but we do not care.
+    !
+    ! Ask the DOF-mapping routine to get us those DOF`s belonging to elements
+    ! on the boundary.
+    !
+    ! The 'mult' call only works on uniform discretisations. We cannot assume
+    ! that and have to call dof_locGlobMapping for every element separately.
+    if (rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      call dof_locGlobMapping_mult(rspatialDiscr, &
+                IelementsAtBoundary(1:icount), Idofs)
+    else
+      do ielement = 1,icount
+        call dof_locGlobMapping(rspatialDiscr, IelementsAtBoundary(ielement),&
+            Idofs(:,ielement))
+      end do
+    end if
+                   
+    ! Loop through the elements
+    do ielidx = 1,icount
+
+      ! Get the element and information about it.
+      ielement = IelementsAtBoundary (ielidx)
+      
+      ! Index in the boundary arrays.
+      I = IelementsAtBoundaryIdx (ielidx)
+      
+      ! Get the element type in case we do not have a uniform triangulation.
+      ! Otherwise, celement was set to the trial element type above.
+      if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
+        celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
+        nve = elem_igetNVE (celement)
+      end if
+        
+      ilocaledge = 0
+      
+      if (IverticesAtBoundaryIdx(ielidx) .ne. 0) then
+        ! Get the local index of the edge -- it coincides with the local index
+        ! of the vertex.
+        ilocaledge = IverticesAtBoundaryIdx(ielidx)
+        ipoint1 = p_IverticesAtElement(IverticesAtBoundaryIdx(ielidx),ielement)
+        ipoint2 = p_IverticesAtElement(mod(IverticesAtBoundaryIdx(ielidx),nve)+1,ielement)
+      else
+        ipoint1 = 0
+        ipoint2 = 0
+      end if
+
+      if (IedgesAtBoundaryIdx(ielidx) .ne. 0) then
+        ! Get the local index of the edge -- it coincides with the local index
+        ! of the vertex.
+        ilocaledge = IedgesAtBoundaryIdx(ielidx)
+
+        ! Get the edge
+        iedge = p_IedgesAtElement(IedgesAtBoundaryIdx(ielidx),ielement)
+      else
+        iedge = 0
+      end if
+      
+      dpar = -1.0_DP
+    
+      ! Now the element-dependent part. For each element type, we have to
+      ! figure out which DOF`s are on the boundary!
+      !
+      ! We proceed as follows: We figure out, which DOF is on the
+      ! boundary. Then, we ask our computation routine to calculate
+      ! the necessary value and translate them into a DOF value.
+      ! All DOF values are collected later.
+      select case (elem_getPrimaryElement(celement))
+      
+      case (EL_P0,EL_Q0)
+
+        ! This element has no DOF's associated to boundary edges.        
+        
+      case (EL_P1,EL_Q1)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        if ( ipoint1 .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+        
+        ! The right point does not have to be checked! It comes later
+        ! with the next edge. The situation when an element crosses the
+        ! maximum parameter value with its boundary is handled by the
+        ! outer DO-LOOP:
+        ! A boundary region with parameter value e.g. [3.0,TMAX]
+        ! will produce two index sets: One index set for [0.0, 0.0]
+        ! and one for [3.0, TMAX).
+        
+      case (EL_DG_P1_2D)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        if ( ipoint1 .ne. 0 ) then
+        
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+        
+        ! Right point inside? -> Corresponding DOF must be computed
+        if ( ipoint2 .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+          Idofs(mod(ilocalEdge,3)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,3)+1,ielidx))
+        end if
+
+      case (EL_P2,EL_Q2)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        if ( ipoint1 .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+        
+        ! The right point does not have to be checked! It comes later
+        ! with the next edge. The situation when an element crosses the
+        ! maximum parameter value with its boundary is handled by the
+        ! outer DO-LOOP:
+        ! A boundary region with parameter value e.g. [3.0,TMAX]
+        ! will produce two index sets: One index set for [0.0, 0.0]
+        ! and one for [3.0, TMAX).
+        !
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        if ( iedge .ne. 0 ) then
+          
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
+              
+          ! The element midpoint does not have to be considered, as it cannot
+          ! be on the boundary.
+        end if
+
+      case (EL_QP1)
+        ! Three DOF`s: Function value in the element midpoint 
+        ! and derivatives.
+        ! No DOF is on a boundary edge.
+
+      case (EL_P1T)
+
+        ! Edge midpoint based element.
+        !
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        if ( iedge .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+
+      case (EL_Q1T,EL_Q1TB)
+      
+        ! The Q1T-element has different variants. Check which variant we have
+        ! and choose the right way to calculate boundary values.
+      
+        if (iand(celement,int(2**16,I32)) .ne. 0) then
+        
+          ! Integral mean value based element.
+          
+          ! Edge inside? -> Calculate integral mean value over the edge
+          if ( iedge .ne. 0 ) then
+          
+            ! Set the DOF number < 0 to indicate that this DOF is in the region.
+            Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+              
+          end if
+                                      
+        else
+          
+          ! Edge midpoint based element.
+          !
+          ! Edge inside? -> Calculate point value on midpoint of edge iedge
+          if ( iedge .ne. 0 ) then
+            ! Set the DOF number < 0 to indicate that this DOF is in the region.
+            Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+          end if
+
+        end if
+
+      case (EL_Q2T,EL_Q2TB)
+      
+        ! The Q2T-element is only integral mean value based.
+        ! On the one hand, we have integral mean values over the edges.
+        ! On the other hand, we have integral mean values of function*parameter
+        ! value on the edge.
+        !
+        ! Edge inside? 
+        if ( iedge .ne. 0 ) then
+          
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
+          
+        end if
+
+      case default
+      
+        print *,'bcasm_getDOFsInBDRegion: Unsupported element!'
+        call sys_halt()
+      
+      end select
+      
+    end do
+
+    ! Temp arrays no more necessary    
+    deallocate(IverticesAtBoundaryIdx)
+    deallocate(IedgesAtBoundaryIdx)
+    deallocate(IelementsAtBoundary)
+    deallocate(IelementsAtBoundaryIdx)
+    
+    ! Now count how many values we actually have.
+    icount = 0
+    do J=1,size(Idofs,2)
+      do I=1,size(Idofs,1)
+        if (Idofs(I,J) < 0) icount = icount + 1
+      end do
+    end do
+    
+    if (icount .gt. 0) then
+    
+      if (present(p_Idofs)) then
+        ! Allocate arrays for storing these DOF`s and their values - if values are
+        ! computed.
+        if (.not. associated(p_Idofs)) then
+          allocate(p_Idofs(icount))
+        end if
+        
+        ! Transfer the DOF`s and their values to these arrays.
+        icount = 0
+        do J=1,size(Idofs,2)
+          do I=1,size(Idofs,1)
+            if (Idofs(I,J) < 0) then
+              icount = icount + 1
+              p_Idofs(icount) = abs(Idofs(I,J))
+            end if
+          end do
+        end do
+      end if
+    
+    end if
+    
+    if (present(ndofs)) ndofs=icount
+    
+    ! Remove temporary memory, finish.
+    deallocate (Idofs)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_replaceRowsMatrix9 (rmatrixSource,rmatrixDest,Irows)
+  
+!<description>
+  ! Replaces all rows Irows in rmatrixDest by those in rmatrixSource.
+  ! Source and destination matrix must have the same structure.
+!</description>
+
+!<input>
+  ! Source matrix. Must be format 9!
+  type(t_matrixScalar), intent(in) :: rmatrixSource
+
+  ! Rows to replace
+  integer, dimension(:), intent(in) :: Irows
+!</input>
+
+!<inputoutput>
+  ! Destination matrix
+  type(t_matrixScalar), intent(inout) :: rmatrixDest
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,irow
+    integer, dimension(:), pointer :: p_Kld1, p_Kld2
+    real(DP), dimension(:), pointer :: p_Da1, p_Da2
+    
+    ! Get pointers to the matrix data.
+    call lsyssc_getbase_Kld (rmatrixSource,p_Kld1)
+    call lsyssc_getbase_Kld (rmatrixDest,p_Kld2)
+    call lsyssc_getbase_double (rmatrixSource,p_Da1)
+    call lsyssc_getbase_double (rmatrixDest,p_Da2)
+    
+    ! Loop over all rows
+    do irow = 1,size(Irows)
+      if ((p_Kld1(irow) .ne. p_Kld2(irow)) .or. (p_Kld1(irow+1) .ne. p_Kld2(irow+1))) then
+        call output_line("Source and destination matrix incompatible!",&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_replaceRowsMatrix9')
+        call sys_halt()
+      end if
+      
+      ! Copy the row.
+      do i=p_Kld1(Irows(irow)),p_Kld1(Irows(irow)+1)-1
+        p_Da2(i) = p_Da1(i)
+      end do
+    
+    end do
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_replaceVectorEntries (rvectorSource,rvectorDest,Irows)
+  
+!<description>
+  ! Replaces all entries Irows in rvectorDest by those in rvectorSource.
+!</description>
+
+!<input>
+  ! Source vector. Must be format 9!
+  type(t_vectorScalar), intent(in) :: rvectorSource
+
+  ! Rows to replace
+  integer, dimension(:), intent(in) :: Irows
+!</input>
+
+!<inputoutput>
+  ! Destination vector
+  type(t_vectorScalar), intent(inout) :: rvectorDest
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    real(DP), dimension(:), pointer :: p_Da1, p_Da2
+    
+    ! Get pointers to the matrix data.
+    call lsyssc_getbase_double (rvectorSource,p_Da1)
+    call lsyssc_getbase_double (rvectorDest,p_Da2)
+    
+    ! Loop over all rows
+    do i = 1,size(Irows)
+      p_Da2(Irows(i)) = p_Da1(Irows(i))
+    end do
+    
+  end subroutine
 
 end module

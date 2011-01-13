@@ -176,6 +176,7 @@ module spacetimelinearsystem
   use discretefbc
   use domainintegration
   use analyticprojection
+  use element
   
   use collection
   use convection
@@ -1164,6 +1165,9 @@ contains
       
     end if
     
+    ! DEBUG!!!
+    !rnonlinearSpatialMatrix%DnewtonT(:,:)  = 0.0_DP
+    
 
   end subroutine  
   
@@ -2033,5 +2037,6 @@ contains
 
 !betrachte die GMV's. Entkoppelt gibt's 2. Ordnung in der Geschwindigkeit
 !(Druck=0), Gekoppelt nicht :(
+
   
 end module

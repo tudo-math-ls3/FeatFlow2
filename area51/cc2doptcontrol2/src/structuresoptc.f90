@@ -255,6 +255,16 @@ module structuresoptc
     ! =0: Stabilisation is not applied to the boundary.
     ! =1: Stabilisation is applied to all bonudary edges (default).
     integer :: ceojStabilOnBoundary = 1
+    
+    ! Definbes whether the convection operator of the dual equation is included
+    ! into the solution.
+    ! =0: no, =1: yes
+    integer :: cconvectionOnBoundaryDefect = 1
+
+    ! Definbes whether the convection operator of the dual equation is set up
+    ! for the preconditioners on the boundary.
+    ! =0: no, =1: yes
+    integer :: cconvectionOnBoundaryMatrix = 1
 
   end type
 

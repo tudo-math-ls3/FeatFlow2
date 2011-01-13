@@ -639,6 +639,15 @@ contains
         'CEOJSTABILONBOUNDARY', rstabilPrimal%ceojStabilOnBoundary,1)
     rstabilDual%ceojStabilOnBoundary = rstabilPrimal%ceojStabilOnBoundary
 
+    ! Get the flags that decides if in the dual equation, the convection is
+    ! set up on the boundary. For the primal equation, this is always set up,
+    ! so pass the values only to the stabilisation structure of the dual equation.
+    call parlst_getvalue_int (rparlist, ssection, &
+        'CCONVECTIONONBOUNDARYDEFECT', rstabilDual%cconvectionOnBoundaryDefect,1)
+
+    call parlst_getvalue_int (rparlist, ssection, &
+        'CCONVECTIONONBOUNDARYMATRIX', rstabilDual%cconvectionOnBoundaryMatrix,1)
+
   end subroutine
   
   ! ***************************************************************************
