@@ -89,6 +89,11 @@ module structuresoptcspacetimenlsol
 
     integer :: ctypeNonlinearIteration = CCNLS_NEWTON
 
+    ! Whether to postprocess intermediate solutions.
+    ! =1: After each nonlinear step, apply postprocessing to the solution.
+
+    integer :: cpostprocessIterates = 0
+
     ! Minimum number of steps
 
     integer :: nminIterations     = 1

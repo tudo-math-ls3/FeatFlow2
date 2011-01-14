@@ -2511,6 +2511,9 @@ contains
     call parlst_getvalue_int (rparlist,ssection,&
         'ctypeNonlinearIteration',rnlstsolver%ctypeNonlinearIteration,1)
 
+    call parlst_getvalue_int (rparlist,ssection,&
+        'cpostprocessIterates',rnlstsolver%cpostprocessIterates,0)
+
     call parlst_getvalue_int (rparlist, ssection, &
         'nminIterations', rnlstsolver%nminIterations, 1)
     

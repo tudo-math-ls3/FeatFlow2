@@ -27,6 +27,11 @@ cpreconditioner = 2
 
 ctypeNonlinearIteration = 2
 
+# Whether to postprocess intermediate solutions.
+# =1: After each nonlinear step, apply postprocessing to the solution.
+
+cpostprocessIterates = 0
+
 # Minimum number of steps
 
 nminIterations     = 1

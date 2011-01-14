@@ -1280,7 +1280,7 @@ contains
     call stat_clearTimer (rtimePostProc)
     call stat_startTimer (rtimePostProc)
     call optcpp_postprocessSpaceTimeVec (rpostproc,rsolution,rrhsDiscrete,&
-        p_rsettingsSolver%rsettingsOptControl,p_rsettingsSolver)    
+        p_rsettingsSolver%rsettingsOptControl,p_rsettingsSolver)
     call stat_stopTimer (rtimePostProc)
     
     ! Sum up the time for the postprocesing during the simulation

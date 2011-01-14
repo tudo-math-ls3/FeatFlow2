@@ -81,6 +81,16 @@ dUpsam2            = 0.0
 
 ceojStabilOnBoundary = 1
 
+# Definbes whether the convection operator of the dual equation is included
+# into the solution.
+# =0: no, =1: yes
+cconvectionOnBoundaryDefect = 1
+
+# Definbes whether the convection operator of the dual equation is set up
+# for the preconditioners on the boundary.
+# =0: no, =1: yes
+cconvectionOnBoundaryMatrix = 1
+
 # Type of bdry. conditions.
 # 0=DIRICHLET stationary, 
 # 1=Pressure drop nonstationary, 

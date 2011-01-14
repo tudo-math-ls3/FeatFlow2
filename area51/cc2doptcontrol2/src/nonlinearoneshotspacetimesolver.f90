@@ -420,6 +420,19 @@ contains
                 (abs(ddefNorm-dlastDefNorm) .ge. rnlstsolver%depsDiff*dlastDefNorm)) &
               .and. (rnlstsolver%nnonlinearIterations .lt. rnlstsolver%nmaxIterations)))
     
+      
+      if (rnlstsolver%cpostprocessIterates .eq. 1) then
+        ! Postprocessing of the current this iterate.
+        call stat_startTimer (rtimerPostproc)
+        if (rnlstsolver%ioutputLevel .ge. 1) then
+          call output_separator (OU_SEP_MINUS)
+          call output_line ("Postprocessing of the current iterate.")
+        end if
+        call optcpp_postprocessSpaceTimeVec (rpostproc,rx,rb,&
+            rsettings%rsettingsOptControl,rsettings)
+        call stat_stopTimer (rtimerPostproc)
+      end if
+                  
       ! Measure time for the current iterate.
       call stat_clearTimer (rtimerIterate)
       call stat_startTimer (rtimerIterate)
@@ -529,6 +542,7 @@ contains
           call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))   
         end if
       end if
+      
       call stat_stopTimer (rtimerPostproc)
 
       if (rnlstsolver%ioutputLevel .ge. 1) then
@@ -724,7 +738,7 @@ contains
           call output_separator (OU_SEP_MINUS)
       
       call stat_stopTimer (rtimerIterate)
-      
+
       call output_line ('Iteration: '//trim(sys_siL(rnlstsolver%nnonlinearIterations,10))//&
           '                          Defect of supersystem:  '//adjustl(sys_sdEP(ddefNorm,20,10)))
       call output_line ('Time for computation of this iterate:       '//&
