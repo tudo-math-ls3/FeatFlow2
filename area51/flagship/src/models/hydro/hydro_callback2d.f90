@@ -181,6 +181,7 @@ module hydro_callback2d
 #include "hydro.h"
 
   use boundary
+  use boundaryaux
   use boundarycondaux
   use collection
   use derivatives
@@ -196,6 +197,7 @@ module hydro_callback2d
   use hydro_basic
   use linearsystemblock
   use linearsystemscalar
+  use mprimitives
   use problem
   use scalarpde
   use solveraux
@@ -4774,11 +4776,13 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution
-    real(DP), dimension(:,:), pointer :: Daux1,Dnx,Dny
-    real(DP), dimension(:,:,:), pointer :: Daux2
+    type(t_boundaryRegion), pointer :: p_rboundaryRegionMirror
+    real(DP), dimension(:,:), pointer :: Daux1,Daux3,Dnx,Dny,DpointParMirror
+    real(DP), dimension(:,:,:), pointer :: Daux2,Daux4
     real(DP), dimension(NVAR2D) :: DstateI,DstateM,Dflux,Diff
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dtime,dscale,pI,cI,rM,pM,cM,dvnI,dvtI,dvnM,dvtM,w1,w4
+    real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
+    real(DP) :: dtime,dscale,cI,cM,dvnI,dvnM,dvtI,dvtM,pI,pM,rM,w1,w4
     integer :: ibdrtype,isegment,iel,ipoint,ndim,ivar,nvar,iexpr,nmaxExpr
 
 #ifndef HYDRO_USE_IBP
@@ -4847,7 +4851,7 @@ contains
         !
         ! Compute the Riemann invariants based on the computed (internal)
         ! state vector and the given freestream state vector and select
-        ! the Riemman invariant for each characteristic field based on the
+        ! the Riemann invariant for each characteristic field based on the
         ! sign of the corresponding eigenvalue.
         
         ! Initialize values for function parser
@@ -5211,6 +5215,137 @@ contains
           end do
         end do
 
+
+      case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+        !-----------------------------------------------------------------------
+        ! Periodic boundary conditions:
+        !
+        ! Compute the Riemann invariants based on the computed
+        ! (internal) state vector and on the state vector evaluated at
+        ! the mirror boundary and select the Riemann invariant for
+        ! each characteristic field based on the sign of the
+        ! corresponding eigenvalue.
+
+        ! Get mirrored boundary region from collection structure
+        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
+            'rboundaryRegionMirror')
+        
+        ! Get minimum/maximum parameter values from collection structure
+        dminParam = rcollection%DquickAccess(3)
+        dmaxParam = rcollection%DquickAccess(4)
+        dminParamMirror = rcollection%DquickAccess(5)
+        dmaxParamMirror = rcollection%DquickAccess(6)
+
+        ! Allocate temporal memory
+        allocate(DpointParMirror(npointsPerElement,nelements))
+        allocate(Daux3(npointsPerElement*nvar, nelements))
+
+        ! Rescale parameter values DpointPar on the boundary segment
+        ! where to compute the boundary conditions into parameter
+        ! values on the mirror boundary region
+        if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
+              dmaxParamMirror, dminParamMirror, DpointParMirror)
+        else
+          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
+              dmaxParamMirror, dminParamMirror, DpointParMirror)
+        end if
+
+        ! Evaluate the solution in the cubature points on the mirrored boundary
+        call doEvaluateAtBdrScalar(DER_FUNC, npointsPerElement*nelements*nvar,&
+            Daux3, p_rsolution%RvectorBlock(1), npointsPerElement*nelements,&
+            DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+        
+            ! Compute auxiliary quantities based on the internal state
+            ! vector evaluated on the boundary
+            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
+                              0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
+                                   Daux1((ipoint-1)*NVAR2D+3,iel)**2)/&
+                                   Daux1((ipoint-1)*NVAR2D+1,iel))
+            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
+
+            ! Compute the normal and tangential velocities based on
+            ! the internal state vector evaluated on the boundary
+            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+                     Daux1((ipoint-1)*NVAR2D+1,iel)
+            dvtI = (-Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+                     Daux1((ipoint-1)*NVAR2D+1,iel)
+
+            ! Compute auxiliary quantities based on state vector
+            ! evaluated on the mirrored boundary
+            pM = (GAMMA-1.0)*(Daux3((ipoint-1)*NVAR2D+4,iel)-&
+                              0.5*(Daux3((ipoint-1)*NVAR2D+2,iel)**2+&
+                                   Daux3((ipoint-1)*NVAR2D+3,iel)**2)/&
+                                   Daux3((ipoint-1)*NVAR2D+1,iel))
+            cM = sqrt(max(GAMMA*pM/Daux3((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
+
+            ! Compute the normal and tangential velocities based on
+            ! state vector evaluated on the mirrored boundary
+            dvnM = ( Dnx(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+2,iel)+&
+                     Dny(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+3,iel) )/&
+                     Daux3((ipoint-1)*NVAR2D+1,iel)
+            dvtM = (-Dny(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+2,iel)+&
+                     Dnx(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+3,iel) )/&
+                     Daux3((ipoint-1)*NVAR2D+1,iel)
+
+            ! Select internal or mirrored Riemann invariant depending
+            ! on the sign of the corresponding eigenvalue
+            if (dvnI .lt. cI) then
+              DstateM(1) = dvnM-2.0/(GAMMA-1.0)*cM
+            else
+              DstateM(1) = dvnI-2.0/(GAMMA-1.0)*cI
+            end if
+
+            if (dvnI .lt. SYS_EPSREAL) then
+              DstateM(2) = pM/(Daux3((ipoint-1)*NVAR2D+1,iel)**GAMMA)
+              DstateM(3) = dvtM
+            else
+              DstateM(2) = pI/(Daux1((ipoint-1)*NVAR2D+1,iel)**GAMMA)
+              DstateM(3) = dvtI
+            end if
+
+            if (dvnI .lt. -cI) then
+              DstateM(4) = dvnM+2.0/(GAMMA-1.0)*cM
+            else
+              DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
+            end if
+            
+            ! Convert Riemann invariants into conservative state variables
+            cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
+            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
+            pM = rM*cM*cM/GAMMA
+            dvnM = 0.5*(DstateM(1)+DstateM(4))
+            dvtM = DstateM(3)
+
+            ! Setup the state vector based on Riemann invariants
+            DstateM(1) = rM
+            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
+            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+
+        ! Deallocate temporal memory
+        deallocate(DpointParMirror, Daux3)
+
       case default
         call output_line('Invalid type of boundary conditions!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr2d_sim')
@@ -5246,7 +5381,7 @@ contains
         !
         ! Compute the Riemann invariants based on the computed (internal)
         ! state vector and the given freestream state vector and select
-        ! the Riemman invariant for each characteristic field based on the
+        ! the Riemann invariant for each characteristic field based on the
         ! sign of the corresponding eigenvalue.
 
         ! Initialize values for function parser
@@ -5600,6 +5735,131 @@ contains
           end do
         end do
 
+        
+      case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+        !-----------------------------------------------------------------------
+        ! Periodic boundary conditions:
+        !
+        ! Compute the Riemann invariants based on the computed
+        ! (internal) state vector and on the state vector evaluated at
+        ! the mirror boundary and select the Riemann invariant for
+        ! each characteristic field based on the sign of the
+        ! corresponding eigenvalue.
+
+        ! Get mirrored boundary region from collection structure
+        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
+            'rboundaryRegionMirror')
+        
+        ! Get minimum/maximum parameter values from collection structure
+        dminParam = rcollection%DquickAccess(3)
+        dmaxParam = rcollection%DquickAccess(4)
+        dminParamMirror = rcollection%DquickAccess(5)
+        dmaxParamMirror = rcollection%DquickAccess(6)
+
+        ! Allocate temporal memory
+        allocate(DpointParMirror(npointsPerElement,nelements))
+        allocate(Daux4(nvar, npointsPerElement, nelements))
+
+        ! Rescale parameter values DpointPar on the boundary segment
+        ! where to compute the boundary conditions into parameter
+        ! values on the mirror boundary region
+        if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
+              dmaxParamMirror, dminParamMirror, DpointParMirror)
+        else
+          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
+              dmaxParamMirror, dminParamMirror, DpointParMirror)
+        end if
+        
+        ! Evaluate the solution in the cubature points on the mirrored boundary
+        call doEvaluateAtBdrBlock(DER_FUNC, nvar, npointsPerElement*nelements,&
+            Daux4, p_rsolution, npointsPerElement*nelements,&
+            DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+        
+            ! Compute auxiliary quantities based on the internal state
+            ! vector evaluated on the boundary
+            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-&
+                              0.5*(Daux2(ipoint,iel,2)**2+&
+                                   Daux2(ipoint,iel,3)**2)/Daux2(ipoint,iel,1))
+            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
+
+            ! Compute the normal and tangential velocities based on
+            ! the internal state vector evaluated on the boundary
+            dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
+                     Dny(ipoint,iel)*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
+            dvtI = (-Dny(ipoint,iel)*Daux2(ipoint,iel,2)+&
+                     Dnx(ipoint,iel)*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
+
+            ! Compute auxiliary quantities based on state vector
+            ! evaluated on the mirrored boundary
+            pM = (GAMMA-1.0)*(Daux4(4,ipoint,iel)-&
+                              0.5*(Daux4(2,ipoint,iel)**2+&
+                                   Daux4(3,ipoint,iel)**2)/Daux4(1,ipoint,iel))
+            cM = sqrt(max(GAMMA*pI/Daux4(1,ipoint,iel), SYS_EPSREAL))
+
+            ! Compute the normal and tangential velocities based on
+            ! state vector evaluated on the mirrored boundary
+            dvnM = ( Dnx(ipoint,iel)*Daux4(2,ipoint,iel)+&
+                     Dny(ipoint,iel)*Daux4(3,ipoint,iel))/Daux4(1,ipoint,iel)
+            dvtM = (-Dny(ipoint,iel)*Daux4(2,ipoint,iel)+&
+                     Dnx(ipoint,iel)*Daux4(3,ipoint,iel))/Daux4(1,ipoint,iel)
+
+            ! Select internal or mirrored Riemann invariant depending
+            ! on the sign of the corresponding eigenvalue
+            if (dvnI .lt. cI) then
+              DstateM(1) = dvnM-2.0/(GAMMA-1.0)*cM
+            else
+              DstateM(1) = dvnI-2.0/(GAMMA-1.0)*cI
+            end if
+
+            if (dvnI .lt. SYS_EPSREAL) then
+              DstateM(2) = pM/(Daux4(1,ipoint,iel)**GAMMA)
+              DstateM(3) = dvtM
+            else
+              DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
+              DstateM(3) = dvtI
+            end if
+
+            if (dvnI .lt. -cI) then
+              DstateM(4) = dvnM+2.0/(GAMMA-1.0)*cM
+            else
+              DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
+            end if
+            
+            ! Convert Riemann invariants into conservative state variables
+            cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
+            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
+            pM = rM*cM*cM/GAMMA
+            dvnM = 0.5*(DstateM(1)+DstateM(4))
+            dvtM = DstateM(3)
+
+            ! Setup the state vector based on Riemann invariants
+            DstateM(1) = rM
+            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,3)
+            DstateI(4) = Daux2(ipoint,iel,4)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM,&
+                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+          end do
+        end do
+
+        ! Deallocate temporal memory
+        deallocate(DpointParMirror, Daux4)
+
       case default
         call output_line('Invalid type of boundary conditions!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr2d_sim')
@@ -5751,6 +6011,50 @@ contains
       Dflux(4) = dnx*(Dstate(4)+p)*u + dny*(Dstate(4)+p)*v
 
     end subroutine doGalerkinFlux
+
+    !***************************************************************************
+    ! Evaluate th solution vector at some boundary points given in
+    ! terms of their parameter values. This ugly trick is necessary
+    ! since we have to pass the 2d-array Dvalues and DpointsPar to a
+    ! subroutine which accepts only 1d-arrays.
+    ! ***************************************************************************
+
+    subroutine doEvaluateAtBdrScalar(iderType, n, Dvalues, rvectorScalar,&
+        m, DpointsPar, ibdc, cparType, rboundaryRegion)
+      
+      integer, intent(in) :: iderType,ibdc,cparType,n,m
+      real(DP), dimension(m), intent(in) :: DpointsPar
+      type(t_vectorScalar), intent(in) :: rvectorScalar
+      type(t_boundaryRegion), intent(in) :: rboundaryRegion
+      
+      real(DP), dimension(n), intent(out) :: Dvalues
+      
+      call fevl_evaluateBdr2D(iderType, Dvalues, rvectorScalar,&
+          DpointsPar, ibdc, cparType, rboundaryRegion)
+      
+    end subroutine doEvaluateAtBdrScalar
+
+    !***************************************************************************
+    ! Evaluate th solution vector at some boundary points given in
+    ! terms of their parameter values. This ugly trick is necessary
+    ! since we have to pass the 2d-array Dvalues and DpointsPar to a
+    ! subroutine which accepts only 1d-arrays.
+    ! ***************************************************************************
+
+    subroutine doEvaluateAtBdrBlock(iderType, n1, n2, Dvalues, rvectorBlock,&
+        m, DpointsPar, ibdc, cparType, rboundaryRegion)
+      
+      integer, intent(in) :: iderType,ibdc,cparType,n1,n2,m
+      real(DP), dimension(m), intent(in) :: DpointsPar
+      type(t_vectorBlock), intent(in) :: rvectorBlock
+      type(t_boundaryRegion), intent(in) :: rboundaryRegion
+      
+      real(DP), dimension(n1,1,n2), intent(out) :: Dvalues
+      
+      call fevl_evaluateBdr2D((/iderType/), Dvalues, rvectorBlock,&
+          DpointsPar, ibdc, cparType, rboundaryRegion)
+      
+    end subroutine doEvaluateAtBdrBlock
     
   end subroutine hydro_coeffVectorBdr2d_sim
 

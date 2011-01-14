@@ -3948,7 +3948,7 @@ contains
 
   end subroutine hydro_calcBilfBdrCond2D
 
-!*****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -4102,9 +4102,10 @@ contains
     ! local variables
     type(t_boundaryCondition), pointer :: p_rboundaryCondition
     type(t_collection) :: rcollectionTmp
-    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_boundaryRegion) :: rboundaryRegion,rboundaryRegionMirror,rregion
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
+    integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
     integer :: ibct, isegment
 
     ! Evaluate linear form for boundary integral and return if
@@ -4132,8 +4133,18 @@ contains
     rcollectionTmp%p_rvectorQuickAccess1 => rsolution
     
     ! Set pointers
-    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
-    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
+    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
+        p_IbdrCondCpIdx)
+    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
+        p_IbdrCondType)
+
+    ! Set additional pointers for periodic boundary conditions
+    if (p_rboundaryCondition%bPeriodic) then
+      call storage_getbase_int(p_rboundaryCondition%h_IbdrCompPeriodic,&
+          p_IbdrCompPeriodic)
+      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondPeriodic,&
+          p_IbdrCondPeriodic)
+    end if
     
     ! Loop over all boundary components
     do ibct = 1, p_rboundaryCondition%iboundarycount
@@ -4155,10 +4166,50 @@ contains
         rform%itermCount = 1
         rform%Idescriptors(1) = DER_FUNC
         
-        ! Create boundary segment
+        ! Create boundary segment in 01-parametrisation
         call bdrc_createRegion(p_rboundaryCondition, ibct,&
             isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
         
+        ! Check if special treatment of mirror boundary condition is required
+        if ((iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_PERIODIC) .or.&
+            (iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
+          
+          ! Create boundary region for mirror boundary in 01-parametrisation
+          call bdrc_createRegion(p_rboundaryCondition, p_IbdrCompPeriodic(isegment),&
+              p_IbdrCondPeriodic(isegment)-p_IbdrCondCpIdx(p_IbdrCompPeriodic(isegment))+1,&
+              rboundaryRegionMirror)
+          
+          ! Attach boundary regin to temporal collection structure
+          call collct_setvalue_bdreg(rcollectionTmp, 'rboundaryRegionMirror',&
+              rboundaryRegionMirror, .true.)
+
+          ! In the callback-function, the minimum/maximum parameter
+          ! values of the boundary region and its mirrored
+          ! counterpartqq are required in length parametrisation to
+          ! determine the parameter values of the mirrored cubature
+          ! points. Therefore, we make a copy of both boundary
+          ! regions, convert them to length parametrisation and attach
+          ! the minimum/maximum parameter values to the quick access
+          ! arrays of the temporal collection structure.
+          rregion = rboundaryRegion
+          call boundary_convertRegion(&
+              rvector%RvectorBlock(1)%p_rspatialDiscr%p_rboundary,&
+              rregion, BDR_PAR_LENGTH)
+          
+          ! Prepare quick access array of temporal collection structure
+          rcollectionTmp%DquickAccess(3) = rregion%dminParam
+          rcollectionTmp%DquickAccess(4) = rregion%dmaxParam
+
+          rregion = rboundaryRegionMirror
+          call boundary_convertRegion(&
+              rvector%RvectorBlock(1)%p_rspatialDiscr%p_rboundary,&
+              rregion, BDR_PAR_LENGTH)
+
+          ! Prepare quick access array of temporal collection structure
+          rcollectionTmp%DquickAccess(5) = rregion%dminParam
+          rcollectionTmp%DquickAccess(6) = rregion%dmaxParam          
+        end if
+
         ! Assemble the linear form
         if (rvector%nblocks .eq. 1) then
           call linf_buildVecIntlScalarBdr2d(rform, CUB_G3_1D, .false.,&
@@ -4172,7 +4223,7 @@ contains
         
       end do ! isegment
     end do ! ibct
-    
+
     ! Release temporal collection structure
     call collct_done(rcollectionTmp)
     
