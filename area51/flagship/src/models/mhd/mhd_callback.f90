@@ -71,11 +71,13 @@
 !# 15.) mhd_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
-!# 16.) mhd_calcBilfBdrCond
+!# 16.) mhd_calcBilfBdrCond = mhd_calcBilfBdrCond1D /
+!#                            mhd_calcBilfBdrCond2D
 !#      -> Calculates the bilinear form arising from the weak
 !#        imposition of boundary conditions
 !#
-!# 17.) mhd_calcLinfBdrCond
+!# 17.) mhd_calcLinfBdrCond = mhd_calcLinfBdrCond1D /
+!#                            mhd_calcLinfBdrCond2D
 !#      -> Calculates the linear form arising from the weak
 !#         imposition of boundary conditions
 !#
@@ -152,8 +154,10 @@ module mhd_callback
   public :: mhd_coeffVectorFE
   public :: mhd_coeffVectorAnalytic
   public :: mhd_parseBoundaryCondition
-  public :: mhd_calcBilfBdrCond
-  public :: mhd_calcLinfBdrCond
+  public :: mhd_calcBilfBdrCond1D
+  public :: mhd_calcBilfBdrCond2D
+  public :: mhd_calcLinfBdrCond1D
+  public :: mhd_calcLinfBdrCond2D
 
 contains
 
@@ -1243,18 +1247,39 @@ contains
         !-----------------------------------------------------------------------
         ! Evaluate linear form for boundary integral (if any)
         !-----------------------------------------------------------------------
-
-        ! --- explicit part ---
-        call mhd_calcLinfBdrCond(rproblemLevel, rsolver,&
-            rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
-            mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
-
-        dscale = rtimestep%theta*rtimestep%dStep
         
-        ! --- implicit part ---
-        call mhd_calcLinfBdrCond(rproblemLevel, rsolver,&
-            rsolution, rtimestep%dTime, -dscale,&
-            mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          ! --- explicit part ---
+          call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
+              mhd_coeffVectorBdr1d_sim, rrhs, rcollection)
+          
+          dscale = rtimestep%theta*rtimestep%dStep
+          
+          ! --- implicit part ---
+          call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime, -dscale,&
+              mhd_coeffVectorBdr1d_sim, rrhs, rcollection)
+
+        case (NDIM2D)
+          ! --- explicit part ---
+          call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
+              mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
+          
+          dscale = rtimestep%theta*rtimestep%dStep
+          
+          ! --- implicit part ---
+          call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime, -dscale,&
+              mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
+
+        case (NDIM3D)
+          print *, "Not implemented yet"
+          stop
+          
+        end select
 
         !-----------------------------------------------------------------------
         ! Compute the transient term
@@ -1294,10 +1319,24 @@ contains
         
         dscale = rtimestep%theta*rtimestep%dStep
 
-        ! --- implicit part ---
-        call mhd_calcLinfBdrCond(rproblemLevel, rsolver,&
-            rsolution, rtimestep%dTime, -dscale,&
-            mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          ! --- implicit part ---
+          call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime, -dscale,&
+              mhd_coeffVectorBdr1d_sim, rrhs, rcollection)
+
+        case (NDIM2D)
+          ! --- implicit part ---
+          call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime, -dscale,&
+              mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
+
+        case (NDIM3D)
+          print *, "Not implemented yet!"
+          stop
+          
+        end select
 
       end if ! theta
 
@@ -1313,9 +1352,21 @@ contains
       call lsysbl_clearVector(rrhs)
 
       ! Evaluate linear form for boundary integral (if any)
-      call mhd_calcLinfBdrCond(rproblemLevel, rsolver,&
-          rsolution, rtimestep%dTime, -1.0_DP,&
-          mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+            rsolution, rtimestep%dTime, -1.0_DP,&
+            mhd_coeffVectorBdr1d_sim, rrhs, rcollection)
+
+      case (NDIM2D)
+        call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+            rsolution, rtimestep%dTime, -1.0_DP,&
+            mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
+
+      case (NDIM3D)
+        print *, "Not implemented yet!"
+        stop
+      end select
 
     end select
 
@@ -4075,7 +4126,55 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_calcBilfBdrCond(rproblemLevel, rsolver,&
+  subroutine mhd_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+      rsolution, dtime, dscale, fcoeff_buildMatrixScBdr1D_sim,&
+      rmatrix, rcollection)
+
+!<description>
+    ! This subroutine computes the bilinear form arising from the weak
+    ! imposition of boundary conditions in 1D.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! callback routine for nonconstant coefficient matrices.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr1D.inc'
+!</intput>
+
+!<inputoutput>
+    ! matrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! At the moment, nothing is done in this subroutine and it should
+    ! not be called. It may be necessary to assemble some bilinear
+    ! forms at the boundary in future.
+
+  end subroutine mhd_calcBilfBdrCond1D
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mhd_calcBilfBdrCond2D(rproblemLevel, rsolver,&
       rsolution, dtime, dscale, fcoeff_buildMatrixScBdr2D_sim,&
       rmatrix, rcollection, cconstrType)
 
@@ -4123,13 +4222,123 @@ contains
     ! not be called. It may be necessary to assemble some bilinear
     ! forms at the boundary in future.
 
-  end subroutine mhd_calcBilfBdrCond
+  end subroutine mhd_calcBilfBdrCond2D
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_calcLinfBdrCond(rproblemLevel, rsolver, rsolution,&
+  subroutine mhd_calcLinfBdrCond1D(rproblemLevel, rsolver, rsolution,&
+      dtime, dscale, fcoeff_buildVectorBlBdr1D_sim, rvector, rcollection)
+
+!<description>
+    ! This subroutine computes the linear form arising from the weak
+    ! imposition of boundary conditions in 1D.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! callback routine for nonconstant coefficient vectors.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorBlBdr1D.inc'
+!</intput>
+
+!<inputoutput>
+    ! residual/right-hand side vector
+    type(t_vectorBlock), intent(inout) :: rvector
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+     ! local variables
+    type(t_boundaryCondition), pointer :: p_rboundaryCondition
+    type(t_collection) :: rcollectionTmp
+        type(t_linearForm) :: rform
+    integer, dimension(:), pointer :: p_IbdrCondType
+    integer :: ibct
+
+    ! Evaluate linear form for boundary integral and return if
+    ! there are no weak boundary conditions available
+    p_rboundaryCondition => rsolver%rboundaryCondition
+    if (.not.p_rboundaryCondition%bWeakBdrCond) return
+
+    ! Check if we are in 1D
+    if (rproblemLevel%rtriangulation%ndim .ne. NDIM1D) then
+      call output_line('Spatial dimension must be 1D!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcLinfBdrCond1D')
+      call sys_halt()
+    end if
+
+    ! Initialize temporal collection structure
+    call collct_init(rcollectionTmp)
+
+    ! Attach function parser from boundary conditions to collection
+    ! structure and specify its name in quick access string array
+    call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
+        p_rboundaryCondition%rfparser, .true.)
+    rcollectionTmp%SquickAccess(1) = 'rfparser'
+
+    ! Attach solution vector to temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+    
+    ! Set pointers
+    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
+    
+    ! Loop over all boundary components
+    do ibct = 1, p_rboundaryCondition%iboundarycount
+      
+      ! Check if this component has weak boundary conditions
+      if (iand(p_IbdrCondType(ibct), BDRC_WEAK) .ne. BDRC_WEAK) cycle
+
+      ! Prepare quick access array of temporal collection structure
+      rcollectionTmp%DquickAccess(1) = dtime
+      rcollectionTmp%DquickAccess(2) = dscale
+      rcollectionTmp%IquickAccess(1) = p_IbdrCondType(ibct)
+      rcollectionTmp%IquickAccess(2) = ibct
+      rcollectionTmp%IquickAccess(3) = p_rboundaryCondition%nmaxExpressions
+      
+      ! Initialize the linear form
+      rform%itermCount = 1
+      rform%Idescriptors(1) = DER_FUNC
+      
+      ! Assemble the linear form
+      if (rvector%nblocks .eq. 1) then
+        call linf_buildVecIntlScalarBdr1d(rform, .false.,&
+            rvector%RvectorBlock(1), fcoeff_buildVectorBlBdr1D_sim,&
+            ibct, rcollectionTmp)
+      else
+        call linf_buildVectorBlockBdr1d(rform, .false.,&
+            rvector, fcoeff_buildVectorBlBdr1D_sim,&
+            ibct, rcollectionTmp)
+      end if
+      
+    end do ! ibct
+    
+    ! Release temporal collection structure
+    call collct_done(rcollectionTmp)
+
+  end subroutine mhd_calcLinfBdrCond1D
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mhd_calcLinfBdrCond2D(rproblemLevel, rsolver, rsolution,&
       dtime, dscale, fcoeff_buildVectorBlBdr2D_sim, rvector, rcollection)
 
 !<description>
@@ -4171,86 +4380,119 @@ contains
     type(t_boundaryCondition), pointer :: p_rboundaryCondition
     type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
-    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_boundaryRegion) :: rboundaryRegion,rregion,rregionMirror
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
+    integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
     integer :: ibct, isegment
 
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
     p_rboundaryCondition => rsolver%rboundaryCondition
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
+    
+    ! Check if we are in 2D
+    if (rproblemLevel%rtriangulation%ndim .ne. NDIM2D) then
+      call output_line('Spatial dimension must be 2D!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcLinfBdrCond2D')
+      call sys_halt()
+    end if
 
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
-
+    
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
         p_rboundaryCondition%rfparser, .true.)
     rcollectionTmp%SquickAccess(1) = 'rfparser'
-
+    
     ! Attach solution vector to temporal collection structure
     rcollectionTmp%p_rvectorQuickAccess1 => rsolution
 
-    ! How many spatial dimensions are we?
-    select case(rproblemLevel%rtriangulation%ndim)
-    case(NDIM2D)
-      ! Set pointers
-      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
-          p_IbdrCondCpIdx)
-      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
-          p_IbdrCondType)
+    ! Set pointers
+    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
+        p_IbdrCondCpIdx)
+    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
+        p_IbdrCondType)
 
-      ! Loop over all boundary components
-      do ibct = 1, p_rboundaryCondition%iboundarycount
-
-        ! Loop over all boundary segments
-        do isegment = p_IbdrCondCpIdx(ibct),&
-                      p_IbdrCondCpIdx(ibct+1)-1
-
-          ! Check if this segment has weak boundary conditions
-          if (iand(p_IbdrCondType(isegment),&
-                   BDRC_WEAK) .ne. BDRC_WEAK) cycle
-
-          ! Prepare quick access array of temporal collection structure
-          rcollectionTmp%DquickAccess(1) = dtime
-          rcollectionTmp%DquickAccess(2) = dscale
-          rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
-          rcollectionTmp%IquickAccess(2) = isegment
-          rcollectionTmp%IquickAccess(3) = p_rboundaryCondition%nmaxExpressions
-
-          ! Initialize the linear form
-          rform%itermCount = 1
-          rform%Idescriptors(1) = DER_FUNC
-          
-          ! Create boundary segment
-          call bdrc_createRegion(p_rboundaryCondition, ibct,&
-              isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
-
-          ! Assemble the linear form
-          if (rvector%nblocks .eq. 1) then
-            call linf_buildVecIntlScalarBdr2d(rform, CUB_G3_1D, .false.,&
-                rvector%RvectorBlock(1), fcoeff_buildVectorBlBdr2D_sim,&
-                rboundaryRegion, rcollectionTmp)
-          else
-            call linf_buildVectorBlockBdr2d(rform, CUB_G3_1D, .false.,&
-                rvector, fcoeff_buildVectorBlBdr2D_sim,&
-                rboundaryRegion, rcollectionTmp)
-          end if
-
-        end do ! isegment
-      end do ! ibct
-      
-    case default
-      call output_line('Unsupported spatial dimension !',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcLinfBdrCond')
-      call sys_halt()
-    end select
+    ! Set additional pointers for periodic boundary conditions
+    if (p_rboundaryCondition%bPeriodic) then
+      call storage_getbase_int(p_rboundaryCondition%h_IbdrCompPeriodic,&
+          p_IbdrCompPeriodic)
+      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondPeriodic,&
+          p_IbdrCondPeriodic)
+    end if
     
+    ! Loop over all boundary components
+    do ibct = 1, p_rboundaryCondition%iboundarycount
+      
+      ! Loop over all boundary segments
+      do isegment = p_IbdrCondCpIdx(ibct), p_IbdrCondCpIdx(ibct+1)-1
+        
+        ! Check if this segment has weak boundary conditions
+        if (iand(p_IbdrCondType(isegment), BDRC_WEAK) .ne. BDRC_WEAK) cycle
+        
+        ! Prepare quick access array of temporal collection structure
+        rcollectionTmp%DquickAccess(1) = dtime
+        rcollectionTmp%DquickAccess(2) = dscale
+        rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
+        rcollectionTmp%IquickAccess(2) = isegment
+        rcollectionTmp%IquickAccess(3) = p_rboundaryCondition%nmaxExpressions
+        
+        ! Initialize the linear form
+        rform%itermCount = 1
+        rform%Idescriptors(1) = DER_FUNC
+        
+        ! Create boundary segment
+        call bdrc_createRegion(p_rboundaryCondition, ibct,&
+            isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
+        
+        ! Check if special treatment of mirror boundary condition is required
+        if ((iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_PERIODIC) .or.&
+            (iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
+          
+          ! Create boundary region for mirror boundary in 01-parametrisation
+          call bdrc_createRegion(p_rboundaryCondition, p_IbdrCompPeriodic(isegment),&
+              p_IbdrCondPeriodic(isegment)-p_IbdrCondCpIdx(p_IbdrCompPeriodic(isegment))+1,&
+              rregionMirror)
+          
+          ! Convert both boundary regions into length parametrisation
+          ! which is necessary to transform the parameter values on
+          ! the boundary segment (in length parametrisation) to
+          ! parameter values on the mirror boundary segment
+          rregion = rboundaryRegion
+          call boundary_convertRegion(&
+              rvector%RvectorBlock(1)%p_rspatialDiscr%p_rboundary,&
+              rregion, BDR_PAR_LENGTH)
+          call boundary_convertRegion(&
+              rvector%RvectorBlock(1)%p_rspatialDiscr%p_rboundary,&
+              rregionMirror, BDR_PAR_LENGTH)
+          
+          ! Attach boundary components to temporal collection structure
+          call collct_setvalue_bdreg(rcollectionTmp, 'rregion',&
+              rregion, .true.)
+          call collct_setvalue_bdreg(rcollectionTmp, 'rregionMirror',&
+              rregionMirror, .true.)
+        end if
+
+        ! Assemble the linear form
+        if (rvector%nblocks .eq. 1) then
+          call linf_buildVecIntlScalarBdr2d(rform, CUB_G3_1D, .false.,&
+              rvector%RvectorBlock(1), fcoeff_buildVectorBlBdr2D_sim,&
+              rboundaryRegion, rcollectionTmp)
+        else
+          call linf_buildVectorBlockBdr2d(rform, CUB_G3_1D, .false.,&
+              rvector, fcoeff_buildVectorBlBdr2D_sim,&
+              rboundaryRegion, rcollectionTmp)
+        end if
+        
+      end do ! isegment
+    end do ! ibct
+        
     ! Release temporal collection structure
     call collct_done(rcollectionTmp)
 
-  end subroutine mhd_calcLinfBdrCond
+  end subroutine mhd_calcLinfBdrCond2D
 
 end module mhd_callback

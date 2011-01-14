@@ -163,6 +163,9 @@
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in block format
 !#
+!# 41.) mhd_coeffVectorBdr1d_sim
+!#      -> Calculates the coefficients for the linear form in 1D
+!#
 !# </purpose>
 !##############################################################################
 
@@ -172,6 +175,7 @@ module mhd_callback1d
 
   use boundarycondaux
   use collection
+  use domainintegration
   use flagship_callback
   use fsystem
   use genoutput
@@ -182,7 +186,9 @@ module mhd_callback1d
   use linearsystemscalar
   use mhd_basic
   use problem
+  use scalarpde
   use solveraux
+  use spatialdiscretisation
   use storage
 
   implicit none
@@ -226,6 +232,7 @@ module mhd_callback1d
   public :: mhd_trafoDiffDenPreVel1d_sim
   public :: mhd_trafoDiffMagfield1d_sim
   public :: mhd_calcBoundaryvalues1d
+  public :: mhd_coeffVectorBdr1d_sim
   public :: mhd_hadaptCallbackScalar1d
   public :: mhd_hadaptCallbackBlock1d
 
@@ -3449,6 +3456,80 @@ contains
 !</subroutine>
 
   end subroutine mhd_calcBoundaryvalues1d
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine mhd_coeffVectorBdr1d_sim(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, ibct, IdofsTest,&
+      rdomainIntSubset, Dcoefficients, rcollection)
+
+!<description>
+    ! This subroutine is called during the vector assembly. It has to
+    ! compute the coefficients in front of the terms of the linear
+    ! form. This routine can be used universaly for arbitrary linear
+    ! forms for which the coefficients are evaluated analytically
+    ! using a function parser which is passed using the collection.
+    !
+    ! The routine accepts a set of points (cubature points) in real
+    ! coordinates.  According to the terms in the linear form, the
+    ! routine has to compute simultaneously for all these points and
+    ! all the terms in the linear form the corresponding coefficients
+    ! in front of the terms.
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(nbocks,itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:,:), intent(out) :: Dcoefficients
+!</output>
+!</subroutine>
+
+  end subroutine mhd_coeffVectorBdr1d_sim
 
   !*****************************************************************************
 
