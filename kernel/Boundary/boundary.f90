@@ -2306,7 +2306,7 @@ contains
   
   ! The parameter value of the point to be checked.
   ! Must be in the range 0..max. par. value.
-  ! Points with negative parameer values are not in the region by definition.
+  ! Points with negative parameter values are not in the region by definition.
   ! The parametrisation type (0-1 or length parametrisation) must match 
   ! the parametrisation in the boundary region rregion!
   real(DP), intent(in) :: dparam
