@@ -968,10 +968,363 @@ contains
     
 
   end function buildEigenvalues2c
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  ! This routine returns the flux vector for the 2d compressible euler
+  ! equations of gas dynamics in direction d
+  ! d=1: x-direction, d=2: y-direction
+  function Euler_buildFlux(Q,d) result(Flux)
+
+    ! The flux vector in direction d at Q
+    real(DP), dimension(4)	:: Flux
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(4), intent(IN)		:: Q
+
+    ! the direction: d=1: x-direction, d=2: y-direction
+    integer, intent(IN)                     :: d
+
+    ! pressure, stagnation enthalpy
+    real(DP)                                :: p, H
+
+    ! temporary variable
+    real(DP)                                :: rho, u, v, E
+    
+    ! Cpnstant Gamma
+    real(dp) :: gamma = 1.4_dp
+
+    ! Calculate primitive variables
+    rho=Q(1)
+    u=Q(2)/rho
+    v=Q(3)/rho
+    E=Q(4)/rho
+    
+    ! Compute the pressure
+    p = (gamma - 1.0_dp)*rho*(E-0.5_dp*(u*u+v*v))
+    
+    ! Compute H, the stagnation enthalpy
+    H = E + p/rho
+
+    if (d==1) then
+      ! build Flux in x direction
+      Flux(1) = Q(2)
+      Flux(2) = rho*u*u+p
+      Flux(3) = rho*u*v
+      Flux(4) = rho*H*u
+    else
+      ! build Flux in y direction
+      Flux(1) = Q(3)
+      Flux(2) = rho*u*v
+      Flux(3) = rho*v*v+p
+      Flux(4) = rho*H*v
+    end if
+
+  end function Euler_buildFlux
+  
+  
+  
+  ! This function returns the Roe mean values in PRIMITIVE
+  ! variables + the speed of sound waves
+  ! Qroe(1) = rho
+  ! Qroe(2) = u
+  ! Qroe(3) = v
+  ! Qroe(4) = H
+  ! Qroe(5) = c
+  function Euler_calculateQroec(Ql, Qr) result(Qroe)
+
+    ! The left and right solution values
+    real(DP), dimension(4), intent(IN)		:: Ql, Qr
+
+    ! The computed Roe values
+    real(DP), dimension(5)					:: Qroe
+
+    ! temp variables
+    real(DP)		:: rhol, rhor, denom, Hl, Hr, El, Er, pl, pr, velnorm
+
+    ! Gamma
+    real(dp) :: gamma = 1.4_dp
     
     
     
+    ! Get densities
+    rhol = Ql(1)
+    rhor = Qr(1)
     
+    !write(*,*) rhol,rhor
+    
+    ! Calculate auxiliary variable
+    denom = (sqrt(rhol)+sqrt(rhor))
+    
+    ! Set Roe-density
+    Qroe(1) = sqrt(rhol*rhor)
+    
+    ! Set Roe-x-velocity
+    Qroe(2) = (Ql(2)/sqrt(rhol) + Qr(2)/sqrt(rhor))/denom
+    
+    ! Set Roe-y-velocity
+    Qroe(3) = (Ql(3)/sqrt(rhol) + Qr(3)/sqrt(rhor))/denom
+
+    ! Get left and right energy states
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    
+    ! Calculate left and right pressure
+    pl = (gamma-1.0_dp)*rhol*(El-0.5_dp*( (Ql(2)/rhol)**2.0_dp + (Ql(3)/rhol)**2.0_dp ) )
+    pr = (gamma-1.0_dp)*rhor*(Er-0.5_dp*( (Qr(2)/rhor)**2.0_dp + (Qr(3)/rhor)**2.0_dp ) )
+    
+    ! Calculate left and right stagnation enthalpy
+    Hl = El + pl/rhol
+    Hr = Er + pr/rhor
+    
+    ! Calculate Roe-stagnation enthalpy
+    Qroe(4) = (sqrt(rhol)*Hl + sqrt(rhor)*Hr)/denom
+    
+    ! Calculate the speed of sound for the Roe-values
+    Qroe(5) = sqrt( (gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ) )
+
+  end function Euler_calculateQroec
+    
+    
+    
+  
+  
+  
+  ! This routine builds the right eigenvectors for the mixed jacobian
+  function Euler_buildMixedRcfromRoe(Q,a,b) result(R)
+
+    ! Right eigenvectors
+    real(DP), dimension(4,4)	:: R
+
+    ! The solution components q1 = roe, q2 = u, q3 = v, q4 = H, q5 = c
+    real(DP), dimension(5), intent(IN)		:: Q
+    
+    ! Components of the normal vector
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: rho, u, v, H, c, ve, velnorm
+   
+    rho = Q(1)
+    u = Q(2)
+    v = Q(3)
+    H = Q(4)
+    c = Q(5)
+    ve = a*u+b*v
+    velnorm = 0.5_dp*sqrt(u*u+v*v)
+    
+        
+      ! Build matrix of right eigenvectors
+      R(1,1) = 1.0_dp
+      R(2,1) = u-c*a
+      R(3,1) = v-c*b
+      R(4,1) = H-c*ve
+      R(1,2) = 1.0_dp
+      R(2,2) = u
+      R(3,2) = v
+      R(4,2) = velnorm
+      R(1,3) = 1.0_dp
+      R(2,3) = u+c*a
+      R(3,3) = v+c*b
+      R(4,3) = H+c*ve
+      R(1,4) = 0.0_dp
+      R(2,4) = b
+      R(3,4) = -a
+      R(4,4) = u*b-v*a
+    
+  end function Euler_buildMixedRcfromRoe
+  
+  
+  
+  ! This routine builds the diagonalmatrix of the absolut value of the eigenvalues
+  function Euler_buildMixedaLambdacfromRoe(Q,a,b) result(aLambda)
+
+    ! Left eigenvectors
+    real(DP), dimension(4,4)	:: aLambda
+
+    ! The solution components q1 = roe, q2 = u, q3 = v, q4 = H, q5 = c
+    real(DP), dimension(5), intent(IN)		:: Q
+
+    ! Components of the normal vector
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: u, v, c, ve
+    
+    ! Constant Gamma
+    real(dp) :: gamma = 1.4_dp
+
+    u = Q(2)
+    v = Q(3)
+    c = Q(5)
+    ve = a*u+b*v
+    
+    ! Build matrix with the absolute values of the eigenvalues
+    aLambda = 0.0_dp
+    aLambda(1,1) = abs(ve-c)
+    aLambda(2,2) = abs(ve)
+    aLambda(3,3) = abs(ve+c)
+    aLambda(4,4) = abs(ve)
+    
+  end function 
+
+
+  ! This routine builds the left eigenvectors for the mixed jacobian
+  function Euler_buildMixedLcfromRoe(Q,a,b) result(L)
+
+    ! Left eigenvectors
+    real(DP), dimension(4,4)	:: L
+
+    ! The solution components q1 = roe, q2 = u, q3 = v, q4 = H, q5 = c
+    real(DP), dimension(5), intent(IN)		:: Q
+
+    ! Components of the normal vector
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: rho, u, v, H, c, ve, velnorm, b1, b2
+    
+    ! Constant Gamma
+    real(dp) :: gamma = 1.4_dp
+   
+    rho = Q(1)
+    u = Q(2)
+    v = Q(3)
+    H = Q(4)
+    c = Q(5)
+    ve = a*u+b*v
+    velnorm = 0.5_dp*sqrt(u*u+v*v)
+    b2 = (gamma-1.0_dp)/c/c
+    b1= b2*velnorm
+    
+    
+       ! Build matrix of left eigenvectors
+       L(1,1) = 0.5_dp*(b1+ve/c)
+       L(2,1) = 1.0_dp-b1
+       L(3,1) = 0.5_dp*(b1-ve/c)
+       L(4,1) = a*ve-b*u
+       L(1,2) = 0.5_dp*(-b2*u-a/c)
+       L(2,2) = b2*u
+       L(3,2) = 0.5_dp*(-b2*u+a/c)
+       L(4,2) = b
+       L(1,3) = 0.5_dp*(-b2*v-b/c)
+       L(2,3) = b2*v
+       L(3,3) = 0.5_dp*(-b2*v+b/c)
+       L(4,3) = -a
+       L(1,4) = 0.5_dp*b2
+       L(2,4) = -b2
+       L(3,4) = 0.5_dp*b2
+       L(4,4) = 0.0_dp
+           
+  end function 
+  
+  
+  
+  
+  ! This routine returns the eigenvalues of the jacobi matrix
+  function Euler_buildEigenvaluescfromRoe(Q,a,b) result(Eigenvalues)
+
+    real(DP), dimension(4)	:: Eigenvalues
+
+    ! The solution components q1 = roe, q2 = u, q3 = v, q4 = H, q5 = c
+    real(DP), dimension(5), intent(IN)		:: Q
+
+    ! Components of the normal vector
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: u, v, c, ve
+    
+    ! Constant Gamma
+    real(dp) :: gamma = 1.4_dp
+
+    u = Q(2)
+    v = Q(3)
+    c = Q(5)
+    ve = a*u+b*v
+    
+    ! build eigenvalues
+    Eigenvalues(1) = ve-c
+    Eigenvalues(2) = ve
+    Eigenvalues(3) = ve+c
+    Eigenvalues(4) = ve
+
+  end function Euler_buildEigenvaluescfromRoe 
+  
+  
+  
+  
+  
+  
+  ! This function transforms a vector of conserved variables
+  ! Q(1) = rho
+  ! Q(2) = rho*u
+  ! Q(3) = rho*v
+  ! Q(4) = rho*E
+  ! into a vector consisting of primitive variables + the speed of sound waves
+  ! Q(1) = rho
+  ! Q(2) = u
+  ! Q(3) = v
+  ! Q(4) = H
+  ! Q(5) = c
+  function Euler_transformVector(Qin) result(Qout)
+
+    ! The left and right solution values
+    real(DP), dimension(4), intent(IN)		:: Qin
+
+    ! The computed Roe values
+    real(DP), dimension(5)					:: Qout
+
+    ! temp variables
+    real(DP)		:: rho, H, E, p
+
+    ! Gamma
+    real(dp) :: gamma = 1.4_dp
+    
+    
+    ! Get density
+    rho = Qin(1)
+
+    ! Set Roe-density
+    Qout(1) = rho
+    
+    ! Set x-velocity
+    Qout(2) = Qin(2)/rho
+    
+    ! Set y-velocity
+    Qout(3) = Qin(3)/rho
+
+    ! Get energy state
+    E = Qin(4)/rho
+    
+    ! Calculate pressure
+    p = (gamma-1.0_dp)*rho*(E-0.5_dp*(Qout(2)*Qout(2)+Qout(3)*Qout(3) ) )
+    
+    ! Calculate stagnation enthalpy
+    H = E + p/rho
+    
+    ! Save stagnation enthalpy
+    Qout(4) = H
+    
+    ! Calculate the speed of sound for the Roe-values
+    !Qout(5) = sqrt( (gamma-1.0_dp)*(H - 0.5_dp*(Qout(2)*Qout(2)+Qout(3)*Qout(3)) ) )
+    Qout(5) = sqrt( max(sys_EPSREAL*sys_EPSREAL , gamma*p/rho) )
+
+  end function Euler_transformVector
     
     
     

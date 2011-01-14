@@ -7429,7 +7429,7 @@ end subroutine
   
   integer :: nvar, ivar, idim
   
-  real(dp), dimension(:), allocatable :: DVec, DVei, DIi, DtIi, DtLinMax, DtLinMin, DltIi, DlIi, DQchar,DWc
+  real(dp), dimension(:), allocatable :: DVec, DVei, DIi, DtIi, DtLinMax, DtLinMin, DltIi, DlIi, DQchar, DWc
   
   real(dp), dimension(:,:), allocatable :: DLin, DtLin, Dalphaei, DL, DR, Dalpha, DL2, DR2, DlinearGradient, Dquadraticgradient, DmAlpha
   
@@ -7469,6 +7469,9 @@ end subroutine
   real(dp) :: dWstar
   
   real(dp) :: dl2x, dl2y
+  
+  real(dp), dimension(5) :: DQcharExt
+
   
  
   
@@ -7577,7 +7580,7 @@ end subroutine
   do iel = 1, NEL
   
     ! No limiting of elements at boundary
-    if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
+    !if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
    
     ! Get values in the center of the element for all variables
     if (ilim<3) then
@@ -7637,7 +7640,7 @@ end subroutine
       
       if (iidx.ne.0) then
       ! Dimensional splitting
-      do idim = 5,5
+      do idim = 10,10
         ! Now we need the trafo matrices
         
         
@@ -7744,6 +7747,22 @@ end subroutine
           DL = buildMixedL2(DQchar,0.0_dp,-1.0_dp)
           DR = buildMixedR2(DQchar,0.0_dp,-1.0_dp)
           end if
+        end if
+        
+        else if (idim==10) then
+        da = DQchar(2)
+        db = DQchar(3)
+        dquo = sqrt(da*da+db*db)
+        DQcharext = Euler_transformVector(DQchar)
+        
+        if (dquo<SYS_EPSREAL) then
+          DL = Euler_buildMixedLcfromRoe(DQcharext,1.0_dp,0.0_dp)
+          DR = Euler_buildMixedLcfromRoe(DQcharext,1.0_dp,0.0_dp)
+        else
+          da = da/dquo
+          db = db/dquo
+          DL = Euler_buildMixedLcfromRoe(DQcharext,da,db)
+          DR = Euler_buildMixedRcfromRoe(DQcharext,da,db)
         end if
         
         end if
@@ -9003,7 +9022,7 @@ end do
       
         DilocMat = 1/ddet*DilocMat
         
-      elseif(indof.eq.6) then
+      elseif ((indof.eq.6).or.(indof.eq.1)) then
         !ddet = DlocMat(1,1)*(DlocMat(2,2)*DlocMat(3,3)*DlocMat(4,4)*(DlocMat(5,5)*DlocMat(6,6)
         
         DilocMat = 0.0_dp

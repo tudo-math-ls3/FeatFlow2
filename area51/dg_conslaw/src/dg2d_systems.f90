@@ -73,9 +73,11 @@ contains
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
     
-    ! Number of Variables (h, hu, hv)
+    ! Number of Variables 
+    ! Shallow water : 3 (h, hu, hv)
     ! (h=Waterheights, u/v=speed in x/y-direction)
-    integer, parameter :: nvar2d = 3
+    ! Euler: 4 (rho, rho u, rho v, rho E)
+    integer, parameter :: nvar2d = 4
     
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
@@ -408,6 +410,7 @@ contains
     call lsyssc_copyMatrix (rmatrixMC, rmatrixiMC)
     call dg_invertMassMatrix(rmatrixiMC)  
     
+    
 !    ! Calculate the condition number of MC    
 !    call lsyssc_getbase_double (rmatrixMC, p_DMCdata)
 !    call lsyssc_getbase_double (rmatrixiMC, p_DiMCdata)
@@ -524,15 +527,15 @@ contains
     
     
     
-    ! Now calculate the source term
-    if (iinsertSourceTerm == 1) then
-      rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
-      rlinformSource%itermCount = 1
-      rlinformSource%Idescriptors(1) = DER_FUNC2D
-      call linf_buildVectorBlock2 (rlinformSource, .true., rsourceTermBlock,&
-                                         Callback_Sourceterm,rcollection)
-      rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G3x3
-    end if
+!    ! Now calculate the source term
+!    if (iinsertSourceTerm == 1) then
+!      rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+!      rlinformSource%itermCount = 1
+!      rlinformSource%Idescriptors(1) = DER_FUNC2D
+!      call linf_buildVectorBlock2 (rlinformSource, .true., rsourceTermBlock,&
+!                                         Callback_Sourceterm,rcollection)
+!      rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G3x3
+!    end if
      
     
 do iwithoutlimiting = 1,1
@@ -552,7 +555,7 @@ if (iwithoutlimiting==2) ilimiter = 0
       
       rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G6_2D
       call linf_buildVectorScalar2 (rlinformIC, .true., rrhsBlock%RvectorBlock(ivar),&
-                                  coeff_RHS_IC, rcollection)
+                                  Euler_coeff_RHS_IC, rcollection)
       rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G3x3
 
     end do
@@ -617,7 +620,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     if (ttfinal > 0.0_dp)then
     timestepping: do
     
-       call getDtByCfl (rsolBlock, raddTriaData, dCFL, dt, dgravconst)
+       !call getDtByCfl (rsolBlock, raddTriaData, dCFL, dt, dgravconst)
        !dt = 0.5_dp*dt
        
        
@@ -648,9 +651,13 @@ if (iwithoutlimiting==2) ilimiter = 0
        call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhsBlock,rsolTempBlock,&
                                               raddTriaData,&
-                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              Euler_flux_dg_buildVectorBlEdge2D_sim,&
                                               rcollection)
                                               
+                                              
+
+
+write(*,*)lsyssc_vectorNorm (rrhsBlock%Rvectorblock(1),LINALG_NORML1)                                               
                                               
                                               
 !       !!!!!!!!!!!!!!!!!!!!!!                                       
@@ -720,7 +727,10 @@ if (iwithoutlimiting==2) ilimiter = 0
          case (1)
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
-                                       flux_sys_block,rcollection)
+                                       Euler_flux_sys_block,rcollection)
+                                       
+write(*,*)lsyssc_vectorNorm (rrhsBlock%Rvectorblock(1),LINALG_NORML1)  
+                                       
          case(2)                             
          do ivar = 1, nvar2d
          
@@ -766,6 +776,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        if (ilimiter .eq. 12) call dg_realKuzmin (rsolTempBlock, raddTriaData)
        end if
        
+       
 !       ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
 !       call lsysbl_copyVector (rsoltempBlock,rsolBlock)
        
@@ -781,7 +792,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhsBlock,rsolTempBlock,&
                                               raddTriaData,&
-                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              Euler_flux_dg_buildVectorBlEdge2D_sim,&
                                               rcollection)
                                               
        call profiler_measure(rprofiler,1)
@@ -794,7 +805,7 @@ if (iwithoutlimiting==2) ilimiter = 0
          case (1)
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
-                                       flux_sys_block,rcollection)
+                                       Euler_flux_sys_block,rcollection)
          case(2)
          do ivar = 1, nvar2d
          
@@ -853,7 +864,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhsBlock,rsolTempBlock,&
                                               raddTriaData,&
-                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              Euler_flux_dg_buildVectorBlEdge2D_sim,&
                                               rcollection)
        call profiler_measure(rprofiler,1)
        call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
@@ -865,7 +876,7 @@ if (iwithoutlimiting==2) ilimiter = 0
          case (1)
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
-                                       flux_sys_block,rcollection)
+                                       Euler_flux_sys_block,rcollection)
          case(2)
          
          do ivar = 1, nvar2d
@@ -893,16 +904,16 @@ if (iwithoutlimiting==2) ilimiter = 0
         call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
        end do
 
-       derror = lsyssc_vectorNorm (rsolUpBlock%Rvectorblock(1),LINALG_NORML1) 
-       call pperr_scalar (rsolUpBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
-       write(*,*) 'SolUp:', derror
-       
-       
+!       derror = lsyssc_vectorNorm (rsolUpBlock%Rvectorblock(1),LINALG_NORML1) 
+!       call pperr_scalar (rsolUpBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+!       write(*,*) 'SolUp:', derror
+!       
+!       
        call lsysbl_vectorLinearComb (rsolBlock,rsolOldBlock,1.0_DP,-1.0_dp)
        call lsysbl_scaleVector (rsolOldBlock,1.0_DP/dt)
        call lsyssc_scalarMatVec (rmatrixMC, rsolOldBlock%Rvectorblock(1), rrhsBlock%Rvectorblock(1), -1.0_dp, 1.0_dp)
-       call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
-       write(*,*) 'Res  :', derror 
+!       call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+!       write(*,*) 'Res  :', derror 
        
        
        ! Get new temp solution
@@ -960,7 +971,8 @@ if (iwithoutlimiting==2) ilimiter = 0
         end if
 
        ! Leave the time stepping loop if final time is reached
-       if ((ttime .ge. ttfinal-0.001_DP*dt).or.(abs(derror)<1e-12)) exit timestepping
+       !if ((ttime .ge. ttfinal-0.001_DP*dt).or.(abs(derror)<1e-12)) exit timestepping
+       if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping
        
        !if (dL2updnorm.le.1.0e-6) exit timestepping
 
@@ -1509,12 +1521,28 @@ if (iwithoutlimiting==2) ilimiter = 0
     
 !    !select case (ioutputtype)
 !    !  case (1)
-!        ! Output solution to gmv file
-!        call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+        ! Output solution to gmv file
+        call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
 !    !  case (2)
-!        ! Output solution to vtk file
-!        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+        ! Output solution to vtk file
+        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
 !    !end select
+
+
+
+
+
+        ! Output solution to vtk file
+        sofile = './gmv/u2d_rho'
+        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+        sofile = './gmv/u2d_rhou'
+        call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
+        sofile = './gmv/u2d_rhov'
+        call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
+        sofile = './gmv/u2d_rhoE'
+        call dg2vtk(rsolBlock%Rvectorblock(4),iextraPoints,sofile,ifilenumber)
+
+
       
 !    write(*,*) 'Writing steady solution to file'
 !    ! And output the steady projection
@@ -1525,20 +1553,20 @@ if (iwithoutlimiting==2) ilimiter = 0
 !    call saveSolutionData(rsolBlock%Rvectorblock(1),sofile,ifilenumber)
 
     
-    sofile = 'l9'
-    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
+!    sofile = 'l9'
+!    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
    
  
-    ! Calculate the error to the reference function.
-    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
-    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-                       getReferenceFunction_2D)
-    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-
-    ! Calculate the error to the reference function.
-    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-                       getReferenceFunction_2D)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+!    ! Calculate the error to the reference function.
+!    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+!                       getReferenceFunction_2D)
+!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+!
+!    ! Calculate the error to the reference function.
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
+!                       getReferenceFunction_2D)
+!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
     
     
     

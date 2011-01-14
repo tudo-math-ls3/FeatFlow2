@@ -2057,6 +2057,203 @@ integer :: iel
     !Dcoefficients (1,:,:) = 0.0_dp
 
   end subroutine
+  
+  
+  
+  
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine Euler_coeff_RHS_IC (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    real(DP) :: r1, dx, dy, dr
+
+    integer :: iel, ipoint
+    
+    ! Function parser
+    type(t_fparser) :: rfparser
+    
+    character(LEN=*), dimension(2), parameter ::&
+         cvariables = (/ (/'x'/), (/'y'/) /)
+         
+    integer :: iunit,i,j
+    real(dp),dimension(400000) :: Dreference
+    real(dp) :: r,n
+
+    
+    ! Initialise function parser
+    call fparser_init()
+    call fparser_create(rfparser, 1)
+    
+    call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
+    
+
+!    iunit = sys_getFreeUnit()
+!
+!    open(iunit, file='h')
+!
+!
+!    do i = 1, 400000
+!      read(iunit,*) Dreference(i)
+!    end do
+!
+!    close(iunit)
+
+    Dcoefficients (1,:,:) = 0.0_dp
+
+    
+    select case (rcollection%IquickAccess(1))
+      case (1) ! Set density rho
+    
+        do iel = 1, size(Dcoefficients,3)
+          do ipoint = 1, size(Dcoefficients,2)
+
+          ! Get coordinates          
+          dx = Dpoints(1,ipoint,iel)
+          dy = Dpoints(2,ipoint,iel)
+  
+!          ! Zero
+!          Dcoefficients (1,ipoint,iel)=0.0_dp
+
+          ! Parser from .dat-file
+          !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
+
+!          ! Pressure hill
+!          Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.3_dp*&
+!                   exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2.0_dp+(Dpoints(2,ipoint,iel)-0.5_dp)**2.0_dp))
+
+!          ! Circular dambreak (for Euler equations)
+!          r = sqrt((dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp)
+!          if ( r<0.1_dp) then
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.15_dp
+!          else
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp
+!          end if
+          
+          ! Shock tube
+          if ( dx<0.5_dp) then
+            Dcoefficients (1,ipoint,iel) = 1.0_dp
+          else
+            Dcoefficients (1,ipoint,iel) = 0.25_dp
+          end if 
+
+
+
+
+!          Dcoefficients (1,ipoint,iel) = 1.0_dp + dx
+           
+          end do
+        end do
+      
+      case (2) ! Set x-momentum
+      
+        Dcoefficients (1,:,:) = 0.0_dp
+      
+      case (3) ! Set y-momentum
+      
+        Dcoefficients (1,:,:) = 0.0_dp
+        
+      case (4) ! Set energy
+      
+        Dcoefficients (1,:,:) = 1.0_dp
+        
+        do iel = 1, size(Dcoefficients,3)
+          do ipoint = 1, size(Dcoefficients,2)
+
+            ! Get coordinates          
+            dx = Dpoints(1,ipoint,iel)
+            dy = Dpoints(2,ipoint,iel)
+        
+            ! Shock tube
+            if ( dx<0.5_dp) then
+              Dcoefficients (1,ipoint,iel) = 2.5_dp
+            else
+              Dcoefficients (1,ipoint,iel) = 0.25_dp
+            end if 
+                      
+          !Dcoefficients (1,ipoint,iel) = 2.5_dp+dx
+          
+          end do
+        end do
+        
+    end select
+    
+    ! Release the function parser
+    call fparser_release(rfparser)
+                    
+    !Dcoefficients (1,:,:) = 0.0_dp
+
+  end subroutine
+  
+  
 
 
 
@@ -3292,6 +3489,394 @@ integer :: iel
     
   end subroutine
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  !<subroutine>
+
+    subroutine Euler_flux_dg_buildVectorBlEdge2D_sim (&
+!              Dcoefficients,&
+!              DsolVals,&
+              DfluxValues,&
+              rvectorSolBlock,&
+              IelementList,&
+              normal,&
+!              DpointsReal,&
+              rintSubSet,&
+              rcollection )
+    
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+!  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+  real(DP), dimension(:,:), intent(in) :: normal
+!  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+  type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+  type(t_vectorBlock), intent(in) :: rvectorSolBlock
+  integer, dimension(:) , intent(in) :: IelementList
+  type(t_collection), intent(inout), target, optional :: rcollection
+    
+  !</input>
+  
+  !<output>
+  ! DfluxValues(nvar,ialbet,ncubp,NEL)
+  real(DP), dimension(:,:,:,:), intent(out) :: DfluxValues
+  !</output>
+    
+  !</subroutine>
+  
+  
+  real(dp), dimension(4) :: DQi, DQa, DQroe, DFi, DFa, DFlux
+  real(dp), dimension(5) :: DQroec
+  integer :: ivar, iel, ipoint
+  ! Dsolutionvalues(2 sides, ncubp, NEL, nvar)
+  real(dp), dimension(:,:,:,:), allocatable :: Dsolutionvalues
+  real(dp) :: dx, dy
+  real(dp) :: dh, du, dv, dnormalPart, dtangentialPart
+  real(dp), dimension(4) :: DF1i, DF1a, DF2i, DF2a, DFx, DFy
+  real(dp), dimension(4,4) :: DL, DR, DaLambda
+  real(dp) :: dmaxEV
+  
+  real(dp),dimension(4,4) :: C
+  
+  real(dp), dimension(2) :: Dvel
+  real(dp) :: dvn, drad, dvt
+  real(dp) :: drho, dE, dpr, dc
+  real(dp) :: dW1, dW2, dW3, dW4, dW1o, dW2o, dW3o, dW4o
+  real(dp) :: gamma = 1.4_dp
+  
+  
+
+  ! Get solution values (or its derivatives)
+  ! DfluxValues(nvar,ialbet,ncubp,NEL)
+  ! Dsolutionvalues(2 sides, ncubp, NEL, nvar)
+  allocate(Dsolutionvalues(2,ubound(DfluxValues,3),ubound(DfluxValues,4),ubound(DfluxValues,1)))
+  
+  do ivar = 1, size(DfluxValues,1)
+  
+    ! Get values on the one side of the edge
+    call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
+                             rIntSubset(1), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 1)
+    ! Get values on the other side of the edge                               
+    call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
+                             rIntSubset(2), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 2)
+   end do
+               
+
+
+
+  
+  
+  do iel = 1, ubound(DfluxValues,4)
+  
+    do ipoint= 1, ubound(DfluxValues,3)
+      
+      ! Get coordinates
+      dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iel)
+      dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
+      
+    
+      ! Set boundary conditions
+      ! Test, if we are at a boundary
+      if (IelementList(iel)==0) then
+      
+        ! No BCs
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,4) = Dsolutionvalues(1,ipoint,iel,4)
+
+
+!        !!! Boundary conditions by Riemann invariants !!!
+!        
+!        ! Calculate Riemann invariants from outer (freestream) state
+!        ! Here you can set the desired freestream state
+!        drho = 1.0_dp
+!        du = 0.0_dp
+!        dv = 0.0_dp
+!        dE = 0.0_dp
+!        
+!        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
+!        dH = dE + dpr/drho
+!        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
+!        
+!        dvn =  du*normal(1,iel) + dv*normal(2,iel)
+!        dvt = -du*normal(2,iel) + dv*normal(1,iel)
+!        
+!        dW1o = dvn - 2.0_dp*dc/(gamma-1)
+!        dW2o = dpr/(drho**gamma)
+!        dW3o = dvt
+!        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
+!        
+!        ! Calculate Riemann invariants from inner values
+!        drho = Dsolutionvalues(1,ipoint,iel,1)
+!        du = Dsolutionvalues(1,ipoint,iel,2)/drho
+!        dv = Dsolutionvalues(1,ipoint,iel,3)/drho
+!        dE = Dsolutionvalues(1,ipoint,iel,4)/drho
+!        
+!        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
+!        dH = dE + dpr/drho
+!        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
+!        
+!        dvn =  du*normal(1,iel) + dv*normal(2,iel)
+!        dvt = -du*normal(2,iel) + dv*normal(1,iel)
+!        
+!        dW1 = dvn - 2.0_dp*dc/(gamma-1)
+!        dW2 = dpr/(drho**gamma)
+!        dW3 = dvt
+!        dW4 = dvn + 2.0_dp*dc/(gamma-1)
+!        
+!        ! Choose inner/outer state depending on the sign of the
+!        ! eigenvalues
+!        if ((dvn-dc)<0.0_dp) dW1 = dW1o
+!        if (dvn<0.0_dp) then
+!          dW2 = dW2o
+!          dW3 = dW3o
+!        end if
+!        if ((dvn+dc)<0.0_dp) dW4 = dW4o
+!        
+!        ! Transform back to conservative variables and set value
+!        ! in the ghost node
+!        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
+!        drho = (dc*dc/(gamma*dW2))**(1.0_dp/(gamma-1.0_dp))
+!        dpr = dc*dc*drho/gamma
+!        du = 0.5_dp*(dW1+dW4)*normal(1,iel) - dW3*normal(2,iel)
+!        dv = 0.5_dp*(dW1+dW4)*normal(2,iel) + dW3*normal(1,iel)
+!        
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = drho
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = drho*du
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = drho*dv
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,4) = dpr/(gamma-1.0_dp) + drho*0.5_dp*(du*du+dv*dv)
+        
+        
+        
+!        ! Reflecting BCs
+!        ! Calculate x- and y- velocity from momentum
+!        drho = Dsolutionvalues(1,ipoint,iel,1)
+!        du = Dsolutionvalues(1,ipoint,iel,2)/drho
+!        dv = Dsolutionvalues(1,ipoint,iel,3)/drho
+!        
+!        ! Calculate normal and tangential part
+!        dvn =  du*normal(1,iel) + dv*normal(2,iel)
+!        dvt = -du*normal(2,iel) + dv*normal(1,iel)
+!        
+!        ! Invert the normal part
+!        dvn = -dvn
+!        dvt = +dvt
+!        
+!        ! Calculate new velocity
+!        du =  dvn*normal(1,iel) + dvt*normal(2,iel)
+!        dv = -dvn*normal(2,iel) + dvt*normal(1,iel)
+!        
+!        ! Set new momentum
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = drho
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = drho * du
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = drho * dv
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,4) = Dsolutionvalues(2,ipoint,iel,4)
+        
+      end if
+      
+    
+
+
+
+
+      ! *** Upwind flux without dimensional splitting (Roe-Flux) and new c ***
+      
+      ! Get solution values on the in and outside
+      DQi = Dsolutionvalues(1,ipoint,iel,:)
+      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
+      
+      ! Get fluxes on the in and outside in x- and y-direction
+      DF1i = Euler_buildFlux(DQi,1)
+      DF1a = Euler_buildFlux(DQa,1)
+      DF2i = Euler_buildFlux(DQi,2)
+      DF2a = Euler_buildFlux(DQa,2)
+            
+      ! Calculate Roevalues
+      DQroec = Euler_calculateQroec(DQi,DQa)
+      
+      ! First calculate flux in x-direction
+      DFx= 0.5_dp*(DF1i+DF1a)
+!      DFx = buildFlux(DQRoe,1)
+      
+      ! First calculate flux in y-direction
+      DFy= 0.5_dp*(DF2i+DF2a)
+!      DFy = buildFlux(DQRoe,2)
+      
+      ! Add the fluxes of the two dimensional directions to get Flux * normal
+      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
+      
+      ! Add artificial diffusion
+      DL       = Euler_buildMixedLcfromRoe       (DQRoec,normal(1,iel),normal(2,iel))
+      DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iel),normal(2,iel))
+      DR       = Euler_buildMixedRcfromRoe       (DQRoec,normal(1,iel),normal(2,iel))
+      
+      ! Save the calculated flux
+      DfluxValues(:,1,ipoint,iel) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
+      DfluxValues(:,1,ipoint,iel) = DFlux + 0.5_dp*maxval(DaLambda)*(DQi - DQa)
+      
+    end do ! ipoint
+  end do ! iel
+  
+
+  
+  
+
+                                 
+  deallocate(Dsolutionvalues)  
+  
+  
+  end subroutine
+  
+  
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine Euler_flux_sys_block (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(nvar,itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    integer :: iel, ipoint, ivar, nvar2d, currentvar,nterms
+    real(DP) :: dvx, dvy, dx, dy, dsol
+    ! (# of terms, ncubp, NEL, nvar2d)
+    real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
+    real(dp), dimension(4) :: dQ, DFx, DFy
+    real(dp), dimension(:), pointer :: p_ddata
+    
+    ! nvar2d = 4
+    nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
+    
+    rdomainIntSubset%ielementDistribution = 1
+    
+    
+    ! rform%itermCount gives the number of additional terms, here 2
+    nterms = rform%itermCount
+        
+    ! Allocate space for the solution values ! (# of derivatives, ncubp, NEL, nvar2d)
+    allocate(DsolutionValues(1,size(Dpoints,2),size(Dpoints,3),nvar2d))
+    
+    ! First evaluate the solution in each point
+    do ivar = 1, nvar2d
+      call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(ivar), &
+                                 rdomainIntSubset, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
+    end do  
+ 
+    ! Loop over all elements and all points   
+    do iel = 1, size(Dpoints,3)
+      do ipoint = 1, size(Dpoints,2)
+        
+        ! Get coordinates
+        dx = Dpoints(1,ipoint,iel)
+        dy = Dpoints(2,ipoint,iel)
+
+        ! Get solution      
+        dQ = DsolutionValues(1,ipoint,iel,:)
+        
+        ! Build fluxes in coordinate directions
+        DFx = Euler_buildFlux(dQ,1)
+        DFy = Euler_buildFlux(dQ,2)
+        
+        ! Set the coefficients
+        Dcoefficients (:,1,ipoint,iel) = DFx(:)
+        Dcoefficients (:,2,ipoint,iel) = DFy(:)
+        
+      end do
+    end do
+    
+    ! Deallocate the solutionvalues    
+    deallocate(DsolutionValues)
+    
+  end subroutine
 
 
 

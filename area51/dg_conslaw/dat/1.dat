@@ -33,17 +33,17 @@ triname = ./pre/QUAD.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 2
+FEkind = 1
 
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.005
+dt = 0.001
 
 # Final time
-ttfinal = 3.0
+ttfinal = 0.35
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -57,7 +57,7 @@ theta = 1.0
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 12
+limiter = 0
 
 # What kind of time stepping to use
 # 1: RK SSP 3rd order
@@ -104,7 +104,7 @@ outtype = 2
 # Create files for video?
 # 0: No
 # 1: Yes
-makevideo = 0
+makevideo = 1
 
 # Make gmv snapshot every ... seconds (should be n*dt)
-videotimestep = 0.01
+videotimestep = 0.005
