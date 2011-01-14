@@ -144,6 +144,11 @@ module boundarycondaux
     integer :: h_DmaxPar = ST_NOHANDLE
 
     ! Handle to
+    !     p_IsegCount = array [1..NBCT]
+    ! which stores the number of segments per boundary component
+    integer :: h_IsegCount = ST_NOHANDLE
+    
+    ! Handle to
     !     p_IbdrCondType = array [1..NNCOMP]
     ! which stores the type of boundary condition of each boundary segment
     integer :: h_IbdrCondType = ST_NOHANDLE
@@ -217,6 +222,7 @@ contains
 
     ! Local variables
     real(DP), dimension(:), pointer :: p_DmaxPar
+    integer, dimension(:), pointer :: p_IsegCount
     integer, dimension(:), pointer :: p_IbdrCondCpIdx
     integer, dimension(:), pointer :: p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic
@@ -225,7 +231,7 @@ contains
     character(LEN=1024), dimension(:), allocatable :: cMathExpression
 
     character(LEN=SYS_NAMELEN) :: keyword
-    integer :: iunit,ibct,ibct1,icomp,ncomp,nncomp,iexpr,nexpr
+    integer :: iunit,ibct,ibct1,icomp,nncomp,iexpr,nexpr
     logical :: bisOpened
 
 
@@ -270,11 +276,18 @@ contains
     end if
     read(iunit, *, end=8888, ERR=9999) rboundaryCondition%nmaxExpressions
 
-    ! Allocate an array containing pointers
+    ! Allocate an array containing the pointers to boundary components
     call storage_new('bdrc_readBoundaryCondition', 'h_IbdrCondCpIdx',&
         rboundaryCondition%iboundarycount+1, ST_INT,&
         rboundaryCondition%h_IbdrCondCpIdx, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
+
+    ! Allocate an array containing the numbers of boundary segments at
+    ! each boundary components
+    call storage_new('bdrc_readBoundaryCondition', 'h_IsegCount',&
+        rboundaryCondition%iboundarycount, ST_INT,&
+        rboundaryCondition%h_IsegCount, ST_NEWBLOCK_NOINIT)
+    call storage_getbase_int(rboundaryCondition%h_IsegCount, p_IsegCount)
 
     ! Initialize the number of components
     nncomp = 0
@@ -314,8 +327,8 @@ contains
       end if
 
       ! Read NCOMP and increment component counter
-      read(iunit, *, end=8888, ERR=9999) ncomp
-      nncomp = nncomp+ncomp
+      read(iunit, *, end=8888, ERR=9999) p_IsegCount(ibct)
+      nncomp = nncomp+p_IsegCount(ibct)
 
     end do ! ibct
 
@@ -491,6 +504,8 @@ contains
         call storage_free(rboundaryCondition%h_IbdrCondCpIdx)
     if (rboundaryCondition%h_DmaxPar .ne. ST_NOHANDLE)&
         call storage_free(rboundaryCondition%h_DmaxPar)
+    if (rboundaryCondition%h_IsegCount .ne. ST_NOHANDLE)&
+        call storage_free(rboundaryCondition%h_IsegCount)
     if (rboundaryCondition%h_IbdrCondType .ne. ST_NOHANDLE)&
         call storage_free(rboundaryCondition%h_IbdrCondType)
     if (rboundaryCondition%h_IbdrCompPeriodic .ne. ST_NOHANDLE)&
@@ -1058,8 +1073,7 @@ contains
 
 !<description>
     ! This subroutine creates a boundary region from a boundary
-    !  condition structure which stores all required data.
-    !
+    ! condition structure which stores all required data.
 !</description>
 
 !<input>
@@ -1082,11 +1096,11 @@ contains
 
     ! local variables
     real(DP), dimension(:), pointer :: p_DmaxPar
+    integer, dimension(:), pointer :: p_IsegCount
     integer, dimension(:), pointer :: p_IbdrCondCpIdx
     logical, dimension(:), pointer :: p_BisSegClosed
     real(DP) :: dcurrentpar, dendpar, dmaxpar
     integer :: iproperties,isegment
-
 
     if ((iboundCompIdx .gt. rboundaryCondition%iboundarycount) .or.&
         (iboundCompIdx .lt. 0)) then
@@ -1097,20 +1111,20 @@ contains
 
     ! Set pointers for boundary
     call storage_getbase_double(rboundaryCondition%h_DmaxPar, p_DmaxPar)
+    call storage_getbase_int(rboundaryCondition%h_IsegCount, p_IsegCount)
     call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
     call storage_getbase_logical(rboundaryCondition%h_BisSegClosed, p_BisSegClosed)
 
 
     if (iboundSegIdx .ne. 0) then
 
-      if ((iboundSegIdx .gt. p_IbdrCondCpIdx(iboundCompIdx+1)&
-          -p_IbdrCondCpIdx(iboundCompIdx)) .or. (iboundSegIdx.lt.0)) then
+      if ((iboundSegIdx .gt. p_IsegCount(iboundCompIdx)) .or. (iboundSegIdx.lt.0)) then
         call output_line ('iboundSegIdx out of bounds!', &
             OU_CLASS_ERROR,OU_MODE_STD,'bdrc_createRegion')
         call sys_halt()
       endif
 
-      ! Get segment number
+      ! Get segment number in absolute values
       isegment = p_IbdrCondCpIdx(iboundCompIdx)+iboundSegIdx-1
 
       ! Get the start and end parameter value
@@ -1168,7 +1182,7 @@ contains
     rregion%iproperties = iproperties
     rregion%iboundCompIdx = iboundCompIdx
     rregion%iboundSegIdx = 0
-    
+
   end subroutine bdrc_createRegion
 
 end module boundarycondaux
