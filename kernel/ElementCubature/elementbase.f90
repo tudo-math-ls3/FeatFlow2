@@ -47,10 +47,16 @@ module elementbase
   ! (Usually the corners of the element.)
   integer(I32), parameter, public :: EL_EVLTAG_COORDS       = 2**0
 
-  ! Calculate the coordinates on the reference element of the points where to evaluate.
+  ! Prepare the coordinates on the reference element of the points where to evaluate.
+  ! A set of coordinates on one element must be specified in the preparation routine.
+  ! These coordinates are transferred to all elements where to evaluate.
+  ! For the preparation routine on one element: Transfer the source coordinates
+  ! on the reference element to the evaluation structure.
   integer(I32), parameter, public :: EL_EVLTAG_REFPOINTS    = 2**1
 
   ! Calculate the real coordinates of the points where to evaluate.
+  ! The real coordinates are calculated based on the corresponding mapping from the
+  ! reference to the real element.
   integer(I32), parameter, public :: EL_EVLTAG_REALPOINTS   = 2**2
   
   ! Calculate the Jacobian matrix of the points where to evaluate
