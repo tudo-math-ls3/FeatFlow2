@@ -3758,8 +3758,8 @@ contains
 
       ! Calculate the list of elements adjacent to the boundary
       call bdraux_getElementsAtRegion(rboundaryRegion,&
-          rdiscretisation, NELbdc, IelementList,&
-          IelementOrientation, DedgePosition, celement)
+          rdiscretisation, NELbdc, IelementList, IelementOrientation,&
+          DedgePosition, celement, BDR_PAR_LENGTH)
 
 
       ! Check if element distribution is empty

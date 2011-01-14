@@ -54,8 +54,9 @@ contains
 
 !<subroutine>
 
-  subroutine bdraux_getElementsAtBoundary(rdiscretisation, NELbdc,&
-      IelementList, IelementOrientation, DedgePosition, celement)
+  subroutine bdraux_getElementsAtBoundary(rdiscretisation,&
+      NELbdc, IelementList, IelementOrientation, DedgePosition,&
+      celement, cparType)
 
 !<description>
     ! This subroutine calculates the list of elements which are
@@ -70,6 +71,10 @@ contains
     ! OPTIOANL: Element type to be considered. If not present, then
     ! all elements adjacent to the boundary are inserted into the list
     integer(I32), intent(in), optional :: celement
+
+    ! OPTIONAL: Type of parametrisation to use.
+    ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
+    integer, intent(in), optional :: cparType
 !</input>
 
 !<output>
@@ -91,7 +96,10 @@ contains
     ! local variables
     type(t_boundary), pointer :: p_rboundary
     type(t_boundaryRegion) :: rboundaryRegion
-    integer :: ibdc,NEL
+    integer :: ibdc,NEL,cpar
+
+    cpar = BDR_PAR_01
+    if (present(cparType)) cpar = cparType
 
     ! The discretisation must provide a boundary structure
     if (associated(rdiscretisation%p_rboundary)) then
@@ -106,16 +114,16 @@ contains
     ! Create a boundary region for each boundary component and call
     ! the calculation routine for that.
     do ibdc = 1,boundary_igetNBoundComp(p_rboundary)
-      call boundary_createRegion (p_rboundary, ibdc, 0, rboundaryRegion)
+      call boundary_createRegion (p_rboundary, ibdc, 0, rboundaryRegion, cpar)
 
       if (present(DedgePosition)) then
         call bdraux_getElementsAtRegion(rboundaryRegion, rdiscretisation,&
             NEL, IelementList(NELbdc+1:), IelementOrientation(NELbdc+1:),&
-            DedgePosition(:,NELbdc+1:), celement)
+            DedgePosition(:,NELbdc+1:), celement, cpar)
       else
         call bdraux_getElementsAtRegion(rboundaryRegion, rdiscretisation,&
             NEL, IelementList(NELbdc+1:), IelementOrientation(NELbdc+1:),&
-            celement=celement)
+            celement=celement, cparType=cpar)
       end if
 
       NELbdc = NELbdc + NEL
@@ -128,7 +136,8 @@ contains
 !<subroutine>
 
   subroutine bdraux_getElementsAtRegion(rboundaryRegion, rdiscretisation,&
-      NELbdc, IelementList, IelementOrientation, DedgePosition, celement)
+      NELbdc, IelementList, IelementOrientation, DedgePosition,&
+      celement, cparType)
 
 !<description>
     ! This subroutine calculates the list of elements which are
@@ -147,6 +156,10 @@ contains
     ! OPTIOANL: Element type to be considered. If not present, then
     ! all elements adjacent to the boundary are inserted into the list
     integer(I32), intent(in), optional :: celement
+
+    ! OPTIONAL: Type of parametrisation to use.
+    ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
+    integer, intent(in), optional :: cparType
 !</input>
 
 !<output>
@@ -177,7 +190,10 @@ contains
     integer, dimension(:), pointer :: p_IelementDistr
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer :: ibdc,iedge,iel,ilocaledge
+    integer :: ibdc,iedge,iel,ilocaledge,cpar
+
+    cpar = BDR_PAR_01
+    if (present(cparType)) cpar = cparType
 
     ! Get some pointers and arrays for quicker access
     p_rtriangulation => rdiscretisation%p_rtriangulation
@@ -267,7 +283,7 @@ contains
       if (present(DedgePosition))&
           call boundary_convertParameterList(rdiscretisation%p_rboundary,&
           ibdc, DedgePosition(:,1:iel), DedgePosition(:,1:iel),&
-          rboundaryRegion%cparType, BDR_PAR_LENGTH)
+          rboundaryRegion%cparType, cpar)
       
       ! Handle the last edge differently
       iedge = p_IboundaryCpIdx(ibdc+1)-1
@@ -290,11 +306,11 @@ contains
         if (present(DedgePosition)) then
           ! Save the start parameter value of the edge -- in length parametrisation.
           DedgePosition(1,iel) = boundary_convertParameter(rdiscretisation%p_rboundary,&
-              ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, BDR_PAR_LENGTH)
+              ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, cpar)
           
           ! Save the end parameter value of the edge -- in length parametrisation.
           DedgePosition(2,iel) = boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
-              ibdc, BDR_PAR_LENGTH)
+              ibdc, cpar)
         end if
       end if
       
@@ -344,7 +360,7 @@ contains
         ! Convert parameter values in length parametrisation
         call boundary_convertParameterList(rdiscretisation%p_rboundary,&
             ibdc, DedgePosition(:,1:iel), DedgePosition(:,1:iel),&
-            rboundaryRegion%cparType, BDR_PAR_LENGTH)
+            rboundaryRegion%cparType, cpar)
       end if
 
       ! Handle the last edge differently
@@ -375,11 +391,11 @@ contains
         if (present(DedgePosition)) then
           ! Save the start parameter value of the edge -- in length parametrisation.
           DedgePosition(1,iel) = boundary_convertParameter(rdiscretisation%p_rboundary, &
-              ibdc, p_DvertexParameterValue(NELbdc), rboundaryRegion%cparType, BDR_PAR_LENGTH)
+              ibdc, p_DvertexParameterValue(NELbdc), rboundaryRegion%cparType, cpar)
           
           ! Save the end parameter value of the edge -- in length parametrisation.
           DedgePosition(2,iel) = boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
-              ibdc, BDR_PAR_LENGTH)
+              ibdc, cpar)
         end if
 
       end if
@@ -396,7 +412,8 @@ contains
 !<subroutine>
 
   subroutine bdraux_getElementsAtBdrComp(ibdc, rdiscretisation,&
-      NELbdc, IelementList, IelementOrientation, DedgePosition, celement)
+      NELbdc, IelementList, IelementOrientation, DedgePosition,&
+      celement, cparType)
 
 !<description>
     ! This subroutine calculates the list of elements which are
@@ -415,6 +432,10 @@ contains
     ! OPTIOANL: Element type to be considered. If not present, then
     ! all elements adjacent to the boundary are inserted into the list
     integer(I32), intent(in), optional :: celement
+
+    ! OPTIONAL: Type of parametrisation to use.
+    ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
+    integer, intent(in), optional :: cparType
 !</input>
 
 !<output>
@@ -443,7 +464,10 @@ contains
     integer, dimension(:), pointer :: p_IelementDistr
     integer, dimension(:), pointer :: p_InodalProperty
     integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer :: iel,iedge
+    integer :: iel,iedge,cpar
+
+    cpar = BDR_PAR_01
+    if (present(cparType)) cpar = cparType
 
     select case(rdiscretisation%ndimension)
     case(NDIM1D)
@@ -551,8 +575,8 @@ contains
       
       ! Create region for entire boundary and determine elements
       call boundary_createRegion (p_rboundary, ibdc, 0, rboundaryRegion)
-      call bdraux_getElementsAtRegion(rboundaryRegion, rdiscretisation,&
-          NELbdc, IelementList, IelementOrientation, DedgePosition, celement)
+      call bdraux_getElementsAtRegion(rboundaryRegion, rdiscretisation, NELbdc,&
+          IelementList, IelementOrientation, DedgePosition, celement, cpar)
 
 
     case default

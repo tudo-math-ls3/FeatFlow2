@@ -7060,7 +7060,8 @@ contains
             ! Calculate the list of elements adjacent to the boundary component
             call bdraux_getElementsAtBdrComp(iboundaryComp,&
                 rmatrix%p_rspatialDiscrTest, NELbdc, IelementList, IelementOrientation,&
-                celement=rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
+                celement=rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+                cparType=BDR_PAR_LENGTH)
 
             ! Check if element distribution is empty
             if (NELbdc .le. 0) cycle
@@ -7106,7 +7107,8 @@ contains
               ! Calculate the list of elements adjacent to the boundary component
               call bdraux_getElementsAtBdrComp(ibdc, rmatrix%p_rspatialDiscrTest,&
                   NELbdc, IelementList, IelementOrientation,&
-                  celement=rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
+                  celement=rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+                  cparType=BDR_PAR_LENGTH)
               
               ! Check if element distribution is empty
               if (NELbdc .le. 0) cycle
@@ -7312,7 +7314,8 @@ contains
             call bdraux_getElementsAtRegion(rboundaryRegion,&
                 rmatrix%p_rspatialDiscrTrial, NELbdc,&
                 IelementList, IelementOrientation, DedgePosition,&
-                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
+                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+                BDR_PAR_LENGTH)
             
             ! Check if element distribution is empty
             if (NELbdc .le. 0) cycle
@@ -7367,7 +7370,8 @@ contains
               call bdraux_getElementsAtRegion(rboundaryReg,&
                   rmatrix%p_rspatialDiscrTrial, NELbdc,&
                   IelementList, IelementOrientation, DedgePosition,&
-                  rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
+                  rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+                  BDR_PAR_LENGTH)
 
               if (NELbdc .gt. 0) then
                 

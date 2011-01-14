@@ -984,7 +984,8 @@ contains
             ! Calculate the list of elements adjacent to the boundary component
             call bdraux_getElementsAtBdrComp(iboundaryComp,&
                 rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                cparType=BDR_PAR_LENGTH)
             
             ! Check if element distribution is empty
             if (NELbdc .le. 0) cycle
@@ -1029,7 +1030,8 @@ contains
               ! Calculate the list of elements adjacent to the boundary component
               call bdraux_getElementsAtBdrComp(ibdc,&
                   rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                  celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                  celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                  cparType=BDR_PAR_LENGTH)
               
               ! Check if element distribution is empty
               if (NELbdc .le. 0) cycle
@@ -1198,7 +1200,8 @@ contains
             call bdraux_getElementsAtRegion(rboundaryRegion,&
                 rvector%p_rspatialDiscr, NELbdc,&
                 IelementList, IelementOrientation, DedgePosition,&
-                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                BDR_PAR_LENGTH)
             
             ! Check if element distribution is empty
             if (NELbdc .le. 0) cycle
@@ -1254,7 +1257,8 @@ contains
               call bdraux_getElementsAtRegion(rboundaryReg,&
                   rvector%p_rspatialDiscr, NELbdc,&
                   IelementList, IelementOrientation, DedgePosition,&
-                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                  BDR_PAR_LENGTH)
               
               if (NELbdc .gt. 0) then
                 
@@ -1400,7 +1404,8 @@ contains
             ! Calculate the list of elements adjacent to the boundary component
             call bdraux_getElementsAtBdrComp(iboundaryComp,&
                 rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                cparType=BDR_PAR_LENGTH)
           
             ! Check if element distribution is empty
             if (NELbdc .le. 0) cycle
@@ -1445,7 +1450,8 @@ contains
               ! Calculate the list of elements adjacent to the boundary component
               call bdraux_getElementsAtBdrComp(ibdc,&
                   rvector%p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                  celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                  celement=rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                  cparType=BDR_PAR_LENGTH)
               
               ! Check if element distribution is empty
               if (NELbdc .le. 0) cycle
@@ -1611,7 +1617,8 @@ contains
             call bdraux_getElementsAtRegion(rboundaryRegion,&
                 rvector%p_rspatialDiscr, NELbdc,&
                 IelementList, IelementOrientation, DedgePosition,&
-                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                BDR_PAR_LENGTH)
             
             ! Check if element distribution is empty
             if (NELbdc .le. 0) cycle
@@ -1667,7 +1674,8 @@ contains
               call bdraux_getElementsAtRegion(rboundaryReg,&
                   rvector%p_rspatialDiscr, NELbdc,&
                   IelementList, IelementOrientation, DedgePosition,&
-                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                  rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                  BDR_PAR_LENGTH)
               
               if (NELbdc .gt. 0) then
                 
@@ -5262,7 +5270,8 @@ contains
             ! Calculate the list of elements adjacent to the boundary component
             call bdraux_getElementsAtBdrComp(iboundaryComp,&
                 p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                celement=p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                celement=p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                cparType=BDR_PAR_LENGTH)
             
             ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
@@ -5304,7 +5313,8 @@ contains
               ! Calculate the list of elements adjacent to the boundary component
               call bdraux_getElementsAtBdrComp(ibdc,&
                   p_rspatialDiscr, NELbdc, IelementList, IelementOrientation,&
-                  celement=p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                  celement=p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                  cparType=BDR_PAR_LENGTH)
               
               ! Check if element distribution is empty
               if (NELbdc .le. 0) cycle
@@ -5485,7 +5495,8 @@ contains
             call bdraux_getElementsAtRegion(rboundaryRegion,&
                 p_rspatialDiscr, NELbdc,&
                 IelementList, IelementOrientation, DedgePosition,&
-                p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                BDR_PAR_LENGTH)
             
             ! Check if element distribution is empty
             if (NELbdc .le. 0) cycle
@@ -5541,7 +5552,8 @@ contains
               call bdraux_getElementsAtRegion(rboundaryReg,&
                   p_rspatialDiscr, NELbdc,&
                   IelementList, IelementOrientation, DedgePosition,&
-                  p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
+                  p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                  BDR_PAR_LENGTH)
               
               if (NELbdc .gt. 0) then
                 
