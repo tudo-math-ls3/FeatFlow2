@@ -1310,8 +1310,8 @@ module triangulation
     ! Parameter values of edge midpoints on the boundary.
     ! Handle to 
     !       p_DedgeParameterValue = array [1..NMBD] of real
-    ! p_DedgeParameterValue(i) contains the parameter value of
-    ! the midpoint of boundary edge i, which corresponds to the 
+    ! p_DedgeParameterValue(i) contains the parameter value of the midpoint
+    ! of boundary edge i in 0-1 parametrisation, which corresponds to the 
     ! edge p_IedgesAtBoundary(I).
     ! There may be edges on the boundary of the triangulation which
     ! are not part of the physical boundary of the domain (-> subdomains).
