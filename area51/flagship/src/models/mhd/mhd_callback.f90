@@ -4378,9 +4378,8 @@ contains
     
     ! local variables
     type(t_boundaryCondition), pointer :: p_rboundaryCondition
-    type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
-    type(t_boundaryRegion) :: rboundaryRegion,rregion,rregionMirror
+    type(t_boundaryRegion) :: rboundaryRegion,rboundaryRegionMirror,rregion
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
@@ -4444,7 +4443,7 @@ contains
         rform%itermCount = 1
         rform%Idescriptors(1) = DER_FUNC
         
-        ! Create boundary segment
+        ! Create boundary segment in 01-parametrisation
         call bdrc_createRegion(p_rboundaryCondition, ibct,&
             isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
         
@@ -4455,25 +4454,36 @@ contains
           ! Create boundary region for mirror boundary in 01-parametrisation
           call bdrc_createRegion(p_rboundaryCondition, p_IbdrCompPeriodic(isegment),&
               p_IbdrCondPeriodic(isegment)-p_IbdrCondCpIdx(p_IbdrCompPeriodic(isegment))+1,&
-              rregionMirror)
+              rboundaryRegionMirror)
           
-          ! Convert both boundary regions into length parametrisation
-          ! which is necessary to transform the parameter values on
-          ! the boundary segment (in length parametrisation) to
-          ! parameter values on the mirror boundary segment
+          ! Attach boundary regin to temporal collection structure
+          call collct_setvalue_bdreg(rcollectionTmp, 'rboundaryRegionMirror',&
+              rboundaryRegionMirror, .true.)
+          ! In the callback-function, the minimum/maximum parameter
+          ! values of the boundary region and its mirrored
+          ! counterpartqq are required in length parametrisation to
+          ! determine the parameter values of the mirrored cubature
+          ! points. Therefore, we make a copy of both boundary
+          ! regions, convert them to length parametrisation and attach
+          ! the minimum/maximum parameter values to the quick access
+          ! arrays of the temporal collection structure.
           rregion = rboundaryRegion
           call boundary_convertRegion(&
               rvector%RvectorBlock(1)%p_rspatialDiscr%p_rboundary,&
               rregion, BDR_PAR_LENGTH)
+
+          ! Prepare quick access array of temporal collection structure
+          rcollectionTmp%DquickAccess(3) = rregion%dminParam
+          rcollectionTmp%DquickAccess(4) = rregion%dmaxParam
+
+          rregion = rboundaryRegionMirror
           call boundary_convertRegion(&
               rvector%RvectorBlock(1)%p_rspatialDiscr%p_rboundary,&
-              rregionMirror, BDR_PAR_LENGTH)
+              rregion, BDR_PAR_LENGTH)
           
-          ! Attach boundary components to temporal collection structure
-          call collct_setvalue_bdreg(rcollectionTmp, 'rregion',&
-              rregion, .true.)
-          call collct_setvalue_bdreg(rcollectionTmp, 'rregionMirror',&
-              rregionMirror, .true.)
+          ! Prepare quick access array of temporal collection structure
+          rcollectionTmp%DquickAccess(5) = rregion%dminParam
+          rcollectionTmp%DquickAccess(6) = rregion%dmaxParam          
         end if
 
         ! Assemble the linear form
