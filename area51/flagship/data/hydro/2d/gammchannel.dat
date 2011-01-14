@@ -219,7 +219,7 @@ iprelimiting = 0
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.001
+dstepUCD = 0.0
 
 # file for UCD output of solution
 sucdsolution = out/gammchannel
@@ -271,7 +271,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.0
+dfinalTime = 10.0
 
 # initial time step size
 dinitialStep = 1e-3
