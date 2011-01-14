@@ -3856,7 +3856,7 @@ contains
 !</input>
   
 !<output>
-  ! Coordinates of the point in coordinates on there reference element.
+  ! Coordinates of the point in coordinates on the reference element.
   ! (The format depends on the type of coordinate on the reference element
   !  and is specified via ctrafoType.)
   real(DP), dimension(:), intent(out) :: DparPoint
