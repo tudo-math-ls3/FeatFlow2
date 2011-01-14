@@ -3489,18 +3489,17 @@ contains
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'ivelocitytype', ivelocitytype)
+        rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
 
-    ! Attach solution or velocity vector to temporal collection structure
+    ! Attach solution to temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+
+    ! Attach velocity vector (if any) to temporal collection structure
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'velocityfield', velocityfield)
-      rcollectionTmp%p_rvectorQuickAccess1 =>&
+          rcollection%SquickAccess(1), 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess2 =>&
           rproblemLevel%RvectorBlock(velocityfield)
-    else
-      rcollectionTmp%p_rvectorQuickAccess1 => rsolution
     end if
     rcollectionTmp%IquickAccess(3) = ivelocityType
 
@@ -3639,18 +3638,17 @@ contains
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'ivelocitytype', ivelocitytype)
+        rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
 
-    ! Attach solution or velocity vector to temporal collection structure
+    ! Attach solution to temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+
+    ! Attach velocity vector (if any) to temporal collection structure
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'velocityfield', velocityfield)
-      rcollectionTmp%p_rvectorQuickAccess1 =>&
+          rcollection%SquickAccess(1), 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess2 =>&
           rproblemLevel%RvectorBlock(velocityfield)
-    else
-      rcollectionTmp%p_rvectorQuickAccess1 => rsolution
     end if
     rcollectionTmp%IquickAccess(3) = ivelocityType
 
@@ -3686,7 +3684,13 @@ contains
           ! linear form and the bilinear form has no boundary term
           
         case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN,&
-              BDRC_FLUX, BDRC_DIRICHLET)
+              BDRC_FLUX, BDRC_DIRICHLET,&
+              BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+
+          ! Remark: For periodic and antiperiodic boundary conditions
+          ! only the convective flux at the outflow boundary is built
+          ! into the bilinear form. Therefore, no information about
+          ! the mirror boundary is required in this step.
           
           ! Initialize the bilinear form
           rform%itermCount = 1
@@ -4067,18 +4071,14 @@ contains
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'ivelocitytype', ivelocitytype)
+        rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
 
-    ! Attach solution or velocity vector to temporal collection structure
+    ! Attach velocity vector (if any) to temporal collection structure
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'velocityfield', velocityfield)
-      rcollectionTmp%p_rvectorQuickAccess1 =>&
+          rcollection%SquickAccess(1), 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess2 =>&
           rproblemLevel%RvectorBlock(velocityfield)
-    else
-      rcollectionTmp%p_rvectorQuickAccess1 => rsolution
     end if
     rcollectionTmp%IquickAccess(3) = ivelocityType
 
@@ -4181,9 +4181,10 @@ contains
     type(t_boundaryCondition), pointer :: p_rboundaryCondition
     type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
-    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_boundaryRegion) :: rboundaryRegion,rboundaryRegionMirror,rregion
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
+    integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
     integer :: ivelocitytype, velocityfield
     integer :: ibdc, isegment
 
@@ -4204,18 +4205,17 @@ contains
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'ivelocitytype', ivelocitytype)
+        rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
 
-    ! Attach solution or velocity vector to temporal collection structure
+    ! Attach solution to temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+
+    ! Attach velocity vector (if any) to temporal collection structure
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'velocityfield', velocityfield)
-      rcollectionTmp%p_rvectorQuickAccess1 =>&
+          rcollection%SquickAccess(1), 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess2 =>&
           rproblemLevel%RvectorBlock(velocityfield)
-    else
-      rcollectionTmp%p_rvectorQuickAccess1 => rsolution
     end if
     rcollectionTmp%IquickAccess(3) = ivelocityType
 
@@ -4227,6 +4227,14 @@ contains
         p_IbdrCondCpIdx)
     call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
         p_IbdrCondType)
+
+    ! Set additional pointers for periodic boundary conditions
+    if (p_rboundaryCondition%bPeriodic) then
+      call storage_getbase_int(p_rboundaryCondition%h_IbdrCompPeriodic,&
+          p_IbdrCompPeriodic)
+      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondPeriodic,&
+          p_IbdrCondPeriodic)
+    end if
     
     ! Loop over all boundary components
     do ibdc = 1, p_rboundaryCondition%iboundarycount
@@ -4252,7 +4260,7 @@ contains
           
         case (BDRC_INHOMNEUMANN, BDRC_ROBIN,&
               BDRC_FLUX, BDRC_DIRICHLET)
-          
+                        
           ! Initialize the linear form
           rform%itermCount = 1
           rform%Idescriptors(1) = DER_FUNC
@@ -4266,6 +4274,59 @@ contains
               .false., rvector, fcoeff_buildVectorScBdr2D_sim,&
               rboundaryRegion, rcollectionTmp)
           
+        case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+
+          ! Initialize the linear form
+          rform%itermCount = 1
+          rform%Idescriptors(1) = DER_FUNC
+          
+          ! Create boundary segment
+          call bdrc_createRegion(p_rboundaryCondition, ibdc,&
+              isegment-p_IbdrCondCpIdx(ibdc)+1, rboundaryRegion)
+          
+          ! Check if special treatment of mirror boundary condition is required
+          if ((iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_PERIODIC) .or.&
+              (iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
+          
+            ! Create boundary region for mirror boundary in 01-parametrisation
+            call bdrc_createRegion(p_rboundaryCondition, p_IbdrCompPeriodic(isegment),&
+                p_IbdrCondPeriodic(isegment)-p_IbdrCondCpIdx(p_IbdrCompPeriodic(isegment))+1,&
+                rboundaryRegionMirror)
+            
+            ! Attach boundary regin to temporal collection structure
+            call collct_setvalue_bdreg(rcollectionTmp, 'rboundaryRegionMirror',&
+                rboundaryRegionMirror, .true.)
+            
+            ! In the callback-function, the minimum/maximum parameter
+            ! values of the boundary region and its mirrored
+            ! counterpartqq are required in length parametrisation to
+            ! determine the parameter values of the mirrored cubature
+            ! points. Therefore, we make a copy of both boundary
+            ! regions, convert them to length parametrisation and
+            ! attach the minimum/maximum parameter values to the quick
+            ! access arrays of the temporal collection structure.
+            rregion = rboundaryRegion
+            call boundary_convertRegion(rvector%p_rspatialDiscr%p_rboundary,&
+                rregion, BDR_PAR_LENGTH)
+            
+            ! Prepare quick access array of temporal collection structure
+            rcollectionTmp%DquickAccess(3) = rregion%dminParam
+            rcollectionTmp%DquickAccess(4) = rregion%dmaxParam
+            
+            rregion = rboundaryRegionMirror
+            call boundary_convertRegion(rvector%p_rspatialDiscr%p_rboundary,&
+                rregion, BDR_PAR_LENGTH)
+            
+            ! Prepare quick access array of temporal collection structure
+            rcollectionTmp%DquickAccess(5) = rregion%dminParam
+            rcollectionTmp%DquickAccess(6) = rregion%dmaxParam          
+          end if
+          
+          ! Assemble the linear form
+          call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D,&
+              .false., rvector, fcoeff_buildVectorScBdr2D_sim,&
+              rboundaryRegion, rcollectionTmp)
+
         case default
           call output_line('Unsupported type of boundary copnditions !',&
               OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCond2D')
