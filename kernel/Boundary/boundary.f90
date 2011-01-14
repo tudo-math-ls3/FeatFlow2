@@ -286,6 +286,7 @@ module boundary
   public :: boundary_getCoords
   public :: boundary_createRegion
   public :: boundary_isInRegion
+  public :: boundary_convertRegion
   public :: boundary_convertParameter
   public :: boundary_convertParameterList
   public :: boundary_convertParameter_mult
@@ -2240,40 +2241,48 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
-    integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
-    real(DP), dimension(:), pointer :: p_DsegInfo, p_DmaxPar
+    integer, dimension(:), pointer :: p_IsegCount
+    real(DP), dimension(:), pointer :: p_DmaxPar
     
-    real(DP) :: dpar, dcurrentpar, dendpar, dparloc, dseglength, dtmax
-    integer :: iseg,istartidx,iboundCompIdx
+    real(DP) :: dminParam,dmaxParam,dmaxParamBC
+    integer :: iboundCompIdx
 
     ! Check of we have to convert the region at all
     if (rregion%cparType .eq. cparType) return
-
-    ! Get the pointers to the segment information arrays for the current
-    ! boundary component:
-    call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
-    call storage_getbase_int(int(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
-    
-    call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
-    call storage_getbase_double(int(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
     
     ! Get the segment-count array and the maximum-parameter array
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     call storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
-
+    
     ! Get boundary component from boundary region
     iboundCompIdx = rregion%iboundCompIdx
-
-    ! If the parameter value exceeds the parameter interval on the boundary 
-    ! component, truncate the parameter value!
-    select case (rregion%cparType)
+    
+    ! If the parameter value exceeds the parameter interval on the
+    ! boundary component, truncate the parameter value!
+    select case (cparType)
     case (BDR_PAR_01)
-      dtmax = real(p_IsegCount(iboundCompIdx),DP)
+      dmaxParamBC = real(p_IsegCount(iboundCompIdx),DP)
     case (BDR_PAR_LENGTH)
-      dtmax = p_DmaxPar(iboundCompIdx)
+      dmaxParamBC = p_DmaxPar(iboundCompIdx)
     end select
-!    dpar = mod(dt,dtmax)
+    
+    ! Convert parametrisation of minimum parameter value
+    dminParam = boundary_convertParameter(rboundary, iboundCompIdx,&
+        rregion%dminParam, rregion%cparType, cparType)
+
+    ! Convert parametrisation of maximum parameter value
+    dmaxParam = boundary_convertParameter(rboundary, iboundCompIdx,&
+        rregion%dmaxParam, rregion%cparType, cparType)
+    
+    ! Check if the maximum parameter valeu is smaller than the minimum
+    ! parameter value and set maximum parameter value accordingly
+    if (dmaxParam .lt. dminParam) dmaxParam=dmaxParamBC
+    
+    ! Convert the boundary region structure
+    rregion%cparType = cparType
+    rregion%dminParam = dminParam
+    rregion%dmaxParam = dmaxParam
+    rregion%dmaxParamBC = DmaxParamBC
 
   end subroutine boundary_convertRegion
 
