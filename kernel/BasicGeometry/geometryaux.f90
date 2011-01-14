@@ -1152,12 +1152,15 @@ contains
   ! our epsilon when we test for zero
   eps = 0.000001_dp
   ! the algorithm is as follows, it is called the Moeller & Trumbore algorithm
-  !                                    
-  !                              1                                |dot((Dpoint2-Dtri(:,0)) x (Dtri(:,1)-Dtri(:,0)),(Dtri(:,2)-Dtri(:,0)))|
-  !----------------------------------------------------------- *  |dot(Ddirect x (Dtri(:,2)-Dtri(:,0)),(Dpoint2-Dtri(:,0)))              |
-  ! dot(Ddirect x (Dtri(:,2)-Dtri(:,0)),(Dtri(:,1)-Dtri(:,0)))    |dot((Dpoint2-Dtri(:,0)) x (Dtri(:,1)-Dtri(:,0)),Ddirect))             |
-  !                                                               
-  
+  !
+  ! A * B with
+  !
+  ! A := 1/dot(Ddirect x (Dtri(:,2)-Dtri(:,0)),(Dtri(:,1)-Dtri(:,0)))
+  !
+  !      |dot((Dpoint2-Dtri(:,0)) x (Dtri(:,1)-Dtri(:,0)),(Dtri(:,2)-Dtri(:,0)))|
+  ! B := |dot(Ddirect x (Dtri(:,2)-Dtri(:,0))            ,(Dpoint2-Dtri(:,0)))  |
+  !      |dot((Dpoint2-Dtri(:,0)) x (Dtri(:,1)-Dtri(:,0)),Ddirect))             |
+
   Ddirect(1:3) = Dpoint2(1:3) - Dpoint1(1:3)
   
   De1(1:3) = Dtri(1:3,2) - Dtri(1:3,1)
@@ -1447,9 +1450,9 @@ contains
   real(DP), dimension(2,2) :: Dintersec
   integer :: i,iintersections
   
-	Dintersection=0
-	Iresult=0
-	! loop over all edges of the quad
+  Dintersection=0
+  Iresult=0
+  ! loop over all edges of the quad
   do i=1,4
     iintersections=0
     Dintersec=0  
