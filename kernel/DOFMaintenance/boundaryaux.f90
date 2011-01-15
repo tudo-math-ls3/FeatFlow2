@@ -326,7 +326,7 @@ contains
       ! of elements in the region. Be careful: The last edge must be
       ! treated differently!
       iel = 0
-      do iedge = 1,NELbdc-1
+      do iedge = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-2
         if (boundary_isInRegion(rboundaryRegion, ibdc,&
             p_DedgeParameterValue(iedge))) then
           
@@ -336,7 +336,7 @@ contains
                 p_IelementDistr(p_IelementsAtBoundary(iedge)))%celement) cycle
           end if
           iel = iel + 1
-          
+
           ! Element number
           IelementList(iel) = p_IelementsAtBoundary(iedge)
           
@@ -364,13 +364,15 @@ contains
       end if
 
       ! Handle the last edge differently
+      iedge = p_IboundaryCpIdx(ibdc+1)-1
+      
       if (boundary_isInRegion(rboundaryRegion, ibdc,&
-          p_DedgeParameterValue(NELbdc))) then
+          p_DedgeParameterValue(iedge))) then
         
         ! Check if we are the correct element distribution
         if (present(celement)) then
           if (celement .ne. p_RelementDistribution(&
-              p_IelementDistr(p_IelementsAtBoundary(NELbdc)))%celement) then
+              p_IelementDistr(p_IelementsAtBoundary(iedge)))%celement) then
             ! Adjust number of elements
             NELbdc = iel
             return
@@ -379,19 +381,19 @@ contains
         iel = iel + 1
         
         ! Element number
-        IelementList(iel) = p_IelementsAtBoundary(NELbdc)
+        IelementList(iel) = p_IelementsAtBoundary(iedge)
         
         ! Element orientation; i.e. the local number of the boundary edge 
         do ilocaledge = 1,ubound(p_IedgesAtElement,1)
-          if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(NELbdc)) .eq. &
-              p_IedgesAtBoundary(NELbdc)) exit
+          if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
+              p_IedgesAtBoundary(iedge)) exit
         end do
         IelementOrientation(iel) = ilocaledge
         
         if (present(DedgePosition)) then
           ! Save the start parameter value of the edge -- in length parametrisation.
           DedgePosition(1,iel) = boundary_convertParameter(rdiscretisation%p_rboundary, &
-              ibdc, p_DvertexParameterValue(NELbdc), rboundaryRegion%cparType, cpar)
+              ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, cpar)
           
           ! Save the end parameter value of the edge -- in length parametrisation.
           DedgePosition(2,iel) = boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
