@@ -1987,7 +1987,7 @@ contains
       dscaleLorentzForceTerm = (1.0_DP-rtimestep%theta) * rtimestep%dStep
 
       ! Calculate explicit part of the Lorentz force term
-      if (dscaleLorentzForceTerm   .ne. 0.0_DP) then
+      if (dscaleLorentzForceTerm .ne. 0.0_DP) then
         call zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
             ssectionNameHydro, ssectionNameTransport, p_rproblemLevel,&
             p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime, &
