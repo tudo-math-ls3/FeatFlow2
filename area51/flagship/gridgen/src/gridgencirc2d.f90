@@ -7,8 +7,11 @@ program gridgencirc2d
   ! Definition of mathematical constant PI
   real(DP) :: pi
 
-  ! Definition of azimuth
+  ! Definition of azimuth (defined below)
   real(DP) :: dazimuth
+
+  ! Definition of azimuth offset
+  real(DP) :: dazimuth0 = 0.0_DP
 
   ! Definition of the inner radius
   real(DP) :: dinnerRadius = 0.1_DP
@@ -60,12 +63,15 @@ program gridgencirc2d
 
     call get_command_argument(i, cbuffer)
     select case(cbuffer)
-    case('-H','--help')
+    case('-h','-H','--help')
       write(*,'(A)') 'Usage: gridgen [OPTION]'
       write(*,'(A)') 'Generate an annular grid in TRI/PRM format.'
       write(*,*)
+      write(*,'(A,T30,A)') '-h,  -H,  --help','this help screen'
       write(*,'(A,T30,A)') '-A,  --azimuth','azimuth of the circular segment'
       write(*,'(T30,A)')   'If not given, a full circle is adopted.'
+      write(*,'(A,T30,A)') '-A0,  --azimuth0','azimuth offset of the circular segment'
+      write(*,'(T30,A)')   'If not given, zero offset is adopted.'
       write(*,'(A,T30,A)') '-a,  --anisotropy','degree of radial grid anisotropy in outer region'
       write(*,'(T30,A)')   'If not given, no anisotropy is adopted.'
       write(*,'(A,T30,A)') '-d,  --delaunay','Delaunay triangulation of the inner region'
@@ -90,6 +96,10 @@ program gridgencirc2d
     case('-A','--azimuth')
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dazimuth; dazimuth = min(2.0_DP*pi, dazimuth)
+
+    case('-A0','--azimuth0')
+      call get_command_argument(i+1, cbuffer)
+      read(cbuffer,*) dazimuth0
 
     case('-a','--anisotropy')
       call get_command_argument(i+1, cbuffer)
@@ -133,6 +143,8 @@ program gridgencirc2d
   write(*,'(A)') '-----------------------'
   write(cbuffer, *) dazimuth
   write(*,'(A,T45,A)') 'azimuth of the circular segment:',trim(adjustl(cbuffer))
+  write(cbuffer, *) dazimuth0
+  write(*,'(A,T45,A)') 'azimuth offset of the circular segment:',trim(adjustl(cbuffer))
   write(cbuffer, *) dinnerRadius
   write(*,'(A,T45,A)') 'radius of inner region:',trim(adjustl(cbuffer))
   write(cbuffer, *) douterRadius
@@ -165,11 +177,12 @@ program gridgencirc2d
     write(100,'(A)') 'ITYP NSPLINE NPAR'
     write(100,'(A)') '2 1 3 '
     write(100,'(A)') 'PARAMETERS'
-    write(cbuffer1, cFormat) 0.0
+    write(cbuffer1, cFormat) 0.0_DP
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer1)) ! midpoint
     write(cbuffer2, cFormat) douterRadius
     write(100,'(A)') trim(adjustl(cbuffer2))//' '//trim(adjustl(cbuffer1)) ! radius
-    write(cbuffer2, cFormat) 2.0_DP*pi
+    write(cbuffer1, cFormat) dazimuth0
+    write(cbuffer2, cFormat) dazimuth0+2.0_DP*pi
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! azimuth
     
   else
@@ -188,24 +201,26 @@ program gridgencirc2d
     write(100,'(A)') '1 1 2 '
     write(100,'(A)') 'PARAMETERS'
     ! Circular segment
-    write(cbuffer1, cFormat) 0.0
+    write(cbuffer1, cFormat) 0.0_DP
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer1)) ! midpoint
     write(cbuffer2, cFormat) douterRadius
     write(100,'(A)') trim(adjustl(cbuffer2))//' '//trim(adjustl(cbuffer1)) ! radius
-    write(cbuffer2, cFormat) 2.0_DP*pi
+    write(cbuffer1, cFormat) dazimuth0
+    write(cbuffer2, cFormat) dazimuth0+dazimuth
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! azimuth
     ! Line segment
-    write(cbuffer1, cFormat) douterRadius*cos(dazimuth)
-    write(cbuffer2, cFormat) douterRadius*sin(dazimuth)
+    write(cbuffer1, cFormat) douterRadius*cos(dazimuth0+dazimuth)
+    write(cbuffer2, cFormat) douterRadius*sin(dazimuth0+dazimuth)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
-    write(cbuffer1, cFormat) -douterRadius*cos(dazimuth)
-    write(cbuffer2, cFormat) -douterRadius*sin(dazimuth)
+    write(cbuffer1, cFormat) -douterRadius*cos(dazimuth0+dazimuth)
+    write(cbuffer2, cFormat) -douterRadius*sin(dazimuth0+dazimuth)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
     ! Line segment
     write(cbuffer1, cFormat) 0.0
-    write(cbuffer2, cFormat) douterRadius
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer1)) ! origin
-    write(100,'(A)') trim(adjustl(cbuffer2))//' '//trim(adjustl(cbuffer1)) ! direction
+    write(cbuffer1, cFormat) douterRadius*cos(dazimuth0)
+    write(cbuffer2, cFormat) douterRadius*sin(dazimuth0)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
         
   end if
 
@@ -244,7 +259,7 @@ program gridgencirc2d
       do isegment = 1, nsegments
         
         ! Compute azimuth
-        phi = (isegment-1)*dazimuth/nsegments
+        phi = dazimuth0+(isegment-1)*dazimuth/nsegments
 
         ! Fill buffers
         write(cbuffer1, '(I10)') isegment
@@ -303,7 +318,7 @@ program gridgencirc2d
       do isegment = 1, nsegments+1
         
         ! Compute azimuth
-        phi = (isegment-1)*dazimuth/nsegments
+        phi = dazimuth0+(isegment-1)*dazimuth/nsegments
         
         if (isegment .eq. 1) then
           ! Fill buffers
@@ -346,8 +361,8 @@ program gridgencirc2d
       end do
       
       ! Write line segment from last point on circle segment to origin
-      x = dinnerRadius * cos(dazimuth)
-      y = dinnerRadius * sin(dazimuth)
+      x = dinnerRadius * cos(dazimuth0+dazimuth)
+      y = dinnerRadius * sin(dazimuth0+dazimuth)
 
       ! Write vertex coordinates
       do isegment = 1, nlineSegments
@@ -365,7 +380,8 @@ program gridgencirc2d
       end do
 
       ! Write line segment from origin to first point on circle segment
-      x = dinnerRadius; y = 0.0_DP
+      x = dinnerRadius * cos(dazimuth0)
+      y = dinnerRadius * sin(dazimuth0)     
 
       ! Write vertex coordinates
       do isegment = 1, nlineSegments-1
@@ -572,7 +588,7 @@ program gridgencirc2d
       do i = 1, iaux
         
         ! Compute azimuth
-        phi = (i-1)*dazimuth/iaux
+        phi = dazimuth0+(i-1)*dazimuth/iaux
         
         if ((dazimuth .lt. 2.0_DP*pi) .and. (i .eq. 1)) then
           ! Fill buffers
@@ -630,7 +646,7 @@ program gridgencirc2d
       end if
       
       ! Compute azimuth
-      phi = dazimuth*(i-1)/nsegments
+      phi = dazimuth0+dazimuth*(i-1)/nsegments
       
       if (dazimuth .ge. 2.0_DP*pi) then
         ! Fill buffers
