@@ -218,7 +218,7 @@ module transport_basic
   integer, parameter, public :: BDRC_DIRICHLET    = 3
 
   ! Penalty parameter for Dirichlet boundary conditions
-  real(DP), parameter, public :: BDRC_DIRICHLET_PENALTY = 1e3
+  real(DP), parameter, public :: BDRC_DIRICHLET_PENALTY = 1e6
 
   ! Robin boundary conditions
   integer, parameter, public :: BDRC_ROBIN        = 4
