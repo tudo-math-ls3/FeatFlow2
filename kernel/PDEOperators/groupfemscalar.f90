@@ -1470,7 +1470,7 @@ contains
             ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
 
       else   ! bbuildStabilisation == no
-        
+
         ! Assemble Galerkin operator with stabilisation
         call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, &
             p_IverticesAtEdge, rafcstab%NEDGE, rdiffMatrix%NEQ,&
@@ -1559,7 +1559,7 @@ contains
         
         if (bclear) then
           !$omp do
-          do iedge = 1, IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
         
             ! Get node numbers and matrix positions
             ij = IverticesAtEdge(3, iedge)
@@ -1581,7 +1581,7 @@ contains
         else   ! do not clear matrix
           ! Loop over all edges
           !$omp do
-          do iedge = 1, IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
         
             ! Get node numbers and matrix positions
             ij = IverticesAtEdge(3, iedge)
@@ -1674,7 +1674,7 @@ contains
         
         if (bclear) then
           !$omp do
-          do iedge = 1, IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
             
             ! Get node numbers and matrix positions
             ij = IverticesAtEdge(3, iedge)
@@ -1699,7 +1699,7 @@ contains
 
         else   ! do not clear matrix
           !$omp do
-          do iedge = 1, IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
             
             ! Get node numbers and matrix positions
             ij = IverticesAtEdge(3, iedge)
