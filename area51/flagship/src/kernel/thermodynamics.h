@@ -383,6 +383,24 @@
 
 #if 0
 !##############################################################################
+! Specific total energy, aka, total energy per unit mass
+!##############################################################################
+#endif
+
+#define SPECIFIC_TOTAL_ENERGY_FROM_CONSVAR(U,nvar) \
+  TOTAL_ENERGY_FROM_CONSVAR(U,nvar)/DENSITY_FROM_CONSVAR(U,nvar)
+#define SPECIFIC_TOTAL_ENERGY_1T_FROM_CONSVAR(U,nvar,i1) \
+  TOTAL_ENERGY_1T_FROM_CONSVAR(U,nvar,i1)/DENSITY_1T_FROM_CONSVAR(U,nvar,i1)
+#define SPECIFIC_TOTAL_ENERGY_1L_FROM_CONSVAR(U,nvar,i1) \
+  TOTAL_ENERGY_1L_FROM_CONSVAR(U,nvar,i1)/DENSITY_1L_FROM_CONSVAR(U,nvar,i1)
+#define SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2) \
+  TOTAL_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2)/DENSITY_2T_FROM_CONSVAR(U,nvar,i1,i2)
+#define SPECIFIC_TOTAL_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2) \
+  TOTAL_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2)/DENSITY_2L_FROM_CONSVAR(U,nvar,i1,i2)
+
+
+#if 0
+!##############################################################################
 ! Speed of sound
 !##############################################################################
 #endif

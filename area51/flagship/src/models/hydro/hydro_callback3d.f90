@@ -1475,9 +1475,9 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
 
-      ! Compute energies
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      ! Compute specific energies
+      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
@@ -1635,9 +1635,9 @@ contains
       pi = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,1,idx)
       pj = PRESSURE_2T_FROM_CONSVAR_3D(DdataAtEdge,NVAR3D,2,idx)
 
-      ! Compute energies
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      ! Compute specific energies
+      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
@@ -1834,7 +1834,7 @@ contains
       ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR3D,inode)
       vi = Y_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR3D,inode)
       wi = Z_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR3D,inode)
-      Ei = TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR3D,inode)
+      Ei = SPECIFIC_TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR3D,inode)
 
 #ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
@@ -1986,12 +1986,12 @@ contains
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
@@ -2210,12 +2210,12 @@ contains
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
@@ -2708,12 +2708,12 @@ contains
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
@@ -3054,12 +3054,12 @@ contains
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
@@ -3168,12 +3168,12 @@ contains
       ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
       wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
 
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
@@ -3694,9 +3694,9 @@ contains
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
       wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
-      ! Compute energies
-      Ei = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
-      Ej = TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
+      ! Compute specific energies
+      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,1,idx)
+      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR3D,2,idx)
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
