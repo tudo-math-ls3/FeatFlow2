@@ -27,7 +27,7 @@ application = transport
 indatfile = data/transport/2d/anisodiff.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond5_weak_primal
+sprimalbdrcondname = bdrcond1_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname =
@@ -78,10 +78,10 @@ idiffusiontype = 2
 
 # section name of diffusion tensor
 sdiffusionname(4) =
-  @diffusion5_11
-  @diffusion5_12
-  @diffusion5_21
-  @diffusion5_22
+  @diffusion1_11
+  @diffusion1_12
+  @diffusion1_21
+  @diffusion1_22
 
 # type of flow reaction
 # 0 = zero reactive term
@@ -94,10 +94,10 @@ sreactionname =
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 1
+irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @rhs5
+srhsname =
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -134,10 +134,10 @@ stargetfuncname = @targetFuncInt
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/square_01x01_quads.prm
+prmfile = grids/2d/square_01x01_hole_quads.prm
 
 # file which contains the triangulation
-trifile = grids/2d/square_01x01_quads.tri
+trifile = grids/2d/square_01x01_hole_quads.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -213,7 +213,7 @@ iprelimiting = 1
 #  0 = no stabilization (Galerkin)
 #  2 = maximum principle preservation
 # 30 = symmetric limiting
-istabilisation = 0
+istabilisation = 30
 
 
 ################################################################################
@@ -284,7 +284,7 @@ dminStep = 1.0
 dmaxStep = 1.0
 
 # adaptive time stepping algorithm
-iadaptTimestep = 0.0
+iadaptTimestep = 0
 
 # initial time for adaptive time stepping
 dadaptTime = 0.0
@@ -322,10 +322,10 @@ depsSteady = 0.0
 ioutputlevel = 3
 
 # minimum multigrid level number
-nlmin = 6
+nlmin = 3
 
 # maximum multigrid level number
-nlmax = 6
+nlmax = 3
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -454,7 +454,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 100
+nmaxIterations = 1000
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
