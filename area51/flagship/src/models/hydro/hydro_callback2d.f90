@@ -4863,7 +4863,7 @@ contains
 
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
-            
+
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
@@ -4896,16 +4896,16 @@ contains
             dvtI = (-Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
                      Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
                      Daux1((ipoint-1)*NVAR2D+1,iel)
-            
+
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-2.0/(GAMMA-1.0)*cM
+              DstateM(1) = dvnM-2.0*cM/(GAMMA-1.0)
             else
-              DstateM(1) = dvnI-2.0/(GAMMA-1.0)*cI
+              DstateM(1) = dvnI-2.0*cI/(GAMMA-1.0)
             end if
 
-            if (dvnI .lt. SYS_EPSREAL) then
+            if (dvnI .lt. 0.0_DP) then
               DstateM(2) = pM/(rM**GAMMA)
               DstateM(3) = dvtM
             else
@@ -4914,9 +4914,9 @@ contains
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(4) = dvnM+2.0/(GAMMA-1.0)*cM
+              DstateM(4) = dvnM+2.0*cM/(GAMMA-1.0)
             else
-              DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
+              DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
             end if
 
             ! Convert Riemann invariants into conservative state variables
@@ -4930,14 +4930,15 @@ contains
             DstateM(1) = rM
             DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
             DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)&
+                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
             DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
             DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
             DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
-            
+
             ! Invoke Riemann solver
             call doRiemannSolver(DstateI, DstateM,&
                 Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
@@ -5106,11 +5107,11 @@ contains
                      Daux1((ipoint-1)*NVAR2D+1,iel)
 
             ! Compute fourth Riemann invariant based on the internal state vector
-            w4 = dvnI+2.0/(GAMMA-1.0)*cI
+            w4 = dvnI+2.0*cI/(GAMMA-1.0)
 
             ! Compute the first Riemann invariant based on the fourth Riemann
             ! invariant and the prescribed boundary values
-            w1 = w4-4.0/(GAMMA-1.0)*cM
+            w1 = w4-4.0*cM/(GAMMA-1.0)
 
             ! Compute the normal velocity based on the first and fourth Riemann
             ! invarient
@@ -5120,7 +5121,8 @@ contains
             DstateM(1) = rM
             DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
             DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)&
+                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
@@ -5180,7 +5182,7 @@ contains
             ! Compute three Riemann invariants based on internal state vector
             DstateM(2) = pI/(Daux1((ipoint-1)*NVAR2D+1,iel)**GAMMA)
             DstateM(3) = dvtI
-            DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
+            DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
             
             ! Compute first Riemann invariant based on fourth Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
@@ -5198,7 +5200,8 @@ contains
             DstateM(1) = rM
             DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
             DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)&
+                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
@@ -5296,9 +5299,9 @@ contains
             ! Select internal or mirrored Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-2.0/(GAMMA-1.0)*cM
+              DstateM(1) = dvnM-2.0*cM/(GAMMA-1.0)
             else
-              DstateM(1) = dvnI-2.0/(GAMMA-1.0)*cI
+              DstateM(1) = dvnI-2.0*cI/(GAMMA-1.0)
             end if
 
             if (dvnI .lt. SYS_EPSREAL) then
@@ -5310,9 +5313,9 @@ contains
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(4) = dvnM+2.0/(GAMMA-1.0)*cM
+              DstateM(4) = dvnM+2.0*cM/(GAMMA-1.0)
             else
-              DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
+              DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
             end if
             
             ! Convert Riemann invariants into conservative state variables
@@ -5326,7 +5329,8 @@ contains
             DstateM(1) = rM
             DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
             DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)&
+                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
@@ -5427,9 +5431,9 @@ contains
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-2.0/(GAMMA-1.0)*cM
+              DstateM(1) = dvnM-2.0*cM/(GAMMA-1.0)
             else
-              DstateM(1) = dvnI-2.0/(GAMMA-1.0)*cI
+              DstateM(1) = dvnI-2.0*cI/(GAMMA-1.0)
             end if
 
             if (dvnI .lt. SYS_EPSREAL) then
@@ -5441,9 +5445,9 @@ contains
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(4) = dvnM+2.0/(GAMMA-1.0)*cM
+              DstateM(4) = dvnM+2.0*cM/(GAMMA-1.0)
             else
-              DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
+              DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
             end if
 
             ! Convert Riemann invariants into conservative state variables
@@ -5457,7 +5461,8 @@ contains
             DstateM(1) = rM
             DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
             DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)&
+                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5629,11 +5634,11 @@ contains
                      Dny(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
 
             ! Compute fourth Riemann invariant based on the internal state vector
-            w4 = dvnI+2.0/(GAMMA-1.0)*cI
+            w4 = dvnI+2.0*cI/(GAMMA-1.0)
 
             ! Compute the first Riemann invariant based on the fourth Riemann
             ! invariant and the prescribed boundary values
-            w1 = w4-4.0/(GAMMA-1.0)*cM
+            w1 = w4-4.0*cM/(GAMMA-1.0)
 
             ! Compute the normal velocity based on the first and fourth Riemann
             ! invarient
@@ -5643,7 +5648,8 @@ contains
             DstateM(1) = rM
             DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
             DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)&
+                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5700,7 +5706,7 @@ contains
             ! Compute three Riemann invariants based on internal state vector
             DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
             DstateM(3) = dvtI
-            DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
+            DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
             
             ! Compute first Riemann invariant based on fourth Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
@@ -5718,7 +5724,8 @@ contains
             DstateM(1) = rM
             DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
             DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)&
+                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5810,9 +5817,9 @@ contains
             ! Select internal or mirrored Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-2.0/(GAMMA-1.0)*cM
+              DstateM(1) = dvnM-2.0*cM/(GAMMA-1.0)
             else
-              DstateM(1) = dvnI-2.0/(GAMMA-1.0)*cI
+              DstateM(1) = dvnI-2.0*cI/(GAMMA-1.0)
             end if
 
             if (dvnI .lt. SYS_EPSREAL) then
@@ -5824,9 +5831,9 @@ contains
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(4) = dvnM+2.0/(GAMMA-1.0)*cM
+              DstateM(4) = dvnM+2.0*cM/(GAMMA-1.0)
             else
-              DstateM(4) = dvnI+2.0/(GAMMA-1.0)*cI
+              DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
             end if
             
             ! Convert Riemann invariants into conservative state variables
@@ -5840,7 +5847,8 @@ contains
             DstateM(1) = rM
             DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
             DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)+0.5*(dvnM*dvnM+dvtM*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0)&
+                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5898,24 +5906,32 @@ contains
       real(DP) :: l1,l2,l3,l4,w1,w2,w3,w4,aux,aux1,aux2
       
       ! Compute auxiliary quantities
-      uI = X_VELOCITY_FROM_CONSVAR(DstateI, NVAR2D)
-      vI = Y_VELOCITY_FROM_CONSVAR(DstateI, NVAR2D)
-      pI = PRESSURE_FROM_CONSVAR_2D(DstateI, NVAR2D)
+      uI = X_VELOCITY_FROM_CONSVAR(DstateI,NVAR2D)
+      vI = Y_VELOCITY_FROM_CONSVAR(DstateI,NVAR2D)
+      pI = PRESSURE_FROM_CONSVAR_2D(DstateI,NVAR2D)
       
       ! Compute auxiliary quantities
-      uM = X_VELOCITY_FROM_CONSVAR(DstateM, NVAR2D)
-      vM = Y_VELOCITY_FROM_CONSVAR(DstateM, NVAR2D)
-      pM = PRESSURE_FROM_CONSVAR_2D(DstateM, NVAR2D)
+      uM = X_VELOCITY_FROM_CONSVAR(DstateM,NVAR2D)
+      vM = Y_VELOCITY_FROM_CONSVAR(DstateM,NVAR2D)
+      pM = PRESSURE_FROM_CONSVAR_2D(DstateM,NVAR2D)
 
       ! Calculate $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
-      Dflux(1) = dnx*(DstateI(2)+DstateM(2))&
-               + dny*(DstateI(3)+DstateM(3))
-      Dflux(2) = dnx*(DstateI(2)*uI+pI + DstateM(2)*uM+pM)&
-               + dny*(DstateI(2)*vI + DstateM(2)*vM)
-      Dflux(3) = dnx*(DstateI(3)*vI + DstateM(3)*vM)&
-               + dny*(DstateI(3)*vI+pI + DstateM(3)*vM+pM)
-      Dflux(4) = dnx*((DstateI(4)+pI)*uI + (DstateM(4)+pM)*uM)&
-               + dny*((DstateI(4)+pI)*vI + (DstateM(4)+pM)*vM)
+      Dflux(1) = dnx*(X_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)+&
+                      X_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D))&
+               + dny*(Y_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)+&
+                      Y_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D))
+      Dflux(2) = dnx*(X_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)*uI+pI+&
+                      X_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D)*uM+pM)&
+               + dny*(X_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)*vI+&
+                      X_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D)*vM)
+      Dflux(3) = dnx*(Y_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)*uI+&
+                      Y_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D)*uM)&
+               + dny*(Y_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)*vI+pI+&
+                      Y_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D)*vM+pM)
+      Dflux(4) = dnx*((TOTAL_ENERGY_FROM_CONSVAR(DstateI,NVAR2D)+pI)*uI+&
+                      (TOTAL_ENERGY_FROM_CONSVAR(DstateM,NVAR2D)+pM)*uM)&
+               + dny*((TOTAL_ENERGY_FROM_CONSVAR(DstateI,NVAR2D)+pI)*vI+&
+                      (TOTAL_ENERGY_FROM_CONSVAR(DstateM,NVAR2D)+pM)*vM)
       
       ! Compute Roe mean values
       aux  = ROE_MEAN_RATIO(\
@@ -6000,15 +6016,19 @@ contains
       
       
       ! Compute auxiliary quantities
-      u = X_VELOCITY_FROM_CONSVAR(Dstate, NVAR2D)
-      v = Y_VELOCITY_FROM_CONSVAR(Dstate, NVAR2D)
-      p = PRESSURE_FROM_CONSVAR_2D(Dstate, NVAR2D)
+      u = X_VELOCITY_FROM_CONSVAR(Dstate,NVAR2D)
+      v = Y_VELOCITY_FROM_CONSVAR(Dstate,NVAR2D)
+      p = PRESSURE_FROM_CONSVAR_2D(Dstate,NVAR2D)
       
       ! Calculate ${\bf n}\cdot{\bf F}(U)$
-      Dflux(1) = dnx*Dstate(2)       + dny*Dstate(3)
-      Dflux(2) = dnx*(Dstate(2)*u+p) + dny*Dstate(2)*v
-      Dflux(3) = dnx*Dstate(3)*v     + dny*(Dstate(3)*v+p)
-      Dflux(4) = dnx*(Dstate(4)+p)*u + dny*(Dstate(4)+p)*v
+      Dflux(1) = dnx * X_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)&
+               + dny * Y_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)
+      Dflux(2) = dnx *(X_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)*u+p)&
+               + dny * X_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)*v
+      Dflux(3) = dnx * Y_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)*u&
+               + dny *(Y_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)*v+p)
+      Dflux(4) = dnx *(TOTAL_ENERGY_FROM_CONSVAR(Dstate,NVAR2D)+p)*u&
+               + dny *(TOTAL_ENERGY_FROM_CONSVAR(Dstate,NVAR2D)+p)*v
 
     end subroutine doGalerkinFlux
 
