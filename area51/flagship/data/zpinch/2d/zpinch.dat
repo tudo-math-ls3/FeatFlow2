@@ -25,7 +25,7 @@ subapplication(2) =
   Transport
 
 # file which contains the application specific data
-indatfile = data/zpinch/2d/z-pinch.indat
+indatfile = data/zpinch/2d/zpinch.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname(2) =
@@ -73,10 +73,10 @@ ilimitersynchronisation = 3
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/z-pinch_paper.prm
+prmfile = grids/2d/zpinch_paper.prm
 
 # file which contains the triangulation
-trifile = grids/2d/z-pinch_paper.tri
+trifile = grids/2d/zpinch_paper.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -104,7 +104,7 @@ errorestimator = ErrorEstimator
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/zpinch/2d/z-pinch.indat
+indatfile = data/zpinch/2d/zpinch.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = %{Zpinch.sprimalbdrcondname:1}
@@ -126,7 +126,7 @@ imasstype = 2
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 0
+imassantidiffusiontype = 1
 
 # type of dissipation
 # 0 = no dissipation
@@ -167,7 +167,7 @@ slimitingvariable(2) =
   pressure
 
 # number of failsafe steps
-nfailsafe = 3
+nfailsafe = 0
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =

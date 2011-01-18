@@ -26,7 +26,7 @@ application_hydro = hydro
 application_transport = transport
 
 # file which contains the application specific data
-indatfile = data/zpinch/2d/z-pinch-rz.indat
+indatfile = data/zpinch/2d/zpinch-rz.indat
 
 # number of spatial dimensions
 ndimension = 2
@@ -51,10 +51,10 @@ errorestimator = ErrorEstimator
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/z-pinch_rect.prm
+prmfile = grids/2d/zpinch_rect.prm
 
 # file which contains the triangulation
-trifile = grids/2d/z-pinch_rect.tri
+trifile = grids/2d/zpinch_rect.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -67,7 +67,7 @@ output = Output
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/zpinch/2d/z-pinch-rz.indat
+indatfile = data/zpinch/2d/zpinch-rz.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_hydro_primal
@@ -188,7 +188,7 @@ iprelimiting = 1
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/zpinch/2d/z-pinch-rz.indat
+indatfile = data/zpinch/2d/zpinch-rz.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_transport_primal
