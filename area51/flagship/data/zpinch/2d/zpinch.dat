@@ -73,10 +73,10 @@ ilimitersynchronisation = 3
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/zpinch_paper.prm
+prmfile = grids/2d/zpinch_60x30.prm
 
 # file which contains the triangulation
-trifile = grids/2d/zpinch_paper.tri
+trifile = grids/2d/zpinch_60x30.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -133,7 +133,7 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 3
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -145,7 +145,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 3
+isystemPrecond = 2
 
 #-------------------------------------------------------------------------------
 
