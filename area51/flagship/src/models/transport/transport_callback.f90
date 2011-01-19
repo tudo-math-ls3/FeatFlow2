@@ -4875,14 +4875,14 @@ contains
           rproblemLevel%Rmatrix(lumpedMassMatrix),&
           p_rpredictor, 1.0_DP, p_rpredictor)
       
-      ! Build antidiffusive fluxes with contribution from consistent
-      ! mass matrix
+      ! Build the raw antidiffusive fluxes with contribution from
+      ! consistent mass matrix
       call gfsc_buildFluxFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
           rproblemLevel%Rmatrix(consistentMassMatrix), p_rpredictor)
     else
-      ! Build antidiffusive fluxes without contribution from
+      ! Build the raw antidiffusive fluxes without contribution from
       ! consistent mass matrix
       call gfsc_buildFluxFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
