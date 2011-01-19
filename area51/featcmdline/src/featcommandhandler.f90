@@ -5171,7 +5171,7 @@ contains
       stoken = Rvalues(2)%svarname
       call cmdprs_getSymbolSection (rcmdStatus%rcollection,stoken,inestlevel,ssection)
       ctype2 = collct_gettype (rcmdStatus%rcollection, Rvalues(2)%svarname, ssectionName=ssection)
-      if (ctype2 .ne. COLLCT_BLKVECTOR) then
+      if (ctype2 .ne. COLLCT_SCAVECTOR) then
         call output_line ("Source and destination not compatible.")
         return
       end if
