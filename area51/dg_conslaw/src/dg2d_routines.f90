@@ -9086,6 +9086,152 @@ end do
   
   
   end subroutine
+  
+  
+  
+  
+  
+  
+  
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine dg_mapCubPts1Dto2D_reverse(icoordSystem, iedge, ncubp, Dxi1D, Dxi2D)
+
+!<description>
+  ! This routine maps the coordinates of the cubature points 
+  ! (given by Dxi1D(1..ncubp,1)) on the 1D reference interval [-1,1] 
+  ! to an edge on the 2D reference element.
+  ! iedge specifies the edge where to map the cubature points to.
+  !
+  ! ctrafoType specifies the type of transformation that is necessary
+  ! to transform coordinates from the 2D reference element to the 2D
+  ! real element. This constant also specifies the type of reference element
+  ! and the coordinate system there.
+!</description>
+
+!<input>
+  ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
+  ! the type of the coordinate system that is used for specifying the coordinates
+  ! on the reference element.
+  integer(I32), intent(in) :: icoordSystem
+  
+  ! Number of the local edge of the element where to map the points to.
+  integer, intent(in) :: iedge
+
+  ! number of cubature points
+  integer , intent(in) :: ncubp
+  
+  ! Cubature point coordinates on 1D reference interval [-1,1]
+  !     Dxi(1..ncubp,1)=coordinates
+  real(DP), dimension(:,:), intent(in) :: Dxi1D
+!</input>
+  
+!<output>
+  ! Coordinates of the cubature points on the edge in 2D.
+  ! For 2D triangles with barycentric coordinates:
+  !        Dxi2D(1..ncubp,1)=1st barycentric coordinate, 
+  !        Dxi2D(1..ncubp,2)=2nd barycentric coordinate,
+  !        Dxi2D(1..ncubp,3)=3rd barycentric coordinate
+  ! For 2D quads with standard coordinates:
+  !        Dxi2D(1..ncubp,1)=x-coord, 
+  !        Dxi2D(1..ncubp,2)=y-coord.
+  real(DP), dimension(:,:), intent(out) :: Dxi2D
+!</output>
+
+!</subroutine>    
+
+  ! What type of transformation do we have? First decide on the dimension,
+  ! then on the actual ID.
+  select case (icoordSystem)
+  
+  case (TRAFO_CS_BARY2DTRI)
+    ! Triangle, barycentric coordinates
+    call trafo_mapCubPts1Dto2DTriBary(iedge, ncubp, Dxi1D, Dxi2D)
+  
+  case (TRAFO_CS_REF2DQUAD,TRAFO_CS_REAL2DQUAD)
+    ! Quadrilateral, [-1,1]^2
+    call dg_mapCubPts1Dto2DRefQuad_reverse(iedge, ncubp, Dxi1D, Dxi2D)
+  
+  case DEFAULT
+    call output_line ('Unsupported coordinate system.', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'trafo_mapCubPts1Dto2D')  
+  end select    
+
+  end subroutine
+  
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  pure subroutine dg_mapCubPts1Dto2DRefQuad_reverse(iedge, ncubp, Dxi1D, Dxi2D)
+
+!<description>
+  ! This routine maps the coordinates of the cubature points in 1D
+  ! (given by Dxi1D(1..ncubp,1)) to an edge on the reference quadrilateral
+  ! in 2D. iedge specifies the edge where to map the cubature points to.
+!</description>
+
+!<input>
+  ! Number of the local edge of the element where to map the points to.
+  integer, intent(in) :: iedge
+
+  ! number of cubature points
+  integer , intent(in) :: ncubp
+  
+  ! Cubature point coordinates on 1D reference interval [-1,1]
+  !     Dxi(1..ncubp,1)=coordinates
+  real(DP), dimension(:,:), intent(in) :: Dxi1D
+!</input>
+  
+!<output>
+  ! Coordinates of the cubature points on the edge in 2D.
+  !        Dxi2D(1..ncubp,1)=x-coord, 
+  !        Dxi2D(1..ncubp,2)=y-coord
+  real(DP), dimension(:,:), intent(out) :: Dxi2D
+!</output>
+
+!</subroutine>    
+
+  ! local variables
+  integer :: ii
+
+    select case(iedge)
+    case (1)
+      ! Edge 1 is on the bottom of the reference element
+      do ii = 1,ncubp
+        Dxi2D(ii,1) = -Dxi1D(ii,1)
+        Dxi2D(ii,2) = -1.0_DP
+      end do
+      
+    case(2)
+      ! Edge 2 is on the right of the reference element
+      do ii = 1,ncubp
+        Dxi2D(ii,1) = 1.0_DP
+        Dxi2D(ii,2) = -Dxi1D(ii,1)
+      end do
+      
+    case(3)
+      ! Edge 3 is on the top of the reference element
+      do ii = 1,ncubp
+        Dxi2D(ii,1) = Dxi1D(ii,1)
+        Dxi2D(ii,2) = 1.0_DP
+      end do
+      
+    case(4)
+      ! Edge 4 is on the left of the reference element
+      do ii = 1,ncubp
+        Dxi2D(ii,1) = -1.0_DP
+        Dxi2D(ii,2) = Dxi1D(ii,1)
+      end do
+      
+    end select
+  
+  end subroutine
+
  
   
 end module

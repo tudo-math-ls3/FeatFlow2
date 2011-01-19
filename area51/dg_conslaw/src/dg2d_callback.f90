@@ -3551,7 +3551,7 @@ integer :: iel
   
   real(dp), dimension(4) :: DQi, DQa, DQroe, DFi, DFa, DFlux
   real(dp), dimension(5) :: DQroec
-  integer :: ivar, iel, ipoint
+  integer :: ivar, iedge, ipoint
   ! Dsolutionvalues(2 sides, ncubp, NEL, nvar)
   real(dp), dimension(:,:,:,:), allocatable :: Dsolutionvalues
   real(dp) :: dx, dy
@@ -3566,6 +3566,7 @@ integer :: iel
   real(dp) :: dvn, drad, dvt
   real(dp) :: drho, dE, dpr, dc
   real(dp) :: dW1, dW2, dW3, dW4, dW1o, dW2o, dW3o, dW4o
+  real(dp) :: dlambda
   real(dp) :: gamma = 1.4_dp
   
   
@@ -3590,24 +3591,24 @@ integer :: iel
 
   
   
-  do iel = 1, ubound(DfluxValues,4)
+  do iedge = 1, ubound(DfluxValues,4)
   
     do ipoint= 1, ubound(DfluxValues,3)
       
       ! Get coordinates
-      dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iel)
-      dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
+      dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
+      dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
       
     
       ! Set boundary conditions
       ! Test, if we are at a boundary
-      if (IelementList(iel)==0) then
+      if (IelementList(iedge)==0) then
       
         ! No BCs
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,4) = Dsolutionvalues(1,ipoint,iel,4)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,1) = Dsolutionvalues(1,ipoint,iedge,1)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,2) = Dsolutionvalues(1,ipoint,iedge,2)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,3) = Dsolutionvalues(1,ipoint,iedge,3)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
 
 
 !        !!! Boundary conditions by Riemann invariants !!!
@@ -3623,8 +3624,8 @@ integer :: iel
 !        dH = dE + dpr/drho
 !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
 !        
-!        dvn =  du*normal(1,iel) + dv*normal(2,iel)
-!        dvt = -du*normal(2,iel) + dv*normal(1,iel)
+!        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
+!        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
 !        
 !        dW1o = dvn - 2.0_dp*dc/(gamma-1)
 !        dW2o = dpr/(drho**gamma)
@@ -3632,17 +3633,17 @@ integer :: iel
 !        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
 !        
 !        ! Calculate Riemann invariants from inner values
-!        drho = Dsolutionvalues(1,ipoint,iel,1)
-!        du = Dsolutionvalues(1,ipoint,iel,2)/drho
-!        dv = Dsolutionvalues(1,ipoint,iel,3)/drho
-!        dE = Dsolutionvalues(1,ipoint,iel,4)/drho
+!        drho = Dsolutionvalues(1,ipoint,iedge,1)
+!        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
+!        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
+!        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
 !        
 !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
 !        dH = dE + dpr/drho
 !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
 !        
-!        dvn =  du*normal(1,iel) + dv*normal(2,iel)
-!        dvt = -du*normal(2,iel) + dv*normal(1,iel)
+!        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
+!        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
 !        
 !        dW1 = dvn - 2.0_dp*dc/(gamma-1)
 !        dW2 = dpr/(drho**gamma)
@@ -3663,39 +3664,39 @@ integer :: iel
 !        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
 !        drho = (dc*dc/(gamma*dW2))**(1.0_dp/(gamma-1.0_dp))
 !        dpr = dc*dc*drho/gamma
-!        du = 0.5_dp*(dW1+dW4)*normal(1,iel) - dW3*normal(2,iel)
-!        dv = 0.5_dp*(dW1+dW4)*normal(2,iel) + dW3*normal(1,iel)
+!        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
+!        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
 !        
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = drho
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = drho*du
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = drho*dv
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,4) = dpr/(gamma-1.0_dp) + drho*0.5_dp*(du*du+dv*dv)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,1) = drho
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,2) = drho*du
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,3) = drho*dv
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,4) = dpr/(gamma-1.0_dp) + drho*0.5_dp*(du*du+dv*dv)
         
         
         
 !        ! Reflecting BCs
 !        ! Calculate x- and y- velocity from momentum
-!        drho = Dsolutionvalues(1,ipoint,iel,1)
-!        du = Dsolutionvalues(1,ipoint,iel,2)/drho
-!        dv = Dsolutionvalues(1,ipoint,iel,3)/drho
+!        drho = Dsolutionvalues(1,ipoint,iedge,1)
+!        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
+!        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
 !        
 !        ! Calculate normal and tangential part
-!        dvn =  du*normal(1,iel) + dv*normal(2,iel)
-!        dvt = -du*normal(2,iel) + dv*normal(1,iel)
+!        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
+!        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
 !        
 !        ! Invert the normal part
 !        dvn = -dvn
 !        dvt = +dvt
 !        
 !        ! Calculate new velocity
-!        du =  dvn*normal(1,iel) + dvt*normal(2,iel)
-!        dv = -dvn*normal(2,iel) + dvt*normal(1,iel)
+!        du =  dvn*normal(1,iedge) + dvt*normal(2,iedge)
+!        dv = -dvn*normal(2,iedge) + dvt*normal(1,iedge)
 !        
 !        ! Set new momentum
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = drho
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = drho * du
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = drho * dv
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,4) = Dsolutionvalues(2,ipoint,iel,4)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,1) = drho
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,2) = drho * du
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,3) = drho * dv
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,4) = Dsolutionvalues(2,ipoint,iedge,4)
         
       end if
       
@@ -3707,8 +3708,8 @@ integer :: iel
       ! *** Upwind flux without dimensional splitting (Roe-Flux) and new c ***
       
       ! Get solution values on the in and outside
-      DQi = Dsolutionvalues(1,ipoint,iel,:)
-      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
+      DQi = Dsolutionvalues(1,ipoint,iedge,:)
+      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,:)
       
       ! Get fluxes on the in and outside in x- and y-direction
       DF1i = Euler_buildFlux(DQi,1)
@@ -3728,19 +3729,25 @@ integer :: iel
 !      DFy = buildFlux(DQRoe,2)
       
       ! Add the fluxes of the two dimensional directions to get Flux * normal
-      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
+      DFlux = DFx*normal(1,iedge) + DFy*normal(2,iedge)
       
       ! Add artificial diffusion
-      DL       = Euler_buildMixedLcfromRoe       (DQRoec,normal(1,iel),normal(2,iel))
-      DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iel),normal(2,iel))
-      DR       = Euler_buildMixedRcfromRoe       (DQRoec,normal(1,iel),normal(2,iel))
+      DL       = Euler_buildMixedLcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
+      DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iedge),normal(2,iedge))
+      DR       = Euler_buildMixedRcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
       
-      ! Save the calculated flux
-      DfluxValues(:,1,ipoint,iel) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
-      DfluxValues(:,1,ipoint,iel) = DFlux + 0.5_dp*maxval(DaLambda)*(DQi - DQa)
+      ! Save the calculated flux (Roe)
+      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
+      
+      ! Lax Friedrichs #1
+      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*maxval(DaLambda)*(DQi - DQa)
+      
+!      ! Lax Friedrichs #2
+!      dlambda = max(sqrt(DQi(2)*DQi(2)+dQi(3)*DQi(3))/DQi(1)+sqrt(gamma/DQi(1)*(gamma-1.0_dp)*DQi(1)*(DQi(4)/DQi(1)-0.5_dp*( (DQi(2)/DQi(1))**2.0_dp + (DQi(3)/DQi(1))**2.0_dp ) )) , sqrt(DQa(2)*DQa(2)+dQa(3)*DQa(3))/DQa(1)+sqrt(gamma/DQa(1)*(gamma-1.0_dp)*DQa(1)*(DQa(4)/DQa(1)-0.5_dp*( (DQa(2)/DQa(1))**2.0_dp + (DQa(3)/DQa(1))**2.0_dp ) )))
+!      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*dlambda*(DQi - DQa)
       
     end do ! ipoint
-  end do ! iel
+  end do ! iedge
   
 
   

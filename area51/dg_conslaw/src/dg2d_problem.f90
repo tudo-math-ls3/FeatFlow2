@@ -1005,7 +1005,7 @@ contains
     ! temporary variable
     real(DP)                                :: rho, u, v, E
     
-    ! Cpnstant Gamma
+    ! Constant Gamma
     real(dp) :: gamma = 1.4_dp
 
     ! Calculate primitive variables
@@ -1023,14 +1023,14 @@ contains
     if (d==1) then
       ! build Flux in x direction
       Flux(1) = Q(2)
-      Flux(2) = rho*u*u+p
-      Flux(3) = rho*u*v
+      Flux(2) = Q(2)*u+p
+      Flux(3) = Q(2)*v
       Flux(4) = rho*H*u
     else
       ! build Flux in y direction
       Flux(1) = Q(3)
-      Flux(2) = rho*u*v
-      Flux(3) = rho*v*v+p
+      Flux(2) = u*Q(3)
+      Flux(3) = Q(3)*v+p
       Flux(4) = rho*H*v
     end if
 
@@ -1065,8 +1065,6 @@ contains
     rhol = Ql(1)
     rhor = Qr(1)
     
-    !write(*,*) rhol,rhor
-    
     ! Calculate auxiliary variable
     denom = (sqrt(rhol)+sqrt(rhor))
     
@@ -1096,7 +1094,7 @@ contains
     
     ! Calculate the speed of sound for the Roe-values
     Qroe(5) = sqrt( (gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ) )
-
+    
   end function Euler_calculateQroec
     
     

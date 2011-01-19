@@ -343,8 +343,8 @@ contains
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                   ielementType,CUB_G3x3,rtriangulation, rboundary)
-                                                !CUB_G6_2D
+                                   ielementType,CUB_G6_2D,rtriangulation, rboundary)
+                                                !CUB_G3x3
                                    
     ! Now copy this initialised block into the other ones
     ! But only create a derived copy, which shares the handles of the original one
@@ -553,10 +553,10 @@ if (iwithoutlimiting==2) ilimiter = 0
           
       rcollection%IquickAccess(1) = ivar
       
-      rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G6_2D
+      !rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G6_2D
       call linf_buildVectorScalar2 (rlinformIC, .true., rrhsBlock%RvectorBlock(ivar),&
                                   Euler_coeff_RHS_IC, rcollection)
-      rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G3x3
+      !rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G3x3
 
     end do
     
@@ -648,7 +648,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        !rcollection%p_rvectorQuickAccess1 => rsolTempBlock
        !rcollection%SquickAccess(1) = sinlet
        call profiler_measure(rprofiler,2)
-       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G5_1D, .true.,&
                                               rrhsBlock,rsolTempBlock,&
                                               raddTriaData,&
                                               Euler_flux_dg_buildVectorBlEdge2D_sim,&
@@ -789,7 +789,7 @@ write(*,*)lsyssc_vectorNorm (rrhsBlock%Rvectorblock(1),LINALG_NORML1)
        ! First use the dg-function for the edge terms
        rcollection%p_rvectorQuickAccess1 => rsolTempBlock
        rcollection%SquickAccess(1) = sinlet
-       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G5_1D, .true.,&
                                               rrhsBlock,rsolTempBlock,&
                                               raddTriaData,&
                                               Euler_flux_dg_buildVectorBlEdge2D_sim,&
@@ -861,7 +861,7 @@ write(*,*)lsyssc_vectorNorm (rrhsBlock%Rvectorblock(1),LINALG_NORML1)
        rcollection%p_rvectorQuickAccess1 => rsolTempBlock
        rcollection%SquickAccess(1) = sinlet
        call profiler_measure(rprofiler,2)
-       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G5_1D, .true.,&
                                               rrhsBlock,rsolTempBlock,&
                                               raddTriaData,&
                                               Euler_flux_dg_buildVectorBlEdge2D_sim,&
