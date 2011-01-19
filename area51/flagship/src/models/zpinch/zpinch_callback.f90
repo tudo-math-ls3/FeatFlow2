@@ -1026,9 +1026,11 @@ contains
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
     real(DP), dimension(:), pointer :: p_DalphaHydro, p_DalphaTransport
     integer, dimension(2) :: IposAFC
-    integer :: convectionAFC,inviscidAFC,lumpedMassMatrix,consistentMassMatrix
-    integer :: imassantidiffusiontype,nfailsafe,ivariable,nvariable
-    integer :: ilimitersynchronisation
+    integer :: convectionAFC,inviscidAFC
+    integer :: lumpedMassMatrixHydro
+    integer :: lumpedMassMatrixTransport,consistentMassMatrixTransport
+    integer :: imassantidiffusiontypeHydro,imassantidiffusiontypeTransport
+    integer :: ilimitersynchronisation,nfailsafe,ivariable,nvariable
     
     ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
@@ -1049,58 +1051,59 @@ contains
     ! Set positions of stabilisation structures
     IposAFC=(/inviscidAFC, convectionAFC/)
 
-    ! Get more parameters from parameter list
-     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(2),&
+    ! Get more parameters from parameter list.
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(2),&
         'ilimitersynchronisation', ilimitersynchronisation)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(3),&
-        'lumpedmassmatrix', lumpedmassmatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(3),&
-        'consistentmassmatrix', consistentmassmatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(3),&
+    
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(3),&
+        'lumpedmassmatrix', lumpedmassmatrixHydro)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(3),&
         'nfailsafe', nfailsafe)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(3),&
-        'imassantidiffusiontype', imassantidiffusiontype)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(3),&
+        'imassantidiffusiontype', imassantidiffusiontypeHydro)
+
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(4),&
+        'lumpedmassmatrix', lumpedmassmatrixTransport)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(4),&
+        'consistentmassmatrix', consistentmassmatrixTransport)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(4),&
+        'imassantidiffusiontype', imassantidiffusiontypeTransport)
     
     !---------------------------------------------------------------------------
     ! Linearised FEM-FCT algorithm
     !---------------------------------------------------------------------------
 
+    !--- compressible hydrodynamic model ---------------------------------------
+    
+    ! Set the first string quick access array to the section name
+    ! of the hydrodynamic model which is stored in the third array
+    rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
+    
     ! Should we apply consistent mass antidiffusion?
-    if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+    if (imassantidiffusiontypeHydro .eq. MASS_CONSISTENT) then
 
       ! Initialize dummy timestep
       rtimestepAux%dStep = 1.0_DP
       rtimestepAux%theta = 0.0_DP
-      
-      !--- compressible hydrodynamic model -------------------------------------
-      
+          
       ! Set pointer to predictor
       p_rpredictorHydro => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
-      
-      ! Set the first string quick access array to the section name
-      ! of the hydrodynamic model which is stored in the third array
-      rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
-      
+          
       ! Compute low-order "right-hand side" without theta parameter
       call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
           rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection, Rsource(1))
       
       ! Compute low-order predictor
       call lsysbl_invertedDiagMatVec(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
           p_rpredictorHydro, 1.0_DP, p_rpredictorHydro)
       
-      ! Compute the raw antidiffusive fluxes with contribution from
+      ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
           1.0_DP, 1.0_DP, .true., p_rpredictorHydro, rcollection)
     else
-      ! Compute the raw antidiffusive fluxes without contribution from
+      ! Vuild the raw antidiffusive fluxes without contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
           1.0_DP, 1.0_DP, .true., Rsolution(1), rcollection)
@@ -1109,8 +1112,12 @@ contains
 
     !--- transport model -------------------------------------------------------
 
+    ! Set the first string quick access array to the section name
+    ! of the transport model which is stored in the fourth array
+    rcollection%SquickAccess(1) = rcollection%SquickAccess(4)
+
     ! Should we apply consistent mass antidiffusion?
-    if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+    if (imassantidiffusiontypeTransport .eq. MASS_CONSISTENT) then
       
       ! Initialize dummy timestep
       rtimestepAux%dStep = 1.0_DP
@@ -1118,10 +1125,6 @@ contains
       
       ! Set pointer to predictor
       p_rpredictorTransport => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
-      
-      ! Set the first string quick access array to the section name
-      ! of the transport model which is stored in the fourth array
-      rcollection%SquickAccess(1) = rcollection%SquickAccess(4)
       
       ! Compute the preconditioner
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
@@ -1136,16 +1139,17 @@ contains
       
       ! Compute low-order predictor
       call lsysbl_invertedDiagMatVec(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           p_rpredictorTransport, 1.0_DP, p_rpredictorTransport)
       
-      ! Build antidiffusive fluxes with contribution from consistent
-      ! mass matrix
+      ! Build the raw antidiffusive fluxes with contribution from
+      ! consistent mass matrix
       call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
           Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
-          rproblemLevel%Rmatrix(consistentMassMatrix), p_rpredictorTransport)
+          rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
+          p_rpredictorTransport)
     else
-      ! Build antidiffusive fluxes without contribution from
+      ! Build the raw antidiffusive fluxes without contribution from
       ! consistent mass matrix
       call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
           Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.)
@@ -1158,8 +1162,7 @@ contains
     if (nfailsafe .gt. 0) then
       
       ! Get number of failsafe variables
-      nvariable = max(1,&
-          parlst_querysubstrings(p_rparlist,&
+      nvariable = max(1, parlst_querysubstrings(p_rparlist,&
           rcollection%SquickAccess(3), 'sfailsafevariable'))
       
       ! Allocate character array that stores all failsafe variable names
@@ -1200,12 +1203,13 @@ contains
         
         ! Apply failsafe flux correction
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(inviscidAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
             hydro_getVariable, Rsolution(1), p_rpredictorHydro)
 
         ! Apply linearised FEM-FCT correction
-        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1226,7 +1230,8 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1240,7 +1245,8 @@ contains
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
       
-      call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call gfsc_buildConvectionVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1258,7 +1264,7 @@ contains
 
         ! Apply failsafe flux correction
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
             zpinch_getVariable, Rsolution, p_Rpredictor)
         
@@ -1274,7 +1280,8 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1294,7 +1301,8 @@ contains
           rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
       
       ! Compute linearised FEM-FCT correction (without initialisation)
-      call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call gfsc_buildConvectionVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1308,7 +1316,7 @@ contains
 
         ! Apply failsafe flux correction
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
             zpinch_getVariable, Rsolution, p_Rpredictor)
         
@@ -1324,7 +1332,8 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1334,7 +1343,8 @@ contains
     case (3)   ! Transport first, hydrodynamic second
       
       ! Compute linearised FEM-FCT correction      
-      call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call gfsc_buildConvectionVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1359,7 +1369,7 @@ contains
 
         ! Apply failsafe flux correction
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
             zpinch_getVariable, Rsolution, p_Rpredictor)
         
@@ -1375,7 +1385,8 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1398,7 +1409,7 @@ contains
 
         ! Apply failsafe flux correction
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
             zpinch_getVariable, Rsolution, p_Rpredictor)
         
@@ -1420,7 +1431,8 @@ contains
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
         
         ! Apply linearised FEM-FCT correction
-        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1432,7 +1444,8 @@ contains
       if (nfailsafe .gt. 0) then
 
         ! Compute linearised FEM-FCT correction
-        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1444,7 +1457,7 @@ contains
 
         ! Apply failsafe flux correction
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
             zpinch_getVariable, Rsolution, p_Rpredictor)
         
@@ -1456,7 +1469,8 @@ contains
       else
         
         ! Apply linearised FEM-FCT correction
-        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
