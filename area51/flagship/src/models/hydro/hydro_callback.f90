@@ -2282,7 +2282,7 @@ contains
     type(t_vectorBlock), pointer :: p_rpredictor
     type(t_parlist), pointer :: p_rparlist
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
-    integer :: inviscidAFC,lumpedMassMatrix
+    integer :: inviscidAFC,lumpedMassMatrix,imassantidiffusiontype
     integer :: nfailsafe,ivariable,nvariable
 
     ! Set pointer to parameter list
@@ -2304,32 +2304,45 @@ contains
         'lumpedmassmatrix', lumpedmassmatrix)
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
+        'imassantidiffusiontype', imassantidiffusiontype)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
         'nfailsafe', nfailsafe)
     
     !---------------------------------------------------------------------------
     ! Linearised FEM-FCT algorithm
     !---------------------------------------------------------------------------
 
-    ! Initialize dummy timestep
-    rtimestepAux%dStep = 1.0_DP
-    rtimestepAux%theta = 0.0_DP
+    ! Should we apply consistent mass antidiffusion?
+    if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+      
+      ! Initialize dummy timestep
+      rtimestepAux%dStep = 1.0_DP
+      rtimestepAux%theta = 0.0_DP
 
-    ! Set pointer to predictor
-    p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
-    
-    ! Compute low-order "right-hand side" without theta parameter
-    call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolver, rsolution, p_rpredictor, rcollection, rsource)
+      ! Set pointer to predictor
+      p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+      
+      ! Compute low-order "right-hand side" without theta parameter
+      call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+          rsolver, rsolution, p_rpredictor, rcollection, rsource)
+      
+      ! Compute low-order predictor
+      call lsysbl_invertedDiagMatVec(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          p_rpredictor, 1.0_DP, p_rpredictor)
 
-    ! Compute low-order predictor
-    call lsysbl_invertedDiagMatVec(&
-        rproblemLevel%Rmatrix(lumpedMassMatrix),&
-        p_rpredictor, 1.0_DP, p_rpredictor)
+      ! Build the raw antidiffusive fluxes with contribution from
+      ! consistent mass matrix
+      call hydro_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
+          1.0_DP, 1.0_DP, .true., p_rpredictor, rcollection)
+    else
+      ! Build the raw antidiffusive fluxes without contribution from
+      ! consistent mass matrix
+      call hydro_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
+          1.0_DP, 1.0_DP, .true., rsolution, rcollection)
+    end if
 
-    ! Compute the raw antidiffusive fluxes
-    call hydro_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-        1.0_DP, 1.0_DP, .true., p_rpredictor, rcollection)
-    
     !---------------------------------------------------------------------------
     ! Perform failsafe flux correction (if required)
     !---------------------------------------------------------------------------
