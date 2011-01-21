@@ -90,3 +90,9 @@ ssectionSpaceTimePostprocessing = TIME-POSTPROCESSING
 # Standard value = 1.0
 
 dweightConvection = 1.0
+
+# Additional weight for the term (y*n)lambda in the natural boundary condition
+# of the dual equation.
+# Standard value = 1.0
+
+dweightNaturalBdcDual = 1.0

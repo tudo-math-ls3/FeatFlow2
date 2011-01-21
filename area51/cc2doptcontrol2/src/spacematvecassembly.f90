@@ -124,6 +124,11 @@ module spacematvecassembly
   use collection
   use mprimitives
   use dofmapping
+  use domainintegration
+  use spatialdiscretisation
+  use timediscretisation
+  use discretebc
+  use matrixfilters
   
   use constantsoptc
   use assemblytemplates
@@ -578,12 +583,6 @@ contains
   subroutine coeff_ProjMass (rdiscretisationTrial,rdiscretisationTest,rform, &
       nelements,npointsPerElement,Dpoints, IdofsTrial,IdofsTest,rdomainIntSubset, &
       Dcoefficients,rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
     
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -1191,6 +1190,7 @@ contains
     type(t_blockDiscretisation) :: rvelDiscr
     real(dp), dimension(:), pointer :: p_Ddata
     real(DP) :: dweightConvection
+    real(DP) :: dcx
     
     logical, parameter :: bnewmethod = .false.
     
@@ -1347,6 +1347,12 @@ contains
 
         ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
         ! u*grad(.)+grad(u)*(.) to the velocity.
+        !
+        ! Set up dcx for the assembly of the boundary integral.
+        ! Compensate for the "-" sign in gamma!
+        dcx = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection * &
+              rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightNaturalBdcDual * &
+              (-rnonlinearSpatialMatrix%Dgamma(2,2))
         select case (rnonlinearSpatialMatrix%iprimalSol)
         case (1)
           call assembleConvection (&
@@ -1356,6 +1362,13 @@ contains
               rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
+
+          ! Assemble the additional term for the natural BDC in the dual equation.
+          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
+              rtempMatrix%RmatrixBlock(1,1),dcx)
+          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
+              rtempMatrix%RmatrixBlock(2,2),dcx)
+
         case (2)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
@@ -1364,6 +1377,13 @@ contains
               rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
+
+          ! Assemble the additional term for the natural BDC in the dual equation.
+          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
+              rtempMatrix%RmatrixBlock(1,1),dcx)
+          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
+              rtempMatrix%RmatrixBlock(2,2),dcx)
+
         case (3)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
@@ -1372,8 +1392,15 @@ contains
               rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
-        end select
 
+          ! Assemble the additional term for the natural BDC in the dual equation.
+          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
+              rtempMatrix%RmatrixBlock(1,1),dcx)
+          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
+              rtempMatrix%RmatrixBlock(2,2),dcx)
+
+        end select
+        
         ! Reintegrate the computed matrix
         call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,4,4)
 
@@ -3270,6 +3297,12 @@ contains
           rnonlinearSpatialMatrix%rdiscrData%rstabilDual,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)    
       
+      ! 2a) Dual equation, natural boundary condition.
+      ! "-" sign in front to compensate the "-" in Dgamma(2,2).
+      call assembleConvectionDefectDualBd (&
+          rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
+          -rnonlinearSpatialMatrix%Dgamma(2,2)*dcx)      
+      
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
       
@@ -3561,6 +3594,59 @@ contains
 
     ! -----------------------------------------------------
 
+    subroutine assembleConvectionDefectDualBd (&
+        rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dcx)
+        
+    ! Assembles the convection defect for the dual on the boundary.
+    
+    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
+    ! about how to set up the matrix. 
+    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
+    
+    ! 2X2 block matrix that specifies the structure of the velocity FE space.
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
+
+    ! Velocity vector for the nonlinearity. Must be specified if
+    ! GAMMA <> 0; can be omitted if GAMMA=0.
+    type(t_vectorBlock), intent(in) :: rvector
+    
+    ! The current solution vector for the velocity (x- and y-velocity)
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! The RHS vector; a defect will be created in this vector.
+    type(t_vectorBlock), intent(inout) :: rb
+    
+    ! Weight for the operator when multiplying: d = b - dcx * A x. Standard = 1.0_DP
+    real(DP), intent(in) :: dcx
+
+      ! local variables
+      real(DP) :: dweight
+      type(t_matrixScalar) :: rmatrixTemp
+    
+      ! Debug weight for the convection
+      dweight = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection * &
+                rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightNaturalBdcDual * dcx
+      
+      if (dweight .eq. 0.0_DP) return
+      
+      ! Create an empty temp matrix
+      call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),rmatrixTemp,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rmatrixTemp)
+      
+      ! Create the operator
+      call smva_assembleDualNeumannBd (rvector,rmatrixTemp,1.0_DP)
+      
+      ! Defect in the dual.
+      call lsyssc_scalarMatVec (rmatrixTemp, rx%RvectorBlock(1), rb%RvectorBlock(1), -dcx, 1.0_DP)
+      call lsyssc_scalarMatVec (rmatrixTemp, rx%RvectorBlock(2), rb%RvectorBlock(2), -dcx, 1.0_DP)
+      
+      call lsyssc_releaseMatrix (rmatrixTemp)
+
+    end subroutine
+
+    ! -----------------------------------------------------
+
     subroutine assembleConvectionDefect (&
         rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dgamma,dgammaT,dnewton,dnewtonT,&
         rstabilisation,dcx,rmatrixEOJ)
@@ -3602,7 +3688,7 @@ contains
     ! Weight for the nonlinear term (\grad(.))^t u
     real(DP), intent(in) :: dnewtonT
     
-    ! Weight for the operator when multiplying: d = b + dcx * A x. Standard = -1.0_DP
+    ! Weight for the operator when multiplying: d = b - dcx * A x. Standard = 1.0_DP
     real(DP), intent(in) :: dcx
     
     ! Stabilisation parameters
@@ -4694,7 +4780,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,i2,j,ilocalEdge,icount,ielidx
+    integer :: i,j,ilocalEdge,icount,ielidx
     integer(I32) :: celement
     integer :: ielement
     integer :: iedge,ipoint1,ipoint2,NVT
@@ -5138,6 +5224,140 @@ contains
       p_Da2(Irows(i)) = p_Da1(Irows(i))
     end do
     
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine fcoeff_neumannbc (rdiscretisationTrial,&
+                  rdiscretisationTest, rform, nelements, npointsPerElement,&
+                  Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
+                  rdomainIntSubset, Dcoefficients, rcollection)
+  
+  ! Calculates the operator 
+  !    $$ int_gamma (y n) phi_j phi_i $$
+  
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+  type(t_bilinearForm), intent(in) :: rform
+  integer, intent(in) :: nelements
+  integer, intent(in) :: npointsPerElement
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  integer, intent(in) :: ibct
+  real(DP), dimension(:,:), intent(in) :: DpointPar
+  integer, dimension(:,:), intent(in) :: IdofsTrial
+  integer, dimension(:,:), intent(in) :: IdofsTest
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  type(t_collection), intent(inout), optional :: rcollection
+
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+
+    ! local variables
+    integer :: ipt,iel
+    real(DP) :: dn1,dn2
+    real(DP), dimension(npointsPerElement,4) :: DtempVal
+    type(t_boundary), pointer :: p_rboundary
+    real(DP) :: dc
+    
+    p_rboundary => rcollection%p_rvectorQuickAccess1%RvectorBlock(1)%p_rspatialDiscr%p_rboundary
+    dc = rcollection%DquickAccess(1)
+    
+    ! Evaluate the FEM functions in all the points.
+    do iel=1,nelements
+      ! y_1
+      call fevl_evaluate_mult (DER_FUNC, DtempVal(:,1), &
+          rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
+          rdomainIntSubset%p_Ielements(iel),Dpoints=Dpoints(:,:,iel))
+
+      ! y_2
+      call fevl_evaluate_mult (DER_FUNC, DtempVal(:,2), &
+          rcollection%p_rvectorQuickAccess1%RvectorBlock(2), &
+          rdomainIntSubset%p_Ielements(iel),Dpoints=Dpoints(:,:,iel))
+          
+      ! Get the normal vector using the boundary.
+      call boundary_getNormalVec2D_mult(&
+          p_rboundary, ibct, DpointPar(:,iel), &
+          DtempVal(:,3), DtempVal(:,4), BDR_PAR_LENGTH)
+          
+      ! Calculate the coefficients
+      do ipt = 1,npointsPerElement
+        Dcoefficients(1,ipt,iel) = &
+            dc * (DtempVal(ipt,1)*DtempVal(ipt,3) + DtempVal(ipt,2)*DtempVal(ipt,4))
+      end do
+      
+    end do
+
+  end subroutine
+    
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_assembleDualNeumannBd (rvector,rmatrix,dc)
+
+!<description>
+  ! This routine assembles the term
+  !    $$ int_gamma (y n) phi_j phi_i $$
+  ! on all boundary edges.
+!</description>
+
+!<input>
+  ! The solution/primal velocity vector that specifies the nonlinearity in the boudnary
+  ! condition.
+  type(t_vectorBlock), intent(in), target :: rvector
+  
+  ! Multiplier for the matrix
+  real(DP), intent(in) :: dc
+!</input>
+
+!<inputoutput>
+  ! Destination matrix where the operator should be added to.
+  type(t_matrixScalar), intent(inout), target :: rmatrix
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    type (t_collection) :: rcollection
+    integer :: ibc,iseg
+    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_bilinearForm) :: rform
+    type(t_spatialDiscretisation), pointer :: p_rdiscr
+    type(t_discreteBC) :: rdiscreteBC
+    
+    !if (dc .eq. 0.0_DP) return
+    
+    p_rdiscr => rmatrix%p_rspatialDiscrTrial
+    
+    ! Prepare the collection for the assembly.
+    rcollection%p_rvectorQuickAccess1 => rvector
+    rcollection%DquickAccess(1) = dc
+    
+    ! Prepare a bilinear form.
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    rform%ballCoeffConstant = .false.
+    rform%BconstantCoeff(1) = .false.
+    rform%Dcoefficients(1:rform%itermCount)  = 1.0_DP
+    
+    ! Assemble the operator on all boundary components.
+    do ibc = 1,boundary_igetNBoundComp(p_rdiscr%p_rboundary)
+    
+      do iseg = 1,boundary_igetNsegments(p_rdiscr%p_rboundary,ibc)
+      
+        ! Get the segment
+        call boundary_createRegion (p_rdiscr%p_rboundary, &
+            ibc, iseg, rboundaryRegion)
+      
+        ! Set up the matrix.
+        call bilf_buildMatrixScalarBdr2D (rform, CUB_G4_1D, .false., &
+            rmatrix,fcoeff_neumannbc,rboundaryRegion, rcollection)
+            
+      end do
+    
+    end do
+
   end subroutine
 
 end module

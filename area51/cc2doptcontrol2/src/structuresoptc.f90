@@ -312,8 +312,13 @@ module structuresoptc
     ! Additional weight for the convective operator. May be used to
     ! switch off the convection.
     ! Standard value = 1.0
+    real(DP) :: dweightConvection = 1.0_DP
 
-    real(DP) :: dweightConvection = 1.0  
+    ! Additional weight for the term (y*n)lambda in the natural boundary condition
+    ! of the dual equation.
+    ! Standard value = 1.0
+    real(DP) :: dweightNaturalBdcDual = 1.0_DP
+    
   end type
 
 !</typeblock>

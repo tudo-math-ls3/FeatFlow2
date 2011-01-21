@@ -2385,6 +2385,9 @@ contains
     call parlst_getvalue_double (rparlist,ssection,&
         'dweightConvection',rdebugFlags%dweightConvection,1.0_DP)
 
+    call parlst_getvalue_double (rparlist,ssection,&
+        'dweightNaturalBdcDual',rdebugFlags%dweightNaturalBdcDual,1.0_DP)
+
   end subroutine
 
   ! ***************************************************************************
