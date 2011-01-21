@@ -553,7 +553,7 @@ contains
       do iel = 1,IELmax-IELset+1
         call trafo_mapCubPts1Dto2D(icoordSystem, raddTriaData%p_IlocalEdgeNumber(1,Iedgelist(IELset+iel-1)), &
             ncubp, Dxi1D, Dxi2D(:,:,1,iel))
-        call trafo_mapCubPts1Dto2D(icoordSystem, raddTriaData%p_IlocalEdgeNumber(2,Iedgelist(IELset+iel-1)), &
+        call dg_mapCubPts1Dto2D_reverse(icoordSystem, raddTriaData%p_IlocalEdgeNumber(2,Iedgelist(IELset+iel-1)), &
             ncubp, Dxi1D, Dxi2D(:,:,2,iel))
       end do
      
@@ -824,8 +824,8 @@ contains
             ! This gives the actual value to multiply the
             ! function value with before summing up to the integral.
             ! Get the precalculated coefficient from the coefficient array.
-            daux1 = domega1 * DfluxValues(ialbet,icubp        ,iel)
-            daux2 = domega2 * DfluxValues(ialbet,ncubp-icubp+1,iel) *(-1.0_dp)
+            daux1 = domega1 * DfluxValues(ialbet,icubp,iel)
+            daux2 = domega2 * DfluxValues(ialbet,icubp,iel) *(-1.0_dp)
            
             ! Now loop through all possible combinations of DOF`s
             ! in the current cubature point. 
@@ -2867,7 +2867,7 @@ end subroutine
   type(t_triangulation), pointer :: p_rtriangulation
   integer, dimension(:), pointer :: p_IedgeList
   integer, dimension(:,:), pointer :: p_IlocalEdgeNumber
-  integer :: ielementDistr, NMT, NVT, iedge
+  integer :: ielementDistr, NMT, NVT, iedge, i
 
 !  ! If the vector does not exist, stop here.
 !  if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
@@ -2933,9 +2933,19 @@ end subroutine
       call linf_initAssembly(rvectorAssembly(1), rform,&
             rvectorBlock%RvectorBlock(1)%p_rspatialDiscr%RelementDistr(1)%celement,&
             ccubType, LINF_NELEMSIM)
-      call linf_initAssembly(rvectorAssembly(2), rform,&
+      call dg_initAssembly_reverseCubPoints(rvectorAssembly(2), rform,&
             rvectorBlock%RvectorBlock(1)%p_rspatialDiscr%RelementDistr(1)%celement,&
             ccubType, LINF_NELEMSIM)
+            
+!      ! Test, if right reversed  
+!      do i = 1, size(rvectorAssembly(1)%p_DcubPtsRef,2)
+!        write(*,*) i, rvectorAssembly(1)%p_Domega(i),rvectorAssembly(2)%p_Domega(size(rvectorAssembly(1)%p_DcubPtsRef,2)+1-i)
+!!        write(*,*) i
+!!        write(*,*) rvectorAssembly(1)%p_DcubPtsRef(:,i)
+!!        write(*,*) rvectorAssembly(2)%p_DcubPtsRef(:,size(rvectorAssembly(1)%p_DcubPtsRef,2)+1-i)
+!      
+!      end do
+!      pause
             
       ! Assemble the data for all elements in this element distribution
       call linf_dg_assembleSubmeshVectorBlockEdge2d (rvectorAssembly,&
@@ -3560,7 +3570,7 @@ end subroutine
           ! formula in that cubature point.
 
           domega1 = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
-          domega2 = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
+          domega2 = dlen * rlocalVectorAssembly(2)%p_Domega(icubp)
 
           
           ! Loop over the additive factors in the bilinear form.
@@ -3583,10 +3593,10 @@ end subroutine
             ! This gives the actual value to multiply the
             ! function value with before summing up to the integral.
             ! Get the precalculated coefficient from the coefficient array.
-            !daux1 = domega1 * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,icubp        ,iel)
-            !daux2 = domega2 * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,ncubp-icubp+1,iel) *(-1.0_dp)
-            Daux(:,1) = domega1 * DfluxValues(:,ialbet,icubp        ,iel)
-            Daux(:,2) = domega2 * DfluxValues(:,ialbet,ncubp-icubp+1,iel) *(-1.0_dp)
+            !daux1 = domega1 * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,icubp,iel)
+            !daux2 = domega2 * rlocalVectorAssembly(2)%p_Dcoefficients(ialbet,icubp,iel) *(-1.0_dp)
+            Daux(:,1) = domega1 * DfluxValues(:,ialbet,icubp,iel)
+            Daux(:,2) = domega2 * DfluxValues(:,ialbet,icubp,iel) *(-1.0_dp)
             
             ! Now loop through all possible combinations of DOF`s
             ! in the current cubature point. 
@@ -9231,6 +9241,128 @@ end do
     end select
   
   end subroutine
+  
+  
+  
+  
+  
+  
+  
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine dg_initAssembly_reverseCubPoints(rvectorAssembly,rform,&
+      celement,ccubType,nelementsPerBlock)
+
+!<description>
+  ! Initialise a vector assembly structure for assembling a linear form.
+!</description>
+
+!<input>
+  ! The bilinear form specifying the underlying PDE of the discretisation.
+  type(t_linearForm), intent(in) :: rform
+  
+  ! Type of element in the test space.
+  integer(I32), intent(in) :: celement
+  
+  ! Type of cubature formula to use.
+  integer(I32), intent(in) :: ccubType
+  
+  ! Optional: Maximum number of elements to process simultaneously.
+  ! If not specified, LINF_NELEMSIM is assumed.
+  integer, intent(in), optional :: nelementsPerBlock
+!</input>
+
+!<output>
+  ! A vector assembly structure.
+  type(t_linfVectorAssembly), intent(out) :: rvectorAssembly
+!</output>
+
+!</subroutine>
+  
+    ! local variables
+    integer :: i,i1
+    
+    real(dp) :: dtemp
+    real(dp), dimension(2) :: dtemp2
+  
+    ! Initialise the structure.
+    rvectorAssembly%rform = rform
+    rvectorAssembly%ccubType = ccubType
+    rvectorAssembly%nelementsPerBlock = LINF_NELEMSIM
+    if (present(nelementsPerBlock)) &
+        rvectorAssembly%nelementsPerBlock = nelementsPerBlock
+    rvectorAssembly%celement = celement
+    
+    ! Get the number of local DOF`s for trial and test functions
+    rvectorAssembly%indof = elem_igetNDofLoc(celement)
+    
+    ! Which derivatives of basis functions are needed?
+    ! Check the descriptors of the bilinear form and set BDERxxxx
+    ! according to these.
+    rvectorAssembly%Bder(:) = .false.
+    
+    ! Loop through the additive terms
+    do i = 1,rform%itermCount
+      ! The desriptor Idescriptors gives directly the derivative
+      ! which is to be computed! Build templates for BDER.
+      ! We do not compute the actual BDER here, as there might be some special
+      ! processing if trial/test functions are identical!
+      !
+      ! At first build the descriptors for the trial functions
+      I1=rform%Idescriptors(i)
+      
+      if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
+        call output_line ('Invalid descriptor!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_initAssembly')
+        call sys_halt()
+      endif
+      
+      rvectorAssembly%Bder(I1)=.true.
+    end do
+
+    ! Get the number of vertices of the element, specifying the transformation
+    ! form the reference to the real element.
+    rvectorAssembly%NVE = elem_igetNVE(celement)
+    
+      ! Get from the element space the type of coordinate system
+    ! that is used there:
+    rvectorAssembly%ctrafoType = elem_igetTrafoType(celement)
+    
+    ! Get the number of cubature points for the cubature formula
+    rvectorAssembly%ncubp = cub_igetNumPts(ccubType)
+
+    ! Allocate two arrays for the points and the weights
+    allocate(rvectorAssembly%p_Domega(rvectorAssembly%ncubp))
+    allocate(rvectorAssembly%p_DcubPtsRef(&
+        trafo_igetReferenceDimension(rvectorAssembly%ctrafoType),&
+        rvectorAssembly%ncubp))
+    
+    ! Get the cubature formula
+    call cub_getCubature(ccubType,rvectorAssembly%p_DcubPtsRef,rvectorAssembly%p_Domega)
+    
+    ! Revert the numbering of cubature points
+    do i = 1, size(rvectorAssembly%p_Domega)/2
+      dtemp2(:) = rvectorAssembly%p_DcubPtsRef(:,i)
+      rvectorAssembly%p_DcubPtsRef(:,i) = rvectorAssembly%p_DcubPtsRef(:,size(rvectorAssembly%p_Domega)+1-i)
+      rvectorAssembly%p_DcubPtsRef(:,size(rvectorAssembly%p_Domega)+1-i) = dtemp2(:)
+      
+      dtemp = rvectorAssembly%p_Domega(i)
+      rvectorAssembly%p_Domega(i) = rvectorAssembly%p_Domega(size(rvectorAssembly%p_Domega)+1-i)
+      rvectorAssembly%p_Domega(size(rvectorAssembly%p_Domega)+1-i) = dtemp
+      
+    end do
+
+    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+    ! the elements later. All of them can be combined with OR, what will give
+    ! a combined evaluation tag. 
+    rvectorAssembly%cevaluationTag = elem_getEvaluationTag(rvectorAssembly%celement)
+        
+  end subroutine
+  
+  !****************************************************************************  
 
  
   

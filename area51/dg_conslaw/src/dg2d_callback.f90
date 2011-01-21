@@ -2190,22 +2190,24 @@ integer :: iel
 !          Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.3_dp*&
 !                   exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2.0_dp+(Dpoints(2,ipoint,iel)-0.5_dp)**2.0_dp))
 
-!          ! Circular dambreak (for Euler equations)
-!          r = sqrt((dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp)
-!          if ( r<0.1_dp) then
-!            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.15_dp
-!          else
-!            Dcoefficients (1,ipoint,iel) = 1.0_dp
-!          end if
-          
-          ! Shock tube
-          if ( dx<0.5_dp) then
-            Dcoefficients (1,ipoint,iel) = 1.0_dp
+          ! Circular dambreak (for Euler equations)
+          r = sqrt(2.0_dp*(dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp)
+          if ( r<0.1_dp) then
+            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.15_dp
           else
-            Dcoefficients (1,ipoint,iel) = 0.25_dp
-          end if 
+            Dcoefficients (1,ipoint,iel) = 1.0_dp
+          end if
+          
+!          ! Shock tube
+!          if ( dx<0.5_dp) then
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp
+!          else
+!            Dcoefficients (1,ipoint,iel) = 0.25_dp
+!          end if 
 
-
+            ! Smooth pressure hill
+            r = sqrt(2.0_dp*(dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp)
+            Dcoefficients (1,ipoint,iel) = 1.0_dp+exp(-r)
 
 
 !          Dcoefficients (1,ipoint,iel) = 1.0_dp + dx
@@ -2237,9 +2239,25 @@ integer :: iel
               Dcoefficients (1,ipoint,iel) = 2.5_dp
             else
               Dcoefficients (1,ipoint,iel) = 0.25_dp
-            end if 
-                      
-          !Dcoefficients (1,ipoint,iel) = 2.5_dp+dx
+            end if
+            
+            
+            ! Circular dambreak (for Euler equations)
+            r = sqrt(2.0_dp*(dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp)
+            if ( r<0.1_dp) then
+              Dcoefficients (1,ipoint,iel) = 2.5_dp
+            else
+              Dcoefficients (1,ipoint,iel) = 0.25_dp
+            end if
+
+
+            ! Smooth pressure hill
+            r = sqrt(2.0_dp*(dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp)
+            Dcoefficients (1,ipoint,iel) = 1.0_dp+exp(-r)
+            
+            
+                        
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp
           
           end do
         end do
@@ -3605,10 +3623,10 @@ integer :: iel
       if (IelementList(iedge)==0) then
       
         ! No BCs
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,1) = Dsolutionvalues(1,ipoint,iedge,1)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,2) = Dsolutionvalues(1,ipoint,iedge,2)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,3) = Dsolutionvalues(1,ipoint,iedge,3)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
+        Dsolutionvalues(2,ipoint,iedge,1) = Dsolutionvalues(1,ipoint,iedge,1)
+        Dsolutionvalues(2,ipoint,iedge,2) = Dsolutionvalues(1,ipoint,iedge,2)
+        Dsolutionvalues(2,ipoint,iedge,3) = Dsolutionvalues(1,ipoint,iedge,3)
+        Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
 
 
 !        !!! Boundary conditions by Riemann invariants !!!
@@ -3709,7 +3727,7 @@ integer :: iel
       
       ! Get solution values on the in and outside
       DQi = Dsolutionvalues(1,ipoint,iedge,:)
-      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,:)
+      DQa = Dsolutionvalues(2,ipoint,iedge,:)
       
       ! Get fluxes on the in and outside in x- and y-direction
       DF1i = Euler_buildFlux(DQi,1)
