@@ -2858,8 +2858,8 @@ contains
     real(DP) :: dscale
     integer :: consistentMassMatrix, lumpedMassMatrix
     integer :: transportMatrix, massMatrix
-    integer :: imasstype,imassantidiffusiontype
-    integer :: convectionAFC,ivelocitytype
+    integer :: imasstype, imassantidiffusiontype
+    integer :: convectionAFC, ivelocitytype
 
 
     !###########################################################################
@@ -2925,7 +2925,7 @@ contains
       !   $$ rhs = M*u^n + (1-theta)*dt*K(u^n)u^n + b.c.`s $$
       !-------------------------------------------------------------------------
 
-      ! Do we have some explicit part?
+      ! Do we have an explicit part?
       if (rtimestep%theta .lt. 1.0_DP) then
 
         ! Compute scaling parameter
@@ -2944,24 +2944,11 @@ contains
                            imasstype .eq. MASS_LUMPED)
 
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(massMatrix),&
-            rsolution%RvectorBlock(1),&
-            rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP)
+            rsolution%RvectorBlock(1), rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP)
 
         ! Evaluate linear form for the boundary integral (if any)
-
-        ! --- explicit part ---
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
             smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep, dscale,&
-            rrhs%RvectorBlock(1), rcollection,&
-            fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
-            fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
-            fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
-
-        dscale = rtimestep%theta*rtimestep%dStep
-
-        ! --- implicit part ---
-        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-            smode, ivelocitytype, rtimestep%dTime, dscale,&
             rrhs%RvectorBlock(1), rcollection,&
             fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
             fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
@@ -2974,20 +2961,7 @@ contains
                            imasstype .eq. MASS_LUMPED)
 
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(massMatrix),&
-            rsolution%RvectorBlock(1),&
-            rrhs%RvectorBlock(1), 1.0_DP, 0.0_DP)
-
-        ! Evaluate linear form for boundary integral (if any)
-
-        dscale = rtimestep%theta*rtimestep%dStep
-
-        ! --- implicit part ---
-        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-            smode, ivelocitytype, rtimestep%dTime, dscale,&
-            rrhs%RvectorBlock(1), rcollection,&
-            fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
-            fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
-            fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
+            rsolution%RvectorBlock(1), rrhs%RvectorBlock(1), 1.0_DP, 0.0_DP)
 
       end if ! theta
 
@@ -2996,19 +2970,11 @@ contains
       !-------------------------------------------------------------------------
       ! Initialize the constant right-hand side by zeros
       !
-      !   $$ rhs = "0" + b.c.`s $$
+      !   $$ rhs = 0 $$
       !-------------------------------------------------------------------------
 
       ! Clear right-hand side vector
       call lsysbl_clearVector(rrhs)
-
-      ! Evaluate linear form for boundary integral (if any)
-      call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
-          rrhs%RvectorBlock(1), rcollection,&
-          fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
-          fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
-          fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
     end select
 
@@ -3026,8 +2992,10 @@ contains
 !<subroutine>
 
   subroutine transp_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rrhs, rres, ite, rcollection,&
-      rsource)
+      rsolver, rsolution, rsolution0, rrhs, rres, ite, rcollection, rsource,&
+      fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+      fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+      fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
 !<description>
     ! This subroutine computes the nonlinear residual vector
@@ -3057,6 +3025,15 @@ contains
 
     ! OPTIONAL: source vector
     type(t_vectorBlock), intent(in), optional :: rsource
+
+    ! OPTIONAL: user-defined callback functions
+    include 'intf_transpCoeffVecBdr.inc'
+    optional :: fcb_coeffVecBdrPrimal1d_sim
+    optional :: fcb_coeffVecBdrPrimal2d_sim
+    optional :: fcb_coeffVecBdrPrimal3d_sim
+    optional :: fcb_coeffVecBdrDual1d_sim
+    optional :: fcb_coeffVecBdrDual2d_sim
+    optional :: fcb_coeffVecBdrDual3d_sim
 !</input>
 
 !<inputoutput>
@@ -3078,15 +3055,16 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_vectorBlock), pointer :: p_rpredictor
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
-    type(t_vectorBlock), pointer :: p_rpredictor
+    character(LEN=SYS_STRLEN) :: smode
     real(DP) :: dscale
     integer(I32) :: ioperationSpec
     integer :: transportMatrix, massMatrix
     integer :: consistentMassMatrix, lumpedMassMatrix
-    integer :: convectionAFC, diffusionAFC
-    integer :: imasstype, imassantidiffusiontype, ivelocitytype
+    integer :: convectionAFC, diffusionAFC, ivelocitytype
+    integer :: imasstype, imassantidiffusiontype
 
 
     !###########################################################################
@@ -3131,6 +3109,12 @@ contains
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'imasstype', imasstype)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_string(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'mode', smode)
 
     ! Do we have some kind of mass matrix?
     select case(imasstype)
@@ -3142,22 +3126,36 @@ contains
       !   $$ res^{(m)} = rhs - [M - dt*theta*K(u^{(m)})]*u^{(m)} $$
       !-------------------------------------------------------------------------
 
-      ! Compute scaling parameter
-      dscale = rtimestep%theta*rtimestep%dStep
-
       ! Apply constant right-hand side
       call lsysbl_copyVector(rrhs, rres)
 
-      ! Apply transport operator
-      call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-          rsolution%rvectorBlock(1), rres%RvectorBlock(1), dscale, 1.0_DP)
+      ! Do we have an implicit part?
+      if (rtimestep%theta .gt. 0.0_DP) then
+        
+        ! Compute scaling parameter
+        dscale = rtimestep%theta*rtimestep%dStep
+        
+        ! Apply transport operator to the solution vector
+        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
+            rsolution%rvectorBlock(1), rres%RvectorBlock(1), dscale, 1.0_DP)
+        
+        ! Evaluate linear form for the boundary integral (if any)
+        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
+            smode, ivelocitytype, rtimestep%dTime, dscale,&
+            rres%RvectorBlock(1), rcollection,&
+            fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+            fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+            fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
+      end if
 
+      ! What type of mass matrix should be used?
       massMatrix = merge(lumpedMassMatrix, consistentMassMatrix,&
                          imasstype .eq. MASS_LUMPED)
 
-      ! Apply mass matrix
+      ! Apply mass matrix to the solution vector
       call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(massMatrix),&
           rsolution%RvectorBlock(1), rres%RvectorBlock(1), -1.0_DP, 1.0_DP)
+      
 
     case DEFAULT
 
@@ -3170,9 +3168,17 @@ contains
       ! Apply constant right-hand side
       call lsysbl_copyVector(rrhs, rres)
 
-      ! Apply transport operator
+      ! Apply transport operator to the solution vector
       call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
           rsolution%rvectorBlock(1), rres%RvectorBlock(1), 1.0_DP, 1.0_DP)
+
+      ! Evaluate linear form for boundary integral (if any)
+      call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
+          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
+          rres%RvectorBlock(1), rcollection,&
+          fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+          fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+          fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
     end select
 
