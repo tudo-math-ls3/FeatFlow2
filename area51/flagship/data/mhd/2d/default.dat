@@ -58,3 +58,6 @@ CoeffMatrix_CXZ = 0
 
 # Position of the constant coefficient matrix CYZ in the scalar matrix structure
 CoeffMatrix_CYZ = 0
+
+# Type of cubature rule used at the boundary
+ccubTypeBdr = 104

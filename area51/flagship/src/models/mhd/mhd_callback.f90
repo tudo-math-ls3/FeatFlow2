@@ -937,7 +937,7 @@ contains
 !<description>
     ! This subroutine computes the constant right-hand side
     !
-    !  $$ rhs = [M + (1-\theta)\Delta t K^n]U^n + S^n$$
+    !  $$ rhs = [M + (1-\theta)\Delta t K^n]U^n + S^n + b.c.`s $$
     !
     ! where the (scaled) source term is optional.
 !</description>
@@ -1019,7 +1019,7 @@ contains
           !---------------------------------------------------------------------
           ! Compute the initial high-order right-hand side
           !
-          !   $$ rhs = (1-theta)*dt*K(U^n)*U^n - b.c.`s $$
+          !   $$ rhs = (1-theta)*dt*K(U^n)*U^n$$
           !---------------------------------------------------------------------
 
           select case(rproblemLevel%rtriangulation%ndim)
@@ -1048,7 +1048,7 @@ contains
           !---------------------------------------------------------------------
           ! Compute the initial low-order right-hand side
           !
-          !   $$ rhs = (1-theta)*dt*L(U^n)*U^n - b.c.`s $$
+          !   $$ rhs = (1-theta)*dt*L(U^n)*U^n$$
           !---------------------------------------------------------------------
 
           ! What type of dissipation is applied?
@@ -1215,7 +1215,7 @@ contains
           !---------------------------------------------------------------------
           ! Compute the initial low-order right-hand side + FEM-TVD stabilisation
           !
-          !   $$ rhs = (1-theta)dt*L(U^n)*U^n + F(U^n) - b.c.`s $$
+          !   $$ rhs = (1-theta)dt*L(U^n)*U^n + F(U^n) $$
           !---------------------------------------------------------------------
 
           select case(rproblemLevel%rtriangulation%ndim)
@@ -1250,29 +1250,13 @@ contains
         
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          ! --- explicit part ---
           call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
               rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
-              mhd_coeffVectorBdr1d_sim, rrhs, rcollection)
-          
-          dscale = rtimestep%theta*rtimestep%dStep
-          
-          ! --- implicit part ---
-          call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
-              rsolution, rtimestep%dTime, -dscale,&
               mhd_coeffVectorBdr1d_sim, rrhs, rcollection)
 
         case (NDIM2D)
-          ! --- explicit part ---
           call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
               rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
-              mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
-          
-          dscale = rtimestep%theta*rtimestep%dStep
-          
-          ! --- implicit part ---
-          call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
-              rsolution, rtimestep%dTime, -dscale,&
               mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
 
         case (NDIM3D)
@@ -1287,9 +1271,11 @@ contains
         !   $$ rhs := M*U^n + rhs $$
         !-----------------------------------------------------------------------
 
+        ! What type of mass matrix should be used?
         massMatrix = merge(lumpedMassMatrix,&
             consistentMassMatrix, imasstype .eq. MASS_LUMPED)
 
+        ! Apply mass matrix to solution vector
         do iblock = 1, rsolution%nblocks
           call lsyssc_scalarMatVec(&
               rproblemLevel%Rmatrix(massMatrix),&
@@ -1305,9 +1291,11 @@ contains
         !   $$ rhs = M*U^n $$
         !-----------------------------------------------------------------------
 
+        ! What type of mass matrix should be used?
         massMatrix = merge(lumpedMassMatrix,&
             consistentMassMatrix, imasstype .eq. MASS_LUMPED)
 
+        ! Apply mass matrix to solution vector
         do iblock = 1, rsolution%nblocks
           call lsyssc_scalarMatVec(&
               rproblemLevel%Rmatrix(massMatrix),&
@@ -1315,58 +1303,19 @@ contains
               rrhs%RvectorBlock(iblock), 1.0_DP , 0.0_DP)
         end do
 
-        ! Evaluate linear form for boundary integral (if any)
-        
-        dscale = rtimestep%theta*rtimestep%dStep
-
-        select case(rproblemLevel%rtriangulation%ndim)
-        case (NDIM1D)
-          ! --- implicit part ---
-          call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
-              rsolution, rtimestep%dTime, -dscale,&
-              mhd_coeffVectorBdr1d_sim, rrhs, rcollection)
-
-        case (NDIM2D)
-          ! --- implicit part ---
-          call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
-              rsolution, rtimestep%dTime, -dscale,&
-              mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
-
-        case (NDIM3D)
-          print *, "Not implemented yet!"
-          stop
-          
-        end select
-
       end if ! theta
+
 
     case DEFAULT
 
       !-------------------------------------------------------------------------
       ! Initialize the constant right-hand side by zeros
       !
-      !   $$ rhs = "0" - b.c.`s $$
+      !   $$ rhs = 0 $$
       !-------------------------------------------------------------------------
 
       ! Clear vector
       call lsysbl_clearVector(rrhs)
-
-      ! Evaluate linear form for boundary integral (if any)
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
-            rsolution, rtimestep%dTime, -1.0_DP,&
-            mhd_coeffVectorBdr1d_sim, rrhs, rcollection)
-
-      case (NDIM2D)
-        call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
-            rsolution, rtimestep%dTime, -1.0_DP,&
-            mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
-
-      case (NDIM3D)
-        print *, "Not implemented yet!"
-        stop
-      end select
 
     end select
 
@@ -1390,12 +1339,12 @@ contains
 !<description>
     ! This subroutine computes the nonlinear residual vector
     !
-    ! $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]U^{(m)} - S^{(m)} $$
+    ! $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]U^{(m)} - S^{(m)} + b.c.`s $$
     !
     ! for the standard two-level theta-scheme, whereby the (scaled)
     ! source term $s^{(m)}$ is optional. The constant right-hand side
     !
-    !  $$ rhs = [M + (1-\theta)\Delta t K^n]U^n + S^n$$
+    !  $$ rhs = [M + (1-\theta)\Delta t K^n]U^n + S^n + b.c.`s $$
     !
     ! must be provided via the precomputed vector rrhs.
 !</description>
@@ -1467,6 +1416,9 @@ contains
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
         'imasstype', imasstype)
 
+    ! Compute scaling parameter
+    dscale = rtimestep%theta*rtimestep%dStep
+
     ! Do we have some kind of mass matrix?
     select case(imasstype)
     case (MASS_LUMPED, MASS_CONSISTENT)
@@ -1474,7 +1426,7 @@ contains
       !-------------------------------------------------------------------------
       ! Initialize the residual for transient flows
       !
-      !   $$ res = rhs-M*U^{(m)} $$
+      !   $$ res = rhs-M*U^{(m)} - b.c.`s $$
       !-------------------------------------------------------------------------
 
       ! Apply constant right-hand side
@@ -1483,7 +1435,7 @@ contains
       massMatrix = merge(lumpedMassMatrix,&
           consistentMassMatrix, imasstype .eq. MASS_LUMPED)
 
-      ! Apply mass matrix
+      ! Apply mass matrix to solution vector
       do iblock = 1, rsolution%nblocks
         call lsyssc_scalarMatVec(&
             rproblemLevel%Rmatrix(massMatrix),&
@@ -1491,16 +1443,59 @@ contains
             rres%RvectorBlock(iblock) , -1._DP, 1.0_DP)
       end do
 
+      !-------------------------------------------------------------------------
+      ! Evaluate linear form for boundary integral (if any)
+      !-------------------------------------------------------------------------
+      
+      ! Do we have an implicit part?
+      if (rtimestep%theta .gt. 0.0_DP) then
+        
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime, -dscale,&
+              mhd_coeffVectorBdr1d_sim, rres, rcollection)
+          
+        case (NDIM2D)
+          call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+              rsolution, rtimestep%dTime, -dscale,&
+              mhd_coeffVectorBdr2d_sim, rres, rcollection)
+          
+        case (NDIM3D)
+          print *, "Not implemented yet"
+          stop
+          
+        end select
+      end if
+
+
     case DEFAULT
 
       !-----------------------------------------------------------------------
       ! Initialize the residual for stationary flows zeros
       !
-      !   $$ res = rhs $$
+      !   $$ res = rhs - b.c.`s $$
       !-----------------------------------------------------------------------
 
       ! Apply constant right-hand side
       call lsysbl_copyVector(rrhs, rres)
+
+      ! Evaluate linear form for boundary integral (if any)
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        call mhd_calcLinfBdrCond1D(rproblemLevel,&
+            rsolver, rsolution, rtimestep%dTime, -1.0_DP,&
+            mhd_coeffVectorBdr1d_sim, rres, rcollection)
+
+      case (NDIM2D)
+        call mhd_calcLinfBdrCond2D(rproblemLevel,&
+            rsolver, rsolution, rtimestep%dTime, -1.0_DP,&
+            mhd_coeffVectorBdr2d_sim, rres, rcollection)
+        
+      case (NDIM3D)
+        print *, "Not implemented yet!"
+        stop
+      end select
 
     end select
 
@@ -4377,13 +4372,14 @@ contains
 !</subroutine>
     
     ! local variables
+    type(t_parlist), pointer :: p_rparlist
     type(t_boundaryCondition), pointer :: p_rboundaryCondition
     type(t_collection) :: rcollectionTmp
     type(t_boundaryRegion) :: rboundaryRegion,rboundaryRegionMirror,rregion
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
-    integer :: ibct, isegment
+    integer :: ibct, isegment, ccubTypeBdr
 
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
@@ -4396,6 +4392,13 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcLinfBdrCond2D')
       call sys_halt()
     end if
+
+    ! Get pointer to parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1), 'ccubTypeBdr', ccubTypeBdr)
 
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
@@ -4488,11 +4491,11 @@ contains
 
         ! Assemble the linear form
         if (rvector%nblocks .eq. 1) then
-          call linf_buildVecIntlScalarBdr2d(rform, CUB_G3_1D, .false.,&
+          call linf_buildVecIntlScalarBdr2d(rform, ccubTypeBdr, .false.,&
               rvector%RvectorBlock(1), fcoeff_buildVectorBlBdr2D_sim,&
               rboundaryRegion, rcollectionTmp)
         else
-          call linf_buildVectorBlockBdr2d(rform, CUB_G3_1D, .false.,&
+          call linf_buildVectorBlockBdr2d(rform, ccubTypeBdr, .false.,&
               rvector, fcoeff_buildVectorBlBdr2D_sim,&
               rboundaryRegion, rcollectionTmp)
         end if
