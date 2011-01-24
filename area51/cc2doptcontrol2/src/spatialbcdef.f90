@@ -831,6 +831,241 @@ contains
                     
                   end if
 
+                case (5)
+                  ! Simple Dirichlet boundary for the primal equation.
+                  ! Read the line again, get the expressions for X- and Y-velocity
+                  read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex3,sbdex4
+                  
+                  ! For any string <> '', create the appropriate Dirichlet boundary
+                  ! condition and add it to the list of boundary conditions.
+                  !
+                  ! The IquickAccess array is set up as follows:
+                  !  IquickAccess(1) = Type of boundary condition
+                  !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
+                  !  IquickAccess(3) = expression type
+                  !  IquickAccess(4) = expression identifier
+                  !
+                  ! The SquickAccess array is set up as follows:
+                  !  SquickAccess(1) = Name of the expression
+                  !
+                  rcoll%IquickAccess(1) = ibctyp
+                  
+                  if (iprimaldual .eq. 1) then
+                  
+                    ! Primal BC's
+                    if ((cbctype .eq. CCSPACE_PRIMAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) THEN
+                      ! If the type is a double precision value, set the DquickAccess(4)
+                      ! to that value so it can quickly be accessed.
+                      if (sbdex1 .ne. '') then
+                        ! X-velocity
+                        !
+                        ! The 2nd element in IquickAccess saves the component number.
+                        rcoll%IquickAccess(2) = 1
+                        
+                        ! IquickAccess(3) saves the type of the expression
+                        iexptyp = collct_getvalue_int (rcoll, sbdex1)
+                        rcoll%IquickAccess(3) = iexptyp
+                        
+                        ! The 1st element in the sting quick access array is
+                        ! the name of the expression to evaluate.
+                        rcoll%SquickAccess(1) = sbdex1
+                        
+                        ! Dquickaccess(3) / IquickAccess(3) saves information
+                        ! about the expression.
+                        select case (iexptyp)
+                        case (BDC_USERDEFID)
+                          iid = collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                        case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                          ! Constant or parabolic profile
+                          rcoll%Dquickaccess(4) = &
+                              collct_getvalue_real (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                        case (BDC_EXPRESSION)
+                          ! Expression. Write the identifier for the expression
+                          ! as itag into the boundary condition structure.
+                          rcoll%IquickAccess(4) = &
+                              collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                        end select
+                      
+                        rcoll%Dquickaccess(1) = dtimePrimal
+                        call user_initCollectForVecAssembly (rglobalData,iid,1,dtimePrimal,rcallbackcollection)
+
+                        ! Assemble the BC's.
+                        call bcasm_newDirichletBConRealBD (&
+                            rspaceDiscr,1,rboundaryRegion,rdiscreteBC,&
+                            cc_getBDconditionsNavSt2D,rcoll)
+
+                        call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+                            
+                      end if
+                      
+                      if (sbdex2 .ne. '') then
+                      
+                        ! Y-velocity
+                        !
+                        ! The 1st element in IquickAccess saves the component number.
+                        rcoll%IquickAccess(2) = 2
+                        
+                        ! IquickAccess(3) saves the type of the expression
+                        iexptyp = collct_getvalue_int (rcoll, sbdex2)
+                        rcoll%IquickAccess(3) = iexptyp
+                        
+                        ! The 1st element in the sting quick access array is
+                        ! the name of the expression to evaluate.
+                        rcoll%SquickAccess(1) = sbdex2
+                        
+                        ! Dquickaccess(4) / IquickAccess(4) saves information
+                        ! about the expression.
+                        select case (iexptyp)
+                        case (BDC_USERDEFID)
+                          iid = collct_getvalue_int (rcoll, sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                        case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                          ! Constant or parabolic profile
+                          rcoll%Dquickaccess(4) = &
+                              collct_getvalue_real (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                        case (BDC_EXPRESSION)
+                          ! Expression. Write the identifier for the expression
+                          ! as itag into the boundary condition structure.
+                          rcoll%IquickAccess(4) = &
+                              collct_getvalue_int (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                        end select
+                      
+                        rcoll%Dquickaccess(1) = dtimePrimal
+                        call user_initCollectForVecAssembly (rglobalData,iid,2,dtimePrimal,rcallbackcollection)
+
+                        ! Assemble the BC's.
+                        call bcasm_newDirichletBConRealBD (&
+                            rspaceDiscr,2,rboundaryRegion,rdiscreteBC,&
+                            cc_getBDconditionsNavSt2D,rcoll)
+
+                        call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+
+                      end if
+                    end if
+                    
+                  end if
+                  
+                case (6)
+                  ! Simple Dirichlet boundary for the dual equation
+                  ! Read the line again, get the expressions for X- and Y-velocity
+                  read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex3,sbdex4
+                  
+                  ! For any string <> '', create the appropriate Dirichlet boundary
+                  ! condition and add it to the list of boundary conditions.
+                  !
+                  ! The IquickAccess array is set up as follows:
+                  !  IquickAccess(1) = Type of boundary condition
+                  !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
+                  !  IquickAccess(3) = expression type
+                  !  IquickAccess(4) = expression identifier
+                  !
+                  ! The SquickAccess array is set up as follows:
+                  !  SquickAccess(1) = Name of the expression
+                  !
+                  rcoll%IquickAccess(1) = ibctyp
+                  
+                  if (iprimaldual .eq. 2) then
+                  
+                    ! Dual BC's
+                    if ((cbctype .eq. CCSPACE_DUAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) THEN
+                    
+                      ! Now the same thing again, this time separately for primal and dual
+                      ! variables.
+                      ! If a velocity is not specified, Dirichlet-0-boundary conditions are
+                      ! assumed.
+                      
+                      if (sbdex1 .ne. '') then
+                        ! X-velocity
+                        !
+                        ! The 2nd element in IquickAccess saves the component number.
+                        rcoll%IquickAccess(2) = 4
+                        
+                        ! IquickAccess(3) saves the type of the expression
+                        iexptyp = collct_getvalue_int (rcoll, sbdex1)
+                        rcoll%IquickAccess(3) = iexptyp
+                        
+                        ! The 1st element in the sting quick access array is
+                        ! the name of the expression to evaluate.
+                        rcoll%SquickAccess(1) = sbdex1
+                        
+                        ! Dquickaccess(3) / IquickAccess(3) saves information
+                        ! about the expression.
+                        select case (iexptyp)
+                        case (BDC_USERDEFID)
+                          iid = collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                        case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                          ! Constant or parabolic profile
+                          rcoll%Dquickaccess(4) = &
+                              collct_getvalue_real (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                        case (BDC_EXPRESSION)
+                          ! Expression. Write the identifier for the expression
+                          ! as itag into the boundary condition structure.
+                          rcoll%IquickAccess(4) = &
+                              collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                        end select
+                      
+                        rcoll%Dquickaccess(1) = dtimeDual
+                        call user_initCollectForVecAssembly (rglobalData,iid,4,dtimeDual,rcallbackcollection)
+
+                        ! Assemble the BC's.
+                        ! If we only assemble dual BC's and there are 3 solution components,
+                        ! we assume the vector to specify exactly the dual solution.
+                        call bcasm_newDirichletBConRealBD (&
+                            rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
+                            cc_getBDconditionsNavSt2D,rcoll)
+                            
+                        call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+
+                      end if
+                      
+                      if (sbdex2 .ne. '') then
+                      
+                        ! Y-velocity
+                        !
+                        ! The 1st element in IquickAccess saves the component number.
+                        rcoll%IquickAccess(2) = 5
+                        
+                        ! IquickAccess(3) saves the type of the expression
+                        iexptyp = collct_getvalue_int (rcoll, sbdex2)
+                        rcoll%IquickAccess(3) = iexptyp
+                        
+                        ! The 1st element in the sting quick access array is
+                        ! the name of the expression to evaluate.
+                        rcoll%SquickAccess(1) = sbdex2
+                        
+                        ! Dquickaccess(4) / IquickAccess(4) saves information
+                        ! about the expression.
+                        select case (iexptyp)
+                        case (BDC_USERDEFID)
+                          iid = collct_getvalue_int (rcoll, sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                        case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                          ! Constant or parabolic profile
+                          rcoll%Dquickaccess(4) = &
+                              collct_getvalue_real (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                        case (BDC_EXPRESSION)
+                          ! Expression. Write the identifier for the expression
+                          ! as itag into the boundary condition structure.
+                          rcoll%IquickAccess(4) = &
+                              collct_getvalue_int (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                        end select
+                      
+                        rcoll%Dquickaccess(1) = dtimeDual
+                        call user_initCollectForVecAssembly (rglobalData,iid,5,dtimeDual,rcallbackcollection)
+
+                        ! Assemble the BC's.
+                        ! If we only assemble dual BC's and there are 3 solution components,
+                        ! we assume the vector to specify exactly the dual solution.
+                        call bcasm_newDirichletBConRealBD (&
+                            rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
+                            cc_getBDconditionsNavSt2D,rcoll)
+                            
+                        call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+
+                      end if
+                      
+                    end if
+                    
+                  end if
+
                 case default
                   call output_line ('Unknown boundary condition!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
