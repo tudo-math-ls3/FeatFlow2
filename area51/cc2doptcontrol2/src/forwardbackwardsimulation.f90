@@ -895,6 +895,7 @@ contains
       call fbsim_getNLsimParamsLinSol(rsimsolver%rnonlinearIteration)
       
       ssectionLinSol = ssection
+      ssectionLinSol2 = ""
       
     case (FBSIM_SOLVER_LINBACKWARD)
       cspace = CCSPACE_DUAL
@@ -903,6 +904,7 @@ contains
       call fbsim_getNLsimParamsLinSol(rsimsolver%rnonlinearIteration)
 
       ssectionLinSol = ssection
+      ssectionLinSol2 = ""
       
     end select
     
