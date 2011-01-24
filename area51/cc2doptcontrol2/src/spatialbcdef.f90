@@ -834,7 +834,7 @@ contains
                 case (5)
                   ! Simple Dirichlet boundary for the primal equation.
                   ! Read the line again, get the expressions for X- and Y-velocity
-                  read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex3,sbdex4
+                  read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
                   
                   ! For any string <> '', create the appropriate Dirichlet boundary
                   ! condition and add it to the list of boundary conditions.
@@ -943,11 +943,11 @@ contains
                     end if
                     
                   end if
-                  
+                                    
                 case (6)
                   ! Simple Dirichlet boundary for the dual equation
                   ! Read the line again, get the expressions for X- and Y-velocity
-                  read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex3,sbdex4
+                  read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex3,sbdex4
                   
                   ! For any string <> '', create the appropriate Dirichlet boundary
                   ! condition and add it to the list of boundary conditions.
@@ -973,34 +973,34 @@ contains
                       ! If a velocity is not specified, Dirichlet-0-boundary conditions are
                       ! assumed.
                       
-                      if (sbdex1 .ne. '') then
+                      if (sbdex3 .ne. '') then
                         ! X-velocity
                         !
                         ! The 2nd element in IquickAccess saves the component number.
                         rcoll%IquickAccess(2) = 4
                         
                         ! IquickAccess(3) saves the type of the expression
-                        iexptyp = collct_getvalue_int (rcoll, sbdex1)
+                        iexptyp = collct_getvalue_int (rcoll, sbdex3)
                         rcoll%IquickAccess(3) = iexptyp
                         
                         ! The 1st element in the sting quick access array is
                         ! the name of the expression to evaluate.
-                        rcoll%SquickAccess(1) = sbdex1
+                        rcoll%SquickAccess(1) = sbdex3
                         
                         ! Dquickaccess(3) / IquickAccess(3) saves information
                         ! about the expression.
                         select case (iexptyp)
                         case (BDC_USERDEFID)
-                          iid = collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                          iid = collct_getvalue_int (rcoll, sbdex3, 0, roptcBDC%ssectionBdExpressions)
                         case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
                           ! Constant or parabolic profile
                           rcoll%Dquickaccess(4) = &
-                              collct_getvalue_real (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                              collct_getvalue_real (rcoll, sbdex3, 0, roptcBDC%ssectionBdExpressions)
                         case (BDC_EXPRESSION)
                           ! Expression. Write the identifier for the expression
                           ! as itag into the boundary condition structure.
                           rcoll%IquickAccess(4) = &
-                              collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                              collct_getvalue_int (rcoll, sbdex3, 0, roptcBDC%ssectionBdExpressions)
                         end select
                       
                         rcoll%Dquickaccess(1) = dtimeDual
@@ -1017,7 +1017,7 @@ contains
 
                       end if
                       
-                      if (sbdex2 .ne. '') then
+                      if (sbdex4 .ne. '') then
                       
                         ! Y-velocity
                         !
@@ -1025,27 +1025,27 @@ contains
                         rcoll%IquickAccess(2) = 5
                         
                         ! IquickAccess(3) saves the type of the expression
-                        iexptyp = collct_getvalue_int (rcoll, sbdex2)
+                        iexptyp = collct_getvalue_int (rcoll, sbdex4)
                         rcoll%IquickAccess(3) = iexptyp
                         
                         ! The 1st element in the sting quick access array is
                         ! the name of the expression to evaluate.
-                        rcoll%SquickAccess(1) = sbdex2
+                        rcoll%SquickAccess(1) = sbdex4
                         
                         ! Dquickaccess(4) / IquickAccess(4) saves information
                         ! about the expression.
                         select case (iexptyp)
                         case (BDC_USERDEFID)
-                          iid = collct_getvalue_int (rcoll, sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                          iid = collct_getvalue_int (rcoll, sbdex4, 0, roptcBDC%ssectionBdExpressions)
                         case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
                           ! Constant or parabolic profile
                           rcoll%Dquickaccess(4) = &
-                              collct_getvalue_real (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                              collct_getvalue_real (rcoll,sbdex4, 0, roptcBDC%ssectionBdExpressions)
                         case (BDC_EXPRESSION)
                           ! Expression. Write the identifier for the expression
                           ! as itag into the boundary condition structure.
                           rcoll%IquickAccess(4) = &
-                              collct_getvalue_int (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                              collct_getvalue_int (rcoll,sbdex4, 0, roptcBDC%ssectionBdExpressions)
                         end select
                       
                         rcoll%Dquickaccess(1) = dtimeDual
