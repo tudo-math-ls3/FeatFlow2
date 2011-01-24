@@ -4714,7 +4714,18 @@ sub make_dep_list {
 			# Compare URI. If identical, no need to throw an error. Skip file.
 			if ($aux ne $headerfiles{$auxBasename}->{'URI'}) {
 			    # URIs differ. Possibly because of "../" in URI.
-			    # Compare inodes.
+			    # Compare inodes. But ensure first that the current file
+			    # exists.
+			    unless (-e $aux) {
+				die "\n\n$progname: ERROR:\n".
+				    "File <$fileToParse> contains a reference to\n" .
+				    "<$match> which got automatically expanded to\n" .
+				    "<$aux>.\n" .
+				    "But no such file exists!\n\n" .
+				    "(Hint: Most likely, you forgot to add the (relative) path to the file in the\n" .
+				    "       Fortran 90 include statement.)\n";
+			    }
+
 			    my $auxInode = stat($aux)->ino;
 			    if ($auxInode ne $headerfiles{$auxBasename}->{'inode'}) {
 				# URIs and inodes differ. Possibly, the second file
