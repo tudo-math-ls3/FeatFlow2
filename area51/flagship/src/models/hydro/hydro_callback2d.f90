@@ -4826,8 +4826,9 @@ contains
     allocate(Dny(npointsPerElement, nelements))
 
     ! Get the normal vectors in the cubature points on the boundary
-    call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+    call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$    call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
 
     if (p_rsolution%nblocks .eq. 1) then
 
