@@ -3123,7 +3123,7 @@ contains
       !-------------------------------------------------------------------------
       ! Compute the residual for transient flows
       !
-      !   $$ res^{(m)} = rhs - [M - dt*theta*K(u^{(m)})]*u^{(m)} $$
+      !   $$ res^{(m)} = rhs - [M - dt*theta*K(u^{(m)})]*u^{(m)} + b.c.`s $$
       !-------------------------------------------------------------------------
 
       ! Apply constant right-hand side
@@ -3162,7 +3162,7 @@ contains
       !-------------------------------------------------------------------------
       ! Compute the residual for stationary flows
       !
-      !   $$ res^{(m)} = rhs + K(u^{(m)})*u^{(m)} $$
+      !   $$ res^{(m)} = rhs + K(u^{(m)})*u^{(m)} +b.c.`s $$
       !-------------------------------------------------------------------------
 
       ! Apply constant right-hand side
