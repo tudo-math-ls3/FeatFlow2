@@ -196,6 +196,18 @@ module cubature
   ! 6-point Gauss formula, 1D, degree = 12, ncubp = 6
   integer(I32), parameter, public :: CUB_G6_1D = 108
 
+  ! Pulcherima, 1D, degree = 4, ncubp = 4
+  integer(I32), parameter, public :: CUB_PULCHERIMA_1D = 109
+
+  ! Milne rule, 1D, degree = 5, ncubp = 5
+  integer(I32), parameter, public :: CUB_MILNE_1D = 110
+
+  ! 6-point rule, 1D, degree = 6, ncubp = 6
+  integer(I32), parameter, public :: CUB_6POINT_1D = 111
+
+  ! Weddle rule, 1D, degree = 7, ncubp = 7
+  integer(I32), parameter, public :: CUB_WEDDLE_1D = 112
+
 !</constantblock>
 
 !<constantblock variable="ccubType" description="2D formulas, quad">  
@@ -434,6 +446,14 @@ contains
     cub_igetID=CUB_SIMPSON_1D
   else if (scub .eq. "G6_1D") then
     cub_igetID=CUB_G6_1D
+  else if (scub .eq. "PULCHERIMA_1D") then
+    cub_igetID=CUB_PULCHERIMA_1D
+  else if (scub .eq. "MILNE_1D") then
+    cub_igetID=CUB_MILNE_1D
+  else if (scub .eq. "6POINT_1D") then
+    cub_igetID=CUB_6POINT_1D
+  else if (scub .eq. "WEDDLE_1D") then
+    cub_igetID=CUB_WEDDLE_1D
 
   ! 2D-fomulas, quadrilateral
   else if (scub .eq. "G1X1" .or. scub .eq. "G1_2D") then
@@ -733,12 +753,14 @@ contains
       n = 2
     case (CUB_G3_1D,CUB_SIMPSON_1D)
       n = 3
-    case (CUB_G4_1D)
+    case (CUB_G4_1D,CUB_PULCHERIMA_1D)
       n = 4
-    case (CUB_G5_1D)
+    case (CUB_G5_1D,CUB_MILNE_1D)
       n = 5
-    case (CUB_G6_1D)
+    case (CUB_G6_1D,CUB_6POINT_1D)
       n = 6
+    case (CUB_WEDDLE_1D)
+      n = 7
     
     ! -= 2D Triangle Formulas =-
     case (CUB_G1_T)
@@ -1128,6 +1150,58 @@ contains
         Domega(1) = 1.0_DP / 3.0_DP
         Domega(2) = 4.0_DP / 3.0_DP
         Domega(3) = 1.0_DP / 3.0_DP
+
+      case(CUB_PULCHERIMA_1D) ! Pulcherima (3/7-Simpson rule)
+        Dpoints(1,1) = -1.0_DP
+        Dpoints(1,2) = -1.0_DP / 3.0_DP
+        Dpoints(1,3) =  1.0_DP / 3.0_DP
+        Dpoints(1,4) =  1.0_DP
+        Domega(1) = 1.0_DP / 4.0_DP
+        Domega(2) = 3.0_DP / 4.0_DP
+        Domega(3) = 3.0_DP / 4.0_DP
+        Domega(4) = 1.0_DP / 4.0_DP
+
+      case(CUB_MILNE_1D) ! Milne rule
+        Dpoints(1,1) = -1.0_DP
+        Dpoints(1,2) = -0.5_DP
+        Dpoints(1,3) =  0.0_DP
+        Dpoints(1,4) =  0.5_DP
+        Dpoints(1,5) =  1.0_DP
+        Domega(1) =  7.0_DP / 45.0_DP
+        Domega(2) = 32.0_DP / 45.0_DP
+        Domega(3) = 12.0_DP / 45.0_DP
+        Domega(4) = 32.0_DP / 45.0_DP
+        Domega(5) =  7.0_DP / 45.0_DP
+        
+      case(CUB_6POINT_1D) ! 6-point rule
+        Dpoints(1,1) = -1.0_DP
+        Dpoints(1,2) = -0.6_DP
+        Dpoints(1,3) = -0.2_DP
+        Dpoints(1,4) =  0.2_DP
+        Dpoints(1,5) =  0.6_DP
+        Dpoints(1,6) =  1.0_DP
+        Domega(1) = 19.0_DP / 144.0_DP
+        Domega(2) = 75.0_DP / 144.0_DP
+        Domega(3) = 50.0_DP / 144.0_DP
+        Domega(4) = 50.0_DP / 144.0_DP
+        Domega(5) = 75.0_DP / 144.0_DP
+        Domega(6) = 19.0_DP / 144.0_DP
+
+      case(CUB_WEDDLE_1D) ! Weddle rule
+        Dpoints(1,1) = -1.0_DP
+        Dpoints(1,2) = -2.0_DP / 3.0_DP
+        Dpoints(1,3) = -1.0_DP / 3.0_DP
+        Dpoints(1,4) =  0.0_DP
+        Dpoints(1,5) =  1.0_DP / 3.0_DP
+        Dpoints(1,6) =  2.0_DP / 3.0_DP
+        Dpoints(1,7) =  1.0_DP
+        Domega(1) =  41.0_DP / 420.0_DP
+        Domega(2) = 216.0_DP / 420.0_DP
+        Domega(3) =  27.0_DP / 420.0_DP
+        Domega(4) = 272.0_DP / 420.0_DP
+        Domega(5) =  27.0_DP / 420.0_DP
+        Domega(6) = 216.0_DP / 420.0_DP
+        Domega(7) =  41.0_DP / 420.0_DP
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! 2D TRIANGLE CUBATURE RULES
@@ -2091,6 +2165,70 @@ contains
     
     ncubp     =  3
     
+  case(CUB_PULCHERIMA_1D) 
+    Dxi(1,1)  = -1.0_DP
+    Dxi(2,1)  = -0.333333333333333_DP
+    Dxi(3,1)  =  0.333333333333333_DP
+    Dxi(4,1)  =  1.0_DP
+    
+    Domega(1) =  0.25_DP
+    Domega(2) =  0.75_DP
+    Domega(3) =  0.75_DP
+    Domega(4) =  0.25_DP
+    
+    ncubp     =  4
+
+  case(CUB_MILNE_1D) 
+    Dxi(1,1)  = -1.0_DP
+    Dxi(2,1)  = -0.5_DP
+    Dxi(3,1)  =  0.0_DP
+    Dxi(4,1)  =  0.5_DP
+    Dxi(5,1)  =  1.0_DP
+    
+    Domega(1) =  0.155555555555555_DP
+    Domega(2) =  0.711111111111111_DP
+    Domega(3) =  0.266666666666666_DP
+    Domega(4) =  0.711111111111111_DP
+    Domega(5) =  0.155555555555555_DP
+    
+    ncubp     =  5
+
+  case(CUB_6POINT_1D) 
+    Dxi(1,1)  = -1.0_DP
+    Dxi(2,1)  = -0.6_DP
+    Dxi(3,1)  = -0.2_DP
+    Dxi(4,1)  =  0.2_DP
+    Dxi(5,1)  =  0.6_DP
+    Dxi(6,1)  =  1.0_DP
+    
+    Domega(1) =  0.131944444444444_DP
+    Domega(2) =  0.520833333333333_DP
+    Domega(3) =  0.347222222222222_DP
+    Domega(4) =  0.347222222222222_DP
+    Domega(5) =  0.520833333333333_DP
+    Domega(6) =  0.131944444444444_DP
+    
+    ncubp     =  6
+
+  case(CUB_WEDDLE_1D) 
+    Dxi(1,1)  = -1.0_DP
+    Dxi(2,1)  = -0.666666666666666_DP
+    Dxi(3,1)  = -0.333333333333333_DP
+    Dxi(4,1)  =  0.0_DP
+    Dxi(5,1)  =  0.333333333333333_DP
+    Dxi(6,1)  =  0.666666666666666_DP
+    Dxi(7,1)  =  1.0_DP
+    
+    Domega(1) =  0.0976190476190476_DP
+    Domega(2) =  0.514285714285714_DP
+    Domega(3) =  0.0642857142857143_DP
+    Domega(4) =  0.647619047619048_DP
+    Domega(5) =  0.0642857142857143_DP
+    Domega(6) =  0.514285714285714_DP
+    Domega(7) =  0.0976190476190476_DP
+    
+    ncubp     =  7
+
   case(CUB_G6_1D)
     Dxi(1,1)  = -0.932469514203152_DP
     Dxi(2,1)  = -0.661209386466265_DP
