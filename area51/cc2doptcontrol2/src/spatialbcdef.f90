@@ -1276,7 +1276,7 @@ contains
       ! Note: The information about the BC's can be retrieved from the
       ! quick-access arrays in the collection as initialised above.
       select case (rcollection%IquickAccess(1))
-      case (1,4)
+      case (1,4,5,6)
         ! Simple Dirichlet BC's for either primal or primal/dual equation.
         ! Evaluate the expression iexprtyp.
         Dvalues(1) = evalBoundary (icomponent,rspaceDiscr, rboundaryRegion, &

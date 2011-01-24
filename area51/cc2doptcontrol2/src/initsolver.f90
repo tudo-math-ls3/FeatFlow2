@@ -3008,6 +3008,9 @@ contains
         call init_initBoundaryConditions (rparlist,SEC_SBDEXPRESSIONS,&
             sstartVectorBoundaryConditions,rsettings%rphysicsPrimal,rboudaryConditions)
         
+        ! Implement the boundary conditions into the solution
+        call tbc_implementBCsolution (rboudaryConditions,rvector,rsettings%rglobalData)
+        
         ! Get settings about postprocessing
         if (sstartVectorPostprocessing .ne. "") then
           call init_initForwardSimPostproc (rparlist,&
@@ -3071,6 +3074,9 @@ contains
         ! Get the boundary conditions
         call init_initBoundaryConditions (rparlist,SEC_SBDEXPRESSIONS,&
             sstartVectorBoundaryConditions,rsettings%rphysicsPrimal,rboudaryConditions)
+        
+        ! Implement the boundary conditions into the solution
+        call tbc_implementBCsolution (rboudaryConditions,rvector,rsettings%rglobalData)
         
         ! #############
         ! Forward sweep
@@ -3196,6 +3202,9 @@ contains
         ! Get the boundary conditions
         call init_initBoundaryConditions (rparlist,SEC_SBDEXPRESSIONS,&
             sstartVectorBoundaryConditions,rsettings%rphysicsPrimal,rboudaryConditions)
+            
+        ! Implement the boundary conditions into the solution
+        call tbc_implementBCsolution (rboudaryConditions,rvector,rsettings%rglobalData)
         
         ! ##############
         ! Backward sweep
