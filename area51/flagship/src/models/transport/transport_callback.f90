@@ -2811,7 +2811,7 @@ contains
 !<description>
     ! This subroutine computes the constant right-hand side
     !
-    !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + s^n$$
+    !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + s^n + b.c.`s$$
     !
     ! where the (scaled) source term is optional.
 !</description>
@@ -3000,12 +3000,12 @@ contains
 !<description>
     ! This subroutine computes the nonlinear residual vector
     !
-    !   $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]u^{(m)} - s^{(m)} $$
+    !   $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]u^{(m)} - s^{(m)} + b.c.`s $$
     !
     ! for the standard two-level theta-scheme, whereby the (scaled)
     ! source term is optional. The constant right-hand side
     !
-    !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + s^n$$
+    !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + s^n + b.c.`s $$
     !
     ! must be provided via the precomputed vector rrhs.
 !</description>
@@ -3162,7 +3162,7 @@ contains
       !-------------------------------------------------------------------------
       ! Compute the residual for stationary flows
       !
-      !   $$ res^{(m)} = rhs + K(u^{(m)})*u^{(m)} +b.c.`s $$
+      !   $$ res^{(m)} = rhs + K(u^{(m)})*u^{(m)} + b.c.`s $$
       !-------------------------------------------------------------------------
 
       ! Apply constant right-hand side
