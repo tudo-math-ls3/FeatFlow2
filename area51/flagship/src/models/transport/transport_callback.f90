@@ -901,7 +901,7 @@ contains
           fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
           fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
           fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
-          BILF_MATC_ELEMENTBASED)
+          BILF_MATC_LUMPED)
 
     elseif (trim(smode) .eq. 'dual') then
 
@@ -1048,7 +1048,7 @@ contains
           fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
           fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
           fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
-          BILF_MATC_ELEMENTBASED)
+          BILF_MATC_LUMPED)
 
     else
       call output_line('Invalid mode!',&
@@ -1496,7 +1496,7 @@ contains
           fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
           fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
           fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
-          BILF_MATC_ELEMENTBASED)
+          BILF_MATC_LUMPED)
 
 
     elseif (trim(smode) .eq. 'dual') then
@@ -1583,7 +1583,7 @@ contains
           fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
           fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
           fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
-          BILF_MATC_ELEMENTBASED)
+          BILF_MATC_LUMPED)
 
     else
       call output_line('Invalid mode!',&
