@@ -319,6 +319,22 @@ module structuresoptc
     ! Standard value = 1.0
     real(DP) :: dweightNaturalBdcDual = 1.0_DP
     
+    ! Modification to the discrete RHS.
+    ! =0: No modification (standard).
+    ! =1: Disturb the primal velocity RHS in all DOF's with a random value.
+    ! =2: Disturb the primal velocity RHS in all DOF's except for the boundary DOF's 
+    !     with a random value.
+    ! =3: Disturb the dual velocity RHS in all DOF's with a random value.
+    ! =4: Disturb the dual velocity RHS in all DOF's except for the boundary DOF's 
+    !     with a random value.
+    ! =5: Disturb the velocity RHS in all DOF's with a random value.
+    ! =6: Disturb the velocity RHS in all DOF's except for the boundary DOF's 
+    !     with a random value.
+    integer :: crhsmodification = 0
+
+    ! Maximum error to be introduced to the RHS if crhsmodification=1/2.
+    real(DP) :: drhsrandomMax = 1E-13
+    
   end type
 
 !</typeblock>

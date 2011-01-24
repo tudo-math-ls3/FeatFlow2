@@ -96,3 +96,21 @@ dweightConvection = 1.0
 # Standard value = 1.0
 
 dweightNaturalBdcDual = 1.0
+
+# Modification to the discrete RHS.
+# =0: No modification (standard).
+# =1: Disturb the primal velocity RHS in all DOF's with a random value.
+# =2: Disturb the primal velocity RHS in all DOF's except for the boundary DOF's 
+#     with a random value.
+# =3: Disturb the dual velocity RHS in all DOF's with a random value.
+# =4: Disturb the dual velocity RHS in all DOF's except for the boundary DOF's 
+#     with a random value.
+# =5: Disturb the velocity RHS in all DOF's with a random value.
+# =6: Disturb the velocity RHS in all DOF's except for the boundary DOF's 
+#     with a random value.
+
+crhsmodification = 0
+
+# Maximum error to be introduced to the RHS if crhsmodification <> 0.
+
+drhsrandomMax = 1E-13

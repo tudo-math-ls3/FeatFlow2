@@ -48,8 +48,10 @@ swriteSolutionFilename = ''
 # =4: The start vector is created by a forward simulation starting from
 #     the initial condition. The dual solution is initialised by a backward
 #     simulation.
+# =5: The start vector is created by evaluating the section sstartVector.
+#     The dual solution is initialised by a backward simulation.
 
-ctypeStartVector = 3
+ctypeStartVector = 5
 
 # Multiplication factor for the start vector (excluding the initial condition).
 # May be used to scale the start vector after creation.

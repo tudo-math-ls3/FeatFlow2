@@ -42,6 +42,7 @@ module timerhsevaluation
   use derivatives
   use scalarpde
   use linearformevaluation
+  use bcassembly
   
   use spatialdiscretisation
   use timediscretisation
@@ -91,7 +92,7 @@ contains
 !<subroutine>
 
   subroutine trhsevl_assembleRHS (rglobalData, rphysics, rrhs, rrhsDiscrete, &
-      roptimalControl, roptcBDC)
+      roptimalControl, rdebugFlags, roptcBDC)
 
 !<description>
   ! Discretises the RHS according to the space/time discretisation scheme
@@ -111,6 +112,9 @@ contains
   ! Optimal control parameters.
   type(t_settings_optcontrol), intent(inout) :: roptimalControl
   
+  ! Debug flags
+  type(t_optcDebugFlags), intent(in) :: rdebugFlags
+
   ! OPTIONAL: Boundary conditions in the problem. If present, they are implemented
   ! to the RHS.
   type(t_optcBDC), intent(in), optional :: roptcBDC
@@ -129,7 +133,8 @@ contains
     
     select case (rrhsDiscrete%p_rtimeDiscr%ctype)
     case (TDISCR_ONESTEPTHETA)
-      call trhsevl_assembleThetaRHS (rglobalData, rphysics, rrhs, rrhsDiscrete, roptimalControl, roptcBDC)
+      call trhsevl_assembleThetaRHS (rglobalData, rphysics, rrhs, rrhsDiscrete, &
+          roptimalControl, rdebugFlags, roptcBDC)
     !case (TDISCR_DG0)
     !  call trhsevl_assembledG0RHS (rglobalData, rrhs, rrhsDiscrete, roptimalControl, roptcBDC)
     case default
@@ -144,7 +149,8 @@ contains
   
 !<subroutine>
 
-  subroutine trhsevl_assembleThetaRHS (rglobalData, rphysics, rrhs, rrhsDiscrete, roptimalControl, roptcBDC)
+  subroutine trhsevl_assembleThetaRHS (rglobalData, rphysics, rrhs, rrhsDiscrete, &
+      roptimalControl, rdebugFlags, roptcBDC)
 
 !<description>
   ! Assembles the space-time RHS vector rrhsDiscrete for a Theta-Scheme. 
@@ -162,6 +168,9 @@ contains
   
   ! Optimal control parameters.
   type(t_settings_optcontrol), intent(inout) :: roptimalControl
+  
+  ! Debug flags
+  type(t_optcDebugFlags), intent(in) :: rdebugFlags
 
   ! OPTIONAL: Boundary conditions in the problem. If present, they are implemented
   ! to the RHS.
@@ -579,6 +588,32 @@ contains
             dtimePrimal, dtimeDual, rrhsDiscrete%p_rtimeDiscr, rtempVectorRHS, rglobalData)
       end if
       
+      ! Check the debug flags. Does the RHS to be disturbed?
+      select case (rdebugFlags%crhsmodification)
+      case (1:2)
+        ! Disturb primal RHS. Only velocity.
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(1),iiterate,&
+            rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 2)
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(2),iiterate,&
+            rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 2)
+      case (3:4)
+        ! Disturb dual RHS. Only velocity.
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(5),iiterate,&
+            rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 4)
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(6),iiterate,&
+            rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 4)
+      case (5:6)
+        ! Disturb full RHS. Only velocity.
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(1),iiterate,&
+            rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 6)
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(2),iiterate,&
+            rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 6)
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(5),iiterate,&
+            rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 6)
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(6),iiterate,&
+            rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 6)
+      end select
+      
       ! Save the RHS.
       call sptivec_setTimestepData(rrhsDiscrete, iiterate, rtempVectorRHS)
       
@@ -589,7 +624,91 @@ contains
     call sptivec_releaseAccessPool (raccessPool)
 
   end subroutine
-  !2. Rhs ist falsch
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine trhsevl_disturbSubvector (rvector,irandomseed,drandommax,bignoreboundary)
+
+!<description>
+  ! Disturbs the DOF's in rvector by a random value in the range -drandommax..drandommax.
+!</description>
+
+!<input>
+  ! Random seed for disturbance.
+  integer, intent(in) :: irandomseed
+  
+  ! Absulute value for max. disturbance.
+  real(DP), intent(in) :: drandommax
+  
+  ! Whether or not to ignore the DOF's on the booundary DOF's.
+  logical, intent(in) :: bignoreboundary
+!</input>
+
+!<inputoutput>
+  ! Vector to be disturbed.
+  type(t_vectorScalar), intent(inout) :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,imax
+    integer, dimension(:), allocatable :: iseed1,iseed2
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer, dimension(:), pointer :: p_Idofs
+    integer :: ndofs
+    integer :: h_Idofs
+    type(t_vectorScalar) :: rvectortemp
+    
+    ! Create an empty temp vector from rvector
+    call lsyssc_createVector (rvector%p_rspatialDiscr,rvectorTemp,.true.)
+    
+    ! Get the vector array
+    call lsyssc_getbase_double (rvectorTemp,p_Ddata)
+    
+    ! Prepare the seed. For most processors, we can save the old seed the following way...
+    call random_seed (size=imax)
+    allocate (iseed1(imax), iseed2(imax))
+    call random_seed (get=iseed1)
+    
+    ! New seed
+    iseed2(:) = 0
+    iseed2(1) = irandomseed
+    call random_seed (put=iseed2)
+    
+    ! Fill with random values
+    call random_number (p_Ddata)
+    
+    ! Subtract half the random number to have negative values.
+    call lsyssc_addConstant (rvectorTemp,-0.5_DP)
+    
+    ! Probably clear boundary DOF's
+    if (bignoreboundary) then
+      h_Idofs = ST_NOHANDLE
+      call bcasm_getDOFsOnBoundary (rvector%p_rspatialDiscr,h_Idofs,ndofs)
+      if (ndofs .gt. 0) then
+        call storage_getbase_int (h_Idofs,p_Idofs)
+        do i=1,size(p_Idofs)
+          p_Ddata(p_Idofs(i)) = 0.0_DP
+        end do
+        call storage_free (h_Idofs)
+      end if
+    end if
+    
+    ! Add the temp vector -- scaled -- to the input
+    call lsyssc_vectorLinearComb (rvectorTemp,rvector,2.0_DP*drandommax,1.0_DP)
+    
+    ! Release the temp vector
+    call lsyssc_releaseVector (rvectorTemp)
+    
+    ! Reset the seed
+    call random_seed (put=iseed1)
+    
+    deallocate(iseed1, iseed2)
+    
+  end subroutine
 
 !  ! ***************************************************************************
 !  

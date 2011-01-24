@@ -2388,6 +2388,12 @@ contains
     call parlst_getvalue_double (rparlist,ssection,&
         'dweightNaturalBdcDual',rdebugFlags%dweightNaturalBdcDual,1.0_DP)
 
+    call parlst_getvalue_int (rparlist,ssection,&
+        'crhsmodification',rdebugFlags%crhsmodification,0)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        'drhsrandomMax',rdebugFlags%drhsrandomMax,0.0_DP)
+
   end subroutine
 
   ! ***************************************************************************
@@ -3156,6 +3162,104 @@ contains
             trim(sys_siL(rsimsolver%nlinearIterations+rsimsolverBackward%nlinearIterations,10)))
         end if
       
+      case (5)
+      
+        ! Read the analytic solution.
+        call init_initFunction (rparlist,sstartVector,rlocalsolution,&
+            rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
+            rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
+        if (isuccess .eq. 1) then
+          call output_line ('Function created by simulation not yet supported!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'init_initStartVector')
+          call sys_halt()
+        end if
+        
+        ! Project it down to all timesteps.
+        do i=1,rvector%neqTime
+          call tdiscr_getTimestep(rvector%p_rtimeDiscr,i-1,dtime)
+          call ansol_prjToVector (rlocalsolution,dtime,rvectorSpace,&
+              1,min(rlocalsolution%ncomponents,6),rmassMatrix)
+          call sptivec_setTimestepData (rvector, i, rvectorSpace)
+        end do
+        
+        ! Release the analytic function.
+        call ansol_done(rlocalsolution)
+      
+        ! Create a nonlinear space-time matrix that resembles the current
+        ! forward equation.
+        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
+            rdiscrData)
+        call stlin_initSpaceTimeMatrix (&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,&
+            rsettings%rglobalData,rsettings%rdebugFlags)
+
+        ! Get the boundary conditions
+        call init_initBoundaryConditions (rparlist,SEC_SBDEXPRESSIONS,&
+            sstartVectorBoundaryConditions,rsettings%rphysicsPrimal,rboudaryConditions)
+        
+        ! ##############
+        ! Backward sweep
+        ! ##############
+        
+        ! Initialise a forward simulation solver that simulates the function to calculate the
+        ! start vector.
+        call fbsim_init (rsettings, rparlist, sstartVectorBackwardSolver, &
+            1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_LINBACKWARD, rsimsolverBackward)
+            
+        ! Attach the matrix to the solver.
+        call fbsim_setMatrix (rsimsolverBackward,rspaceTimeMatrix)
+        
+        ! Get settings about postprocessing
+        if (sstartVectorPostprocessing .ne. "") then
+          call init_initForwardSimPostproc (rparlist,&
+              sstartVectorPostprocessing,rsimsolverBackward%rpostprocessing)
+
+          ! Postprocessing of the combined solution!
+          rsimsolverBackward%rpostprocessing%cspace = CCSPACE_PRIMALDUAL
+        end if
+        
+        ! Simulate...
+        call fbsim_simulate (rsimsolverBackward, rvector, rrhs, &
+            rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
+            
+        ! Clean up
+        call fbsim_done (rsimsolverBackward)
+        
+        ! Release the matrix.
+        call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
+      
+        ! Probably print some statistical data
+        if (ioutputLevel .ge. 1) then
+          call output_lbrk ()
+
+          call output_line ("Total time for backward simulation:      "//&
+              trim(sys_sdL(rsimsolverBackward%dtimeTotal,10)))
+
+          call output_line ("Total time for simulation:               "//&
+              trim(sys_sdL(rsimsolverBackward%dtimeTotal,10)))
+
+          call output_line ("Total time for nonlinear solver:        "//&
+            trim(sys_sdL(rsimsolverBackward%dtimeNonlinearSolver,10)))
+            
+          call output_line ("Total time for defect calculation:      "//&
+            trim(sys_sdL(rsimsolverBackward%dtimeDefectCalculation,10)))
+
+          call output_line ("Total time for matrix assembly:         "//&
+            trim(sys_sdL(rsimsolverBackward%dtimeMatrixAssembly,10)))
+            
+          call output_line ("Total time for linear solver:           "//&
+            trim(sys_sdL(rsimsolverBackward%dtimeLinearSolver,10)))
+            
+          call output_line ("Total time for postprocessing:          "//&
+            trim(sys_sdL(rsimsolverBackward%dtimePostprocessing,10)))
+            
+          call output_line ("Total #iterations nonlinear solver:     "//&
+            trim(sys_siL(rsimsolverBackward%nnonlinearIterations,10)))
+            
+          call output_line ("Total #iterations linear solver:        "//&
+            trim(sys_siL(rsimsolverBackward%nlinearIterations,10)))
+        end if
+      
       end select
       
     end select
@@ -3427,7 +3531,7 @@ contains
 
     ! CAll the assembly routine to do that task.
     call trhsevl_assembleRHS (rsettings%rglobalData, rsettings%rphysicsPrimal, &
-        rrhs, rrhsDiscrete, rsettings%rsettingsOptControl)
+        rrhs, rrhsDiscrete, rsettings%rsettingsOptControl, rsettings%rdebugFlags)
 
   end subroutine
 
