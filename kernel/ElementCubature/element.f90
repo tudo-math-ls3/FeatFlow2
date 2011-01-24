@@ -77,6 +77,9 @@
 !#      -> Convert a string with an element identifier to the corresponding
 !#         element id.
 !#
+!# 13.) elem_isLinearTrafoType
+!#      -> Check whether transformation is (multi-) linear or not
+!#
 !#  FAQ - Some explainations  \\
 !# -------------------------- \\
 !# 1.) What is an element and what are Degrees Of Freedoms (DOF`s)?
@@ -286,6 +289,7 @@ module element
   public :: elem_getMaxDerivative
   public :: elem_getEvaluationTag
   public :: elem_isNonparametric
+  public :: elem_isLinearTrafo
   public :: elem_getPrimaryElement
   public :: elem_igetShape
   public :: elem_generic1
@@ -2951,5 +2955,36 @@ contains
     end select
 
   end subroutine 
+
+  !************************************************************************
+  
+!<function>  
+
+  elemental logical function elem_isLinearTrafo (celement) result (blinearTrafo)
+
+  !<description>
+  
+  ! Determines whether an element celement has (multi-)linear transformation
+  
+  !</description>
+  
+  !<result>
+  ! =true, if the element has a (multi-)linear trnasformation.
+  ! =false, if the element has a higher-oder transformation.
+  !</result>
+  
+  !<input>
+  
+  ! Element type qualifier.
+  integer(I32), intent(in) :: celement
+  
+  !</input>
+ 
+!</function>
+
+    ! Use the transformation routine to determine that value!
+    blinearTrafo = trafo_isLinearTrafo(elem_igetTrafoType(celement))
+  
+  end function
    
 end module 

@@ -115,6 +115,9 @@
 !#      -> Find the coordinates on the reference hexahedron
 !#         for a given point in real world coordinates
 !#
+!# 27.) trafo_isLinearTrafo
+!#      -> Checks whether transformation is (multi-)linear or not
+!#
 !#  FAQ - Some explainations  \\
 !# -------------------------- \\
 !# 1.) How is the ID code ctrafoType of the transformation defined?
@@ -363,6 +366,7 @@ module transformation
   public :: trafo_calcTrafo_prism3d
   public :: trafo_igetReferenceDimension
   public :: trafo_calcBackTrafo_hexa
+  public :: trafo_isLinearTrafo
 
 contains
 
@@ -491,7 +495,7 @@ contains
   elemental integer function trafo_igetNVE(ctrafoType)
 
 !<description>
-  ! This function returns for a given trynsformation ID the size NVE of the
+  ! This function returns for a given transformation ID the size NVE of the
   ! coordinate array which is used to hold all the coordinates of the vertices
   ! of an element (corners, edge midpoints,...).
 !</description>
@@ -4631,5 +4635,93 @@ contains
   
 !************************************************************************
   
+!<function>  
+
+  elemental logical function trafo_isLinearTrafo (ctrafoType) result (blinearTrafo)
+
+  !<description>
+  
+  ! This function determines for a given transformation ID wether it is a
+  ! (multi-)linear transformation or not
+  
+  !</description>
+  
+  !<result>
+  ! =true, if the transformation is (multi-)linear.
+  ! =false, if the transformation is of higher order.
+  !</result>
+  
+  !<input>
+  
+  ! The transformation code identifier.
+  integer(I32), intent(in) :: ctrafoType
+  
+  !</input>
+ 
+!</function>
+
+    blinearTrafo = .false.
+
+    ! What type of transformation do we have? First decide on the dimension,
+    ! then on the actual ID.
+    select case (trafo_igetDimension(ctrafoType))
+
+    case (NDIM1D)
+      ! 1D elements. Lines. Check the actual transformation
+      ! ID how to transform.
+    
+      select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      case (TRAFO_ID_MLINCUBE)
+        ! 1D linear line transformation. 
+        blinearTrafo = .true.
+        
+      end select
+
+      case (NDIM2D)
+      ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
+      ! ID how to transform.
+    
+      select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      case (TRAFO_ID_LINSIMPLEX)
+        ! 2D simplex -> linear triangular transformation. 
+        blinearTrafo = .true.
+      
+      case (TRAFO_ID_MLINCUBE)
+        ! Bilinear transformation for cubic-shaped elements 
+        ! -> Bilinear quadrilateral transformation.
+        blinearTrafo = .true.
+      
+      end select
+
+    case (NDIM3D)
+      ! 3D elements. Tetrahedra, Hexahedra. Check the actual transformation
+      ! ID how to transform.
+    
+      select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      case (TRAFO_ID_LINSIMPLEX)
+        ! 3D simplex -> linear triangular transformation. 
+        blinearTrafo = .true.
+      
+      case (TRAFO_ID_MLINCUBE)
+        ! Trilinear transformation for cubic-shaped elements 
+        ! -> Trilinear hexahedral transformation.
+        blinearTrafo = .true.
+      
+      case (TRAFO_ID_MLINPYRAMID)
+        ! Bilinear transformation for pyramid shaped elements
+        blinearTrafo = .true.
+      
+      case (TRAFO_ID_MLINPRISM)
+        ! Bilinear transformation for prismic shaped elements
+        blinearTrafo = .true.
+
+      end select
+      
+    end select
+  
+  end function
 
 end module 
