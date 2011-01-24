@@ -193,6 +193,8 @@
 !# tan(A)    : Tangent of A. Returns the tangent of the angle A, where A
 !#             is measured in radians.
 !# tanh(A)   : Same as tan() but for hyperbolic tangent.
+!# rrand(A,B) : Reproducable pseudo-random number; B'th random number with
+!#              Random-Seed A.
 !# </verb>
 !#
 !# The parser also supports a number of standard constants in the function
@@ -482,32 +484,33 @@ module fparser
   integer(is), parameter :: cIf          = 21, & ! <-- if-then-else
                             cMin         = 22, & ! <-- first dyadic operator: .OP.(A,B)
                             cMax         = 23, &
-                            cAtan2       = 24, & ! --> last dyadic operator: .OP.(A,B)
-                            cAbs         = 25, & ! <-- monadic operator: .OP.(A)
-                            cAnint       = 26, &
-                            cAint        = 27, &
-                            cExp         = 28, &
-                            cLog10       = 29, &
-                            cLog         = 30
-  integer(is), parameter :: cSqrt        = 31, &
-                            cSinh        = 32, &
-                            cCosh        = 33, &
-                            cTanh        = 34, &
-                            cSin         = 35, &
-                            cCos         = 36, &
-                            cTan         = 37, & 
-                            cCot         = 38, &
-                            cAsinh       = 39, &
-                            cAsin        = 40
-  integer(is), parameter :: cAcosh       = 41, &
-                            cAcos        = 42, &
-                            cAtanh       = 43, &
-                            cAtan        = 44, &
-                            cCeil        = 45, &
-                            cFloor       = 46, &
-                            cCsc         = 47, &
-                            cSec         = 48, & ! --> last monadic operator: .OP.(A)
-                            VarBegin     = 49
+                            cRrand       = 24, &
+                            cAtan2       = 25, & ! --> last dyadic operator: .OP.(A,B)
+                            cAbs         = 26, & ! <-- monadic operator: .OP.(A)
+                            cAnint       = 27, &
+                            cAint        = 28, &
+                            cExp         = 29, &
+                            cLog10       = 30, &
+                            cLog         = 31
+  integer(is), parameter :: cSqrt        = 32, &
+                            cSinh        = 33, &
+                            cCosh        = 34, &
+                            cTanh        = 35, &
+                            cSin         = 36, &
+                            cCos         = 37, &
+                            cTan         = 38, & 
+                            cCot         = 39, &
+                            cAsinh       = 40, &
+                            cAsin        = 41
+  integer(is), parameter :: cAcosh       = 42, &
+                            cAcos        = 43, &
+                            cAtanh       = 44, &
+                            cAtan        = 45, &
+                            cCeil        = 46, &
+                            cFloor       = 47, &
+                            cCsc         = 48, &
+                            cSec         = 49, & ! --> last monadic operator: .OP.(A)
+                            VarBegin     = 50
 
 !</constantblock>
 
@@ -538,6 +541,7 @@ module fparser
   character (LEN=5), dimension(cIf:cSec), parameter :: Funcs = (/ 'if   ', &
                                                                   'min  ', &
                                                                   'max  ', &
+                                                                  'rrand', &
                                                                   'atan2', &
                                                                   'abs  ', &
                                                                   'anint', &
@@ -2432,6 +2436,8 @@ contains
 
     ! local variables
     real(DP) :: daux
+    integer, dimension(:), allocatable :: p_Irandom1,p_Irandom2
+    integer :: iaux
 
     rcomp%ibytecodeSize = rcomp%ibytecodeSize + 1    
     rcomp%IbyteCode(rcomp%ibytecodeSize) = ibyte
@@ -2635,6 +2641,31 @@ contains
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize-1) = min(rcomp%Dimmed(rcomp%iimmedSize),&
                                                rcomp%Dimmed(rcomp%iimmedSize-1))
+        call RemoveCompiledImmediate(rcomp)
+        call RemoveCompiledByte(rcomp)
+        call RemoveCompiledByte(rcomp)
+      end if
+
+    case (cRrand)
+      if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
+          rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
+        call random_seed (size=iaux)
+        allocate (p_Irandom1(iaux))
+        allocate (p_Irandom2(iaux))
+        call random_seed (get=p_Irandom1)
+
+        p_Irandom2(:) = 0
+        p_Irandom2(1) = int(rcomp%Dimmed(rcomp%iimmedSize-1))
+        call random_seed (put=p_Irandom2)
+        daux = 0.0_DP
+        do iaux=1,max(1,int(rcomp%Dimmed(rcomp%iimmedSize)))
+          call random_number (daux)
+        end do
+        rcomp%Dimmed(rcomp%iimmedSize-1) = daux
+
+        call random_seed (put=p_Irandom1)
+        deallocate(p_Irandom1,p_Irandom2)
+
         call RemoveCompiledImmediate(rcomp)
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
@@ -3974,6 +4005,8 @@ contains
     integer  :: iinstPtr,istackPtr,idataPtr
     integer  :: ijumpAddr,iimmedAddr
     real(DP) :: daux
+    integer :: iaux
+    integer, dimension(:), allocatable :: p_Irandom1,p_Irandom2
     
     ! Initialization
     idataPtr  = 1
@@ -4119,6 +4152,27 @@ contains
         
       case (cMin)
         Dstack(istackPtr-1) = min(Dstack(istackPtr-1), Dstack(istackPtr))
+        istackPtr = istackPtr-1
+        
+      case (cRrand)
+        call random_seed (size=iaux)
+        allocate (p_Irandom1(iaux))
+        allocate (p_Irandom2(iaux))
+        call random_seed (get=p_Irandom1)
+
+        p_Irandom2(:) = 0
+        p_Irandom2(1) = int(Dstack(istackPtr-1))
+        call random_seed (put=p_Irandom2)
+
+        daux = 0.0_DP
+        do iaux=1,max(1,int(Dstack(istackPtr)))
+          call random_number (daux)
+        end do
+        Dstack(istackPtr-1) = daux
+
+        call random_seed (put=p_Irandom1)
+        deallocate(p_Irandom1,p_Irandom2)
+      
         istackPtr = istackPtr-1
         
       case (cSec)
@@ -4308,6 +4362,8 @@ contains
     ! local variables
     integer  :: iinstPtr,idataPtr,istackPtr,iblock,istartValueScalar,iVariable
     real(DP) :: daux
+    integer :: iaux
+    integer, dimension(:), allocatable :: p_Irandom1,p_Irandom2
     
     ! Initialization
     idataPtr  = 1
@@ -4522,6 +4578,28 @@ contains
            Dstack(iblock, istackPtr-1) = min(Dstack(iblock, istackPtr-1),&
                                              Dstack(iblock, istackPtr))
         end do
+        istackPtr = istackPtr-1
+        
+      case (cRrand)
+        call random_seed (size=iaux)
+        allocate (p_Irandom1(iaux))
+        allocate (p_Irandom2(iaux))
+        call random_seed (get=p_Irandom1)
+
+        do iblock = 1, iblockSize
+          p_Irandom2(:) = 0
+          p_Irandom2(1) = int(Dstack(iblock, istackPtr-1))
+          call random_seed (put=p_Irandom2)
+          daux = 0.0_DP
+          do iaux=1,max(1,int(Dstack(iblock, istackPtr)))
+            call random_number (daux)
+          end do
+          Dstack(iblock, istackPtr-1) = daux
+        end do
+
+        call random_seed (put=p_Irandom1)
+        deallocate(p_Irandom1,p_Irandom2)
+
         istackPtr = istackPtr-1
         
 
