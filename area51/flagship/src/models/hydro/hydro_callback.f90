@@ -930,7 +930,7 @@ contains
 !<description>
     ! This subroutine computes the constant right-hand side
     !
-    !  $$ rhs = [M + (1-\theta)\Delta t K^n]U^n + S^n + b.c.`s$$
+    !  $$ rhs = [M + (1-\theta)\Delta t K^n]U^n + S^n + b.c.`s  $$
     !
     ! where the (scaled) source term is optional.
 !</description>
@@ -1268,6 +1268,7 @@ contains
         massMatrix = merge(lumpedMassMatrix,&
             consistentMassMatrix, imasstype .eq. MASS_LUMPED)
 
+        ! Apply mass matrix to solution vector
         do iblock = 1, rsolution%nblocks
           call lsyssc_scalarMatVec(&
               rproblemLevel%Rmatrix(massMatrix),&
@@ -1287,6 +1288,7 @@ contains
         massMatrix = merge(lumpedMassMatrix,&
             consistentMassMatrix, imasstype .eq. MASS_LUMPED)
 
+        ! Apply mass matrix to solution vector
         do iblock = 1, rsolution%nblocks
           call lsyssc_scalarMatVec(&
               rproblemLevel%Rmatrix(massMatrix),&
@@ -1422,10 +1424,11 @@ contains
       ! Apply constant right-hand side
       call lsysbl_copyVector(rrhs, rres)
 
+      ! What type of mass matrix should be used?
       massMatrix = merge(lumpedMassMatrix,&
           consistentMassMatrix, imasstype .eq. MASS_LUMPED)
 
-      ! Apply mass matrix
+      ! Apply mass matrix to solution vector
       do iblock = 1, rsolution%nblocks
         call lsyssc_scalarMatVec(&
             rproblemLevel%Rmatrix(massMatrix),&
@@ -1442,13 +1445,11 @@ contains
         
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          ! --- implicit part ---
           call hydro_calcLinfBdrCond1D(rproblemLevel, rsolver,&
               rsolution, rtimestep%dTime, -dscale,&
               hydro_coeffVectorBdr1d_sim, rres, rcollection)
           
         case (NDIM2D)
-          ! --- implicit part ---
           call hydro_calcLinfBdrCond2D(rproblemLevel, rsolver,&
               rsolution, rtimestep%dTime, -dscale,&
               hydro_coeffVectorBdr2d_sim, rres, rcollection)
