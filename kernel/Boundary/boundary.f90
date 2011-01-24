@@ -63,7 +63,11 @@
 !# It contains the following set of auxiliary routines:
 !#
 !# 1.) boundary_getNormal2D
-!#     -> Calculates the normal of a point on a specific boundary segment.
+!#     -> Calculates the normal vector at a point on a specific boundary segment.
+!#
+!# 2.) boundary_calcNormal2D
+!#     -> Calculates the normal to a curve given by a set of sampling points
+!#        at a point on the curve.
 !#
 !# </purpose>
 !##############################################################################
@@ -278,6 +282,12 @@ module boundary
     module procedure boundary_getNormalVec2D_sim
   end interface
 
+  interface boundary_calcNormalVec2D
+    module procedure boundary_calcNormalVec2D
+    module procedure boundary_calcNormalVec2D_mult
+    module procedure boundary_calcNormalVec2D_sim
+  end interface
+
   public :: boundary_read_prm
   public :: boundary_release
   public :: boundary_igetNBoundComp
@@ -295,6 +305,9 @@ module boundary
   public :: boundary_getNormalVec2D
   public :: boundary_getNormalVec2D_mult
   public :: boundary_getNormalVec2D_sim
+  public :: boundary_calcNormalVec2D
+  public :: boundary_calcNormalVec2D_mult
+  public :: boundary_calcNormalVec2D_sim
 
 contains
 
@@ -3050,4 +3063,504 @@ contains
     
   end subroutine boundary_getNormal2D
 
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine boundary_calcNormalVec2D(DsamplePoints, Dpoint, dnx, dny, cpolynomial)
+
+!<description>
+  ! This routine calculates the normal vector at the coordinates given
+  ! by Dpoints throught the polynomial best-fit curve through the
+  ! points DsamplePoints. If the optional parameter cpolynomial is
+  ! given, then this values is used for the least-squares
+  ! fit. Otherwise, the number of sampling points minus one is used
+  ! for the least-squares fit.
+!</description>
+
+!<input>
+    
+    ! Coordinates of the sampling points
+    ! Dimension: DsamplePoints(nim,nsamplePoints)
+    real(DP), dimension(:,:), intent(in) :: DsamplePoints
+
+    ! Coordinate of the point where to evaluate the normal vector
+    ! Dimension: Dpoint(ndim)
+    real(DP), dimension(:), intent(in) :: Dpoint
+
+    ! OPTIONAL: Polynomial order of the least-sqaures fit
+    integer, intent(in), optional :: cpolynomial
+
+!</input>
+
+!<output>
+
+    ! x-coordinate of normal vector
+    real(DP), intent(out) :: dnx
+    
+    ! y-coordinate of normal vector
+    real(DP), intent(out) :: dny
+    
+!</output>
+
+!</subroutine>
+    
+    ! local variables
+    real(DP), dimension(:,:), allocatable :: Da
+    real(DP), dimension(:), allocatable :: Db,Dc
+    real(DP) :: dscale,det1,det2
+    integer :: ipolynomial,nsamplepoints
+
+    ipolynomial = size(DsamplePoints,2)-1
+    if (present(cpolynomial)) ipolynomial = cpolynomial
+
+    ! Get number of sampling points
+    nsamplepoints = size(DsamplePoints,2)
+
+    ! What polynomial degree should be used?
+    select case(ipolynomial)
+
+    case (1)
+      ! linear interpolation - straight line
+      !
+      ! The normal to a straight line is constant and does not
+      ! depend on the point on the line where it is evaluated
+
+      ! Do we have two sampling points? - would make a least squares
+      ! fit unnecessary
+      if (nsamplepoints .eq. 2) then
+
+        ! Compute outward normal vector from the fomula
+        !   $ n_x = y_2-y-1 $
+        !   $ n_y = x_1-x_2 $
+        dnx = DsamplePoints(2,2) - DsamplePoints(2,1)
+        dny = DsamplePoints(1,1) - DsamplePoints(1,2)
+        
+        ! ... and normalize the vector to unity
+        dscale = sqrt(dnx**2+dny**2)
+        dnx = dnx/dscale
+        dny = dny/dscale
+
+      elseif (nsamplepoints .gt. 2) then
+        ! Do a linear least squares fit of the sampling points
+        
+        ! Allocate temporal memory
+        allocate(Da(2,2), Db(2), Dc(2))
+
+        ! Compute 2x2-matrix
+        Da(1,1) = nsamplepoints
+        Da(1,2) = sum(DsamplePoints(1,:))
+        Da(2,1) = Da(1,2)
+        Da(2,2) = sum(DsamplePoints(1,:)**2)
+        
+        ! Compute 2x1-vector
+        Db(1) = sum(DsamplePoints(2,:))
+        Db(2) = sum(DsamplePoints(1,:)*DsamplePoints(2,:))
+        
+        ! Solve linear 2x2-system via Cramers rule
+        det1 = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
+        
+        ! Check if system has unique solution
+        if (abs(det1) .gt. SYS_EPSREAL) then
+          ! Linear system has a unique solution. Thus, the
+          ! tangential vector is given by the slope of the line
+          det2 = Db(1)*Da(2,2)-Db(2)*Da(2,1)
+          Dc(1) = det2/det1
+          det2 = Da(1,1)*Db(2)-Da(1,2)*Db(1)
+          Dc(2) = det2/det1
+
+          ! Check if the x-value of the first sampling point is
+          ! smaller than the x-value of the last sampling point
+          if (DsamplePoints(1,1) .lt.&
+              DsamplePoints(1,nsamplepoints)) then
+            ! Adopt slope of the line as tangential vector
+            dscale = sqrt(Dc(2)**2+1)
+            dnx =  Dc(2)/dscale
+            dny = -1.0_DP/dscale
+          else
+            ! Adopt negative slope of the line as tangential vector
+            dscale = sqrt(Dc(2)**2+1)
+            dnx = -Dc(2)/dscale
+            dny =  1.0_DP/dscale
+          end if
+        else
+          ! Linear system has no unique solution because the
+          ! straight line is parallel to the y-axis. Therefore, we
+          ! determine the direction of the line and return the
+          ! outward unit normal vector accordingly.
+          if (DsamplePoints(2,1) .lt.&
+              DsamplePoints(2,nsamplepoints)) then
+            dnx = 1.0_DP
+            dny = 0.0_DP
+          else
+            dnx = -1.0_DP
+            dny =  0.0_DP
+          end if
+        end if
+        
+        ! Deallocate temporal memory
+        deallocate(Da, Db, Dc)
+        
+      else
+        call output_line ('Insufficient number of sampling points!', &
+            OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D')
+        call sys_halt()
+      end if
+      
+    case default
+      call output_line ('Unsupported polynomial order!', &
+          OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D')
+      call sys_halt()
+    end select
+    
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine boundary_calcNormalVec2D_mult(DsamplePoints, Dpoints, Dnx, Dny, cpolynomial)
+
+!<description>
+  ! This routine calculates the normal vector at the coordinates given
+  ! by Dpoints throught the polynomial best-fit curve through the
+  ! points DsamplePoints. If the optional parameter cpolynomial is
+  ! given, then this values is used for the least-squares
+  ! fit. Otherwise, the number of sampling points minus one is used
+  ! for the least-squares fit.
+!</description>
+
+!<input>
+    
+    ! Coordinates of the sampling points
+    ! Dimension: DsamplePoints(nim,nsamplePoints)
+    real(DP), dimension(:,:), intent(in) :: DsamplePoints
+
+    ! Coordinate of the point where to evaluate the normal vector
+    ! Dimension: Dpoint(ndim,npoints)
+    real(DP), dimension(:,:), intent(in) :: Dpoints
+
+    ! OPTIONAL: Polynomial order of the least-sqaures fit
+    integer, intent(in), optional :: cpolynomial
+
+!</input>
+
+!<output>
+
+    ! x-coordinates of normal vector
+    ! Dimension: Dnx(npoints)
+    real(DP), dimension(:), intent(out) :: Dnx
+    
+    ! y-coordinates of normal vector
+    ! Dimension: Dny(npoints)
+    real(DP), dimension(:), intent(out) :: Dny
+    
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), allocatable :: Da
+    real(DP), dimension(:), allocatable :: Db,Dc
+    real(DP) :: dscale,det1,det2
+    integer :: ipolynomial,ipoint,nsamplepoints,npoints
+    
+    ipolynomial = size(DsamplePoints,2)-1
+    if (present(cpolynomial)) ipolynomial = cpolynomial
+
+    if ((size(Dnx) .ne. size(Dpoints,2)) .or. (size(Dny) .ne. size(Dpoints,2))) then
+      call output_line ('size(Dpoints,2) /= size(Dnx) /= size(Dny)!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'boundary_calcNormalVec2D_mult')
+      call sys_halt()
+    end if
+
+    ! Get number of points
+    npoints = size(Dpoints,2)
+    nsamplepoints = size(DsamplePoints,2)
+    
+    ! What polynomial degree should be used?
+    select case(ipolynomial)
+
+    case (1)
+      ! linear interpolation - straight line
+      !
+      ! The normal to a straight line is constant and does not
+      ! depend on the point on the line where it is evaluated
+
+      ! Do we have two sampling points? - would make a least squares
+      ! fit unnecessary
+      if (nsamplepoints .eq. 2) then
+
+        do ipoint = 1, npoints
+          ! Compute outward normal vector from the fomula
+          !   $ n_x = y_2-y-1 $
+          !   $ n_y = x_1-x_2 $
+          Dnx(ipoint) = DsamplePoints(2,2) - DsamplePoints(2,1)
+          Dny(ipoint) = DsamplePoints(1,1) - DsamplePoints(1,2)
+          
+          ! ... and normalize the vector to unity
+          dscale = sqrt(Dnx(ipoint)**2+Dny(ipoint)**2)
+          Dnx(ipoint) = Dnx(ipoint)/dscale
+          Dny(ipoint) = Dny(ipoint)/dscale
+        end do
+
+      elseif (nsamplepoints .gt. 2) then
+        ! Do a linear least squares fit of the sampling points
+        
+        ! Allocate temporal memory
+        allocate(Da(2,2), Db(2), Dc(2))
+
+        ! Compute 2x2-matrix
+        Da(1,1) = nsamplepoints
+        Da(1,2) = sum(DsamplePoints(1,:))
+        Da(2,1) = Da(1,2)
+        Da(2,2) = sum(DsamplePoints(1,:)**2)
+        
+        ! Compute 2x1-vector
+        Db(1) = sum(DsamplePoints(2,:))
+        Db(2) = sum(DsamplePoints(1,:)*DsamplePoints(2,:))
+        
+        ! Solve linear 2x2-system via Cramers rule
+        det1 = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
+        
+        ! Check if system has unique solution
+        if (abs(det1) .gt. SYS_EPSREAL) then
+          ! Linear system has a unique solution. Thus, the
+          ! tangential vector is given by the slope of the line
+          det2 = Db(1)*Da(2,2)-Db(2)*Da(2,1)
+          Dc(1) = det2/det1
+          det2 = Da(1,1)*Db(2)-Da(1,2)*Db(1)
+          Dc(2) = det2/det1
+          ! Check if the x-value of the first sampling point is
+          ! smaller than the x-value of the last sampling point
+          if (DsamplePoints(1,1) .lt.&
+              DsamplePoints(1,nsamplepoints)) then
+            ! Adopt slope of the line as tangential vector
+            do ipoint = 1, npoints
+              dscale = sqrt(Dc(2)**2+1)
+              Dnx(ipoint) =  Dc(2)/dscale
+              Dny(ipoint) = -1.0_DP/dscale
+            end do
+          else
+            ! Adopt negative slope of the line as tangential vector
+            do ipoint = 1, npoints
+              dscale = sqrt(Dc(2)**2+1)
+              Dnx(ipoint) = -Dc(2)/dscale
+              Dny(ipoint) =  1.0_DP/dscale
+            end do
+          end if
+        else
+          ! Linear system has no unique solution because the
+          ! straight line is parallel to the y-axis. Therefore, we
+          ! determine the direction of the line and return the
+          ! outward unit normal vector accordingly.
+          if (DsamplePoints(2,1) .lt.&
+              DsamplePoints(2,nsamplepoints)) then
+            do ipoint = 1, npoints
+              Dnx(ipoint) = 1.0_DP
+              Dny(ipoint) = 0.0_DP
+            end do
+          else
+            do ipoint = 1, npoints
+              Dnx(ipoint) = -1.0_DP
+              Dny(ipoint) =  0.0_DP
+            end do
+          end if
+        end if
+        
+        ! Deallocate temporal memory
+        deallocate(Da, Db, Dc)
+        
+      else
+        call output_line ('Insufficient number of sampling points!', &
+            OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D_mult')
+        call sys_halt()
+      end if
+      
+    case default
+      call output_line ('Unsupported polynomial order!', &
+          OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D_mult')
+      call sys_halt()
+    end select
+    
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine boundary_calcNormalVec2D_sim(DsamplePoints, Dpoints, Dnx, Dny, cpolynomial)
+
+!<description>
+  ! This routine calculates the normal vector at the coordinates given
+  ! by Dpoints throught the polynomial best-fit curve through the
+  ! points DsamplePoints. If the optional parameter cpolynomial is
+  ! given, then this values is used for the least-squares
+  ! fit. Otherwise, the number of sampling points minus one is used
+  ! for the least-squares fit.
+!</description>
+
+!<input>
+    
+    ! Coordinates of the sampling points
+    ! Dimension: DsamplePoints(nim,nsamplePoints,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: DsamplePoints
+
+    ! Coordinate of the point where to evaluate the normal vector
+    ! Dimension: Dpoint(ndim,npoints,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! OPTIONAL: Polynomial order of the least-sqaures fit
+    integer, intent(in), optional :: cpolynomial
+
+!</input>
+
+!<output>
+
+    ! x-coordinates of normal vector
+    ! Dimension: Dnx(npoints,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dnx
+    
+    ! y-coordinates of normal vector
+    ! Dimension: Dny(npoints,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dny
+    
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), allocatable :: Da
+    real(DP), dimension(:), allocatable :: Db,Dc
+    real(DP) :: dscale,det1,det2
+    integer :: ipolynomial,ipoint,iel,nsamplepoints,npoints,nelements
+
+    ipolynomial = size(DsamplePoints,2)-1
+    if (present(cpolynomial)) ipolynomial = cpolynomial
+
+    if ((size(Dnx,1) .ne. size(Dpoints,2)) .or.&
+        (size(Dnx,2) .ne. size(Dpoints,3)) .or.&
+        (size(Dny,1) .ne. size(Dpoints,2)) .or.&
+        (size(Dny,2) .ne. size(Dpoints,3))) then
+      call output_line ('size(Dpoints,2:3) /= size(Dnx) /= size(Dny)!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'boundary_calcNormalVec2D_sim')
+      call sys_halt()
+    end if
+
+    ! Get number of points and elements
+    npoints = size(Dpoints,2)
+    nelements = size(Dpoints,3)
+    nsamplepoints = size(DsamplePoints,2)
+
+    ! What polynomial degree should be used?
+    select case(ipolynomial)
+
+    case (1)
+      ! linear interpolation - straight line
+      !
+      ! The normal to a straight line is constant and does not
+      ! depend on the point on the line where it is evaluated
+
+      ! Do we have two sampling points? - would make a least squares
+      ! fit unnecessary
+      if (nsamplepoints .eq. 2) then
+
+        do ipoint = 1, npoints
+          do iel = 1, nelements
+            ! Compute outward normal vector from the fomula
+            !   $ n_x = y_2-y-1 $
+            !   $ n_y = x_1-x_2 $
+            Dnx(ipoint,iel) = DsamplePoints(2,2,iel) - DsamplePoints(2,1,iel)
+            Dny(ipoint,iel) = DsamplePoints(1,1,iel) - DsamplePoints(1,2,iel)
+            
+            ! ... and normalize the vector to unity
+            dscale = sqrt(Dnx(ipoint,iel)**2+Dny(ipoint,iel)**2)
+            Dnx(ipoint,iel) = Dnx(ipoint,iel)/dscale
+            Dny(ipoint,iel) = Dny(ipoint,iel)/dscale
+          end do
+        end do
+        
+      elseif (nsamplepoints .gt. 2) then
+        ! Do a linear least squares fit of the sampling points
+        
+        ! Allocate temporal memory
+        allocate(Da(2,2), Db(2), Dc(2))
+
+        do iel = 1, nelements
+          ! Compute 2x2-matrix
+          Da(1,1) = nsamplepoints
+          Da(1,2) = sum(DsamplePoints(1,:,iel))
+          Da(2,1) = Da(1,2)
+          Da(2,2) = sum(DsamplePoints(1,:,iel)**2)
+          
+          ! Compute 2x1-vector
+          Db(1) = sum(DsamplePoints(2,:,iel))
+          Db(2) = sum(DsamplePoints(1,:,iel)*DsamplePoints(2,:,iel))
+          
+          ! Solve linear 2x2-system via Cramers rule
+          det1 = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
+          
+          ! Check if system has unique solution
+          if (abs(det1) .gt. SYS_EPSREAL) then
+            ! Linear system has a unique solution. Thus, the
+            ! tangential vector is given by the slope of the line
+            det2 = Db(1)*Da(2,2)-Db(2)*Da(2,1)
+            Dc(1) = det2/det1
+            det2 = Da(1,1)*Db(2)-Da(1,2)*Db(1)
+            Dc(2) = det2/det1
+            ! Check if the x-value of the first sampling point is
+            ! smaller than the x-value of the last sampling point
+            if (DsamplePoints(1,1,iel) .lt.&
+                DsamplePoints(1,nsamplepoints,iel)) then
+              ! Adopt slope of the line as tangential vector
+              do ipoint = 1, npoints
+                dscale = sqrt(Dc(2)**2+1)
+                Dnx(ipoint,iel) =  Dc(2)/dscale
+                Dny(ipoint,iel) = -1.0_DP/dscale
+              end do
+            else
+              ! Adopt negative slope of the line as tangential vector
+              do ipoint = 1, npoints
+                dscale = sqrt(Dc(2)**2+1)
+                Dnx(ipoint,iel) = -Dc(2)/dscale
+                Dny(ipoint,iel) =  1.0_DP/dscale
+              end do
+            end if
+          else
+            ! Linear system has no unique solution because the
+            ! straight line is parallel to the y-axis. Therefore, we
+            ! determine the direction of the line and return the
+            ! outward unit normal vector accordingly.
+            if (DsamplePoints(2,1,iel) .lt.&
+                DsamplePoints(2,nsamplepoints,iel)) then
+              do ipoint = 1, npoints
+                Dnx(ipoint,iel) = 1.0_DP
+                Dny(ipoint,iel) = 0.0_DP
+              end do
+            else
+              do ipoint = 1, npoints
+                Dnx(ipoint,iel) = -1.0_DP
+                Dny(ipoint,iel) =  0.0_DP
+              end do
+            end if
+          end if
+        end do
+
+        ! Deallocate temporal memory
+        deallocate(Da, Db, Dc)
+        
+      else
+        call output_line ('Insufficient number of sampling points!', &
+            OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D_sim')
+        call sys_halt()
+      end if
+      
+    case default
+      call output_line ('Unsupported polynomial order!', &
+          OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D_sim')
+      call sys_halt()
+    end select
+
+  end subroutine
+    
 end module boundary
