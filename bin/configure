@@ -4698,6 +4698,23 @@ sub make_dep_list {
 		unless ((DO_NOT_INCLUDE          =~ m/\Q$aux\E/) or
 			($HEADER_FILES_TO_COPY   =~ m/\Q$aux\E/) or
 			defined(${ $headerFilesToCopyHashRef }{$auxBasename})) {
+		    # Ensure first that the current file exists.
+		    if (! -e $aux) {
+			my $str =
+			    "<$match> which got automatically expanded to\n" .
+			    "<$aux>.\n";
+			if ($match eq $aux) {
+			    $str =
+				"<$match>.\n";
+			}
+			die "\n\n$progname: ERROR:\n".
+			    "File <$fileToParse> contains a reference to\n" .
+			    $str .
+			    "But no such file exists!\n\n" .
+			    "(Hint: Most likely, you forgot to add the (relative) path to the file in the\n" .
+			    "       Fortran 90 include statement.)\n";
+		    }
+
 		    # Strategy:
 		    # * No file with this name seen yet. Store URI, inode and md5 sum of
 		    #   file content
@@ -4714,18 +4731,7 @@ sub make_dep_list {
 			# Compare URI. If identical, no need to throw an error. Skip file.
 			if ($aux ne $headerfiles{$auxBasename}->{'URI'}) {
 			    # URIs differ. Possibly because of "../" in URI.
-			    # Compare inodes. But ensure first that the current file
-			    # exists.
-			    unless (-e $aux) {
-				die "\n\n$progname: ERROR:\n".
-				    "File <$fileToParse> contains a reference to\n" .
-				    "<$match> which got automatically expanded to\n" .
-				    "<$aux>.\n" .
-				    "But no such file exists!\n\n" .
-				    "(Hint: Most likely, you forgot to add the (relative) path to the file in the\n" .
-				    "       Fortran 90 include statement.)\n";
-			    }
-
+			    # Compare inodes.
 			    my $auxInode = stat($aux)->ino;
 			    if ($auxInode ne $headerfiles{$auxBasename}->{'inode'}) {
 				# URIs and inodes differ. Possibly, the second file
@@ -4754,29 +4760,23 @@ sub make_dep_list {
 			    } # different idnoe
 			} # different URI
 		    } else {
-			if (! -e $aux) {
-			    die "\n\n$progname: ERROR:\n".
-				"File <$fileToParse> contains a reference to\n" .
-				"<$aux>, but that file does not exist.\n";
-			} else {
-			    # Parse this file for dependencies
-			    push @deps, &get_dependency($aux);
+			# Parse this file for dependencies
+			push @deps, &get_dependency($aux);
 
-			    # Store URI
-			    $headerfiles{$auxBasename}->{'URI'}   = $aux;
-			    # Store inode
-			    $headerfiles{$auxBasename}->{'inode'} = stat($aux)->ino;
-			    # Compute and md5 sum of file content
-			    open(HEADERFILE, "<", $aux) or
-				die "\n$progname: ERROR:\n".
-				"Cannot open header file <$aux> for reading: $!\n";
-			    my $auxData = do { local $/; <HEADERFILE> };
-			    close(HEADERFILE);
-			    my $auxMD5 = md5($auxData);
-			    $headerfiles{$auxBasename}->{'md5'} = $auxMD5;
-			    # Store first file that references this header file
-			    $headerfiles{$auxBasename}->{'referer'} = $fileToParse;
-			}
+			# Store URI
+			$headerfiles{$auxBasename}->{'URI'}   = $aux;
+			# Store inode
+			$headerfiles{$auxBasename}->{'inode'} = stat($aux)->ino;
+			# Compute and md5 sum of file content
+			open(HEADERFILE, "<", $aux) or
+			    die "\n$progname: ERROR:\n".
+			    "Cannot open header file <$aux> for reading: $!\n";
+			my $auxData = do { local $/; <HEADERFILE> };
+			close(HEADERFILE);
+			my $auxMD5 = md5($auxData);
+			$headerfiles{$auxBasename}->{'md5'} = $auxMD5;
+			# Store first file that references this header file
+			$headerfiles{$auxBasename}->{'referer'} = $fileToParse;
 		    } # file seen before
 #                push @headerfiles, $aux;
 		} # not on exclude nor copy list
