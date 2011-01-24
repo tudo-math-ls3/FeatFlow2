@@ -497,8 +497,9 @@ contains
     allocate(Dny(size(DpointPar,1),size(DpointPar,2)))
 
     ! Get the normal vectors in the cubature points on the boundary
-    call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+    call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$    call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
     
     ! Evaluate the reference function and the exact velocities
     do iel = 1, size(Ielements)
@@ -664,8 +665,9 @@ contains
     Dvalue(NDIM3D+1) = dtime
 
     ! Get the normal vectors in the cubature points on the boundary
-    call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+    call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$    call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
 
     ! Evaluate the reference function and the exact velocities
     do iel = 1, size(Ielements)
@@ -1487,8 +1489,9 @@ contains
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
         
         ! Initialize values
         Dvalue = 0.0_DP
@@ -1556,8 +1559,9 @@ contains
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
         
         ! Initialize values
         Dvalue = 0.0_DP
@@ -1642,8 +1646,9 @@ contains
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
         
         ! Rescale parameter values DpointPar on the boundary segment
         ! where to compute the boundary conditions into parameter
@@ -1960,8 +1965,9 @@ contains
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
         
         ! Initialize values
         Dvalue = 0.0_DP
@@ -2029,8 +2035,9 @@ contains
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
         
         ! Initialize values
         Dvalue = 0.0_DP
@@ -2115,8 +2122,9 @@ contains
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$        call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
         
         ! Rescale parameter values DpointPar on the boundary segment
         ! where to compute the boundary conditions into parameter
@@ -2338,8 +2346,9 @@ contains
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$        call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+!!$            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
         
         ! Multiply the velocity vector with the normal in each point
         ! to get the normal velocity.
@@ -2419,8 +2428,9 @@ contains
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$        call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+!!$            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
         
         ! Multiply the velocity vector with the normal in each point
         ! to get the normal velocity.
@@ -2601,8 +2611,9 @@ contains
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$        call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+!!$            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
 
         ! Multiply the velocity vector with the normal in each point
         ! to get the normal velocity.
@@ -2682,8 +2693,9 @@ contains
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$        call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+!!$            ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
         
         ! Multiply the velocity vector with the normal in each point
         ! to get the normal velocity.
@@ -3158,8 +3170,9 @@ contains
       allocate(Dny(npointsPerElement, nelements))
 
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
       
       ! Initialize values
       Dvalue = 0.0_DP
@@ -3212,8 +3225,9 @@ contains
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
       
       ! Initialize values
       Dvalue = 0.0_DP
@@ -3395,8 +3409,9 @@ contains
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+!!$          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
       
       ! Multiply the velocity vector [0.5*u,1] with the normal in each
       ! point to get the normal velocity.
@@ -3457,8 +3472,9 @@ contains
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+!!$          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
 
       ! Multiply the velocity vector [0.5*u,1] with the normal in each
       ! point to get the normal velocity.
@@ -3939,8 +3955,9 @@ contains
       allocate(Dny(npointsPerElement, nelements))
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
 
       ! Initialize values
       Dvalue = 0.0_DP
@@ -3997,8 +4014,9 @@ contains
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$      call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+!!$          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
 
       ! Initialize values
       Dvalue = 0.0_DP
@@ -4183,8 +4201,9 @@ contains
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+!!$          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
 
       ! Multiply the velocity vector [a,1] with the normal in each
       ! point to get the normal velocity.
@@ -4246,8 +4265,9 @@ contains
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+!!$      call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+!!$          ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
       
       ! Multiply the velocity vector [a,1] with the normal in each
       ! point to get the normal velocity.
