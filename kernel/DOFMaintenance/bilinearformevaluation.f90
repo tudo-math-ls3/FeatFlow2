@@ -6243,13 +6243,14 @@ contains
     
     ! local data of every processor when using OpenMP
     integer :: IELset,IELmax,ibdc,k
-    integer :: iel,icubp,ialbet,ia,ib,idofe,jdofe
+    integer :: iel,icubp,ialbet,ia,ib,idofe,jdofe,nve
     real(DP) :: domega,daux,db,dlen
     integer(I32) :: cevaluationTag
     type(t_bilfMatrixAssembly), target :: rlocalMatrixAssembly
     type(t_domainIntSubset) :: rintSubset
     integer, dimension(:,:,:), pointer :: p_Kentry
     real(DP), dimension(:,:,:), pointer :: p_Dentry
+    real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:), pointer :: p_Domega
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial
@@ -6265,8 +6266,10 @@ contains
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     real(DP), dimension(:,:), allocatable :: DpointsPar
+    real(DP), dimension(:), allocatable :: DedgeLength
     
     integer(i32) :: icoordSystem
+    logical :: bisLinearTrafo
 
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
@@ -6287,10 +6290,10 @@ contains
     ! stucture or disturbing the data of the other processors.
     !
     !$omp parallel default(shared) &
-    !$omp private(DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,cevaluationTag,&
-    !$omp         daux,db,dlen,domega,ia,ialbet,ib,icoordSystem,icubp,idofe,&
-    !$omp         iel,jdofe,k,p_DbasTest,p_DbasTrial,p_Dcoefficients,&
-    !$omp         p_DcoefficientsBilf,p_DcubPtsRef,p_Dentry,p_Domega,&
+    !$omp private(DedgeLength,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,bisLinearTrafo,&
+    !$omp         cevaluationTag,daux,db,dlen,domega,ia,ialbet,ib,icoordSystem,icubp,&
+    !$omp         idofe,iel,jdofe,k,p_DbasTest,p_DbasTrial,p_Dcoefficients,&
+    !$omp         p_DcoefficientsBilf,p_Dcoords,p_DcubPtsRef,p_Dentry,p_Domega,&
     !$omp         p_Idescriptors,p_IdofsTest,p_IdofsTrial,p_Kentry,&
     !$omp         p_revalElementSet,rintSubset,rlocalMatrixAssembly)
     rlocalMatrixAssembly = rmatrixAssembly
@@ -6326,6 +6329,9 @@ contains
 
     ! Allocate memory for the parameter values of the points on the boundary
     allocate(DpointsPar(ncubp,rlocalMatrixAssembly%nelementsPerBlock))
+
+    ! Allocate memory for the length of edges on the boundary
+    allocate(DedgeLength(rlocalMatrixAssembly%nelementsPerBlock))
 
     ! Get the type of coordinate system
     icoordSystem = elem_igetCoordSystem(rlocalMatrixAssembly%celementTrial)
@@ -6455,6 +6461,17 @@ contains
       ! The cubature points are already initialised by 1D->2D mapping.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
+      ! Do we have a (multi-)linear transformation?
+      bisLinearTrafo = trafo_isLinearTrafo(rlocalMatrixAssembly%ctrafoType)
+
+      if (bisLinearTrafo) then
+        ! We need the vertices of the element corners and the number
+        ! of vertices per element to compute the length of the element
+        ! edge at the boundary
+        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
+        nve = trafo_igetNVE(rlocalMatrixAssembly%ctrafoType)
+      end if
+
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
@@ -6462,6 +6479,7 @@ contains
           cevaluationTag, rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalMatrixAssembly%ctrafoType, &
           DpointsRef=DpointsRef)
+      p_Dcoords => p_revalElementSet%p_Dcoords
       
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
@@ -6498,6 +6516,30 @@ contains
             rlocalMatrixAssembly%p_DbasTrial)
       end if
       
+      ! Calculate the length of egdes on the boundary. Depending on
+      ! whether the transformation is (multi-)linear or not we compute
+      ! the edge length as the distance between the two corner
+      ! vertices of the element located on the boundary or as the real
+      ! length of the boundary segment of the element.
+      !
+      ! The length of the current edge serves as a "determinant" in
+      ! the cubature, so we have to divide it by 2 as an edge on the
+      ! unit interval [-1,1] has length 2.
+      if (bisLinearTrafo) then
+        do iel = 1,IELmax-IELset+1
+          DedgeLength(iel) = 0.5_DP*sqrt(&
+              (p_Dcoords(1,    IelementOrientation(IELset+iel-1),iel)-&
+               p_Dcoords(1,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2+&
+              (p_Dcoords(2,    IelementOrientation(IELset+iel-1),iel)-&
+               p_Dcoords(2,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2)
+        end do
+      else
+        do iel = 1,IELmax-IELset+1
+          DedgeLength(iel) = 0.5_DP*(DedgePosition(2,IELset+iel-1)-&
+                                     DedgePosition(1,IELset+iel-1))
+        end do
+      end if
+
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
       ! Values of all basis functions calculated. Now we can start 
@@ -6520,16 +6562,9 @@ contains
 
         do iel = 1,IELmax-IELset+1
           
-          ! Get the length of the edge. Let us use the parameter values
-          ! on the boundary for that purpose; this is a more general
-          ! implementation than using simple lines as it will later 
-          ! support isoparametric elements.
-          !
-          ! The length of the current edge serves as a "determinant"
-          ! in the cubature, so we have to divide it by 2 as an edge on 
-          ! the unit interval [-1,1] has length 2.
-          dlen = 0.5_DP*(DedgePosition(2,IELset+iel-1)-DedgePosition(1,IELset+iel-1))
-          
+          ! Get the length of the edge.
+          dlen = DedgeLength(iel)
+
           ! Loop over all cubature points on the current element
           do icubp = 1, ncubp
 
@@ -6611,15 +6646,8 @@ contains
 
         do iel = 1,IELmax-IELset+1
           
-          ! Get the length of the edge. Let us use the parameter values
-          ! on the boundary for that purpose; this is a more general
-          ! implementation than using simple lines as it will later 
-          ! support isoparametric elements.
-          !
-          ! The length of the current edge serves as a "determinant"
-          ! in the cubature, so we have to divide it by 2 as an edge on 
-          ! the unit interval [-1,1] has length 2.
-          dlen = 0.5_DP*(DedgePosition(2,IELset+iel-1)-DedgePosition(1,IELset+iel-1))
+          ! Get the length of the edge.
+          dlen = DedgeLength(iel)
 
           ! Loop over all cubature points on the current element
           do icubp = 1, ncubp
@@ -6723,7 +6751,7 @@ contains
         !$omp end critical
 
       else
-        
+
         !$omp critical
         do iel = 1,IELmax-IELset+1
           
@@ -6746,7 +6774,7 @@ contains
     call bilf_releaseAssemblyData(rlocalMatrixAssembly)
   
     ! Deallocate memory
-    deallocate(Dxi2D, DpointsRef, DpointsPar)
+    deallocate(Dxi2D, DpointsRef, DpointsPar, DedgeLength)
     !$omp end parallel
 
   end subroutine

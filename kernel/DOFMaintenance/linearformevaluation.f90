@@ -2843,11 +2843,12 @@ contains
     
     ! local data of every processor when using OpenMP
     integer :: IELset,IELmax,ibdc,k
-    integer :: iel,icubp,ialbet,ia,idofe
+    integer :: iel,icubp,ialbet,ia,idofe,nve
     real(DP) :: domega,daux,dlen
     integer(I32) :: cevaluationTag
     type(t_linfVectorAssembly), target :: rlocalVectorAssembly
     type(t_domainIntSubset) :: rintSubset
+    real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:), pointer :: p_Domega
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
@@ -2863,8 +2864,10 @@ contains
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     real(DP), dimension(:,:), allocatable :: DpointsPar
+    real(DP), dimension(:), allocatable :: DedgeLength
     
     integer(i32) :: icoordSystem
+    logical :: bisLinearTrafo
 
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
@@ -2884,9 +2887,9 @@ contains
     ! stucture or disturbing the data of the other processors.
     !
     !$omp parallel default(shared) &
-    !$omp private(DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
-    !$omp         cevaluationTag,daux,dlen,domega,ia,ialbet,icoordSystem,&
-    !$omp         icubp,idofe,iel,k,p_Dbas,p_Dcoefficients,p_DcubPtsRef,&
+    !$omp private(DedgeLength,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
+    !$omp         bisLinearTrafo,cevaluationTag,daux,dlen,domega,ia,ialbet,icoordSystem,&
+    !$omp         icubp,idofe,iel,k,p_Dbas,p_Dcoefficients,p_Dcoords,p_DcubPtsRef,&
     !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
     !$omp         rintSubset,rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
@@ -2920,6 +2923,9 @@ contains
 
     ! Allocate memory for the parameter values of the points on the boundary
     allocate(DpointsPar(ncubp,rlocalVectorAssembly%nelementsPerBlock))
+
+    ! Allocate memory for the length of edges on the boundary
+    allocate(DedgeLength(rlocalVectorAssembly%nelementsPerBlock))
 
     ! Get the type of coordinate system
     icoordSystem = elem_igetCoordSystem(rlocalVectorAssembly%celement)
@@ -3013,6 +3019,17 @@ contains
       ! The cubature points are already initialised by 1D->2D mapping.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
+      ! Do we have a (multi-)linear transformation?
+      bisLinearTrafo = trafo_isLinearTrafo(rlocalVectorAssembly%ctrafoType)
+
+      if (bisLinearTrafo) then
+        ! We need the vertices of the element corners and the number
+        ! of vertices per element to compute the length of the element
+        ! edge at the boundary
+        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
+        nve = trafo_igetNVE(rlocalVectorAssembly%ctrafoType)
+      end if
+
       ! Calculate all information that is necessary to evaluate the
       ! finite element on all cells of our subset. This includes the
       ! coordinates of the points on the cells.
@@ -3020,6 +3037,7 @@ contains
           cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
           DpointsRef=DpointsRef)
+      p_Dcoords => p_revalElementSet%p_Dcoords
       
       ! Now it is time to call our coefficient function to calculate the
       ! function values in the cubature points:
@@ -3046,6 +3064,30 @@ contains
           p_revalElementSet, rlocalVectorAssembly%Bder, &
           rlocalVectorAssembly%p_Dbas)
       
+      ! Calculate the length of egdes on the boundary. Depending on
+      ! whether the transformation is (multi-)linear or not we compute
+      ! the edge length as the distance between the two corner
+      ! vertices of the element located on the boundary or as the real
+      ! length of the boundary segment of the element.
+      !
+      ! The length of the current edge serves as a "determinant" in
+      ! the cubature, so we have to divide it by 2 as an edge on the
+      ! unit interval [-1,1] has length 2.
+      if (bisLinearTrafo) then
+        do iel = 1,IELmax-IELset+1
+          DedgeLength(iel) = 0.5_DP*sqrt(&
+              (p_Dcoords(1,    IelementOrientation(IELset+iel-1),iel)-&
+               p_Dcoords(1,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2+&
+              (p_Dcoords(2,    IelementOrientation(IELset+iel-1),iel)-&
+               p_Dcoords(2,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2)
+        end do
+      else
+        do iel = 1,IELmax-IELset+1
+          DedgeLength(iel) = 0.5_DP*(DedgePosition(2,IELset+iel-1)-&
+                                     DedgePosition(1,IELset+iel-1))
+        end do
+      end if
+
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
       ! Values of all basis functions calculated. Now we can start 
@@ -3064,15 +3106,8 @@ contains
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
 
-        ! Get the length of the edge. Let us use the parameter values
-        ! on the boundary for that purpose; this is a more general
-        ! implementation than using simple lines as it will later 
-        ! support isoparametric elements.
-        !
-        ! The length of the current edge serves as a "determinant"
-        ! in the cubature, so we have to divide it by 2 as an edge on 
-        ! the unit interval [-1,1] has length 2.
-        dlen = 0.5_DP*(DedgePosition(2,IELset+iel-1)-DedgePosition(1,IELset+iel-1))
+        ! Get the length of the edge.
+        dlen = DedgeLength(iel)
 
         ! Loop over all cubature points on the current element
         do icubp = 1, ncubp
@@ -3158,7 +3193,7 @@ contains
     call linf_releaseAssemblyData(rlocalVectorAssembly)
 
     ! Deallocate memory
-    deallocate(Dxi2D, DpointsRef, DpointsPar, DlocalData)
+    deallocate(Dxi2D, DpointsRef, DpointsPar, DlocalData, DedgeLength)
     !$omp end parallel
 
   end subroutine
@@ -3459,11 +3494,12 @@ contains
     
     ! local data of every processor when using OpenMP
     integer :: IELset,IELmax,ibdc,k
-    integer :: iel,icubp,ialbet,ia,idofe,ivar
+    integer :: iel,icubp,ialbet,ia,idofe,ivar,nve
     real(DP) :: domega,dlen
     integer(I32) :: cevaluationTag
     type(t_linfVectorAssembly), target :: rlocalVectorAssembly
     type(t_domainIntSubset) :: rintSubset
+    real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:), pointer :: p_Domega
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     real(DP), dimension(:,:,:,:), pointer :: p_Dcoefficients
@@ -3480,8 +3516,10 @@ contains
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     real(DP), dimension(:,:), allocatable :: DpointsPar
+    real(DP), dimension(:), allocatable :: DedgeLength
     
     integer(i32) :: icoordSystem
+    logical :: bisLinearTrafo
 
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
@@ -3501,9 +3539,9 @@ contains
     ! stucture or disturbing the data of the other processors.
     !
     !$omp parallel default(shared) &
-    !$omp private(Daux,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
-    !$omp         cevaluationTag,dlen,domega,ia,ialbet,icoordSystem,icubp,&
-    !$omp         idofe,iel,ivar,k,p_Dbas,p_Dcoefficients,p_DcubPtsRef,&
+    !$omp private(DedgeLength,Daux,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
+    !$omp         bisLinearTrafo,cevaluationTag,dlen,domega,ia,ialbet,icoordSystem,icubp,&
+    !$omp         idofe,iel,ivar,k,p_Dbas,p_Dcoefficients,p_Dcoords,p_DcubPtsRef,&
     !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
     !$omp         rintSubset,rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
@@ -3538,6 +3576,9 @@ contains
 
     ! Allocate memory for the parameter values of the points on the boundary
     allocate(DpointsPar(ncubp,rlocalVectorAssembly%nelementsPerBlock))
+
+    ! Allocate memory for the length of edges on the boundary
+    allocate(DedgeLength(rlocalVectorAssembly%nelementsPerBlock))
 
     ! Get the type of coordinate system
     icoordSystem = elem_igetCoordSystem(rlocalVectorAssembly%celement)
@@ -3631,6 +3672,17 @@ contains
       ! The cubature points are already initialised by 1D->2D mapping.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
+      ! Do we have a (multi-)linear transformation?
+      bisLinearTrafo = trafo_isLinearTrafo(rlocalVectorAssembly%ctrafoType)
+
+      if (bisLinearTrafo) then
+        ! We need the vertices of the element corners and the number
+        ! of vertices per element to compute the length of the element
+        ! edge at the boundary
+        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
+        nve = trafo_igetNVE(rlocalVectorAssembly%ctrafoType)
+      end if
+
       ! Calculate all information that is necessary to evaluate the
       ! finite element on all cells of our subset. This includes the
       ! coordinates of the points on the cells.
@@ -3638,6 +3690,7 @@ contains
           cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
           DpointsRef=DpointsRef)
+      p_Dcoords => p_revalElementSet%p_Dcoords
       
       ! Now it is time to call our coefficient function to calculate the
       ! function values in the cubature points:
@@ -3664,6 +3717,30 @@ contains
           p_revalElementSet, rlocalVectorAssembly%Bder, &
           rlocalVectorAssembly%p_Dbas)
       
+      ! Calculate the length of egdes on the boundary. Depending on
+      ! whether the transformation is (multi-)linear or not we compute
+      ! the edge length as the distance between the two corner
+      ! vertices of the element located on the boundary or as the real
+      ! length of the boundary segment of the element.
+      !
+      ! The length of the current edge serves as a "determinant" in
+      ! the cubature, so we have to divide it by 2 as an edge on the
+      ! unit interval [-1,1] has length 2.
+      if (bisLinearTrafo) then
+        do iel = 1,IELmax-IELset+1
+          DedgeLength(iel) = 0.5_DP*sqrt(&
+              (p_Dcoords(1,    IelementOrientation(IELset+iel-1),iel)-&
+               p_Dcoords(1,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2+&
+              (p_Dcoords(2,    IelementOrientation(IELset+iel-1),iel)-&
+               p_Dcoords(2,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2)
+        end do
+      else
+        do iel = 1,IELmax-IELset+1
+          DedgeLength(iel) = 0.5_DP*(DedgePosition(2,IELset+iel-1)-&
+                                     DedgePosition(1,IELset+iel-1))
+        end do
+      end if
+
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
       ! Values of all basis functions calculated. Now we can start 
@@ -3682,15 +3759,8 @@ contains
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
 
-        ! Get the length of the edge. Let us use the parameter values
-        ! on the boundary for that purpose; this is a more general
-        ! implementation than using simple lines as it will later 
-        ! support isoparametric elements.
-        !
-        ! The length of the current edge serves as a "determinant"
-        ! in the cubature, so we have to divide it by 2 as an edge on 
-        ! the unit interval [-1,1] has length 2.
-        dlen = 0.5_DP*(DedgePosition(2,IELset+iel-1)-DedgePosition(1,IELset+iel-1))
+        ! Get the length of the edge.
+        dlen = DedgeLength(iel)
 
         ! Loop over all cubature points on the current element
         do icubp = 1, ncubp
@@ -3780,7 +3850,7 @@ contains
     call linf_releaseAssemblyData(rlocalVectorAssembly)
 
     ! Deallocate memory
-    deallocate(Dxi2D, DpointsRef, DpointsPar, DlocalData, Daux)
+    deallocate(Dxi2D, DpointsRef, DpointsPar, DlocalData, Daux, DedgeLength)
     !$omp end parallel
 
   end subroutine
@@ -4407,11 +4477,12 @@ contains
     
     ! local data of every processor when using OpenMP
     integer :: IELset,IELmax,ibdc,k
-    integer :: iel,icubp,ialbet,ia,idofe,iblock
+    integer :: iel,icubp,ialbet,ia,idofe,iblock,nve
     real(DP) :: domega,dlen
     integer(I32) :: cevaluationTag
     type(t_linfVectorAssembly), target :: rlocalVectorAssembly
     type(t_domainIntSubset) :: rintSubset
+    real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:), pointer :: p_Domega
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     real(DP), dimension(:,:,:,:), pointer :: p_Dcoefficients
@@ -4428,8 +4499,10 @@ contains
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     real(DP), dimension(:,:), allocatable :: DpointsPar
+    real(DP), dimension(:), allocatable :: DedgeLength
     
     integer(i32) :: icoordSystem
+    logical :: bisLinearTrafo
 
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
@@ -4449,10 +4522,10 @@ contains
     ! stucture or disturbing the data of the other processors.
     !
     !$omp parallel default(shared) &
-    !$omp private(DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
-    !$omp         cevaluationTag,daux,dlen,domega,ia,ialbet,icoordSystem,&
-    !$omp         iblock,icubp,idofe,iel,k,p_Dbas,p_Dcoefficients,p_DcubPtsRef,&
-    !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
+    !$omp private(DedgeLength,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
+    !$omp         bisLinearTrafo,cevaluationTag,daux,dlen,domega,ia,ialbet,icoordSystem,&
+    !$omp         iblock,icubp,idofe,iel,k,p_Dbas,p_Dcoefficients,p_Dcoords,&
+    !$omp         p_DcubPtsRef,p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
     !$omp         rintSubset,rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks)
@@ -4486,6 +4559,9 @@ contains
 
     ! Allocate memory for the parameter values of the points on the boundary
     allocate(DpointsPar(ncubp,rlocalVectorAssembly%nelementsPerBlock))
+
+    ! Allocate memory for the length of edges on the boundary
+    allocate(DedgeLength(rlocalVectorAssembly%nelementsPerBlock))
 
     ! Get the type of coordinate system
     icoordSystem = elem_igetCoordSystem(rlocalVectorAssembly%celement)
@@ -4580,6 +4656,17 @@ contains
       ! The cubature points are already initialised by 1D->2D mapping.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
+      ! Do we have a (multi-)linear transformation?
+      bisLinearTrafo = trafo_isLinearTrafo(rlocalVectorAssembly%ctrafoType)
+
+      if (bisLinearTrafo) then
+        ! We need the vertices of the element corners and the number
+        ! of vertices per element to compute the length of the element
+        ! edge at the boundary
+        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
+        nve = trafo_igetNVE(rlocalVectorAssembly%ctrafoType)
+      end if
+
       ! Calculate all information that is necessary to evaluate the
       ! finite element on all cells of our subset. This includes the
       ! coordinates of the points on the cells.
@@ -4587,6 +4674,7 @@ contains
           cevaluationTag, rvector%p_rblockDiscr%RspatialDiscr(1)%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
           DpointsRef=DpointsRef)
+      p_Dcoords => p_revalElementSet%p_Dcoords
       
       ! Now it is time to call our coefficient function to calculate the
       ! function values in the cubature points:
@@ -4613,6 +4701,30 @@ contains
           p_revalElementSet, rlocalVectorAssembly%Bder, &
           rlocalVectorAssembly%p_Dbas)
       
+      ! Calculate the length of egdes on the boundary. Depending on
+      ! whether the transformation is (multi-)linear or not we compute
+      ! the edge length as the distance between the two corner
+      ! vertices of the element located on the boundary or as the real
+      ! length of the boundary segment of the element.
+      !
+      ! The length of the current edge serves as a "determinant" in
+      ! the cubature, so we have to divide it by 2 as an edge on the
+      ! unit interval [-1,1] has length 2.
+      if (bisLinearTrafo) then
+        do iel = 1,IELmax-IELset+1
+          DedgeLength(iel) = 0.5_DP*sqrt(&
+              (p_Dcoords(1,    IelementOrientation(IELset+iel-1),iel)-&
+               p_Dcoords(1,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2+&
+              (p_Dcoords(2,    IelementOrientation(IELset+iel-1),iel)-&
+               p_Dcoords(2,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2)
+        end do
+      else
+        do iel = 1,IELmax-IELset+1
+          DedgeLength(iel) = 0.5_DP*(DedgePosition(2,IELset+iel-1)-&
+                                     DedgePosition(1,IELset+iel-1))
+        end do
+      end if
+
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
       ! Values of all basis functions calculated. Now we can start 
@@ -4631,15 +4743,8 @@ contains
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
 
-        ! Get the length of the edge. Let us use the parameter values
-        ! on the boundary for that purpose; this is a more general
-        ! implementation than using simple lines as it will later 
-        ! support isoparametric elements.
-        !
-        ! The length of the current edge serves as a "determinant"
-        ! in the cubature, so we have to divide it by 2 as an edge on 
-        ! the unit interval [-1,1] has length 2.
-        dlen = 0.5_DP*(DedgePosition(2,IELset+iel-1)-DedgePosition(1,IELset+iel-1))
+        ! Get the length of the edge.
+        dlen = DedgeLength(iel)
 
         ! Loop over all cubature points on the current element
         do icubp = 1, ncubp
@@ -4729,7 +4834,7 @@ contains
     call linf_releaseAssemblyData(rlocalVectorAssembly)
 
     ! Deallocate memory
-    deallocate(Dxi2D, DpointsRef, DpointsPar, DlocalData, Daux)
+    deallocate(Dxi2D, DpointsRef, DpointsPar, DlocalData, Daux, DedgeLength)
     !$omp end parallel
 
   end subroutine
