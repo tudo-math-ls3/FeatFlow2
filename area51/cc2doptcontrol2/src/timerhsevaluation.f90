@@ -598,9 +598,9 @@ contains
             rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 2)
       case (3:4)
         ! Disturb dual RHS. Only velocity.
-        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(5),iiterate,&
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(4),iiterate,&
             rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 4)
-        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(6),iiterate,&
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(5),iiterate,&
             rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 4)
       case (5:6)
         ! Disturb full RHS. Only velocity.
@@ -608,9 +608,9 @@ contains
             rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 6)
         call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(2),iiterate,&
             rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 6)
-        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(5),iiterate,&
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(4),iiterate,&
             rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 6)
-        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(6),iiterate,&
+        call trhsevl_disturbSubvector (rtempVectorRHS%Rvectorblock(5),iiterate,&
             rdebugFlags%drhsrandomMax,rdebugFlags%crhsmodification .eq. 6)
       end select
       
