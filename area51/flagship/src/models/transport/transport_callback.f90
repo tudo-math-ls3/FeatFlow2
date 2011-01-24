@@ -3624,7 +3624,7 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_bilinearform) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
-    integer :: ivelocitytype, velocityfield
+    integer :: ivelocitytype, velocityfield, ccubTypeBdr
     integer :: ibdc, isegment
 
     ! Evaluate bilinear form for boundary integral and 
@@ -3645,6 +3645,8 @@ contains
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1), 'ccubTypeBdr', ccubTypeBdr)
 
     ! Attach solution to temporal collection structure
     rcollectionTmp%p_rvectorQuickAccess1 => rsolution
@@ -3713,7 +3715,7 @@ contains
               rboundaryRegion)
           
           ! Assemble the bilinear form
-          call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D,&
+          call bilf_buildMatrixScalarBdr2D(rform, ccubTypeBdr,&
               .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
               rboundaryRegion, rcollectionTmp, cconstrType)
           
@@ -4191,7 +4193,7 @@ contains
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
-    integer :: ivelocitytype, velocityfield
+    integer :: ivelocitytype, velocityfield, ccubTypeBdr
     integer :: ibdc, isegment
 
     ! Evaluate linear form for boundary integral and return if
@@ -4212,6 +4214,8 @@ contains
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1), 'ccubTypeBdr', ccubTypeBdr)
 
     ! Attach solution to temporal collection structure
     rcollectionTmp%p_rvectorQuickAccess1 => rsolution
@@ -4276,7 +4280,7 @@ contains
               isegment-p_IbdrCondCpIdx(ibdc)+1, rboundaryRegion)
           
           ! Assemble the linear form
-          call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D,&
+          call linf_buildVectorScalarBdr2d(rform, ccubTypeBdr,&
               .false., rvector, fcoeff_buildVectorScBdr2D_sim,&
               rboundaryRegion, rcollectionTmp)
           
@@ -4329,7 +4333,7 @@ contains
           end if
           
           ! Assemble the linear form
-          call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D,&
+          call linf_buildVectorScalarBdr2d(rform, ccubTypeBdr,&
               .false., rvector, fcoeff_buildVectorScBdr2D_sim,&
               rboundaryRegion, rcollectionTmp)
 
