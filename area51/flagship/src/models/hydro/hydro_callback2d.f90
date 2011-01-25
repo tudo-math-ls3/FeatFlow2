@@ -4929,10 +4929,9 @@ contains
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)&
-                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
+            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
@@ -5090,11 +5089,11 @@ contains
             end do
 
             ! Compute auxiliary quantities based on prescribed boundary values
-            rM = DstateM(1)
-            pM = DstateM(2)
-            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
+            rM   = DstateM(1)
+            pM   = DstateM(2)
             dvtM = DstateM(3)
-
+            cM   = sqrt(GAMMA*pM/rM)
+            
             ! Compute auxiliary quantities based on internal state vector
             pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
                               0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
@@ -5120,10 +5119,9 @@ contains
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)&
-                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
+            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
@@ -5199,10 +5197,9 @@ contains
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)&
-                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
+            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
@@ -5328,10 +5325,9 @@ contains
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)&
-                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
+            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
@@ -5460,10 +5456,9 @@ contains
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)&
-                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
+            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5619,10 +5614,10 @@ contains
             end do
 
             ! Compute auxiliary quantities based on prescribed boundary values
-            rM = DstateM(1)
-            pM = DstateM(2)
-            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
+            rM   = DstateM(1)
+            pM   = DstateM(2)
             dvtM = DstateM(3)
+            cM   = sqrt(GAMMA*pM/rM)
 
             ! Compute auxiliary quantities based on internal state vector
             pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-&
@@ -5647,10 +5642,9 @@ contains
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)&
-                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
+            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5723,10 +5717,9 @@ contains
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)&
-                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
+            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5846,10 +5839,9 @@ contains
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*( Dnx(ipoint,iel)*dvnM+Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(-Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0)&
-                       + 0.5*rM*(dvnM**2+(1.0-2.0*Dny(ipoint,iel)**2)*dvtM**2)
+            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
