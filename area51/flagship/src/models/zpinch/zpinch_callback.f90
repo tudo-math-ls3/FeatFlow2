@@ -407,7 +407,10 @@ contains
         ! Compute the residual
         call transp_calcResidualThetaScheme(rproblemLevel,&
             rtimestep, rsolver, rsolution, rsolution0,&
-            rrhs, rres, istep, rcollection)
+            rrhs, rres, istep, rcollection,&
+            fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
+            fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
+
       end if
 
 
