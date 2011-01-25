@@ -74,7 +74,7 @@
 !##############################################################################
 #endif
 
-#define ROE_MEAN_RATIO(ul,ur) (ul/ur)
+#define ROE_MEAN_RATIO(ul,ur) (sqrt(ul/ur))
 #define ROE_MEAN_VALUE(ul,ur,ratio) ((ratio*ul+MYNEWLINE ur)/MYNEWLINE (ratio+1))
 
 #if 0
