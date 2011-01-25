@@ -1373,7 +1373,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: Dstack
+    real(DP), dimension(:), allocatable :: Dstack
     integer :: EvalErrType
     
     ! Check if component is valid
@@ -1460,8 +1460,8 @@ contains
 !</subroutine>
     
     ! local variables
-    real(DP), dimension(:), pointer :: Dstack
-    real(DP), dimension(:), pointer :: DvalueTemp
+    real(DP), dimension(:,:), allocatable :: Dstack
+    real(DP), dimension(:), allocatable :: DvalueTemp
     integer :: iValSet,iValMax,nvalue,iblockSize,isizeValueScalar,isizeValueBlock
     integer :: EvalErrType
 
@@ -1485,7 +1485,7 @@ contains
         !$omp private(Dstack,iValMax,iblockSize)
         
         ! Allocate temporal memory
-        allocate(Dstack(FPAR_NITEMSIM*(rfparser%Rcomp(icomp)%iStackSize+1)))
+        allocate(Dstack(FPAR_NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
 
         !$omp do schedule(static,1)
         do iValSet = 1, nvalue, FPAR_NITEMSIM
@@ -1509,7 +1509,7 @@ contains
         !$omp private(Dstack,iValMax,iblockSize)
         
         ! Allocate temporal memory
-        allocate(Dstack(FPAR_NITEMSIM*(rfparser%Rcomp(icomp)%iStackSize+1)))
+        allocate(Dstack(FPAR_NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
 
         !$omp do schedule(static,1)
         do iValSet = 1, nvalue, FPAR_NITEMSIM
@@ -1533,7 +1533,7 @@ contains
     else   ! The compiled function cannot be vectorized
 
       ! Allocate temporal memory
-      allocate(Dstack(rfparser%Rcomp(icomp)%iStackSize+1))
+      allocate(Dstack(rfparser%Rcomp(icomp)%iStackSize+1,1))
 
       ! The compiled bytecode cannot be vectorized. Hence, evaluate the function
       ! separately for each set of variables. Here, the organization of the array
@@ -1554,7 +1554,7 @@ contains
             DvalueTemp(isizeValueBlock+1:) = DvalueScalar
 
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack,&
+            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
                                     DvalueTemp, EvalErrType, Dresult(iValSet))
           end do
         else
@@ -1564,7 +1564,7 @@ contains
             DvalueTemp(isizeValueBlock+1:) = DvalueScalar
             
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack,&
+            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
                                     DvalueTemp, EvalErrType, Dresult(iValSet))
           end do
         end if
@@ -1578,15 +1578,17 @@ contains
           do iValSet = 1, nvalue
             
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack,&
-                                    DvalueBlock(iValSet,:), EvalErrType, Dresult(iValSet))
+            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
+                                    DvalueBlock(iValSet,:), EvalErrType,&
+                                    Dresult(iValSet))
           end do
         else
           do iValSet = 1, nvalue
             
             ! Invoke working routine
-            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack,&
-                                    DvalueBlock(:, iValSet), EvalErrType, Dresult(iValSet))
+            call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
+                                    DvalueBlock(:, iValSet), EvalErrType,&
+                                    Dresult(iValSet))
           end do
         end if
 
@@ -3974,9 +3976,7 @@ contains
   subroutine evalFunctionScalar (rcomp, Dstack, Dvalue, EvalErrType, dresult)
 
 !<description>
-    ! Evaluate bytecode for the values passed in array Val(:). Note, this subroutine
-    ! requires some working memory Stack(*) which is not checked. So be warned,
-    ! not to call this routine directly ;-)
+    ! Evaluate bytecode for the values passed in array Val(:).
 !</description>
 
 !<input>
@@ -3989,7 +3989,7 @@ contains
 
 !<inputoutput>
     ! Stack memory
-    real(DP), dimension(*), intent(inout) :: Dstack
+    real(DP), dimension(:), intent(inout) :: Dstack
 !</inputoutput>
 
 !<output>
@@ -4322,8 +4322,6 @@ contains
 
 !<description>
     ! Evaluate bytecode for an array of values passed in DvalueBlock(:,:).
-    ! Note, this subroutine requires some working memory Dstack(iblock,*) which is
-    ! not checked. So be warned, not to call this function directly ;-)
 !</description>
 
 !<input>
@@ -4347,7 +4345,7 @@ contains
 
 !<inputoutput>
     ! Stack memory
-    real(DP), dimension(iblockSize,*), intent(inout) :: Dstack
+    real(DP), dimension(:,:), intent(inout) :: Dstack
 !</inputoutput>
 
 !<output>
