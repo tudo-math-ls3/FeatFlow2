@@ -5627,8 +5627,8 @@ contains
     rexport%coutputFormat = UCD_FORMAT_GMV
     rexport%cflags = UCD_FLAG_STANDARD
 
-    rexport%nvertices = rtriangulation%NVT
-    rexport%ncells = rtriangulation%NEL
+    rexport%nvertices = rexport%p_rtriangulation%NVT
+    rexport%ncells = rexport%p_rtriangulation%NEL
 
     ! Read each line and interpret it
     do while (ios .eq. 0)
@@ -5666,11 +5666,12 @@ contains
         
         !----------------------------------------------------
         ! Read triangulation (or ignore it if already given in rtriangulation)
-        call read_triangulation (mfile,sline,rtriangulation)
+        if (rexport%p_rtriangulation%ndim .eq. 0)&
+            call read_triangulation (mfile,sline,rexport%p_rtriangulation)
         
         ! NEL/NVT has changed
-        rexport%nvertices = rtriangulation%NVT
-        rexport%ncells = rtriangulation%NEL
+        rexport%nvertices = rexport%p_rtriangulation%NVT
+        rexport%ncells = rexport%p_rtriangulation%NEL
         
       else if (skey .eq. "material") then
       
@@ -6106,7 +6107,7 @@ contains
     
     subroutine read_triangulation (mfile,scommand,rtriangulation)
     
-    ! Reads data about tracers from the GMV file mfile.
+    ! Reads triangulation data from the GMV file mfile.
     
     ! Handle to the GMV file
     integer, intent(in) :: mfile
