@@ -73,10 +73,10 @@ ilimitersynchronisation = 3
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/zpinch_60x30.prm
+prmfile = grids/2d/zpinch_paper.prm
 
 # file which contains the triangulation
-trifile = grids/2d/zpinch_60x30.tri
+trifile = grids/2d/zpinch_paper.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -133,7 +133,7 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 2
+idissipationtype = 3
 
 # type of system coupling
 # 0 = segregated approach
@@ -145,7 +145,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 2
+isystemPrecond = 3
 
 #-------------------------------------------------------------------------------
 
@@ -267,7 +267,7 @@ inviscid = Inviscid
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 1
 
 # perform prelimiting
 iprelimiting = 0
@@ -457,13 +457,13 @@ iprelimiting = %{Inviscid.iprelimiting}
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.05
+dstepUCD = 0.01
 
 # file for UCD output of solution
 sucdsolution = out/zpinch
 
 # file for UCD import of solution
-sucdimport = 
+sucdimport =
 
 # file for UCD output of error
 sucderror = out/
@@ -503,7 +503,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 0.5
+theta = 1.0
 
 # number of steps for multisteps scheme
 multisteps = 2
@@ -578,13 +578,13 @@ istoppingCriterion = 0
 nminIterations = 1
 
 # maximum number of coupling steps
-nmaxIterations = 25
+nmaxIterations = 5
 
 # nonlinear relaxation parameter
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-10
+depsAbs = 1e-8
 
 # relative tolerance for residual
 depsRel = 1e-4
@@ -869,7 +869,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 5
+isolver = 2
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 0
