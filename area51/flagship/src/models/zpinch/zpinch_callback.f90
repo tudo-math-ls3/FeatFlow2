@@ -586,23 +586,59 @@ contains
           neq, .true.)
     end if
 
-    ! Set x-velocity
-    call hydro_getVariable(rsolution, 'velocity_x',&
-        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
-    call zpinch_setVariable2d(&
-        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
+    ! What dimension are we?
+    select case(ndim)
+    case (NDIM1D)
+      ! Set x-velocity
+      call hydro_getVariable(rsolution, 'velocity_x',&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
+      call zpinch_setVariable2d(&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
 
-    ! Set y-velocity
-    call hydro_getVariable(rsolution, 'velocity_y',&
-        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
-    call zpinch_setVariable2d(&
-        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
+    case (NDIM2D)
+      ! Set x-velocity
+      call hydro_getVariable(rsolution, 'velocity_x',&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
+      call zpinch_setVariable2d(&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
+      
+      ! Set y-velocity
+      call hydro_getVariable(rsolution, 'velocity_y',&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
+      call zpinch_setVariable2d(&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
+
+    case (NDIM3D)
+      ! Set x-velocity
+      call hydro_getVariable(rsolution, 'velocity_x',&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
+      call zpinch_setVariable2d(&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
+      
+      ! Set y-velocity
+      call hydro_getVariable(rsolution, 'velocity_y',&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
+      call zpinch_setVariable2d(&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
+
+      ! Set z-velocity
+      call hydro_getVariable(rsolution, 'velocity_z',&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(3))
+      call zpinch_setVariable2d(&
+          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(3), 3)
+
+    case default
+      call output_line('Invalid spatial dimension!',&
+          OU_CLASS_ERROR, OU_MODE_STD, 'zpinch_calcLorentzforceTerm')
+      call sys_halt()
+    end select
+
 
     ! Set the global solution vector at the current time step
     call lsysbl_duplicateVector(rsolution,&
         rproblemLevel%RvectorBlock(2),&
         LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
-    call zpinch_setVariable2d(rproblemLevel%RvectorBlock(2), 3)
+    call zpinch_setVariable2d(rproblemLevel%RvectorBlock(2), ndim+1)
 
     ! Set update notification in problem level structure
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
