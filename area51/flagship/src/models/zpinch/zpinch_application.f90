@@ -1157,7 +1157,7 @@ contains
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
 
     ! Vector for source term
-    type(t_vectorBlock), dimension(2) :: rforce
+    type(t_vectorBlock), dimension(2) :: Rforce
 
     ! local variables
     type(t_ucdExport) :: rimport
@@ -1492,12 +1492,20 @@ contains
         call zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
             ssectionNameHydro, ssectionNameTransport, p_rproblemLevel,&
             p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime, &
-            dscale, rforce(1), rcollection)
+            dscale, .true., Rforce(1), rcollection)
 
-        ! Calculate explicit part of the geometric source term
-        ! ...
+        ! Calculate explicit part of the geometric source term (if any)
+        call zpinch_calcGeometricSourceTerm(rparlist, ssectionName,&
+            ssectionNameHydro, ssectionNameTransport, p_rproblemLevel,&
+            p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime, &
+            dscale, .false., 1, Rforce(1), rcollection)
+        
+        call zpinch_calcGeometricSourceTerm(rparlist, ssectionName,&
+            ssectionNameHydro, ssectionNameTransport, p_rproblemLevel,&
+            p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime, &
+            dscale, .false., 2, Rforce(2), rcollection)
       end if
-
+      
       ! Prepare quick access arrays/vectors
       rcollection%SquickAccess(1) = 'null'
       rcollection%SquickAccess(2) = ssectionName
@@ -1519,7 +1527,7 @@ contains
           ! ... with source term
           call tstep_performRKStep(p_rproblemLevel, rtimestep,&
               rsolver, rsolution, zpinch_nlsolverCallback,&
-              rcollection, rforce)
+              rcollection, Rforce)
         else
           ! ... without source term
           call tstep_performRKStep(p_rproblemLevel, rtimestep,&
@@ -1535,7 +1543,7 @@ contains
           ! ... with source term
           call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
               rsolver, rsolution, zpinch_nlsolverCallback,&
-              rcollection, rforce)
+              rcollection, Rforce)
         else
           ! ... without source term
           call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
@@ -1558,10 +1566,10 @@ contains
       rcollection%SquickAccess(2) = ssectionName
       rcollection%SquickAccess(3) = ssectionNameHydro
       rcollection%SquickAccess(4) = ssectionNameTransport
-
+      
       ! Apply linearised FEM-FCT post-processing
       call zpinch_calcLinearisedFCT(RbdrCond, p_rproblemLevel, rtimestep,&
-          p_rsolverHydro, p_rsolverTransport, Rsolution, rcollection, Rforce)
+          p_rsolverHydro, p_rsolverTransport, Rsolution, rcollection)
 
       ! Calculate velocity field (\rho v)
       call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
@@ -1719,7 +1727,8 @@ contains
     end do timeloop
 
     ! Release Lorentz force vector
-    call lsysbl_releaseVector(rforce(1))
+    call lsysbl_releaseVector(Rforce(1))
+    call lsysbl_releaseVector(Rforce(2))
 
     ! Release adaptation structure
     if (trim(adjustl(sadaptivityName)) .ne. '') then

@@ -18,7 +18,10 @@
 !# 3.) zpinch_calcLorentzforceTerm
 !#     -> Calculates the Lorentz force term for given solutions
 !#
-!# 4.) zpinch_calcLinearisedFCT
+!# 4.) zpinch_calcGeometricSourceTerm
+!#     -> Calculates the geometric source term for axi-symmetric flow
+!#
+!# 5.) zpinch_calcLinearisedFCT
 !#     -> Calculates the linearised FCT correction
 !#
 !# 5.) zpinch_getVariable
@@ -70,6 +73,7 @@ module zpinch_callback
   public :: zpinch_nlsolverCallback
   public :: zpinch_calcVelocityField
   public :: zpinch_calcLorentzforceTerm
+  public :: zpinch_calcGeometricSourceTerm
   public :: zpinch_calcLinearisedFCT
 
 contains
@@ -139,8 +143,7 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_vectorBlock), pointer :: p_rsolutionHydro, p_rsolutionTransport
     type(t_vectorBlock) :: rforce
-    real(DP) :: dscaleLorentzForceTerm
-    integer :: ilorentzForceType
+    real(DP) :: dscale
     integer(i32) :: iSpec
     integer :: isystemFormat, jacobianMatrix
 
@@ -185,35 +188,38 @@ contains
         ! Set pointer to parameter list
         p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
-        ! Get parameters from parameter list
-        call parlst_getvalue_int(p_rparlist,&
-            rcollection%SquickAccess(2), 'ilorentzforcetype', ilorentzForceType)
-        
-        ! Calculate scaling for implicit part of the Lorentz force
-        dscaleLorentzForceTerm = -rtimestep%theta * rtimestep%dStep
+        ! Calculate scaling for implicit parts
+        dscale = -rtimestep%theta * rtimestep%dStep
 
-        if ((ilorentzForceType .ne. 0) .and.&
-            (dscaleLorentzForceTerm .ne. 0.0_DP)) then
+        if (dscale .ne. 0.0_DP) then
 
           ! Compute the implicit part of the Lorentz force
           call zpinch_calcLorentzforceTerm(p_rparlist,&
               rcollection%SquickAccess(2), rcollection%SquickAccess(3),&
               rcollection%SquickAccess(4), rproblemLevel,&
               p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime,&
-              dscaleLorentzForceTerm, rforce, rcollection)
+              dscale, .true., rforce, rcollection)
 
-          ! Compute the residual including the pre-computed implicit
-          ! part of the Lorentz force term
+          ! Compute the implicit part of the geometric source term (if any)
+          call zpinch_calcGeometricSourceTerm(p_rparlist,&
+              rcollection%SquickAccess(2), rcollection%SquickAccess(3),&
+              rcollection%SquickAccess(4), rproblemLevel,&
+              p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime,&
+              dscale, .false., 1, rforce, rcollection)
+          
+
+          ! Compute the residual including the implicit part of the
+          ! Lorentz force term and the geometric source term (if any)
           call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, rrhs, rres, istep,&
               rcollection, rforce)
 
           ! Release temporal memory
           call lsysbl_releaseVector(rforce)
-
+          
         else
-
-          ! Compute the residual without the Lorentz force term
+          
+          ! Compute the residual without implicit parts
           call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, rrhs, rres, istep, rcollection)
 
@@ -297,7 +303,7 @@ contains
         ! Compute the right-hand side
         call transp_calcRhsRungeKuttaScheme(rproblemLevel,&
             rtimestep, rsolver, rsolution, rsolution0,&
-            rrhs, istep, rcollection,&
+            rrhs, istep, rcollection, rsource,&
             fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
             fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
         
@@ -353,7 +359,7 @@ contains
             
             ! Assemble the constant right-hand side
             call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-                rsolver, rsolution0, rrhs, rcollection,&
+                rsolver, rsolution0, rrhs, rcollection, rsource,&
                 fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
                 fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
 
@@ -406,13 +412,50 @@ contains
           iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
         end if
         
-        ! Compute the residual
-        call transp_calcResidualThetaScheme(rproblemLevel,&
-            rtimestep, rsolver, rsolution, rsolution0,&
-            rrhs, rres, istep, rcollection,&
-            fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
-            fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
 
+        ! THIS IS DEBUG CODE
+        
+        ! Set pointers to current solution vectors stored in the
+        ! first and second quick access vector
+        p_rsolutionHydro     => rcollection%p_rvectorQuickAccess1
+        p_rsolutionTransport => rcollection%p_rvectorQuickAccess2
+
+        ! Set pointer to parameter list
+        p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+        
+        ! Calculate scaling for implicit part of the geometric source term (if any)
+        dscale = -rtimestep%theta * rtimestep%dStep
+
+        if (dscale .ne. 0.0_DP) then
+          
+          ! Compute the implicit part of the geometric source tmer (if any)
+          call zpinch_calcGeometricSourceTerm(p_rparlist,&
+              rcollection%SquickAccess(2), rcollection%SquickAccess(3),&
+              rcollection%SquickAccess(4), rproblemLevel,&
+              p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime,&
+              dscale, .true., 2, rforce, rcollection)
+
+          ! Compute the residual including the implicit part of the
+          ! geometric source term (if any)
+          call transp_calcResidualThetaScheme(rproblemLevel,&
+              rtimestep, rsolver, rsolution, rsolution0,&
+              rrhs, rres, istep, rcollection, rforce,&
+              fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
+              fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
+
+          ! Release temporal memory
+          call lsysbl_releaseVector(rforce)
+
+        else
+          
+          ! Compute the residual without implicit parts
+          call transp_calcResidualThetaScheme(rproblemLevel,&
+              rtimestep, rsolver, rsolution, rsolution0,&
+              rrhs, rres, istep, rcollection,&
+              fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
+              fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
+
+        end if
       end if
 
 
@@ -654,12 +697,12 @@ contains
 
   subroutine zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
       ssectionNameHydro, ssectionNameTransport, rproblemLevel,&
-      rsolutionHydro, rsolutionTransport, dtime, dscale, rforce,&
-      rcollection)
+      rsolutionHydro, rsolutionTransport, dtime, dscale, bclear,&
+      rforce, rcollection)
 
 !<description>
     ! This subroutine evaluates the Lorentz force term based on the
-    ! given solution vectors and applies stores it in vector rsource.
+    ! given solution vectors and stores it in vector rforce.
 !</description>
 
 !<input>
@@ -685,10 +728,13 @@ contains
 
     ! scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! Clear force vector?
+    logical, intent(in) :: bclear
 !</input>
 
 !<inputoutput>
-    ! source vector to be assembled
+    ! source vectors to be assembled
     type(t_vectorBlock), intent(inout) :: rforce
 
     ! collection structure
@@ -699,19 +745,14 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataHydro, p_Ddata
-    real(DP), dimension(:), pointer :: p_DlumpedMassMatrix
+    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataHydro
+    real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DdataForce
     character(LEN=SYS_STRLEN) :: slorentzforceName
     real(DP) :: dcurrentDrive, deffectiveRadius
     integer :: isystemFormat, lumpedMassMatrix
     integer :: neq, nvar, icomp, icoordinatesystem
     logical :: bcompatible
 
-
-    ! Check if solution vector and Lorentz force vector are compatible
-    call lsysbl_isVectorCompatible(rsolutionHydro, rforce, bcompatible)
-    if (.not.bcompatible)&
-        call lsysbl_resizeVectorBlock(rforce, rsolutionHydro, .false.)
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName,&
@@ -725,6 +766,11 @@ contains
     call parlst_getvalue_int(rparlist, ssectionNameHydro,&
         'isystemformat', isystemFormat)
     
+    ! Check if solution vector and Lorentz force vector are compatible
+    call lsysbl_isVectorCompatible(rsolutionHydro, rforce, bcompatible)
+    if (.not.bcompatible)&
+        call lsysbl_resizeVectorBlock(rforce, rsolutionHydro, .false.)
+        
     ! Get lumped and consistent mass matrix
     if (lumpedMassMatrix .gt. 0) then
       call lsyssc_getbase_double(&
@@ -736,7 +782,7 @@ contains
     end if
     
     ! Set pointer to global solution vectors
-    call lsysbl_getbase_double(rforce, p_Ddata)
+    call lsysbl_getbase_double(rforce, p_DdataForce)
     call lsysbl_getbase_double(rsolutionHydro, p_DdataHydro)
     call lsysbl_getbase_double(rsolutionTransport, p_DdataTransport)
 
@@ -769,14 +815,14 @@ contains
       ! What type of coordinate system are we?
       select case(icoordinatesystem)
       case(1)
-        call calcForceXYInterleaveFormat(dcurrentDrive, deffectiveRadius,&
-            neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
-            p_DdataTransport, p_DdataHydro, p_Ddata)
+        call calcLorentzForceXYIntlFormat(dcurrentDrive, deffectiveRadius,&
+            neq, nvar, bclear, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataHydro, p_DdataForce)
 
       case(2)
-        call calcForceRZInterleaveFormat(dcurrentDrive, deffectiveRadius,&
-            neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
-            p_DdataTransport, p_DdataHydro, p_Ddata)
+        call calcLorentzForceRZIntlFormat(dcurrentDrive, deffectiveRadius,&
+            neq, nvar, bclear, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataHydro, p_DdataForce)
 
       case default
         call output_line('Invalid type of coordinate system!',&
@@ -788,14 +834,14 @@ contains
       ! What type of coordinate system are we?
       select case(icoordinatesystem)
       case(1)
-        call calcForceXYBlockFormat(dcurrentDrive, deffectiveRadius,&
-            neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
-            p_DdataTransport, p_DdataHydro, p_Ddata)
+        call calcLorentzForceXYBlockFormat(dcurrentDrive, deffectiveRadius,&
+            neq, nvar, bclear, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataHydro, p_DdataForce)
 
       case(2)
-        call calcForceRZBlockFormat(dcurrentDrive, deffectiveRadius,&
-            neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
-            p_DdataTransport, p_DdataHydro, p_Ddata)
+        call calcLorentzForceRZBlockFormat(dcurrentDrive, deffectiveRadius,&
+            neq, nvar, bclear, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataHydro, p_DdataForce)
 
       case default
         call output_line('Invalid type of coordinate system!',&
@@ -818,8 +864,8 @@ contains
     ! Calculate the Lorentz force term in x-y coordinates.
     ! The system is stored in interleave format.
 
-    subroutine calcForceXYInterleaveFormat(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, DvertexCoords,&
+    subroutine calcLorentzForceXYIntlFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, bclear, DvertexCoords,&
         DmassMatrix, DdataTransport, DdataHydro, DdataForce)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -827,6 +873,7 @@ contains
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
       integer, intent(in) :: neq, nvar
+      logical, intent(in) :: bclear
 
       real(DP), dimension(nvar,neq), intent(out) :: DdataForce
 
@@ -834,47 +881,85 @@ contains
       real(DP) :: drad, daux, x1, x2
       integer :: i
 
-      ! Loop over all rows
-      !$omp parallel do private(x1,x2,drad,daux) if (neq > 10000)
-      do i = 1, neq
+      if (bclear) then
 
-        ! Get coordinates at node i
-        x1 = DvertexCoords(1, i)
-        x2 = DvertexCoords(2, i)
-        
-        ! Compute unit vector starting at the origin
-        drad = sqrt(x1*x1 + x2*x2)
-        if (drad .gt. SYS_EPSREAL) then
-          x1 = x1/drad
-          x2 = x2/drad
-        else
-          x1 = 0.0_DP
-          x2 = 0.0_DP
-        end if
-        
-        ! Compute scaling parameter
-        daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
-               max(drad, deffectiveRadius)
-
-        ! Compute Lorentz force term
-        DdataForce(1,i) = 0.0_DP
-        DdataForce(2,i) = daux * x1
-        DdataForce(3,i) = daux * x2
-        DdataForce(4,i) = daux * (X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1+&
-                                  Y_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x2)/&
+        ! Loop over all rows
+        !$omp parallel do private(x1,x2,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get coordinates at node i
+          x1 = DvertexCoords(1, i)
+          x2 = DvertexCoords(2, i)
+          
+          ! Compute unit vector starting at the origin
+          drad = sqrt(x1*x1 + x2*x2)
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = x1/drad
+            x2 = x2/drad
+          else
+            x1 = 0.0_DP
+            x2 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+              max(drad, deffectiveRadius)
+          
+          ! Compute Lorentz force term
+          DdataForce(1,i) = 0.0_DP
+          DdataForce(2,i) = daux * x1
+          DdataForce(3,i) = daux * x2
+          DdataForce(4,i) = daux * (X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1+&
+                                    Y_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x2)/&
                                      DENSITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
-      end do
-      !$omp end parallel do
+        end do
+        !$omp end parallel do
 
-    end subroutine calcForceXYInterleaveFormat
+      else
+
+        ! Loop over all rows
+        !$omp parallel do private(x1,x2,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get coordinates at node i
+          x1 = DvertexCoords(1, i)
+          x2 = DvertexCoords(2, i)
+          
+          ! Compute unit vector starting at the origin
+          drad = sqrt(x1*x1 + x2*x2)
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = x1/drad
+            x2 = x2/drad
+          else
+            x1 = 0.0_DP
+            x2 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+              max(drad, deffectiveRadius)
+          
+          ! Compute Lorentz force term
+          DdataForce(2,i) = DdataForce(2,i) + daux * x1
+          DdataForce(3,i) = DdataForce(3,i) + daux * x2
+          DdataForce(4,i) = DdataForce(4,i)&
+                          + daux * (X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1+&
+                                    Y_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x2)/&
+                                     DENSITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine calcLorentzForceXYIntlFormat
 
 
     !**************************************************************
     ! Calculate the Lorentz force term in r-z coordinates.
     ! The system is stored in interleave format.
 
-    subroutine calcForceRZInterleaveFormat(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, DvertexCoords, DmassMatrix,&
+    subroutine calcLorentzForceRZIntlFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, bclear, DvertexCoords, DmassMatrix,&
         DdataTransport, DdataHydro, DdataForce)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -882,6 +967,7 @@ contains
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
       integer, intent(in) :: neq, nvar
+      logical, intent(in) :: bclear
       
       real(DP), dimension(nvar,neq), intent(out) :: DdataForce
       
@@ -889,42 +975,74 @@ contains
       real(DP) :: drad, daux, x1
       integer :: i
 
-      ! Loop over all rows
-      !$omp parallel do private(x1,drad,daux) if (neq > 10000)
-      do i = 1, neq
+      if (bclear) then
 
-        ! Get x-coordinate at node i
-        x1 = DvertexCoords(1, i); drad = x1
-        
-        ! Compute unit vector starting at the origin
-        if (drad .gt. SYS_EPSREAL) then
-          x1 = 1.0_DP
-        else
-          x1 = 0.0_DP
-        end if
+        ! Loop over all rows
+        !$omp parallel do private(x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad = abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP, x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+              max(drad, deffectiveRadius)
+          
+          ! Compute Lorentz source term        
+          DdataForce(1,i) = 0.0_DP
+          DdataForce(2,i) = daux * x1
+          DdataForce(3,i) = 0.0_DP
+          DdataForce(4,i) = daux * X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1/&
+                                      DENSITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+        end do
+        !$omp end parallel do
 
-        ! Compute scaling parameter
-        daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
-               max(drad, deffectiveRadius)
+      else
 
-        ! Compute Lorentz source term        
-        DdataForce(1,i) = 0.0_DP
-        DdataForce(2,i) = daux * x1
-        DdataForce(3,i) = 0.0_DP
-        DdataForce(4,i) = daux * X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1/&
-                                    DENSITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
-      end do
-      !$omp end parallel do
+        ! Loop over all rows
+        !$omp parallel do private(x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad = abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP, x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+              max(drad, deffectiveRadius)
+          
+          ! Compute Lorentz source term
+          DdataForce(2,i) = DdataForce(2,i) + daux * x1          
+          DdataForce(4,i) = DdataForce(4,i)&
+                          + daux * X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1/&
+                                      DENSITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+        end do
+        !$omp end parallel do
 
-    end subroutine calcForceRZInterleaveFormat
+      end if
+
+    end subroutine calcLorentzForceRZIntlFormat
 
 
     !**************************************************************
     ! Calculate the Lorentz force term in x-y coordinates.
     ! The system is stored in block format.
 
-    subroutine calcForceXYBlockFormat(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, DvertexCoords,&
+    subroutine calcLorentzForceXYBlockFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, bclear, DvertexCoords,&
         DmassMatrix, DdataTransport, DdataHydro, DdataForce)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -932,6 +1050,7 @@ contains
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
       integer, intent(in) :: neq, nvar
+      logical, intent(in) :: bclear
 
       real(DP), dimension(neq,nvar), intent(out) :: DdataForce
 
@@ -939,47 +1058,85 @@ contains
       real(DP) :: drad, daux, x1, x2
       integer :: i
 
-      ! Loop over all rows
-      !$omp parallel do private(x1,x2,drad,daux) if (neq > 10000)
-      do i = 1, neq
+      if (bclear) then
 
-        ! Get coordinates at node i
-        x1 = DvertexCoords(1, i)
-        x2 = DvertexCoords(2, i)
-        
-        ! Compute unit vector starting at the origin
-        drad = sqrt(x1*x1 + x2*x2)
-        if (drad .gt. SYS_EPSREAL) then
-          x1 = x1/drad
-          x2 = x2/drad
-        else
-          x1 = 0.0_DP
-          x2 = 0.0_DP
-        end if
-        
-        ! Compute scaling parameter
-        daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
-               max(drad, deffectiveRadius)
+        ! Loop over all rows
+        !$omp parallel do private(x1,x2,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get coordinates at node i
+          x1 = DvertexCoords(1, i)
+          x2 = DvertexCoords(2, i)
+          
+          ! Compute unit vector starting at the origin
+          drad = sqrt(x1*x1 + x2*x2)
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = x1/drad
+            x2 = x2/drad
+          else
+            x1 = 0.0_DP
+            x2 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+              max(drad, deffectiveRadius)
+          
+          ! Compute Lorentz source term
+          DdataForce(i,1) = 0.0_DP
+          DdataForce(i,2) = daux * x1
+          DdataForce(i,3) = daux * x2
+          DdataForce(i,4) = daux * (X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1+&
+                                    Y_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x2)/&
+                                       DENSITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+        end do
+        !$omp end parallel do
 
-        ! Compute Lorentz source term
-        DdataForce(i,1) = 0.0_DP
-        DdataForce(i,2) = daux * x1
-        DdataForce(i,3) = daux * x2
-        DdataForce(i,4) = daux * (X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1+&
-                                  Y_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x2)/&
-                                     DENSITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
-      end do
-      !$omp end parallel do
+      else
 
-    end subroutine calcForceXYBlockFormat
+        ! Loop over all rows
+        !$omp parallel do private(x1,x2,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get coordinates at node i
+          x1 = DvertexCoords(1, i)
+          x2 = DvertexCoords(2, i)
+          
+          ! Compute unit vector starting at the origin
+          drad = sqrt(x1*x1 + x2*x2)
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = x1/drad
+            x2 = x2/drad
+          else
+            x1 = 0.0_DP
+            x2 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+              max(drad, deffectiveRadius)
+          
+          ! Compute Lorentz source term
+          DdataForce(i,2) = DdataForce(i,2) + daux * x1
+          DdataForce(i,3) = DdataForce(i,3) + daux * x2
+          DdataForce(i,4) = DdataForce(i,4)&
+                          + daux * (X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1+&
+                                    Y_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x2)/&
+                                       DENSITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine calcLorentzForceXYBlockFormat
 
 
     !**************************************************************
     ! Calculate the Lorentz force term in r-z coordinates.
     ! The system is stored in block format.
 
-    subroutine calcForceRZBlockFormat(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, DvertexCoords, DmassMatrix,&
+    subroutine calcLorentzForceRZBlockFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, bclear, DvertexCoords, DmassMatrix,&
         DdataTransport, DdataHydro, DdataForce)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -987,6 +1144,7 @@ contains
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
       integer, intent(in) :: neq, nvar
+      logical, intent(in) :: bclear
       
       real(DP), dimension(neq,nvar), intent(out) :: DdataForce
       
@@ -994,36 +1152,581 @@ contains
       real(DP) :: drad, daux, x1
       integer :: i
 
-      ! Loop over all rows
-      !$omp parallel do private(x1,drad,daux) if (neq > 10000)
-      do i = 1, neq
+      if (bclear) then
 
-        ! Get x-coordinate at node i
-        x1 = DvertexCoords(1, i); drad = x1
+        ! Loop over all rows
+        !$omp parallel do private(x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad = abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP,x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+              max(drad, deffectiveRadius)
+          
+          ! Compute Lorentz source term
+          DdataForce(i,1) = 0.0_DP
+          DdataForce(i,2) = daux * x1
+          DdataForce(i,3) = 0.0_DP
+          DdataForce(i,4) = daux * X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1/&
+                                      DENSITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all rows
+        !$omp parallel do private(x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad = abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP,x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+              max(drad, deffectiveRadius)
+          
+          ! Compute Lorentz source term
+          DdataForce(i,2) = DdataForce(i,2)  + daux * x1
+          DdataForce(i,4) = DdataForce(i,4)&
+                          + daux * X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1/&
+                                      DENSITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+        end do
+        !$omp end parallel do
         
-        ! Compute unit vector starting at the origin
-        if (drad .gt. SYS_EPSREAL) then
-          x1 = 1.0_DP
-        else
-          x1 = 0.0_DP
-        end if
+      end if
 
-        ! Compute scaling parameter
-        daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
-               max(drad, deffectiveRadius)
-        
-        ! Compute Lorentz source term
-        DdataForce(i,1) = 0.0_DP
-        DdataForce(i,2) = daux * x1
-        DdataForce(i,3) = 0.0_DP
-        DdataForce(i,4) = daux * X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1/&
-                                    DENSITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
-      end do
-      !$omp end parallel do
-
-    end subroutine calcForceRZBlockFormat
-
+    end subroutine calcLorentzForceRZBlockFormat
+    
   end subroutine zpinch_calcLorentzforceTerm
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_calcGeometricSourceTerm(rparlist, ssectionName,&
+      ssectionNameHydro, ssectionNameTransport, rproblemLevel,&
+      rsolutionHydro, rsolutionTransport, dtime, dscale, bclear,&
+      csourceTerm, rsource, rcollection)
+
+!<description>
+    ! This subroutine evaluates the geometric source term for axi-symmetric flow
+    ! based on the given solution vectors and stores it in the vector rforce.
+    ! The parameter csourceTerm indicates if the geometric source term shoule be
+    ! computed for the hydrodynamic model (csourceTerm=1) or for the scalar 
+    ! transport model (csourceTerm=2).
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section names in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionNameHydro
+    character(LEN=*), intent(in) :: ssectionNameTransport
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solution vector for transport model
+    type(t_vectorBlock), intent(in) :: rsolutionTransport
+
+    ! solution vector for hydrodynamic model
+    type(t_vectorBlock), intent(in) :: rsolutionHydro
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+
+    ! Clear source vector?
+    logical, intent(in) :: bclear
+
+    ! parameter which specifies if the geometric source term should be
+    ! computed for the hydrodynamic model (csourceTerm = 1) or for the
+    ! scalar transport model (csourceTerm = 2).
+    integer, intent(in) :: csourceTerm
+!</input>
+
+!<inputoutput>
+    ! source vectors to be assembled
+    type(t_vectorBlock), intent(inout) :: rsource
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataHydro
+    real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DdataSource
+    real(DP) :: deffectiveRadius
+    integer :: isystemFormat, lumpedMassMatrix
+    integer :: neq, nvar, icoordinatesystem
+    logical :: bcompatible
+
+    
+    ! Get global configuration from parameter list
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        'icoordinatesystem', icoordinatesystem)
+
+    ! Do nothing if we are not r-z coordinates
+    if (icoordinatesystem .ne. 2) return
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_double(rparlist, ssectionName,&
+        'deffectiveradius', deffectiveRadius)
+    call parlst_getvalue_int(rparlist, ssectionNameHydro,&
+        'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(rparlist, ssectionNameHydro,&
+        'isystemformat', isystemFormat)
+
+    ! Check if solution vector and source vector are compatible
+    select case(csourceTerm)
+    case (1)
+      ! hydrodynamic model
+      call lsysbl_isVectorCompatible(rsolutionHydro, rsource, bcompatible)
+      if (.not.bcompatible)&
+          call lsysbl_resizeVectorBlock(rsource, rsolutionHydro, .false.)
+      
+    case(2)
+      ! scalar transport model
+      call lsysbl_isVectorCompatible(rsolutionTransport, rsource, bcompatible)
+      if (.not.bcompatible)&
+          call lsysbl_resizeVectorBlock(rsource, rsolutionTransport, .false.)
+
+    case default
+      call output_line('Invalid value for parameter csourceTerm!',&
+          OU_CLASS_ERROR, OU_MODE_STD, 'zpinch_calcGeometricSourceTerm')
+      call sys_halt()
+    end select
+        
+    ! Get lumped and consistent mass matrix
+    if (lumpedMassMatrix .gt. 0) then
+      call lsyssc_getbase_double(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
+    else
+      call output_line('Lumped mass matrix is not available!',&
+          OU_CLASS_ERROR, OU_MODE_STD, 'zpinch_calcGeometricSourceTerm')
+      call sys_halt()
+    end if
+    
+    ! Set pointer to global solution vectors
+    call lsysbl_getbase_double(rsource, p_DdataSource)
+    call lsysbl_getbase_double(rsolutionHydro, p_DdataHydro)
+    call lsysbl_getbase_double(rsolutionTransport, p_DdataTransport)
+
+    ! Set pointer to the vertex coordinates
+    call storage_getbase_double2D(&
+        rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+    ! Set dimensions
+    neq  = rsolutionTransport%NEQ
+    nvar = hydro_getNVAR(rproblemLevel)
+
+    ! What type of system format are we?
+    select case(isystemFormat)
+
+    case (SYSTEM_INTERLEAVEFORMAT)
+      
+      ! Which source term should be assembled?
+      select case(csourceTerm)
+      case(1)
+        call calcGeomSourceHydroIntlFormat(dscale, deffectiveRadius,&
+            neq, nvar, bclear, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataHydro, p_DdataSource)
+
+      case(2)
+        call calcGeomSourceTranspIntlFormat(dscale, deffectiveRadius,&
+            neq, nvar, bclear, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataHydro, p_DdataSource)
+      end select
+
+    case (SYSTEM_BLOCKFORMAT)
+      
+      ! Which source term should be assembled?
+      select case(csourceTerm)
+      case(1)
+        call calcGeomSourceHydroBlockFormat(dscale, deffectiveRadius,&
+            neq, nvar, bclear, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataHydro, p_DdataSource)
+
+      case(2)
+        call calcGeomSourceTranspBlockFormat(dscale, deffectiveRadius,&
+            neq, nvar, bclear, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataHydro, p_DdataSource)
+      end select
+
+    end select
+
+  contains
+
+    ! Here, the real working routines follow
+
+    !**************************************************************
+    ! Calculate the geometric source term for the hydrodynamic model.
+    ! The system is stored in interleave format.
+
+    subroutine calcGeomSourceHydroIntlFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, bclear, DvertexCoords,&
+        DmassMatrix, DdataTransport, DdataHydro, DdataSource)
+
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(nvar,neq), intent(in) :: DdataHydro
+      real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
+      real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
+      integer, intent(in) :: neq, nvar
+      logical, intent(in) :: bclear
+
+      real(DP), dimension(nvar,neq), intent(out) :: DdataSource
+
+      ! local variables
+      real(DP) :: drad, daux, x1, ui, pi
+      integer :: i
+
+      if (bclear) then
+
+        ! Loop over all rows
+        !$omp parallel do private(ui,pi,x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad = abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP, x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = -dscale * x1 / max(drad, deffectiveRadius)
+          
+          ! Compute auxiliary quantities
+          ui = X_VELOCITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          pi = PRESSURE_1T_FROM_CONSVAR_2D(DdataHydro,NVAR2D,i)
+          
+          ! Compute geometric source term for axi-symmetry
+          DdataSource(1,i) = daux * X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          DdataSource(2,i) = daux * X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*ui
+          DdataSource(3,i) = daux * Y_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*ui
+          DdataSource(4,i) = daux * (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)+pi)*ui
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all rows
+        !$omp parallel do private(ui,pi,x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad = abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP, x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = -dscale * x1 / max(drad, deffectiveRadius)
+          
+          ! Compute auxiliary quantities
+          ui = X_VELOCITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          pi = PRESSURE_1T_FROM_CONSVAR_2D(DdataHydro,NVAR2D,i)
+          
+          ! Compute geometric source term for axi-symmetry
+          DdataSource(1,i) = DdataSource(1,i)&
+                           + daux * X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          DdataSource(2,i) = DdataSource(2,i)&
+                           + daux * X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*ui
+          DdataSource(3,i) = DdataSource(3,i)&
+                           + daux * Y_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*ui
+          DdataSource(4,i) = DdataSource(4,i)&
+                           + daux * (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)+pi)*ui
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine calcGeomSourceHydroIntlFormat
+
+
+    !**************************************************************
+    ! Calculate the geometric source term for the transport model.
+    ! The system is stored in interleave format.
+
+    subroutine calcGeomSourceTranspIntlFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, bclear, DvertexCoords, DmassMatrix,&
+        DdataTransport, DdataHydro, DdataSource)
+
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(nvar,neq), intent(in) :: DdataHydro
+      real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
+      real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
+      integer, intent(in) :: neq, nvar
+      logical, intent(in) :: bclear
+      
+      real(DP), dimension(:), intent(out) :: DdataSource
+      
+      ! local variables
+      real(DP) :: drad, daux, x1, ui
+      integer :: i
+
+      if (bclear) then
+
+        ! Loop over all rows
+        !$omp parallel do private(ui,x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad =  abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP,x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = -dscale * x1 / max(drad, deffectiveRadius)
+          
+          ! Compute auxiliary quantities
+          ui = X_VELOCITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          
+          ! Compute geometric source term for axi-symmetry
+          DdataSource(i) = daux * DdataTransport(i)*ui
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all rows
+        !$omp parallel do private(ui,x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad =  abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP,x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = -dscale * x1 / max(drad, deffectiveRadius)
+          
+          ! Compute auxiliary quantities
+          ui = X_VELOCITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          
+          ! Compute geometric source term for axi-symmetry
+          DdataSource(i) = DdataSource(i)&
+              + daux * DdataTransport(i)*ui
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine calcGeomSourceTranspIntlFormat
+
+    
+    !**************************************************************
+    ! Calculate the geometric source term for the hydrodynamic model
+    ! The system is stored in block format.
+
+    subroutine calcGeomSourceHydroBlockFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, bclear, DvertexCoords, DmassMatrix,&
+        DdataTransport, DdataHydro, DdataSource)
+
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(neq,nvar), intent(in) :: DdataHydro
+      real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
+      real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
+      integer, intent(in) :: neq, nvar
+      logical, intent(in) :: bclear
+      
+      real(DP), dimension(neq,nvar), intent(out) :: DdataSource
+      
+      ! local variables
+      real(DP) :: drad, daux, x1, ui, pi
+      integer :: i
+
+      if (bclear) then
+
+        ! Loop over all rows
+        !$omp parallel do private(ui,pi,x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad = abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP,x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = -dscale * x1 / max(drad, deffectiveRadius)
+          
+          ! Compute auxiliary quantities
+          ui = X_VELOCITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          pi = PRESSURE_1L_FROM_CONSVAR_2D(DdataHydro,NVAR2D,i)
+          
+          ! Compute geometric source term for axi-symmetry
+          DdataSource(i,1) = daux * X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          DdataSource(i,2) = daux * X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*ui
+          DdataSource(i,3) = daux * Y_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*ui
+          DdataSource(i,4) = daux * (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)+pi)*ui
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all rows
+        !$omp parallel do private(ui,pi,x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad = abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP,x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = -dscale * x1 / max(drad, deffectiveRadius)
+          
+          ! Compute auxiliary quantities
+          ui = X_VELOCITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          pi = PRESSURE_1L_FROM_CONSVAR_2D(DdataHydro,NVAR2D,i)
+          
+          ! Compute geometric source term for axi-symmetry
+          DdataSource(i,1) = DdataSource(i,1)&
+                           + daux * X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          DdataSource(i,2) = DdataSource(i,2)&
+                           + daux * X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*ui
+          DdataSource(i,3) = DdataSource(i,3)&
+                           + daux * Y_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*ui
+          DdataSource(i,4) = DdataSource(i,4)&
+                           + daux * (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)+pi)*ui
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine calcGeomSourceHydroBlockFormat
+
+    
+    !**************************************************************
+    ! Calculate the geometric souce term for the transport model.
+    ! The system is stored in block format.
+
+    subroutine calcGeomSourceTranspBlockFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, bclear, DvertexCoords, DmassMatrix,&
+        DdataTransport, DdataHydro, DdataSource)
+
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(neq,nvar), intent(in) :: DdataHydro
+      real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
+      real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
+      integer, intent(in) :: neq, nvar
+      logical, intent(in) :: bclear
+      
+      real(DP), dimension(:), intent(out) :: DdataSource
+      
+      ! local variables
+      real(DP) :: drad, daux, x1, ui
+      integer :: i
+
+      if (bclear) then
+
+        ! Loop over all rows
+        !$omp parallel do private(ui,x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad = abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP,x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = -dscale * x1 / max(drad, deffectiveRadius)
+          
+          ! Compute auxiliary quantities
+          ui = X_VELOCITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          
+          ! Compute geometric source term for axi-symmetry
+          DdataSource(i) = daux * DdataTransport(i)*ui
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all rows
+        !$omp parallel do private(ui,x1,drad,daux) if (neq > 10000)
+        do i = 1, neq
+          
+          ! Get x-coordinate at node i
+          x1 = DvertexCoords(1, i); drad = abs(x1)
+          
+          ! Compute unit vector starting at the origin
+          if (drad .gt. SYS_EPSREAL) then
+            x1 = sign(1.0_DP,x1)
+          else
+            x1 = 0.0_DP
+          end if
+          
+          ! Compute scaling parameter
+          daux = -dscale * x1 / max(drad, deffectiveRadius)
+          
+          ! Compute auxiliary quantities
+          ui = X_VELOCITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
+          
+          ! Compute geometric source term for axi-symmetry
+          DdataSource(i) = DdataSource(i)&
+                         + daux * DdataTransport(i)*ui
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine calcGeomSourceTranspBlockFormat
+    
+  end subroutine zpinch_calcGeometricSourceTerm
 
   !*****************************************************************************
 
@@ -1133,27 +1836,40 @@ contains
           
       ! Set pointer to predictor
       p_rpredictorHydro => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
-          
+
       ! Compute low-order "right-hand side" without theta parameter
-      call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-          rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection, Rsource(1))
-      
+      if (present(Rsource)) then
+        if (Rsource(1)%NEQ .eq. 0) then
+          ! ... without source term
+          call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+              rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection)
+        else
+          ! ... with source term
+          call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+              rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection, Rsource(1))
+        end if
+      else
+        ! ... without source term
+        call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+            rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection)
+      end if
+
       ! Compute low-order predictor
       call lsysbl_invertedDiagMatVec(&
           rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
           p_rpredictorHydro, 1.0_DP, p_rpredictorHydro)
-      
+
       ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
           1.0_DP, 1.0_DP, .true., p_rpredictorHydro, rcollection)
+
     else
-      ! Vuild the raw antidiffusive fluxes without contribution from
+      ! Build the raw antidiffusive fluxes without contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
           1.0_DP, 1.0_DP, .true., Rsolution(1), rcollection)
     end if
-        
 
     !--- transport model -------------------------------------------------------
 
@@ -1176,11 +1892,30 @@ contains
           rsolverTransport, Rsolution(2), rcollection)
       
       ! Compute low-order "right-hand side" without theta parameter
-      call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-          rsolverTransport, Rsolution(2), p_rpredictorTransport,&
-          rcollection,&
-          fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
-          fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
+      if (present(Rsource)) then
+        if (Rsource(2)%NEQ .eq. 0) then
+          ! ... without source term
+          call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+              rsolverTransport, Rsolution(2), p_rpredictorTransport,&
+              rcollection,&
+              fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
+              fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
+        else
+          ! ... with source term
+          call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+              rsolverTransport, Rsolution(2), p_rpredictorTransport,&
+              rcollection, Rsource(2),&
+              fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
+              fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
+        end if
+      else
+        ! ... without source term
+        call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+            rsolverTransport, Rsolution(2), p_rpredictorTransport,&
+            rcollection,&
+            fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
+            fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
+      end if
       
       ! Compute low-order predictor
       call lsysbl_invertedDiagMatVec(&
