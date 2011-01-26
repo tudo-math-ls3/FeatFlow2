@@ -30,6 +30,8 @@
 
 module zpinch_callback
 
+#include "hydro.h"
+
   use afcstabilisation
   use basicgeometry
   use boundarycondaux
@@ -840,7 +842,7 @@ contains
         x1 = DvertexCoords(1, i)
         x2 = DvertexCoords(2, i)
         
-        ! Compute unit vector into origin
+        ! Compute unit vector starting at the origin
         drad = sqrt(x1*x1 + x2*x2)
         if (drad .gt. SYS_EPSREAL) then
           x1 = x1/drad
@@ -850,16 +852,17 @@ contains
           x2 = 0.0_DP
         end if
         
-        ! Compute Lorentz source term
+        ! Compute scaling parameter
         daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
                max(drad, deffectiveRadius)
 
-        ! Impose source values
+        ! Compute Lorentz force term
         DdataForce(1,i) = 0.0_DP
         DdataForce(2,i) = daux * x1
         DdataForce(3,i) = daux * x2
-        DdataForce(4,i) = daux * (DdataHydro(2,i)*x1 +&
-                                  DdataHydro(3,i)*x2) / DdataHydro(1,i)
+        DdataForce(4,i) = daux * (X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1+&
+                                  Y_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x2)/&
+                                     DENSITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
       end do
       !$omp end parallel do
 
@@ -893,22 +896,23 @@ contains
         ! Get x-coordinate at node i
         x1 = DvertexCoords(1, i); drad = x1
         
-        ! Compute unit vector into origin
+        ! Compute unit vector starting at the origin
         if (drad .gt. SYS_EPSREAL) then
           x1 = 1.0_DP
         else
           x1 = 0.0_DP
         end if
 
-        ! Compute Lorentz source term
+        ! Compute scaling parameter
         daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
                max(drad, deffectiveRadius)
-        
-        ! Impose source values
+
+        ! Compute Lorentz source term        
         DdataForce(1,i) = 0.0_DP
         DdataForce(2,i) = daux * x1
         DdataForce(3,i) = 0.0_DP
-        DdataForce(4,i) = daux * DdataHydro(2,i)*x1 / DdataHydro(1,i)
+        DdataForce(4,i) = daux * X_MOMENTUM_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1/&
+                                    DENSITY_1T_FROM_CONSVAR(DdataHydro,NVAR2D,i)
       end do
       !$omp end parallel do
 
@@ -943,7 +947,7 @@ contains
         x1 = DvertexCoords(1, i)
         x2 = DvertexCoords(2, i)
         
-        ! Compute unit vector into origin
+        ! Compute unit vector starting at the origin
         drad = sqrt(x1*x1 + x2*x2)
         if (drad .gt. SYS_EPSREAL) then
           x1 = x1/drad
@@ -953,16 +957,17 @@ contains
           x2 = 0.0_DP
         end if
         
-        ! Compute Lorentz source term
+        ! Compute scaling parameter
         daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
                max(drad, deffectiveRadius)
 
-        ! Impose source values
+        ! Compute Lorentz source term
         DdataForce(i,1) = 0.0_DP
         DdataForce(i,2) = daux * x1
         DdataForce(i,3) = daux * x2
-        DdataForce(i,4) = daux * (DdataHydro(i,2)*x1 +&
-                                  DdataHydro(i,3)*x2) / DdataHydro(i,1)
+        DdataForce(i,4) = daux * (X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1+&
+                                  Y_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x2)/&
+                                     DENSITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
       end do
       !$omp end parallel do
 
@@ -996,22 +1001,23 @@ contains
         ! Get x-coordinate at node i
         x1 = DvertexCoords(1, i); drad = x1
         
-        ! Compute unit vector into origin
+        ! Compute unit vector starting at the origin
         if (drad .gt. SYS_EPSREAL) then
           x1 = 1.0_DP
         else
           x1 = 0.0_DP
         end if
 
-        ! Compute Lorentz source term
+        ! Compute scaling parameter
         daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
                max(drad, deffectiveRadius)
         
-        ! Impose source values
+        ! Compute Lorentz source term
         DdataForce(i,1) = 0.0_DP
         DdataForce(i,2) = daux * x1
         DdataForce(i,3) = 0.0_DP
-        DdataForce(i,4) = daux * DdataHydro(i,2)*x1 / DdataHydro(i,1)
+        DdataForce(i,4) = daux * X_MOMENTUM_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)*x1/&
+                                    DENSITY_1L_FROM_CONSVAR(DdataHydro,NVAR2D,i)
       end do
       !$omp end parallel do
 
