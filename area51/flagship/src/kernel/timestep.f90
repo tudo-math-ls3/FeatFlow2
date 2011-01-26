@@ -45,8 +45,8 @@
 !#     -> Performs one step of an explicit Runge-Kutta scheme to compute the
 !#        solution for the time interval dTime..dTime+dStep
 !#
-!# 8.) tstep_performPseudoStepping = tstep_performPseudoStepSc /
-!#                                   tstep_performPseudoStepBl
+!# 8.) tstep_performPseudoStepping = tstep_performPseudoSteppingSc /
+!#                                   tstep_performPseudoSteppingBl
 !#     -> Performs pseudo time-stepping to compute the steady state solution
 !#
 !#
@@ -736,25 +736,29 @@ contains
 
     if (present(rsource)) then
 
-      ! Call block version with right-hand side vector
+      ! Convert scalar vectors to 1-block vectors
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
       call lsysbl_createVecFromScalar(rsource, rsourceBlock)
-
+      
+      ! Call block version of this subroutine
       call tstep_performThetaStepBl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
           rsourceBlock)
 
+      ! Deallocate temporal 1-block vectors
       call lsysbl_releaseVector(rsolutionBlock)
       call lsysbl_releaseVector(rsourceBlock)
 
     else
 
-      ! Call block version without right-hand side vector
+      ! Convert scalar vector to 1-block vector
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
 
+      ! Call block version of this subroutine
       call tstep_performThetaStepBl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
 
+      ! Deallocate temporal 1-block vector
       call lsysbl_releaseVector(rsolutionBlock)
 
     end if
@@ -1047,22 +1051,27 @@ contains
       allocate(rsolutionBlock(size(rsolution)))
       allocate(rsourceBlock(size(rsource)))
 
+      ! Convert scalar vectors to 1-block vectors
       do i = 1, size(rsolution)
         call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
       end do
 
+      ! Convert scalar vectors to 1-block vectors
       do i = 1, size(rsource)
-        call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
+            call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
       end do
 
+      ! Call block version of this subroutine
       call tstep_performThetaStepBlCpl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
           rsourceBlock)
 
+      ! Deallocate temporal 1-block vectors
       do i = 1, size(rsolution)
         call lsysbl_releaseVector(rsolutionBlock(i))
       end do
 
+      ! Deallocate temporal 1-block vectors
       do i = 1, size(rsource)
         call lsysbl_releaseVector(rsourceBlock(i))
       end do
@@ -1076,13 +1085,16 @@ contains
       ! Allocate temporal memory
       allocate(rsolutionBlock(size(rsolution)))
 
+      ! Convert scalar vectors to 1-block vectors
       do i = 1, size(rsolution)
         call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
       end do
 
+      ! Call block version of this subroutine
       call tstep_performThetaStepBlCpl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
 
+      ! Deallocate temporal 1-block vectors
       do i = 1, size(rsolution)
         call lsysbl_releaseVector(rsolutionBlock(i))
       end do
@@ -1385,22 +1397,28 @@ contains
 
     if (present(rsource)) then
 
+      ! Convert scalar vectors to 1-block vectos
       call lsysbl_createVecFromScalar(rsource, rsourceBlock)
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-
+      
+      ! Call block version of this routine
       call tstep_performRKStepBl(rproblemLevel, rtimestep, rsolver,&
           rsolutionBlock, fcb_nlsolverCallback, rcollection, rsourceBlock)
-
+      
+      ! Free temporal 1-block vectors
       call lsysbl_releaseVector(rsourceBlock)
       call lsysbl_releaseVector(rsolutionBlock)
-
+      
     else
 
+      ! Convert scalar vector to 1-block vecto
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
 
+      ! Call block version of this routine
       call tstep_performRKStepBl(rproblemLevel, rtimestep, rsolver,&
           rsolutionBlock, fcb_nlsolverCallback, rcollection)
 
+      ! Free temporal 1-block vector
       call lsysbl_releaseVector(rsolutionBlock)
 
     end if
@@ -1529,7 +1547,11 @@ contains
 
         ! Initialize the constant right-hand side vector
         if (present(rsource)) then
-          call lsysbl_copyVector(rsource, p_rconstB)
+          if (rsource%NEQ .gt. 0) then
+            call lsysbl_copyVector(rsource, p_rconstB)
+          else
+            call lsysbl_clearVector(p_rconstB)
+          end if
         else
           call lsysbl_clearVector(p_rconstB)
         end if
@@ -1751,22 +1773,27 @@ contains
       allocate(rsolutionBlock(size(rsolution)))
       allocate(rsourceBlock(size(rsource)))
 
+      ! Convert scalar vectors to 1-block vectors
       do i = 1, size(rsolution)
         call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
       end do
 
+      ! Convert scalar vectors to 1-block vectors
       do i = 1, size(rsource)
         call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
       end do
 
+      ! Call block version of this subroutine
       call tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
           rsourceBlock)
 
+      ! Deallocate temporal 1-block vectors
       do i = 1, size(rsolution)
         call lsysbl_releaseVector(rsolutionBlock(i))
       end do
 
+      ! Deallocate temporal 1-block vectors
       do i = 1, size(rsource)
         call lsysbl_releaseVector(rsourceBlock(i))
       end do
@@ -1780,13 +1807,16 @@ contains
       ! Allocate temporal memory
       allocate(rsolutionBlock(size(rsolution)))
 
+      ! Convert scalar vectors to 1-block vectors
       do i = 1, size(rsolution)
         call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
       end do
 
+      ! Call block version of this subroutine
       call tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
 
+      ! Deallocate temporal 1-block vectors
       do i = 1, size(rsolution)
         call lsysbl_releaseVector(rsolutionBlock(i))
       end do
@@ -1906,8 +1936,8 @@ contains
       case (TSTEP_THETA_SCHEME)
 
         ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver&
-            , rsolution, fcb_nlsolverCallback, rcollection, rsource)
+        call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver,&
+            rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -1987,8 +2017,8 @@ contains
       case (TSTEP_THETA_SCHEME)
 
         ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver&
-            , rsolution, fcb_nlsolverCallback, rcollection, rsource)
+        call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver,&
+            rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&

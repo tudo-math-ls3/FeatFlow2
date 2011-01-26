@@ -2790,8 +2790,10 @@ contains
     end select
 
     ! Apply the given load vector to the residual
-    if (present(rsource))&
-        call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
+    if (present(rsource)) then
+      if (rsource%NEQ .gt. 0)&
+          call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
+    end if
 
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
@@ -2979,8 +2981,10 @@ contains
     end select
 
     ! Apply the source vector to the right-hand side (if any)
-    if (present(rsource))&
-        call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
+    if (present(rsource)) then
+      if (rsource%NEQ .gt. 0)&
+          call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
+    end if
 
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
@@ -3330,8 +3334,10 @@ contains
 
 
     ! Apply the source vector to the residual (if any)
-    if (present(rsource))&
-        call lsysbl_vectorLinearComb(rsource, rres, -1.0_DP, 1.0_DP)
+    if (present(rsource)) then
+      if (rsource%NEQ .gt. 0)&
+          call lsysbl_vectorLinearComb(rsource, rres, -1.0_DP, 1.0_DP)
+    end if
 
     ! Stop time measurement for residual evaluation
     call stat_stopTimer(p_rtimer)
