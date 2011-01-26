@@ -126,7 +126,7 @@ imasstype = 2
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 1
+imassantidiffusiontype = 0
 
 # type of dissipation
 # 0 = no dissipation
@@ -267,7 +267,7 @@ inviscid = Inviscid
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 0
@@ -460,7 +460,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-sucdsolution = out/zpinch
+sucdsolution = out/zpinch_60x240_fct_nomass
 
 # file for UCD import of solution
 sucdimport =
