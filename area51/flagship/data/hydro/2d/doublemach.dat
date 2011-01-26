@@ -27,7 +27,7 @@ application = hydro
 indatfile = data/hydro/2d/doublemach.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_weak_primal
+sprimalbdrcondname = bdrcond_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -68,7 +68,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 1
+isystemPrecond = 2
 
 #-------------------------------------------------------------------------------
 
@@ -85,11 +85,12 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-slimitingvariable(1) = 
-  none
+slimitingvariable(2) = 
+  density
+  pressure
 
 # number of failsafe steps
-nfailsafe = 3
+nfailsafe = 0
 
 # variables for failsafe flux correction
 sfailsafevariable(4) =
@@ -218,7 +219,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 0
@@ -245,11 +246,12 @@ sucdsolution = out/dmr
 sucderror = 
 
 # variables for ucd output
-sucdvariable(4) =
+sucdvariable(5) =
  density
  velocity
  energy
  pressure
+ machnumber
 
 
 ################################################################################
@@ -287,7 +289,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 10e-4
+dfinalTime = 0.2
 
 # initial time step size
 dinitialStep = 1e-4
@@ -337,10 +339,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 5
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce
