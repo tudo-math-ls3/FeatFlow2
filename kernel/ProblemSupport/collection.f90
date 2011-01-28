@@ -723,6 +723,22 @@ module collection
     type(t_matrixBlock), pointer :: p_rmatrixQuickAccess4 => null()
 
     ! USER DEFINED:
+    ! A quick access pointer to a parameter list.
+    type(t_parlist), pointer :: p_rparlistQuickAccess1 => null()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a parameter list.
+    type(t_parlist), pointer :: p_rparlistQuickAccess2 => null()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a parameter list.
+    type(t_parlist), pointer :: p_rparlistQuickAccess3 => null()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a parameter list.
+    type(t_parlist), pointer :: p_rparlistQuickAccess4 => null()
+
+    ! USER DEFINED:
     ! A quick access pointer to another collection structure.
     ! Can be used to link collection structures.
     type(t_collection), pointer :: p_rnextCollection => null()
