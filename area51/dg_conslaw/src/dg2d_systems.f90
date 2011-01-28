@@ -498,7 +498,7 @@ contains
     
         ! The linear solver stops, when this relative or absolut norm of
     ! the residual is reached.
-    p_rsolverNode%depsRel = 1.0e-50
+    p_rsolverNode%depsRel = 1.0e-14
     p_rsolverNode%depsAbs = 1.0e-14
     
     ! Attach the system matrix to the solver.
@@ -655,9 +655,7 @@ if (iwithoutlimiting==2) ilimiter = 0
                                               rcollection)
                                               
                                               
-
-
-write(*,*)lsyssc_vectorNorm (rrhsBlock%Rvectorblock(1),LINALG_NORML1)                                               
+     write(*,*) lsyssc_vectornorm(rrhsBlock%Rvectorblock(1),1)                                     
                                               
                                               
 !       !!!!!!!!!!!!!!!!!!!!!!                                       
@@ -728,9 +726,7 @@ write(*,*)lsyssc_vectorNorm (rrhsBlock%Rvectorblock(1),LINALG_NORML1)
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
                                        Euler_flux_sys_block,rcollection)
-                                       
-write(*,*)lsyssc_vectorNorm (rrhsBlock%Rvectorblock(1),LINALG_NORML1)  
-                                       
+         write(*,*) lsyssc_vectornorm(rrhsBlock%Rvectorblock(1),1)
          case(2)                             
          do ivar = 1, nvar2d
          
@@ -738,7 +734,7 @@ write(*,*)lsyssc_vectorNorm (rrhsBlock%Rvectorblock(1),LINALG_NORML1)
            rcollection%IquickAccess(1) = ivar
          
            call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
-                                         flux_sys,rcollection)
+                                         Euler_flux_sys_sc,rcollection)
            !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
          end do
          end select                           
@@ -814,7 +810,7 @@ write(*,*)lsyssc_vectorNorm (rrhsBlock%Rvectorblock(1),LINALG_NORML1)
          
 
            call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
-                                         flux_sys,rcollection)
+                                         Euler_flux_sys_sc,rcollection)
            !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
          end do
          end select
@@ -886,7 +882,7 @@ write(*,*)lsyssc_vectorNorm (rrhsBlock%Rvectorblock(1),LINALG_NORML1)
          
 
            call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
-                                         flux_sys,rcollection)
+                                         Euler_flux_sys_sc,rcollection)
            !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
          end do
          end select

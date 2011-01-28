@@ -43,7 +43,7 @@ FEkind = 1
 dt = 0.001
 
 # Final time
-ttfinal = 0.5
+ttfinal = 0.1
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -91,7 +91,7 @@ gravconst = 1.0
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 3
+extrapoints = 0
 
 # Name of output file
 ofile = ./gmv/u2d
@@ -104,7 +104,7 @@ outtype = 2
 # Create files for video?
 # 0: No
 # 1: Yes
-makevideo = 1
+makevideo = 0
 
 # Make gmv snapshot every ... seconds (should be n*dt)
 videotimestep = 0.005

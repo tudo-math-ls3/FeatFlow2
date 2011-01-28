@@ -2937,16 +2937,6 @@ end subroutine
             rvectorBlock%RvectorBlock(1)%p_rspatialDiscr%RelementDistr(1)%celement,&
             ccubType, LINF_NELEMSIM)
             
-!      ! Test, if right reversed  
-!      do i = 1, size(rvectorAssembly(1)%p_DcubPtsRef,2)
-!        write(*,*) i, rvectorAssembly(1)%p_Domega(i),rvectorAssembly(2)%p_Domega(size(rvectorAssembly(1)%p_DcubPtsRef,2)+1-i)
-!!        write(*,*) i
-!!        write(*,*) rvectorAssembly(1)%p_DcubPtsRef(:,i)
-!!        write(*,*) rvectorAssembly(2)%p_DcubPtsRef(:,size(rvectorAssembly(1)%p_DcubPtsRef,2)+1-i)
-!      
-!      end do
-!      pause
-            
       ! Assemble the data for all elements in this element distribution
       call linf_dg_assembleSubmeshVectorBlockEdge2d (rvectorAssembly,&
             rvectorBlock, rvectorBlockSol,&
@@ -3099,7 +3089,7 @@ end subroutine
     real(DP), dimension(:,:,:), allocatable :: DlocalData
   
     ! Arrays for cubature points 1D->2D
-    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
+    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D_1, Dxi1D_2
     real(DP), dimension(:,:,:,:), allocatable :: Dxi2D,DpointsRef
     
     ! Element list, where to assemble the form
@@ -3217,15 +3207,15 @@ end subroutine
     ! Get the elements adjacent to the given edges
     allocate(IelementList(3,size(IedgeList)))
     IelementList(1:2,1:size(IedgeList))=p_IelementsAtEdge(1:2,IedgeList(:))
-    
-    ! Allocate daux
-    allocate(daux(nvar,2))
-    
+
     ! Copy the second component and replace 0s by 1s
     IelementList(3,size(IedgeList))=IelementList(2,size(IedgeList))
     do iel = 1,size(IedgeList)
       IelementList(3,iel)=max(IelementList(2,iel),1)
     end do
+    
+    ! Allocate daux
+    allocate(daux(nvar,2))
     
     ! Get some pointers for faster access
 !    call lsyssc_getbase_double (rvector, p_Ddata)
@@ -3254,7 +3244,7 @@ end subroutine
 !    ! The coordinates of the corner edges of the elements for the transformation
 !    allocate(Dcoords(ndim2d,NVE,rlocalVectorAssembly(1)%nelementsPerBlock))
       
-  ! Allocate space for the flux variables DIM(nvar,ialbet,ncubp,elementsperblock)
+  ! Allocate space for the flux variables DIM(nvar,ialbet,ncubp,elementsPerBlock)
   allocate(DfluxValues(nvar,1,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
   
   
@@ -3272,7 +3262,8 @@ end subroutine
     ! can work with in the mapping between 1D and 2D.
     do k = 1, ubound(rlocalVectorAssembly(1)%p_DcubPtsRef,1)
       do icubp = 1,ncubp
-        Dxi1D(icubp,k) = rlocalVectorAssembly(1)%p_DcubPtsRef(k,icubp)
+        Dxi1D_1(icubp,k) = rlocalVectorAssembly(1)%p_DcubPtsRef(k,icubp)
+        Dxi1D_2(icubp,k) = rlocalVectorAssembly(2)%p_DcubPtsRef(k,icubp)
       end do
     end do
  
@@ -3285,8 +3276,8 @@ end subroutine
     ! Allocate DlocalData, which will later 
     allocate(DlocalData(nvar,2,indof))
     
-    ! Allocate the space for the pointer to the Data of the different blocks of the output vector
-    allocate(p_DoutputData(nvar))
+!    ! Allocate the space for the pointer to the Data of the different blocks of the output vector
+!    allocate(p_DoutputData(nvar))
     
     !do ivar = 1, nvar
     !  call lsyssc_getbase_double(rvector%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
@@ -3319,9 +3310,9 @@ end subroutine
       ! Map the 1D cubature points to the edges in 2D.
       do iel = 1,IELmax-IELset+1
         call trafo_mapCubPts1Dto2D(icoordSystem, raddTriaData%p_IlocalEdgeNumber(1,Iedgelist(IELset+iel-1)), &
-            ncubp, Dxi1D, Dxi2D(:,:,1,iel))
+            ncubp, Dxi1D_1, Dxi2D(:,:,1,iel))
         call trafo_mapCubPts1Dto2D(icoordSystem, raddTriaData%p_IlocalEdgeNumber(2,Iedgelist(IELset+iel-1)), &
-            ncubp, Dxi1D, Dxi2D(:,:,2,iel))
+            ncubp, Dxi1D_2, Dxi2D(:,:,2,iel))
       end do
      
       ! Transpose the coordinate array such that we get coordinates we
@@ -3335,7 +3326,7 @@ end subroutine
           end do
         end do
       end do
-        
+
       ! --------------------- DOF SEARCH PHASE ------------------------
     
       ! The outstanding feature with finite elements is: A basis
@@ -3673,7 +3664,7 @@ end subroutine
 
     ! Deallocate memory
     deallocate(Dxi2D,DpointsRef,IelementList)!,DsolVals,edgelength,normal,Djac,Ddetj,DpointsReal,Dcoords)
-    deallocate(DfluxValues,daux,DlocalData,p_DoutputData)
+    deallocate(DfluxValues,daux,DlocalData)!,p_DoutputData)
 
   end subroutine
   
