@@ -359,25 +359,41 @@ contains
     ! Initialize global collection structure
     call collct_init(rcollection)
 
-    !  Attach the parameter list and the timers to the collection
+    ! Create a separate section for the scalar transport model
+    call collct_addsection(rcollection, ssectionName)
+    
+    ! Define section name of this application
+    call collct_setvalue_string(rcollection, 'ssectionName',&
+        ssectionName, .true.)
+
+    ! Attach the parameter list and the timers to the collection
     call collct_setvalue_parlst(rcollection,&
-        'rparlist', rparlist, .true.)
+        'rparlist', rparlist, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerSolution', rtimerSolution, .true.)
+        'rtimerSolution', rtimerSolution, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAdaptation', rtimerAdaptation, .true.)
+        'rtimerAdaptation', rtimerAdaptation, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerErrorEstimation', rtimerErrorEstimation, .true.)
+        'rtimerErrorEstimation', rtimerErrorEstimation, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerTriangulation', rtimerTriangulation, .true.)
+        'rtimerTriangulation', rtimerTriangulation, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.)
+        'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.)
+        'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAssemblyVector', rtimerAssemblyVector, .true.)
+        'rtimerAssemblyVector', rtimerAssemblyVector, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerPrePostprocess', rtimerPrePostprocess, .true.)
+        'rtimerPrePostprocess', rtimerPrePostprocess, .true.,&
+        ssectionName=ssectionName)
 
     ! Create function parser
     call fparser_create(rfparser, 100)
@@ -394,7 +410,8 @@ contains
         sindatfileName, 'deffunc', FPAR_FUNCTION)
 
     ! Attach the function parser to the collection
-    call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.)
+    call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.,&
+        ssectionName=ssectionName)
 
     ! Initialize the solver structures
     call transp_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
@@ -417,7 +434,6 @@ contains
 
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rtimerPrePostprocess)
-
 
     !---------------------------------------------------------------------------
     ! Solution algorithm
@@ -596,7 +612,7 @@ contains
     call stat_stopTimer(rtimerTotal)
 
     ! Output statistics
-    call transp_outputStatistics(rtimerTotal, rcollection)
+    call transp_outputStatistics(rtimerTotal, ssectionName, rcollection)
 
     ! Release collection
     call collct_done(rcollection)
@@ -785,7 +801,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 !</input>
 
@@ -1142,7 +1158,8 @@ contains
       end if
 
       ! Get function parser from collection
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
 
       select case(p_rtriangulation%ndim)
       case (NDIM1D)
@@ -1547,7 +1564,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 !</input>
 
@@ -1593,7 +1610,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! problem level
@@ -1608,7 +1625,7 @@ contains
     type(t_vectorBlock), intent(inout) :: rvector
 
     ! collection structure
-    type(t_collection), intent(inout) :: rcollection
+    type(t_collection), intent(inout), target :: rcollection
 !</intputoutput>
 !</subroutine>
 
@@ -1619,8 +1636,8 @@ contains
     type(t_vectorBlock) :: rvectorHigh, rvectorAux
     type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
     type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     type(t_fparser), pointer :: p_rfparser
+    type(t_collection) :: rcollectionTmp
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
@@ -1682,7 +1699,8 @@ contains
           ssectionName, 'ssolutionname', ssolutionName)
 
       ! Get function parser from collection structure
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
 
       ! Set pointer to vertex coordinates
       call storage_getbase_double2D(&
@@ -1727,7 +1745,11 @@ contains
           ssectionName, 'ssolutionname', ssolutionName)
 
       ! Get function parser from collection structure
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
+
+      ! Get the number of the component used for evaluating the initial solution
+      icomp = fparser_getFunctionNumber(p_rfparser, ssolutionname)
 
       ! Retrieve the lumped and consistent mass matrices from the
       ! problem level structure or recompute them on-the-fly.
@@ -1756,25 +1778,34 @@ contains
         call lsyssc_lumpMatrixScalar(rlumpedMassMatrix, LSYSSC_LUMP_DIAG)
         p_rlumpedMassMatrix => rlumpedMassMatrix
       end if
+      
+      ! Initialize temporal collection structure
+      call collct_init(rcollectionTmp)
+      
+      ! Prepare quick access arrays of the temporal collection structure
+      rcollectionTmp%SquickAccess(1) = ''
+      rcollectionTmp%SquickAccess(2) = 'rfparser'
+      rcollectionTmp%DquickAccess(1) = dtime
+      rcollectionTmp%IquickAccess(1) = icomp
+      
+      ! Attach user-defined collection structure to temporal collection
+      ! structure (may be required by the callback function)
+      rcollectionTmp%p_rnextCollection => rcollection
+
+      ! Attach function parser from boundary conditions to collection
+      ! structure and specify its name in quick access string array
+      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
 
       ! Set up the linear form
       rform%itermCount = 1
       rform%Idescriptors(1) = DER_FUNC
       
-      ! Attach the simulation time and the name of the 
-      ! function parser to the collection structure
-      rcollection%DquickAccess(1) = dtime
-      rcollection%SquickAccess(1) = "rfparser"
-
-      ! Set pointer to spatial discretisation
-      p_rspatialDiscr => rvector%RvectorBlock(1)%p_rspatialDiscr
-
-      ! Get the number of the component used for evaluating the initial solution
-      rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
-      
       ! Assemble the linear form for the scalar subvector
       call linf_buildVectorScalar2(rform, .true.,&
-          rvector%RvectorBlock(1), transp_coeffVectorAnalytic, rcollection)
+          rvector%RvectorBlock(1), transp_coeffVectorAnalytic, rcollectionTmp)
+
+      ! Release temporal collection structure
+      call collct_done(rcollectionTmp)
 
       ! Store norm of load vector (if required)
       dnorm0 = lsyssc_vectorNorm(&
@@ -1839,9 +1870,6 @@ contains
         call gfsc_buildFluxFCT(rafcstab, rvectorHigh, 0.0_DP, 0.0_DP, 1.0_DP,&
             .true., p_rconsistentMassMatrix, rvectorHigh)
 
-        ! Attach section name to collection structure
-        rcollection%SquickAccess(1) = ssectionName
-        
         ! Apply flux correction to solution profile
         call gfsc_buildConvectionVectorFCT(p_rlumpedMassMatrix,&
             rafcstab, rvector, 1._DP, .false.,&
@@ -1884,7 +1912,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! problem level structure
@@ -1899,20 +1927,21 @@ contains
     type(t_vectorBlock), intent(inout) :: rvector
 
     ! collection structure
-    type(t_collection), intent(inout) :: rcollection
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_linearForm) :: rform
+    type(t_collection) :: rcollectionTmp
     character(LEN=SYS_STRLEN) :: srhsname
     integer :: icomp, irhstype
 
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
-                             'irhstype', irhstype)
+        'irhstype', irhstype)
 
     ! How should the right-hand side be initialised?
     select case(irhstype)
@@ -1924,26 +1953,43 @@ contains
     case (RHS_ANALYTIC)
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist, ssectionName,&
-                                  'srhsname', srhsname)
+          'srhsname', srhsname)
 
       ! Get function parser from collection structure
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
 
       ! Get the number of the component used for evaluating the right-hand side
       icomp = fparser_getFunctionNumber(p_rfparser, srhsname)
 
-      ! Prepare quick access arrays of the collection
-      rcollection%DquickAccess(1) = dtime
-      rcollection%IquickAccess(1) = icomp
-      rcollection%SquickAccess(1) = 'rfparser'
+      ! Initialize temporal collection structure
+      call collct_init(rcollectionTmp)
 
+      ! Prepare quick access arrays of the temporal collection structure
+      rcollectionTmp%SquickAccess(1) = ''
+      rcollectionTmp%SquickAccess(2) = 'rfparser'
+      rcollectionTmp%DquickAccess(1) = dtime
+      rcollectionTmp%IquickAccess(1) = icomp
+      
+      ! Attach user-defined collection structure to temporal collection
+      ! structure (may be required by the callback function)
+      rcollectionTmp%p_rnextCollection => rcollection
+
+      ! Attach function parser from boundary conditions to collection
+      ! structure and specify its name in quick access string array
+      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+      
       ! Set up the corresponding linear form
       rform%itermCount      = 1
       rform%Idescriptors(1) = DER_FUNC
 
       ! Build the discretised right-hand side vector
       call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
-                                   transp_coeffVectorAnalytic, rcollection)
+                                   transp_coeffVectorAnalytic, rcollectionTmp)
+
+      ! Release temporal collection structure
+      call collct_done(rcollectionTmp)
+
 
     case DEFAULT
       call output_line('Invalid type of target functional!',&
@@ -1970,7 +2016,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! problem level structure
@@ -1985,13 +2031,14 @@ contains
     type(t_vectorBlock), intent(inout) :: rvector
 
     ! collection structure
-    type(t_collection), intent(inout) :: rcollection
+    type(t_collection), intent(inout), target :: rcollection
 !</intputoutput>
 !</subroutine>
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_linearForm) :: rform
+    type(t_collection) :: rcollectionTmp
     character(LEN=SYS_STRLEN) :: stargetfuncname
     integer :: itargetfunctype, icomp
 
@@ -2011,21 +2058,34 @@ contains
 
     case (TFUNC_VOLINTG,&
           TFUNC_MIXINTG)
-
-      ! Get function parser from collection structure
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
-
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist, ssectionName,&
           'stargetfuncname', stargetfuncname)
-
+      
+      ! Get function parser from collection structure
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
+      
       ! Get the number of the component used for evaluating the target functional
       icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
 
-      ! Prepare quick access arrays of the collection
-      rcollection%DquickAccess(1) = dtime
-      rcollection%IquickAccess(1) = icomp
-      rcollection%SquickAccess(1) = 'rfparser'
+      ! Initialize temporal collection structure
+      call collct_init(rcollectionTmp)
+      
+      ! Prepare quick access arrays of the temporal collection structure
+      rcollectionTmp%SquickAccess(1) = ''
+      rcollectionTmp%SquickAccess(2) = 'rfparser'
+      rcollectionTmp%DquickAccess(1) = dtime
+      rcollectionTmp%IquickAccess(1) = icomp
+      
+      ! Attach user-defined collection structure to temporal collection
+      ! structure (may be required by the callback function)
+      rcollectionTmp%p_rnextCollection => rcollection
+
+      ! Attach function parser from boundary conditions to collection
+      ! structure and specify its name in quick access string array
+      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+
 
       ! Set up the corresponding linear form
       rform%itermCount      = 1
@@ -2034,7 +2094,10 @@ contains
       ! Build the discretised target functional. The contribution of
       ! the surfae integral comes in be weakly impose boundary conditions
       call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
-          transp_coeffVectorAnalytic, rcollection)
+          transp_coeffVectorAnalytic, rcollectionTmp)
+
+      ! Release temporal collection structure
+      call collct_done(rcollectionTmp)
 
 
     case DEFAULT
@@ -2132,7 +2195,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_outputStatistics(rtimerTotal, rcollection)
+  subroutine transp_outputStatistics(rtimerTotal, ssectionName, rcollection)
 
 !<description>
     ! This subroutine output application statistics
@@ -2141,6 +2204,9 @@ contains
 !<input>
     ! timer for total time measurement
     type(t_timer), intent(in) :: rtimerTotal
+
+    ! section name in parameter collection structure
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -2162,18 +2228,26 @@ contains
 
 
     ! Get timer objects from collection
-    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
-    p_rtimerAssemblyMatrix => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
-    p_rtimerAssemblyVector => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
-    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    p_rtimerSolution => collct_getvalue_timer(rcollection,&
+        'rtimerSolution', ssectionName=ssectionName)
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection,&
+        'rtimerAdaptation', ssectionName=ssectionName)
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection,&
+        'rtimerErrorEstimation', ssectionName=ssectionName)
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection,&
+        'rtimerTriangulation', ssectionName=ssectionName)
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', ssectionName=ssectionName)
+    p_rtimerAssemblyMatrix => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyMatrix', ssectionName=ssectionName)
+    p_rtimerAssemblyVector => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyVector', ssectionName=ssectionName)
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
+        'rtimerPrePostprocess', ssectionName=ssectionName)
 
     ! Output statistics
     call output_lbrk()
-    call output_line('Time measurement:')
+    call output_line('Time measurement: '//trim(adjustl(ssectionName)))
     call output_line('-----------------')
 
     call stat_subTimers(p_rtimerAssemblyMatrix, p_rtimerSolution)
@@ -2182,32 +2256,32 @@ contains
     dtotalTime = max(rtimerTotal%delapsedCPU, rtimerTotal%delapsedReal)
     dfraction  = 100.0_DP/dtotalTime
 
-    call output_line('Time for computing solution:   '//&
+    call output_line('Time for computing solution   : '//&
                      trim(adjustl(sys_sdE(p_rtimerSolution%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerSolution%delapsedCPU, 5)))//' %')
-    call output_line('Time for mesh adaptivity:      '//&
+    call output_line('Time for mesh adaptivity      : '//&
                      trim(adjustl(sys_sdE(p_rtimerAdaptation%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerAdaptation%delapsedCPU, 5)))//' %')
-    call output_line('Time for error estimation:     '//&
+    call output_line('Time for error estimation     : '//&
                      trim(adjustl(sys_sdE(p_rtimerErrorEstimation%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerErrorEstimation%delapsedCPU, 5)))//' %')
-    call output_line('Time for triangulation:        '//&
+    call output_line('Time for triangulation        : '//&
                      trim(adjustl(sys_sdE(p_rtimerTriangulation%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerTriangulation%delapsedCPU, 5)))//' %')
-    call output_line('Time for coefficient assembly: '//&
+    call output_line('Time for coefficient assembly : '//&
                      trim(adjustl(sys_sdE(p_rtimerAssemblyCoeff%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyCoeff%delapsedCPU, 5)))//' %')
-    call output_line('Time for matrix assembly:      '//&
+    call output_line('Time for matrix assembly      : '//&
                      trim(adjustl(sys_sdE(p_rtimerAssemblyMatrix%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyMatrix%delapsedCPU, 5)))//' %')
-    call output_line('Time for vector assembly:      '//&
+    call output_line('Time for vector assembly      : '//&
                      trim(adjustl(sys_sdE(p_rtimerAssemblyVector%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyVector%delapsedCPU, 5)))//' %')
-    call output_line('Time for pre-/post-processing: '//&
+    call output_line('Time for pre-/post-processing : '//&
                      trim(adjustl(sys_sdE(p_rtimerPrePostprocess%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerPrePostprocess%delapsedCPU, 5)))//' %')
     call output_lbrk()
-    call output_line('Time for total simulation:     '//&
+    call output_line('Time for total simulation     : '//&
                      trim(adjustl(sys_sdE(dtotalTime, 5))))
     call output_lbrk()
 
@@ -2226,7 +2300,7 @@ contains
 !</description>
 
 !<input>
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! time-stepping algorithm
@@ -2252,8 +2326,8 @@ contains
     ! solver structure
     type(t_solver), intent(inout) :: rsolver
 
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 
 !<output>
@@ -2276,6 +2350,7 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock) :: rvector1, rvector2
     type(t_matrixScalar) :: rmatrix
+    type(t_collection) :: rcollectionTmp
     real(DP), dimension(:), pointer :: p_DsolutionDual, p_Dresidual
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DtargetError
     integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
@@ -2332,16 +2407,16 @@ contains
     ! Calculate the standard Galerkin preconditioner
     ! (required for rhs and residual calculation)
     call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-        rsolver, rsolutionPrimal, rcollection)
+        rsolver, rsolutionPrimal, ssectionName, rcollection)
 
     ! Calculate the standard Galerkin right-hand side vector
     call transp_calcRhsThetaScheme(rproblemLevel, rtimestep, rsolver,&
-        rsolutionPrimal, rvector1, rcollection, rrhs)
+        rsolutionPrimal, rvector1, ssectionName, rcollection, rrhs)
 
     ! Calculate the standard Galerkin residual
     call transp_calcResidualThetaScheme(rproblemLevel, rtimestep,&
         rsolver, rsolutionPrimal, rsolutionPrimal, rvector1,&
-        rvector2, 0, rcollection)
+        rvector2, 0, ssectionName, rcollection)
 
     ! Ok, now we have to switch on all types of stabilisation again
     rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation =&
@@ -2439,91 +2514,123 @@ contains
 
       ! Get global configuration from parameter list
       call parlst_getvalue_int(rparlist, ssectionName,&
-                               'itargetfunctype', itargetfuncType)
+          'itargetfunctype', itargetfuncType)
       call parlst_getvalue_string(rparlist, ssectionName,&
-                                  'sexactsolutionname', sexactsolutionname, '')
-
+          'sexactsolutionname', sexactsolutionname, '')
+      
       select case(itargetfunctype)
       case (TFUNC_ZERO)
         call output_line('Zero target functional is not implemented yet!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
         call sys_halt()
 
 
       case(TFUNC_VOLINTG)
-        ! Get function parser from collection structure
-        p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
-
         ! Get global configuration from parameter list
         call parlst_getvalue_string(rparlist, ssectionName,&
-                                  'stargetfuncname', stargetfuncName)
+            'stargetfuncname', stargetfuncName)
+        
+        ! Get function parser from collection structure
+        p_rfparser => collct_getvalue_pars(rcollection,&
+            'rfparser', ssectionName=ssectionName)
 
-        ! Prepare quick access arrays of the collection
-        rcollection%DquickAccess(1) = rtimestep%dTime
-        rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
-        rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
-        rcollection%SquickAccess(1) = 'rfparser'
+        ! Initialize temporal collection structure
+        call collct_init(rcollectionTmp)
+        
+        ! Prepare quick access arrays of the temporal collection structure
+        rcollectionTmp%SquickAccess(1) = ''
+        rcollectionTmp%SquickAccess(2) = 'rfparser'
+        rcollectionTmp%DquickAccess(1) = rtimestep%dTime
+        rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+        rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
+
+        ! Attach user-defined collection structure to temporal collection
+        ! structure (may be required by the callback function)
+        rcollectionTmp%p_rnextCollection => rcollection
+        
+        ! Attach function parser from boundary conditions to collection
+        ! structure and specify its name in quick access string array
+        call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+        
 
         if (trim(sexacttargetfuncname) .ne. '') then
           ! Get the number of the component used for evaluating the exact target functional
           icomp = fparser_getFunctionNumber(p_rfparser, sexacttargetfuncName)
-
+          
           ! Evaluate exact value of the quantity of interest
           call fparser_evalFunction(p_rfparser, icomp,&
-                                   (/rtimestep%dTime/), dexactTargetFunc)
+              (/rtimestep%dTime/), dexactTargetFunc)
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dtargetFunc,&
-                            rsolutionPrimal%RvectorBlock(1),&
-                            rcollection=rcollection,&
-                            ffunctionWeight=transp_weightFuncAnalytic)
-
+              rsolutionPrimal%RvectorBlock(1), rcollection=rcollectionTmp,&
+              ffunctionWeight=transp_weightFuncAnalytic)
+          
           ! Compute exact error in target functional. Note that the
           ! routine pperr_scalar computes the value $J(0-u_h)$ so that we
           ! have to change the sign to minus
           dexactTargetError = dexactTargetFunc+dtargetFunc
-
+          
         else
-
+          
           ! Compute the exact error of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
               rsolutionPrimal%RvectorBlock(1), transp_refFuncAnalytic,&
-              rcollection, ffunctionWeight=transp_weightFuncAnalytic)
-
+              rcollectionTmp, ffunctionWeight=transp_weightFuncAnalytic)
+          
           ! Compute the exact value of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
               ffunctionReference=transp_refFuncAnalytic,&
-              rcollection=rcollection,&
+              rcollection=rcollectionTmp,&
               rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
               ffunctionWeight=transp_weightFuncAnalytic)
         end if
 
+        ! Release temporal collection structure
+        call collct_done(rcollectionTmp)
+
 
       case (TFUNC_SURFINTG)
-        ! Get function parser from collection structure
-        p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
-
         ! Get global configuration from parameter list
         call parlst_getvalue_int(rparlist, ssectionName,&
             'velocityfield', velocityfield)
         call parlst_getvalue_string(rparlist, ssectionName,&
             'stargetfuncname', stargetfuncName)
 
-        ! Prepare quick access arrays of the collection
-        rcollection%DquickAccess(1) = rtimestep%dTime
-        rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
-        rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
-        rcollection%SquickAccess(1) = 'rfparser'
+        ! Get function parser from collection structure
+        p_rfparser => collct_getvalue_pars(rcollection,&
+            'rfparser', ssectionName=ssectionName)
+        
+        ! Initialize temporal collection structure
+        call collct_init(rcollectionTmp)
 
+        ! Prepare quick access arrays of the temporal collection structure
+        rcollectionTmp%SquickAccess(1) = ''
+        rcollectionTmp%SquickAccess(2) = 'rfparser'
+        rcollectionTmp%DquickAccess(1) = rtimestep%dTime
+        rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+        rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
+
+        ! ... and also the numbers of the exact velocity function
         do i = 1, rproblemLevel%rtriangulation%ndim
           call parlst_getvalue_string(rparlist, ssectionName,&
               'svelocityname', svelocityname, isubString=i)
-          rcollection%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
+          rcollectionTmp%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
         end do
 
-        ! Attach vectors to collection structure
-        rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
-        rcollection%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
+        ! Attach primal solution vector and velocity fied to first and
+        ! second quick access vector of the temporal collection structure
+        rcollectionTmp%p_rvectorQuickAccess1 => rsolutionPrimal
+        rcollectionTmp%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
+        
+        ! Attach user-defined collection structure to temporal collection
+        ! structure (may be required by the callback function)
+        rcollectionTmp%p_rnextCollection => rcollection
+        
+        ! Attach function parser from boundary conditions to collection
+        ! structure and specify its name in quick access string array
+        call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+        
 
         if (trim(sexacttargetfuncname) .ne. '') then
           ! Get the number of the component used for evaluating the exact target functional
@@ -2532,14 +2639,14 @@ contains
           ! Evaluate exact value of the quantity of interest
           call fparser_evalFunction(p_rfparser, icomp,&
               (/rtimestep%dTime/), dexactTargetFunc)
-
-          ! Prepare quick access arrays of the collection
-          rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, '@null')
-
+          
+          ! Prepare quick access arrays of the temporal collection structure
+          rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, '@null')
+          
           ! Compute the approximate value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dtargetFunc,&
               ffunctionReference=transp_errorBdrInt2D_sim,&
-              rcollection=rcollection,&
+              rcollection=rcollectionTmp,&
               rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
               ffunctionWeight=transp_weightFuncBdrInt2D_sim)
 
@@ -2553,23 +2660,23 @@ contains
           ! Compute the exact error of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetError,&
               ffunctionReference=transp_errorBdrInt2D_sim,&
-              rcollection=rcollection,&
+              rcollection=rcollectionTmp,&
               rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
               ffunctionWeight=transp_weightFuncBdrInt2D_sim)
 
           ! Compute the exact value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetFunc,&
               ffunctionReference=transp_refFuncBdrInt2D_sim,&
-              rcollection=rcollection,&
+              rcollection=rcollectionTmp,&
               rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
               ffunctionWeight=transp_weightFuncBdrInt2D_sim)
         end if
 
+        ! Release temporal collection structure
+        call collct_done(rcollectionTmp)
+
 
       case (TFUNC_MIXINTG)
-        ! Get function parser from collection structure
-        p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
-
         ! Get global configuration from parameter list
         call parlst_getvalue_int(rparlist, ssectionName,&
             'velocityfield', velocityfield)
@@ -2584,21 +2691,40 @@ contains
               'stargetfuncname', stargetfuncname, isubstring=1)
         end if
 
-        ! Prepare quick access arrays of the collection
-        rcollection%DquickAccess(1) = rtimestep%dTime
-        rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
-        rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
-        rcollection%SquickAccess(1) = 'rfparser'
+        ! Get function parser from collection structure
+        p_rfparser => collct_getvalue_pars(rcollection,&
+            'rfparser', ssectionName=ssectionName)
+        
+        ! Initialize temporal collection structure
+        call collct_init(rcollectionTmp)
 
+        ! Prepare quick access arrays of the temporal collection structure
+        rcollectionTmp%SquickAccess(1) = ''
+        rcollectionTmp%SquickAccess(2) = 'rfparser'
+        rcollectionTmp%DquickAccess(1) = rtimestep%dTime
+        rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+        rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
+        
+        ! ... and also the numbers of the exact velocity function
         do i = 1, rproblemLevel%rtriangulation%ndim
           call parlst_getvalue_string(rparlist, ssectionName,&
               'svelocityname', svelocityname, isubString=i)
-          rcollection%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
+          rcollectionTmp%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
         end do
 
-        ! Attach vectors to collection structure
-        rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
-        rcollection%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
+        ! Attach primal solution vector and velocity fied to first and
+        ! second quick access vector of the temporal collection structure
+        rcollectionTmp%p_rvectorQuickAccess1 => rsolutionPrimal
+        rcollectionTmp%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
+
+        ! Attach user-defined collection structure to temporal collection
+        ! structure (may be required by the callback function)
+        rcollectionTmp%p_rnextCollection => rcollection
+        
+        ! Attach function parser from boundary conditions to collection
+        ! structure and specify its name in quick access string array
+        call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+
 
         if (trim(sexacttargetfuncname) .ne. '') then
           ! Get the number of the component used for evaluating the exact target functional
@@ -2606,16 +2732,16 @@ contains
 
           ! Evaluate exact value of the quantity of interest
           call fparser_evalFunction(p_rfparser, icomp,&
-                                   (/rtimestep%dTime/), dexactTargetFunc)
+              (/rtimestep%dTime/), dexactTargetFunc)
 
           ! Prepare quick access arrays of the collection
-          rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, '@null')
+          rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, '@null')
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dtargetFunc,&
-              rsolutionPrimal%RvectorBlock(1), rcollection&
-              =rcollection, ffunctionWeight=transp_weightFuncAnalytic)
-
+              rsolutionPrimal%RvectorBlock(1), rcollection=rcollectionTmp,&
+              ffunctionWeight=transp_weightFuncAnalytic)
+          
           ! Get the name of the function used for evaluating the
           ! surface integral part of the target functional
           if (parlst_querysubstrings(rparlist, ssectionName, 'stargetfuncname') .eq. 0) then
@@ -2627,12 +2753,12 @@ contains
           end if
 
           ! Prepare quick access arrays of the collection
-          rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
+          rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
               ffunctionReference=transp_errorBdrInt2D_sim,&
-              rcollection=rcollection,&
+              rcollection=rcollectionTmp,&
               rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
               ffunctionWeight=transp_weightFuncBdrInt2D_sim)
 
@@ -2648,16 +2774,16 @@ contains
 
           ! Compute the exact error of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
-              rsolutionPrimal%RvectorBlock(1), transp_refFuncAnalytic&
-              , rcollection, ffunctionWeight=transp_weightFuncAnalytic)
+              rsolutionPrimal%RvectorBlock(1), transp_refFuncAnalytic,&
+              rcollectionTmp, ffunctionWeight=transp_weightFuncAnalytic)
 
           ! Compute the exact value of the quantity of interest.
           call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
               ffunctionReference=transp_refFuncAnalytic,&
-              rcollection=rcollection,&
+              rcollection=rcollectionTmp,&
               rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
               ffunctionWeight=transp_weightFuncAnalytic)
-
+          
           ! Get the name of the function used for evaluating the
           ! surface integral part of the target functional
           if (parlst_querysubstrings(rparlist, ssectionName, 'stargetfuncname') .eq. 0) then
@@ -2669,13 +2795,13 @@ contains
           end if
 
           ! Prepare quick access arrays of the collection
-          rcollection%DquickAccess(1) = rtimestep%dTime
-          rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
+          rcollectionTmp%DquickAccess(1) = rtimestep%dTime
+          rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
 
           ! Compute the exact error of the quantity of interest at the boundary
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
               ffunctionReference=transp_errorBdrInt2D_sim,&
-              rcollection=rcollection,&
+              rcollection=rcollectionTmp,&
               rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
               ffunctionWeight=transp_weightFuncBdrInt2D_sim)
 
@@ -2685,7 +2811,7 @@ contains
           ! Compute the exact value of the quantity of interest at the boundary
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
               ffunctionReference=transp_refFuncBdrInt2D_sim,&
-              rcollection=rcollection,&
+              rcollection=rcollectionTmp,&
               rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
               ffunctionWeight=transp_weightFuncBdrInt2D_sim)
 
@@ -2693,10 +2819,13 @@ contains
           dexactTargetFunc = dexactTargetFunc + daux
         end if
 
+        ! Release temporal collection structure
+        call collct_done(rcollectionTmp)
+
 
       case default
         call output_line('Invalid type of target functional!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
         call sys_halt()
       end select
 
@@ -2728,7 +2857,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of grid indicator!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
       call sys_halt()
     end select
 
@@ -2740,15 +2869,15 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
     call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'nprotectLayers', nprotectLayers, 0)
     call parlst_getvalue_double(rparlist, trim(serrorestimatorName),&
-                                'dprotectLayerTolerance', dprotectLayerTolerance, 0.0_DP)
+        'dprotectLayerTolerance', dprotectLayerTolerance, 0.0_DP)
 
     if (nprotectLayers > 0) then
 
       ! Create auxiliary memory
       h_BisactiveElement = ST_NOHANDLE
       call storage_new('transp_estimateTargetFuncError',' BisactiveElement',&
-                       rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
-                       h_BisactiveElement, ST_NEWBLOCK_NOINIT)
+          rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
+          h_BisactiveElement, ST_NEWBLOCK_NOINIT)
       call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
 
       ! Set pointers
@@ -2854,7 +2983,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! solution vector
@@ -2869,7 +2998,7 @@ contains
 
 !<inputoutput>
     ! collection structure
-    type(t_collection), intent(inout) :: rcollection
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 
 !<output>
@@ -2888,6 +3017,7 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorScalar) :: rvectorScalar
+    type(t_collection) :: rcollectionTmp
     real(DP), dimension(:), pointer :: p_Ddata, p_Derror
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
@@ -2967,19 +3097,32 @@ contains
     case (SOLUTION_ANALYTIC_POINTVALUE)
 
       ! Get function parser from collection
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
 
       ! Get the number of the component used for evaluating the target functional
       icomp = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
 
-      ! Prepare quick access arrays of the collection
-      rcollection%DquickAccess(1) = dtime
-      rcollection%IquickAccess(1) = icomp
-      rcollection%SquickAccess(1) = 'rfparser'
+      ! Initialize temporal collection structure
+      call collct_init(rcollectionTmp)
+
+      ! Prepare quick access arrays of the temporal collection structure
+      rcollectionTmp%SquickAccess(1) = ''
+      rcollectionTmp%SquickAccess(2) = 'rfparser'
+      rcollectionTmp%DquickAccess(1) = dtime
+      rcollectionTmp%IquickAccess(1) = icomp
+      
+      ! Attach user-defined collection structure to temporal collection
+      ! structure (may be required by the callback function)
+      rcollectionTmp%p_rnextCollection => rcollection
+
+      ! Attach function parser from boundary conditions to collection
+      ! structure and specify its name in quick access string array
+      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
 
       ! Calculate the H1-error of the reference solution
       call pperr_scalar(PPERR_H1ERROR, dexacterror, rsolution%RvectorBlock(1),&
-                        transp_refFuncAnalytic, rcollection)
+                        transp_refFuncAnalytic, rcollectionTmp)
 
       call output_lbrk()
       call output_line('Error Analysis')
@@ -2988,6 +3131,9 @@ contains
       call output_line('exact H1-error:     '//trim(sys_sdEP(dexacterror,15,6)))
       call output_line('effectivity index:  '//trim(sys_sdEP(derror/dexacterror,15,6)))
       call output_lbrk()
+
+      ! Release temporal collection structure
+      call collct_done(rcollectionTmp)
 
     case DEFAULT
       call output_lbrk()
@@ -3249,7 +3395,7 @@ contains
     ! element-wise indicator
     type(t_vectorScalar), intent(inout) :: rindicator
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
@@ -3331,7 +3477,7 @@ contains
 !</description>
 
 !<input>
-      ! section name in parameter list
+      ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! boundary condition structure
@@ -3398,12 +3544,18 @@ contains
 
 
     ! Get timer structures
-    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
-    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
+        'rtimerPrePostprocess', ssectionName=ssectionName)
+    p_rtimerSolution => collct_getvalue_timer(rcollection,&
+        'rtimerSolution', ssectionName=ssectionName)
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection,&
+        'rtimerErrorEstimation', ssectionName=ssectionName)
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection,&
+        'rtimerAdaptation', ssectionName=ssectionName)
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection,&
+        'rtimerTriangulation', ssectionName=ssectionName)
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', ssectionName=ssectionName)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -3575,9 +3727,6 @@ contains
       ! Start time measurement for solution procedure
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
 
-      ! Prepare quick access arrays of the collection
-      rcollection%SquickAccess(1) = ssectionName
-
       ! What time-stepping scheme should be used?
       select case(rtimestep%ctimestepType)
 
@@ -3617,7 +3766,7 @@ contains
 
       ! Perform linearised FEM-FCT post-processing
       call transp_calcLinearisedFCT(rbdrCond, p_rproblemLevel,&
-          rtimestep, rsolver, rsolution, rcollection)
+          rtimestep, rsolver, rsolution, ssectionName, rcollection)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
@@ -3794,7 +3943,7 @@ contains
 !</description>
 
 !<input>
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! boundary condition structure for the primal problem
@@ -3852,7 +4001,7 @@ contains
 !</description>
 
 !<input>
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! boundary condition structure
@@ -3916,14 +4065,19 @@ contains
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
-
     ! Get timer structures
-    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
-    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
+        'rtimerPrePostprocess', ssectionName=ssectionName)
+    p_rtimerSolution => collct_getvalue_timer(rcollection,&
+        'rtimerSolution', ssectionName=ssectionName)
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection,&
+        'rtimerErrorEstimation', ssectionName=ssectionName)
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection,&
+        'rtimerAdaptation', ssectionName=ssectionName)
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection,&
+        'rtimerTriangulation', ssectionName=ssectionName)
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', ssectionName=ssectionName)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -4015,9 +4169,6 @@ contains
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
             0.0_DP, rrhs, rcollection)
 
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
-
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
             rsolver, rsolution, transp_nlsolverCallback, rcollection, rrhs)
@@ -4026,9 +4177,6 @@ contains
         call lsysbl_releaseVector(rrhs)
 
       else
-
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem without right-hand side
         call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
@@ -4149,7 +4297,7 @@ contains
 !</description>
 
 !<input>
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! boundary condition structure for the primal problem
@@ -4221,12 +4369,18 @@ contains
 
 
     ! Get timer structures
-    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
-    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
+        'rtimerPrePostprocess', ssectionName=ssectionName)
+    p_rtimerSolution => collct_getvalue_timer(rcollection,&
+        'rtimerSolution', ssectionName=ssectionName)
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection,&
+        'rtimerErrorEstimation', ssectionName=ssectionName)
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection,&
+        'rtimerAdaptation', ssectionName=ssectionName)
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection,&
+        'rtimerTriangulation', ssectionName=ssectionName)
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', ssectionName=ssectionName)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -4316,9 +4470,6 @@ contains
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
             0.0_DP, rrhs, rcollection)
 
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
-
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
             rsolver, rsolutionPrimal, transp_nlsolverCallback,&
@@ -4328,9 +4479,6 @@ contains
         call lsysbl_releaseVector(rrhs)
 
       else
-
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem without right-hand side
         call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
@@ -4379,9 +4527,6 @@ contains
       call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
 
-      ! Prepare quick access arrays of the collection
-      rcollection%SquickAccess(1) = ssectionName
-
       ! Solve the dual problem
       call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
           rsolver, rsolutionDual, transp_nlsolverCallback,&
@@ -4422,9 +4567,6 @@ contains
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
             0.0_DP, rrhs, rcollection)
 
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
-
         ! Compute the error in the quantity of interest
         call transp_estimateTargetFuncError(rparlist, ssectionName,&
             p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
@@ -4434,9 +4576,6 @@ contains
         call lsysbl_releaseVector(rrhs)
 
       else
-
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
 
         ! Compute the error in the quantity of interest
         call transp_estimateTargetFuncError(rparlist, ssectionName,&
@@ -4539,7 +4678,7 @@ contains
 !</description>
 
 !<input>
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! boundary condition structure
@@ -4605,12 +4744,18 @@ contains
 
 
     ! Get timer structures
-    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
-    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
+        'rtimerPrePostprocess', ssectionName=ssectionName)
+    p_rtimerSolution => collct_getvalue_timer(rcollection,&
+        'rtimerSolution', ssectionName=ssectionName)
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection,&
+        'rtimerErrorEstimation', ssectionName=ssectionName)
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection,&
+        'rtimerAdaptation', ssectionName=ssectionName)
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection,&
+        'rtimerTriangulation', ssectionName=ssectionName)
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', ssectionName=ssectionName)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -4659,7 +4804,7 @@ contains
         call grph_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
-            rgraph, .true.)
+            rgraph, .true., ssectionName=ssectionName)
 
         ! Attach the primal solution vector to the collection structure
         rcollection%p_rvectorQuickAccess1 => rsolution
@@ -4707,9 +4852,6 @@ contains
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
             0.0_DP, rrhs, rcollection)
 
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
-
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
             rsolver, rsolution, transp_nlsolverCallback, rcollection,&
@@ -4719,9 +4861,6 @@ contains
         call lsysbl_releaseVector(rrhs)
 
       else
-
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem without right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
@@ -4841,7 +4980,7 @@ contains
 !</description>
 
 !<input>
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! boundary condition structure for the primal problem
@@ -4913,12 +5052,18 @@ contains
 
 
     ! Get timer structures
-    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
-    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
+        'rtimerPrePostprocess', ssectionName=ssectionName)
+    p_rtimerSolution => collct_getvalue_timer(rcollection,&
+        'rtimerSolution', ssectionName=ssectionName)
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection,&
+        'rtimerErrorEstimation', ssectionName=ssectionName)
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection,&
+        'rtimerAdaptation', ssectionName=ssectionName)
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection,&
+        'rtimerTriangulation', ssectionName=ssectionName)
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', ssectionName=ssectionName)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -5016,9 +5161,6 @@ contains
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
             0.0_DP, rrhs, rcollection)
 
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
-
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
             rsolver, rsolutionPrimal, transp_nlsolverCallback,&
@@ -5028,9 +5170,6 @@ contains
         call lsysbl_releaseVector(rrhs)
 
       else
-
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem without right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
@@ -5079,9 +5218,6 @@ contains
       call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
 
-      ! Prepare quick access arrays of the collection
-      rcollection%SquickAccess(1) = ssectionName
-
       ! Solve the dual problem
       call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
           rsolutionDual, transp_nlsolverCallback, rcollection,&
@@ -5122,9 +5258,6 @@ contains
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
             0.0_DP, rrhs, rcollection)
 
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
-
         ! Compute the error in the quantity of interest
         call transp_estimateTargetFuncError(rparlist, ssectionName,&
             p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
@@ -5134,9 +5267,6 @@ contains
         call lsysbl_releaseVector(rrhs)
 
       else
-
-        ! Prepare quick access arrays of the collection
-        rcollection%SquickAccess(1) = ssectionName
 
         ! Compute the error in the quantity of interest
         call transp_estimateTargetFuncError(rparlist, ssectionName,&

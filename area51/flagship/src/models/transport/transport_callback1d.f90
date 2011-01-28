@@ -9,10 +9,7 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) transp_setVariable1d
-!#     -> Sets global variables for external data, e.g., velocity fields in 1D
-!#
-!# 2.) transp_hadaptCallback1d
+!# 1.) transp_hadaptCallback1d
 !#      -> Performs application specific tasks in the adaptation algorithm in 1D
 !#
 !#
@@ -142,7 +139,6 @@ module transport_callback1d
 
   private
   
-  public :: transp_setVariable1d
   public :: transp_hadaptCallback1d
 
   public :: transp_calcMatDiagConvP1d_sim
@@ -169,62 +165,7 @@ module transport_callback1d
   public :: transp_coeffVecBdrBLevP1d_sim
   public :: transp_coeffMatBdrBLevP1d_sim
 
-!<globals>
-
-  !*****************************************************************
-  ! Pointers to external data vectors.
-  !
-  ! Using global variables is not good programming style but it is the
-  ! only way to allow for an efficient access to the velocity data
-  ! from within the callback routines which are called repeatedly
-
-  real(DP), dimension(:), pointer, save :: p_Dvariable1 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable2 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable3 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable4 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable5 => null()
-
-!</globals>
-
 contains
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_setVariable1d(rvector, ivariable)
-
-!<description>
-    ! This subroutine sets one of the the global pointers to the given vector.
-!</description>
-
-!<input>
-    ! scalar vector
-    type(t_vectorScalar), intent(in) :: rvector
-
-    ! variable number
-    integer, intent(in) :: ivariable
-!</input>
-!</subroutine>
-
-    select case(ivariable)
-    case (1)
-      call lsyssc_getbase_double(rvector, p_Dvariable1)
-    case (2)
-      call lsyssc_getbase_double(rvector, p_Dvariable2)
-    case (3)
-      call lsyssc_getbase_double(rvector, p_Dvariable3)
-    case (4)
-      call lsyssc_getbase_double(rvector, p_Dvariable4)
-    case (5)
-      call lsyssc_getbase_double(rvector, p_Dvariable5)
-    case DEFAULT
-      call output_line('Invalid variable number!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable1d')
-      call sys_halt()
-    end select
-
-  end subroutine transp_setVariable1d
   
   !*****************************************************************************
 
@@ -244,7 +185,12 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Collection
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   IquickAccess(1):     NEQ or ivt
+    !   IquickAccess(2:3):   ivt1,ivt2
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -323,7 +269,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagConvP1d_sim(DdataAtNode,&
+  subroutine transp_calcMatDiagConvP1d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -351,7 +297,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -362,22 +311,24 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX
     integer :: inode
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+
     do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+          p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
 #else
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+          p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
 #endif
     end do
     
@@ -387,7 +338,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalConvP1d_sim(DdataAtEdge,&
+  subroutine transp_calcMatGalConvP1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -415,7 +366,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -426,28 +380,30 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+          p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
       ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+          p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
 #else
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+          p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+          p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
 #endif
 
       ! Set artificial diffusion to zero
@@ -460,7 +416,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwConvP1d_sim(DdataAtEdge,&
+  subroutine transp_calcMatUpwConvP1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -489,7 +445,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -500,28 +459,30 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its doubledata
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+          p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
       ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+          p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
 #else
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+          p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+          p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
 #endif
       
       ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
@@ -593,8 +554,17 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   rvectorQuickAccess2: velocity field
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -610,7 +580,7 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
-    type(t_vectorBlock), pointer :: p_rvelocity
+    type(t_vectorBlock), pointer :: p_rsolution,p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnx,dnv,dtime,dscale,dval
@@ -623,14 +593,17 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
-    ! This subroutine assumes that the first quick access vector
-    ! points to the velocity vector (if any)
-    p_rvelocity => rcollection%p_rvectorQuickAccess1
+    ! This subroutine assumes that the first two quick access vectors
+    ! point to the solution and velocity vector (if any)
+    p_rsolution => rcollection%p_rvectorQuickAccess1
+    p_rvelocity => rcollection%p_rvectorQuickAccess2
 
     ! The first two quick access double values hold the simulation
     ! time and the scaling parameter
@@ -737,52 +710,61 @@ contains
       !
       ! and do not include any boundary integral into the bilinear form at all.
       
-      ! Allocate temporal memory
-      allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+      if (associated(p_rvelocity)) then
 
-      ! Evaluate the velocity field in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
-      call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
-          p_rvelocity%RvectorBlock(1), Dpoints, &
-          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-      ! Initialize values
-      Dvalue = 0.0_DP
-      Dvalue(NDIM3D+1) = dtime
-
-      ! Evaluate the function parser for the boundary values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,2).
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Set values for function parser
-          Dvalue(1:NDIM1D) = Dpoints(1:NDIM1D, ipoint, iel)
-
-          ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment,&
-              Dvalue, Daux(ipoint,iel,2))
+        ! Allocate temporal memory
+        allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+        
+        ! Evaluate the velocity field in the cubature points on the boundary
+        ! and store the result in Daux(:,:,:,1)
+        call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
+            p_rvelocity%RvectorBlock(1), Dpoints, &
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+        
+        ! Initialize values
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Evaluate the function parser for the boundary values in the
+        ! cubature points on the boundary and store the result in
+        ! Dcoefficients(:,:,2).
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:NDIM1D) = Dpoints(1:NDIM1D, ipoint, iel)
+            
+            ! Evaluate function parser
+            call fparser_evalFunction(p_rfparser, isegment,&
+                Dvalue, Daux(ipoint,iel,2))
+          end do
         end do
-      end do
-      
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
-          
-          ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = dnx * Daux(ipoint,iel,1)
-          Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
+        
+        ! Multiply the velocity vector with the normal in each point
+        ! to get the normal velocity.
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Compute the normal velocity and impose Dirichlet boundary condition
+            dnv = dnx * Daux(ipoint,iel,1)
+            Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
+          end do
         end do
-      end do
+        
+        ! Deallocate temporal memory
+        deallocate(Daux)
 
-      ! Deallocate temporal memory
-      deallocate(Daux)
-
+      else
+        
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+        
+      end if
       
+
     case(BDRC_FLUX)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s prescribed at the inlet):
@@ -795,56 +777,81 @@ contains
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
 
-      ! Allocate temporal memory
-      allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
-
-      ! Evaluate the velocity field in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
-      call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
-          p_rvelocity%RvectorBlock(1), Dpoints, &
-          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-      ! Initialize values
-      Dvalue = 0.0_DP
-      Dvalue(NDIM3D+1) = dtime
-
-      ! Evaluate the function parser for the boundary values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,2).
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Set values for function parser
-          Dvalue(1:NDIM1D) = Dpoints(1:NDIM1D, ipoint, iel)
-
-          ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment,&
-              Dvalue, Daux(ipoint,iel,2))
+      if (associated(p_rvelocity)) then
+        
+        ! Allocate temporal memory
+        allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+        
+        ! Evaluate the velocity field in the cubature points on the boundary
+        ! and store the result in Daux(:,:,:,1)
+        call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
+            p_rvelocity%RvectorBlock(1), Dpoints, &
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+        
+        ! Initialize values
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Evaluate the function parser for the boundary values in the
+        ! cubature points on the boundary and store the result in
+        ! Dcoefficients(:,:,2).
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:NDIM1D) = Dpoints(1:NDIM1D, ipoint, iel)
+            
+            ! Evaluate function parser
+            call fparser_evalFunction(p_rfparser, isegment,&
+                Dvalue, Daux(ipoint,iel,2))
+          end do
         end do
-      end do
-
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
-
-          ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1)
-
-          ! Check if we are at the primal inflow boundary
-          if (dnv .lt. 0.0_DP) then
-            Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
-          else
-            Dcoefficients(1,ipoint,iel) = 0.0_DP
-          end if
+        
+        ! Multiply the velocity vector with the normal in each point
+        ! to get the normal velocity.
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Compute the normal velocity
+            dnv = dnx * Daux(ipoint,iel,1)
+            
+            ! Check if we are at the primal inflow boundary
+            if (dnv .lt. 0.0_DP) then
+              Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
+            else
+              Dcoefficients(1,ipoint,iel) = 0.0_DP
+            end if
+          end do
         end do
-      end do
+        
+        ! Deallocate temporal memory
+        deallocate(Daux)
 
-      ! Deallocate temporal memory
-      deallocate(Daux)
+      else
+        
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+        
+      end if
+
+
+    case(BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+      !-------------------------------------------------------------------------
+      ! Periodic/Antiperiodic boundary conditions (Flux boundary conditions):
+      !
+      ! Evaluate coefficient for both the convective and diffusive
+      ! part for the linear form at the inflow boundary part.
+      !
+      ! $$ -({\bf v}u-d\nabla u)\cdot{\bf n} = -({\bf v}g)\cdot{\bf n} $$
+      !
+      ! The boundary integral at the outflow boundary is included
+      ! into the bilinear form.
+      
+      print *, "Periodic boundary conditions in 1D are not implemented yet"
+      stop
 
       
     case default
@@ -917,8 +924,17 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   rvectorQuickAccess2: velocity field
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -934,7 +950,7 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
-    type(t_vectorBlock), pointer :: p_rvelocity
+    type(t_vectorBlock), pointer :: p_rsolution,p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnx,dnv,dtime,dscale,dval
@@ -947,14 +963,17 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
-    ! This subroutine assumes that the first quick access vector
-    ! points to the velocity vector (if any)
-    p_rvelocity => rcollection%p_rvectorQuickAccess1
+    ! This subroutine assumes that the first two quick access vectors
+    ! point to the solution and velocity vector (if any)
+    p_rsolution => rcollection%p_rvectorQuickAccess1
+    p_rvelocity => rcollection%p_rvectorQuickAccess2
 
     ! The first two quick access double values hold the simulation
     ! time and the scaling parameter
@@ -1061,51 +1080,60 @@ contains
       !
       ! and do not include any boundary integral into the bilinear form at all.
 
-      ! Allocate temporal memory
-      allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+      if (associated(p_rvelocity)) then
 
-      ! Evaluate the velocity field in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
-      call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
-          p_rvelocity%RvectorBlock(1), Dpoints, &
-          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-      ! Initialize values
-      Dvalue = 0.0_DP
-      Dvalue(NDIM3D+1) = dtime
-
-      ! Evaluate the function parser for the boundary values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,2).
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Set values for function parser
-          Dvalue(1:NDIM1D) = Dpoints(1:NDIM1D, ipoint, iel)
-
-          ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment,&
-              Dvalue, Daux(ipoint,iel,2))
+        ! Allocate temporal memory
+        allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+        
+        ! Evaluate the velocity field in the cubature points on the boundary
+        ! and store the result in Daux(:,:,:,1)
+        call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
+            p_rvelocity%RvectorBlock(1), Dpoints, &
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+        
+        ! Initialize values
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Evaluate the function parser for the boundary values in the
+        ! cubature points on the boundary and store the result in
+        ! Dcoefficients(:,:,2).
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:NDIM1D) = Dpoints(1:NDIM1D, ipoint, iel)
+            
+            ! Evaluate function parser
+            call fparser_evalFunction(p_rfparser, isegment,&
+                Dvalue, Daux(ipoint,iel,2))
+          end do
         end do
-      end do
-
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
-
-          ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = dnx * Daux(ipoint,iel,1)
-          Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,2)
+        
+        ! Multiply the velocity vector with the normal in each point
+        ! to get the normal velocity.
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Compute the normal velocity and impose Dirichlet boundary condition
+            dnv = dnx * Daux(ipoint,iel,1)
+            Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,2)
+          end do
         end do
-      end do
-
-      ! Deallocate temporal memory
-      deallocate(Daux)
-
+        
+        ! Deallocate temporal memory
+        deallocate(Daux)
+        
+      else
+        
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+        
+      end if
+        
       
     case(BDRC_FLUX)
       !-------------------------------------------------------------------------
@@ -1118,57 +1146,83 @@ contains
       !
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
-            
-      ! Allocate temporal memory
-      allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
-
-      ! Evaluate the velocity field in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
-      call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
-          p_rvelocity%RvectorBlock(1), Dpoints,&
-          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-      ! Initialize values
-      Dvalue = 0.0_DP
-      Dvalue(NDIM3D+1) = dtime
-
-      ! Evaluate the function parser for the boundary values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,2).
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Set values for function parser
-          Dvalue(1:NDIM1D) = Dpoints(1:NDIM1D, ipoint, iel)
-
-          ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment,&
-              Dvalue, Daux(ipoint,iel,2))
-        end do
-      end do
       
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
-          
-          ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1)
-
-          ! Check if we are at the dual inflow boundary
-          if (dnv .gt. SYS_EPSREAL) then
-            Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,2)
-          else
-            Dcoefficients(1,ipoint,iel) = 0.0_DP
-          end if
+      if (associated(p_rvelocity)) then
+        
+        ! Allocate temporal memory
+        allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+        
+        ! Evaluate the velocity field in the cubature points on the boundary
+        ! and store the result in Daux(:,:,:,1)
+        call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
+            p_rvelocity%RvectorBlock(1), Dpoints,&
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+        
+        ! Initialize values
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Evaluate the function parser for the boundary values in the
+        ! cubature points on the boundary and store the result in
+        ! Dcoefficients(:,:,2).
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:NDIM1D) = Dpoints(1:NDIM1D, ipoint, iel)
+            
+            ! Evaluate function parser
+            call fparser_evalFunction(p_rfparser, isegment,&
+                Dvalue, Daux(ipoint,iel,2))
+          end do
         end do
-      end do
+        
+        ! Multiply the velocity vector with the normal in each point
+        ! to get the normal velocity.
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Compute the normal velocity
+            dnv = dnx * Daux(ipoint,iel,1)
+            
+            ! Check if we are at the dual inflow boundary
+            if (dnv .gt. SYS_EPSREAL) then
+              Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,2)
+            else
+              Dcoefficients(1,ipoint,iel) = 0.0_DP
+            end if
+          end do
+        end do
+        
+        ! Deallocate temporal memory
+        deallocate(Daux)
+        
+      else
+        
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+        
+      end if
 
-      ! Deallocate temporal memory
-      deallocate(Daux)
+
+    case(BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+      !-------------------------------------------------------------------------
+      ! Periodic/Antiperiodic boundary conditions (Flux boundary conditions):
+      !
+      ! Evaluate coefficient for both the convective and diffusive
+      ! part for the linear form at the inflow boundary part.
+      !
+      ! $$ -({\bf v}u-d\nabla u)\cdot{\bf n} = -({\bf v}g)\cdot{\bf n} $$
+      !
+      ! The boundary integral at the outflow boundary is included
+      ! into the bilinear form.
+
+      print *, "Periodic boundary conditions in 1D are not implemented yet"
+      stop
+
 
     case default
       call output_line('Invalid type of boundary conditions!',&
@@ -1245,8 +1299,15 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   rvectorQuickAccess2: velocity field
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -1261,10 +1322,10 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rvelocity
+    type(t_vectorBlock), pointer :: p_rsolution,p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP) :: dnx,dnv,dtime,dscale
-    integer :: ibdrtype,isegment,iel,ipoint,ivelocityType
+    integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -1273,9 +1334,10 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access vector
-    ! points to the velocity vector (if any)
-    p_rvelocity => rcollection%p_rvectorQuickAccess1
+    ! This subroutine assumes that the first two quick access vectors
+    ! point to the solution and velocity vector (if any)
+    p_rsolution => rcollection%p_rvectorQuickAccess1
+    p_rvelocity => rcollection%p_rvectorQuickAccess2
 
     ! The first two quick access double values hold the simulation
     ! time and the scaling parameter
@@ -1295,19 +1357,8 @@ contains
       ! (In-)Homogeneous Neumann boundary conditions:
       ! Assemble the convective part of the boundary integral (if any)
 
-      ! What type of velocity are we?
-      ivelocityType = rcollection%IquickAccess(3)
-      if (ivelocityType .eq. VELOCITY_ZERO) then
-
-        ! Set the coefficient to zero
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-            Dcoefficients(1,ipoint,iel) = 0.0
-          end do
-        end do
-      
-      else
-
+      if (associated(p_rvelocity)) then
+        
         ! Allocate temporal memory
         allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
         
@@ -1336,6 +1387,11 @@ contains
         ! Free temporal memory
         deallocate(Daux)
 
+      else
+
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+        
       end if
 
 
@@ -1477,8 +1533,15 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   rvectorQuickAccess2: velocity field
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -1493,10 +1556,10 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rvelocity
+    type(t_vectorBlock), pointer :: p_rsolution,p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP) :: dnx,dnv,dtime,dscale
-    integer :: ibdrtype,isegment,iel,ipoint,ivelocityType
+    integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -1505,9 +1568,10 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access vector
-    ! points to the velocity vector (if any)
-    p_rvelocity => rcollection%p_rvectorQuickAccess1
+    ! This subroutine assumes that the first two quick access vectors
+    ! point to the solution and velocity vector (if any)
+    p_rsolution => rcollection%p_rvectorQuickAccess1
+    p_rvelocity => rcollection%p_rvectorQuickAccess2
 
     ! The first two quick access double values hold the simulation
     ! time and the scaling parameter
@@ -1527,18 +1591,7 @@ contains
       ! (In-)Homogeneous Neumann boundary conditions:
       ! Assemble the boundary integral for the convective term (if any)
 
-      ! What type of velocity are we?
-      ivelocityType = rcollection%IquickAccess(3)
-      if (ivelocityType .eq. VELOCITY_ZERO) then
-
-        ! Set the coefficient to zero
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-            Dcoefficients(1,ipoint,iel) = 0.0
-          end do
-        end do
-      
-      else
+      if (associated(p_rvelocity)) then
 
         ! Allocate temporal memory
         allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
@@ -1568,6 +1621,11 @@ contains
         ! Free temporal memory
         deallocate(Daux)
 
+      else
+
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+        
       end if
 
 
@@ -1646,7 +1704,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagConvD1d_sim(DdataAtNode,&
+  subroutine transp_calcMatDiagConvD1d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -1674,7 +1732,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1685,22 +1746,24 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX
     integer :: inode
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+
     do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+          p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
 #else
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+          p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
 #endif
     end do
     
@@ -1710,7 +1773,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalConvD1d_sim(DdataAtEdge,&
+  subroutine transp_calcMatGalConvD1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1738,7 +1801,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1749,28 +1815,30 @@ contains
 !</subroutine>
     
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
     
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+          p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+          p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+          p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
       ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+          p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
 #endif
 
       ! Set artificial diffusion to zero
@@ -1783,7 +1851,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwConvD1d_sim(DdataAtEdge,&
+  subroutine transp_calcMatUpwConvD1d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1812,7 +1880,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1823,28 +1894,30 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
     
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+          p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+          p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+          p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
       ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+          p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
 #endif
 
       ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
@@ -1885,7 +1958,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1944,7 +2018,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2015,7 +2090,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2117,8 +2193,16 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2147,10 +2231,12 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
@@ -2440,8 +2526,14 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -2624,7 +2716,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2689,7 +2782,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2766,7 +2860,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2871,8 +2966,16 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2901,10 +3004,12 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
@@ -3205,8 +3310,14 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 

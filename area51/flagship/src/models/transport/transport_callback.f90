@@ -75,25 +75,22 @@
 !# 13.) transp_calcVelocityField
 !#      -> Calculates the velocity field
 !#
-!# 14.) transp_setVelocityField
-!#      -> Sets the velocity field internally
-!#
-!# 15.) transp_calcLinearisedFCT
+!# 14.) transp_calcLinearisedFCT
 !#      -> Calculates the linearised FCT correction
 !#
-!# 16.) transp_coeffVectorAnalytic
+!# 15.) transp_coeffVectorAnalytic
 !#      -> Callback routine for the evaluation of linear forms
 !#         using an analytic expression for the load-vector
 !#
-!# 17.) transp_refFuncAnalytic
+!# 16.) transp_refFuncAnalytic
 !#      -> Callback routine for the evaluation of the reference
 !#         target function for goal-oriented error estimation
 !#
-!# 18.) transp_weightFuncAnalytic
+!# 17.) transp_weightFuncAnalytic
 !#      -> Callback routine for the evaluation of the weights in
 !#         the target functional for goal-oriented error estimation
 !#
-!# 19.) transp_parseBoundaryCondition
+!# 18.) transp_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
 !#
@@ -173,7 +170,6 @@ module transport_callback
   public :: transp_calcLinfBdrCond1D
   public :: transp_calcLinfBdrCond2D
   public :: transp_calcVelocityField
-  public :: transp_setVelocityField
   public :: transp_calcLinearisedFCT
   public :: transp_coeffVectorAnalytic
   public :: transp_refFuncAnalytic
@@ -240,8 +236,13 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
+    character(len=SYS_STRLEN) :: ssectionName
     integer(i32) :: iSpec
     integer :: jacobianMatrix
+
+    ! Get section name
+    call collct_getvalue_string(rcollection,&
+        'ssectionname', ssectionName)
 
 
     !###########################################################################
@@ -263,11 +264,12 @@ contains
 
       ! Compute the preconditioner
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rcollection)
+          rsolver, rsolution, ssectionName, rcollection)
 
       ! Compute the right-hand side
       call transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rrhs, istep, rcollection, rsource)
+          rsolver, rsolution, rsolution0, rrhs, istep,&
+          ssectionName, rcollection, rsource)
 
       ! Remove specifier for the preconditioner (if any)
       iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
@@ -281,16 +283,16 @@ contains
       if (istep .eq. 0) then
         ! Compute the constant right-hand side
         call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution0, rrhs, rcollection, rsource)
+            rsolver, rsolution0, rrhs, ssectionName, rcollection, rsource)
       end if
 
       ! Compute the preconditioner
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rcollection)
+          rsolver, rsolution, ssectionName, rcollection)
 
       ! Compute the residual
       call transp_calcResidualThetaScheme(rproblemLevel, rtimestep, rsolver,&
-          rsolution, rsolution0, rrhs, rres, istep, rcollection)
+          rsolution, rsolution0, rrhs, rres, istep, ssectionName, rcollection)
 
       ! Remove specifier for the preconditioner (if any)
       iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
@@ -303,7 +305,7 @@ contains
 
       ! Compute the preconditioner
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rcollection)
+          rsolver, rsolution, ssectionName, rcollection)
     end if
 
 
@@ -313,7 +315,7 @@ contains
 
       ! Compute the Jacobian matrix
       call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rcollection)
+          rsolver, rsolution, rsolution0, ssectionName, rcollection)
     end if
 
 
@@ -323,7 +325,7 @@ contains
 
       ! Impose boundary conditions
       call transp_setBoundaryCondition(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rres, rcollection)
+          rsolver, rsolution, rsolution0, rres, ssectionName, rcollection)
     end if
 
 
@@ -331,16 +333,14 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(iSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
 
-      p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-
+      p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'jacobianMatrix', jacobianMatrix)
+          ssectionName, 'jacobianMatrix', jacobianMatrix)
 
       ! Apply Jacobian matrix
       call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
-          rsolution%RvectorBlock(1), rres%RvectorBlock(1), 1.0_DP,&
-          1.0_DP)
+          rsolution%RvectorBlock(1), rres%RvectorBlock(1), 1.0_DP, 1.0_DP)
     end if
 
 
@@ -354,7 +354,7 @@ contains
 !<subroutine>
 
   subroutine transp_calcPrecondThetaScheme(rproblemLevel,&
-      rtimestep, rsolver, rsolution, rcollection,&
+      rtimestep, rsolver, rsolution, ssectionName, rcollection,&
       fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
       fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
       fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
@@ -373,6 +373,9 @@ contains
 
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
     ! user-defined callback functions
     include 'intf_transpCalcMatrix.inc'
@@ -398,14 +401,15 @@ contains
     ! solver structure
     type(t_solver), intent(inout) :: rsolver
 
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    type(t_collection) :: rcollectionTmp
     character(LEN=SYS_STRLEN) :: smode
     logical :: bbuildStabilisation
     integer :: systemMatrix, transportMatrix, lumpedMassMatrix, consistentMassMatrix
@@ -424,7 +428,8 @@ contains
     if (iand(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE) .eq. 0) return
 
     ! Start time measurement for matrix evaluation
-    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
+    p_rtimer => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyMatrix', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! Remove update notifier for further calls. Depending on the
@@ -433,22 +438,18 @@ contains
                                       not(PROBLEV_MSPEC_UPDATE))
 
     ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'transportmatrix', transportMatrix)
+        ssectionName, 'transportmatrix', transportMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CX', coeffMatrix_CX)
+        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-    'coeffMatrix_CY', coeffMatrix_CY)
+        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CZ', coeffMatrix_CZ)
+        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ)
     call parlst_getvalue_int(p_rparlist,&
-        Rcollection%squickaccess(1),&
-        'Coeffmatrix_s', coeffMatrix_S)
+        ssectionName, 'coeffmatrix_s', coeffMatrix_S)
 
     !---------------------------------------------------------------------------
     ! Assemble diffusion operator (for the right-hand side):
@@ -474,8 +475,7 @@ contains
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'idiffusiontype', idiffusiontype)
+        ssectionName, 'idiffusiontype', idiffusiontype)
 
     ! Primal and dual mode are equivalent
     ! @FAQ2: Which type of diffusion are we?
@@ -494,8 +494,7 @@ contains
     case (DIFFUSION_ANISOTROPIC)
       ! Anisotropic diffusion
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'diffusionAFC', diffusionAFC)
+          ssectionName, 'diffusionAFC', diffusionAFC)
 
       if (diffusionAFC > 0) then
 
@@ -580,21 +579,21 @@ contains
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_string(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'mode', smode)
+        ssectionName, 'mode', smode)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'ivelocitytype', ivelocitytype)
+        ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'convectionAFC', convectionAFC)
+        ssectionName, 'convectionAFC', convectionAFC)
 
-    ! Set velocity vector (if any)
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+
+    ! Set vector for velocity field (if any)
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'velocityfield', velocityfield)
-      call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
+          ssectionName, 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
     end if
 
     ! Are we in primal or dual mode?
@@ -630,21 +629,21 @@ contains
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
           end select
 
         else ! callback function not present
@@ -674,21 +673,21 @@ contains
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP1d_sim, transp_calcMatGalConvP1d_sim,&
                 1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP2d_sim, transp_calcMatGalConvP2d_sim,&
                 1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP3d_sim, transp_calcMatGalConvP3d_sim,&
                 1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
           end select
 
         case default
@@ -703,21 +702,21 @@ contains
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP1d_sim, transp_calcMatUpwConvP1d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP2d_sim, transp_calcMatUpwConvP2d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvP3d_sim, transp_calcMatUpwConvP3d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
           end select
 
         end select
@@ -741,7 +740,7 @@ contains
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagSTBurgP2d_sim, transp_calcMatGalSTBurgP2d_sim,&
               1.0_DP, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case default
 
@@ -753,7 +752,7 @@ contains
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagSTBurgP2d_sim, transp_calcMatUpwSTBurgP2d_sim,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         end select
 
@@ -774,7 +773,7 @@ contains
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagSTBLevP2d_sim, transp_calcMatGalSTBLevP2d_sim,&
               1.0_DP, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case default
 
@@ -786,7 +785,7 @@ contains
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagSTBLevP2d_sim, transp_calcMatUpwSTBLevP2d_sim,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         end select
 
@@ -807,7 +806,7 @@ contains
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBurgP1d_sim, transp_calcMatGalBurgP1d_sim,&
               1.0_DP, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case default
 
@@ -819,7 +818,7 @@ contains
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBurgP1d_sim, transp_calcMatUpwBurgP1d_sim,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         end select
 
@@ -840,7 +839,7 @@ contains
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBurgP2d_sim, transp_calcMatGalBurgP2d_sim,&
               1.0_DP, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case default
 
@@ -852,7 +851,7 @@ contains
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBurgP2d_sim, transp_calcMatUpwBurgP2d_sim,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         end select
 
@@ -873,7 +872,7 @@ contains
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBLevP1d_sim, transp_calcMatGalBLevP1d_sim,&
               1.0_DP, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case default
 
@@ -885,7 +884,7 @@ contains
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               transp_calcMatDiagBLevP1d_sim, transp_calcMatUpwBLevP1d_sim,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         end select
 
@@ -897,7 +896,7 @@ contains
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
           smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
-          rproblemLevel%Rmatrix(transportMatrix), rcollection,&
+          rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
           fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
           fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
           fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
@@ -935,21 +934,21 @@ contains
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
           end select
 
         else ! callback function not present
@@ -980,21 +979,21 @@ contains
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD1d_sim, transp_calcMatGalConvD1d_sim,&
                 1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD2d_sim, transp_calcMatGalConvD2d_sim,&
                 1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD3d_sim, transp_calcMatGalConvD3d_sim,&
                 1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
           end select
           
         case default
@@ -1009,21 +1008,21 @@ contains
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD1d_sim, transp_calcMatUpwConvD1d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD2d_sim, transp_calcMatUpwConvD2d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                 transp_calcMatDiagConvD3d_sim, transp_calcMatUpwConvD3d_sim,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
           end select
 
         end select
@@ -1044,7 +1043,7 @@ contains
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
           smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
-          rproblemLevel%Rmatrix(transportMatrix), rcollection,&
+          rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
           fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
           fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
           fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
@@ -1061,11 +1060,9 @@ contains
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'systemmatrix', systemMatrix)
+        ssectionName, 'systemmatrix', systemMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'imasstype', imasstype)
+        ssectionName, 'imasstype', imasstype)
 
     select case(imasstype)
     case (MASS_LUMPED)
@@ -1077,8 +1074,7 @@ contains
       !-------------------------------------------------------------------------
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'lumpedmassmatrix', lumpedMassMatrix)
+          ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
 
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -1096,8 +1092,7 @@ contains
       !-------------------------------------------------------------------------
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'consistentmassmatrix', consistentMassMatrix)
+          ssectionName, 'consistentmassmatrix', consistentMassMatrix)
 
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%Rmatrix(consistentMassMatrix),&
@@ -1145,8 +1140,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcJacobianThetaScheme(rproblemLevel,&
-      rtimestep, rsolver, rsolution, rsolution0, rcollection,&
-      fcb_calcMatrixPrimal_sim, fcb_calcMatrixDual_sim,&
+      rtimestep, rsolver, rsolution, rsolution0, ssectionName,&
+      rcollection, fcb_calcMatrixPrimal_sim, fcb_calcMatrixDual_sim,&
       fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
       fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
       fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim)
@@ -1161,6 +1156,9 @@ contains
 
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolution0
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
     ! user-defined callback functions
     include 'intf_transpCalcMatrix.inc'
@@ -1187,14 +1185,15 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(inout) :: rsolution
 
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    type(t_collection) :: rcollectionTmp
     real(DP) :: hstep
     character(LEN=SYS_STRLEN) :: smode
     integer :: transportMatrix, jacobianMatrix
@@ -1213,35 +1212,29 @@ contains
     !###########################################################################
 
     ! Start time measurement for matrix evaluation
-    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
+    p_rtimer => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyMatrix', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'consistentmassmatrix', consistentMassMatrix)
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'lumpedmassmatrix', lumpedMassMatrix)
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'transportmatrix', transportMatrix)
+        ssectionName, 'transportmatrix', transportMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'jacobianmatrix', jacobianMatrix)
+        ssectionName, 'jacobianmatrix', jacobianMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CX', coeffMatrix_CX)
+        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CY', coeffMatrix_CY)
+        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CZ', coeffMatrix_CZ)
+        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_S', coeffMatrix_S)
+        ssectionName, 'coeffMatrix_S', coeffMatrix_S)
 
     ! The Jacobian matrix for the low-order transport operator needs
     ! to be generated only in case of nonlinear governing equations.
@@ -1289,11 +1282,9 @@ contains
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'idiffusiontype', idiffusiontype)
+        ssectionName, 'idiffusiontype', idiffusiontype)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'diffusionAFC', diffusionAFC)
+        ssectionName, 'diffusionAFC', diffusionAFC)
 
     ! @FAQ2: What type of diffusion are we?
     select case(idiffusiontype)
@@ -1338,14 +1329,11 @@ contains
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_string(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'mode', smode)
+        ssectionName, 'mode', smode)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'ivelocitytype', ivelocitytype)
+        ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'convectionAFC', convectionAFC)
+        ssectionName, 'convectionAFC', convectionAFC)
 
     if (convectionAFC > 0) then
 
@@ -1359,12 +1347,15 @@ contains
 
     end if   ! convectionAFC
 
-    ! Set velocity vector (if any)
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+
+    ! Set vector for velocity field (if any)
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'velocityfield', velocityfield)
-      call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
+          ssectionName, 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
     end if
 
     ! Are we in primal or dual mode?
@@ -1391,21 +1382,21 @@ contains
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rsolution, fcb_calcMatrixPrimal_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM2D)
             call gfsc_buildConvectionJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, fcb_calcMatrixPrimal_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM3D)
             call gfsc_buildConvectionJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rsolution, fcb_calcMatrixPrimal_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
           end select
 
         else ! callback function not present
@@ -1430,21 +1421,21 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rsolution, transp_calcMatUpwConvP1d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case (NDIM2D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsolution, transp_calcMatUpwConvP2d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case (NDIM3D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rsolution, transp_calcMatUpwConvP3d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
         end select
 
       case (VELOCITY_BURGERS_SPACETIME)
@@ -1453,7 +1444,7 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rsolution, transp_calcMatUpwSTBurgP2d_sim, hstep,&
             1.0_DP, bbuildStabilisation, .false.,&
-            rproblemLevel%Rmatrix(transportMatrix), rcollection)
+            rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
@@ -1461,7 +1452,7 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rsolution, transp_calcMatUpwSTBLevP2d_sim, hstep,&
             1.0_DP, bbuildStabilisation, .false.,&
-            rproblemLevel%Rmatrix(transportMatrix), rcollection)
+            rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
@@ -1469,7 +1460,7 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rsolution, transp_calcMatUpwBurgP1d_sim, hstep,&
             1.0_DP, bbuildStabilisation, .false.,&
-            rproblemLevel%Rmatrix(transportMatrix), rcollection)
+            rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
@@ -1477,7 +1468,7 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rsolution, transp_calcMatUpwBurgP2d_sim, hstep,&
             1.0_DP, bbuildStabilisation, .false.,&
-            rproblemLevel%Rmatrix(transportMatrix), rcollection)
+            rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
@@ -1485,14 +1476,14 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rsolution, transp_calcMatUpwBLevP1d_sim, hstep,&
             1.0_DP, bbuildStabilisation, .false.,&
-            rproblemLevel%Rmatrix(transportMatrix), rcollection)
+            rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
       end select
 
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
           smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
-          rproblemLevel%Rmatrix(transportMatrix), rcollection,&
+          rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
           fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
           fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
           fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
@@ -1514,21 +1505,21 @@ contains
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rsolution, fcb_calcMatrixDual_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM2D)
             call gfsc_buildConvectionJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, fcb_calcMatrixDual_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM3D)
             call gfsc_buildConvectionJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rsolution, fcb_calcMatrixDual_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollection)
+                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
           end select
 
         else ! callback function not present
@@ -1552,21 +1543,21 @@ contains
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rsolution, transp_calcMatUpwConvD1d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case (NDIM2D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsolution, transp_calcMatUpwConvD2d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case (NDIM3D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rsolution, transp_calcMatUpwConvD3d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollection)
+              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
         end select
 
         ! @TODO: The dual mode has only been implemented for linear
@@ -1579,7 +1570,7 @@ contains
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
           smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
-          rproblemLevel%Rmatrix(transportMatrix), rcollection,&
+          rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
           fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
           fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
           fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
@@ -1594,8 +1585,7 @@ contains
 
     ! Check if the Jacobian operator has extended sparsity pattern
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'ijacobianFormat', ijacobianFormat)
+        ssectionName, 'ijacobianFormat', ijacobianFormat)
     if (ijacobianFormat .eq. 0) then
       bisExactStructure   = .true.
       bisExtendedSparsity = .false.
@@ -1610,8 +1600,7 @@ contains
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'imasstype', imasstype)
+        ssectionName, 'imasstype', imasstype)
 
     select case(imasstype)
     case (MASS_LUMPED)
@@ -1715,9 +1704,7 @@ contains
                 AFCSTAB_FEMFCT_ITERATIVE)
 
             call parlst_getvalue_int(p_rparlist,&
-                rcollection%SquickAccess(1),&
-                'imassantidiffusiontype',&
-                imassantidiffusiontype)
+                ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
             ! Should we apply consistent mass antidiffusion?
             if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1814,9 +1801,7 @@ contains
           case (AFCSTAB_FEMGP)
 
             call parlst_getvalue_int(p_rparlist,&
-                rcollection%SquickAccess(1),&
-                'imassantidiffusiontype',&
-                imassantidiffusiontype)
+                ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
             ! Should we apply consistent mass antidiffusion?
             if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1911,8 +1896,7 @@ contains
               AFCSTAB_FEMFCT_ITERATIVE)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype', imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1939,9 +1923,7 @@ contains
         case (AFCSTAB_FEMGP)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype',&
-              imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1971,8 +1953,7 @@ contains
               AFCSTAB_FEMFCT_ITERATIVE)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype', imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2004,9 +1985,7 @@ contains
         case (AFCSTAB_FEMGP)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype',&
-              imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2039,8 +2018,7 @@ contains
               AFCSTAB_FEMFCT_ITERATIVE)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype', imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2072,9 +2050,7 @@ contains
         case (AFCSTAB_FEMGP)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype',&
-              imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2107,8 +2083,7 @@ contains
               AFCSTAB_FEMFCT_ITERATIVE)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype', imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2140,9 +2115,7 @@ contains
         case (AFCSTAB_FEMGP)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype',&
-              imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2175,8 +2148,7 @@ contains
               AFCSTAB_FEMFCT_ITERATIVE)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype', imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2208,9 +2180,7 @@ contains
         case (AFCSTAB_FEMGP)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype',&
-              imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2242,8 +2212,7 @@ contains
               AFCSTAB_FEMFCT_ITERATIVE)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype', imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2275,9 +2244,7 @@ contains
         case (AFCSTAB_FEMGP)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype',&
-              imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2322,8 +2289,7 @@ contains
                 AFCSTAB_FEMFCT_ITERATIVE)
 
             call parlst_getvalue_int(p_rparlist,&
-                rcollection%SquickAccess(1),&
-                'imassantidiffusiontype', imassantidiffusiontype)
+                ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
             ! Should we apply consistent mass antidiffusion?
             if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2421,9 +2387,7 @@ contains
           case (AFCSTAB_FEMGP)
 
             call parlst_getvalue_int(p_rparlist,&
-                rcollection%SquickAccess(1),&
-                'imassantidiffusiontype',&
-                imassantidiffusiontype)
+                ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
             ! Should we apply consistent mass antidiffusion?
             if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2516,8 +2480,7 @@ contains
               AFCSTAB_FEMFCT_ITERATIVE)
 
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype', imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2543,9 +2506,7 @@ contains
 
         case (AFCSTAB_FEMGP)
           call parlst_getvalue_int(p_rparlist,&
-              rcollection%SquickAccess(1),&
-              'imassantidiffusiontype',&
-              imassantidiffusiontype)
+              ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2609,8 +2570,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rrhs, istep, rcollection, rsource,&
+  subroutine transp_calcRhsRungeKuttaScheme(rproblemLevel,&
+      rtimestep, rsolver, rsolution, rsolution0, rrhs, istep,&
+      ssectionName, rcollection, rsource,&
       fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
       fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
       fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)    
@@ -2636,6 +2598,9 @@ contains
     ! OPTIONAL: load vector specified by the application
     type(t_vectorBlock), intent(in), optional :: rsource
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! OPTIONAL: user-defined callback functions
     include 'intf_transpCoeffVecBdr.inc'
     optional :: fcb_coeffVecBdrPrimal1d_sim
@@ -2656,7 +2621,7 @@ contains
     ! right-hand side vector
     type(t_vectorBlock), intent(inout) :: rrhs
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -2676,20 +2641,19 @@ contains
     stop
 
     ! Start time measurement for residual/rhs evaluation
-    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    p_rtimer => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyVector', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'transportmatrix', transportMatrix)
+        ssectionName, 'transportmatrix', transportMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'lumpedmassmatrix', lumpedMassMatrix)
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'consistentmassmatrix', consistentMassMatrix)
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
 
 
     ! Compute the right-hand side
@@ -2708,8 +2672,7 @@ contains
     !   $$ rhs = rhs + f^*(u^n+1,u^n) $$
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'convectionAFC', convectionAFC)
+        ssectionName, 'convectionAFC', convectionAFC)
 
     dweight = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
 
@@ -2724,8 +2687,7 @@ contains
       p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'imassantidiffusiontype', imassantidiffusiontype)
+          ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2754,8 +2716,7 @@ contains
     case (AFCSTAB_FEMGP)
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'imassantidiffusiontype', imassantidiffusiontype)
+          ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2777,8 +2738,7 @@ contains
     !   $$ rhs = rhs + g^*(u^n+1,u^n) $$
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'diffusionAFC', diffusionAFC)
+        ssectionName, 'diffusionAFC', diffusionAFC)
 
     ! What kind of stabilisation should be applied?
     select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
@@ -2805,7 +2765,7 @@ contains
 !<subroutine>
 
   subroutine transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rrhs, rcollection, rsource,&
+      rsolver, rsolution, rrhs, ssectionName, rcollection, rsource,&
       fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
       fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
       fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
@@ -2848,6 +2808,9 @@ contains
     ! right-hand side vector
     type(t_vectorBlock), intent(inout) :: rrhs
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -2875,7 +2838,7 @@ contains
     if (iand(rproblemLevel%iproblemSpec,&
              PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rcollection)
+          rsolver, rsolution, ssectionName, rcollection)
       rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
                                         not(PROBLEV_MSPEC_INITIALIZE))
     end if
@@ -2890,32 +2853,28 @@ contains
     ! ---------------------------------------------------------------------------
 
     ! Start time measurement for rhs evaluation
-    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    p_rtimer => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyVector', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'consistentmassmatrix', consistentMassMatrix)
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'lumpedmassmatrix', lumpedMassMatrix)
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'transportmatrix', transportMatrix)
+        ssectionName, 'transportmatrix', transportMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'imasstype', imasstype)
+        ssectionName, 'imasstype', imasstype)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'ivelocitytype', ivelocitytype)
+        ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'convectionAFC', convectionAFC)
+        ssectionName, 'convectionAFC', convectionAFC)
     call parlst_getvalue_string(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'mode', smode)
+        ssectionName, 'mode', smode)
 
     ! Do we have some kind of mass matrix?
     select case(imasstype)
@@ -2951,7 +2910,7 @@ contains
         ! Evaluate linear form for the boundary integral (if any)
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
             smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep, dscale,&
-            rrhs%RvectorBlock(1), rcollection,&
+            rrhs%RvectorBlock(1), ssectionName, rcollection,&
             fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
             fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
             fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
@@ -2995,8 +2954,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rrhs, rres, ite, rcollection, rsource,&
+  subroutine transp_calcResidualThetaScheme(rproblemLevel,&
+      rtimestep, rsolver, rsolution, rsolution0, rrhs, rres,&
+      ite, ssectionName, rcollection, rsource,&
       fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
       fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
       fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
@@ -3026,6 +2986,9 @@ contains
 
     ! iteration number
     integer, intent(in) :: ite
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
     ! OPTIONAL: source vector
     type(t_vectorBlock), intent(in), optional :: rsource
@@ -3082,7 +3045,7 @@ contains
     if (iand(rproblemLevel%iproblemSpec,&
              PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rcollection)
+          rsolver, rsolution, ssectionName, rcollection)
       rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
                                         not(PROBLEV_MSPEC_INITIALIZE))
     end if
@@ -3096,29 +3059,25 @@ contains
     !---------------------------------------------------------------------------
 
     ! Start time measurement for residual evaluation
-    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    p_rtimer => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyVector', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'consistentmassmatrix', consistentMassMatrix)
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'lumpedmassmatrix', lumpedMassMatrix)
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'transportmatrix', transportMatrix)
+        ssectionName, 'transportmatrix', transportMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'imasstype', imasstype)
+        ssectionName, 'imasstype', imasstype)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'ivelocitytype', ivelocitytype)
+        ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_string(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'mode', smode)
+        ssectionName, 'mode', smode)
 
     ! Do we have some kind of mass matrix?
     select case(imasstype)
@@ -3146,7 +3105,7 @@ contains
         ! Evaluate linear form for the boundary integral (if any)
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
             smode, ivelocitytype, rtimestep%dTime, dscale,&
-            rres%RvectorBlock(1), rcollection,&
+            rres%RvectorBlock(1), ssectionName, rcollection,&
             fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
             fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
             fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
@@ -3179,7 +3138,7 @@ contains
       ! Evaluate linear form for boundary integral (if any)
       call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
           smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
-          rres%RvectorBlock(1), rcollection,&
+          rres%RvectorBlock(1), ssectionName, rcollection,&
           fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
           fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
           fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
@@ -3193,8 +3152,7 @@ contains
     !-------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'convectionAFC', convectionAFC)
+        ssectionName, 'convectionAFC', convectionAFC)
 
     if (convectionAFC > 0) then
 
@@ -3226,8 +3184,7 @@ contains
         end if
 
         call parlst_getvalue_int(p_rparlist,&
-            rcollection%SquickAccess(1),&
-            'imassantidiffusiontype', imassantidiffusiontype)
+            ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -3290,8 +3247,7 @@ contains
       case (AFCSTAB_FEMGP)
 
         call parlst_getvalue_int(p_rparlist,&
-            rcollection%SquickAccess(1),&
-            'imassantidiffusiontype', imassantidiffusiontype)
+            ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -3316,8 +3272,7 @@ contains
     !-------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'diffusionAFC', diffusionAFC)
+        ssectionName, 'diffusionAFC', diffusionAFC)
 
     if (diffusionAFC > 0) then
 
@@ -3349,7 +3304,7 @@ contains
 !<subroutine>
 
   subroutine transp_setBoundaryCondition(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rres, rcollection)
+      rsolver, rsolution, rsolution0, rres, ssectionName, rcollection)
 
 !<description>
     ! This subroutine imposes the Dirichlet boundary conditions in
@@ -3378,6 +3333,9 @@ contains
     ! residual vector
     type(t_vectorBlock), intent(inout) :: rres
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! collection structure to provide additional
     ! information to the boundary setting routine
     type(t_collection), intent(InOUT) :: rcollection
@@ -3389,7 +3347,8 @@ contains
     integer :: imatrix
 
     ! Get parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
 
     ! What type of preconditioner are we?
     select case(rsolver%iprecond)
@@ -3398,14 +3357,12 @@ contains
           NLSOL_PRECOND_NEWTON_FAILED)
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'systemmatrix', imatrix)
+          ssectionName, 'systemmatrix', imatrix)
 
     case (NLSOL_PRECOND_NEWTON)
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'jacobianmatrix', imatrix)
+          ssectionName, 'jacobianmatrix', imatrix)
 
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
@@ -3426,8 +3383,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcBilfBdrCond1D(rproblemLevel, rsolver, rsolution,&
-      dtime, dscale, fcoeff_buildMatrixScBdr1D_sim, rmatrix, rcollection, cconstrType)
+  subroutine transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+      rsolution, dtime, dscale, fcoeff_buildMatrixScBdr1D_sim,&
+      rmatrix, ssectionName, rcollection, cconstrType)
 
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
@@ -3456,6 +3414,9 @@ contains
     ! scaling factor
     real(DP), intent(in) :: dscale
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! callback routine for nonconstant coefficient matrices.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr1D.inc'
 
@@ -3469,7 +3430,7 @@ contains
     ! matrix
     type(t_matrixScalar), intent(inout) :: rmatrix
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -3489,35 +3450,46 @@ contains
     p_rboundaryCondition => rsolver%rboundaryCondition
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
 
+    ! Get parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+    
+    
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
+    
+    ! Prepare quick access arrays of temporal collection structure
+    rcollectionTmp%SquickAccess(1) = ''
+    rcollectionTmp%SquickAccess(2) = 'rfparser'
+    rcollectionTmp%DquickAccess(1) = dtime
+    rcollectionTmp%DquickAccess(2) = dscale
+
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+    
+    ! Attach solution vector to first quick access vector of the
+    ! temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
 
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
         p_rboundaryCondition%rfparser, .true.)
-    rcollectionTmp%SquickAccess(1) = 'rfparser'
-
-    ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    
+    ! Attach velocity vector (if any) to second quick access vector of
+    ! the temporal collection structure
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
-
-    ! Attach solution to temporal collection structure
-    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
-
-    ! Attach velocity vector (if any) to temporal collection structure
+        ssectionName, 'ivelocitytype', ivelocitytype)
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'velocityfield', velocityfield)
-      rcollectionTmp%p_rvectorQuickAccess2 =>&
-          rproblemLevel%RvectorBlock(velocityfield)
+          ssectionName, 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
+    else
+      nullify(rcollectionTmp%p_rvectorQuickAccess2)
     end if
-    rcollectionTmp%IquickAccess(3) = ivelocityType
 
-    ! Attach collection structure to temporal collection structute
-    rcollectionTmp%p_rnextCollection => rcollection
-
+    
     ! Set pointers
     call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
         p_IbdrCondType)
@@ -3528,9 +3500,8 @@ contains
       ! Check if this segment has weak boundary conditions
       if (iand(p_IbdrCondType(ibdc), BDRC_WEAK) .ne. BDRC_WEAK) cycle
         
-      ! Prepare quick access array of temporal collection structure
-      rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%DquickAccess(2) = dscale
+      ! Prepare further quick access arrays of temporal collection
+      ! structure with boundary component and type
       rcollectionTmp%IquickAccess(1) = p_IbdrCondType(ibdc)
       rcollectionTmp%IquickAccess(2) = ibdc
 
@@ -3575,8 +3546,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcBilfBdrCond2D(rproblemLevel, rsolver, rsolution,&
-      dtime, dscale, fcoeff_buildMatrixScBdr2D_sim, rmatrix, rcollection, cconstrType)
+  subroutine transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+      rsolution, dtime, dscale, fcoeff_buildMatrixScBdr2D_sim,&
+      rmatrix, ssectionName, rcollection, cconstrType)
 
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
@@ -3605,6 +3577,9 @@ contains
     ! scaling factor
     real(DP), intent(in) :: dscale
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! callback routine for nonconstant coefficient matrices.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr2D.inc'
 
@@ -3618,7 +3593,7 @@ contains
     ! matrix
     type(t_matrixScalar), intent(inout) :: rmatrix
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -3638,36 +3613,49 @@ contains
     p_rboundaryCondition => rsolver%rboundaryCondition
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
 
+    ! Get parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+
+    ! Get parameter values from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'ccubTypeBdr', ccubTypeBdr)
+
+    
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
+
+    ! Prepare quick access arrays of temporal collection structure
+    rcollectionTmp%SquickAccess(1) = ''
+    rcollectionTmp%SquickAccess(2) = 'rfparser'
+    rcollectionTmp%DquickAccess(1) = dtime
+    rcollectionTmp%DquickAccess(2) = dscale
+
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+
+    ! Attach solution vector to first quick access vector of the
+    ! temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
 
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
         p_rboundaryCondition%rfparser, .true.)
-    rcollectionTmp%SquickAccess(1) = 'rfparser'
-
-    ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    
+    ! Attach velocity vector (if any) to second quick access vector of
+    ! the temporal collection structure
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'ccubTypeBdr', ccubTypeBdr)
-
-    ! Attach solution to temporal collection structure
-    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
-
-    ! Attach velocity vector (if any) to temporal collection structure
+        ssectionName, 'ivelocitytype', ivelocitytype)
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'velocityfield', velocityfield)
-      rcollectionTmp%p_rvectorQuickAccess2 =>&
-          rproblemLevel%RvectorBlock(velocityfield)
+          ssectionName, 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
+    else
+      nullify(rcollectionTmp%p_rvectorQuickAccess2)
     end if
-    rcollectionTmp%IquickAccess(3) = ivelocityType
 
-    ! Attach collection structure to temporal collection structute
-    rcollectionTmp%p_rnextCollection => rcollection
 
     ! Set pointers
     call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
@@ -3684,9 +3672,8 @@ contains
         ! Check if this segment has weak boundary conditions
         if (iand(p_IbdrCondType(isegment), BDRC_WEAK) .ne. BDRC_WEAK) cycle
         
-        ! Prepare quick access array of temporal collection structure
-        rcollectionTmp%DquickAccess(1) = dtime
-        rcollectionTmp%DquickAccess(2) = dscale
+        ! Prepare further quick access arrays of temporal collection
+        ! structure with boundary component and type
         rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
         rcollectionTmp%IquickAccess(2) = isegment
         
@@ -3745,8 +3732,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcBilfBdrCondQuick(rproblemLevel, rsolver,&
-      rsolution, smode, ivelocitytype, dtime, dscale, rmatrix, rcollection,&
+  subroutine transp_calcBilfBdrCondQuick(rproblemLevel,&
+      rsolver, rsolution, smode, ivelocitytype, dtime, dscale,&
+      rmatrix, ssectionName, rcollection,&
       fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
       fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
       fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim, cconstrType)
@@ -3779,6 +3767,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
     ! user-defined callback functions
     include 'intf_transpCoeffMatBdr.inc'
@@ -3818,7 +3809,7 @@ contains
           if (present(fcb_coeffMatBdrPrimal1d_sim)) then
             call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
                 rsolution, dtime, dscale, fcb_coeffMatBdrPrimal1d_sim,&
-                rmatrix, rcollection, cconstrType)
+                rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
@@ -3831,7 +3822,7 @@ contains
           if (present(fcb_coeffMatBdrPrimal2d_sim)) then
             call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
                 rsolution, dtime, dscale, fcb_coeffMatBdrPrimal2d_sim,&
-                rmatrix, rcollection, cconstrType)
+                rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
@@ -3844,7 +3835,7 @@ contains
           if (present(fcb_coeffMatBdrPrimal3d_sim)) then
 !!$            call transp_calcBilfBdrCond3D(rproblemLevel, rsolver,&
 !!$                rsolution, dtime, dscale, fcb_coeffMatBdrPrimal3d_sim,&
-!!$                rmatrix, rcollection, cconstrType)
+!!$                rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
@@ -3858,48 +3849,48 @@ contains
           ! linear velocity in 1D
           call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffMatBdrConvP1d_sim,&
-              rmatrix, rcollection, cconstrType)
+              rmatrix, ssectionName, rcollection, cconstrType)
         case (NDIM2D)
           ! linear velocity in 2D
           call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffMatBdrConvP2d_sim,&
-              rmatrix, rcollection, cconstrType)
+              rmatrix, ssectionName, rcollection, cconstrType)
         case (NDIM3D)
           ! linear velocity in 3D
 !!$          call transp_calcBilfBdrCond3D(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffMatBdrConvP3d_sim,&
-!!$              rmatrix, rcollection, cconstrType)
+!!$              rmatrix, ssectionName, rcollection, cconstrType)
         end select
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
         call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffMatBdrSTBurgP2d_sim,&
-            rmatrix, rcollection, cconstrType)
+            rmatrix, ssectionName, rcollection, cconstrType)
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
         call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffMatBdrSTBLevP2d_sim,&
-            rmatrix, rcollection, cconstrType)
+            rmatrix, ssectionName, rcollection, cconstrType)
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
         call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffMatBdrBurgP1d_sim,&
-            rmatrix, rcollection, cconstrType)
+            rmatrix, ssectionName, rcollection, cconstrType)
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
         call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffMatBdrBurgP2d_sim,&
-            rmatrix, rcollection, cconstrType)
+            rmatrix, ssectionName, rcollection, cconstrType)
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
         call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffMatBdrBLevP1d_sim,&
-            rmatrix, rcollection, cconstrType)
+            rmatrix, ssectionName, rcollection, cconstrType)
 
       end select
 
@@ -3917,7 +3908,7 @@ contains
           if (present(fcb_coeffMatBdrDual1d_sim)) then
             call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
                 rsolution, dtime, dscale, fcb_coeffMatBdrDual1d_sim,&
-                rmatrix, rcollection, cconstrType)
+                rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
@@ -3930,7 +3921,7 @@ contains
           if (present(fcb_coeffMatBdrDual2d_sim)) then
             call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
                 rsolution, dtime, dscale, fcb_coeffMatBdrDual2d_sim,&
-                rmatrix, rcollection, cconstrType)
+                rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
@@ -3943,7 +3934,7 @@ contains
           if (present(fcb_coeffMatBdrDual3d_sim)) then
 !!$            call transp_calcBilfBdrCond3D(rproblemLevel, rsolver,&
 !!$                rsolution, dtime, dscale, fcb_coeffMatBdrDual3d_sim,&
-!!$                rmatrix, rcollection, cconstrType)
+!!$                rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondQuick')
@@ -3957,17 +3948,17 @@ contains
           ! linear velocity in 1D
           call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffMatBdrConvD1d_sim,&
-              rmatrix, rcollection, cconstrType)
+              rmatrix, ssectionName, rcollection, cconstrType)
         case (NDIM2D)
           ! linear velocity in 2D
           call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffMatBdrConvD2d_sim,&
-              rmatrix, rcollection, cconstrType)
+              rmatrix, ssectionName, rcollection, cconstrType)
         case (NDIM3D)
           ! linear velocity in 3D
 !!$          call transp_calcBilfBdrCond3D(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffMatBdrConvD3d_sim,&
-!!$              rmatrix, rcollection, cconstrType)
+!!$              rmatrix, ssectionName, rcollection, cconstrType)
         end select
 
 
@@ -3975,31 +3966,31 @@ contains
         ! nonlinear Burgers` equation in space-time
 !!$        call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrSTBurgersD2d_sim,&
-!!$            rmatrix, rcollection, cconstrType)
+!!$            rmatrix, ssectionName, rcollection, cconstrType)
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
 !!$        call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrSTBLevD2d_sim,&
-!!$            rmatrix, rcollection, cconstrType)
+!!$            rmatrix, ssectionName, rcollection, cconstrType)
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
 !!$        call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBurgersD1d_sim,&
-!!$            rmatrix, rcollection, cconstrType)
+!!$            rmatrix, ssectionName, rcollection, cconstrType)
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
 !!$        call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBurgersD2d_sim,&
-!!$            rmatrix, rcollection, cconstrType)
+!!$            rmatrix, ssectionName, rcollection, cconstrType)
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
 !!$        call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBLevD1d_sim,&
-!!$            rmatrix, rcollection, cconstrType)
+!!$            rmatrix, ssectionName, rcollection, cconstrType)
 
       end select
 
@@ -4015,8 +4006,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcLinfBdrCond1D(rproblemLevel, rsolver, rsolution,&
-      dtime, dscale, fcoeff_buildVectorScBdr1D_sim, rvector, rcollection)
+  subroutine transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+      rsolution, dtime, dscale, fcoeff_buildVectorScBdr1D_sim,&
+      rvector, ssectionName, rcollection)
 
 !<description>
     ! This subroutine computes the linear form arising from the weak
@@ -4045,6 +4037,9 @@ contains
     ! scaling factor
     real(DP), intent(in) :: dscale
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! callback routine for nonconstant coefficient vectors.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorScBdr1D.inc'
 !</intput>
@@ -4053,7 +4048,7 @@ contains
     ! scalar vector where to store the linear form
     type(t_vectorScalar), intent(inout) :: rvector
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -4073,32 +4068,46 @@ contains
     p_rboundaryCondition => rsolver%rboundaryCondition
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
 
+    ! Get parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+    
+
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
 
+    ! Prepare quick access arrays of temporal collection structure
+    rcollectionTmp%SquickAccess(1) = ''
+    rcollectionTmp%SquickAccess(2) = 'rfparser'
+    rcollectionTmp%DquickAccess(1) = dtime
+    rcollectionTmp%DquickAccess(2) = dscale
+    
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+    
+    ! Attach solution vector to first quick access vector of the
+    ! temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+    
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
         p_rboundaryCondition%rfparser, .true.)
-    rcollectionTmp%SquickAccess(1) = 'rfparser'
 
-    ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    ! Attach velocity vector (if any) to second quick access vector of
+    ! the temporal collection structure
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
-
-    ! Attach velocity vector (if any) to temporal collection structure
+        ssectionName, 'ivelocitytype', ivelocitytype)
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'velocityfield', velocityfield)
-      rcollectionTmp%p_rvectorQuickAccess2 =>&
-          rproblemLevel%RvectorBlock(velocityfield)
+          ssectionName, 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
+    else
+      nullify(rcollectionTmp%p_rvectorQuickAccess2)
     end if
-    rcollectionTmp%IquickAccess(3) = ivelocityType
-
-    ! Attach collection structure to temporal collection structute
-    rcollectionTmp%p_rnextCollection => rcollection
-
+    
+    
     ! Set pointers
     call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
         p_IbdrCondType)
@@ -4109,9 +4118,8 @@ contains
       ! Check if this segment has weak boundary conditions
       if (iand(p_IbdrCondType(ibdc), BDRC_WEAK) .ne. BDRC_WEAK) cycle
 
-      ! Prepare quick access array of temporal collection structure
-      rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%DquickAccess(2) = dscale
+      ! Prepare further quick access arrays of temporal collection
+      ! structure with boundary component and type
       rcollectionTmp%IquickAccess(1) = p_IbdrCondType(ibdc)
       rcollectionTmp%IquickAccess(2) = ibdc
       
@@ -4142,14 +4150,18 @@ contains
       
     end do ! ibdc
     
+    ! Release temporal collection structure
+    call collct_done(rcollectionTmp)
+
   end subroutine transp_calcLinfBdrCond1D
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_calcLinfBdrCond2D(rproblemLevel, rsolver, rsolution,&
-      dtime, dscale, fcoeff_buildVectorScBdr2D_sim, rvector, rcollection)
+  subroutine transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+      rsolution, dtime, dscale, fcoeff_buildVectorScBdr2D_sim,&
+      rvector, ssectionName, rcollection)
 
 !<description>
     ! This subroutine computes the linear form arising from the weak
@@ -4178,6 +4190,9 @@ contains
     ! scaling factor
     real(DP), intent(in) :: dscale
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! callback routine for nonconstant coefficient vectors.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorScBdr2D.inc'
 !</intput>
@@ -4186,7 +4201,7 @@ contains
     ! scalar vector where to store the linear form
     type(t_vectorScalar), intent(inout) :: rvector
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -4207,37 +4222,51 @@ contains
     p_rboundaryCondition => rsolver%rboundaryCondition
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
 
+    ! Get parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+
+    ! Get parameter values from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'ccubTypeBdr', ccubTypeBdr)
+    
+    
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
+
+    ! Prepare quick access arrays of temporal collection structure
+    rcollectionTmp%SquickAccess(1) = ''
+    rcollectionTmp%SquickAccess(2) = 'rfparser'
+    rcollectionTmp%DquickAccess(1) = dtime
+    rcollectionTmp%DquickAccess(2) = dscale
+
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+
+    ! Attach solution vector to first quick access vector of the
+    ! temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
 
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
         p_rboundaryCondition%rfparser, .true.)
-    rcollectionTmp%SquickAccess(1) = 'rfparser'
-
-    ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    
+    ! Attach velocity vector (if any) to second quick access vector of
+    ! the temporal collection structure
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'ccubTypeBdr', ccubTypeBdr)
-
-    ! Attach solution to temporal collection structure
-    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
-
-    ! Attach velocity vector (if any) to temporal collection structure
+        ssectionName, 'ivelocitytype', ivelocitytype)
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'velocityfield', velocityfield)
+          ssectionName, 'velocityfield', velocityfield)
       rcollectionTmp%p_rvectorQuickAccess2 =>&
           rproblemLevel%RvectorBlock(velocityfield)
+    else
+      nullify(rcollectionTmp%p_rvectorQuickAccess2)
     end if
-    rcollectionTmp%IquickAccess(3) = ivelocityType
-
-    ! Attach collection structure to temporal collection structute
-    rcollectionTmp%p_rnextCollection => rcollection
-
+    
+    
     ! Set pointers
     call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
         p_IbdrCondCpIdx)
@@ -4261,9 +4290,8 @@ contains
         ! Check if this segment has weak boundary conditions
         if (iand(p_IbdrCondType(isegment), BDRC_WEAK) .ne. BDRC_WEAK) cycle
         
-        ! Prepare quick access array of temporal collection structure
-        rcollectionTmp%DquickAccess(1) = dtime
-        rcollectionTmp%DquickAccess(2) = dscale
+        ! Prepare further quick access arrays of temporal collection
+        ! structure with boundary component and type
         rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
         rcollectionTmp%IquickAccess(2) = isegment
         
@@ -4354,7 +4382,6 @@ contains
 
     end do ! ibdc
 
-
     ! Release temporal collection structure
     call collct_done(rcollectionTmp)
 
@@ -4364,8 +4391,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
-      rsolution, smode, ivelocitytype, dtime, dscale, rvector, rcollection,&
+  subroutine transp_calcLinfBdrCondQuick(rproblemLevel,&
+      rsolver, rsolution, smode, ivelocitytype, dtime, dscale,&
+      rvector, ssectionName, rcollection,&
       fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
       fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
       fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
@@ -4398,6 +4426,9 @@ contains
 
     ! scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
     ! user-defined callback functions
     include 'intf_transpCoeffVecBdr.inc'
@@ -4433,7 +4464,7 @@ contains
           if (present(fcb_coeffVecBdrPrimal1d_sim)) then
             call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
                 rsolution, dtime, dscale, fcb_coeffVecBdrPrimal1d_sim,&
-                rvector, rcollection)
+                rvector, ssectionName, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
@@ -4446,7 +4477,7 @@ contains
           if (present(fcb_coeffVecBdrPrimal2d_sim)) then
             call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
                 rsolution, dtime, dscale, fcb_coeffVecBdrPrimal2d_sim,&
-                rvector, rcollection)
+                rvector, ssectionName, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
@@ -4459,7 +4490,7 @@ contains
           if (present(fcb_coeffVecBdrPrimal3d_sim)) then
 !!$            call transp_calcLinfBdrCond3D(rproblemLevel, rsolver,&
 !!$                rsolution, dtime, dscale, fcb_coeffVecBdrPrimal3d_sim,&
-!!$                rvector, rcollection)
+!!$                rvector, ssectionName, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
@@ -4473,48 +4504,48 @@ contains
           ! linear velocity in 1D
           call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffVecBdrConvP1d_sim,&
-              rvector, rcollection)
+              rvector, ssectionName, rcollection)
         case (NDIM2D)
           ! linear velocity in 2D
           call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffVecBdrConvP2d_sim,&
-              rvector, rcollection)
+              rvector, ssectionName, rcollection)
         case (NDIM3D)
           ! linear velocity in 3D
 !!$          call transp_calcLinfBdrCond3D(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffVecBdrConvP3d_sim,&
-!!$              rvector, rcollection)
+!!$              rvector, ssectionName, rcollection)
         end select
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
         call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffVecBdrSTBurgP2d_sim,&
-            rvector, rcollection)
+            rvector, ssectionName, rcollection)
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
         call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffVecBdrSTBLevP2d_sim,&
-            rvector, rcollection)
+            rvector, ssectionName, rcollection)
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
         call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffVecBdrBurgP1d_sim,&
-            rvector, rcollection)
+            rvector, ssectionName, rcollection)
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
         call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffVecBdrBurgP2d_sim,&
-            rvector, rcollection)
+            rvector, ssectionName, rcollection)
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
         call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffVecBdrBLevP1d_sim,&
-            rvector, rcollection)
+            rvector, ssectionName, rcollection)
 
       end select
 
@@ -4532,7 +4563,7 @@ contains
           if (present(fcb_coeffVecBdrDual1d_sim)) then
             call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
                 rsolution, dtime, dscale, fcb_coeffVecBdrDual1d_sim,&
-                rvector, rcollection)
+                rvector, ssectionName, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
@@ -4545,7 +4576,7 @@ contains
           if (present(fcb_coeffVecBdrDual2d_sim)) then
             call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
                 rsolution, dtime, dscale, fcb_coeffVecBdrDual2d_sim,&
-                rvector, rcollection)
+                rvector, ssectionName, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
@@ -4558,7 +4589,7 @@ contains
           if (present(fcb_coeffVecBdrDual3d_sim)) then
 !!$            call transp_calcLinfBdrCond3D(rproblemLevel, rsolver,&
 !!$                rsolution, dtime, dscale, fcb_coeffVecBdrDual3d_sim,&
-!!$                rvector, rcollection)
+!!$                rvector, ssectionName, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
@@ -4572,17 +4603,17 @@ contains
           ! linear velocity in 1D
           call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
             rsolution, dtime, dscale, transp_coeffVecBdrConvD1d_sim,&
-            rvector, rcollection)
+            rvector, ssectionName, rcollection)
         case (NDIM2D)
           ! linear velocity in 2D
           call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
               rsolution, dtime, dscale, transp_coeffVecBdrConvD2d_sim,&
-              rvector, rcollection)
+              rvector, ssectionName, rcollection)
         case (NDIM3D)
           ! linear velocity in 3D
 !!$          call transp_calcLinfBdrCond3D(rproblemLevel, rsolver,&
 !!$              rsolution, dtime, dscale, transp_coeffVecBdrConvD3d_sim,&
-!!$              rvector, rcollection)
+!!$              rvector, ssectionName, rcollection)
         end select
 
 
@@ -4590,31 +4621,31 @@ contains
         ! nonlinear Burgers` equation in space-time
 !!$        call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrSTBurgersD2d_sim,&
-!!$            rvector, rcollection)
+!!$            rvector, ssectionName, rcollection)
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
 !!$        call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrSTBLevD2d_sim,&
-!!$            rvector, rcollection)
+!!$            rvector, ssectionName, rcollection)
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
 !!$        call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBurgersD1d_sim,&
-!!$            rvector, rcollection)
+!!$            rvector, ssectionName, rcollection)
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
 !!$        call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBurgersD2d_sim,&
-!!$            rvector, rcollection)
+!!$            rvector, ssectionName, rcollection)
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
 !!$        call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBLevD1d_sim,&
-!!$            rvector, rcollection)
+!!$            rvector, ssectionName, rcollection)
 
       end select
 
@@ -4656,7 +4687,7 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(inout), target :: rproblemLevel
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -4674,19 +4705,20 @@ contains
 
 
     ! Check if the velocity "vector" needs to be generated explicitly
-    call parlst_getvalue_int(rparlist, ssectionName,&
-        'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'ivelocitytype', ivelocitytype)
     if ((abs(ivelocitytype) .ne. VELOCITY_CONSTANT) .and.&
         (abs(ivelocitytype) .ne. VELOCITY_TIMEDEP)) return
 
     ! Get parameter from parameter list
-    call parlst_getvalue_int(rparlist, ssectionName,&
-        'velocityfield', velocityfield)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-        'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'velocityfield', velocityfield)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'discretisation', discretisation)
 
     ! Get function parser from collection
-    p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        'rfparser', ssectionName=ssectionName)
 
     ! Set minimum problem level
     nlmin = rproblemLevel%ilev
@@ -4759,49 +4791,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_setVelocityField(rvector)
-
-!<description>
-    ! This subroutine sets the global pointer to the velocity vector
-    ! on the given problem level structure. Note that this subroutine
-    ! will not work of multiple convection-diffusion-reaction problems
-    ! are solved in parallel since there is only one global pointer.
-!</description>
-
-!<input>
-    ! velocity field
-    type(t_vectorBlock), intent(in) :: rvector
-!</input>
-!</subroutine>
-
-    ! What spatial dimension are we?
-    select case(rvector%nblocks)
-    case (NDIM1D)
-      call transp_setVariable1d(rvector%RvectorBlock(1), 1)
-
-    case (NDIM2D)
-      call transp_setVariable2d(rvector%RvectorBlock(1), 1)
-      call transp_setVariable2d(rvector%RvectorBlock(2), 2)
-
-    case (NDIM3D)
-      call transp_setVariable3d(rvector%RvectorBlock(1), 1)
-      call transp_setVariable3d(rvector%RvectorBlock(2), 2)
-      call transp_setVariable3d(rvector%RvectorBlock(3), 3)
-
-    case DEFAULT
-      call output_line('Invalid spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_setVelocityField')
-      call sys_halt()
-    end select
-
-  end subroutine transp_setVelocityField
-
-  !*****************************************************************************
-
-!<subroutine>
-
   subroutine transp_calcLinearisedFCT(rbdrCond, rproblemLevel,&
-      rtimestep, rsolver, rsolution, rcollection, rsource)
+      rtimestep, rsolver, rsolution, ssectionName, rcollection, rsource)
 
 !<description>
     ! This subroutine calculates the linearised FCT correction
@@ -4813,6 +4804,9 @@ contains
 
     ! time-stepping algorithm
     type(t_timestep), intent(in) :: rtimestep
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
     ! OPTIONAL: source vector
     type(t_vectorBlock), intent(in), optional :: rsource
@@ -4840,13 +4834,13 @@ contains
     integer :: convectionAFC,lumpedMassMatrix,consistentMassMatrix
     integer :: imassantidiffusiontype
 
-    ! Set pointer to parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-
+    ! Get parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+    
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'convectionAFC', convectionAFC)
+        ssectionName, 'convectionAFC', convectionAFC)
 
     ! Do we have to apply linearised FEM-FCT?
     if (convectionAFC .le. 0) return
@@ -4855,14 +4849,11 @@ contains
 
     ! Get more parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'lumpedmassmatrix', lumpedmassmatrix)
+        ssectionName, 'lumpedmassmatrix', lumpedmassmatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'consistentmassmatrix', consistentmassmatrix)
+        ssectionName, 'consistentmassmatrix', consistentmassmatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'imassantidiffusiontype', imassantidiffusiontype)
+        ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
     !---------------------------------------------------------------------------
     ! Linearised FEM-FCT algorithm
@@ -4880,11 +4871,11 @@ contains
       
       ! Compute the preconditioner
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rcollection)
+          rsolver, rsolution, ssectionName, rcollection)
       
       ! Compute low-order "right-hand side" without theta parameter
       call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-          rsolver, rsolution, p_rpredictor, rcollection, rsource)
+          rsolver, rsolution, p_rpredictor, ssectionName, rcollection, rsource)
       
       ! Compute low-order predictor
       call lsysbl_invertedDiagMatVec(&
@@ -4975,6 +4966,11 @@ contains
 !<inputoutput>
     ! Optional: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   DquickAccess(1):            simulation time
+    !   DquickAccess(1:ntermCount): number of the analytic function(s)
+    !   SquickAccess(1):            section name in the collection
+    !   SquickAccess(2):            string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -4993,15 +4989,16 @@ contains
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dtime
     integer :: itermCount, ipoint, iel, ndim, icomp
-
-
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
-
-    ! This subroutine assumes that the first quick access double value
-    ! holds the simulation time
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
+    
+    ! This subroutine assumes that the first quick access double
+    ! value holds the simulation time
     dtime  = rcollection%DquickAccess(1)
 
     ! Loop over all components of the linear form
@@ -5103,6 +5100,10 @@ contains
 
     ! Optional: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   DquickAccess(1): simulation time
+    !   SquickAccess(1): section name in the collection
+    !   SquickAccess(2): string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -5118,24 +5119,31 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dtime
     integer :: ipoint, iel, ndim, icomp
 
 
     ! Initialize values
     Dvalue = 0.0_DP
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-                                       trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
-    ! Moreover, this subroutine assumes that the first quick access integer
-    ! value holds the number of the function to be evaluated
+    ! This subroutine assumes that the first quick access double
+    ! value holds the simulation time
+    dtime  = rcollection%DquickAccess(1)
+
+    ! Get number of the analytic reference function
+!!$    icomp = collct_getvalue_int(rcollection, 'irefFuncAnalytic',&
+!!$        ssectionName=trim(rcollection%SquickAccess(1)))
     icomp = rcollection%IquickAccess(1)
 
-    ! This subroutine also assumes that the first quick access double
-    ! value holds the simulation time
-    Dvalue(NDIM3D+1) = rcollection%DquickAccess(1)
+    ! Set simulation time
+    Dvalue(NDIM3D+1) = dtime
 
     ! Set number of spatial dimensions
     ndim = size(Dpoints, 1)
@@ -5204,6 +5212,10 @@ contains
 
     ! Optional: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   DquickAccess(1): simulation time
+    !   SquickAccess(1): section name in the collection
+    !   SquickAccess(2): string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -5219,24 +5231,31 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dtime
     integer :: ipoint, iel, ndim, icomp
 
 
     ! Initialize values
     Dvalue = 0.0_DP
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-                                       trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
-    ! Moreover, this subroutine assumes that the second quick access integer
-    ! value holds the number of the function to be evaluated
+    ! This subroutine assumes that the first quick access double
+    ! value holds the simulation time
+    dtime  = rcollection%DquickAccess(1)
+
+    ! Get number of the analytic reference function
+!!$    icomp = collct_getvalue_int(rcollection, 'iweightFuncAnalytic',&
+!!$        ssectionName=trim(rcollection%SquickAccess(1)))
     icomp = rcollection%IquickAccess(2)
 
-    ! This subroutine also assumes that the first quick access double
-    ! value holds the simulation time
-    Dvalue(NDIM3D+1) = rcollection%DquickAccess(1)
+    ! Set simulation time
+    Dvalue(NDIM3D+1) = dtime
 
     ! Set number of spatial dimensions
     ndim = size(Dpoints, 1)

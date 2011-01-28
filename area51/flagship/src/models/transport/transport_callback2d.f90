@@ -9,22 +9,19 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) transp_setVariable2d
-!#     -> Sets global variables for external data, e.g., velocity fields in 2D
-!#
-!# 2.) transp_hadaptCallback2d
+!# 1.) transp_hadaptCallback2d
 !#     -> Performs application specific tasks in the adaptation algorithm in 2D
 !#
-!# 3.) transp_refFuncBdrInt2d_sim
+!# 2.) transp_refFuncBdrInt2d_sim
 !#     -> Callback routine for the evaluation of the boundary integral
 !#        of the target functional for goal-oriented error estimation
 !#
-!# 4.) transp_errorBdrInt2d_sim
+!# 3.) transp_errorBdrInt2d_sim
 !#     -> Callback routine for the evaluation of the boundary integral
 !#        of the error in the target functional for goal-oriented
 !#        error estimation
 !#
-!# 5.) transp_weightFuncBdrInt2d_sim
+!# 4.) transp_weightFuncBdrInt2d_sim
 !#     -> Callback routine for the evaluation of the weights in
 !#        the boundary integral of the target functional for
 !#        goal-oriented error estimation
@@ -181,7 +178,6 @@ module transport_callback2d
 
   private
 
-  public :: transp_setVariable2d
   public :: transp_hadaptCallback2d
   public :: transp_refFuncBdrInt2d_sim
   public :: transp_errorBdrInt2d_sim
@@ -217,62 +213,7 @@ module transport_callback2d
   public :: transp_coeffMatBdrBurgP2d_sim
   public :: transp_coeffVecBdrBurgP2d_sim
 
-!<globals>
-
-  !*****************************************************************
-  ! Pointers to external data vectors.
-  !
-  ! Using global variables is not good programming style but it is the
-  ! only way to allow for an efficient access to the velocity data
-  ! from within the callback routines which are called repeatedly
-
-  real(DP), dimension(:), pointer, save :: p_Dvariable1 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable2 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable3 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable4 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable5 => null()
-
-!</globals>
-
 contains
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_setVariable2d(rvector, ivariable)
-
-!<description>
-    ! This subroutine sets one of the the global pointers to the given vector.
-!</description>
-
-!<input>
-    ! scalar vector
-    type(t_vectorScalar), intent(in) :: rvector
-
-    ! variable number
-    integer, intent(in) :: ivariable
-!</input>
-!</subroutine>
-
-    select case(ivariable)
-    case (1)
-      call lsyssc_getbase_double(rvector, p_Dvariable1)
-    case (2)
-      call lsyssc_getbase_double(rvector, p_Dvariable2)
-    case (3)
-      call lsyssc_getbase_double(rvector, p_Dvariable3)
-    case (4)
-      call lsyssc_getbase_double(rvector, p_Dvariable4)
-    case (5)
-      call lsyssc_getbase_double(rvector, p_Dvariable5)
-    case DEFAULT
-      call output_line('Invalid variable number!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable2d')
-      call sys_halt()
-    end select
-
-  end subroutine transp_setVariable2d
 
   !*****************************************************************************
 
@@ -292,7 +233,12 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Collection
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   IquickAccess(1):     NEQ or ivt
+    !   IquickAccess(2:5):   ivt1,...,ivt5
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -446,8 +392,12 @@ contains
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   DquickAccess(1): simulation time
+    !   SquickAccess(1): section name in the collection
+    !   SquickAccess(2): string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -467,25 +417,27 @@ contains
     real(DP), dimension(:,:), pointer :: Dnx,Dny
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dtime
-    integer :: iel,ipoint,icomp1,icomp2,icomp
+    integer :: iel,ipoint,icompFunc,icompVelX,icompVelY
 
-
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
+
+    ! This subroutine also assumes that the first quick access double
+    ! value holds the simulation time
+    dtime = rcollection%DquickAccess(1)
 
     ! This subroutine assumes that the first quick access integer
     ! value holds the number of the reference function.  Moreover,
     ! quick access interger values 3 and 4 hold the numbers of the
     ! functions to be evaluated for the x-velocity and y-velocity.
-    icomp  = rcollection%IquickAccess(1)
-    icomp1 = rcollection%IquickAccess(3)
-    icomp2 = rcollection%IquickAccess(4)
-
-    ! This subroutine also assumes that the first quick access double
-    ! value holds the simulation time
-    dtime = rcollection%DquickAccess(1)
+    icompFunc = rcollection%IquickAccess(1)
+    icompVelX = rcollection%IquickAccess(3)
+    icompVelY = rcollection%IquickAccess(4)
 
     ! Initialize values
     Dvalue = 0.0_DP
@@ -509,11 +461,11 @@ contains
         Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
         
         ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp,  Dvalue,&
+        call fparser_evalFunction(p_rfparser, icompFunc,  Dvalue,&
             Dcoefficients(ipoint,iel,1))
-        call fparser_evalFunction(p_rfparser, icomp1, Dvalue,&
+        call fparser_evalFunction(p_rfparser, icompVelX, Dvalue,&
             Dcoefficients(ipoint,iel,2))
-        call fparser_evalFunction(p_rfparser, icomp2, Dvalue,&
+        call fparser_evalFunction(p_rfparser, icompVelY, Dvalue,&
             Dcoefficients(ipoint,iel,3))
         
         ! Compute the expression from the data stored in Dcoefficients
@@ -595,8 +547,16 @@ contains
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   rvectorQuickAccess2: velocity field
+    !   IquickAccess(1):     number of the reference function
+    !   IquickAccess(3):     number of the reference x-velocity
+    !   IquickAccess(4):     number of the reference y-velocity
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -610,7 +570,6 @@ contains
 
 !</subroutine>
 
-
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
@@ -618,13 +577,15 @@ contains
     real(DP), dimension(:,:), pointer :: Dnx,Dny
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dtime
-    integer :: iel,ipoint,icomp1,icomp2,icomp
+    integer :: iel,ipoint,icompFunc,icompVelX,icompVelY
 
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
     ! This subroutine assumes that the first quick access vector
     ! points to the primal solution vector and the second quick access
@@ -652,9 +613,9 @@ contains
     ! value holds the number of the reference function.  Moreover,
     ! quick access interger values 3 and 4 hold the numbers of the
     ! functions to be evaluated for the x-velocity and y-velocity
-    icomp  = rcollection%IquickAccess(1)
-    icomp1 = rcollection%IquickAccess(3)
-    icomp2 = rcollection%IquickAccess(4)
+    icompFunc = rcollection%IquickAccess(1)
+    icompVelX = rcollection%IquickAccess(3)
+    icompVelY = rcollection%IquickAccess(4)
 
     ! This subroutine also assumes that the first quick access double
     ! value holds the simulation time
@@ -677,11 +638,11 @@ contains
         Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
         
         ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp,  Dvalue,&
+        call fparser_evalFunction(p_rfparser, icompFunc,  Dvalue,&
             Dcoefficients(ipoint,iel,3))
-        call fparser_evalFunction(p_rfparser, icomp1, Dvalue,&
+        call fparser_evalFunction(p_rfparser, icompVelX, Dvalue,&
             Dcoefficients(ipoint,iel,4))
-        call fparser_evalFunction(p_rfparser, icomp2, Dvalue,&
+        call fparser_evalFunction(p_rfparser, icompVelY, Dvalue,&
             Dcoefficients(ipoint,iel,5))
         
         ! Compute the expression from the data stored in Dcoefficients
@@ -758,8 +719,12 @@ contains
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   IquickAccess(2): number of the weighting function
+    !   SquickAccess(1): section name in the collection
+    !   SquickAccess(2): string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -781,10 +746,12 @@ contains
     ! Initialize values
     Dvalue = 0.0_DP
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-                                       trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
     ! Moreover, this subroutine assumes that the second quick access integer
     ! value holds the number of the function to be evaluated
@@ -812,7 +779,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagConvP2d_sim(DdataAtNode,&
+  subroutine transp_calcMatDiagConvP2d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -840,7 +807,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -851,24 +821,28 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     integer :: inode
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+
     do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #else
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #endif
     end do
     
@@ -878,7 +852,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalConvP2d_sim(DdataAtEdge,&
+  subroutine transp_calcMatGalConvP2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -906,7 +880,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -917,32 +894,36 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     integer :: iedge
-
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
 
       ! Set artificial diffusion to zero
@@ -955,7 +936,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwConvP2d_sim(DdataAtEdge,&
+  subroutine transp_calcMatUpwConvP2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -984,7 +965,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -995,32 +979,36 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
 
       ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
@@ -1034,7 +1022,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagConvD2d_sim(DdataAtNode,&
+  subroutine transp_calcMatDiagConvD2d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -1062,7 +1050,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1073,24 +1064,28 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     integer :: inode
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+
     do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #else
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #endif
     end do
     
@@ -1100,7 +1095,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalConvD2d_sim(DdataAtEdge,&
+  subroutine transp_calcMatGalConvD2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1128,7 +1123,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1139,32 +1137,36 @@ contains
 !</subroutine>
     
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient $k_{ji] = -v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji] = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
       ! Set artificial diffusion to zero
@@ -1177,7 +1179,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwConvD2d_sim(DdataAtEdge,&
+  subroutine transp_calcMatUpwConvD2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -1206,7 +1208,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1217,32 +1222,36 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
       ! Compute artificial diffusion coefficient
@@ -1320,8 +1329,23 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   rvectorQuickAccess2: velocity field
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for periodic boundary conditions
+    !   DquickAccess(3):     minimim parameter of the boundary component
+    !   DquickAccess(4):     maximum parameter of the boundary component
+    !   DquickAccess(5):     minimim parameter of the mirror boundary component
+    !   DquickAccess(6):     maximum parameter of the mirror boundary component
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1353,17 +1377,16 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
-    ! This subroutine assumes that the first quick access vector
-    ! points to the solution vector
+    ! This subroutine assumes that the first two quick access vectors
+    ! point to the solution and velocity vector (if any)
     p_rsolution => rcollection%p_rvectorQuickAccess1
-    
-    ! This subroutine assumes that the first quick access vector
-    ! points to the velocity vector (if any)
     p_rvelocity => rcollection%p_rvectorQuickAccess2
 
     ! The first two quick access double values hold the simulation
@@ -1621,7 +1644,7 @@ contains
         
         ! Get mirrored boundary region from collection structure
         p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
-            'rboundaryRegionMirror')
+            'rboundaryRegionMirror', ssectionName=trim(rcollection%SquickAccess(1)))
         
         ! Get minimum/maximum parameter values from collection structure
         dminParam = rcollection%DquickAccess(3)
@@ -1796,8 +1819,23 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   rvectorQuickAccess2: velocity field
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for periodic boundary conditions
+    !   DquickAccess(3):     minimim parameter of the boundary component
+    !   DquickAccess(4):     maximum parameter of the boundary component
+    !   DquickAccess(5):     minimim parameter of the mirror boundary component
+    !   DquickAccess(6):     maximum parameter of the mirror boundary component
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1813,7 +1851,7 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
-    type(t_vectorBlock), pointer :: p_rvelocity, p_rsolution
+    type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
     type(t_boundaryRegion), pointer :: p_rboundaryRegionMirror
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(:,:), pointer :: Dnx,Dny,DpointParMirror
@@ -1829,17 +1867,16 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
-    ! This subroutine assumes that the first quick access vector
-    ! points to the solution vector
+    ! This subroutine assumes that the first two quick access vectors
+    ! point to the solution and velocity vector (if any)
     p_rsolution => rcollection%p_rvectorQuickAccess1
-    
-    ! This subroutine assumes that the first quick access vector
-    ! points to the velocity vector (if any)
     p_rvelocity => rcollection%p_rvectorQuickAccess2
 
     ! The first two quick access double values hold the simulation
@@ -2097,7 +2134,7 @@ contains
         
         ! Get mirrored boundary region from collection structure
         p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
-            'rboundaryRegionMirror')
+            'rboundaryRegionMirror', ssectionName=trim(rcollection%SquickAccess(1)))
         
         ! Get minimum/maximum parameter values from collection structure
         dminParam = rcollection%DquickAccess(3)
@@ -2277,8 +2314,15 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   rvectorQuickAccess2: velocity field
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -2293,7 +2337,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rvelocity
+    type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(:,:), pointer :: Dnx,Dny
     real(DP) :: dnv,dtime,dscale
@@ -2306,8 +2350,9 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the second quick access vector
-    ! points to the velocity vector (if any)
+    ! This subroutine assumes that the first two quick access vectors
+    ! point to the solution and velocity vector (if any)
+    p_rsolution => rcollection%p_rvectorQuickAccess1
     p_rvelocity => rcollection%p_rvectorQuickAccess2
 
     ! The first two quick access double values hold the simulation
@@ -2542,8 +2587,15 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   rvectorQuickAccess2: velocity field
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -2558,7 +2610,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rvelocity
+    type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(:,:), pointer :: Dnx,Dny
     real(DP) :: dnv,dtime,dscale
@@ -2571,8 +2623,9 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the second quick access vector
-    ! points to the velocity vector (if any)
+    ! This subroutine assumes that the first two quick access vectors
+    ! point to the solution and velocity vector (if any)
+    p_rsolution => rcollection%p_rvectorQuickAccess1
     p_rvelocity => rcollection%p_rvectorQuickAccess2
 
     ! The first two quick access double values hold the simulation
@@ -2768,7 +2821,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2831,7 +2885,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2908,7 +2963,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3019,8 +3075,22 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for periodic boundary conditions
+    !   DquickAccess(3):     minimim parameter of the boundary component
+    !   DquickAccess(4):     maximum parameter of the boundary component
+    !   DquickAccess(5):     minimim parameter of the mirror boundary component
+    !   DquickAccess(6):     maximum parameter of the mirror boundary component
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3050,10 +3120,12 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
     
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
@@ -3346,8 +3418,14 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -3539,7 +3617,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3605,7 +3684,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3686,7 +3766,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3800,8 +3881,22 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for periodic boundary conditions
+    !   DquickAccess(3):     minimim parameter of the boundary component
+    !   DquickAccess(4):     maximum parameter of the boundary component
+    !   DquickAccess(5):     minimim parameter of the mirror boundary component
+    !   DquickAccess(6):     maximum parameter of the mirror boundary component
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3831,10 +3926,12 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
     
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
@@ -4086,7 +4183,6 @@ contains
     !
     ! This routine handles the primal problem for the
     ! 1D Buckley-Leverett equation in space and time.
-
 !</description>
 
 !<input>
@@ -4138,8 +4234,14 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -4331,7 +4433,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -4392,7 +4495,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -4465,7 +4569,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -4573,8 +4678,22 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for periodic boundary conditions
+    !   DquickAccess(3):     minimim parameter of the boundary component
+    !   DquickAccess(4):     maximum parameter of the boundary component
+    !   DquickAccess(5):     minimim parameter of the mirror boundary component
+    !   DquickAccess(6):     maximum parameter of the mirror boundary component
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -4597,7 +4716,7 @@ contains
 
     print *, "Weak boundary conditions are not available yet"
     stop
-
+    
   end subroutine transp_coeffVecBdrBurgP2d_sim
 
   !*****************************************************************************
@@ -4671,8 +4790,14 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 

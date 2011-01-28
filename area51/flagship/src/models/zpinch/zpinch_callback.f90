@@ -141,25 +141,34 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    type(t_vectorBlock), pointer :: p_rsolutionHydro, p_rsolutionTransport
+    type(t_vectorBlock), pointer :: p_rsolutionHydro
+    type(t_vectorBlock), pointer :: p_rsolutionTransport
     type(t_vectorBlock) :: rforce
+    character(LEN=SYS_STRLEN) :: ssectionName
+    character(LEN=SYS_STRLEN) :: ssectionNameHydro
+    character(LEN=SYS_STRLEN) :: ssectionNameTransport
     real(DP) :: dscale
     integer(i32) :: iSpec
     integer :: isystemFormat, jacobianMatrix
 
+    ! Get section names
+    call collct_getvalue_string(rcollection,&
+        'ssectionname', ssectionName)
+    call collct_getvalue_string(rcollection,&
+        'ssectionnameHydro', ssectionNameHydro)
+    call collct_getvalue_string(rcollection,&
+        'ssectionnameTransport', ssectionNameTransport)
+
+
     if (trim(rsolver%ssolverName) .eq. 'NonlinearSolverHydro') then
-
-      ! Set the first string quick access array to the section name
-      ! of the hydrodynamic model which is stored in the third array
-      rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
-
+      
       ! Do we have to calculate the preconditioner?
       ! --------------------------------------------------------------------------
       if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
-
+        
         ! Compute the preconditioner
         call hydro_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rcollection)
+            rsolver, rsolution, ssectionNameHydro, rcollection)
       end if
 
 
@@ -177,42 +186,42 @@ contains
           ! Compute the constant right-hand side including the
           ! given explicit part of the Lorentz force term
           call hydro_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-              rsolver, rsolution0, rrhs, rcollection, rsource)
+              rsolver, rsolution0, rrhs, ssectionNameHydro, rcollection, rsource)
         end if
 
         ! Set pointers to current solution vectors stored in the
         ! first and second quick access vector
         p_rsolutionHydro     => rcollection%p_rvectorQuickAccess1
         p_rsolutionTransport => rcollection%p_rvectorQuickAccess2
-
-        ! Set pointer to parameter list
-        p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-
+        
+        ! Set pointer to parameter list (we can always use the
+        ! parameter list from the same section since all three
+        ! sections in the collection have the same data)
+        p_rparlist => collct_getvalue_parlst(rcollection,&
+            'rparlist', ssectionName=ssectionName)
+        
         ! Calculate scaling for implicit parts
         dscale = -rtimestep%theta * rtimestep%dStep
 
         if (dscale .ne. 0.0_DP) then
 
           ! Compute the implicit part of the Lorentz force
-          call zpinch_calcLorentzforceTerm(p_rparlist,&
-              rcollection%SquickAccess(2), rcollection%SquickAccess(3),&
-              rcollection%SquickAccess(4), rproblemLevel,&
+          call zpinch_calcLorentzforceTerm(p_rparlist, ssectionName,&
+              ssectionNameHydro, ssectionNameTransport, rproblemLevel,&
               p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime,&
               dscale, .true., rforce, rcollection)
 
           ! Compute the implicit part of the geometric source term (if any)
-          call zpinch_calcGeometricSourceTerm(p_rparlist,&
-              rcollection%SquickAccess(2), rcollection%SquickAccess(3),&
-              rcollection%SquickAccess(4), rproblemLevel,&
+          call zpinch_calcGeometricSourceTerm(p_rparlist, ssectionName,&
+              ssectionNameHydro, ssectionNameTransport, rproblemLevel,&
               p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime,&
               dscale, .false., 1, rforce, rcollection)
           
-
           ! Compute the residual including the implicit part of the
           ! Lorentz force term and the geometric source term (if any)
           call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, rrhs, rres, istep,&
-              rcollection, rforce)
+              ssectionNameHydro, rcollection, rforce)
 
           ! Release temporal memory
           call lsysbl_releaseVector(rforce)
@@ -221,7 +230,8 @@ contains
           
           ! Compute the residual without implicit parts
           call hydro_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-              rsolver, rsolution, rsolution0, rrhs, rres, istep, rcollection)
+              rsolver, rsolution, rsolution0, rrhs, rres, istep,&
+              ssectionNameHydro, rcollection)
 
         end if
       end if
@@ -233,23 +243,18 @@ contains
 
         ! Impose boundary conditions
         call hydro_setBoundaryCondition(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rsolution0, rres, rcollection)
+            rsolver, rsolution, rsolution0, rres, ssectionNameHydro, rcollection)
       end if
 
 
-    elseif (trim(rsolver%ssolverName) .eq. 'NonlinearSolverTransport') then
+    elseif (trim(rsolver%ssolverName) .eq. 'NonlinearSolverTransport') then   
 
-      ! Set the first string quick access array to the section name
-      ! of the transport model which is stored in the fourth array
-      rcollection%SquickAccess(1) = rcollection%SquickAccess(4)
+      ! Set pointer to parameter list (we can always use the parameter
+      ! list from the same section since all three sections in the
+      ! collection have the same data)
+      p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
 
-      ! Set pointer to parameter list
-      p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-      
-      ! Get configuration from hydrodynamic section of parameter list 
-      call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(3), 'isystemformat', isystemFormat)
-      
       !###########################################################################
       ! REMARK: The order in which the operations are performed is
       ! essential. This is due to the fact that the calculation of the
@@ -266,15 +271,19 @@ contains
       ! Do we have to calculate the constant right-hand side?
       ! --------------------------------------------------------------------------
       if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-
+        
+        ! Get configuration from hydrodynamic section of parameter list 
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionNameHydro, 'isystemformat', isystemFormat)
+        
         ! What type of system format are we?
         select case(isystemFormat)
           
         case (SYSTEM_INTERLEAVEFORMAT)
           
           ! Compute the preconditioner in interleaved format
-          call transp_calcPrecondThetaScheme(rproblemLevel,&
-              rtimestep, rsolver, rsolution, rcollection,&
+          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution, ssectionNameTransport, rcollection,&
               zpinch_calcMatDiagConvIntlP2d_sim,&
               zpinch_calcMatRusConvIntlP2d_sim,&
               zpinch_calcMatDiagConvIntlD2d_sim,&
@@ -285,8 +294,8 @@ contains
         case (SYSTEM_BLOCKFORMAT)
 
           ! Compute the preconditioner in block format
-          call transp_calcPrecondThetaScheme(rproblemLevel,&
-              rtimestep, rsolver, rsolution, rcollection,&
+          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution, ssectionNameTransport, rcollection,&
               zpinch_calcMatDiagConvBlockP2d_sim,&
               zpinch_calcMatRusConvBlockP2d_sim,&
               zpinch_calcMatDiagConvBlockD2d_sim,&
@@ -301,9 +310,9 @@ contains
         end select
         
         ! Compute the right-hand side
-        call transp_calcRhsRungeKuttaScheme(rproblemLevel,&
-            rtimestep, rsolver, rsolution, rsolution0,&
-            rrhs, istep, rcollection, rsource,&
+        call transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rsolution0, rrhs, istep,&
+            ssectionNameTransport, rcollection, rsource,&
             fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
             fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
         
@@ -315,6 +324,10 @@ contains
       ! Do we have to calculate the residual?
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+
+        ! Get configuration from hydrodynamic section of parameter list 
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionNameHydro, 'isystemformat', isystemFormat)
 
         if (istep .eq. 0) then
           
@@ -330,8 +343,8 @@ contains
             case (SYSTEM_INTERLEAVEFORMAT)
               
               ! Compute the preconditioner in interleaved format
-              call transp_calcPrecondThetaScheme(rproblemLevel,&
-                  rtimestep, rsolver, rsolution0, rcollection,&
+              call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+                  rsolver, rsolution0, ssectionNameTransport, rcollection,&
                   zpinch_calcMatDiagConvIntlP2d_sim,&
                   zpinch_calcMatRusConvIntlP2d_sim,&
                   zpinch_calcMatDiagConvIntlD2d_sim,&
@@ -342,8 +355,8 @@ contains
             case (SYSTEM_BLOCKFORMAT)
 
               ! Compute the preconditioner in block format
-              call transp_calcPrecondThetaScheme(rproblemLevel,&
-                  rtimestep, rsolver, rsolution0, rcollection,&
+              call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+                  rsolver, rsolution0, ssectionNameTransport, rcollection,&
                   zpinch_calcMatDiagConvBlockP2d_sim,&
                   zpinch_calcMatRusConvBlockP2d_sim,&
                   zpinch_calcMatDiagConvBlockD2d_sim,&
@@ -358,22 +371,21 @@ contains
             end select
             
             ! Assemble the constant right-hand side
-            call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-                rsolver, rsolution0, rrhs, rcollection, rsource,&
+            call transp_calcRhsThetaScheme(rproblemLevel, rtimestep, rsolver,&
+                rsolution0, rrhs, ssectionNameTransport, rcollection, rsource,&
                 fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
                 fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
 
           end if
 
-          ! Set pointer to the solution vector of the hydrodynamic model
-          ! from the current time step
+          ! Set pointers to current solution vector of the
+          ! hydrodynamic model stored in the first quick access vector
           p_rsolutionHydro => rcollection%p_rvectorQuickAccess1
-
+          
           ! Calculate the velocity vector using the solution of the
           ! Hydrodynamic model from the current time step
-          call zpinch_calcVelocityField(p_rparlist,&
-              rcollection%SquickAccess(1), rproblemLevel,&
-              p_rsolutionHydro, rcollection)
+          call zpinch_calcVelocityField(p_rparlist, ssectionNameTransport,&
+              rproblemLevel, p_rsolutionHydro, rcollection)
 
           ! What type of system format are we?
           select case(isystemFormat)
@@ -381,8 +393,8 @@ contains
           case (SYSTEM_INTERLEAVEFORMAT)
             
             ! Compute the preconditioner in interleaved format
-            call transp_calcPrecondThetaScheme(rproblemLevel,&
-                rtimestep, rsolver, rsolution, rcollection,&
+            call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+                rsolver, rsolution, ssectionNameTransport, rcollection,&
                 zpinch_calcMatDiagConvIntlP2d_sim,&
                 zpinch_calcMatRusConvIntlP2d_sim,&
                 zpinch_calcMatDiagConvIntlD2d_sim,&
@@ -393,8 +405,8 @@ contains
           case (SYSTEM_BLOCKFORMAT)
             
             ! Compute the preconditioner in block format
-            call transp_calcPrecondThetaScheme(rproblemLevel,&
-                rtimestep, rsolver, rsolution, rcollection,&
+            call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+                rsolver, rsolution, ssectionNameTransport, rcollection,&
                 zpinch_calcMatDiagConvBlockP2d_sim,&
                 zpinch_calcMatRusConvBlockP2d_sim,&
                 zpinch_calcMatDiagConvBlockD2d_sim,&
@@ -419,19 +431,16 @@ contains
         ! first and second quick access vector
         p_rsolutionHydro     => rcollection%p_rvectorQuickAccess1
         p_rsolutionTransport => rcollection%p_rvectorQuickAccess2
-
-        ! Set pointer to parameter list
-        p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
         
-        ! Calculate scaling for implicit part of the geometric source term (if any)
+        ! Calculate scaling for implicit part of the geometric source
+        ! term (if any)
         dscale = -rtimestep%theta * rtimestep%dStep
 
         if (dscale .ne. 0.0_DP) then
           
           ! Compute the implicit part of the geometric source tmer (if any)
-          call zpinch_calcGeometricSourceTerm(p_rparlist,&
-              rcollection%SquickAccess(2), rcollection%SquickAccess(3),&
-              rcollection%SquickAccess(4), rproblemLevel,&
+          call zpinch_calcGeometricSourceTerm(p_rparlist, ssectionName,&
+              ssectionNameHydro, SsectionNameTransport, rproblemLevel,&
               p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime,&
               dscale, .true., 2, rforce, rcollection)
 
@@ -439,7 +448,7 @@ contains
           ! geometric source term (if any)
           call transp_calcResidualThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rsolution0,&
-              rrhs, rres, istep, rcollection, rforce,&
+              rrhs, rres, istep, ssectionNameTransport, rcollection, rforce,&
               fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
               fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
 
@@ -451,7 +460,7 @@ contains
           ! Compute the residual without implicit parts
           call transp_calcResidualThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rsolution0,&
-              rrhs, rres, istep, rcollection,&
+              rrhs, rres, istep, ssectionNameTransport, rcollection,&
               fcb_coeffVecBdrPrimal2d_sim=transp_coeffVecBdrConvP2d_sim,&
               fcb_coeffVecBdrDual2d_sim=transp_coeffVecBdrConvD2d_sim)
 
@@ -463,14 +472,18 @@ contains
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
         
+        ! Get configuration from hydrodynamic section of parameter list 
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionNameHydro, 'isystemformat', isystemFormat)
+        
         ! What type of system format are we?
         select case(isystemFormat)
           
         case (SYSTEM_INTERLEAVEFORMAT)
           
           ! Compute the preconditioner in interleaved format
-          call transp_calcPrecondThetaScheme(rproblemLevel,&
-              rtimestep, rsolver, rsolution, rcollection,&
+          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution, ssectionNameTransport, rcollection,&
               zpinch_calcMatDiagConvIntlP2d_sim,&
               zpinch_calcMatRusConvIntlP2d_sim,&
               zpinch_calcMatDiagConvIntlD2d_sim,&
@@ -481,8 +494,8 @@ contains
         case (SYSTEM_BLOCKFORMAT)
           
           ! Compute the preconditioner in block format
-          call transp_calcPrecondThetaScheme(rproblemLevel,&
-              rtimestep, rsolver, rsolution, rcollection,&
+          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution, ssectionNameTransport, rcollection,&
               zpinch_calcMatDiagConvBlockP2d_sim,&
               zpinch_calcMatRusConvBlockP2d_sim,&
               zpinch_calcMatDiagConvBlockD2d_sim,&
@@ -502,14 +515,18 @@ contains
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
 
+        ! Get configuration from hydrodynamic section of parameter list 
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionNameHydro, 'isystemformat', isystemFormat)
+        
         ! What type of system format are we?
         select case(isystemFormat)
           
         case (SYSTEM_INTERLEAVEFORMAT)
           
           ! Compute the Jacobian matrix in interleaved format
-          call transp_calcJacobianThetaScheme(rproblemLevel,&
-              rtimestep, rsolver, rsolution, rsolution0, rcollection,&
+          call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution, rsolution0, ssectionNameTransport, rcollection,&
               zpinch_calcMatRusConvIntlP2d_sim,&
               zpinch_calcMatRusConvIntlD2d_sim,&
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
@@ -518,8 +535,8 @@ contains
         case (SYSTEM_BLOCKFORMAT)
 
           ! Compute the Jacobian matrix in block format
-          call transp_calcJacobianThetaScheme(rproblemLevel,&
-              rtimestep, rsolver, rsolution, rsolution0, rcollection,&
+          call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution, rsolution0, ssectionNameTransport, rcollection,&
               zpinch_calcMatRusConvBlockP2d_sim,&
               zpinch_calcMatRusConvBlockD2d_sim,&
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
@@ -539,7 +556,7 @@ contains
 
         ! Impose boundary conditions
         call transp_setBoundaryCondition(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rsolution0, rres, rcollection)
+            rsolver, rsolution, rsolution0, rres, ssectionNameTransport, rcollection)
       end if
 
 
@@ -547,12 +564,9 @@ contains
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
 
-        ! Set pointers to parameter list
-        p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-
-        ! Get position of Jacobian matrix
+        ! Get position of Jacobian matrix from transport section of parameter list
         call parlst_getvalue_int(p_rparlist,&
-            rcollection%SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
+            ssectionNameTransport, 'jacobianMatrix', jacobianMatrix)
 
         ! Apply Jacobian matrix
         call lsyssc_scalarMatVec(&
@@ -637,40 +651,28 @@ contains
       ! Set x-velocity
       call hydro_getVariable(rsolution, 'velocity_x',&
           rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
-      call zpinch_setVariable2d(&
-          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
 
     case (NDIM2D)
       ! Set x-velocity
       call hydro_getVariable(rsolution, 'velocity_x',&
           rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
-      call zpinch_setVariable2d(&
-          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
-      
+
       ! Set y-velocity
       call hydro_getVariable(rsolution, 'velocity_y',&
           rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
-      call zpinch_setVariable2d(&
-          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
 
     case (NDIM3D)
       ! Set x-velocity
       call hydro_getVariable(rsolution, 'velocity_x',&
           rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
-      call zpinch_setVariable2d(&
-          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
       
       ! Set y-velocity
       call hydro_getVariable(rsolution, 'velocity_y',&
           rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
-      call zpinch_setVariable2d(&
-          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
 
       ! Set z-velocity
       call hydro_getVariable(rsolution, 'velocity_z',&
           rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(3))
-      call zpinch_setVariable2d(&
-          rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(3), 3)
 
     case default
       call output_line('Invalid spatial dimension!',&
@@ -679,11 +681,12 @@ contains
     end select
 
 
-    ! Set the global solution vector at the current time step
-    call lsysbl_duplicateVector(rsolution,&
-        rproblemLevel%RvectorBlock(2),&
-        LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
-    call zpinch_setVariable2d(rproblemLevel%RvectorBlock(2), ndim+1)
+!!$    ! Set the global solution vector at the current time step
+!!$    call lsysbl_duplicateVector(rsolution,&
+!!$        rproblemLevel%RvectorBlock(2),&
+!!$        LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
+!!$    call zpinch_setVariable2d(rproblemLevel%RvectorBlock(2), ndim+1)
+
 
     ! Set update notification in problem level structure
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
@@ -795,7 +798,8 @@ contains
     nvar = hydro_getNVAR(rproblemLevel)
 
     ! Get function parser from collection structure
-    p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        'rfparser', ssectionName=ssectionName)
 
     ! Get the number of the component used for
     ! evaluating the Lorentz force term
@@ -1283,6 +1287,7 @@ contains
     integer :: neq, nvar, icoordinatesystem
     logical :: bcompatible
 
+return
     
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -1733,7 +1738,8 @@ contains
 !<subroutine>
   
   subroutine zpinch_calcLinearisedFCT(RbdrCond, rproblemLevel, rtimestep,&
-      rsolverHydro, rsolverTransport, Rsolution, rcollection, Rsource)
+      rsolverHydro, rsolverTransport, Rsolution, ssectionName,&
+      ssectionNameHydro, ssectionNameTransport, rcollection, Rsource)
 
 !<description>
     ! This subroutine calculates the linearised FCT correction
@@ -1745,6 +1751,11 @@ contains
 
     ! time-stepping algorithm
     type(t_timestep), intent(in) :: rtimestep
+
+    ! section names in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionNameHydro
+    character(LEN=*), intent(in) :: ssectionNameTransport
 
     ! OPTIONAL: source vector
     type(t_vectorBlock), dimension(:), intent(in), optional :: Rsource
@@ -1781,13 +1792,14 @@ contains
     integer :: ilimitersynchronisation,nfailsafe,ivariable,nvariable
     
     ! Set pointer to parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
 
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(3), 'inviscidAFC', inviscidAFC)
+        ssectionNameHydro, 'inviscidAFC', inviscidAFC)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(4), 'convectionAFC', convectionAFC)
+        ssectionNameTransport, 'convectionAFC', convectionAFC)
 
     ! Do we have to apply linearised FEM-FCT?
     if ((inviscidAFC .le. 0) .or. (convectionAFC .le. 0)) return
@@ -1800,21 +1812,21 @@ contains
     IposAFC=(/inviscidAFC, convectionAFC/)
 
     ! Get more parameters from parameter list.
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(2),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'ilimitersynchronisation', ilimitersynchronisation)
     
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(3),&
+    call parlst_getvalue_int(p_rparlist, ssectionNameHydro,&
         'lumpedmassmatrix', lumpedmassmatrixHydro)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(3),&
+    call parlst_getvalue_int(p_rparlist, ssectionNameHydro,&
         'nfailsafe', nfailsafe)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(3),&
+    call parlst_getvalue_int(p_rparlist, ssectionNameHydro,&
         'imassantidiffusiontype', imassantidiffusiontypeHydro)
 
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(4),&
+    call parlst_getvalue_int(p_rparlist, ssectionNameTransport,&
         'lumpedmassmatrix', lumpedmassmatrixTransport)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(4),&
+    call parlst_getvalue_int(p_rparlist, ssectionNameTransport,&
         'consistentmassmatrix', consistentmassmatrixTransport)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(4),&
+    call parlst_getvalue_int(p_rparlist, ssectionNameTransport,&
         'imassantidiffusiontype', imassantidiffusiontypeTransport)
     
     !---------------------------------------------------------------------------
@@ -1822,10 +1834,6 @@ contains
     !---------------------------------------------------------------------------
 
     !--- compressible hydrodynamic model ---------------------------------------
-    
-    ! Set the first string quick access array to the section name
-    ! of the hydrodynamic model which is stored in the third array
-    rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
     
     ! Should we apply consistent mass antidiffusion?
     if (imassantidiffusiontypeHydro .eq. MASS_CONSISTENT) then
@@ -1842,16 +1850,19 @@ contains
         if (Rsource(1)%NEQ .eq. 0) then
           ! ... without source term
           call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-              rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection)
+              rsolverHydro, Rsolution(1), p_rpredictorHydro,&
+              ssectionNameHydro,rcollection)
         else
           ! ... with source term
           call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-              rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection, Rsource(1))
+              rsolverHydro, Rsolution(1), p_rpredictorHydro,&
+              ssectionNameHydro, rcollection, Rsource(1))
         end if
       else
         ! ... without source term
         call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-            rsolverHydro, Rsolution(1), p_rpredictorHydro, rcollection)
+            rsolverHydro, Rsolution(1), p_rpredictorHydro,&
+            ssectionNameHydro, rcollection)
       end if
 
       ! Compute low-order predictor
@@ -1862,20 +1873,18 @@ contains
       ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., p_rpredictorHydro, rcollection)
+          1.0_DP, 1.0_DP, .true., p_rpredictorHydro,&
+          ssectionNameHydro, rcollection)
 
     else
       ! Build the raw antidiffusive fluxes without contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., Rsolution(1), rcollection)
+          1.0_DP, 1.0_DP, .true., Rsolution(1),&
+          ssectionNameHydro, rcollection)
     end if
 
     !--- transport model -------------------------------------------------------
-
-    ! Set the first string quick access array to the section name
-    ! of the transport model which is stored in the fourth array
-    rcollection%SquickAccess(1) = rcollection%SquickAccess(4)
 
     ! Should we apply consistent mass antidiffusion?
     if (imassantidiffusiontypeTransport .eq. MASS_CONSISTENT) then
@@ -1889,7 +1898,7 @@ contains
       
       ! Compute the preconditioner
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolverTransport, Rsolution(2), rcollection)
+          rsolverTransport, Rsolution(2), ssectionNameTransport, rcollection)
       
       ! Compute low-order "right-hand side" without theta parameter
       if (present(Rsource)) then
@@ -1897,14 +1906,14 @@ contains
           ! ... without source term
           call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
               rsolverTransport, Rsolution(2), p_rpredictorTransport,&
-              rcollection,&
+              ssectionNameTransport, rcollection,&
               fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
               fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
         else
           ! ... with source term
           call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
               rsolverTransport, Rsolution(2), p_rpredictorTransport,&
-              rcollection, Rsource(2),&
+              ssectionNameTransport, rcollection, Rsource(2),&
               fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
               fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
         end if
@@ -1912,7 +1921,7 @@ contains
         ! ... without source term
         call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
             rsolverTransport, Rsolution(2), p_rpredictorTransport,&
-            rcollection,&
+            ssectionNameTransport, rcollection,&
             fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
             fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
       end if
@@ -1943,7 +1952,7 @@ contains
       
       ! Get number of failsafe variables
       nvariable = max(1, parlst_querysubstrings(p_rparlist,&
-          rcollection%SquickAccess(3), 'sfailsafevariable'))
+          ssectionNameHydro, 'sfailsafevariable'))
       
       ! Allocate character array that stores all failsafe variable names
       allocate(SfailsafeVariables(nvariable))
@@ -1951,7 +1960,7 @@ contains
       ! Initialize character array with failsafe variable names
       do ivariable = 1, nvariable
         call parlst_getvalue_string(p_rparlist,&
-            rcollection%SquickAccess(3), 'sfailsafevariable',&
+            ssectionNameHydro, 'sfailsafevariable',&
             Sfailsafevariables(ivariable), isubstring=ivariable)
       end do
 
@@ -1965,10 +1974,6 @@ contains
           LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_SHARE)
     end if
 
-    ! Set the first string quick access array to the section name
-    ! of the hydrodynamic model which is stored in the third array
-    rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
-    
     ! What type of limiter synchronisation is performed?
     select case(ilimitersynchronisation)
       
@@ -1979,7 +1984,8 @@ contains
         ! Compute linearised FEM-FCT correction
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-            AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
+            AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
+            ssectionNameHydro, rcollection)
         
         ! Apply failsafe flux correction
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(inviscidAFC),&
@@ -2008,7 +2014,8 @@ contains
         ! Compute linearised FEM-FCT correction
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
+            ssectionNameHydro, rcollection)
         
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
@@ -2023,7 +2030,8 @@ contains
       ! Compute linearised FEM-FCT correction
       call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
+          AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
+          ssectionNameHydro, rcollection)
       
       call gfsc_buildConvectionVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
@@ -2058,7 +2066,8 @@ contains
         ! Apply linearised FEM-FCT correction
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
+            ssectionNameHydro, rcollection)
         
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
@@ -2073,7 +2082,8 @@ contains
       ! Compute linearised FEM-FCT correction
       call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
+          AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
+          ssectionNameHydro, rcollection)
       
       ! Copy correction factor for hydrodynamic system to transport model
       call afcstab_copyStabilisation(&
@@ -2110,7 +2120,8 @@ contains
         ! Apply linearised FEM-FCT correction
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
+            ssectionNameHydro, rcollection)
         
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
@@ -2138,7 +2149,7 @@ contains
       call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT,&
-          Rsolution(1), rcollection)
+          Rsolution(1), ssectionNameHydro, rcollection)
       
       ! Copy final correction factor back to transport model
       call afcstab_copyStabilisation(&
@@ -2163,7 +2174,8 @@ contains
         ! Apply linearised FEM-FCT correction
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
+            ssectionNameHydro, rcollection)
         
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
@@ -2180,7 +2192,8 @@ contains
         ! Compute linearised FEM-FCT correction
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-            AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
+            AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
+            ssectionNameHydro, rcollection)
 
         ! Copy correction factor for hydrodynamic system to transport model
         call afcstab_copyStabilisation(&
@@ -2203,7 +2216,8 @@ contains
         ! Apply linearised FEM-FCT correction      
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
+            ssectionNameHydro, rcollection)
         
         ! Copy correction factor for hydrodynamic system to transport model
         call afcstab_copyStabilisation(&
@@ -2263,7 +2277,8 @@ contains
         ! Apply linearised FEM-FCT correction
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
+            ssectionNameHydro, rcollection)
       end if
 
 

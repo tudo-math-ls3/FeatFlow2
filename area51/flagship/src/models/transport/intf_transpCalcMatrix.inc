@@ -9,7 +9,7 @@
 
 !<subroutine>
     
-  pure subroutine fcb_calcMatrixDiagPrimal_sim(DdataAtNode,&
+  subroutine fcb_calcMatrixDiagPrimal_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -63,7 +63,7 @@
 
 !<subroutine>
     
-  pure subroutine fcb_calcMatrixPrimal_sim(DdataAtEdge,&
+  subroutine fcb_calcMatrixPrimal_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -118,7 +118,7 @@
 
 !<subroutine>
     
-  pure subroutine fcb_calcMatrixDiagDual_sim(DdataAtNode,&
+  subroutine fcb_calcMatrixDiagDual_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -172,7 +172,7 @@
 
 !<subroutine>
     
-  pure subroutine fcb_calcMatrixDual_sim(DdataAtEdge,&
+  subroutine fcb_calcMatrixDual_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 

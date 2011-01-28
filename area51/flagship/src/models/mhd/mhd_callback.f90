@@ -217,13 +217,20 @@ contains
 !</output>
 !</subroutine>
 
+    ! local variables
+    character(len=SYS_STRLEN) :: ssectionName
+    
+    ! Get current section name
+    call collct_getvalue_string(rcollection,&
+        'ssectionname', ssectionName)
+
     ! Do we have to calculate the preconditioner?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
 
       ! Compute the preconditioner
       call mhd_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rcollection)
+          rsolver, rsolution, ssectionName, rcollection)
     end if
 
 
@@ -233,8 +240,7 @@ contains
 
       ! Compute the right-hand side
       call mhd_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rrhs, istep,&
-          rcollection)
+          rsolver, rsolution, rsolution0, rrhs, istep, ssectionName, rcollection)
     end if
 
 
@@ -244,13 +250,12 @@ contains
       if (istep .eq. 0) then
         ! Compute the constant right-hand side
         call mhd_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution0, rrhs, rcollection, rsource)
+            rsolver, rsolution0, rrhs, ssectionName, rcollection, rsource)
       end if
 
       ! Compute the residual
       call mhd_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rrhs, rres, istep,&
-          rcollection)
+          rsolver, rsolution, rsolution0, rrhs, rres, istep, ssectionName, rcollection)
     end if
 
 
@@ -260,7 +265,7 @@ contains
 
       ! Impose boundary conditions
       call mhd_setBoundaryCondition(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rres, rcollection)
+          rsolver, rsolution, rsolution0, rres, ssectionName, rcollection)
     end if
 
 
@@ -274,7 +279,7 @@ contains
 !<subroutine>
 
   subroutine mhd_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rcollection)
+      rsolver, rsolution, ssectionName, rcollection)
 
 !<description>
     ! This subroutine calculates the nonlinear preconditioner and
@@ -289,6 +294,9 @@ contains
 
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -298,7 +306,7 @@ contains
     ! solver structure
     type(t_solver), intent(inout) :: rsolver
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -312,21 +320,23 @@ contains
     integer :: isystemCoupling, isystemPrecond, isystemFormat, imasstype, ivar
 
     ! Start time measurement for matrix evaluation
-    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
+    p_rtimer => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyMatrix', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'systemmatrix', systemMatrix)
+        ssectionName, 'systemmatrix', systemMatrix)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'coeffMatrix_CX', coeffMatrix_CX)
+        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'coeffMatrix_CY', coeffMatrix_CY)
+        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'coeffMatrix_CZ', coeffMatrix_CZ)
+        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'inviscidAFC', inviscidAFC)
+        ssectionName, 'inviscidAFC', inviscidAFC)
 
     !---------------------------------------------------------------------------
     ! Check if fully explicit time-stepping is used
@@ -334,13 +344,13 @@ contains
     if (rtimestep%theta .le. SYS_EPSREAL) then
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'isystemformat', isystemFormat)
+          ssectionName, 'isystemformat', isystemFormat)
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'imasstype', imasstype)
+          ssectionName, 'imasstype', imasstype)
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+          ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+          ssectionName, 'consistentmassmatrix', consistentMassMatrix)
 
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
@@ -432,13 +442,13 @@ contains
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'isystemCoupling', isystemCoupling)
+        ssectionName, 'isystemCoupling', isystemCoupling)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'isystemPrecond', isystemPrecond)
+        ssectionName, 'isystemPrecond', isystemPrecond)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'isystemformat', isystemFormat)
+        ssectionName, 'isystemformat', isystemFormat)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'imasstype', imasstype)
+        ssectionName, 'imasstype', imasstype)
 
     ! Compute scaling parameter
     select case (imasstype)
@@ -733,9 +743,9 @@ contains
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'isystemformat', isystemFormat)
+        ssectionName, 'isystemformat', isystemFormat)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'imasstype', imasstype)
+        ssectionName, 'imasstype', imasstype)
 
     select case(isystemFormat)
 
@@ -758,7 +768,7 @@ contains
         !-----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
-            rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+            ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
 
         call lsyssc_MatrixLinearComb(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -777,7 +787,7 @@ contains
         !-----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
-            rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+            ssectionName, 'consistentmassmatrix', consistentMassMatrix)
 
         call lsyssc_MatrixLinearComb(&
             rproblemLevel%Rmatrix(consistentMassMatrix),&
@@ -816,7 +826,7 @@ contains
         !-----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
-            rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+            ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
 
         do ivar = 1, mhd_getNVAR(rproblemLevel)
           call lsyssc_MatrixLinearComb(&
@@ -838,7 +848,7 @@ contains
         !-----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
-            rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+            ssectionName, 'consistentmassmatrix', consistentMassMatrix)
 
         do ivar = 1, mhd_getNVAR(rproblemLevel)
           call lsyssc_MatrixLinearComb(&
@@ -891,7 +901,7 @@ contains
 !<subroutine>
 
   subroutine mhd_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rcollection)
+      rsolver, rsolution, rsolution0, ssectionName, rcollection)
 
 !<description>
     ! This callback subroutine computes the Jacobian matrix for the
@@ -904,6 +914,9 @@ contains
 
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolution0
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -916,13 +929,13 @@ contains
     ! current solution vector
     type(t_vectorBlock), intent(inout) :: rsolution
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
-    print *, "!!! The calculation of the Jacobian matrix for the compressible !!!"
-    print *, "!!! Euler/Navier Stokes equations has yet not been implemented  !!!"
+    print *, "!!! The calculation of the Jacobian matrix for the !!!"
+    print *, "!!! MHD equations has yet not been implemented     !!!"
     stop
 
   end subroutine mhd_calcJacobianThetaScheme
@@ -932,7 +945,7 @@ contains
 !<subroutine>
 
   subroutine mhd_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rrhs, rcollection, rsource)
+      rsolver, rsolution, rrhs, ssectionName, rcollection, rsource)
 
 !<description>
     ! This subroutine computes the constant right-hand side
@@ -949,6 +962,9 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! OPTIONAL: source vector
     type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
@@ -963,7 +979,7 @@ contains
     ! right-hand side vector
     type(t_vectorBlock), intent(inout) :: rrhs
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -979,26 +995,28 @@ contains
 
 
     ! Start time measurement for residual/rhs evaluation
-    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    p_rtimer => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyVector', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'coeffmatrix_cx', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'coeffmatrix_cy', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'coeffmatrix_cz', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'inviscidAFC', inviscidAFC)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'imasstype', imasstype)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'idissipationtype', idissipationtype)
 
     ! Do we have some kind of mass matrix?
@@ -1252,12 +1270,12 @@ contains
         case (NDIM1D)
           call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
               rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
-              mhd_coeffVectorBdr1d_sim, rrhs, rcollection)
+              mhd_coeffVectorBdr1d_sim, rrhs, ssectionName, rcollection)
 
         case (NDIM2D)
           call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
               rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
-              mhd_coeffVectorBdr2d_sim, rrhs, rcollection)
+              mhd_coeffVectorBdr2d_sim, rrhs, ssectionName, rcollection)
 
         case (NDIM3D)
           print *, "Not implemented yet"
@@ -1333,8 +1351,8 @@ contains
 !<subroutine>
 
   subroutine mhd_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rrhs, rres, ite, rcollection,&
-      rsource)
+      rsolver, rsolution, rsolution0, rrhs, rres, ite, ssectionName,&
+      rcollection, rsource)
 
 !<description>
     ! This subroutine computes the nonlinear residual vector
@@ -1362,6 +1380,9 @@ contains
     ! number of nonlinear iteration
     integer, intent(in) :: ite
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! OPTIONAL:  source vector
     type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
@@ -1379,7 +1400,7 @@ contains
     ! residual vector
     type(t_vectorBlock), intent(inout) :: rres
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -1396,24 +1417,26 @@ contains
     integer :: iblock
 
     ! Start time measurement for residual/rhs evaluation
-    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    p_rtimer => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyVector', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'coeffmatrix_cx', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'coeffmatrix_cy', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'coeffmatrix_cz', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'inviscidAFC', inviscidAFC)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'imasstype', imasstype)
 
     ! Compute scaling parameter
@@ -1454,12 +1477,12 @@ contains
         case (NDIM1D)
           call mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
               rsolution, rtimestep%dTime, -dscale,&
-              mhd_coeffVectorBdr1d_sim, rres, rcollection)
+              mhd_coeffVectorBdr1d_sim, rres, ssectionName, rcollection)
           
         case (NDIM2D)
           call mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
               rsolution, rtimestep%dTime, -dscale,&
-              mhd_coeffVectorBdr2d_sim, rres, rcollection)
+              mhd_coeffVectorBdr2d_sim, rres, ssectionName, rcollection)
           
         case (NDIM3D)
           print *, "Not implemented yet"
@@ -1485,12 +1508,12 @@ contains
       case (NDIM1D)
         call mhd_calcLinfBdrCond1D(rproblemLevel,&
             rsolver, rsolution, rtimestep%dTime, -1.0_DP,&
-            mhd_coeffVectorBdr1d_sim, rres, rcollection)
+            mhd_coeffVectorBdr1d_sim, rres, ssectionName, rcollection)
 
       case (NDIM2D)
         call mhd_calcLinfBdrCond2D(rproblemLevel,&
             rsolver, rsolution, rtimestep%dTime, -1.0_DP,&
-            mhd_coeffVectorBdr2d_sim, rres, rcollection)
+            mhd_coeffVectorBdr2d_sim, rres, ssectionName, rcollection)
         
       case (NDIM3D)
         print *, "Not implemented yet!"
@@ -1547,7 +1570,7 @@ contains
       !-------------------------------------------------------------------------
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'idissipationtype', idissipationtype)
+          ssectionName, 'idissipationtype', idissipationtype)
 
       ! What type of dissipation is applied?
       select case(idissipationtype)
@@ -1778,7 +1801,7 @@ contains
 
       ! Assemble the raw antidiffusive fluxes
       call mhd_calcFluxFCT(rproblemLevel, rsolution, rtimestep%theta,&
-          rtimestep%dStep, 1.0_DP, (ite .eq. 0), rsolution, rcollection)
+          rtimestep%dStep, 1.0_DP, (ite .eq. 0), rsolution, ssectionName, rcollection)
 
       !-------------------------------------------------------------------------
       ! Set operation specifier
@@ -1809,7 +1832,8 @@ contains
 
       ! Apply FEM-FCT algorithm
       call mhd_calcCorrectionFCT(rproblemLevel, p_rpredictor,&
-          rtimestep%dStep, .false., ioperationSpec, rres, rcollection)
+          rtimestep%dStep, .false., ioperationSpec, rres,&
+          ssectionName, rcollection)
 
       ! Subtract corrected antidiffusion from right-hand side
       if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
@@ -1837,7 +1861,7 @@ contains
 !<subroutine>
 
   subroutine mhd_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rrhs, istep, rcollection)
+      rsolver, rsolution, rsolution0, rrhs, istep, ssectionName, rcollection)
 
 !<description>
     ! This subroutine computes the right-hand side vector
@@ -1853,6 +1877,9 @@ contains
 
     ! number of explicit step
     integer, intent(in) :: istep
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -1868,7 +1895,7 @@ contains
     ! right-hand side vector
     type(t_vectorBlock), intent(inout) :: rrhs
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -1887,18 +1914,20 @@ contains
     stop
 
     ! Start time measurement for residual/rhs evaluation
-    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    p_rtimer => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyVector', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'coeffMatrix_CZ', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'inviscidAFC', inviscidAFC)
 
     !---------------------------------------------------------------------------
@@ -1906,7 +1935,7 @@ contains
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'imasstype', imasstype)
+        ssectionName, 'imasstype', imasstype)
 
     select case(imasstype)
     case (MASS_LUMPED)
@@ -1918,7 +1947,7 @@ contains
       !-------------------------------------------------------------------------
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+          ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
 
       do iblock = 1, rsolution%nblocks
         call lsyssc_scalarMatVec(&
@@ -1936,7 +1965,7 @@ contains
       !-------------------------------------------------------------------------
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'consistentmassmatrix',&
+          ssectionName, 'consistentmassmatrix',&
           consistentMassMatrix)
 
       do iblock = 1, rsolution%nblocks
@@ -1958,7 +1987,7 @@ contains
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'inviscidAFC', inviscidAFC)
+        ssectionName, 'inviscidAFC', inviscidAFC)
 
     !---------------------------------------------------------------------------
     ! Compute the scaling parameter
@@ -2006,7 +2035,7 @@ contains
 
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'idissipationtype', idissipationtype)
+          ssectionName, 'idissipationtype', idissipationtype)
 
       select case(idissipationtype)
 
@@ -2145,7 +2174,7 @@ contains
 !<subroutine>
 
   subroutine mhd_setBoundaryCondition(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rres, rcollection)
+      rsolver, rsolution, rsolution0, rres, ssectionName, rcollection)
 
 !<description>
     ! This subroutine imposes the nonlinear boundary conditions.
@@ -2160,6 +2189,9 @@ contains
 
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolution0
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -2184,7 +2216,8 @@ contains
 
 
     ! Get parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
 
     ! What type of nonlinear preconditioner are we?
     select case(rsolver%iprecond)
@@ -2193,12 +2226,12 @@ contains
           NLSOL_PRECOND_NEWTON_FAILED)
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'systemmatrix', imatrix)
+          ssectionName, 'systemmatrix', imatrix)
 
     case (NLSOL_PRECOND_NEWTON)
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'jacobianmatrix', imatrix)
+          ssectionName, 'jacobianmatrix', imatrix)
 
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
@@ -2246,7 +2279,7 @@ contains
 !<subroutine>
 
   subroutine mhd_calcLinearisedFCT(rbdrCond, rproblemLevel,&
-      rtimestep, rsolver, rsolution, rcollection, rsource)
+      rtimestep, rsolver, rsolution, ssectionName, rcollection, rsource)
 
 !<description>
     ! This subroutine calculates the linearised FCT correction
@@ -2258,6 +2291,9 @@ contains
 
     ! time-stepping algorithm
     type(t_timestep), intent(in) :: rtimestep
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
     ! OPTIONAL: source vector
     type(t_vectorBlock), intent(in), optional :: rsource
@@ -2287,11 +2323,11 @@ contains
     integer :: nfailsafe,ivariable,nvariable
 
     ! Set pointer to parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
 
     ! Get parameters from parameter list
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'inviscidAFC', inviscidAFC)
 
     ! Do we have to apply linearised FEM-FCT?
@@ -2300,11 +2336,9 @@ contains
         .ne. AFCSTAB_FEMFCT_LINEARISED) return
 
     ! Get more parameters from parameter list
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'lumpedmassmatrix', lumpedmassmatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'nfailsafe', nfailsafe)
     
     !---------------------------------------------------------------------------
@@ -2320,7 +2354,7 @@ contains
     
     ! Compute low-order "right-hand side" without theta parameter
     call mhd_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolver, rsolution, p_rpredictor, rcollection, rsource)
+        rsolver, rsolution, p_rpredictor, ssectionName, rcollection, rsource)
 
     ! Compute low-order predictor
     call lsysbl_invertedDiagMatVec(&
@@ -2329,7 +2363,7 @@ contains
 
     ! Compute the raw antidiffusive fluxes
     call mhd_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-        1.0_DP, 1.0_DP, .true., p_rpredictor, rcollection)
+        1.0_DP, 1.0_DP, .true., p_rpredictor, ssectionName, rcollection)
     
     !---------------------------------------------------------------------------
     ! Perform failsafe flux correction (if required)
@@ -2340,7 +2374,7 @@ contains
       ! Get number of failsafe variables
       nvariable = max(1,&
           parlst_querysubstrings(p_rparlist,&
-          rcollection%SquickAccess(1), 'sfailsafevariable'))
+          ssectionName, 'sfailsafevariable'))
 
       ! Allocate character array that stores all failsafe variable names
       allocate(SfailsafeVariables(nvariable))
@@ -2348,7 +2382,7 @@ contains
       ! Initialize character array with failsafe variable names
       do ivariable = 1, nvariable
         call parlst_getvalue_string(p_rparlist,&
-            rcollection%SquickAccess(1), 'sfailsafevariable',&
+            ssectionName, 'sfailsafevariable',&
             Sfailsafevariables(ivariable), isubstring=ivariable)
       end do
 
@@ -2357,7 +2391,7 @@ contains
           rsolution, rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT,&
-          rsolution, rcollection)
+          rsolution, ssectionName, rcollection)
       
       ! Apply failsafe flux correction
       call afcstab_failsafeLimiting(&
@@ -2376,7 +2410,7 @@ contains
           rsolution, rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD+&
           AFCSTAB_FCTALGO_SCALEBYMASS,&
-          rsolution, rcollection)
+          rsolution, ssectionName, rcollection)
     end if
 
     ! Impose boundary conditions for the solution vector
@@ -2400,8 +2434,8 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_calcFluxFCT(rproblemLevel, rsolution1,&
-      theta, tstep, dscale, binit, rsolution2, rcollection)
+  subroutine mhd_calcFluxFCT(rproblemLevel, rsolution1, theta,&
+      tstep, dscale, binit, rsolution2, ssectionName, rcollection)
 
 !<description>
     ! This subroutine calculates the raw antidiffusive fluxes for
@@ -2428,6 +2462,9 @@ contains
 
     ! OPTIONAL: second solution vector
     type(t_vectorBlock), intent(in) :: rsolution2
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -2445,23 +2482,19 @@ contains
     integer :: idissipationtype, imassantidiffusiontype
 
     ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
 
     ! Get parameters from parameter list
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'inviscidAFC', inviscidAFC)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'lumpedmassmatrix', lumpedmassmatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'consistentmassmatrix', consistentmassmatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'imassantidiffusiontype', imassantidiffusiontype)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'idissipationtype', idissipationtype)
 
 
@@ -2646,8 +2679,8 @@ contains
 !<subroutine>
 
   subroutine mhd_calcCorrectionFCT(rproblemLevel, rsolution, &
-      dscale, bclear, ioperationSpec, rresidual, rcollection,&
-      rafcstab, slimitingvariableName)
+      dscale, bclear, ioperationSpec, rresidual, ssectionName,&
+      rcollection, rafcstab, slimitingvariableName)
 
 !<description>
     ! This subroutine calculates the raw antidiffusive fluxes for
@@ -2674,6 +2707,9 @@ contains
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+    
     ! OPTIONAL: Parameter name of limiting variables in parameter list
     ! If not present, then the default string 'slimitingvariable' is used
     character(len=*), intent(in), optional :: slimitingvariableName
@@ -2701,19 +2737,18 @@ contains
 
 
     ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
 
     ! Get parameters from parameter list
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'lumpedmassmatrix', lumpedmassmatrix)
     
     ! Set pointer to stabilisation structure
     if (present(rafcstab)) then
       p_rafcstab => rafcstab
     else
-      call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
+      call parlst_getvalue_int(p_rparlist, ssectionName,&
           'inviscidAFC', inviscidAFC)
       p_rafcstab => rproblemLevel%Rafcstab(inviscidAFC)
     end if
@@ -2721,10 +2756,10 @@ contains
     ! Get number of limiting variables
     if (present(slimitingvariableName)) then
       nvariable = max(1, parlst_querysubstrings(p_rparlist,&
-          rcollection%SquickAccess(1), slimitingvariableName))
+          ssectionName, slimitingvariableName))
     else
       nvariable = max(1, parlst_querysubstrings(p_rparlist,&
-          rcollection%SquickAccess(1), 'slimitingvariable'))
+          ssectionName, 'slimitingvariable'))
     end if
     
     ! Copy operation specifier and disable the correction step
@@ -2742,11 +2777,11 @@ contains
       ! Get variable declaration string
       if (present(slimitingvariableName)) then
         call parlst_getvalue_string(p_rparlist,&
-            rcollection%SquickAccess(1), slimitingvariableName,&
+            ssectionName, slimitingvariableName,&
             slimitingvariable, isubstring=ivariable)
       else
         call parlst_getvalue_string(p_rparlist,&
-            rcollection%SquickAccess(1), 'slimitingvariable',&
+            ssectionName, 'slimitingvariable',&
             slimitingvariable, isubstring=ivariable)
       end if
 
@@ -3916,10 +3951,12 @@ contains
     integer :: itermCount, ipoint, iel, ndim, icomp
     
     
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
     
     ! This subroutine assumes that the first quick access double value
     ! holds the simulation time
@@ -4123,7 +4160,7 @@ contains
 
   subroutine mhd_calcBilfBdrCond1D(rproblemLevel, rsolver,&
       rsolution, dtime, dscale, fcoeff_buildMatrixScBdr1D_sim,&
-      rmatrix, rcollection)
+      rmatrix, ssectionName, rcollection)
 
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
@@ -4145,6 +4182,9 @@ contains
 
     ! scaling factor
     real(DP), intent(in) :: dscale
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
     ! callback routine for nonconstant coefficient matrices.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr1D.inc'
@@ -4171,7 +4211,7 @@ contains
 
   subroutine mhd_calcBilfBdrCond2D(rproblemLevel, rsolver,&
       rsolution, dtime, dscale, fcoeff_buildMatrixScBdr2D_sim,&
-      rmatrix, rcollection, cconstrType)
+      rmatrix, ssectionName, rcollection, cconstrType)
 
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
@@ -4194,6 +4234,9 @@ contains
 
     ! scaling factor
     real(DP), intent(in) :: dscale
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
     ! callback routine for nonconstant coefficient matrices.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr2D.inc'
@@ -4223,8 +4266,9 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_calcLinfBdrCond1D(rproblemLevel, rsolver, rsolution,&
-      dtime, dscale, fcoeff_buildVectorBlBdr1D_sim, rvector, rcollection)
+  subroutine mhd_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+      rsolution, dtime, dscale, fcoeff_buildVectorBlBdr1D_sim,&
+      rvector, ssectionName, rcollection)
 
 !<description>
     ! This subroutine computes the linear form arising from the weak
@@ -4247,6 +4291,9 @@ contains
     ! scaling factor
     real(DP), intent(in) :: dscale
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! callback routine for nonconstant coefficient vectors.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorBlBdr1D.inc'
 !</intput>
@@ -4256,14 +4303,14 @@ contains
     type(t_vectorBlock), intent(inout) :: rvector
 
     ! collection
-    type(t_collection), intent(inout) :: rcollection
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
 
      ! local variables
     type(t_boundaryCondition), pointer :: p_rboundaryCondition
     type(t_collection) :: rcollectionTmp
-        type(t_linearForm) :: rform
+    type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondType
     integer :: ibct
 
@@ -4282,14 +4329,24 @@ contains
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
 
+    ! Prepare quick access arrays of temporal collection structure
+    rcollectionTmp%SquickAccess(1) = ''
+    rcollectionTmp%SquickAccess(2) = 'rfparser'
+    rcollectionTmp%DquickAccess(1) = dtime
+    rcollectionTmp%DquickAccess(2) = dscale
+
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+    
+    ! Attach solution vector to temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+    
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
         p_rboundaryCondition%rfparser, .true.)
-    rcollectionTmp%SquickAccess(1) = 'rfparser'
-
-    ! Attach solution vector to temporal collection structure
-    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+    
     
     ! Set pointers
     call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
@@ -4300,9 +4357,8 @@ contains
       ! Check if this component has weak boundary conditions
       if (iand(p_IbdrCondType(ibct), BDRC_WEAK) .ne. BDRC_WEAK) cycle
 
-      ! Prepare quick access array of temporal collection structure
-      rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%DquickAccess(2) = dscale
+      ! Prepare further quick access arrays of temporal collection
+      ! structure with boundary component, type and maximum expressions
       rcollectionTmp%IquickAccess(1) = p_IbdrCondType(ibct)
       rcollectionTmp%IquickAccess(2) = ibct
       rcollectionTmp%IquickAccess(3) = p_rboundaryCondition%nmaxExpressions
@@ -4333,8 +4389,9 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_calcLinfBdrCond2D(rproblemLevel, rsolver, rsolution,&
-      dtime, dscale, fcoeff_buildVectorBlBdr2D_sim, rvector, rcollection)
+  subroutine mhd_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+      rsolution, dtime, dscale, fcoeff_buildVectorBlBdr2D_sim,&
+      rvector, ssectionName, rcollection)
 
 !<description>
     ! This subroutine computes the linear form arising from the weak
@@ -4358,6 +4415,9 @@ contains
     ! scaling factor
     real(DP), intent(in) :: dscale
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! callback routine for nonconstant coefficient vectors.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorBlBdr2D.inc'
 !</intput>
@@ -4367,7 +4427,7 @@ contains
     type(t_vectorBlock), intent(inout) :: rvector
 
     ! collection
-    type(t_collection), intent(inout) :: rcollection
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
     
@@ -4394,24 +4454,36 @@ contains
     end if
 
     ! Get pointer to parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
     
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'ccubTypeBdr', ccubTypeBdr)
+        ssectionName, 'ccubTypeBdr', ccubTypeBdr)
 
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
+    
+    ! Prepare quick access arrays of temporal collection structure
+    rcollectionTmp%SquickAccess(1) = ''
+    rcollectionTmp%SquickAccess(2) = 'rfparser'
+    rcollectionTmp%DquickAccess(1) = dtime
+    rcollectionTmp%DquickAccess(2) = dscale
+
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+
+    ! Attach solution vector to first quick access vector of the
+    ! temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
     
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
         p_rboundaryCondition%rfparser, .true.)
-    rcollectionTmp%SquickAccess(1) = 'rfparser'
     
-    ! Attach solution vector to temporal collection structure
-    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
-
+    
     ! Set pointers
     call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
         p_IbdrCondCpIdx)
@@ -4435,9 +4507,8 @@ contains
         ! Check if this segment has weak boundary conditions
         if (iand(p_IbdrCondType(isegment), BDRC_WEAK) .ne. BDRC_WEAK) cycle
         
-        ! Prepare quick access array of temporal collection structure
-        rcollectionTmp%DquickAccess(1) = dtime
-        rcollectionTmp%DquickAccess(2) = dscale
+        ! Prepare further quick access arrays of temporal collection
+        ! structure with boundary component, type and maximum expressions
         rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
         rcollectionTmp%IquickAccess(2) = isegment
         rcollectionTmp%IquickAccess(3) = p_rboundaryCondition%nmaxExpressions

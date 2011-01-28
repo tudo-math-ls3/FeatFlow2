@@ -287,7 +287,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -397,7 +398,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -483,7 +485,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -638,7 +641,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -789,7 +793,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -997,7 +1002,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1237,7 +1243,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1380,7 +1387,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1517,8 +1525,9 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
@@ -1582,8 +1591,9 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
@@ -1647,8 +1657,9 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
@@ -1722,11 +1733,12 @@ contains
 
   ! Number of edges
   integer, intent(in) :: nedges
-  !</input>
+!</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
@@ -1807,8 +1819,9 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
@@ -1931,8 +1944,9 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
@@ -2061,8 +2075,9 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
@@ -2258,8 +2273,9 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
@@ -2449,8 +2465,9 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
@@ -2550,8 +2567,9 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
@@ -2652,7 +2670,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2960,7 +2979,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3066,7 +3086,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3217,7 +3238,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: collection structure
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3300,7 +3322,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3349,7 +3372,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3402,7 +3426,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3451,7 +3476,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3504,7 +3530,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3571,7 +3598,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3624,7 +3652,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3695,7 +3724,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3753,7 +3783,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3808,7 +3839,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3866,7 +3898,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3921,7 +3954,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3979,7 +4013,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -4052,7 +4087,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -4110,7 +4146,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -4203,7 +4240,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -4759,8 +4797,17 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
+    ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   IquickAccess(3):     maximum number of expressions
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -4792,10 +4839,12 @@ contains
     call sys_halt()
 #endif
 
-    ! This subroutine assumes that the first quick access string
-    ! value holds the name of the function parser in the collection.
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
     p_rfparser => collct_getvalue_pars(rcollection,&
-        trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
 
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
@@ -6090,7 +6139,12 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Collection
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   IquickAccess(1):     NEQ or ivt
+    !   IquickAccess(2:5):   ivt1,...,ivt5
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -6219,7 +6273,12 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Collection
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   IquickAccess(1):     NEQ or ivt
+    !   IquickAccess(2:5):   ivt1,...,ivt5
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>

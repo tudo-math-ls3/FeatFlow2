@@ -277,25 +277,41 @@ contains
     ! Initialize global collection structure
     call collct_init(rcollection)
 
-    !  Attach the parameter list and the timers to the collection
+    ! Create a separate section for the scalar transport model
+    call collct_addsection(rcollection, ssectionName)
+    
+    ! Define section name of this application
+    call collct_setvalue_string(rcollection, 'ssectionName',&
+        ssectionName, .true.)
+
+    ! Attach the parameter list and the timers to the collection
     call collct_setvalue_parlst(rcollection,&
-        'rparlist', rparlist, .true.)
+        'rparlist', rparlist, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerSolution', rtimerSolution, .true.)
+        'rtimerSolution', rtimerSolution, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAdaptation', rtimerAdaptation, .true.)
+        'rtimerAdaptation', rtimerAdaptation, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerErrorEstimation', rtimerErrorEstimation, .true.)
+        'rtimerErrorEstimation', rtimerErrorEstimation, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerTriangulation', rtimerTriangulation, .true.)
+        'rtimerTriangulation', rtimerTriangulation, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.)
+        'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.)
+        'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAssemblyVector', rtimerAssemblyVector, .true.)
+        'rtimerAssemblyVector', rtimerAssemblyVector, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerPrePostprocess', rtimerPrePostprocess, .true.)
+        'rtimerPrePostprocess', rtimerPrePostprocess, .true.,&
+        ssectionName=ssectionName)
 
     ! Create function parser
     call fparser_create(rfparser, 100)
@@ -312,8 +328,9 @@ contains
         sindatfileName, 'deffunc', FPAR_FUNCTION)
 
     ! Attach the function parser to the collection
-    call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.)
-
+    call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.,&
+        ssectionName=ssectionName)
+    
     ! Initialize the solver structures
     call hydro_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
@@ -429,7 +446,7 @@ contains
     call stat_stopTimer(rtimerTotal)
 
     ! Output statistics
-    call hydro_outputStatistics(rtimerTotal, rcollection)
+    call hydro_outputStatistics(rtimerTotal, ssectionName, rcollection)
 
     ! Release collection
     call collct_done(rcollection)
@@ -691,7 +708,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 !</input>
 
@@ -782,8 +799,8 @@ contains
         ssectionName, 'nsumcubRefEval', nsumcubRefEval, 0)
     
     ! Set pointers to triangulation and boundary structure
-    p_rtriangulation  => rproblemLevel%rtriangulation
-    p_rboundary       => rproblemLevel%p_rproblem%rboundary
+    p_rtriangulation => rproblemLevel%rtriangulation
+    p_rboundary      => rproblemLevel%p_rproblem%rboundary
 
     ! Create discretisation structure
     if (discretisation > 0) then
@@ -1516,7 +1533,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 !</input>
 
@@ -1562,7 +1579,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! problem level
@@ -1577,7 +1594,7 @@ contains
     type(t_vectorBlock), intent(inout) :: rvector
 
     ! collection structure
-    type(t_collection), intent(inout) :: rcollection
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1587,8 +1604,8 @@ contains
     type(t_vectorBlock) :: rvectorBlock, rvectorHigh, rvectorAux
     type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
     type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     type(t_fparser), pointer :: p_rfparser
+    type(t_collection) :: rcollectionTmp
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
@@ -1650,7 +1667,8 @@ contains
       end if
 
       ! Get function parser from collection structure
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
 
       ! Set pointers
       call storage_getbase_double2D(&
@@ -1727,7 +1745,8 @@ contains
       end if
 
       ! Get function parser from collection structure
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
 
       ! Retrieve the lumped and consistent mass matrices from the
       ! problem level structure or recompute them on-the-fly.
@@ -1757,23 +1776,31 @@ contains
         p_rlumpedMassMatrix => rlumpedMassMatrix
       end if
       
+      ! Initialize temporal collection structure
+      call collct_init(rcollectionTmp)
+      
+      ! Prepare quick access arrays of the temporal collection structure
+      rcollectionTmp%SquickAccess(1) = ''
+      rcollectionTmp%SquickAccess(2) = 'rfparser'
+      rcollectionTmp%DquickAccess(1) = dtime
+      
+      ! Attach user-defined collection structure to temporal collection
+      ! structure (may be required by the callback function)
+      rcollectionTmp%p_rnextCollection => rcollection
+
+      ! Attach function parser from boundary conditions to collection
+      ! structure and specify its name in quick access string array
+      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+
       ! Set up the linear form
       rform%itermCount = 1
       rform%Idescriptors(1) = DER_FUNC
-      
-      ! Attach the simulation time and the name of the 
-      ! function parser to the collection structure
-      rcollection%DquickAccess(1) = dtime
-      rcollection%SquickAccess(1) = "rfparser"
       
       ! Initialize number of expressions
       nexpression = 0
 
       ! Loop over all blocks of the global solution vector
       do iblock = 1, rvector%nblocks
-        
-        ! Set pointer to spatial discretisation
-        p_rspatialDiscr => rvector%RvectorBlock(iblock)%p_rspatialDiscr
         
         ! Scalar vectors in interleaved format have to be treated differently
         if (rvector%RvectorBlock(iblock)%NVAR .eq. 1) then
@@ -1783,11 +1810,11 @@ contains
               'ssolutionName', ssolutionName, isubstring=nexpression+1)
 
           ! Set the number of the component used for evaluating the initial solution
-          rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
+          rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
           
           ! Assemble the linear form for the scalar subvector
           call linf_buildVectorScalar2(rform, .true.,&
-              rvector%RvectorBlock(iblock), hydro_coeffVectorAnalytic, rcollection)
+              rvector%RvectorBlock(iblock), hydro_coeffVectorAnalytic, rcollectionTmp)
 
           ! Increase number of processed expressions
           nexpression = nexpression + 1
@@ -1805,12 +1832,11 @@ contains
                 'ssolutionName', ssolutionName, isubstring=nexpression+ivar)
             
             ! Set the number of the component used for evaluating the initial solution
-            rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
+            rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
 
             ! Assemble the linear form for the scalar subvector
             call linf_buildVectorScalar2(rform, .true.,&
-                rvectorBlock%RvectorBlock(ivar), hydro_coeffVectorAnalytic,&
-                rcollection)
+                rvectorBlock%RvectorBlock(ivar), hydro_coeffVectorAnalytic, rcollectionTmp)
           end do
 
           ! Convert block vector back to scalar vector in interleaved format
@@ -1825,6 +1851,9 @@ contains
         end if
 
       end do
+
+      ! Release temporal collection structure
+      call collct_done(rcollectionTmp)
       
       ! Store norm of load vector (if required)
       if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
@@ -1905,9 +1934,6 @@ contains
             hydro_calcFluxFCTScDiss1d_sim, 0.0_DP, 0.0_DP, 1.0_DP, .true.,&
             p_rconsistentMassMatrix, rcollection=rcollection)
         
-        ! Attach section name to collection structure
-        rcollection%SquickAccess(1) = ssectionName
-
         if (nsolutionfailsafe .gt. 0) then
 
           ! Get number of failsafe variables
@@ -1928,7 +1954,8 @@ contains
           ! Compute and apply FEM-FCT correction
           call hydro_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
               .false., AFCSTAB_FCTALGO_STANDARD-AFCSTAB_FCTALGO_CORRECT,&
-              rvector, rcollection, rafcstab, 'ssolutionconstrainvariable')
+              rvector, ssectionName, rcollection,&
+              rafcstab, 'ssolutionconstrainvariable')
           
           ! Apply failsafe flux correction
           call afcstab_failsafeLimiting(rafcstab, p_rlumpedMassMatrix,&
@@ -1943,7 +1970,8 @@ contains
           ! Compute and apply FEM-FCT correction
           call hydro_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
               .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS,&
-              rvector, rcollection, rafcstab, 'ssolutionconstrainvariable')
+              rvector, ssectionName, rcollection,&
+              rafcstab, 'ssolutionconstrainvariable')
         end if
         
         ! Release stabilisation structure
@@ -2253,7 +2281,7 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_outputStatistics(rtimerTotal, rcollection)
+  subroutine hydro_outputStatistics(rtimerTotal, ssectionName, rcollection)
 
 !<description>
     ! This subroutine output application statistics
@@ -2262,6 +2290,9 @@ contains
 !<input>
     ! timer for total time measurement
     type(t_timer), intent(in) :: rtimerTotal
+
+    ! section name in collection structure
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -2283,18 +2314,26 @@ contains
 
 
     ! Get timer objects from collection
-    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
-    p_rtimerAssemblyMatrix => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
-    p_rtimerAssemblyVector => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
-    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    p_rtimerSolution => collct_getvalue_timer(rcollection,&
+        'rtimerSolution', ssectionName=ssectionName)
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection,&
+        'rtimerAdaptation', ssectionName=ssectionName)
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection,&
+        'rtimerErrorEstimation', ssectionName=ssectionName)
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection,&
+        'rtimerTriangulation', ssectionName=ssectionName)
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', ssectionName=ssectionName)
+    p_rtimerAssemblyMatrix => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyMatrix', ssectionName=ssectionName)
+    p_rtimerAssemblyVector => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyVector', ssectionName=ssectionName)
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
+        'rtimerPrePostprocess', ssectionName=ssectionName)
 
     ! Output statistics
     call output_lbrk()
-    call output_line('Time measurement:')
+    call output_line('Time measurement: '//trim(adjustl(ssectionName)))
     call output_line('-----------------')
 
     call stat_subTimers(p_rtimerAssemblyMatrix, p_rtimerSolution)
@@ -2321,7 +2360,7 @@ contains
     call output_line('Time for matrix assembly      : '//&
                      trim(adjustl(sys_sdE(p_rtimerAssemblyMatrix%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyMatrix%delapsedCPU, 5)))//' %')
-    call output_line('Time for vector assembly:       '//&
+    call output_line('Time for vector assembly      : '//&
                      trim(adjustl(sys_sdE(p_rtimerAssemblyVector%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyVector%delapsedCPU, 5)))//' %')
     call output_line('Time for pre-/post-processing : '//&
@@ -2636,7 +2675,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! adaptation structure
@@ -2779,7 +2818,7 @@ contains
 !</description>
 
 !<input>
-      ! section name in parameter list
+      ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! boundary condition structure
@@ -2842,12 +2881,18 @@ contains
 
 
     ! Get timer structures
-    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
-    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
+        'rtimerPrePostprocess', ssectionName=ssectionName)
+    p_rtimerSolution => collct_getvalue_timer(rcollection,&
+        'rtimerSolution', ssectionName=ssectionName)
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection,&
+        'rtimerErrorEstimation', ssectionName=ssectionName)
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection,&
+        'rtimerAdaptation', ssectionName=ssectionName)
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection,&
+        'rtimerTriangulation', ssectionName=ssectionName)
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', ssectionName=ssectionName)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -3058,9 +3103,6 @@ contains
       ! Start time measurement for solution procedure
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
 
-      ! Prepare quick access arrays of the collection
-      rcollection%SquickAccess(1) = ssectionName
-
       ! What time-stepping scheme should be used?
       select case(rtimestep%ctimestepType)
 
@@ -3084,7 +3126,7 @@ contains
 
       ! Perform linearised FEM-FCT post-processing
       call hydro_calcLinearisedFCT(rbdrCond, p_rproblemLevel,&
-          rtimestep, rsolver, rsolution, rcollection)
+          rtimestep, rsolver, rsolution, ssectionName, rcollection)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)

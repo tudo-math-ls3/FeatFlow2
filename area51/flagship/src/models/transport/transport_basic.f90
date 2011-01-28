@@ -53,6 +53,9 @@ module transport_basic
 
 !<constantblock description="Global type of flow velocities">
 
+  ! velocity profile is defined externally
+  integer, parameter, public :: VELOCITY_EXTERNAL          =-1
+
   ! zero velocity profile v=0
   integer, parameter, public :: VELOCITY_ZERO              = 0
 
@@ -255,7 +258,7 @@ contains
 
     select case(abs(ivelocityType))
 
-    case(VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
+    case(VELOCITY_EXTERNAL, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
       bvector = .true.
 
     case default

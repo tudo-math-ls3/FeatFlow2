@@ -9,10 +9,7 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) transp_setVariable3d
-!#     -> Sets global variables for external data, e.g., velocity fields in 3D
-!#
-!# 2.) transp_hadaptCallback3d
+!# 1.) transp_hadaptCallback3d
 !#      -> Performs application specific tasks in the adaptation algorithm in 3D
 !#
 !#
@@ -64,7 +61,6 @@ module transport_callback3d
 
   private
 
-  public :: transp_setVariable3d
   public :: transp_hadaptCallback3d
 
   public :: transp_calcMatDiagConvP3d_sim
@@ -75,63 +71,8 @@ module transport_callback3d
   public :: transp_calcMatGalConvD3d_sim
   public :: transp_calcMatUpwConvD3d_sim
 
-!<globals>
-
-  !*****************************************************************
-  ! Pointers to external data vectors.
-  !
-  ! Using global variables is not good programming style but it is the
-  ! only way to allow for an efficient access to the velocity data
-  ! from within the callback routines which are called repeatedly
-
-  real(DP), dimension(:), pointer, save :: p_Dvariable1 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable2 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable3 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable4 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable5 => null()
-
-!</globals>
-
 contains
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_setVariable3d(rvector, ivariable)
-
-!<description>
-    ! This subroutine sets one of the the global pointers to the given vector.
-!</description>
-
-!<input>
-    ! scalar vector
-    type(t_vectorScalar), intent(in) :: rvector
-
-    ! variable number
-    integer, intent(in) :: ivariable
-!</input>
-!</subroutine>
-
-    select case(ivariable)
-    case (1)
-      call lsyssc_getbase_double(rvector, p_Dvariable1)
-    case (2)
-      call lsyssc_getbase_double(rvector, p_Dvariable2)
-    case (3)
-      call lsyssc_getbase_double(rvector, p_Dvariable3)
-    case (4)
-      call lsyssc_getbase_double(rvector, p_Dvariable4)
-    case (5)
-      call lsyssc_getbase_double(rvector, p_Dvariable5)
-    case DEFAULT
-      call output_line('Invalid variable number!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable3d')
-      call sys_halt()
-    end select
-
-  end subroutine transp_setVariable3d
-
+  
   !*****************************************************************************
 
 !<subroutine>
@@ -150,7 +91,12 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Collection
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   IquickAccess(1):     NEQ or ivt
+    !   IquickAccess(2:5):   ivt1,...,ivt5
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -245,7 +191,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagConvP3d_sim(DdataAtNode,&
+  subroutine transp_calcMatDiagConvP3d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -273,7 +219,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -284,26 +233,32 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY,p_DvelocityZ
     integer :: inode
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(3), p_DvelocityZ)
+
     do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
-          +p_Dvariable3(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
+          +p_DvelocityZ(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
 #else
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
-          +p_Dvariable3(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
+          +p_DvelocityZ(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
 #endif
     end do
     
@@ -313,7 +268,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalConvP3d_sim(DdataAtEdge,&
+  subroutine transp_calcMatGalConvP3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -341,7 +296,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -352,36 +310,42 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY,p_DvelocityZ
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(3), p_DvelocityZ)
+
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
-          +p_Dvariable3(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
-          +p_Dvariable3(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
-          +p_Dvariable3(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
-          +p_Dvariable3(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
 #endif
 
       ! Set artificial diffusion to zero
@@ -394,7 +358,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwConvP3d_sim(DdataAtEdge,&
+  subroutine transp_calcMatUpwConvP3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -423,7 +387,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -434,36 +401,42 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY,p_DvelocityZ
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(3), p_DvelocityZ)
+
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
-          +p_Dvariable3(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
-          +p_Dvariable3(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
-          +p_Dvariable3(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
-          +p_Dvariable3(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
 #endif
 
       ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
@@ -477,7 +450,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatDiagConvD3d_sim(DdataAtNode,&
+  subroutine transp_calcMatDiagConvD3d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
@@ -505,7 +478,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -516,26 +492,32 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY,p_DvelocityZ
     integer :: inode
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(3), p_DvelocityZ)
     
     do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
-          +p_Dvariable3(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
+          +p_DvelocityZ(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
 #else
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
-          +p_Dvariable3(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
+          +p_DvelocityZ(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
 #endif
     end do
     
@@ -545,7 +527,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalConvD3d_sim(DdataAtEdge,&
+  subroutine transp_calcMatGalConvD3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -573,7 +555,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -584,36 +569,42 @@ contains
 !</subroutine>
     
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY,p_DvelocityZ
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(3), p_DvelocityZ)
     
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
-          +p_Dvariable3(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
-          +p_Dvariable3(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
-          +p_Dvariable3(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
-          +p_Dvariable3(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
 #endif
 
       ! Set artificial diffusion to zero
@@ -626,7 +617,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwConvD3d_sim(DdataAtEdge,&
+  subroutine transp_calcMatUpwConvD3d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
@@ -655,7 +646,10 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: velocity field
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -666,36 +660,42 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY,p_DvelocityZ
     integer :: iedge
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(3), p_DvelocityZ)
     
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
-          +p_Dvariable3(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
-          +p_Dvariable3(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
-          +p_Dvariable3(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
-          +p_Dvariable3(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
+          +p_DvelocityZ(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
 #endif
 
       ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$

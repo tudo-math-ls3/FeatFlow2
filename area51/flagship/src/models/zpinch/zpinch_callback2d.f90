@@ -9,57 +9,53 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) zpinch_setVariable2d = zpinch_setVariableScalar2d /
-!#                            zpinch_setVariableBlock2d
-!#     -> Sets global variables for external data, e.g., velocity fields in 2D
-!#
-!# 2.) zpinch_hadaptCallbackScalar2d
+!# 1.) zpinch_hadaptCallbackScalar2d
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in interleave format
 !#
-!# 3.) zpinch_hadaptCallbackBlock2d
+!# 2.) zpinch_hadaptCallbackBlock2d
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in block format
 !#
-!# 4.) zpinch_calcMatDiagConvIntlP2d_sim
+!# 3.) zpinch_calcMatDiagConvIntlP2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (primal formulation)
 !#        for hydrodynamic systems stored in interleaved format
 !#
-!# 5.) zpinch_calcMatRusConvIntlP2d_sim
+!# 4.) zpinch_calcMatRusConvIntlP2d_sim
 !#     -> Calculates the off-diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (primal formulation)
 !#        and applies scalar artificial viscosities of Rusanov-type
 !#        for hydrodynamic systems stored in interleaved format
 !#
-!# 6.) zpinch_calcMatDiagConvIntlD2d_sim
+!# 5.) zpinch_calcMatDiagConvIntlD2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (dual formulation)
 !#        for hydrodynamic systems stored in interleaved format
 !#
-!# 7.) zpinch_calcMatRusConvIntlD2d_sim
+!# 6.) zpinch_calcMatRusConvIntlD2d_sim
 !#     -> Calculates the off-diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (dual formulation)
 !#        and applies scalar artificial viscosities of Rusanov-type
 !#        for hydrodynamic systems stored in interleaved format
 !#
-!# 8.) zpinch_calcMatDiagConvBlockP2d_sim
+!# 7.) zpinch_calcMatDiagConvBlockP2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (primal formulation)
 !#        for hydrodynamic systems stored in block format
 !#
-!# 9.) zpinch_calcMatRusConvBlockP2d_sim
-!#     -> Calculates the off-diagonal Galerkin transport coefficients
-!#        for linear convection in 2D (primal formulation)
-!#        and applies scalar artificial viscosities of Rusanov-type
-!#        for hydrodynamic systems stored in block format
+!# 10.) zpinch_calcMatRusConvBlockP2d_sim
+!#      -> Calculates the off-diagonal Galerkin transport coefficients
+!#         for linear convection in 2D (primal formulation)
+!#         and applies scalar artificial viscosities of Rusanov-type
+!#         for hydrodynamic systems stored in block format
 !#
-!# 10.) zpinch_calcMatDiagConvBlockD2d_sim
+!# 11.) zpinch_calcMatDiagConvBlockD2d_sim
 !#      -> Calculates the diagonal Galerkin transport coefficients
 !#         for linear convection in 2D (dual formulation)
 !#         for hydrodynamic systems stored in block format
 !#
-!# 11.) zpinch_calcMatRusConvBlockD2d_sim
+!# 12.) zpinch_calcMatRusConvBlockD2d_sim
 !#      -> Calculates the off-diagonal Galerkin transport coefficients
 !#         for linear convection in 2D (dual formulation)
 !#         and applies scalar artificial viscosities of Rusanov-type
@@ -69,6 +65,8 @@
 !##############################################################################
 
 module zpinch_callback2d
+
+#include "hydro.h"
 
   use collection
   use hydro_basic
@@ -83,7 +81,6 @@ module zpinch_callback2d
   implicit none
 
   private
-  public :: zpinch_setVariable2d
   public :: zpinch_hadaptCallbackScalar2d
   public :: zpinch_hadaptCallbackBlock2d
   
@@ -99,107 +96,7 @@ module zpinch_callback2d
   public :: zpinch_calcMatDiagConvBlockD2d_sim
   public :: zpinch_calcMatRusConvBlockD2d_sim
   
-  interface zpinch_setVariable2d
-    module procedure zpinch_setVariableScalar2d
-    module procedure zpinch_setVariableBlock2d
-  end interface
-
-!<globals>
-
-  !*****************************************************************
-  ! Pointers to external data vectors.
-  !
-  ! Using global variables is not good programming style but it is the
-  ! only way to allow for an efficient access to the velocity data
-  ! from within the callback routines which are called repeatedly
-
-  real(DP), dimension(:), pointer, save :: p_Dvariable1 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable2 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable3 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable4 => null()
-  real(DP), dimension(:), pointer, save :: p_Dvariable5 => null()
-
-!</globals>
-
 contains
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_setVariableScalar2d(rvector, ivariable)
-
-!<description>
-    ! This subroutine sets one of the the global pointers to
-    ! the given scalar vector.
-!</description>
-
-!<input>
-    ! scalar vector
-    type(t_vectorScalar), intent(in) :: rvector
-
-    ! variable number
-    integer, intent(in) :: ivariable
-!</input>
-!</subroutine>
-
-    select case(ivariable)
-    case (1)
-      call lsyssc_getbase_double(rvector, p_Dvariable1)
-    case (2)
-      call lsyssc_getbase_double(rvector, p_Dvariable2)
-    case (3)
-      call lsyssc_getbase_double(rvector, p_Dvariable3)
-    case (4)
-      call lsyssc_getbase_double(rvector, p_Dvariable4)
-    case (5)
-      call lsyssc_getbase_double(rvector, p_Dvariable5)
-    case DEFAULT
-      call output_line('Invalid variable number!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_setVariableScalar2d')
-      call sys_halt()
-    end select
-
-  end subroutine zpinch_setVariableScalar2d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_setVariableBlock2d(rvector, ivariable)
-
-!<description>
-    ! This subroutine sets one of the the global pointers to
-    ! the given block vector.
-!</description>
-
-!<input>
-    ! block vector
-    type(t_vectorBlock), intent(in) :: rvector
-
-    ! variable number
-    integer, intent(in) :: ivariable
-!</input>
-!</subroutine>
-
-    select case(ivariable)
-    case (1)
-      call lsysbl_getbase_double(rvector, p_Dvariable1)
-    case (2)
-      call lsysbl_getbase_double(rvector, p_Dvariable2)
-    case (3)
-      call lsysbl_getbase_double(rvector, p_Dvariable3)
-    case (4)
-      call lsysbl_getbase_double(rvector, p_Dvariable4)
-    case (5)
-      call lsysbl_getbase_double(rvector, p_Dvariable5)
-    case DEFAULT
-      call output_line('Invalid variable number!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_setVariableBlock2d')
-      call sys_halt()
-    end select
-
-  end subroutine zpinch_setVariableBlock2d
 
   !*****************************************************************************
 
@@ -220,7 +117,12 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Collection
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   IquickAccess(1):     NEQ or ivt
+    !   IquickAccess(2:5):   ivt1,...,ivt5
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -390,7 +292,12 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Collection
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   IquickAccess(1):     NEQ or ivt
+    !   IquickAccess(2:5):   ivt1,...,ivt5
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -548,7 +455,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine zpinch_calcMatDiagConvIntlP2d_sim(DdataAtNode,&
+  subroutine zpinch_calcMatDiagConvIntlP2d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
@@ -579,7 +486,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -590,25 +498,29 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     integer :: inode
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
     
     do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 
 #else
       ! Compute convective coefficient  $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #endif
     end do
     
@@ -618,7 +530,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine zpinch_calcMatRusConvIntlP2d_sim(DdataAtEdge,&
+  subroutine zpinch_calcMatRusConvIntlP2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
@@ -650,7 +562,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -660,37 +573,46 @@ contains
 !</output>
 !</subroutine>
 
-    ! local parameters
-    real(DP), parameter :: GAMMA = 1.4_DP
-    
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DsolutionHydro
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
     integer :: iedge,idx,jdx
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+
+    ! This subroutine assumes that a second collection structure is
+    ! attached to rcollection, and moreover, the first quick access
+    ! vector of this collection structure points to the solution of
+    ! the hydrodynamic mode
+    call lsysbl_getbase_double(rcollection%p_rnextCollection%&
+        p_rvectorQuickAccess1, p_DsolutionHydro)
     
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient  $k_{ji} = v_i*Cx_{ij}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient  $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient  $k_{ji} = -v_i*Cx_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
       ! Compute base indices
@@ -698,12 +620,12 @@ contains
       jdx = 4*(IverticesAtEdge(2,iedge)-1)
       
       ! Compute auxiliary variables
-      ui = p_Dvariable3(idx+2)/p_Dvariable3(idx+1)
-      vi = p_Dvariable3(idx+3)/p_Dvariable3(idx+1)
-      Ei = p_Dvariable3(idx+4)/p_Dvariable3(idx+1)
-      uj = p_Dvariable3(jdx+2)/p_Dvariable3(jdx+1)
-      vj = p_Dvariable3(jdx+3)/p_Dvariable3(jdx+1)
-      Ej = p_Dvariable3(jdx+4)/p_Dvariable3(jdx+1)
+      ui = p_DsolutionHydro(idx+2)/p_DsolutionHydro(idx+1)
+      vi = p_DsolutionHydro(idx+3)/p_DsolutionHydro(idx+1)
+      Ei = p_DsolutionHydro(idx+4)/p_DsolutionHydro(idx+1)
+      uj = p_DsolutionHydro(jdx+2)/p_DsolutionHydro(jdx+1)
+      vj = p_DsolutionHydro(jdx+3)/p_DsolutionHydro(jdx+1)
+      Ej = p_DsolutionHydro(jdx+4)/p_DsolutionHydro(jdx+1)
       
       ! Compute auxiliary quantities
       hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
@@ -730,7 +652,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine zpinch_calcMatDiagConvIntlD2d_sim(DdataAtNode,&
+  subroutine zpinch_calcMatDiagConvIntlD2d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
@@ -761,7 +683,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -772,24 +695,28 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     integer :: inode
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
     
     do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #else
       ! Compute convective coefficient  $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #endif
     end do
     
@@ -799,7 +726,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine zpinch_calcMatRusConvIntlD2d_sim(DdataAtEdge,&
+  subroutine zpinch_calcMatRusConvIntlD2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
@@ -831,7 +758,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -841,37 +769,46 @@ contains
 !</output>
 !</subroutine>
 
-    ! local parameters
-    real(DP), parameter :: GAMMA = 1.4_DP
-    
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DsolutionHydro
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
     integer :: iedge,idx,jdx
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
     
+    ! This subroutine assumes that a second collection structure is
+    ! attached to rcollection, and moreover, the first quick access
+    ! vector of this collection structure points to the solution of
+    ! the hydrodynamic mode
+    call lsysbl_getbase_double(rcollection%p_rnextCollection%&
+        p_rvectorQuickAccess1, p_DsolutionHydro)
+
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient $k_{ji] = -v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji] = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
       ! Compute base indices
@@ -879,12 +816,12 @@ contains
       jdx = 4*(IverticesAtEdge(2,iedge)-1)
       
       ! Compute auxiliary variables
-      ui = p_Dvariable3(idx+2)/p_Dvariable3(idx+1)
-      vi = p_Dvariable3(idx+3)/p_Dvariable3(idx+1)
-      Ei = p_Dvariable3(idx+4)/p_Dvariable3(idx+1)
-      uj = p_Dvariable3(jdx+2)/p_Dvariable3(jdx+1)
-      vj = p_Dvariable3(jdx+3)/p_Dvariable3(jdx+1)
-      Ej = p_Dvariable3(jdx+4)/p_Dvariable3(jdx+1)
+      ui = p_DsolutionHydro(idx+2)/p_DsolutionHydro(idx+1)
+      vi = p_DsolutionHydro(idx+3)/p_DsolutionHydro(idx+1)
+      Ei = p_DsolutionHydro(idx+4)/p_DsolutionHydro(idx+1)
+      uj = p_DsolutionHydro(jdx+2)/p_DsolutionHydro(jdx+1)
+      vj = p_DsolutionHydro(jdx+3)/p_DsolutionHydro(jdx+1)
+      Ej = p_DsolutionHydro(jdx+4)/p_DsolutionHydro(jdx+1)
       
       ! Compute auxiliary quantities
       hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
@@ -911,7 +848,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine zpinch_calcMatDiagConvBlockP2d_sim(DdataAtNode,&
+  subroutine zpinch_calcMatDiagConvBlockP2d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
@@ -942,7 +879,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -953,24 +891,28 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     integer :: inode
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
     
     do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #else
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #endif
     end do
     
@@ -980,7 +922,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine zpinch_calcMatRusConvBlockP2d_sim(DdataAtEdge,&
+  subroutine zpinch_calcMatRusConvBlockP2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
@@ -1012,7 +954,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1022,52 +965,62 @@ contains
 !</output>
 !</subroutine>
 
-    ! local parameters
-    real(DP), parameter :: GAMMA = 1.4_DP
-    
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DsolutionHydro
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
     integer :: iedge,neq,i,j
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+
+    ! This subroutine assumes that a second collection structure is
+    ! attached to rcollection, and moreover, the first quick access
+    ! vector of this collection structure points to the solution of
+    ! the hydrodynamic mode
+    call lsysbl_getbase_double(rcollection%p_rnextCollection%&
+        p_rvectorQuickAccess1, p_DsolutionHydro)
+
     do iedge = 1, nedges
+
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
       ! Get number of equations for single variable
-      neq = size(p_Dvariable1)
+      neq = size(p_DvelocityX)
 
       ! Get equations i and j
       i = IverticesAtEdge(1,iedge)
       j = IverticesAtEdge(2,iedge)
       
       ! Compute auxiliary variables
-      ui = p_Dvariable3(neq  +i)/p_Dvariable3(i)
-      vi = p_Dvariable3(neq*2+i)/p_Dvariable3(i)
-      Ei = p_Dvariable3(neq*3+i)/p_Dvariable3(i)
-      uj = p_Dvariable3(neq  +j)/p_Dvariable3(j)
-      vj = p_Dvariable3(neq*2+j)/p_Dvariable3(j)
-      Ej = p_Dvariable3(neq*3+j)/p_Dvariable3(j)
+      ui = p_DsolutionHydro(neq  +i)/p_DsolutionHydro(i)
+      vi = p_DsolutionHydro(neq*2+i)/p_DsolutionHydro(i)
+      Ei = p_DsolutionHydro(neq*3+i)/p_DsolutionHydro(i)
+      uj = p_DsolutionHydro(neq  +j)/p_DsolutionHydro(j)
+      vj = p_DsolutionHydro(neq*2+j)/p_DsolutionHydro(j)
+      Ej = p_DsolutionHydro(neq*3+j)/p_DsolutionHydro(j)
       
       ! Compute auxiliary quantities
       hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
@@ -1094,7 +1047,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine zpinch_calcMatDiagConvBlockD2d_sim(DdataAtNode,&
+  subroutine zpinch_calcMatDiagConvBlockD2d_sim(DdataAtNode,&
       DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
@@ -1125,7 +1078,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1136,24 +1090,28 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     integer :: inode
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
     
     do inode = 1, nnodes
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #else
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #endif
     end do
     
@@ -1163,7 +1121,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine zpinch_calcMatRusConvBlockD2d_sim(DdataAtEdge,&
+  subroutine zpinch_calcMatRusConvBlockD2d_sim(DdataAtEdge,&
       DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
@@ -1195,7 +1153,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1205,53 +1164,62 @@ contains
 !</output>
 !</subroutine>
 
-    ! local parameters
-    real(DP), parameter :: GAMMA = 1.4_DP
-    
     ! local variable
-    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP), dimension(:), pointer :: p_DsolutionHydro
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
     real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
     integer :: iedge,neq,i,j
 
-!!!    ! Set pointer to velocity vector
-!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
-    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity field, so lets get its double data
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), p_DvelocityX)
+    call lsyssc_getbase_double(&
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(2), p_DvelocityY)
+
+    ! This subroutine assumes that a second collection structure is
+    ! attached to rcollection, and moreover, the first quick access
+    ! vector of this collection structure points to the solution of
+    ! the hydrodynamic mode
+    call lsysbl_getbase_double(rcollection%p_rnextCollection%&
+        p_rvectorQuickAccess1, p_DsolutionHydro)
+
     do iedge = 1, nedges
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient $k_{ji] = -v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji] = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
       ! Get number of equations for single variable
-      neq = size(p_Dvariable1)
+      neq = size(p_DvelocityX)
       
       ! Get equations i and j
       i = IverticesAtEdge(1,iedge)
       j = IverticesAtEdge(2,iedge)
 
       ! Compute auxiliary variables
-      ui = p_Dvariable3(neq  +i)/p_Dvariable3(i)
-      vi = p_Dvariable3(neq*2+i)/p_Dvariable3(i)
-      Ei = p_Dvariable3(neq*3+i)/p_Dvariable3(i)
-      uj = p_Dvariable3(neq  +j)/p_Dvariable3(j)
-      vj = p_Dvariable3(neq*2+j)/p_Dvariable3(j)
-      Ej = p_Dvariable3(neq*3+j)/p_Dvariable3(j)
+      ui = p_DsolutionHydro(neq  +i)/p_DsolutionHydro(i)
+      vi = p_DsolutionHydro(neq*2+i)/p_DsolutionHydro(i)
+      Ei = p_DsolutionHydro(neq*3+i)/p_DsolutionHydro(i)
+      uj = p_DsolutionHydro(neq  +j)/p_DsolutionHydro(j)
+      vj = p_DsolutionHydro(neq*2+j)/p_DsolutionHydro(j)
+      Ej = p_DsolutionHydro(neq*3+j)/p_DsolutionHydro(j)
       
       ! Compute auxiliary quantities
       hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)

@@ -230,26 +230,118 @@ contains
     ! Initialize global collection structure
     call collct_init(rcollection)
 
-    ! Attach the parameter list and the timers
-    ! to the collection for the hydrodynamic model
+    ! Create separate sections for the z-pinch problem, the
+    ! hydrodynamic model and the scalar transport model
+    call collct_addsection(rcollection, ssectionName)
+    call collct_addsection(rcollection, ssectionNameHydro)
+    call collct_addsection(rcollection, ssectionNameTransport)
+
+    ! Define section names of the z-pinch problem, the hydrodynamic
+    ! model and the scalar transport model. Below, we will fill each
+    ! of the three section with parameter list and the timer
+    ! structures. Why is this complicated task necessary? Well, each
+    ! submodel assumes that it has its own section in the global
+    ! collection structure and the global parameter list.
+    call collct_setvalue_string(rcollection, 'ssectionName',&
+        ssectionName, .true.)
+    call collct_setvalue_string(rcollection, 'ssectionNameHydro',&
+        ssectionNameHydro, .true.)
+    call collct_setvalue_string(rcollection, 'ssectionNameTransport',&
+        ssectionNameTransport, .true.)
+
+
+    ! Attach the parameter list and the timers to the
+    ! collection. Since we do not measure the time individually for
+    ! each submodel, the same timers will be attached to the section
+    ! that corresponds to the hydrodynamic model and the scalar
+    ! transport model so that the timings are cumulated.
     call collct_setvalue_parlst(rcollection,&
-        'rparlist', rparlist, .true.)
+        'rparlist', rparlist, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerSolution', rtimerSolution, .true.)
+        'rtimerSolution', rtimerSolution, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAdaptation', rtimerAdaptation, .true.)
+        'rtimerAdaptation', rtimerAdaptation, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerErrorEstimation', rtimerErrorEstimation, .true.)
+        'rtimerErrorEstimation', rtimerErrorEstimation, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerTriangulation', rtimerTriangulation, .true.)
+        'rtimerTriangulation', rtimerTriangulation, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.)
+        'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.)
+        'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerAssemblyVector', rtimerAssemblyVector, .true.)
+        'rtimerAssemblyVector', rtimerAssemblyVector, .true.,&
+        ssectionName=ssectionName)
     call collct_setvalue_timer(rcollection,&
-        'rtimerPrePostprocess', rtimerPrePostprocess, .true.)
+        'rtimerPrePostprocess', rtimerPrePostprocess, .true.,&
+        ssectionName=ssectionName)
+
+    ! Attach the parameter list and the timers to the collection
+    ! into the section for the hydrodynamic model
+    call collct_setvalue_parlst(rcollection,&
+        'rparlist', rparlist, .true.,&
+        ssectionName=ssectionNameHydro)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerSolution', rtimerSolution, .true.,&
+        ssectionName=ssectionNameHydro)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAdaptation', rtimerAdaptation, .true.,&
+        ssectionName=ssectionNameHydro)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerErrorEstimation', rtimerErrorEstimation, .true.,&
+        ssectionName=ssectionNameHydro)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerTriangulation', rtimerTriangulation, .true.,&
+        ssectionName=ssectionNameHydro)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.,&
+        ssectionName=ssectionNameHydro)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.,&
+        ssectionName=ssectionNameHydro)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAssemblyVector', rtimerAssemblyVector, .true.,&
+        ssectionName=ssectionNameHydro)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerPrePostprocess', rtimerPrePostprocess, .true.,&
+        ssectionName=ssectionNameHydro)
+
+    ! Attach the parameter list and the timers to the collection
+    ! into the section for the scalar transport model
+    call collct_setvalue_parlst(rcollection,&
+        'rparlist', rparlist, .true.,&
+        ssectionName=ssectionNameTransport)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerSolution', rtimerSolution, .true.,&
+        ssectionName=ssectionNameTransport)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAdaptation', rtimerAdaptation, .true.,&
+        ssectionName=ssectionNameTransport)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerErrorEstimation', rtimerErrorEstimation, .true.,&
+        ssectionName=ssectionNameTransport)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerTriangulation', rtimerTriangulation, .true.,&
+        ssectionName=ssectionNameTransport)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.,&
+        ssectionName=ssectionNameTransport)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.,&
+        ssectionName=ssectionNameTransport)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAssemblyVector', rtimerAssemblyVector, .true.,&
+        ssectionName=ssectionNameTransport)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerPrePostprocess', rtimerPrePostprocess, .true.,&
+        ssectionName=ssectionNameTransport)
 
     ! Create function parser
     call fparser_create(rfparser, 100)
@@ -283,9 +375,13 @@ contains
     call fparser_parseFileForKeyword(rfparser,&
         sindatfileName, 'deffunc', FPAR_FUNCTION)
 
-    ! Attach the function parser to the collection
-    call collct_setvalue_pars(rcollection,&
-        'rfparser', rfparser, .true.)
+    ! Attach the function parser to all three sections of the collection
+    call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.,&
+        ssectionName=ssectionName)
+    call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.,&
+        ssectionName=ssectionNameHydro)
+    call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.,&
+        ssectionName=ssectionNameTransport)
 
     ! Initialize the solver structures
     call zpinch_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
@@ -428,7 +524,7 @@ contains
     call stat_stopTimer(rtimerTotal)
 
     ! Output statistics
-    call hydro_outputStatistics(rtimerTotal, rcollection)
+    call hydro_outputStatistics(rtimerTotal, ssectionName, rcollection)
 
     ! Release collection
     call collct_done(rcollection)
@@ -1173,13 +1269,19 @@ contains
     integer, external :: signal_SIGINT
 
     ! Get timer structures
-    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
-    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
-
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
+        'rtimerPrePostprocess', ssectionName=ssectionName)
+    p_rtimerSolution => collct_getvalue_timer(rcollection,&
+        'rtimerSolution', ssectionName=ssectionName)
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection,&
+        'rtimerErrorEstimation', ssectionName=ssectionName)
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection,&
+        'rtimerAdaptation', ssectionName=ssectionName)
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection,&
+        'rtimerTriangulation', ssectionName=ssectionName)
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', ssectionName=ssectionName)
+    
     ! Set pointers to solver structures
     p_rsolverHydro => solver_getNextSolver(rsolver, 1)
     p_rsolverTransport => solver_getNextSolver(rsolver, 2)
@@ -1507,10 +1609,6 @@ contains
       end if
       
       ! Prepare quick access arrays/vectors
-      rcollection%SquickAccess(1) = 'null'
-      rcollection%SquickAccess(2) = ssectionName
-      rcollection%SquickAccess(3) = ssectionNameHydro
-      rcollection%SquickAccess(4) = ssectionNameTransport
       rcollection%p_rvectorQuickAccess1 => rsolution(1)
       rcollection%p_rvectorQuickAccess2 => rsolution(2)
       rcollection%p_rvectorQuickAccess3 => rtimestep%RtempVectors(1)
@@ -1561,15 +1659,10 @@ contains
       ! Compute linearised FCT correction for hydrodynamic and transport model
       !-------------------------------------------------------------------------
 
-      ! Prepare quick access arrays
-      rcollection%SquickAccess(1) = 'null'
-      rcollection%SquickAccess(2) = ssectionName
-      rcollection%SquickAccess(3) = ssectionNameHydro
-      rcollection%SquickAccess(4) = ssectionNameTransport
-      
       ! Apply linearised FEM-FCT post-processing
       call zpinch_calcLinearisedFCT(RbdrCond, p_rproblemLevel, rtimestep,&
-          p_rsolverHydro, p_rsolverTransport, Rsolution, rcollection)
+          p_rsolverHydro, p_rsolverTransport, Rsolution, ssectionName,&
+          ssectionNameHydro, ssectionNameTransport, rcollection)
 
       ! Calculate velocity field (\rho v)
       call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
