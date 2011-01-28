@@ -109,7 +109,7 @@
 !# least 128 elemens. 
 !# Care must be taken when an application wants to use these arays.
 !# Not maintained by the collection internally, they are of 
-!# *pure temprary nature*. Long-life information should never be stored
+!# *pure temporary nature*. Long-life information should never be stored
 !# in there! They can be used e.g. in assembly routines to provide 
 !# callback routines with information that must quickly be accessed 
 !# without the need of asking the collection for a named variable.
@@ -165,6 +165,10 @@
 !#
 !# 15.) collct_gettag
 !#      -> Returns the user defined tag of a value
+!#
+!# 16.) collct_copyQuickAccess
+!#      -> Copies all quick access arrays from one collection structure
+!#         to another collection structure
 !#
 !# Auxiliary routines:
 !#
@@ -779,6 +783,8 @@ module collection
   public :: collct_cleanupvalue 
   public :: collct_deletevalue 
   public :: collct_printStatistics 
+  public :: collct_copyQuickAccess
+
   public :: collct_getvalue_struc 
   public :: collct_getvalue_string 
   public :: collct_getvalue_intarr 
@@ -7469,6 +7475,50 @@ contains
     p_rvalue%p_rparticles3D => value
     
   end subroutine collct_setvalue_particles3D
+
+! ***************************************************************************  
+
   
+!<subroutine>
+
+  subroutine collct_copyQuickAccess(rcollectionSrc, rcollectionDest)
+
+!<description>  
+  ! This subroutine copies all quick access arrays from the collection
+  ! structure rcollectionSrc to the collection structure rcollectionDest
+!</description>
+
+!<input>
+  ! Source collection structure
+  type(t_collection), intent(in) :: rcollectionSrc
+!</input>
+
+!<inputoutput>
+  ! Destination collection structure
+  type(t_collection), intent(inout) :: rcollectionDest
+!</inputoutput>
   
+!</subroutine>
+
+    rcollectionDest%IquickAccess = rcollectionSrc%IquickAccess
+    rcollectionDest%DquickAccess = rcollectionSrc%DquickAccess
+    rcollectionDest%SquickAccess = rcollectionSrc%SquickAccess
+    
+    rcollectionDest%p_rvectorQuickAccess1 => rcollectionSrc%p_rvectorQuickAccess1
+    rcollectionDest%p_rvectorQuickAccess2 => rcollectionSrc%p_rvectorQuickAccess2
+    rcollectionDest%p_rvectorQuickAccess3 => rcollectionSrc%p_rvectorQuickAccess3
+    rcollectionDest%p_rvectorQuickAccess4 => rcollectionSrc%p_rvectorQuickAccess4
+    
+    rcollectionDest%p_rmatrixQuickAccess1 => rcollectionSrc%p_rmatrixQuickAccess1
+    rcollectionDest%p_rmatrixQuickAccess2 => rcollectionSrc%p_rmatrixQuickAccess2
+    rcollectionDest%p_rmatrixQuickAccess3 => rcollectionSrc%p_rmatrixQuickAccess3
+    rcollectionDest%p_rmatrixQuickAccess4 => rcollectionSrc%p_rmatrixQuickAccess4
+    
+    rcollectionDest%p_rparlistQuickAccess1 => rcollectionSrc%p_rparlistQuickAccess1
+    rcollectionDest%p_rparlistQuickAccess2 => rcollectionSrc%p_rparlistQuickAccess2
+    rcollectionDest%p_rparlistQuickAccess3 => rcollectionSrc%p_rparlistQuickAccess3
+    rcollectionDest%p_rparlistQuickAccess4 => rcollectionSrc%p_rparlistQuickAccess4
+
+  end subroutine collct_copyQuickAccess
+
 end module collection
