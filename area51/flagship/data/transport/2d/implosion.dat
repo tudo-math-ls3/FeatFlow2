@@ -57,7 +57,7 @@ imassantidiffusiontype = 1
 # 6 = Burgers' equation in 2D
 # 7 = Burgers' equation in 3D
 # 8 = Buckley Leverett equation in 1D
-ivelocitytype = -2
+ivelocitytype = 2
 
 # section name of velocity field
 svelocityname(2) =
@@ -72,7 +72,7 @@ svelocityname(2) =
 idiffusiontype = 0
 
 # section name of diffusion tensor
-sdiffusionname = @diffusion
+sdiffusionname =
 
 # type of flow reaction
 # 0 = zero reactive term
@@ -80,7 +80,7 @@ sdiffusionname = @diffusion
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = @reaction
+sreactionname =
 
 # type of right-hand side vector
 # 0 = zero right-hand side
@@ -88,7 +88,7 @@ sreactionname = @reaction
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @rhs
+srhsname =
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -96,7 +96,7 @@ srhsname = @rhs
 # 2 = PGM image
 # 3 = anayltical initial solution: consistent L2-projection
 # 4 = anayltical initial solution: lumped L2-projection
-isolutiontype = 1
+isolutiontype = 3
 
 # section name of initial solution
 ssolutionname = @initsol
@@ -108,7 +108,7 @@ ssolutionname = @initsol
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = @exactsol
+sexactsolutionname =
 
 # type of target functional
 # 0 = zero target functional
@@ -116,19 +116,21 @@ sexactsolutionname = @exactsol
 # 2 = surface integral
 # 3 = mixed volume/surface integral
 # 4 = analytical target functional
-itargetfunctype = 1
+itargetfunctype = 0
 
 # section name of target functional
-stargetfuncname = @targetFuncInt
+stargetfuncname =
 
 
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/z-pinch_paper.prm
+prmfile = grids/2d/zpinch_60x240.prm
+#prmfile = grids/2d/zpinch_3x120_rz.prm
 
 # file which contains the triangulation
-trifile = grids/2d/z-pinch_paper.tri
+trifile = grids/2d/zpinch_60x240.tri
+#trifile = grids/2d/zpinch_3x120_rz.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -174,6 +176,21 @@ adaptivity = Adaptivity
 
 # section name of the error estimation configuration
 errorestimator = ErrorEstimator
+
+#-------------------------------------------------------------------------------
+
+# type of coordinate system
+#  0 = Cartesian coodinate system (x,y,z) 1D, 2D, 3D
+#  1 = axi-symmetric coordinate system (r,z) 2D
+#  2 = cylindrically symmetric coordinate system (r) 1D
+#  3 = spherically symmetric coordinate system (r) 1D
+icoordsystem = 0
+
+# type of geometric source term
+# 0 = evaluate linear form by numerical integration
+# 1 = group formulation with consistent mass matrix
+# 2 = group formulation with lumped mass matrix
+igeometricsourcetype = 2
 
 
 ################################################################################
@@ -643,7 +660,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25

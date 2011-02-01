@@ -287,6 +287,25 @@ module hydro_basic
 
 !</constantblock>
 
+!<constantblock description="Global types of coordinate systems">
+
+  ! Cartesian coordinate system (x,y,z)
+  integer, parameter, public :: COORDS_CARTESIAN           = 0
+
+  ! Axi-symmetric coordinate system (r,z) with symmetry around the
+  ! z-axis (2D approximation of a 3D flow)
+  integer, parameter, public :: COORDS_AXIALSYMMETRY       = 1
+
+  ! Cylindrically symmtric coordinate system (r)
+  ! (1D approximation of a 2D flow)
+  integer, parameter, public :: COORDS_CYLINDRICALSYMMETRY = 2
+
+  ! Spherically symmetric coordinate system (r)
+  ! (1D approximation of a 3D flow)
+  integer, parameter, public :: COORDS_SPHERICALSYMMETRY   = 3
+
+!</constants>
+
 !</constants>
 
 contains

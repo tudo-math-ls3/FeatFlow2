@@ -93,6 +93,10 @@
 !# 18.) transp_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
+!# 19.) transp_calcGeometricSourceterm
+!#      -> Calculates the geometric source term for axi-symmetric,
+!#         cylindrical or sperical symmetric coordinate systems.
+!#
 !#
 !# Frequently asked questions?
 !#
@@ -171,10 +175,30 @@ module transport_callback
   public :: transp_calcLinfBdrCond2D
   public :: transp_calcVelocityField
   public :: transp_calcLinearisedFCT
+  public :: transp_calcGeometricSourceterm
   public :: transp_coeffVectorAnalytic
   public :: transp_refFuncAnalytic
   public :: transp_weightFuncAnalytic
   public :: transp_parseBoundaryCondition
+
+  !*****************************************************************************
+
+!<constants>
+
+!<constantblock>
+  ! Minimum number of equations for OpenMP parallelisation: If the number of
+  ! equations is below this value, then no parallelisation is performed.
+#ifndef TRANSP_GEOMSOURCE_NEQMIN_OMP
+#ifndef ENABLE_AUTOTUNE
+  integer, parameter, public :: TRANSP_GEOMSOURCE_NEQMIN_OMP = 10000
+#else
+  integer, public            :: TRANSP_GEOMSOURCE_NEQMIN_OMP = 10000
+#endif
+#endif
+  
+!</constantblock>
+
+!</constants>
 
 contains
 
@@ -653,6 +677,7 @@ contains
           call sys_halt()
 
         end if
+
 
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
@@ -1407,6 +1432,7 @@ contains
 
         end if
 
+
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
 
@@ -1530,8 +1556,10 @@ contains
 
         end if
 
+
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
+
 
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP)
@@ -2466,6 +2494,7 @@ contains
 
         end if
 
+
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
 
@@ -2915,6 +2944,10 @@ contains
             fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
             fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
+        ! Build the geometric source term (if any)
+        call transp_calcGeometricSourceterm(p_rparlist, ssectionName,&
+            rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
+
       else ! theta = 1
 
         ! Build transient term $M_L*u^n$ or $M_C*u^n$
@@ -2936,9 +2969,10 @@ contains
 
       ! Clear right-hand side vector
       call lsysbl_clearVector(rrhs)
-
+      
     end select
 
+    
     ! Apply the source vector to the right-hand side (if any)
     if (present(rsource)) then
       if (rsource%NEQ .gt. 0)&
@@ -3109,6 +3143,10 @@ contains
             fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
             fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
             fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
+
+        ! Build the geometric source term (if any)
+        call transp_calcGeometricSourceterm(p_rparlist, ssectionName,&
+            rproblemLevel, rsolution, dscale, .false., rres, rcollection)
       end if
 
       ! What type of mass matrix should be used?
@@ -3143,6 +3181,10 @@ contains
           fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
           fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
+      ! Build the geometric source term (if any)
+      call transp_calcGeometricSourceterm(p_rparlist, ssectionName,&
+          rproblemLevel, rsolution, 1.0_DP, .false., rres, rcollection)
+      
     end select
 
     !-------------------------------------------------------------------------
@@ -5374,5 +5416,425 @@ contains
     end select
 
   end subroutine transp_parseBoundaryCondition
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_calcGeometricSourceterm(rparlist, ssectionName,&
+      rproblemLevel, rsolution, dscale, bclear, rsource, rcollection)
+
+!<description>
+    ! This subroutine calculates the geometric source term for
+    ! axi-symmetric, cylindrically symmetric or sperically symmetric
+    ! coordinate system.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+
+    ! Clear source vector?
+    logical, intent(in) :: bclear
+!</input>
+
+!<inputoutput>
+    ! source vector to be assembled
+    type(t_vectorBlock), intent(inout) :: rsource
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_Dcoords
+    real(DP), dimension(:), pointer :: p_DdataSolution
+    real(DP), dimension(:), pointer :: p_DdataVelocity
+    real(DP), dimension(:), pointer :: p_DdataSource
+    real(DP), dimension(:), pointer :: p_DdataMassMatrix
+    integer, dimension(:), pointer :: p_Kld, p_Kcol
+    character(LEN=SYS_STRLEN) :: smode
+    real(DP) :: deffectiveRadius
+    integer :: icoordsystem, massmatrix, velocityfield
+    integer :: ivelocitytype, igeometricsourcetype
+
+    ! Check of source and solution vector are compatible
+    call lsysbl_isVectorCompatible(rsolution, rsource)
+
+
+    ! Get parameters from parameter list
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'mode', smode)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'ivelocitytype', ivelocitytype)
+    
+    ! Are we in primal or dual mode?
+    if (trim(smode) .eq. 'primal') then
+    
+      !-------------------------------------------------------------------------
+      ! We are in primal mode
+      !-------------------------------------------------------------------------
+      
+      ! @FAQ2: Which type of velocity are we?
+      select case(abs(ivelocitytype))
+        
+      case (VELOCITY_ZERO)
+        ! zero velocity, do nothing (i.e. clear the source vector if required)
+        if (bclear) call lsysbl_clearVector(rsource)
+        
+      case (VELOCITY_EXTERNAL,VELOCITY_CONSTANT,VELOCITY_TIMEDEP)
+        
+        !-----------------------------------------------------------------------
+        ! problem structure has an explicit velocity field
+        !-----------------------------------------------------------------------
+        
+        ! Get further parameters from parameter list
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'icoordsystem', icoordsystem, COORDS_CARTESIAN)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'igeometricsourcetype', igeometricsourcetype, MASS_LUMPED)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'velocityfield', velocityfield, VELOCITY_ZERO)
+        call parlst_getvalue_double(rparlist,&
+            ssectionName, 'deffectiveRadius', deffectiveRadius, 1e-4_DP)
+
+        
+        ! Get pointers
+        call lsysbl_getbase_double(rsolution, p_DdataSolution)
+        call lsysbl_getbase_double(rsource, p_DdataSource)
+        call lsysbl_getbase_double(&
+            rproblemLevel%RvectorBlock(velocityfield), p_DdataVelocity)
+        
+        ! Get coordinates of the triangulation
+        ! NOTE: This implementation only works for linear and bilinear finite
+        !       elements where the nodal degrees of freedom are located at the
+        !       vertices of the triangulation. For higher-order finite elements
+        !       the linearform needs to be assembled by numerical integration
+        call storage_getbase_double2d(&
+            rproblemLevel%rtriangulation%h_DvertexCoords, p_Dcoords)
+        
+        ! What type of coordinate system are we?
+        select case(icoordsystem)
+        case (COORDS_CARTESIAN)
+          ! No geometric source term required, clear vector (if required)
+          if (bclear) call lsysbl_clearVector(rsource)
+          
+          
+        case (COORDS_AXIALSYMMETRY,COORDS_CYLINDRICALSYMMETRY)
+          ! Axi-symmetric (dalpha=1) flow (2D approximation to 3D flow) or
+          ! cylindrically symmetric (dalpha=1) flow (1D approximation to 2D flow)
+          
+          select case(igeometricsourcetype)
+          case (MASS_LUMPED)
+            call parlst_getvalue_int(rparlist,&
+                ssectionName, 'lumpedmassmatrix', massmatrix)
+            call lsyssc_getbase_double(&
+                rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+            call doSourceVelocityLumped(dscale, deffectiveRadius,&
+                rsource%NEQ, bclear, p_Dcoords, p_DdataMassMatrix,&
+                p_DdataVelocity, p_DdataSolution, p_DdataSource)
+            
+          case (MASS_CONSISTENT)
+            call parlst_getvalue_int(rparlist,&
+                ssectionName, 'consistentmassmatrix', massmatrix)
+            call lsyssc_getbase_double(&
+                rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+            call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
+            call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+            call doSourceVelocityConsistent(dscale, deffectiveRadius,&
+                rsource%NEQ, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
+                p_Kcol, p_DdataVelocity, p_DdataSolution, p_DdataSource)
+            
+          case default
+            call output_line('Unsupported geometric source type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
+            call sys_halt()
+          end select
+          
+          
+        case (COORDS_SPHERICALSYMMETRY)
+          ! Spherically symmetric (dalpha=2) flow (1D approximation to 3D flow)
+          
+          select case(igeometricsourcetype)
+          case (MASS_LUMPED)
+            call parlst_getvalue_int(rparlist,&
+                ssectionName, 'lumpedmassmatrix', massmatrix)
+            call lsyssc_getbase_double(&
+                rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+            call doSourceVelocityLumped(2*dscale, deffectiveRadius,&
+                rsource%NEQ, bclear, p_Dcoords, p_DdataMassMatrix,&
+                p_DdataVelocity, p_DdataSolution, p_DdataSource)
+            
+          case (MASS_CONSISTENT)
+            call parlst_getvalue_int(rparlist,&
+                ssectionName, 'lumpedmassmatrix', massmatrix)
+            call lsyssc_getbase_double(&
+                rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+            call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
+            call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+            call doSourceVelocityConsistent(2*dscale, deffectiveRadius,&
+                rsource%NEQ, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
+                p_Kcol, p_DdataVelocity, p_DdataSolution, p_DdataSource)
+            
+          case default
+            call output_line('Unsupported geometric source type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
+            call sys_halt()
+          end select
+          
+        case default
+          call output_line('Invalid coordinate system!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
+          call sys_halt()
+        end select
+        
+      case default
+        call output_line('Unsupported velocity type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
+        call sys_halt()
+      end select
+      
+    elseif (trim(smode) .eq. 'dual') then
+
+      !-------------------------------------------------------------------------
+      ! We are in dual mode
+      !-------------------------------------------------------------------------
+
+      print *, "Dual mode not implemented yet"
+      stop
+
+    else
+      call output_line('Invalid mode!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
+      call sys_halt()
+    end if
+    
+  contains
+
+    ! Here, the real working routines follow
+
+    !**************************************************************
+    ! Calculate the geometric source term for axi-symmetric flow
+    ! (dalpha=1) in 2D and cylindrically (dalpha=1) or spherically
+    ! symmetric (dalpha=2) flow in 1D. This routine assembles the
+    ! geometric source term for a given velocity field and solution
+    ! vector using the lumped mass matrix.
+    
+    subroutine doSourceVelocityLumped(deffectiveScale,&
+        deffectiveRadius, neq, bclear, Dcoords, DdataMassMatrix,&
+        DdataVelocity, DdataSolution, DdataSource)
+
+      ! Effective scaling parameter (dalpha * dscale)
+      real(DP), intent(in) :: deffectiveScale
+
+      ! Effectiive radius
+      real(DP), intent(in) :: deffectiveRadius
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+
+      ! Clear source vector?
+      logical, intent(in) :: bclear
+
+      ! Coordinates of the nodal degrees of freedom
+      real(DP), dimension(:,:), intent(in) :: Dcoords
+
+      ! Lumped mass matrix
+      real(DP), dimension(:), intent(in) :: DdataMassMatrix
+
+      ! Velocity vector
+      real(DP), dimension(:), intent(in) :: DdataVelocity
+
+      ! Solution vector
+      real(DP), dimension(:), intent(in) :: DdataSolution
+
+      
+      ! Source vector
+      real(DP), dimension(:), intent(inout) :: DdataSource
+
+
+      ! local variables
+      real(DP) :: daux, dradius
+      integer :: ieq
+
+      
+      ! Do we have to clear the source vector?
+      if (bclear) then
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,dradius) if(neq > TRANSP_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Get the r-coordinate and compute the radius
+          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+
+          ! Compute unit vector into the origin, scale it be the user-
+          ! defined scaling parameter dscale and devide it by the radius
+          daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+
+          ! Overwrite the geometric source term
+          DdataSource(ieq) = daux * DdataMassMatrix(ieq) *&
+                             DdataVelocity(ieq) * DdataSolution(ieq)
+        end do
+        !$omp end parallel do
+
+      else ! bclear
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,dradius) if(neq > TRANSP_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Get the r-coordinate and compute the radius
+          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+
+          ! Compute unit vector into the origin, scale it be the user-
+          ! defined scaling parameter dscale and devide it by the radius
+          daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+
+          ! Update the geometric source term
+          DdataSource(ieq) = DdataSource(ieq) + daux * DdataMassMatrix(ieq) *&
+                             DdataVelocity(ieq) * DdataSolution(ieq)
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine doSourceVelocityLumped
+
+    !**************************************************************
+    ! Calculate the geometric source term for axi-symmetric flow
+    ! (dalpha=1) in 2D and cylindrically (dalpha=1) or spherically
+    ! symmetric (dalpha=2) flow in 1D. This routine assembles the
+    ! geometric source term for a given velocity field and solution
+    ! vector using the consistent mass matrix.
+    
+    subroutine doSourceVelocityConsistent(deffectiveScale,&
+        deffectiveRadius, neq, bclear, Dcoords, DdataMassMatrix,&
+        Kld, Kcol, DdataVelocity, DdataSolution, DdataSource)
+
+      ! Effective scaling parameter (dalpha * dscale)
+      real(DP), intent(in) :: deffectiveScale
+
+      ! Effectiive radius
+      real(DP), intent(in) :: deffectiveRadius
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+
+      ! Clear source vector?
+      logical, intent(in) :: bclear
+
+      ! Coordinates of the nodal degrees of freedom
+      real(DP), dimension(:,:), intent(in) :: Dcoords
+
+      ! Consistent mass matrix
+      real(DP), dimension(:), intent(in) :: DdataMassMatrix
+
+      ! Sparsity pattern of the mass matrix
+      integer, dimension(:), intent(in) :: Kld,Kcol
+
+      ! Velocity vector
+      real(DP), dimension(:), intent(in) :: DdataVelocity
+
+      ! Solution vector
+      real(DP), dimension(:), intent(in) :: DdataSolution
+
+      
+      ! Source vector
+      real(DP), dimension(:), intent(inout) :: DdataSource
+
+
+      ! local variables
+      real(DP) :: ddata, daux, dradius
+      integer :: ieq,ia,jeq
+
+      
+      ! Do we have to clear the source vector?
+      if (bclear) then
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,ddata,dradius,ia,jeq) if(neq > TRANSP_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Clear temporal data
+          ddata = 0.0_DP
+
+          ! Loop over all coupled degrees of freedom
+          do ia = Kld(ieq), Kld(ieq+1)-1
+
+            ! Get nodal degree of freedom
+            jeq = Kcol(ia)
+            
+            ! Get the r-coordinate and compute the radius
+            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            
+            ! Compute unit vector into the origin, scale it be the user-
+            ! defined scaling parameter dscale and devide it by the radius
+            daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+            
+            ! Update the geometric source term
+            ddata = ddata + daux * DdataMassMatrix(ia) *&
+                             DdataVelocity(jeq) * DdataSolution(jeq)
+          end do
+          
+          ! Overwrite the geometric source term
+          DdataSource(ieq) = ddata
+        end do
+        !$omp end parallel do
+
+      else ! bclear
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,ddata,dradius,ia,jeq) if(neq > TRANSP_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Clear temporal data
+          ddata = 0.0_DP
+
+          ! Loop over all coupled degrees of freedom
+          do ia = Kld(ieq), Kld(ieq+1)-1
+
+            ! Get nodal degree of freedom
+            jeq = Kcol(ia)
+            
+            ! Get the r-coordinate and compute the radius
+            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+
+            ! Compute unit vector into the origin, scale it be the user-
+            ! defined scaling parameter dscale and devide it by the radius
+            daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+            
+            ! Update the geometric source term
+            ddata = ddata + daux * DdataMassMatrix(ia) *&
+                             DdataVelocity(jeq) * DdataSolution(jeq)
+          end do
+          
+          ! Update the geometric source term
+          DdataSource(ieq) = DdataSource(ieq) + ddata
+        end do
+        !$omp end parallel do
+
+      end if
+      
+    end subroutine doSourceVelocityConsistent
+
+  end subroutine transp_calcGeometricSourceterm
 
 end module transport_callback

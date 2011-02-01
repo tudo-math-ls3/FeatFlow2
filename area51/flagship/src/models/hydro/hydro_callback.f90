@@ -78,9 +78,13 @@
 !#      -> Calculates the linear form arising from the weak
 !#         imposition of boundary conditions
 !#
+!# 17.) hydro_calcGeometricSourceterm
+!#      -> Calculates the geometric source term for axi-symmetric,
+!#         cylindrical or sperical symmetric coordinate systems.
+!#
 !# Frequently asked questions?
 !#
-!# 1.) What is the magic behind subroutine 'transp_nlsolverCallback'?
+!# 1.) What is the magic behind subroutine 'hydro_nlsolverCallback'?
 !#
 !#     -> This is the main callback routine which is called by the
 !#        nonlinear solution algorithm. The specifier ioperationSpec
@@ -98,6 +102,8 @@
 !##############################################################################
 
 module hydro_callback
+
+#include "hydro.h"
 
   use afcstabilisation
   use basicgeometry
@@ -145,6 +151,7 @@ module hydro_callback
   public :: hydro_calcLinearisedFCT
   public :: hydro_calcFluxFCT
   public :: hydro_calcCorrectionFCT
+  public :: hydro_calcGeometricSourceTerm
   public :: hydro_limitEdgewiseVelocity
   public :: hydro_limitEdgewiseMomentum
   public :: hydro_coeffVectorFE
@@ -154,6 +161,25 @@ module hydro_callback
   public :: hydro_calcBilfBdrCond2D
   public :: hydro_calcLinfBdrCond1D
   public :: hydro_calcLinfBdrCond2D
+
+  !*****************************************************************************
+
+!<constants>
+
+!<constantblock>
+  ! Minimum number of equations for OpenMP parallelisation: If the number of
+  ! equations is below this value, then no parallelisation is performed.
+#ifndef HYDRO_GEOMSOURCE_NEQMIN_OMP
+#ifndef ENABLE_AUTOTUNE
+  integer, parameter, public :: HYDRO_GEOMSOURCE_NEQMIN_OMP = 10000
+#else
+  integer, public            :: HYDRO_GEOMSOURCE_NEQMIN_OMP = 10000
+#endif
+#endif
+  
+!</constantblock>
+
+!</constants>
 
 contains
 
@@ -1298,6 +1324,10 @@ contains
               rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
         end do
 
+        ! Build the geometric source term (if any)
+        call hydro_calcGeometricSourceterm(p_rparlist, ssectionName,&
+            rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
+
       else ! theta = 1
 
         !-----------------------------------------------------------------------
@@ -1466,7 +1496,8 @@ contains
       end do
        
       !-------------------------------------------------------------------------
-      ! Evaluate linear form for boundary integral (if any)
+      ! Evaluate linear form for boundary integral
+      ! and geometric source term (if any)
       !-------------------------------------------------------------------------
       
       ! Do we have an implicit part?
@@ -1488,6 +1519,10 @@ contains
           stop
           
         end select
+
+        ! Build the geometric source term (if any)
+        call hydro_calcGeometricSourceterm(p_rparlist, ssectionName,&
+            rproblemLevel, rsolution, dscale, .false., rres, rcollection)
       end if
 
       
@@ -1519,6 +1554,10 @@ contains
         stop
       end select
 
+      ! Build the geometric source term (if any)
+      call hydro_calcGeometricSourceterm(p_rparlist, ssectionName,&
+          rproblemLevel, rsolution, 1.0_DP, .false., rres, rcollection)
+      
     end select
 
     !---------------------------------------------------------------------------
@@ -4319,5 +4358,1293 @@ contains
     call collct_done(rcollectionTmp)
     
   end subroutine hydro_calcLinfBdrCond2D
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcGeometricSourceterm(rparlist, ssectionName,&
+      rproblemLevel, rsolution, dscale, bclear, rsource, rcollection)
+
+!<description>
+    ! This subroutine calculates the geometric source term for
+    ! axi-symmetric, cylindrically symmetric or sperically symmetric
+    ! coordinate system.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+
+    ! Clear source vector?
+    logical, intent(in) :: bclear
+!</input>
+
+!<inputoutput>
+    ! source vector to be assembled
+    type(t_vectorBlock), intent(inout) :: rsource
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_Dcoords
+    real(DP), dimension(:), pointer :: p_DdataSolution
+    real(DP), dimension(:), pointer :: p_DdataSource
+    real(DP), dimension(:), pointer :: p_DdataMassMatrix
+    integer, dimension(:), pointer :: p_Kld, p_Kcol
+    character(LEN=SYS_STRLEN) :: smode
+    real(DP) :: deffectiveRadius
+    integer :: neq, nvar, icoordsystem, igeometricsourcetype
+    integer :: isystemFormat, massmatrix
+
+    ! Check of source and solution vector are compatible
+    call lsysbl_isVectorCompatible(rsolution, rsource)
+
+
+    ! Get parameters from parameter list
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'mode', smode)
+    
+    ! Are we in primal or dual mode?
+    if (trim(smode) .eq. 'primal') then
+    
+      !-------------------------------------------------------------------------
+      ! We are in primal mode
+      !-------------------------------------------------------------------------
+      
+      ! Get further parameters from parameter list
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'isystemformat', isystemformat)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'icoordsystem', icoordsystem, COORDS_CARTESIAN)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'igeometricsourcetype', igeometricsourcetype, MASS_LUMPED)
+      call parlst_getvalue_double(rparlist,&
+          ssectionName, 'deffectiveRadius', deffectiveRadius, 1e-4_DP)
+      
+      ! Get pointers
+      call lsysbl_getbase_double(rsolution, p_DdataSolution)
+      call lsysbl_getbase_double(rsource, p_DdataSource)
+
+      ! Get number of equations and variables
+      nvar = hydro_getNVAR(rproblemLevel)
+      neq  = rsolution%NEQ/nvar
+      
+      ! Get coordinates of the triangulation
+      ! NOTE: This implementation only works for linear and bilinear finite
+      !       elements where the nodal degrees of freedom are located at the
+      !       vertices of the triangulation. For higher-order finite elements
+      !       the linearform needs to be assembled by numerical integration
+      call storage_getbase_double2d(&
+          rproblemLevel%rtriangulation%h_DvertexCoords, p_Dcoords)
+      
+      ! What type of coordinate system are we?
+      select case(icoordsystem)
+      case (COORDS_CARTESIAN)
+        ! No geometric source term required, clear vector (if required)
+        if (bclear) call lsysbl_clearVector(rsource)
+        
+
+      case (COORDS_AXIALSYMMETRY)
+        !-----------------------------------------------------------------------
+        ! Axi-symmetric (dalpha=1) flow (2D approximation to 3D flow)
+        !-----------------------------------------------------------------------
+        
+        select case(igeometricsourcetype)
+        case (MASS_LUMPED)
+          ! Use lumped mass matrix
+          call parlst_getvalue_int(rparlist,&
+              ssectionName, 'lumpedmassmatrix', massmatrix)
+          call lsyssc_getbase_double(&
+              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+
+          select case(isystemFormat)
+          case (SYSTEM_INTERLEAVEFORMAT)
+            call doSource2DIntlLumped(dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                p_DdataSolution, p_DdataSource)
+
+          case (SYSTEM_BLOCKFORMAT)
+            call doSource2DBlockLumped(dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                p_DdataSolution, p_DdataSource)
+
+          case DEFAULT
+            call output_line('Invalid system format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+            call sys_halt()
+          end select
+          
+        case (MASS_CONSISTENT)
+          ! Use consistent mass matrix
+          call parlst_getvalue_int(rparlist,&
+              ssectionName, 'consistentmassmatrix', massmatrix)
+          call lsyssc_getbase_double(&
+              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+          call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
+          call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+          
+          select case(isystemFormat)
+          case (SYSTEM_INTERLEAVEFORMAT)
+            call doSource2DIntlConsistent(dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
+                p_Kcol, p_DdataSolution, p_DdataSource)
+
+          case (SYSTEM_BLOCKFORMAT)
+            call doSource2DBlockConsistent(dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
+                p_Kcol, p_DdataSolution, p_DdataSource)
+
+          case DEFAULT
+            call output_line('Invalid system format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+            call sys_halt()
+          end select
+          
+        case default
+          call output_line('Unsupported geometric source type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+          call sys_halt()
+        end select
+        
+
+      case (COORDS_CYLINDRICALSYMMETRY)
+        !-----------------------------------------------------------------------
+        ! Cylindrically symmetric (dalpha=1) flow (1D approximation to 2D flow)
+        !-----------------------------------------------------------------------
+        
+        select case(igeometricsourcetype)
+        case (MASS_LUMPED)
+          ! Use lumped mass matrix
+          call parlst_getvalue_int(rparlist,&
+              ssectionName, 'lumpedmassmatrix', massmatrix)
+          call lsyssc_getbase_double(&
+              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+          
+          select case(isystemFormat)
+          case (SYSTEM_INTERLEAVEFORMAT)
+            call doSource1DIntlLumped(dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                p_DdataSolution, p_DdataSource)
+            
+          case (SYSTEM_BLOCKFORMAT)
+            call doSource1DBlockLumped(dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                p_DdataSolution, p_DdataSource)
+
+          case DEFAULT
+            call output_line('Invalid system format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+            call sys_halt()
+          end select
+          
+        case (MASS_CONSISTENT)
+          ! Use consistent mass matrix
+          call parlst_getvalue_int(rparlist,&
+              ssectionName, 'consistentmassmatrix', massmatrix)
+          call lsyssc_getbase_double(&
+              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+          call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
+          call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+
+          select case(isystemFormat)
+          case (SYSTEM_INTERLEAVEFORMAT)
+            call doSource1DIntlConsistent(dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
+                p_Kcol, p_DdataSolution, p_DdataSource)
+
+          case (SYSTEM_BLOCKFORMAT)
+            call doSource1DBlockConsistent(dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
+                p_Kcol, p_DdataSolution, p_DdataSource)
+            
+          case DEFAULT
+            call output_line('Invalid system format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+            call sys_halt()
+          end select
+          
+        case default
+          call output_line('Unsupported geometric source type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+          call sys_halt()
+        end select
+        
+        
+      case (COORDS_SPHERICALSYMMETRY)
+        !-----------------------------------------------------------------------
+        ! Spherically symmetric (dalpha=2) flow (1D approximation to 3D flow)
+        !-----------------------------------------------------------------------
+        
+        select case(igeometricsourcetype)
+        case (MASS_LUMPED)
+          ! Use lumped mass matrix
+          call parlst_getvalue_int(rparlist,&
+              ssectionName, 'lumpedmassmatrix', massmatrix)
+          call lsyssc_getbase_double(&
+              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+
+          select case(isystemFormat)
+          case (SYSTEM_INTERLEAVEFORMAT)
+            call doSource1DIntlLumped(2*dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                p_DdataSolution, p_DdataSource)
+
+          case (SYSTEM_BLOCKFORMAT)
+            call doSource1DBlockLumped(2*dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                p_DdataSolution, p_DdataSource)
+
+          case DEFAULT
+            call output_line('Invalid system format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+            call sys_halt()
+          end select
+           
+        case (MASS_CONSISTENT)
+          ! Use consistent mass matrix
+          call parlst_getvalue_int(rparlist,&
+              ssectionName, 'lumpedmassmatrix', massmatrix)
+          call lsyssc_getbase_double(&
+              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+          call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
+          call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+
+          select case(isystemFormat)
+          case (SYSTEM_INTERLEAVEFORMAT)
+            call doSource1DIntlConsistent(2*dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
+                p_Kcol, p_DdataSolution, p_DdataSource)
+
+          case (SYSTEM_BLOCKFORMAT)
+            call doSource1DBlockConsistent(2*dscale, deffectiveRadius,&
+                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
+                p_Kcol, p_DdataSolution, p_DdataSource)
+
+          case DEFAULT
+            call output_line('Invalid system format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+            call sys_halt()
+          end select
+          
+        case default
+          call output_line('Unsupported geometric source type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+          call sys_halt()
+        end select
+        
+      case default
+        call output_line('Invalid coordinate system!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+        call sys_halt()
+      end select
+      
+    elseif (trim(smode) .eq. 'dual') then
+      
+      !-------------------------------------------------------------------------
+      ! We are in dual mode
+      !-------------------------------------------------------------------------
+      
+      print *, "Dual mode not implemented yet"
+      stop
+      
+    else
+      call output_line('Invalid mode!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcGeometricSourceterm')
+      call sys_halt()
+    end if
+
+  contains
+
+    ! Here, the real working routines follow
+
+    !**************************************************************
+    ! Calculate the geometric source term for cylindrically (dalpha=1)
+    ! or spherically symmetric (dalpha=2) flow in 1D. This routine
+    ! assembles the geometric source term for systems stored in
+    ! interleaved format using the lumped mass matrix.
+    
+    subroutine doSource1DIntlLumped(deffectiveScale,&
+        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        DdataMassMatrix, DdataSolution, DdataSource)
+
+      ! Effective scaling parameter (dalpha * dscale)
+      real(DP), intent(in) :: deffectiveScale
+
+      ! Effectiive radius
+      real(DP), intent(in) :: deffectiveRadius
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+      
+      ! Number of variables
+      integer, intent(in) :: nvar
+      
+      ! Clear source vector?
+      logical, intent(in) :: bclear
+
+      ! Coordinates of the nodal degrees of freedom
+      real(DP), dimension(:,:), intent(in) :: Dcoords
+
+      ! Lumped mass matrix
+      real(DP), dimension(:), intent(in) :: DdataMassMatrix
+
+      ! Solution vector
+      real(DP), dimension(nvar,neq), intent(in) :: DdataSolution
+
+      
+      ! Source vector
+      real(DP), dimension(nvar,neq), intent(inout) :: DdataSource
+
+
+      ! local variables
+      real(DP) :: daux, dradius, dvel, dpre
+      integer :: ieq
+
+      
+      ! Do we have to clear the source vector?
+      if (bclear) then
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Get the r-coordinate and compute the radius
+          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+
+          ! Compute unit vector into the origin, scale it be the user-
+          ! defined scaling parameter dscale and devide it by the radius
+          daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+
+          ! Compute the radial velocity and pressure
+          dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+          dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR1D, ieq)
+
+          ! Overwrite the geometric source term
+          DdataSource(1,ieq) = daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+          DdataSource(2,ieq) = daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq) * dvel
+          DdataSource(3,ieq) = daux * DdataMassMatrix(ieq) *&
+                               (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)+dpre)*dvel
+        end do
+        !$omp end parallel do
+
+      else ! bclear
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Get the r-coordinate and compute the radius
+          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+
+          ! Compute unit vector into the origin, scale it be the user-
+          ! defined scaling parameter dscale and devide it by the radius
+          daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+
+          ! Compute the radial velocity and pressure
+          dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+          dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR1D, ieq)
+
+          ! Update the geometric source term
+          DdataSource(1,ieq) = DdataSource(1,ieq) + daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+          DdataSource(2,ieq) = DdataSource(2,ieq) + daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq) * dvel
+          DdataSource(3,ieq) = DdataSource(3,ieq) + daux * DdataMassMatrix(ieq) *&
+                               (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)+dpre)*dvel
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine doSource1DIntlLumped
+
+    !**************************************************************
+    ! Calculate the geometric source term for cylindrically (dalpha=1)
+    ! or spherically symmetric (dalpha=2) flow in 1D. This routine
+    ! assembles the geometric source term for systems stored in
+    ! block format using the lumped mass matrix.
+    
+    subroutine doSource1DBlockLumped(deffectiveScale,&
+        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        DdataMassMatrix, DdataSolution, DdataSource)
+
+      ! Effective scaling parameter (dalpha * dscale)
+      real(DP), intent(in) :: deffectiveScale
+
+      ! Effectiive radius
+      real(DP), intent(in) :: deffectiveRadius
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+      
+      ! Number of variables
+      integer, intent(in) :: nvar
+      
+      ! Clear source vector?
+      logical, intent(in) :: bclear
+
+      ! Coordinates of the nodal degrees of freedom
+      real(DP), dimension(:,:), intent(in) :: Dcoords
+
+      ! Lumped mass matrix
+      real(DP), dimension(:), intent(in) :: DdataMassMatrix
+
+      ! Solution vector
+      real(DP), dimension(neq,nvar), intent(in) :: DdataSolution
+
+      
+      ! Source vector
+      real(DP), dimension(neq,nvar), intent(inout) :: DdataSource
+
+
+      ! local variables
+      real(DP) :: daux, dradius, dvel, dpre
+      integer :: ieq
+
+      
+      ! Do we have to clear the source vector?
+      if (bclear) then
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Get the r-coordinate and compute the radius
+          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+
+          ! Compute unit vector into the origin, scale it be the user-
+          ! defined scaling parameter dscale and devide it by the radius
+          daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+
+          ! Compute the radial velocity and pressure
+          dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+          dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR1D, ieq)
+
+          ! Overwrite the geometric source term
+          DdataSource(ieq,1) = daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+          DdataSource(ieq,2) = daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq) * dvel
+          DdataSource(ieq,3) = daux * DdataMassMatrix(ieq) *&
+                               (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)+dpre)*dvel
+        end do
+        !$omp end parallel do
+
+      else ! bclear
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Get the r-coordinate and compute the radius
+          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+
+          ! Compute unit vector into the origin, scale it be the user-
+          ! defined scaling parameter dscale and devide it by the radius
+          daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+
+          ! Compute the radial velocity and pressure
+          dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+          dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR1D, ieq)
+
+          ! Update the geometric source term
+          DdataSource(ieq,1) = DdataSource(ieq,1) + daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+          DdataSource(ieq,2) = DdataSource(ieq,2) + daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq) * dvel
+          DdataSource(ieq,3) = DdataSource(ieq,3) + daux * DdataMassMatrix(ieq) *&
+                               (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)+dpre)*dvel
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine doSource1DBlockLumped    
+    
+    !**************************************************************
+    ! Calculate the geometric source term for cylindrically (dalpha=1)
+    ! or spherically symmetric (dalpha=2) flow in 1D. This routine
+    ! assembles the geometric source term for systems stored in
+    ! interleaved format using the consistent mass matrix.
+    
+    subroutine doSource1DIntlConsistent(deffectiveScale,&
+        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
+
+      ! Effective scaling parameter (dalpha * dscale)
+      real(DP), intent(in) :: deffectiveScale
+
+      ! Effectiive radius
+      real(DP), intent(in) :: deffectiveRadius
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+      
+      ! Number of variables
+      integer, intent(in) :: nvar
+
+      ! Clear source vector?
+      logical, intent(in) :: bclear
+
+      ! Coordinates of the nodal degrees of freedom
+      real(DP), dimension(:,:), intent(in) :: Dcoords
+
+      ! Consistent mass matrix
+      real(DP), dimension(:), intent(in) :: DdataMassMatrix
+
+      ! Sparsity pattern of the mass matrix
+      integer, dimension(:), intent(in) :: Kld,Kcol
+
+      ! Solution vector
+      real(DP), dimension(nvar,neq), intent(in) :: DdataSolution
+
+      
+      ! Source vector
+      real(DP), dimension(nvar,neq), intent(inout) :: DdataSource
+
+
+      ! local variables
+      real(DP), dimension(NVAR1D) :: Ddata
+      real(DP) :: daux, dradius, dvel, dpre
+      integer :: ieq,ia,jeq
+
+      
+      ! Do we have to clear the source vector?
+      if (bclear) then
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Clear temporal data
+          Ddata = 0.0_DP
+
+          ! Loop over all coupled degrees of freedom
+          do ia = Kld(ieq), Kld(ieq+1)-1
+
+            ! Get nodal degree of freedom
+            jeq = Kcol(ia)
+            
+            ! Get the r-coordinate and compute the radius
+            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            
+            ! Compute unit vector into the origin, scale it be the user-
+            ! defined scaling parameter dscale and devide it by the radius
+            daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+            
+            ! Compute the radial velocity and pressure
+            dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+            dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR1D, jeq)
+
+            ! Update the geometric source term
+            Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+            Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq) * dvel
+            Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
+                       (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)+dpre)*dvel
+          end do
+          
+          ! Overwrite the geometric source term
+          DdataSource(:,ieq) = Ddata
+        end do
+        !$omp end parallel do
+
+      else ! bclear
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Clear temporal data
+          Ddata = 0.0_DP
+
+          ! Loop over all coupled degrees of freedom
+          do ia = Kld(ieq), Kld(ieq+1)-1
+
+            ! Get nodal degree of freedom
+            jeq = Kcol(ia)
+            
+            ! Get the r-coordinate and compute the radius
+            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+
+            ! Compute unit vector into the origin, scale it be the user-
+            ! defined scaling parameter dscale and devide it by the radius
+            daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+           
+            ! Compute the radial velocity and pressure
+            dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+            dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR1D, jeq)
+ 
+            ! Update the geometric source term
+            Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+            Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq) * dvel
+            Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
+                       (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)+dpre)*dvel
+          end do
+          
+          ! Update the geometric source term
+          DdataSource(:,ieq) = DdataSource(:,ieq) + Ddata
+        end do
+        !$omp end parallel do
+
+      end if
+      
+    end subroutine doSource1DIntlConsistent
+    
+    !**************************************************************
+    ! Calculate the geometric source term for cylindrically (dalpha=1)
+    ! or spherically symmetric (dalpha=2) flow in 1D. This routine
+    ! assembles the geometric source term for systems stored in
+    ! block format using the consistent mass matrix.
+    
+    subroutine doSource1DBlockConsistent(deffectiveScale,&
+        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
+
+      ! Effective scaling parameter (dalpha * dscale)
+      real(DP), intent(in) :: deffectiveScale
+
+      ! Effectiive radius
+      real(DP), intent(in) :: deffectiveRadius
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+      
+      ! Number of variables
+      integer, intent(in) :: nvar
+
+      ! Clear source vector?
+      logical, intent(in) :: bclear
+
+      ! Coordinates of the nodal degrees of freedom
+      real(DP), dimension(:,:), intent(in) :: Dcoords
+
+      ! Consistent mass matrix
+      real(DP), dimension(:), intent(in) :: DdataMassMatrix
+
+      ! Sparsity pattern of the mass matrix
+      integer, dimension(:), intent(in) :: Kld,Kcol
+
+      ! Solution vector
+      real(DP), dimension(neq,nvar), intent(in) :: DdataSolution
+
+      
+      ! Source vector
+      real(DP), dimension(neq,nvar), intent(inout) :: DdataSource
+
+
+      ! local variables
+      real(DP), dimension(NVAR1D) :: Ddata
+      real(DP) :: daux, dradius, dvel, dpre
+      integer :: ieq,ia,jeq
+
+      
+      ! Do we have to clear the source vector?
+      if (bclear) then
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Clear temporal data
+          Ddata = 0.0_DP
+
+          ! Loop over all coupled degrees of freedom
+          do ia = Kld(ieq), Kld(ieq+1)-1
+
+            ! Get nodal degree of freedom
+            jeq = Kcol(ia)
+            
+            ! Get the r-coordinate and compute the radius
+            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            
+            ! Compute unit vector into the origin, scale it be the user-
+            ! defined scaling parameter dscale and devide it by the radius
+            daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+            
+            ! Compute the radial velocity and pressure
+            dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+            dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR1D, jeq)
+
+            ! Update the geometric source term
+            Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+            Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq) * dvel
+            Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
+                       (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)+dpre)*dvel
+          end do
+          
+          ! Overwrite the geometric source term
+          DdataSource(ieq,:) = Ddata
+        end do
+        !$omp end parallel do
+
+      else ! bclear
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Clear temporal data
+          Ddata = 0.0_DP
+
+          ! Loop over all coupled degrees of freedom
+          do ia = Kld(ieq), Kld(ieq+1)-1
+
+            ! Get nodal degree of freedom
+            jeq = Kcol(ia)
+            
+            ! Get the r-coordinate and compute the radius
+            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+
+            ! Compute unit vector into the origin, scale it be the user-
+            ! defined scaling parameter dscale and devide it by the radius
+            daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+           
+            ! Compute the radial velocity and pressure
+            dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+            dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR1D, jeq)
+ 
+            ! Update the geometric source term
+            Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+            Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq) * dvel
+            Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
+                       (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)+dpre)*dvel
+          end do
+          
+          ! Update the geometric source term
+          DdataSource(ieq,:) = DdataSource(ieq,:) + Ddata
+        end do
+        !$omp end parallel do
+
+      end if
+      
+    end subroutine doSource1DBlockConsistent
+
+    !**************************************************************
+    ! Calculate the geometric source term for axi-symmetric (dalpha=1)
+    ! flow in 2D. This routine assembles the geometric source term for
+    ! systems stored in interleaved format using the lumped mass matrix.
+    
+    subroutine doSource2DIntlLumped(deffectiveScale,&
+        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        DdataMassMatrix, DdataSolution, DdataSource)
+
+      ! Effective scaling parameter (dalpha * dscale)
+      real(DP), intent(in) :: deffectiveScale
+
+      ! Effectiive radius
+      real(DP), intent(in) :: deffectiveRadius
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+      
+      ! Number of variables
+      integer, intent(in) :: nvar
+      
+      ! Clear source vector?
+      logical, intent(in) :: bclear
+
+      ! Coordinates of the nodal degrees of freedom
+      real(DP), dimension(:,:), intent(in) :: Dcoords
+
+      ! Lumped mass matrix
+      real(DP), dimension(:), intent(in) :: DdataMassMatrix
+
+      ! Solution vector
+      real(DP), dimension(nvar,neq), intent(in) :: DdataSolution
+
+      
+      ! Source vector
+      real(DP), dimension(nvar,neq), intent(inout) :: DdataSource
+
+
+      ! local variables
+      real(DP) :: daux, dradius, dvel, dpre
+      integer :: ieq
+
+      
+      ! Do we have to clear the source vector?
+      if (bclear) then
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Get the r-coordinate and compute the radius
+          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+
+          ! Compute unit vector into the origin, scale it be the user-
+          ! defined scaling parameter dscale and devide it by the radius
+          daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+
+          ! Compute the radial velocity and pressure
+          dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+          dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR2D, ieq)
+
+          ! Overwrite the geometric source term
+          DdataSource(1,ieq) = daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+          DdataSource(2,ieq) = daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+          DdataSource(3,ieq) = daux * DdataMassMatrix(ieq) *&
+                               Y_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+          DdataSource(4,ieq) = daux * DdataMassMatrix(ieq) *&
+                               (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)+dpre)*dvel
+        end do
+        !$omp end parallel do
+
+      else ! bclear
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Get the r-coordinate and compute the radius
+          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+
+          ! Compute unit vector into the origin, scale it be the user-
+          ! defined scaling parameter dscale and devide it by the radius
+          daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+
+          ! Compute the radial velocity and pressure
+          dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+          dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR2D, ieq)
+
+          ! Update the geometric source term
+          DdataSource(1,ieq) = DdataSource(1,ieq) + daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+          DdataSource(2,ieq) = DdataSource(2,ieq) + daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+          DdataSource(3,ieq) = DdataSource(3,ieq) + daux * DdataMassMatrix(ieq) *&
+                               Y_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+          DdataSource(4,ieq) = DdataSource(4,ieq) + daux * DdataMassMatrix(ieq) *&
+                               (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)+dpre)*dvel
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine doSource2DIntlLumped
+
+    !**************************************************************
+    ! Calculate the geometric source term for axi-symmetric (dalpha=1)
+    ! flow in 2D. This routine assembles the geometric source term for
+    ! systems stored in block format using the lumped mass matrix.
+    
+    subroutine doSource2DBlockLumped(deffectiveScale,&
+        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        DdataMassMatrix, DdataSolution, DdataSource)
+
+      ! Effective scaling parameter (dalpha * dscale)
+      real(DP), intent(in) :: deffectiveScale
+
+      ! Effectiive radius
+      real(DP), intent(in) :: deffectiveRadius
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+      
+      ! Number of variables
+      integer, intent(in) :: nvar
+      
+      ! Clear source vector?
+      logical, intent(in) :: bclear
+
+      ! Coordinates of the nodal degrees of freedom
+      real(DP), dimension(:,:), intent(in) :: Dcoords
+
+      ! Lumped mass matrix
+      real(DP), dimension(:), intent(in) :: DdataMassMatrix
+
+      ! Solution vector
+      real(DP), dimension(neq,nvar), intent(in) :: DdataSolution
+
+      
+      ! Source vector
+      real(DP), dimension(neq,nvar), intent(inout) :: DdataSource
+
+
+      ! local variables
+      real(DP) :: daux, dradius, dvel, dpre
+      integer :: ieq
+
+      
+      ! Do we have to clear the source vector?
+      if (bclear) then
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Get the r-coordinate and compute the radius
+          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+
+          ! Compute unit vector into the origin, scale it be the user-
+          ! defined scaling parameter dscale and devide it by the radius
+          daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+
+          ! Compute the radial velocity and pressure
+          dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+          dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR2D, ieq)
+
+          ! Overwrite the geometric source term
+          DdataSource(ieq,1) = daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+          DdataSource(ieq,2) = daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+          DdataSource(ieq,3) = daux * DdataMassMatrix(ieq) *&
+                               Y_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+          DdataSource(ieq,4) = daux * DdataMassMatrix(ieq) *&
+                               (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)+dpre)*dvel
+        end do
+        !$omp end parallel do
+
+      else ! bclear
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Get the r-coordinate and compute the radius
+          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+
+          ! Compute unit vector into the origin, scale it be the user-
+          ! defined scaling parameter dscale and devide it by the radius
+          daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+
+          ! Compute the radial velocity and pressure
+          dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+          dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR2D, ieq)
+
+          ! Update the geometric source term
+          DdataSource(ieq,1) = DdataSource(ieq,1) + daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+          DdataSource(ieq,2) = DdataSource(ieq,2) + daux * DdataMassMatrix(ieq) *&
+                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+          DdataSource(ieq,3) = DdataSource(ieq,3) + daux * DdataMassMatrix(ieq) *&
+                               Y_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+          DdataSource(ieq,4) = DdataSource(ieq,4) + daux * DdataMassMatrix(ieq) *&
+                               (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)+dpre)*dvel
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine doSource2DBlockLumped
+    
+    !**************************************************************
+    ! Calculate the geometric source term for axi-symmetric (dalpha=1)
+    ! flow in 2D. This routine assembles the geometric source term for
+    ! systems stored in interleaved format using the consistent mass matrix.
+    
+    subroutine doSource2DIntlConsistent(deffectiveScale,&
+        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
+
+      ! Effective scaling parameter (dalpha * dscale)
+      real(DP), intent(in) :: deffectiveScale
+
+      ! Effectiive radius
+      real(DP), intent(in) :: deffectiveRadius
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+      
+      ! Number of variables
+      integer, intent(in) :: nvar
+
+      ! Clear source vector?
+      logical, intent(in) :: bclear
+
+      ! Coordinates of the nodal degrees of freedom
+      real(DP), dimension(:,:), intent(in) :: Dcoords
+
+      ! Consistent mass matrix
+      real(DP), dimension(:), intent(in) :: DdataMassMatrix
+
+      ! Sparsity pattern of the mass matrix
+      integer, dimension(:), intent(in) :: Kld,Kcol
+
+      ! Solution vector
+      real(DP), dimension(nvar,neq), intent(in) :: DdataSolution
+
+      
+      ! Source vector
+      real(DP), dimension(nvar,neq), intent(inout) :: DdataSource
+
+
+      ! local variables
+      real(DP), dimension(NVAR2D) :: Ddata
+      real(DP) :: daux, dradius, dvel, dpre
+      integer :: ieq,ia,jeq
+
+      
+      ! Do we have to clear the source vector?
+      if (bclear) then
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Clear temporal data
+          Ddata = 0.0_DP
+
+          ! Loop over all coupled degrees of freedom
+          do ia = Kld(ieq), Kld(ieq+1)-1
+
+            ! Get nodal degree of freedom
+            jeq = Kcol(ia)
+            
+            ! Get the r-coordinate and compute the radius
+            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            
+            ! Compute unit vector into the origin, scale it be the user-
+            ! defined scaling parameter dscale and devide it by the radius
+            daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+            
+            ! Compute the radial velocity and pressure
+            dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+            dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR2D, jeq)
+
+            ! Update the geometric source term
+            Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+            Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+            Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
+                       Y_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+            Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
+                       (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)+dpre)*dvel
+          end do
+          
+          ! Overwrite the geometric source term
+          DdataSource(:,ieq) = Ddata
+        end do
+        !$omp end parallel do
+
+      else ! bclear
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Clear temporal data
+          Ddata = 0.0_DP
+
+          ! Loop over all coupled degrees of freedom
+          do ia = Kld(ieq), Kld(ieq+1)-1
+
+            ! Get nodal degree of freedom
+            jeq = Kcol(ia)
+            
+            ! Get the r-coordinate and compute the radius
+            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+
+            ! Compute unit vector into the origin, scale it be the user-
+            ! defined scaling parameter dscale and devide it by the radius
+            daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+           
+            ! Compute the radial velocity and pressure
+            dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+            dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR2D, jeq)
+ 
+            ! Update the geometric source term
+            Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+            Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+            Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
+                       Y_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+            Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
+                       (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)+dpre)*dvel
+          end do
+          
+          ! Update the geometric source term
+          DdataSource(:,ieq) = DdataSource(:,ieq) + Ddata
+        end do
+        !$omp end parallel do
+
+      end if
+      
+    end subroutine doSource2DIntlConsistent
+    
+    !**************************************************************
+    ! Calculate the geometric source term for axi-symmetric (dalpha=1)
+    ! flow in 2D. This routine assembles the geometric source term for
+    ! systems stored in block format using the consistent mass matrix.
+    
+    subroutine doSource2DBlockConsistent(deffectiveScale,&
+        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
+
+      ! Effective scaling parameter (dalpha * dscale)
+      real(DP), intent(in) :: deffectiveScale
+
+      ! Effectiive radius
+      real(DP), intent(in) :: deffectiveRadius
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+      
+      ! Number of variables
+      integer, intent(in) :: nvar
+
+      ! Clear source vector?
+      logical, intent(in) :: bclear
+
+      ! Coordinates of the nodal degrees of freedom
+      real(DP), dimension(:,:), intent(in) :: Dcoords
+
+      ! Consistent mass matrix
+      real(DP), dimension(:), intent(in) :: DdataMassMatrix
+
+      ! Sparsity pattern of the mass matrix
+      integer, dimension(:), intent(in) :: Kld,Kcol
+
+      ! Solution vector
+      real(DP), dimension(neq,nvar), intent(in) :: DdataSolution
+
+      
+      ! Source vector
+      real(DP), dimension(neq,nvar), intent(inout) :: DdataSource
+
+
+      ! local variables
+      real(DP), dimension(NVAR2D) :: Ddata
+      real(DP) :: daux, dradius, dvel, dpre
+      integer :: ieq,ia,jeq
+
+      
+      ! Do we have to clear the source vector?
+      if (bclear) then
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Clear temporal data
+          Ddata = 0.0_DP
+
+          ! Loop over all coupled degrees of freedom
+          do ia = Kld(ieq), Kld(ieq+1)-1
+
+            ! Get nodal degree of freedom
+            jeq = Kcol(ia)
+            
+            ! Get the r-coordinate and compute the radius
+            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            
+            ! Compute unit vector into the origin, scale it be the user-
+            ! defined scaling parameter dscale and devide it by the radius
+            daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+            
+            ! Compute the radial velocity and pressure
+            dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+            dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR2D, jeq)
+
+            ! Update the geometric source term
+            Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+            Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+            Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
+                       Y_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+            Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
+                       (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)+dpre)*dvel
+          end do
+          
+          ! Overwrite the geometric source term
+          DdataSource(ieq,:) = Ddata
+        end do
+        !$omp end parallel do
+
+      else ! bclear
+
+        ! Loop over all degrees of freedom
+        !$omp parallel do default(shared)&
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        do ieq = 1, neq
+
+          ! Clear temporal data
+          Ddata = 0.0_DP
+
+          ! Loop over all coupled degrees of freedom
+          do ia = Kld(ieq), Kld(ieq+1)-1
+
+            ! Get nodal degree of freedom
+            jeq = Kcol(ia)
+            
+            ! Get the r-coordinate and compute the radius
+            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+
+            ! Compute unit vector into the origin, scale it be the user-
+            ! defined scaling parameter dscale and devide it by the radius
+            daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
+           
+            ! Compute the radial velocity and pressure
+            dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+            dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR2D, jeq)
+ 
+            ! Update the geometric source term
+            Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+            Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
+                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+            Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
+                       Y_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+            Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
+                       (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)+dpre)*dvel
+          end do
+          
+          ! Update the geometric source term
+          DdataSource(ieq,:) = DdataSource(ieq,:) + Ddata
+        end do
+        !$omp end parallel do
+
+      end if
+      
+    end subroutine doSource2DBlockConsistent
+
+  end subroutine hydro_calcGeometricSourceterm
 
 end module hydro_callback

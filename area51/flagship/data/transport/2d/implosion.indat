@@ -7,12 +7,16 @@
 #                                                                              #
 ################################################################################
 
+# Definition of user-defined constants
+defconst: width = 0.2
+
 # Definition of user-defined expressions
 defexpr:  sqr1 = SQRT(x^2+y^2)
+#defexpr:  sqr1 = ABS(x)
 defexpr:  r    = max(@sqr1, 1e-4)
 
 # Specify the initial solution
-deffunc: @initsol = if(@sqr1 < 1-1e-12 | @sqr1 > 1.05+1e-12, 0, 1) ; x,y,z,t
+deffunc: @initsol = if(@sqr1 < 1.0-_width | @sqr1 > 1.0+_width, 0, 1) ; x,y,z,t
 
 # Specify the velocity field
 deffunc: @velocity_x = -4*(t^3)*x/@r ; x,y,z,t
@@ -29,17 +33,8 @@ IBCT
 NCOMP
 1
 PARAMETERS
-4.0  T  'FLUX_WEAK'  0.0
+1.0  T  'FLUX_WEAK'  0.0
+#2.0  T  'FLUX_WEAK'  0.0
+#3.0  T  'FLUX_WEAK'  0.0
+#4.0  T  'FLUX_WEAK'  0.0
 
-# Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-1
-PARAMETERS
-4.0  T  'HOMNEUMANN_STRONG'

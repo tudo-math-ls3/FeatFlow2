@@ -209,7 +209,7 @@ module transport_basic
 !</constantblock>
 
 
-!<constantblock description="Types of boundary conditions">
+!<constantblock description="Global types of boundary conditions">
 
   ! Homogeneous Neumann boundary conditions
   integer, parameter, public :: BDRC_HOMNEUMANN   = 1
@@ -229,6 +229,23 @@ module transport_basic
   ! Flux boundary condition
   integer, parameter, public :: BDRC_FLUX         = 5
 !</constantblock>
+
+!<constantblock description="Global types of coordinate systems">
+
+  ! Cartesian coordinate system (x,y,z)
+  integer, parameter, public :: COORDS_CARTESIAN           = 0
+
+  ! Axi-symmetric coordinate system (r,z) with symmetry around the
+  ! z-axis (2D approximation of a 3D flow)
+  integer, parameter, public :: COORDS_AXIALSYMMETRY       = 1
+
+  ! Cylindrically symmtric coordinate system (r)
+  ! (1D approximation of a 2D flow)
+  integer, parameter, public :: COORDS_CYLINDRICALSYMMETRY = 2
+
+  ! Spherically symmetric coordinate system (r)
+  ! (1D approximation of a 3D flow)
+  integer, parameter, public :: COORDS_SPHERICALSYMMETRY   = 3
 
 !</constants>
 
