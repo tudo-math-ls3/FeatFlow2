@@ -27,16 +27,16 @@
 #
 # in the ideal case it should be
 # ( uname -m ) - ( uname -p ) - ( uname -s )
-# but on pc/linux (uname -p) gives either unknown or very long answer
-# containing characters which are problematic in the directory names
-# like ()
+# but on pc/linux (uname -p) gives either unknown or very long answers
+# containing characters which are problematic in directory names like
+# parenthesis, '()'.
 #
 
 
 # Don't let the script be confused by non-english messages
 # from system information programs.
 # (LC_ALL overrides the value of the LANG environment variable 
-# and the value of any other LC_* environment variables.)
+# and the values of any other LC_* environment variables.)
 LC_ALL=C
 
 
@@ -58,7 +58,7 @@ case ${id} in
 	*) arch="pc";;
     esac
 		
-    #generic version
+    # generic version
     cpu=x86
 
     # try to guess the cpu specs 
@@ -69,7 +69,7 @@ case ${id} in
     # The following syntax
     #   let nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`+1
     # is nicer, but only available in bash. For maximum portability use a syntax
-    # only using POSIX complaint Unix shell commands.
+    # only using POSIX compliant Unix shell commands.
     nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`
     nproc=`expr $nproc + 1`
 
