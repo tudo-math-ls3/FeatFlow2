@@ -99,11 +99,11 @@ REALID:=$(strip $(REALID))-intel-goto
 endif
 
 ifeq ($(strip $(REALID)), pc-nehalem-linux)
-REALID:=$(strip $(REALID))-intel-goto
+REALID:=$(strip $(REALID))-intel-goto2
 endif
 
 ifeq ($(strip $(REALID)), pc64-nehalem-linux)
-REALID:=$(strip $(REALID))-intel-goto
+REALID:=$(strip $(REALID))-intel-goto2
 endif
 
 ifeq ($(strip $(REALID)), pc-athlon64-linux)
