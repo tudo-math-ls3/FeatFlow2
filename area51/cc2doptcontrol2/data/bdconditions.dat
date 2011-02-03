@@ -137,6 +137,8 @@ ineumannBoundary = -1
 #                Dirichlet-0-value for Y-vel., dual X- and Y-velocity.
 #                The definition of the dual X-/Y-velocity is optional; if not defined,
 #                0-boundary conditions are assumed.
+#          = 5 : Dirichlet-conditions for primal equation, do-nothing conditions for dual eqn.
+#          = 6 : Dirichlet-conditions for dual equation, do-nothing conditions for primal eqn.
 
 #bdComponent1(4)=
 #  1.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary

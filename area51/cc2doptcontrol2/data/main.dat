@@ -97,6 +97,16 @@ dweightConvection = 1.0
 
 dweightNaturalBdcDual = 1.0
 
+# Additional weight for the term -y grad(lambda) in the dual equation.
+# Standard value = 1.0.
+
+dweightDualConvection = 1.0
+
+# Additional weight for the term grad(y)^T lambda in the dual equation.
+# Standard value = 1.0.
+
+dweightDualNewtonT = 1.0
+
 # Modification to the discrete RHS.
 # =0: No modification (standard).
 # =1: Disturb the primal velocity RHS in all DOF's with a random value.
