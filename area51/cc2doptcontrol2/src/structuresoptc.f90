@@ -318,6 +318,10 @@ module structuresoptc
     ! Standard value = 1.0.
     real(DP) :: dweightDualConvection = 1.0_DP
     
+    ! Additional weight for the term grad(y)^T lambda in the dual equation.
+    ! Standard value = 1.0.
+    real(DP) :: dweightDualNewtonT = 1.0_DP
+    
     ! Additional weight for the term (y*n)lambda in the natural boundary condition
     ! of the dual equation.
     ! Standard value = 1.0

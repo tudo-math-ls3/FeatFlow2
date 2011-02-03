@@ -1191,6 +1191,7 @@ contains
     type(t_blockDiscretisation) :: rvelDiscr
     real(dp), dimension(:), pointer :: p_Ddata
     real(DP) :: dweightConvection, dweightDualConvection, dweightNaturalBdcDual
+    real(DP) :: dweightDualNewtonT
     
     logical, parameter :: bnewmethod = .false.
     
@@ -1201,6 +1202,8 @@ contains
         rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightDualConvection
     dweightNaturalBdcDual = &
         rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightNaturalBdcDual
+    dweightDualNewtonT = &
+        rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightDualNewtonT
 
     ballocate = .false.
     if ((rmatrix%NEQ .le. 0) .or. &
@@ -1366,7 +1369,7 @@ contains
               dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
               dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,2),&
+              dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
 
@@ -1383,7 +1386,7 @@ contains
               dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
               dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,2),&
+              dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
 
@@ -1400,7 +1403,7 @@ contains
               dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
               dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,2),&
+              dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
 
@@ -1676,7 +1679,7 @@ contains
         if (rnonlinearSpatialMatrix%Dgamma(1,1) .ne. 0.0_DP) then
           roptcoperator%dprimalDelta = dweightConvection * rnonlinearSpatialMatrix%Dgamma(1,1)
           roptcoperator%ddualDelta   = dweightDualConvection * rnonlinearSpatialMatrix%Dgamma(2,2)
-          roptcoperator%ddualNewtonTrans = dweightConvection * rnonlinearSpatialMatrix%DnewtonT(2,2)
+          roptcoperator%ddualNewtonTrans = dweightDualNewtonT * rnonlinearSpatialMatrix%DnewtonT(2,2)
           
           ! Whether or not Newton is active has no influence to the
           ! defect, so the following lines are commented out.
@@ -3000,6 +3003,7 @@ contains
     type(t_optcoperator) :: roptcoperator
     type(t_blockDIscretisation) :: rvelDiscr
     real(DP) :: dweightConvection,dweightDualConvection,dweightNaturalBdcDual
+    real(DP) :: dweightDualNewtonT
     
     logical, parameter :: bnewmethod = .false.
     
@@ -3016,6 +3020,8 @@ contains
         rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightDualConvection
     dweightNaturalBdcDual = &
         rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightNaturalBdcDual
+    dweightDualNewtonT = &
+        rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightDualNewtonT
     
     dcx = 1.0_DP
     if (present(cx)) dcx = cx
@@ -3319,7 +3325,7 @@ contains
           dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
           dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
           dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
-          dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,2),&
+          dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
           rnonlinearSpatialMatrix%rdiscrData%rstabilDual,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)    
       
@@ -3550,7 +3556,7 @@ contains
       if (rnonlinearSpatialMatrix%Dgamma(1,1) .ne. 0.0_DP) then
         roptcoperator%dprimalDelta = dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1)
         roptcoperator%ddualDelta   = dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2)
-        roptcoperator%ddualNewtonTrans = dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,2)
+        roptcoperator%ddualNewtonTrans = dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2)
         
         ! Newton implies additional operators.
         if (rnonlinearSpatialMatrix%Dnewton(1,1) .ne. 0.0_DP) then
