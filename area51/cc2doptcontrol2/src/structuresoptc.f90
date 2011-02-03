@@ -314,11 +314,15 @@ module structuresoptc
     ! Standard value = 1.0
     real(DP) :: dweightConvection = 1.0_DP
 
+    ! Additional weight for the term -y grad(lambda) in the dual equation.
+    ! Standard value = 1.0.
+    real(DP) :: dweightDualConvection = 1.0_DP
+    
     ! Additional weight for the term (y*n)lambda in the natural boundary condition
     ! of the dual equation.
     ! Standard value = 1.0
     real(DP) :: dweightNaturalBdcDual = 1.0_DP
-    
+
     ! Modification to the discrete RHS.
     ! =0: No modification (standard).
     ! =1: Disturb the primal velocity RHS in all DOF's with a random value.

@@ -541,7 +541,8 @@ contains
     !    ... - (u grad lamda) + dupsam2*stabilisation + ... = rhs
     
     rnonlinearSpatialMatrix%rdiscrData%rstabilDual%dupsam = &
-        -rnonlinearSpatialMatrix%rdiscrData%rstabilDual%dupsam
+        -rnonlinearSpatialMatrix%rdiscrData%rstabilDual%dupsam * &
+        mprim_signum(rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightDualConvection)
         
     ! Remember the evaluation point of the nonlinearity.
     rnonlinearSpatialMatrix%p_rnonlinearity => rnonlinearity
@@ -1189,13 +1190,17 @@ contains
     type(t_vectorBlock), pointer :: p_rprimalSol, p_rdualSol
     type(t_blockDiscretisation) :: rvelDiscr
     real(dp), dimension(:), pointer :: p_Ddata
-    real(DP) :: dweightConvection
-    real(DP) :: dcx
+    real(DP) :: dweightConvection, dweightDualConvection, dweightNaturalBdcDual
     
     logical, parameter :: bnewmethod = .false.
     
-    ! Debug weight for the convection
-    dweightConvection = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection
+    ! Debug weights for the convection
+    dweightConvection = &
+        rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection
+    dweightDualConvection = &
+        rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightDualConvection
+    dweightNaturalBdcDual = &
+        rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightNaturalBdcDual
 
     ballocate = .false.
     if ((rmatrix%NEQ .le. 0) .or. &
@@ -1284,24 +1289,30 @@ contains
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
-              rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)      
         case (2)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
-              rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)      
         case (3)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
-              rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)      
         end select
@@ -1347,57 +1358,57 @@ contains
 
         ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
         ! u*grad(.)+grad(u)*(.) to the velocity.
-        !
-        ! Set up dcx for the assembly of the boundary integral.
-        ! Compensate for the "-" sign in gamma!
-        dcx = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection * &
-              rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightNaturalBdcDual * &
-              (-rnonlinearSpatialMatrix%Dgamma(2,2))
         select case (rnonlinearSpatialMatrix%iprimalSol)
         case (1)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
-              rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
+              dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
 
           ! Assemble the additional term for the natural BDC in the dual equation.
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rtempMatrix%RmatrixBlock(1,1),dcx)
+              rtempMatrix%RmatrixBlock(1,1),dweightNaturalBdcDual)
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rtempMatrix%RmatrixBlock(2,2),dcx)
+              rtempMatrix%RmatrixBlock(2,2),dweightNaturalBdcDual)
 
         case (2)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
-              rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
+              dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
 
           ! Assemble the additional term for the natural BDC in the dual equation.
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rtempMatrix%RmatrixBlock(1,1),dcx)
+              rtempMatrix%RmatrixBlock(1,1),dweightNaturalBdcDual)
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rtempMatrix%RmatrixBlock(2,2),dcx)
+              rtempMatrix%RmatrixBlock(2,2),dweightNaturalBdcDual)
 
         case (3)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
-              rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
+              dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
 
           ! Assemble the additional term for the natural BDC in the dual equation.
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rtempMatrix%RmatrixBlock(1,1),dcx)
+              rtempMatrix%RmatrixBlock(1,1),dweightNaturalBdcDual)
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rtempMatrix%RmatrixBlock(2,2),dcx)
+              rtempMatrix%RmatrixBlock(2,2),dweightNaturalBdcDual)
 
         end select
         
@@ -1440,8 +1451,10 @@ contains
             
         call assembleConvection (&
             rnonlinearSpatialMatrix,rtempMatrix,rtempVector,&
-            rnonlinearSpatialMatrix%Dgamma(2,1),rnonlinearSpatialMatrix%DgammaT(2,1),&
-            rnonlinearSpatialMatrix%Dnewton(2,1),rnonlinearSpatialMatrix%DnewtonT(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%Dgamma(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,1),&
             rstabilisation)
             
         if (rtempVector%NEQ .ne. 0) &
@@ -1463,10 +1476,10 @@ contains
         end select
             
         call assembleConvection (&
-            rnonlinearSpatialMatrix,rtempMatrix,rtempVector,&
-            0.0_DP,rnonlinearSpatialMatrix%DgammaT2(2,1),&
-            rnonlinearSpatialMatrix%Dnewton2(2,1),0.0_DP,&
-            rstabilisation)      
+            rnonlinearSpatialMatrix,rtempMatrix,rtempVector,0.0_DP,&
+            dweightConvection*rnonlinearSpatialMatrix%DgammaT2(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%Dnewton2(2,1),&
+            0.0_DP,rstabilisation)      
 
         if (rtempVector%NEQ .ne. 0) &
           call lsysbl_releaseVector (rtempVector)
@@ -1661,16 +1674,16 @@ contains
         
         ! Nonlinearity
         if (rnonlinearSpatialMatrix%Dgamma(1,1) .ne. 0.0_DP) then
-          roptcoperator%dprimalDelta = dweightconvection * rnonlinearSpatialMatrix%Dgamma(1,1)
-          roptcoperator%ddualDelta   = dweightconvection * rnonlinearSpatialMatrix%Dgamma(2,2)
-          roptcoperator%ddualNewtonTrans = dweightconvection * rnonlinearSpatialMatrix%DnewtonT(2,2)
+          roptcoperator%dprimalDelta = dweightConvection * rnonlinearSpatialMatrix%Dgamma(1,1)
+          roptcoperator%ddualDelta   = dweightDualConvection * rnonlinearSpatialMatrix%Dgamma(2,2)
+          roptcoperator%ddualNewtonTrans = dweightConvection * rnonlinearSpatialMatrix%DnewtonT(2,2)
           
           ! Whether or not Newton is active has no influence to the
           ! defect, so the following lines are commented out.
           ! if (rparams%bnewton) then
-          roptcoperator%dprimalNewton    = dweightconvection * rnonlinearSpatialMatrix%Dnewton(1,1)
-          roptcoperator%ddualRDeltaTrans = dweightconvection * rnonlinearSpatialMatrix%DgammaT(2,1)
-          roptcoperator%ddualRNewton     = dweightconvection * rnonlinearSpatialMatrix%Dnewton(2,1)
+          roptcoperator%dprimalNewton    = dweightConvection * rnonlinearSpatialMatrix%Dnewton(1,1)
+          roptcoperator%ddualRDeltaTrans = dweightConvection * rnonlinearSpatialMatrix%DgammaT(2,1)
+          roptcoperator%ddualRNewton     = dweightConvection * rnonlinearSpatialMatrix%Dnewton(2,1)
           ! end if
           
         end if
@@ -2180,13 +2193,9 @@ contains
     type(t_jumpStabilisation) :: rjumpStabil
     type(t_convUpwind) :: rupwindStabil
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
-    real(DP) :: dweightConvection
     integer, dimension(:), pointer :: p_Idofs
     integer :: h_Idofs
     type(t_matrixBlock) :: rmatrixtemp
-    
-      ! Debug weight for the convection
-      dweightConvection = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection
     
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
@@ -2235,10 +2244,10 @@ contains
           rstreamlineDiffusion%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion%ddelta            = dweightConvection * dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dweightConvection * dgammaT
-          rstreamlineDiffusion%dnewton           = dweightConvection * dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dweightConvection * dnewtonT
+          rstreamlineDiffusion%ddelta            = dgamma
+          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
+          rstreamlineDiffusion%dnewton           = dnewton
+          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
           
           if (rstabilisation%dupsam .ne. 0) then
             call output_line ("assembleConvection: Warning. Please use the")
@@ -2264,10 +2273,10 @@ contains
           rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion2%ddelta  = dweightConvection * dgamma
-          rstreamlineDiffusion2%ddeltaT = dweightConvection * dgammaT
-          rstreamlineDiffusion2%dnewton = dweightConvection * dnewton
-          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
+          rstreamlineDiffusion2%ddelta  = dgamma
+          rstreamlineDiffusion2%ddeltaT = dgammaT
+          rstreamlineDiffusion2%dnewton = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2286,9 +2295,9 @@ contains
           
           ! Matrix weights
           rstreamlineDiffusion2%ddelta  = 0.0_DP
-          rstreamlineDiffusion2%ddeltaT = dweightConvection * dgammaT
-          rstreamlineDiffusion2%dnewton = dweightConvection * dnewton
-          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
+          rstreamlineDiffusion2%ddeltaT = dgammaT
+          rstreamlineDiffusion2%dnewton = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity for everything except
           ! for the convection. As velocity vector, specify rvector!
@@ -2302,7 +2311,7 @@ contains
           ! is added or subtracted!
           rupwindStabil%dupsam = abs(rstabilisation%dupsam)
           rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-          rupwindStabil%dtheta = dweightConvection*dgamma
+          rupwindStabil%dtheta = dgamma
           
           ! Apply the upwind operator.
           call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
@@ -2338,10 +2347,10 @@ contains
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion%ddelta            = dweightConvection * dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dweightConvection * dgammaT
-          rstreamlineDiffusion%dnewton           = dweightConvection * dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dweightConvection * dnewtonT
+          rstreamlineDiffusion%ddelta            = dgamma
+          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
+          rstreamlineDiffusion%dnewton           = dnewton
+          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2394,10 +2403,10 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dweightConvection * dgamma
-          rstreamlineDiffusion2%ddeltaT  = dweightConvection * dgammaT
-          rstreamlineDiffusion2%dnewton  = dweightConvection * dnewton
-          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
+          rstreamlineDiffusion2%ddelta   = dgamma
+          rstreamlineDiffusion2%ddeltaT  = dgammaT
+          rstreamlineDiffusion2%dnewton  = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2446,10 +2455,10 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dweightConvection * dgamma
-          rstreamlineDiffusion2%ddeltaT  = dweightConvection * dgammaT
-          rstreamlineDiffusion2%dnewton  = dweightConvection * dnewton
-          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
+          rstreamlineDiffusion2%ddelta   = dgamma
+          rstreamlineDiffusion2%ddeltaT  = dgammaT
+          rstreamlineDiffusion2%dnewton  = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2990,6 +2999,7 @@ contains
     type(t_settings_stabil) :: rstabilisation    
     type(t_optcoperator) :: roptcoperator
     type(t_blockDIscretisation) :: rvelDiscr
+    real(DP) :: dweightConvection,dweightDualConvection,dweightNaturalBdcDual
     
     logical, parameter :: bnewmethod = .false.
     
@@ -2998,6 +3008,14 @@ contains
     
     call lsysbl_getbase_double (rd,p_Dd)
     call lsysbl_getbase_double (rx,p_Dx)
+    
+    ! Debug weights for the convection
+    dweightConvection = &
+        rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection
+    dweightDualConvection = &
+        rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightDualConvection
+    dweightNaturalBdcDual = &
+        rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightNaturalBdcDual
     
     dcx = 1.0_DP
     if (present(cx)) dcx = cx
@@ -3274,8 +3292,10 @@ contains
 
       call assembleConvectionDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
-          rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
-          rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
           rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)    
       
@@ -3296,16 +3316,17 @@ contains
 
       call assembleConvectionDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
-          rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
-          rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
+          dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
+          dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
+          dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
+          dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,2),&
           rnonlinearSpatialMatrix%rdiscrData%rstabilDual,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)    
       
       ! 2a) Dual equation, natural boundary condition.
-      ! "-" sign in front to compensate the "-" in Dgamma(2,2).
       call assembleConvectionDefectDualBd (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
-          -rnonlinearSpatialMatrix%Dgamma(2,2)*dcx)      
+          dweightNaturalBdcDual*dcx)      
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
@@ -3329,8 +3350,10 @@ contains
 
       call assembleConvectionDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorDual,rtempVectorX,rtempVectorB,&
-          rnonlinearSpatialMatrix%Dgamma(2,1),rnonlinearSpatialMatrix%DgammaT(2,1),&
-          rnonlinearSpatialMatrix%Dnewton(2,1),rnonlinearSpatialMatrix%DnewtonT(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%Dgamma(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,1),&
           rstabilisation,dcx)    
       
       ! There is probably a 2nd reactive term involved stemming from
@@ -3339,10 +3362,10 @@ contains
       rstabilisation = t_settings_stabil(0,0.0_DP,1,1,1)
       
       call assembleConvectionDefect (&
-          rnonlinearSpatialMatrix,rtempMatrix,rvectorDual2,rtempVectorX,rtempVectorB,&
-          0.0_DP,rnonlinearSpatialMatrix%DgammaT2(2,1),&
-          rnonlinearSpatialMatrix%Dnewton2(2,1),0.0_DP,&
-          rstabilisation,dcx)    
+          rnonlinearSpatialMatrix,rtempMatrix,rvectorDual2,rtempVectorX,rtempVectorB,0.0_DP,&
+          dweightConvection*rnonlinearSpatialMatrix%DgammaT2(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%Dnewton2(2,1),&
+          0.0_DP,rstabilisation,dcx)    
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
@@ -3525,15 +3548,15 @@ contains
       
       ! Nonlinearity
       if (rnonlinearSpatialMatrix%Dgamma(1,1) .ne. 0.0_DP) then
-        roptcoperator%dprimalDelta = rnonlinearSpatialMatrix%Dgamma(1,1)
-        roptcoperator%ddualDelta   = rnonlinearSpatialMatrix%Dgamma(2,2)
-        roptcoperator%ddualNewtonTrans = rnonlinearSpatialMatrix%DnewtonT(2,2)
+        roptcoperator%dprimalDelta = dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1)
+        roptcoperator%ddualDelta   = dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2)
+        roptcoperator%ddualNewtonTrans = dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,2)
         
         ! Newton implies additional operators.
         if (rnonlinearSpatialMatrix%Dnewton(1,1) .ne. 0.0_DP) then
-          roptcoperator%dprimalNewton    = 1.0_DP
-          roptcoperator%ddualRDeltaTrans = 1.0_DP
-          roptcoperator%ddualRNewton     = -1.0_DP
+          roptcoperator%dprimalNewton    = dweightConvection*1.0_DP
+          roptcoperator%ddualRDeltaTrans = dweightConvection*1.0_DP
+          roptcoperator%ddualRNewton     = dweightConvection*(-1.0_DP)
         end if
         
       end if
@@ -3627,12 +3650,6 @@ contains
       real(DP) :: dweight
       type(t_matrixScalar) :: rmatrixTemp
     
-      ! Debug weight for the convection
-      dweight = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection * &
-                rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightNaturalBdcDual * dcx
-      
-      if (dweight .eq. 0.0_DP) return
-      
       ! Create an empty temp matrix
       call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),rmatrixTemp,&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
@@ -3708,7 +3725,6 @@ contains
     type(t_convStreamDiff2) :: rstreamlineDiffusion3
     type(t_jumpStabilisation) :: rjumpStabil
     type(t_convupwind) :: rupwindStabil
-    real(DP) :: dweightConvection
     type(t_vectorBlock) :: rbtemp
     integer :: h_Idofs
     integer, dimension(:), pointer :: p_Idofs
@@ -3717,9 +3733,6 @@ contains
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2
     call lsysbl_getbase_double (rx,p_Ddata1)
     call lsysbl_getbase_double (rb,p_Ddata2)
-    
-      ! Debug weight for the convection
-      dweightConvection = rnonlinearSpatialMatrix%rdiscrData%p_rdebugFlags%dweightConvection
     
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
@@ -3745,10 +3758,10 @@ contains
           rstreamlineDiffusion%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion%ddelta            = dweightConvection * dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dweightConvection * dgammaT
-          rstreamlineDiffusion%dnewton           = dweightConvection * dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dweightConvection * dnewtonT
+          rstreamlineDiffusion%ddelta            = dgamma
+          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
+          rstreamlineDiffusion%dnewton           = dnewton
+          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -3771,10 +3784,10 @@ contains
           rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion2%ddelta  = dweightConvection * dgamma
-          rstreamlineDiffusion2%ddeltaT = dweightConvection * dgammaT
-          rstreamlineDiffusion2%dnewton = dweightConvection * dnewton
-          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
+          rstreamlineDiffusion2%ddelta  = dgamma
+          rstreamlineDiffusion2%ddeltaT = dgammaT
+          rstreamlineDiffusion2%dnewton = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -3796,9 +3809,9 @@ contains
           
           ! Matrix weights
           rstreamlineDiffusion2%ddelta  = 0.0_DP
-          rstreamlineDiffusion2%ddeltaT = dweightConvection * dgammaT
-          rstreamlineDiffusion2%dnewton = dweightConvection * dnewton
-          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
+          rstreamlineDiffusion2%ddeltaT = dgammaT
+          rstreamlineDiffusion2%dnewton = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity except for the
           ! convection part. As velocity vector, specify rvector!
@@ -3846,10 +3859,10 @@ contains
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion%ddelta            = dweightConvection * dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dweightConvection * dgammaT
-          rstreamlineDiffusion%dnewton           = dweightConvection * dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dweightConvection * dnewtonT
+          rstreamlineDiffusion%ddelta            = dgamma
+          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
+          rstreamlineDiffusion%dnewton           = dnewton
+          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -3901,10 +3914,10 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dweightConvection * dgamma
-          rstreamlineDiffusion2%ddeltaT  = dweightConvection * dgammaT
-          rstreamlineDiffusion2%dnewton  = dweightConvection * dnewton
-          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
+          rstreamlineDiffusion2%ddelta   = dgamma
+          rstreamlineDiffusion2%ddeltaT  = dgammaT
+          rstreamlineDiffusion2%dnewton  = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -3951,10 +3964,10 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dweightConvection * dgamma
-          rstreamlineDiffusion2%ddeltaT  = dweightConvection * dgammaT
-          rstreamlineDiffusion2%dnewton  = dweightConvection * dnewton
-          rstreamlineDiffusion2%dnewtonT = dweightConvection * dnewtonT
+          rstreamlineDiffusion2%ddelta   = dgamma
+          rstreamlineDiffusion2%ddeltaT  = dgammaT
+          rstreamlineDiffusion2%dnewton  = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
