@@ -4835,7 +4835,7 @@ contains
       ! Get the normal vector using the boundary.
       call boundary_getNormalVec2D_mult(&
           p_rboundary, ibct, DpointPar(:,iel), &
-          DtempVal(:,3), DtempVal(:,4), BDR_PAR_LENGTH)
+          DtempVal(:,3), DtempVal(:,4), cparType=BDR_PAR_LENGTH)
           
       ! Calculate the coefficients
       do ipt = 1,npointsPerElement

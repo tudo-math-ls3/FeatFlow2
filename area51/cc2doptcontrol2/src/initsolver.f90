@@ -2391,6 +2391,9 @@ contains
     call parlst_getvalue_double (rparlist,ssection,&
         'dweightDualConvection',rdebugFlags%dweightDualConvection,1.0_DP)
 
+    call parlst_getvalue_double (rparlist,ssection,&
+        'dweightDualNewtonT',rdebugFlags%dweightDualNewtonT,1.0_DP)
+
     call parlst_getvalue_int (rparlist,ssection,&
         'crhsmodification',rdebugFlags%crhsmodification,0)
 
