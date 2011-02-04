@@ -113,11 +113,11 @@ contains
         if (itimestep .eq. 0) then
           ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate 
           ! near timestep 0.
-          call interpolateQuadratic (dreltime,0,1,2,rspaceTimeVector,rvector)
+          call interpolateQuadratic (dreltime-1.0_DP,0,1,2,rspaceTimeVector,rvector)
         else if (itimestep .eq. ntimesteps) then
           ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate 
           ! near timestep n.
-          call interpolateQuadratic (dreltime,&
+          call interpolateQuadratic (dreltime+1.0_DP,&
             ntimesteps-2,ntimesteps-1,ntimesteps,rspaceTimeVector,rvector)
         else
           ! Somewhere in the inner. Get the number of the previous and next timestep
@@ -158,11 +158,11 @@ contains
         if (itimestep .eq. 0) then
           ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate 
           ! near timestep 0.
-          call interpolateQuadratic (dreltime,0,1,2,rspaceTimeVector,rvector)
+          call interpolateQuadratic (dreltime-1.0_DP,0,1,2,rspaceTimeVector,rvector)
         else if (itimestep .eq. ntimesteps-1) then
           ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate 
           ! near timestep n.
-          call interpolateQuadratic (dreltime,&
+          call interpolateQuadratic (dreltime+1.0_DP,&
             ntimesteps-1-2,ntimesteps-1-1,ntimesteps-1,rspaceTimeVector,rvector)
         else
           ! Somewhere in the inner. Get the number of the previous and next timestep
@@ -266,7 +266,7 @@ contains
       
       ! Interpolate
       do i=1,size(p_Ddata3)
-        call mprim_quadraticInterpolation (dreltime,&
+        call mprim_quadraticInterpolation (dt,&
             p_Ddata1(i),p_Ddata2(i),p_Ddata3(i),p_Ddata3(i))
       end do
       
