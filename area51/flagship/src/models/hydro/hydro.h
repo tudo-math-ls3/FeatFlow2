@@ -166,23 +166,23 @@
 ! Diagonal matrix for inviscid hydrodynamics in 1D
 #endif
 #define MATRIXDIAG_HYDRO_2T_1D(K,i,idx,dscale,CX,ui)\
-  K(1,i,idx) = 0.0;MYNEWLINE\
-  K(2,i,idx) = dscale*(3.0-GAMMA)*ui*CX;MYNEWLINE\
-  K(3,i,idx) = dscale*GAMMA*ui*CX
+  K(1,i,idx) = 0.0_DP;MYNEWLINE\
+  K(2,i,idx) = dscale*(3.0_DP-(GAMMA))*ui*CX;MYNEWLINE\
+  K(3,i,idx) = dscale*(GAMMA)*ui*CX
 
 #if 0
 ! Full matrix for inviscid hydrodynamics in 1D
 #endif
 #define MATRIX_HYDRO_2T_1D(K,i,idx,dscale,CX,ui,Ei)\
-  K(1,i,idx) = 0.0;MYNEWLINE\
-  K(2,i,idx) = dscale*(GAMMA-3.0)/2.0*ui*ui*CX;MYNEWLINE\
-  K(3,i,idx) = dscale*((GAMMA-1.0)*ui*ui-GAMMA*Ei)*ui*CX;MYNEWLINE\
+  K(1,i,idx) = 0.0_DP;MYNEWLINE\
+  K(2,i,idx) = dscale*((GAMMA)-3.0_DP)/2.0_DP*ui*ui*CX;MYNEWLINE\
+  K(3,i,idx) = dscale*(((GAMMA)-1.0_DP)*ui*ui-(GAMMA)*Ei)*ui*CX;MYNEWLINE\
   K(4,i,idx) = dscale*CX;MYNEWLINE\
-  K(5,i,idx) = dscale*(3.0-GAMMA)*ui*CX;MYNEWLINE\
-  K(6,i,idx) = dscale*(GAMMA*Ei-3.0*(GAMMA-1.0)/2.0*ui*ui)*CX;MYNEWLINE\
-  K(7,i,idx) = 0.0;MYNEWLINE\
-  K(8,i,idx) = dscale*(GAMMA-1.0)*CX;MYNEWLINE\
-  K(9,i,idx) = dscale*GAMMA*ui*CX
+  K(5,i,idx) = dscale*(3.0_DP-(GAMMA))*ui*CX;MYNEWLINE\
+  K(6,i,idx) = dscale*((GAMMA)*Ei-3.0_DP*((GAMMA)-1.0_DP)/2.0_DP*ui*ui)*CX;MYNEWLINE\
+  K(7,i,idx) = 0.0_DP;MYNEWLINE\
+  K(8,i,idx) = dscale*((GAMMA)-1.0_DP)*CX;MYNEWLINE\
+  K(9,i,idx) = dscale*(GAMMA)*ui*CX
 
 
 #if 0
@@ -327,31 +327,31 @@
 ! Diagonal matrix for inviscid hydrodynamics in 2D
 #endif
 #define MATRIXDIAG_HYDRO_2T_2D(K,i,idx,dscale,CX,CY,ui,vi)\
-  K(1,i,idx) = 0.0;MYNEWLINE\
-  K(2,i,idx) = dscale*((3.0-GAMMA)*ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
-  K(3,i,idx) = dscale*(ui*CX+MYNEWLINE (3.0-GAMMA)*vi*CY);MYNEWLINE\
-  K(4,i,idx) = dscale*(GAMMA*(ui*CX+MYNEWLINE vi*CY))
+  K(1,i,idx) = 0.0_DP;MYNEWLINE\
+  K(2,i,idx) = dscale*((3.0_DP-(GAMMA))*ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
+  K(3,i,idx) = dscale*(ui*CX+MYNEWLINE (3.0_DP-(GAMMA))*vi*CY);MYNEWLINE\
+  K(4,i,idx) = dscale*((GAMMA)*(ui*CX+MYNEWLINE vi*CY))
 
 #if 0
 ! Full matrix for inviscid hydrodynamics in 2D
 #endif
 #define MATRIX_HYDRO_2T_2D(K,i,idx,dscale,CX,CY,ui,vi,Ei)\
-  K( 1,i,idx) = 0.0;MYNEWLINE\
-  K( 2,i,idx) = dscale*(((GAMMA-1.0)/2.0*(ui*ui+vi*vi)-ui*ui)*CX-MYNEWLINE ui*vi*CY);MYNEWLINE\
-  K( 3,i,idx) = dscale*(((GAMMA-1.0)/2.0*(ui*ui+vi*vi)-vi*vi)*CY-MYNEWLINE ui*vi*CX);MYNEWLINE\
-  K( 4,i,idx) = dscale*((GAMMA-1.0)*(ui*ui+vi*vi)-GAMMA*Ei)*(ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
+  K( 1,i,idx) = 0.0_DP;MYNEWLINE\
+  K( 2,i,idx) = dscale*((((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi)-ui*ui)*CX-MYNEWLINE ui*vi*CY);MYNEWLINE\
+  K( 3,i,idx) = dscale*((((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi)-vi*vi)*CY-MYNEWLINE ui*vi*CX);MYNEWLINE\
+  K( 4,i,idx) = dscale*(((GAMMA)-1.0_DP)*(ui*ui+vi*vi)-(GAMMA)*Ei)*(ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
   K( 5,i,idx) = dscale*CX;MYNEWLINE\
-  K( 6,i,idx) = dscale*((3.0-GAMMA)*ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
-  K( 7,i,idx) = dscale*(vi*CX-MYNEWLINE (GAMMA-1.0)*ui*CY);MYNEWLINE\
-  K( 8,i,idx) = dscale*((GAMMA*Ei-(GAMMA-1.0)/2.0*(ui*ui+vi*vi))*CX-MYNEWLINE (GAMMA-1.0)*ui*(ui*CX+MYNEWLINE vi*CY));MYNEWLINE\
+  K( 6,i,idx) = dscale*((3.0_DP-(GAMMA))*ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
+  K( 7,i,idx) = dscale*(vi*CX-MYNEWLINE ((GAMMA)-1.0_DP)*ui*CY);MYNEWLINE\
+  K( 8,i,idx) = dscale*(((GAMMA)*Ei-((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi))*CX-MYNEWLINE ((GAMMA)-1.0_DP)*ui*(ui*CX+MYNEWLINE vi*CY));MYNEWLINE\
   K( 9,i,idx) = dscale*CY;MYNEWLINE\
-  K(10,i,idx) = dscale*(ui*CY-MYNEWLINE (GAMMA-1.0)*vi*CX);MYNEWLINE\
-  K(11,i,idx) = dscale*(ui*CX+MYNEWLINE (3.0-GAMMA)*vi*CY);MYNEWLINE\
-  K(12,i,idx) = dscale*((GAMMA*Ei-(GAMMA-1.0)/2.0*(ui*ui+vi*vi))*CY-MYNEWLINE (GAMMA-1.0)*vi*(ui*CX+MYNEWLINE vi*CY));MYNEWLINE\
-  K(13,i,idx) = 0.0;MYNEWLINE\
-  K(14,i,idx) = dscale*(GAMMA-1.0)*CX;MYNEWLINE\
-  K(15,i,idx) = dscale*(GAMMA-1.0)*CY;MYNEWLINE\
-  K(16,i,idx) = dscale*(GAMMA*(ui*CX+MYNEWLINE vi*CY))
+  K(10,i,idx) = dscale*(ui*CY-MYNEWLINE ((GAMMA)-1.0_DP)*vi*CX);MYNEWLINE\
+  K(11,i,idx) = dscale*(ui*CX+MYNEWLINE (3.0_DP-(GAMMA))*vi*CY);MYNEWLINE\
+  K(12,i,idx) = dscale*(((GAMMA)*Ei-((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi))*CY-MYNEWLINE ((GAMMA)-1.0_DP)*vi*(ui*CX+MYNEWLINE vi*CY));MYNEWLINE\
+  K(13,i,idx) = 0.0_DP;MYNEWLINE\
+  K(14,i,idx) = dscale*((GAMMA)-1.0_DP)*CX;MYNEWLINE\
+  K(15,i,idx) = dscale*((GAMMA)-1.0_DP)*CY;MYNEWLINE\
+  K(16,i,idx) = dscale*((GAMMA)*(ui*CX+MYNEWLINE vi*CY))
 
 #if 0
 !##############################################################################
@@ -666,39 +666,39 @@
 ! Diagonal matrix for inviscid hydrodynamics in 3D
 #endif
 #define MATRIXDIAG_HYDRO_2T_3D(K,i,idx,dscale,CX,CY,CZ,ui,vi,wi)\
-  K(1,i,idx) = 0.0;MYNEWLINE\
-  K(2,i,idx) = dscale*((3.0-GAMMA)*ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
-  K(3,i,idx) = dscale*(ui*CX+MYNEWLINE (3.0-GAMMA)*vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
-  K(4,i,idx) = dscale*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE (3.0-GAMMA)*wi*CZ);MYNEWLINE\
-  K(5,i,idx) = dscale*(GAMMA*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
+  K(1,i,idx) = 0.0_DP;MYNEWLINE\
+  K(2,i,idx) = dscale*((3.0_DP-(GAMMA))*ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
+  K(3,i,idx) = dscale*(ui*CX+MYNEWLINE (3.0_DP-(GAMMA))*vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
+  K(4,i,idx) = dscale*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE (3.0_DP-(GAMMA))*wi*CZ);MYNEWLINE\
+  K(5,i,idx) = dscale*((GAMMA)*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
 
 #if 0
 ! Diagonal matrix for inviscid hydrodynamics in 3D
 #endif
 #define MATRIX_HYDRO_2T_3D(K,i,idx,dscale,CX,CY,CZ,ui,vi,wi,Ei)	\
-  K( 1,i,idx) = 0.0;MYNEWLINE\
-  K( 2,i,idx) = dscale*(((GAMMA-1.0)/2.0*(ui*ui+vi*vi+wi*wi)-ui*ui)*CX-MYNEWLINE ui*vi*CY-MYNEWLINE ui*wi*CZ);MYNEWLINE\
-  K( 3,i,idx) = dscale*(((GAMMA-1.0)/2.0*(ui*ui+vi*vi+wi*wi)-vi*vi)*CY-MYNEWLINE ui*vi*CX-MYNEWLINE vi*wi*CZ);MYNEWLINE\
-  K( 4,i,idx) = dscale*(((GAMMA-1.0)/2.0*(ui*ui+vi*vi+wi*wi)-wi*wi)*CZ-MYNEWLINE ui*wi*CX-MYNEWLINE vi*wi*CY);MYNEWLINE\
-  K( 5,i,idx) = dscale*((GAMMA-1.0)*(ui*ui+vi*vi+wi*wi)-MYNEWLINE GAMMA*Ei)*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
+  K( 1,i,idx) = 0.0_DP;MYNEWLINE\
+  K( 2,i,idx) = dscale*((((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi)-ui*ui)*CX-MYNEWLINE ui*vi*CY-MYNEWLINE ui*wi*CZ);MYNEWLINE\
+  K( 3,i,idx) = dscale*((((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi)-vi*vi)*CY-MYNEWLINE ui*vi*CX-MYNEWLINE vi*wi*CZ);MYNEWLINE\
+  K( 4,i,idx) = dscale*((((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi)-wi*wi)*CZ-MYNEWLINE ui*wi*CX-MYNEWLINE vi*wi*CY);MYNEWLINE\
+  K( 5,i,idx) = dscale*(((GAMMA)-1.0_DP)*(ui*ui+vi*vi+wi*wi)-MYNEWLINE (GAMMA)*Ei)*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
   K( 6,i,idx) = dscale*CX;MYNEWLINE\
-  K( 7,i,idx) = dscale*((3.0-GAMMA)*ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
-  K( 8,i,idx) = dscale*(vi*CX-MYNEWLINE (GAMMA-1.0)*ui*CY);MYNEWLINE\
-  K( 9,i,idx) = dscale*(wi*CX-MYNEWLINE (GAMMA-1.0)*ui*CZ);MYNEWLINE\
-  K(10,i,idx) = dscale*((GAMMA*Ei-(GAMMA-1.0)/2.0*(ui*ui+vi*vi+wi*wi))*CX-MYNEWLINE(GAMMA-1.0)*ui*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ));MYNEWLINE\
+  K( 7,i,idx) = dscale*((3.0_DP-(GAMMA))*ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
+  K( 8,i,idx) = dscale*(vi*CX-MYNEWLINE ((GAMMA)-1.0_DP)*ui*CY);MYNEWLINE\
+  K( 9,i,idx) = dscale*(wi*CX-MYNEWLINE ((GAMMA)-1.0_DP)*ui*CZ);MYNEWLINE\
+  K(10,i,idx) = dscale*(((GAMMA)*Ei-((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi))*CX-MYNEWLINE((GAMMA)-1.0_DP)*ui*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ));MYNEWLINE\
   K(11,i,idx) = dscale*CY;MYNEWLINE\
-  K(12,i,idx) = dscale*(ui*CY-MYNEWLINE (GAMMA-1.0)*vi*CX);MYNEWLINE\
-  K(13,i,idx) = dscale*((3.0-GAMMA)*vi*CY+MYNEWLINE ui*CX+MYNEWLINE wi*CZ);MYNEWLINE\
-  K(14,i,idx) = dscale*(wi*CY-MYNEWLINE (GAMMA-1.0)*vi*CZ);MYNEWLINE\
-  K(15,i,idx) = dscale*((GAMMA*Ei-(GAMMA-1.0)/2.0*(ui*ui+vi*vi+wi*wi))*CY-MYNEWLINE (GAMMA-1.0)*vi*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ));MYNEWLINE\
+  K(12,i,idx) = dscale*(ui*CY-MYNEWLINE ((GAMMA)-1.0_DP)*vi*CX);MYNEWLINE\
+  K(13,i,idx) = dscale*((3.0_DP-(GAMMA))*vi*CY+MYNEWLINE ui*CX+MYNEWLINE wi*CZ);MYNEWLINE\
+  K(14,i,idx) = dscale*(wi*CY-MYNEWLINE ((GAMMA)-1.0_DP)*vi*CZ);MYNEWLINE\
+  K(15,i,idx) = dscale*(((GAMMA)*Ei-((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi))*CY-MYNEWLINE ((GAMMA)-1.0_DP)*vi*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ));MYNEWLINE\
   K(16,i,idx) = dscale*CZ;MYNEWLINE\
-  K(17,i,idx) = dscale*(ui*CZ-MYNEWLINE (GAMMA-1.0)*wi*CX);MYNEWLINE\
-  K(18,i,idx) = dscale*(vi*CZ-MYNEWLINE (GAMMA-1.0)*wi*CY);MYNEWLINE\
-  K(19,i,idx) = dscale*((3.0-GAMMA)*wi*CZ+MYNEWLINE ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
-  K(20,i,idx) = dscale*((GAMMA*Ei-(GAMMA-1.0)/2.0*(ui*ui+vi*vi+wi*wi))*CZ-MYNEWLINE (GAMMA-1.0)*wi*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ));MYNEWLINE\
-  K(21,i,idx) = 0.0;MYNEWLINE\
-  K(22,i,idx) = dscale*(GAMMA-1.0)*CX;MYNEWLINE\
-  K(23,i,idx) = dscale*(GAMMA-1.0)*CY;MYNEWLINE\
-  K(24,i,idx) = dscale*(GAMMA-1.0)*CZ;MYNEWLINE\
-  K(25,i,idx) = dscale*(GAMMA*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
+  K(17,i,idx) = dscale*(ui*CZ-MYNEWLINE ((GAMMA)-1.0_DP)*wi*CX);MYNEWLINE\
+  K(18,i,idx) = dscale*(vi*CZ-MYNEWLINE ((GAMMA)-1.0_DP)*wi*CY);MYNEWLINE\
+  K(19,i,idx) = dscale*((3.0_DP-(GAMMA))*wi*CZ+MYNEWLINE ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
+  K(20,i,idx) = dscale*(((GAMMA)*Ei-((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi))*CZ-MYNEWLINE ((GAMMA)-1.0_DP)*wi*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ));MYNEWLINE\
+  K(21,i,idx) = 0.0_DP;MYNEWLINE\
+  K(22,i,idx) = dscale*((GAMMA)-1.0_DP)*CX;MYNEWLINE\
+  K(23,i,idx) = dscale*((GAMMA)-1.0_DP)*CY;MYNEWLINE\
+  K(24,i,idx) = dscale*((GAMMA)-1.0_DP)*CZ;MYNEWLINE\
+  K(25,i,idx) = dscale*((GAMMA)*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
 #endif
