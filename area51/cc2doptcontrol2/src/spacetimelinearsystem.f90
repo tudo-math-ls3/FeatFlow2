@@ -1374,12 +1374,6 @@ contains
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     end if
     
-    ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
-    ! of the spatial matrix.
-    rnonlinearity%p_rvector1 => rtempVectorEval(1)
-    rnonlinearity%p_rvector2 => rtempVectorEval(2)
-    rnonlinearity%p_rvector3 => rtempVectorEval(3)
-
     ! If a nonlinearity is involved, rtempVectorEval(1) contains the 'previous',
     ! rtempVectorEval(2) the 'current' and rtempVectorEval(3) the 'next'
     ! solution (relative to the current time step) where to evaluate
@@ -1428,6 +1422,11 @@ contains
       else
         call lsysbl_clearVector (rtempVectorD)
       end if
+      
+      ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
+      ! of the spatial matrix.
+      call smva_initNonlinearData (rnonlinearity,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3),&
+          rspaceTimeMatrix%p_rneumannBoundary%p_rneumannBoundary(ieqTime))
       
       if (ieqTime .ne. neqTime) then
       

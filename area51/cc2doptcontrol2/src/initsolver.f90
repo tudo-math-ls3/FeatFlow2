@@ -3609,6 +3609,7 @@ contains
     type(t_spatialMatrixNonlinearData), target :: rnonlinearity
     real(dp), dimension(:), pointer :: p_DdataB,p_DdataX
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr
+    type(t_neumannBoundary), target:: rneumannBoundary
 
   !    ! If the following constant is set from 1.0 to 0.0, the primal system is
   !    ! decoupled from the dual system!
@@ -3643,10 +3644,11 @@ contains
 
       ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
       ! of the spatial matrix.
-      rnonlinearity%p_rvector1 => rx
-      rnonlinearity%p_rvector2 => rx
-      rnonlinearity%p_rvector3 => rx
-
+      ! Pass an empty Neumann bonudary structure. The initial condition does not
+      ! care about the Neumann boundary as it just cares about the initial condition
+      ! in the primal equation. Neumann BC is only necessary for the dual eqn!
+      call smva_initNonlinearData (rnonlinearity,rx,rx,rx,rneumannBoundary)
+      
       ! The initial condition is implemented as:
       !
       !   (M/dt + A) y_0  =  b_0 := (M/dt + A) y^0
