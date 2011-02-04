@@ -86,6 +86,7 @@ module initsolver
   use forwardbackwardsimulation
   use spacetimeinterlevelprojection
   use nonlinearoneshotspacetimesolver
+  use spacetimeneumannbc
   use timeboundaryconditions
   use timerhsevaluation
   
@@ -2415,7 +2416,7 @@ contains
 
 !<input>
   ! Settings structure for the optimal control solver.
-  type(t_settings_optflow), intent(in), target :: rsettings
+  type(t_settings_optflow), intent(inout), target :: rsettings
 
   ! Parameter list
   type(t_parlist), intent(in) :: rparlist
@@ -2900,6 +2901,7 @@ contains
     type(t_spaceTimeMatrixDiscrData) :: rdiscrData
     type(t_optcBDC) :: rboudaryConditions
     type(t_matrixBlock) :: rmassMatrix
+    type(t_sptiNeumannBoundary) :: rsptiNeumannBC
 
     ! Get the definition of the start vector
     call parlst_getvalue_int (rparlist, ssection, &
@@ -3000,13 +3002,19 @@ contains
         ! start vector.
         call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
             1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARD, rsimsolver)
+        
+        ! Get the discretisation data.
+        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
+            rdiscrData)
+        
+        ! Discretise the Neumann boundary conditions.
+        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,rsptiNeumannBC)
+        call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
             
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
-        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
-            rdiscrData)
         call stlin_initSpaceTimeMatrix (&
-            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,&
             rsettings%rglobalData,rsettings%rdebugFlags)
         call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
         
@@ -3030,6 +3038,7 @@ contains
         ! Clean up
         call fbsim_done (rsimsolver)
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
+        call stnm_releaseNeumannBoundary (rsptiNeumannBC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3068,13 +3077,19 @@ contains
             rvectorSpace,1,3,rmassMatrix)
             
         call sptivec_setTimestepData (rvector, 1, rvectorSpace)
+
+        ! Get the discretisation data of the current level.        
+        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
+            rdiscrData)
+            
+        ! Discretise the Neumann boundary conditions.
+        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,rsptiNeumannBC)
+        call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
         
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
-        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
-            rdiscrData)
         call stlin_initSpaceTimeMatrix (&
-            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,&
             rsettings%rglobalData,rsettings%rdebugFlags)
 
         ! Get the boundary conditions
@@ -3139,6 +3154,7 @@ contains
         
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
+        call stnm_releaseNeumannBoundary (rsptiNeumannBC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3196,13 +3212,19 @@ contains
         
         ! Release the analytic function.
         call ansol_done(rlocalsolution)
+
+        ! Get the discretisation data of the current level.
+        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
+            rdiscrData)
+      
+        ! Discretise the Neumann boundary conditions.
+        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,rsptiNeumannBC)
+        call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
       
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
-        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
-            rdiscrData)
         call stlin_initSpaceTimeMatrix (&
-            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,&
             rsettings%rglobalData,rsettings%rdebugFlags)
 
         ! Get the boundary conditions
@@ -3242,6 +3264,7 @@ contains
         
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
+        call stnm_releaseNeumannBoundary (rsptiNeumannBC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3285,7 +3308,7 @@ contains
         
     ! Release memory
     call lsysbl_releaseMatrix(rmassMatrix)
-    call lsysbl_releaseVector (rvectorSpace)
+    call lsysbl_releaseVector(rvectorSpace)
 
     ! Scale the start vector.
     do i=2,rvector%neqTime
@@ -3639,9 +3662,9 @@ contains
 
       ! Disable the submatrices for the dual solution and the coupling.
       ! We only want to generate the RHS for the primal solution.
-      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
-      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
-      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
+      call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+      call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+      call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
 
       ! Set up the matrix weights the matrix in the 0th timestep.
       ! We set up only the stuff for the primal equation; for setting up

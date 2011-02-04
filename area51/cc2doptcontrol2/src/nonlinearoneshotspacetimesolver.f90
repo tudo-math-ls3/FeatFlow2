@@ -82,6 +82,7 @@ module nonlinearoneshotspacetimesolver
   use spacetimelinearsolver
   use optcanalysis
   use timeboundaryconditions
+  use spacetimeneumannbc
     
   implicit none
   
@@ -154,7 +155,7 @@ contains
 !<subroutine>
 
   subroutine nlstslv_initPrecMatrices (rsettings,ctypeNonlinearIteration,rmatrix,&
-      RprecMatrices,Rsolutions)
+      RprecMatrices,Rsolutions,RneumannBC)
   
 !<description>
   ! Sets up the preconditioner matrices on all levels according to
@@ -176,6 +177,10 @@ contains
   ! Array with space-time vectors with evaluation points of the nonlinearities
   ! on all levels.
   type(t_spaceTimeVector), dimension(:), intent(inout), target :: Rsolutions
+  
+  ! Array with Neumann boundary definitions for nonlinear boundary conditions,
+  ! for all levels.
+  type(t_sptiNeumannBoundary), dimension(:), intent(inout), target :: RneumannBC
 !</inputoutput>
 
 !<output>
@@ -212,10 +217,14 @@ contains
     do ilev = nlevels,1,-1
       ! Get the discretisation data of the level
       call nlstslv_initStdDiscrData (rsettings,ilev,rdiscrData)
+
+      ! Create the Neumann boundary conditions      
+      call stnm_assembleNeumannBoundary (rsettings%roptcBDC,RneumannBC(ilev),rsettings%rglobalData)
       
       ! Initialise the corresponding space-time matrix
       call stlin_initSpaceTimeMatrix (&
-          RprecMatrices(ilev),cmatrixType,rdiscrData,Rsolutions(ilev),&
+          RprecMatrices(ilev),cmatrixType,rdiscrData,&
+          Rsolutions(ilev),RneumannBC(ilev),&
           rsettings%rglobalData,rsettings%rdebugFlags)
 
       ! Create a temp vector here for the interpolation
@@ -310,9 +319,10 @@ contains
     ! Some statistical data
     type(t_timer) :: rtimeFactorisationStep,rtimerMGstep,rtimerIterate,rtimerPostproc
 
-    ! Nonlinear space-time matrix representing the discrete operator
+    ! Nonlinear space-time matrix representing the discrete operator, nonlinearity,...
     type(t_spaceTimeMatrixDiscrData) :: rdiscrData
     type(t_ccoptSpaceTimeMatrix) :: rmatrix
+    type(t_sptiNeumannBoundary) :: rsptiNeumannBC
 
     call stat_clearTimer (rnlstsolver%rtimeSmoothing)
     call stat_clearTimer (rnlstsolver%rtimeCoarseGridSolver)
@@ -331,10 +341,16 @@ contains
     ! Get the discretisation data of the level
     call nlstslv_initStdDiscrData (rsettings,nlevels,rdiscrData)
     
+    ! Initialise the Neumann boundary conditions on the maximum level.
+    ! Used for nonlinear boundary conditions.
+    call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,rsptiNeumannBC)
+    call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
+    
     ! Initialise a space-time matrix of the corresponding system.
     ! The solution vector is our nonlinearity.
     call stlin_initSpaceTimeMatrix (&
-        rmatrix,MATT_OPTCONTROL,rdiscrData,rx,rsettings%rglobalData,rsettings%rdebugFlags)
+        rmatrix,MATT_OPTCONTROL,rdiscrData,rx,rsptiNeumannBC,&
+        rsettings%rglobalData,rsettings%rdebugFlags)
     
     ! ---------------------------------------------------------------
     ! Create the initial defect
@@ -373,14 +389,14 @@ contains
     ! Initialise the nonlinear matrices on all levels for the first iteration
     if (bnewtonAllowed .or. (rnlstsolver%ctypeNonlinearIteration .eq. 1)) then
       call nlstslv_initPrecMatrices (rsettings,rnlstsolver%ctypeNonlinearIteration,&
-          rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+          rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,rnlstsolver%p_rsptiNeumannBC)
     else
       ! Newton not allowed. Select fixed point.
       !if (rnlstsolver%ioutputLevel .ge. 1) then
       !  call output_line ("Adaptive Newton: Selecting fixed point iteration.")
       !end if
       call nlstslv_initPrecMatrices (rsettings,1,&
-          rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+          rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,rnlstsolver%p_rsptiNeumannBC)
     end if
     
     ! Pass the matrices to the linear solver.
@@ -567,7 +583,7 @@ contains
         ! Standard fixed point iteraion
         call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
         call nlstslv_initPrecMatrices (rsettings,rnlstsolver%ctypeNonlinearIteration,&
-            rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+            rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,rnlstsolver%p_rsptiNeumannBC)
 
         ! The structure of the matrices does not change,
         ! so we don't have to call sptils_initStructure again.
@@ -584,7 +600,7 @@ contains
 
           call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
           call nlstslv_initPrecMatrices (rsettings,rnlstsolver%ctypeNonlinearIteration,&
-              rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+              rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,rnlstsolver%p_rsptiNeumannBC)
 
           ! Is Newton already active?
           if (.not. bnewtonAllowed) then
@@ -604,7 +620,7 @@ contains
           
           call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
           call nlstslv_initPrecMatrices (rsettings,1,&
-              rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions)
+              rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,rnlstsolver%p_rsptiNeumannBC)
 
           ! Is Newton currently active?
           if (.not. bnewtonAllowed) then
@@ -764,6 +780,10 @@ contains
     
     ! Release the preconditioner matrices.
     call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
+    
+    ! Release other stuff
+    call stnm_releaseNeumannBoundary (rsptiNeumannBC)
+    call stlin_releaseSpaceTimeMatrix(rmatrix)
     
     ! Decrease rnlstsolver%nnonlinearIterations if the DO-loop was completely processed;
     ! iglobIter = nmaxIterations+1 in that case!

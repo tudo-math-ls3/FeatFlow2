@@ -34,9 +34,6 @@
 !#     -> Initialise the matrix weights of a submatrix in the global space-time
 !#        matrix.
 !#
-!# 2.) stlin_disableSubmatrix
-!#     -> Disables a submatrix by setting the corresponding weights to zero.
-!#
 !# 3.) stlin_getFullMatrixDummy
 !#     -> Get a dummy structure of a full matrix
 !#
@@ -198,6 +195,8 @@ module spacetimelinearsystem
   use fespacehierarchy
   
   use spacetimehierarchy
+  
+  use spacetimeneumannbc
 
   !use spacepreconditioner
   !use spacepreconditionerinit
@@ -207,6 +206,7 @@ module spacetimelinearsystem
   
   !use spacetimediscretisation
   !use timeboundaryconditions
+  use spacematvecassembly
   use user_callback
   
   use matrixio
@@ -325,6 +325,9 @@ module spacetimelinearsystem
     ! so the matrix assembly/application routines use the vector that
     ! is specified in their input parameters.
     type(t_spacetimeVector), pointer :: p_rsolution => null()
+    
+    ! A t_sptiNeumannBC structure defining the Neumann boundary
+    type(t_sptiNeumannBoundary), pointer :: p_rneumannBoundary => null()
 
   end type
 
@@ -336,7 +339,6 @@ module spacetimelinearsystem
   public :: stlin_initSpaceTimeMatrix
   public :: stlin_releaseSpaceTimeMatrix
   public :: stlin_setupMatrixWeights
-  public :: stlin_disableSubmatrix
   public :: stlin_getFullMatrixDummy
   public :: stlin_initSpaceConstraints
   public :: stlin_doneSpaceConstraints
@@ -610,7 +612,7 @@ contains
 !<subroutine>
 
   subroutine stlin_initSpaceTimeMatrix (&
-      rspaceTimeMatrix,cmatrixType,rdiscrData,rsolution,rglobalData,rdebugFlags)
+      rspaceTimeMatrix,cmatrixType,rdiscrData,rsolution,rneumannBoundary,rglobalData,rdebugFlags)
 
 !<description>
   ! Initialises a space-time matrix.
@@ -626,6 +628,10 @@ contains
   ! Space-time solution vector that specifies the evaluation 
   ! point of the nonlinearity.
   type(t_spacetimeVector), intent(in), target :: rsolution
+  
+  ! Definition of the Neumann boundary conditions for all timesteps.
+  ! Used for nonlinear boundary conditions.
+  type(t_sptiNeumannBoundary), intent(in), target :: rneumannBoundary
 
   ! Global data for callback routines.
   type(t_globalData), intent(in), target :: rglobalData
@@ -655,6 +661,7 @@ contains
     ! Remember data about how to discretise.
     rspaceTimeMatrix%rdiscrData = rdiscrData
     rspaceTimeMatrix%p_rsolution => rsolution
+    rspaceTimeMatrix%p_rneumannBoundary => rneumannBoundary
     rspaceTimeMatrix%p_rdebugFlags => rdebugFlags
     rspaceTimeMatrix%p_rglobalData => rglobalData
 
@@ -681,8 +688,10 @@ contains
     rspaceTimeMatrix%cmatrixType = MATT_OPTCONTROL
     rspaceTimeMatrix%NEQtime = 0
     
+    nullify(rspaceTimeMatrix%p_rneumannBoundary)
     nullify(rspaceTimeMatrix%p_rsolution)
     nullify(rspaceTimeMatrix%p_rdebugFlags)
+    nullify(rspaceTimeMatrix%p_rglobalData)
 
   end subroutine
   
@@ -818,18 +827,7 @@ contains
     cthetaschemetype = p_rtimeDiscr%itag
    
     ! Clear the coefficients
-    rnonlinearSpatialMatrix%Diota(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dalpha(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dtheta(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dgamma(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dnewton(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%DgammaT(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dnewton2(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%DgammaT2(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%DnewtonT(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Deta(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dtau(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dkappa(:,:) = 0.0_DP
+    call smva_clearMatrix (rnonlinearSpatialMatrix)
 
     select case (rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation)
     case (0,1)
@@ -1140,6 +1138,17 @@ contains
     ! General parameters.
     rnonlinearSpatialMatrix%dalphaC = rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
     rnonlinearSpatialMatrix%cmatrixType = rspaceTimeMatrix%cmatrixType
+    
+    ! The boundary integral in the dual equation has exactly the same weigt
+    ! as Dgamma -- but with a negative sign, it stems from a partial integration!
+    rnonlinearSpatialMatrix%DdualBdIntegral(2,2) = -rnonlinearSpatialMatrix%Dgamma(2,2)
+
+    ! If Newton is active, we have to activate the Newton term on the boundary!
+    ! Value and sign are the same as for DdualBdIntegral.
+    if (dnewton .ne. 0.0_DP) then
+      rnonlinearSpatialMatrix%DdualBdIntegralNewton(2,2) = &
+          rnonlinearSpatialMatrix%DdualBdIntegral(2,2)
+    end if
 
     ! Probably scale the system entries.
     if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%csystemScaling .ne. 0) then
@@ -1156,6 +1165,8 @@ contains
       rnonlinearSpatialMatrix%DgammaT2(:,:) = dtstep * rnonlinearSpatialMatrix%DgammaT2(:,:)
       rnonlinearSpatialMatrix%DnewtonT(:,:) = dtstep * rnonlinearSpatialMatrix%DnewtonT(:,:)
       rnonlinearSpatialMatrix%Deta(:,:)     = dtstep * rnonlinearSpatialMatrix%Deta(:,:)    
+      rnonlinearSpatialMatrix%DdualBdIntegral(:,:) = dtstep * rnonlinearSpatialMatrix%DdualBdIntegral(:,:)    
+      rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:) = dtstep * rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:)    
       
       ! Do not scale the pressure block.
       ! rnonlinearSpatialMatrix%Dkappa(:,:)   = dtstep * rnonlinearSpatialMatrix%Dkappa(:,:)  
@@ -1171,50 +1182,6 @@ contains
 
   end subroutine  
   
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  subroutine stlin_disableSubmatrix (rnonlinearSpatialMatrix,irow,icolumn)
-
-!<description>
-  ! Disables a subbklock in the nonlinear matrix rnonlinearSpatialMatrix.
-  ! All weights of the correspopnding subblock are set to 0.
-!</description>
-
-!<input>
-  ! The row/column of the submatrix to be disabled.
-  integer :: irow,icolumn
-!</input>
-
-!<inputoutput>
-  ! A t_nonlinearSpatialMatrix structure that defines the shape of the core
-  ! equation. The weights that specify the submatrices of a small 6x6 
-  ! block matrix system are initialised depending on the position
-  ! specified by isubstep and nsubsteps.
-  !
-  ! The structure must have been initialised with smva_initNonlinMatrix!
-  type(t_nonlinearSpatialMatrix), intent(inout) :: rnonlinearSpatialMatrix
-!</inputoutput>
-
-!</subroutine>
-
-    ! Clear the coefficients
-    rnonlinearSpatialMatrix%Diota(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dalpha(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dtheta(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dgamma(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dnewton(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%DgammaT(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dnewton2(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%DgammaT2(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%DnewtonT(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Deta(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dtau(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dkappa(irow,icolumn) = 0.0_DP
-
-  end subroutine
-
   ! ***************************************************************************
 
 !<subroutine>
@@ -1647,8 +1614,9 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call sbc_assembleBDconditions (rboundaryConditions,dtimePrimal,dtimeDual,p_rdiscr,p_rtimediscr,&
-            CCSPACE_PRIMALDUAL,rdiscreteBC,rspaceTimeMatrix%p_rglobalData)
+        call sbc_assembleBDconditions (rboundaryConditions,dtimePrimal,dtimeDual,&
+            CCSPACE_PRIMALDUAL,rspaceTimeMatrix%p_rglobalData,SBC_BDC,&
+            p_rtimediscr,p_rdiscr,rdiscreteBC)
         call sbc_assembleFBDconditions (dtimePrimal,p_rdiscr,p_rtimediscr,&
             CCSPACE_PRIMALDUAL,rdiscreteFBC,rspaceTimeMatrix%p_rglobalData)
 

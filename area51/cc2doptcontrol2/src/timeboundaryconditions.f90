@@ -49,7 +49,6 @@
 
 module timeboundaryconditions
 
-
   use fsystem
   use storage
   use genoutput
@@ -181,8 +180,9 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
-            rx%p_rspaceDiscr,rx%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
+        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
+            rglobalData,SBC_BDC,&
+            rx%p_rtimeDiscr,rx%p_rspaceDiscr,rdiscreteBC)
         call sbc_assembleFBDconditions (dtimePrimal,&
             rx%p_rspaceDiscr,rx%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
@@ -210,8 +210,9 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
-            rx%p_rspaceDiscr,rx%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
+        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
+            rglobalData,SBC_BDC,&
+            rx%p_rtimeDiscr,rx%p_rspaceDiscr,rdiscreteBC)
         call sbc_assembleFBDconditions (dtimePrimal,&
             rx%p_rspaceDiscr,rx%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
@@ -313,8 +314,9 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
-            rb%p_rspaceDiscr,rb%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
+        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
+            rglobalData,SBC_BDC,&
+            rb%p_rtimeDiscr,rb%p_rspaceDiscr,rdiscreteBC)
         call sbc_assembleFBDconditions (dtimePrimal,&
             rb%p_rspaceDiscr,rb%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
@@ -340,8 +342,9 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
-            rb%p_rspaceDiscr,rb%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
+        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
+            rglobalData,SBC_BDC,&
+            rb%p_rtimeDiscr,rb%p_rspaceDiscr,rdiscreteBC)
         call sbc_assembleFBDconditions (dtimePrimal,&
             rb%p_rspaceDiscr,rb%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
@@ -404,7 +407,6 @@ contains
 
     real(DP) :: dtimePrimal,dtimeDual,dtstep
     integer :: isubstep
-    logical :: bhasNeumann
     type(t_vectorBlock) :: rtempVector
     type(t_discreteBC) :: rdiscreteBC
     type(t_discreteFBC) :: rdiscreteFBC
@@ -440,9 +442,9 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
-            rd%p_rspaceDiscr,rd%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData,&
-            bhasNeumann)
+        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
+            rglobalData,SBC_BDC,&
+            rd%p_rtimeDiscr,rd%p_rspaceDiscr,rdiscreteBC)
         call sbc_assembleFBDconditions (dtimePrimal,&
             rd%p_rspaceDiscr,rd%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
@@ -488,8 +490,9 @@ contains
         
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
-            rd%p_rspaceDiscr,rd%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
+        call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
+            rglobalData,SBC_BDC,&
+            rd%p_rtimeDiscr,rd%p_rspaceDiscr,rdiscreteBC)
         call sbc_assembleFBDconditions (dtimePrimal,&
             rd%p_rspaceDiscr,rd%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
@@ -562,7 +565,7 @@ contains
     integer :: isubstep
     type(t_vectorBlock) :: rtempVector
     type(t_discreteBC) :: rdiscreteBC
-    logical :: bhasNeumann
+    type(t_neumannBoundary) :: rneumannBoundary
     real(dp) :: dtimePrimal,dtimeDual,dtstep
     real(DP), dimension(:), pointer :: p_Dx
 
@@ -589,18 +592,26 @@ contains
 
       ! Assemble the BC's.
       call bcasm_clearDiscreteBC(rdiscreteBC)
-      call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
-          rx%p_rspaceDiscr,rx%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,&
-          rglobalData,bhasNeumann)
+      call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
+          rglobalData,SBC_ALL,&
+          rx%p_rtimeDiscr,rx%p_rspaceDiscr,rdiscreteBC,rneumannBoundary)
     
-      if (.not. bhasNeumann) then
+      if ((rneumannBoundary%nregionsPrimal .eq. 0) .or. &
+          (rneumannBoundary%nregionsPrimal .eq. 0)) then
         call sptivec_getTimestepData(rx, isubstep, rtempVector)
         
-        call vecfil_subvectorToL20 (rtempVector,3)
-        call vecfil_subvectorToL20 (rtempVector,6)
+        if (rneumannBoundary%nregionsPrimal .eq. 0) then
+          call vecfil_subvectorToL20 (rtempVector,3)
+        end if
+        
+        if (rneumannBoundary%nregionsDual .eq. 0) then
+          call vecfil_subvectorToL20 (rtempVector,6)
+        end if
         
         call sptivec_setTimestepData(rx, isubstep, rtempVector)
       end if
+      
+      call sbc_releaseNeumannBoundary(rneumannBoundary)
       
     end do
   
@@ -855,9 +866,9 @@ contains
     call bcasm_initDiscreteFBC(rdiscreteFBC)
 
     ! Assemble the BC's.
-    call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
-        rvector%p_rblockDiscr,rtimeDiscr,&
-        CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
+    call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
+        rglobalData,SBC_BDC,&
+        rtimeDiscr,rvector%p_rblockDiscr,rdiscreteBC)
     call sbc_assembleFBDconditions (dtimePrimal,&
         rvector%p_rblockDiscr,rtimeDiscr,&
         CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
@@ -921,8 +932,9 @@ contains
     call bcasm_initDiscreteFBC(rdiscreteFBC)
 
     ! Assemble the BC's.
-    call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
-        rd%p_rblockDiscr,rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
+    call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
+        rglobalData,SBC_BDC,&
+        rtimeDiscr,rd%p_rblockDiscr,rdiscreteBC)
     call sbc_assembleFBDconditions (dtimePrimal,&
         rd%p_rblockDiscr,rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
 

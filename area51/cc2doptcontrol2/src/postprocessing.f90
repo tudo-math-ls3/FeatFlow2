@@ -906,8 +906,9 @@ contains
         ! new discretisation:
         call spdp_projectSolution (rvector,rprjVector)
         
-        call sbc_assembleBDconditions (rsettings%roptcBDC,dtimePrimal,dtimeDual,rpostproc%rspaceDiscrLinear,&
-            rpostproc%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rsettings%rglobalData)
+        call sbc_assembleBDconditions (rsettings%roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
+            rsettings%rglobalData,SBC_BDC,&
+            rpostproc%p_rtimeDiscr,rpostproc%rspaceDiscrLinear,rdiscreteBC)
         call sbc_assembleFBDconditions (dtimePrimal,rpostproc%rspaceDiscrLinear,rpostproc%p_rtimeDiscr,&
             CCSPACE_PRIMALDUAL,rdiscreteFBC,rsettings%rglobalData)
         

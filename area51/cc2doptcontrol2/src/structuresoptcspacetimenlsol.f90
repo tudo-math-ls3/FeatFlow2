@@ -44,6 +44,8 @@ module structuresoptcspacetimenlsol
   use spacetimelinearsystem
   use spacetimelinearsolver
   
+  use spacetimeneumannbc
+  
   implicit none
   
   private
@@ -171,6 +173,9 @@ module structuresoptcspacetimenlsol
   
     ! Evaluation points of the nonlinearities on all levels
     type(t_spacetimeVector), dimension(:), pointer :: p_Rsolutions => null()
+
+    ! Neumann boundary conditions on all levels; for nonlinear boundarty conditions
+    type(t_sptiNeumannBoundary), dimension(:), pointer :: p_rsptiNeumannBC => null()
   
     ! <!-- Output -->
 
@@ -239,7 +244,7 @@ contains
 
 !<input>
   ! Global settings structure.
-  type(t_settings_optflow), intent(in), target :: rsettings
+  type(t_settings_optflow), intent(inout), target :: rsettings
   
   ! Absolute level of the solver (relative to the global hierarchies in
   ! rsettings).
@@ -250,7 +255,7 @@ contains
 !</input>
 
 !<output>
-  ! Pointer to a solver node representing a nonlinear space-time solver.
+  ! A solver node representing a nonlinear space-time solver.
   type(t_nlstsolver), intent(out) :: rsolver
 !</output>
 
@@ -264,6 +269,7 @@ contains
     ! Allocate memory for the preconditioner matrices/vectors on all levels
     allocate(rsolver%p_RprecMatrices(ispaceTimeLevel))
     allocate(rsolver%p_Rsolutions(ispaceTimeLevel))
+    allocate(rsolver%p_rsptiNeumannBC(ispaceTimeLevel))
 
     ! Allocate temp vectors on all levels for the nonlinearity
     do ilev = 1,ispaceTimeLevel
@@ -275,6 +281,11 @@ contains
       ! Create the vector.
       call sptivec_initVector (rsolver%p_Rsolutions(ilev),&
           p_rtimeDiscr,p_rfeSpaceLevel%p_rdiscretisation)
+          
+      ! Prepare arrays for the Neumann boundary conditions.
+      ! Used for nonlinear boundary conditions.
+      call stnm_createNeumannBoundary (&
+          p_rfeSpaceLevel%p_rdiscretisation,p_rtimeDiscr,rsolver%p_rsptiNeumannBC(ilev))
     
     end do
         
@@ -317,13 +328,15 @@ contains
     rsolver%p_rmgSolver => null()
     rsolver%p_rcgrSolver => null()
 
-    ! Release temp vectors 
+    ! Release temp vectors and Neumann BC's.
     do ilev = 1,size(rsolver%p_Rsolutions)
+      call stnm_releaseNeumannBoundary (rsolver%p_rsptiNeumannBC(ilev))
       call sptivec_releaseVector(rsolver%p_Rsolutions(ilev))
     end do
 
     ! Release preconditioner matrices
     deallocate(rsolver%p_Rsolutions)
+    deallocate(rsolver%p_rsptiNeumannBC)
     deallocate(rsolver%p_RprecMatrices)
 
   end subroutine  

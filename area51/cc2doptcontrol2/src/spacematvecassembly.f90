@@ -87,6 +87,15 @@
 !#
 !# 5.) smva_initNonlinearData
 !#     -> Initialises a nonlinear-data structure.
+!#
+!# 6.) smva_clearMatrix
+!#     -> Clears all weights in a matrix.
+!#
+!# 7.) smva_disableSubmatrix
+!#     -> Disables a submatrix by setting the corresponding weights to zero.
+!#
+!# 8.) smva_clearMatrix
+!#     -> Sets all weights in a matrix to zero
 !# </purpose>
 !##############################################################################
 
@@ -136,6 +145,8 @@ module spacematvecassembly
   use structuresoptc
   
   use structuresoptflow
+
+  use spatialbcdef
 
   use optcontrolconvection
     
@@ -237,6 +248,8 @@ module spacematvecassembly
   public :: smva_initNonlinearData
   public :: smva_addBdEOJvector
   public :: smva_addBdEOJOperator
+  public :: smva_disableSubmatrix
+  public :: smva_clearMatrix
 
 !<types>
 
@@ -258,6 +271,9 @@ module spacematvecassembly
     ! for the 'next' timestep. If there is no next timestep (e.g.
     ! like in the last timestep), the vector can be undefined.
     type(t_vectorBlock), pointer :: p_rvector3 => null()
+    
+    ! Definition of the Neumann boundary conditions.
+    type(t_neumannBoundary), pointer :: p_rneumannBoundary => null()
 
   end type
   
@@ -361,6 +377,14 @@ module spacematvecassembly
     ! KAPPA-parameters that switch the I matrix in the continuity equation
     ! on/off.
     real(DP), dimension(2,2) :: Dkappa = 0.0_DP
+    
+    ! Weight for the boundary integral in the dual equation
+    ! on the Neumann boundary: (y n)(.)
+    real(DP), dimension(2,2) :: DdualBdIntegral = 0.0_DP
+
+    ! Weight for the Newton boundary integral in the dual equation
+    ! on the Neumann boundary: ((.)n) lambda
+    real(DP), dimension(2,2) :: DdualBdIntegralNewton = 0.0_DP
     
     ! When evaluating nonlinear terms, the evaluation routine accepts
     ! in timestep i three solution vectors -- one corresponding to
@@ -1375,9 +1399,13 @@ contains
 
           ! Assemble the additional term for the natural BDC in the dual equation.
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rtempMatrix%RmatrixBlock(1,1),dweightNaturalBdcDual)
+              rtempMatrix%RmatrixBlock(1,1),&
+              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
+              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rtempMatrix%RmatrixBlock(2,2),dweightNaturalBdcDual)
+              rtempMatrix%RmatrixBlock(2,2),&
+              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
+              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
 
         case (2)
           call assembleConvection (&
@@ -1392,9 +1420,13 @@ contains
 
           ! Assemble the additional term for the natural BDC in the dual equation.
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rtempMatrix%RmatrixBlock(1,1),dweightNaturalBdcDual)
+              rtempMatrix%RmatrixBlock(1,1),&
+              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
+              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rtempMatrix%RmatrixBlock(2,2),dweightNaturalBdcDual)
+              rtempMatrix%RmatrixBlock(2,2),&
+              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
+              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
 
         case (3)
           call assembleConvection (&
@@ -1409,9 +1441,13 @@ contains
 
           ! Assemble the additional term for the natural BDC in the dual equation.
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rtempMatrix%RmatrixBlock(1,1),dweightNaturalBdcDual)
+              rtempMatrix%RmatrixBlock(1,1),&
+              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
+              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
           call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rtempMatrix%RmatrixBlock(2,2),dweightNaturalBdcDual)
+              rtempMatrix%RmatrixBlock(2,2),&
+              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
+              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
 
         end select
         
@@ -3332,7 +3368,7 @@ contains
       ! 2a) Dual equation, natural boundary condition.
       call assembleConvectionDefectDualBd (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
-          dweightNaturalBdcDual*dcx)      
+          dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),dcx)      
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
@@ -3628,7 +3664,7 @@ contains
     ! -----------------------------------------------------
 
     subroutine assembleConvectionDefectDualBd (&
-        rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dcx)
+        rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dweightBdIntegral,dcx)
         
     ! Assembles the convection defect for the dual on the boundary.
     
@@ -3649,6 +3685,9 @@ contains
     ! The RHS vector; a defect will be created in this vector.
     type(t_vectorBlock), intent(inout) :: rb
     
+    ! Weight of the boudnary integral.
+    real(DP), intent(in) :: dweightBdIntegral
+    
     ! Weight for the operator when multiplying: d = b - dcx * A x. Standard = 1.0_DP
     real(DP), intent(in) :: dcx
 
@@ -3662,7 +3701,8 @@ contains
       call lsyssc_clearMatrix (rmatrixTemp)
       
       ! Create the operator
-      call smva_assembleDualNeumannBd (rvector,rmatrixTemp,1.0_DP)
+      call smva_assembleDualNeumannBd (rvector,rmatrixTemp,dweightBdIntegral,&
+          rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
       
       ! Defect in the dual.
       call lsyssc_scalarMatVec (rmatrixTemp, rx%RvectorBlock(1), rb%RvectorBlock(1), -dcx, 1.0_DP)
@@ -4513,7 +4553,8 @@ contains
   
 !<subroutine>
 
-  subroutine smva_initNonlinearData (rnonlinearData,rvector1,rvector2,rvector3)
+  subroutine smva_initNonlinearData (rnonlinearData,rvector1,rvector2,rvector3,&
+      rneumannBoundary)
 
 !<description>
   ! Initialises a nonlinear-data structure that defines the nonlinearity
@@ -4534,6 +4575,9 @@ contains
     ! for the 'next' timestep. If there is no next timestep (e.g.
     ! like in the last timestep), the vector can be undefined.
     type(t_vectorBlock), intent(in), target :: rvector3
+    
+    ! Specifies the Neumann boundary.
+    type(t_neumannBoundary), intent(in), target :: rneumannBoundary
 !</input>
 
 !<inputoutput>
@@ -4547,6 +4591,7 @@ contains
     rnonlinearData%p_rvector1 => rvector1
     rnonlinearData%p_rvector2 => rvector2
     rnonlinearData%p_rvector3 => rvector3
+    rnonlinearData%p_rneumannBoundary => rneumannBoundary
 
   end subroutine   
 
@@ -4851,7 +4896,7 @@ contains
 
 !<subroutine>
 
-  subroutine smva_assembleDualNeumannBd (rvector,rmatrix,dc)
+  subroutine smva_assembleDualNeumannBd (rvector,rmatrix,dc,rneumannBoundary)
 
 !<description>
   ! This routine assembles the term
@@ -4866,6 +4911,9 @@ contains
   
   ! Multiplier for the matrix
   real(DP), intent(in) :: dc
+  
+  ! Defines the Neumann boundary segments.
+  type(t_neumannBoundary), intent(in) :: rneumannBoundary
 !</input>
 
 !<inputoutput>
@@ -4876,16 +4924,12 @@ contains
 !</subroutine>
 
     ! local variables
+    integer :: i
     type (t_collection) :: rcollection
-    integer :: ibc,iseg
-    type(t_boundaryRegion) :: rboundaryRegion
     type(t_bilinearForm) :: rform
-    type(t_spatialDiscretisation), pointer :: p_rdiscr
-    type(t_discreteBC) :: rdiscreteBC
+    type(t_neumannBdRegion), pointer :: p_rdualNeumannBd
     
     !if (dc .eq. 0.0_DP) return
-    
-    p_rdiscr => rmatrix%p_rspatialDiscrTrial
     
     ! Prepare the collection for the assembly.
     rcollection%p_rvectorQuickAccess1 => rvector
@@ -4899,22 +4943,96 @@ contains
     rform%BconstantCoeff(1) = .false.
     rform%Dcoefficients(1:rform%itermCount)  = 1.0_DP
     
-    ! Assemble the operator on all boundary components.
-    do ibc = 1,boundary_igetNBoundComp(p_rdiscr%p_rboundary)
-    
-      do iseg = 1,boundary_igetNsegments(p_rdiscr%p_rboundary,ibc)
-      
-        ! Get the segment
-        call boundary_createRegion (p_rdiscr%p_rboundary, &
-            ibc, iseg, rboundaryRegion)
-      
-        ! Set up the matrix.
-        call bilf_buildMatrixScalarBdr2D (rform, CUB_G4_1D, .false., &
-            rmatrix,fcoeff_neumannbc,rboundaryRegion, rcollection)
-            
-      end do
-    
+    ! Assemble the operator on all boundary components in rneumannBoundary.
+    p_rdualNeumannBd => rneumannBoundary%p_rdualNeumannBdHead
+    do i = 1,rneumannBoundary%nregionsDual
+      ! Set up the matrix.
+      call bilf_buildMatrixScalarBdr2D (rform, CUB_G4_1D, .false., &
+          rmatrix,fcoeff_neumannbc,p_rdualNeumannBd%rboundaryRegion, rcollection)
+
+      ! Next segment            
+      p_rdualNeumannBd => p_rdualNeumannBd%p_nextNeumannRegion
     end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_clearMatrix (rnonlinearSpatialMatrix)
+
+!<description>
+  ! Resets all operators in a nonlinear matrix to zero.
+!</description>
+
+!<inputoutput>
+  ! Matrix to clear.
+  type(t_nonlinearSpatialMatrix), intent(inout) :: rnonlinearSpatialMatrix
+!</inputoutput>
+  
+!</subroutine>
+
+    rnonlinearSpatialMatrix%Diota(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dalpha(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dtheta(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dgamma(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dnewton(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DgammaT(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dnewton2(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DgammaT2(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DnewtonT(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Deta(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dtau(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dkappa(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DdualBdIntegral(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:) = 0.0_DP
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine smva_disableSubmatrix (rnonlinearSpatialMatrix,irow,icolumn)
+
+!<description>
+  ! Disables a subbklock in the nonlinear matrix rnonlinearSpatialMatrix.
+  ! All weights of the correspopnding subblock are set to 0.
+!</description>
+
+!<input>
+  ! The row/column of the submatrix to be disabled.
+  integer :: irow,icolumn
+!</input>
+
+!<inputoutput>
+  ! A t_nonlinearSpatialMatrix structure that defines the shape of the core
+  ! equation. The weights that specify the submatrices of a small 6x6 
+  ! block matrix system are initialised depending on the position
+  ! specified by isubstep and nsubsteps.
+  !
+  ! The structure must have been initialised with smva_initNonlinMatrix!
+  type(t_nonlinearSpatialMatrix), intent(inout) :: rnonlinearSpatialMatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! Clear the coefficients
+    rnonlinearSpatialMatrix%Diota(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dalpha(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dtheta(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dgamma(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dnewton(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DgammaT(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dnewton2(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DgammaT2(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DnewtonT(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Deta(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dtau(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dkappa(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DdualBdIntegral(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DdualBdIntegralNewton(irow,icolumn) = 0.0_DP
 
   end subroutine
 

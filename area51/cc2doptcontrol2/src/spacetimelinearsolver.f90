@@ -2770,7 +2770,8 @@ contains
       call sptivec_getTimestepData (rd, iiterate, rtempVectorD)
 
       ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
-      call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3)
+      call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
+          rsolverNode%rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
 
       if (rsolverNode%p_rsubnodeBlockJacobi%ssectionAlternative .eq. "") then
       
@@ -3535,7 +3536,8 @@ contains
         end if
       
         ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
-        call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3)
+        call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
+            rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
       
         ! Is there a previous timestep?
         if (iiterate .gt. 1) then
@@ -3793,7 +3795,8 @@ contains
         end if
       
         ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
-        call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3)
+        call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
+            rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
       
         ! Is there a nect timestep?
         if (iiterate .lt. NEQtime) then
@@ -5040,6 +5043,7 @@ contains
     type(t_spatialMatrixNonlinearData) :: rnonlinearData
     type(t_discreteBC), pointer :: p_rdiscreteBC
     type(t_discreteFBC), pointer :: p_rdiscreteFBC
+    type(t_neumannBoundary), pointer :: p_rneumannBoundary
 
     type(t_matrixBlock), pointer :: p_rblockTemp
     type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
@@ -5071,6 +5075,7 @@ contains
     ! Get a reference to our matrix and to the three temp vectors
     ! that were created by the init routine.
     p_rblockTemp => rpreconditioner%p_RmatrixPrecond(ilevel)
+    p_rneumannBoundary => rpreconditioner%p_RneumannBoundary(ilevel)
     p_rvector1 => rpreconditioner%p_RtempVec(1,ilevel)
     p_rvector2 => rpreconditioner%p_RtempVec(2,ilevel)
     p_rvector3 => rpreconditioner%p_RtempVec(3,ilevel)
@@ -5080,9 +5085,6 @@ contains
     call lsysbl_getbase_double (p_rvector2,p_Ddata2)
     call lsysbl_getbase_double (p_rvector3,p_Ddata3)
 
-    ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
-    call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3)
-    
     ! Get pointers to the BC's.
     p_rdiscreteBC => rpreconditioner%p_RdiscreteBC(ilevel)
     p_rdiscreteFBC => rpreconditioner%p_RdiscreteFBC(ilevel)
@@ -5103,6 +5105,10 @@ contains
         call sptivec_getTimestepData (rsupermatrix%p_rsolution, isubstep+1, p_rvector3)
       end if
     
+      ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
+      call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
+          rsupermatrix%p_rneumannBoundary%p_RneumannBoundary(isubstep))
+      
       ! Current time step?
       call tdiscr_getTimestep(rsupermatrix%rdiscrData%p_rtimeDiscr,isubstep-1,dtimePrimal,dtstep)
       dtimeDual = dtimePrimal - (1.0_DP-rsupermatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
@@ -5173,22 +5179,27 @@ contains
         
       end do  
 
-      if (.not. rpreconditioner%bhasNeumann) then
-        ! Insert a 'point matrix' containing a zero in the pressure block.
-        ! This allows the boundary condition implementation routine to
-        ! insert a unit vector for the pressure if we have a pure-Dirichlet
-        ! problem.
-        ! Don't insert the matrix if there is already one! An existing matrix
-        ! is always an identity matrix, as it happens to appear in the first
-        ! and last time strep.
+      ! Insert a 'point matrix' containing a zero in the pressure block.
+      ! This allows the boundary condition implementation routine to
+      ! insert a unit vector for the pressure if we have a pure-Dirichlet
+      ! problem.
+      ! Don't insert the matrix if there is already one! An existing matrix
+      ! is always an identity matrix, as it happens to appear in the first
+      ! and last time strep.
+      if ((p_rneumannBoundary%nregionsPrimal .eq. 0) .or. (p_rneumannBoundary%nregionsDual .eq. 0)) then
         ! IF (isubstep .NE. 0) THEN
-        if (.not. lsysbl_isSubmatrixPresent (rmatrix,(isubstep-1)*6+3,(isubstep-1)*6+3)) then
-          call createPointMatrix (rmatrix%RmatrixBlock((isubstep-1)*6+3,(isubstep-1)*6+3),&
-              rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEMPressure%NEQ,1)
+        if (p_rneumannBoundary%nregionsPrimal .eq. 0) then
+          if (.not. lsysbl_isSubmatrixPresent (rmatrix,(isubstep-1)*6+3,(isubstep-1)*6+3)) then
+            call createPointMatrix (rmatrix%RmatrixBlock((isubstep-1)*6+3,(isubstep-1)*6+3),&
+                rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEMPressure%NEQ,1)
+          end if
         end if
-        if (.not. lsysbl_isSubmatrixPresent (rmatrix,(isubstep-1)*6+6,(isubstep-1)*6+6)) then
-          call createPointMatrix (rmatrix%RmatrixBlock((isubstep-1)*6+6,(isubstep-1)*6+6),&
-              rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEMPressure%NEQ,1)
+        
+        if (p_rneumannBoundary%nregionsDual .eq. 0) then
+          if (.not. lsysbl_isSubmatrixPresent (rmatrix,(isubstep-1)*6+6,(isubstep-1)*6+6)) then
+            call createPointMatrix (rmatrix%RmatrixBlock((isubstep-1)*6+6,(isubstep-1)*6+6),&
+                rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEMPressure%NEQ,1)
+          end if
         end if
         
         ! Remember this timestep as "pure Dirichlet".

@@ -432,6 +432,9 @@ module forwardbackwardsimulation
     ! discretisation of p_RmatrixPrecond.
     type(t_discreteFBC), dimension(:), pointer :: p_RdiscreteFBC => null()
     
+    ! Definition of the Neumann boundary conditions on all levels.
+    type(t_neumannBoundary), dimension(:), pointer :: p_RneumannBoundary => null()
+    
     ! An array of 3x#levels temp vectors.
     ! Note: The temp vectors on the maximum level are created but
     ! actually not used. The application can use them to save the
@@ -440,9 +443,6 @@ module forwardbackwardsimulation
     
     ! Assembly data on all levels.
     type(t_spatialMatrixDiscrData), dimension(:), pointer :: p_RassemblyData
-    
-    ! Whether there are Neumann boundary components in the BC`s.
-    logical :: bhasNeumann
     
     !<!-- Statistical data -->
     
@@ -1164,7 +1164,6 @@ contains
       rpreconditioner%RfilterChain(6)%ifilterType = FILTER_DONOTHING
     end select
     rpreconditioner%bneedPressureDiagonalBlock = .false.
-    rpreconditioner%bhasNeumann = .true.
     
     ! Depending on the space, initialise the projection hierarchy with primal
     ! and/or dual space parameters.
@@ -1210,6 +1209,7 @@ contains
     ! Prepare boundary condition structures
     allocate(rpreconditioner%p_RdiscreteBC(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
     allocate(rpreconditioner%p_RdiscreteFBC(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
+    allocate(rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
     do ilev=rpreconditioner%NLMIN,rpreconditioner%NLMAX
       call bcasm_initDiscreteBC(rpreconditioner%p_RdiscreteBC(ilev))
       call bcasm_initDiscreteFBC(rpreconditioner%p_RdiscreteFBC(ilev))
@@ -1850,8 +1850,8 @@ contains
         ! Saves some memory.
       select case (cspace)
       case (CCSPACE_PRIMAL,CCSPACE_DUAL)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
       end select
       
       ! Allocate memory.
@@ -1915,19 +1915,20 @@ contains
 !</subroutine>
 
     ! local variables
-    logical :: bneumann
     integer :: ilev
 
     ! Clear the BC`s and reassemble on all levels.
     do ilev = rpreconditioner%NLMIN,rpreconditioner%NLMAX
       call bcasm_clearDiscreteBC(rpreconditioner%p_RdiscreteBC(ilev))
       call bcasm_clearDiscreteFBC(rpreconditioner%p_RdiscreteFBC(ilev))
+      call sbc_releaseNeumannBoundary(rpreconditioner%p_RneumannBoundary(ilev))
       
       call sbc_assembleBDconditions (rpreconditioner%p_rboundaryConditions,dtimePrimal,dtimeDual,&
-          rpreconditioner%p_rfeHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
+          rpreconditioner%cspace,rglobalData,SBC_ALL,&
           rpreconditioner%p_rtimeDiscr,&
-          rpreconditioner%cspace,rpreconditioner%p_RdiscreteBC(ilev),&
-          rglobalData,bneumann)
+          rpreconditioner%p_rfeHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
+          rpreconditioner%p_RdiscreteBC(ilev),&
+          rpreconditioner%p_RneumannBoundary(ilev))
       call sbc_assembleFBDconditions (dtimePrimal,&
           rpreconditioner%p_rfeHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
           rpreconditioner%p_rtimeDiscr,&
@@ -1936,34 +1937,34 @@ contains
     end do
 
     ! Do we have Neumann boundary?
-    ! The Neumann flag on the maximum level decides upon that.
-    ! This may actually change from level to level but we simplify here
-    ! and use the filter only depending on the max. level.
-    rpreconditioner%bhasNeumann = bneumann
-    if (.not. bneumann) then
-      ! Pure Dirichlet problem -- Neumann boundary for the pressure.
-      ! Filter the pressure to avoid indefiniteness.
-      rpreconditioner%bneedPressureDiagonalBlock = .true.
-      rpreconditioner%RfilterChain(3)%ifilterType = FILTER_DONOTHING
-      rpreconditioner%RfilterChain(6)%ifilterType = FILTER_DONOTHING
-      select case (rpreconditioner%cspace)
-      case (CCSPACE_PRIMAL)
+    ! If this is a pure Dirichlet problem, install pressure filters
+    ! to get the problem definite.
+
+    rpreconditioner%bneedPressureDiagonalBlock = .true.
+    rpreconditioner%RfilterChain(3)%ifilterType = FILTER_DONOTHING
+    rpreconditioner%RfilterChain(6)%ifilterType = FILTER_DONOTHING
+    select case (rpreconditioner%cspace)
+    case (CCSPACE_PRIMAL)
+      if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
         rpreconditioner%RfilterChain(3)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(3)%itoL20component = 3
-      case (CCSPACE_DUAL)
+      end if
+    case (CCSPACE_DUAL)
+      if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
         rpreconditioner%RfilterChain(6)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(6)%itoL20component = 6
-      case (CCSPACE_PRIMALDUAL)
+      end if
+    case (CCSPACE_PRIMALDUAL)
+      if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
         rpreconditioner%RfilterChain(3)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(3)%itoL20component = 3
+      end if
+
+      if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
         rpreconditioner%RfilterChain(6)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(6)%itoL20component = 6
-      end select
-    else
-      rpreconditioner%RfilterChain(3)%ifilterType = FILTER_DONOTHING
-      rpreconditioner%RfilterChain(6)%ifilterType = FILTER_DONOTHING
-      rpreconditioner%bneedPressureDiagonalBlock = .false.
-    end if
+      end if
+    end select
     
 
   end subroutine
@@ -2014,11 +2015,13 @@ contains
 
     ! Release boundary condition structures
     do ilev = rpreconditioner%NLMAX,rpreconditioner%NLMIN,-1
+      call sbc_releaseNeumannBoundary(rpreconditioner%p_RneumannBoundary(ilev))
       call bcasm_releaseDiscreteFBC(rpreconditioner%p_RdiscreteFBC(ilev))
       call bcasm_releaseDiscreteBC(rpreconditioner%p_RdiscreteBC(ilev))
     end do
     deallocate(rpreconditioner%p_RdiscreteFBC)
     deallocate(rpreconditioner%p_RdiscreteBC)
+    deallocate(rpreconditioner%p_RneumannBoundary)
     
     ! Release temp vectors
     do ilev = rpreconditioner%NLMAX,rpreconditioner%NLMIN,-1
@@ -2225,8 +2228,11 @@ contains
       end if
       
       ! Prepare a local nonlinearity structure for the matrix assembly.
+      ! We can use the Neumann boundary from the finest level as these are defined
+      ! analytically!
       call smva_initNonlinearData (rlocalNonlinearity,&
-          p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3)
+          p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3,&
+          rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(ieqTime+ioffdiag))
 
       ! Create a nonlinear matrix on the current level.
       call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
@@ -2240,13 +2246,13 @@ contains
         
       select case (rpreconditioner%cspace)
       case (CCSPACE_PRIMAL)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
       case (CCSPACE_DUAL)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
       end select
       !<- letzte änderung!
     
@@ -2528,12 +2534,26 @@ contains
         ! Filter the final defect.
         call vecfil_discreteBCdef (rd,rpreconditioner%p_RdiscreteBC(rpreconditioner%NLMAX))
         call vecfil_discreteFBCdef (rd,rpreconditioner%p_RdiscreteFBC(rpreconditioner%NLMAX))
-        if (.not. rpreconditioner%bhasNeumann) then
-          call vecfil_normaliseToL20Sca (rd%RvectorBlock(3))
-          if (rpreconditioner%cspace .eq. CCSPACE_PRIMALDUAL) then
+        
+        ! Probably filter the pressure
+        select case (rpreconditioner%cspace)
+        case (CCSPACE_PRIMAL)
+          if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
+            call vecfil_normaliseToL20Sca (rd%RvectorBlock(3))
+          end if
+        case (CCSPACE_DUAL)
+          if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
+            ! Dual pressure in component 3 in this case!
+            call vecfil_normaliseToL20Sca (rd%RvectorBlock(3))
+          end if
+        case (CCSPACE_PRIMALDUAL)
+          if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
+            call vecfil_normaliseToL20Sca (rd%RvectorBlock(3))
+          end if
+          if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
             call vecfil_normaliseToL20Sca (rd%RvectorBlock(6))
           end if
-        end if
+        end select
       end if
       
       if (p_rsolverNode%dfinalDefect .gt. p_rsolverNode%dinitialDefect*0.99_DP) then
@@ -2870,9 +2890,9 @@ contains
       call lsyssc_clearVector (rdefect%RvectorBlock(5))
       call lsyssc_clearVector (rdefect%RvectorBlock(6))
 
-      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
-      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
-      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+      call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+      call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
+      call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
       
     case (CCSPACE_DUAL)
       ! Only dual space, set the primal defect to zero
@@ -2883,9 +2903,9 @@ contains
       call lsyssc_copyVector (rrhs%RvectorBlock(5),rdefect%RvectorBlock(5))
       call lsyssc_copyVector (rrhs%RvectorBlock(6),rdefect%RvectorBlock(6))
 
-      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
-      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
-      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+      call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
+      call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+      call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
     case default
       call lsysbl_copyVector (rrhs,rdefect)
     end select
@@ -3083,8 +3103,9 @@ contains
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
     call sbc_assembleBDconditions (rpostprocessing%p_rboundaryConditions,dtimePrimal,dtimeDual,&
-        rprjDiscretisation,rpostprocessing%p_rtimeDiscr,&
-        rpostprocessing%cspace,rpostprocessing%rdiscreteBC,rsettings%rglobalData)
+        rpostprocessing%cspace,rsettings%rglobalData,SBC_BDC,&
+        rpostprocessing%p_rtimeDiscr,rprjDiscretisation,&
+        rpostprocessing%rdiscreteBC)
     call sbc_assembleFBDconditions (dtimePrimal,&
         rprjDiscretisation,rpostprocessing%p_rtimeDiscr,&
         rpostprocessing%cspace,rpostprocessing%rdiscreteFBC,rsettings%rglobalData)
@@ -3618,7 +3639,8 @@ contains
           ! Create a nonlinear-data structure that specifies the evaluation point
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
-          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
 
           ! RHS.
           call sptivec_getVectorFromPool(rrhsAccess, iiterate-1, p_rprevrhs)
@@ -3652,7 +3674,8 @@ contains
           ! Create a nonlinear-data structure that specifies the evaluation point
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
-          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
 
           ! Current RHS
           call lsysbl_copyVector (p_rcurrentrhs,rrhs)
@@ -4010,7 +4033,8 @@ contains
           ! Create a nonlinear-data structure that specifies the evaluation point
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
-          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
           
           ! Calculate the defect. For that purpose, start with the
           ! defect. Remember that the time stepping scheme is already
@@ -4023,8 +4047,8 @@ contains
               rsimsolver%rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
               iiterate,-1,rnonlinearSpatialMatrix)
-          call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
-          call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
+          call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+          call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
           
           call smva_assembleDefect (rnonlinearSpatialMatrix,p_rprevsol,&
               rdefect,1.0_DP)
@@ -4042,7 +4066,8 @@ contains
           ! Create a nonlinear-data structure that specifies the evaluation point
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
-          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
           
           ! There is no previous timestep. Load the RHS into the defect vector
           call lsysbl_copyVector (p_rcurrentrhs,rdefect)
@@ -4054,8 +4079,8 @@ contains
             rsimsolver%rdiscrData,rnonlinearData)
         call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
             iiterate,0,rnonlinearSpatialMatrix)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
         
         call smva_assembleDefect (rnonlinearSpatialMatrix,p_rcurrentsol,&
           rdefect,1.0_DP)
@@ -4168,7 +4193,8 @@ contains
           ! Create a nonlinear-data structure that specifies the evaluation point
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
-          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
 
           ! Calculate the defect. For that purpose, start with the
           ! defect. Remember that the time stepping scheme is already
@@ -4181,8 +4207,8 @@ contains
               rsimsolver%rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
               iiterate,1,rnonlinearSpatialMatrix)
-          call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
-          call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+          call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
+          call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
   
           ! DEBUG!!!        
           call lsysbl_getbase_double (p_rprevsol,p_Dsol)
@@ -4203,7 +4229,8 @@ contains
           ! Create a nonlinear-data structure that specifies the evaluation point
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
-          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
 
           ! There is next timestep. Load the RHS into the defect vector
           call lsysbl_copyVector (p_rcurrentrhs,rdefect)
@@ -4221,18 +4248,18 @@ contains
             rsimsolver%rdiscrData,rnonlinearData)
         call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
             iiterate,0,rnonlinearSpatialMatrix)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
         
         call smva_assembleDefect (rnonlinearSpatialMatrix,p_rcurrentsol,&
             rdefect,1.0_DP)
 
         call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
             iiterate,0,rnonlinearSpatialMatrix)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
-        call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
         
         call smva_assembleDefect (rnonlinearSpatialMatrix,p_rcurrentsol,&
             rdefect,1.0_DP)
