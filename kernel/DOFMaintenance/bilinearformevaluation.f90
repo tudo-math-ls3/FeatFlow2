@@ -4924,8 +4924,8 @@ contains
   !</subroutine>
   
     ! local variables
-    integer, dimension(:), pointer :: p_Kcol, p_Kld
-    integer :: na,iel,idofe,jdofe,indofTest,indofTrial,jcol0,jdfg,jcol
+    integer, dimension(:), pointer :: p_Kcol, p_Kld, p_KrowIdx
+    integer :: na,iel,idofe,jdofe,indofTest,indofTrial,jcol0,jdfg,jcol,nnzrows
 
     indofTrial = icolsPerElement
     indofTest = irowsPerElement
@@ -5005,6 +5005,80 @@ contains
             ! the real matrix. We aligned Kentry this way to get
             ! higher speed of the assembly routine, since this leads
             ! to better data locality.
+            
+            Kentry(jdofe,idofe,iel)=jcol
+            
+          end do ! IDOFE
+          
+        end do ! JDOFE
+        
+      end do ! IEL
+      
+    case (LSYSSC_MATRIX9ROWC)
+    
+      ! Get pointers to the row/column structure of the matrix
+      call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      call lsyssc_getbase_Kld (rmatrix,p_Kld)
+      call lsyssc_getbase_KrowIdx (rmatrix,p_KrowIdx)
+      na = rmatrix%NA
+      nnzrows = rmatrix%NNZROWS
+
+      ! We build a quadratic indofTrial*indofTest local matrix:
+      ! Kentry(1..indofTrial,1..indofTest) receives the position 
+      !   in the global system matrix
+      !
+      ! Loop through elements in the set and for each element,
+      ! loop through the local matrices to initialise them:
+      do iel = 1,nelements
+      
+        ! For building the local matrices, we have first to
+        ! loop through the test functions (the "O"`s), as these
+        ! define the rows in the matrix.
+        do idofe = 1,indofTest
+        
+          ! Row IDOFE of the local matrix corresponds 
+          ! to row=global DOF KDFG(IDOFE) in the global matrix.
+          ! This is one of the the "O"`s in the above picture.
+          ! Get the starting position of the corresponding row
+          ! to JCOL0:
+
+          jcol0=p_Kld(p_KrowIdx(nnzrows+Irows(idofe,iel)))
+          
+          ! Now we loop through the other DOF`s on the current element
+          ! (the "O"`s).
+          ! All these have common support with our current basis function
+          ! and will therefore give an additive value to the global
+          ! matrix.
+          
+          do jdofe = 1,indofTrial
+            
+            ! Get the global DOF of the "X" which interacts with 
+            ! our "O".
+            
+            jdfg=Icolumns(jdofe,iel)
+            
+            ! Starting in JCOL0 (which points to the beginning of
+            ! the line initially), loop through the elements in
+            ! the row to find the position of column IDFG.
+            ! Jump out of the DO loop if we find the column.
+            
+            do jcol = jcol0,na
+              if (p_Kcol(jcol) .eq. jdfg) exit
+            end do
+
+            ! Because columns in the global matrix are sorted 
+            ! ascendingly (except for the diagonal element),
+            ! the next search can start after the column we just found.
+            
+            ! JCOL0=JCOL+1
+            
+            ! Save the position of the matrix entry into the local
+            ! matrix.
+            ! Note that a column in Kentry corresponds to a row in
+            ! the real matrix. We aligned Kentry this way to get
+            ! higher speed of the assembly routine, since this leads
+            ! to better data locality.
+            ! Subtract the offset to get the offset in the compressed matrix.
             
             Kentry(jdofe,idofe,iel)=jcol
             
@@ -6884,7 +6958,7 @@ contains
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
       select case (rmatrix%cmatrixFormat) 
-      case (LSYSSC_MATRIX9)
+      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
       
         ! Probably allocate/clear the matrix
         if (rmatrix%h_DA .eq. ST_NOHANDLE) then
@@ -7316,7 +7390,7 @@ contains
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
       select case (rmatrix%cmatrixFormat) 
-      case (LSYSSC_MATRIX9)
+      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
       
         ! Probably allocate/clear the matrix
         if (rmatrix%h_DA .eq. ST_NOHANDLE) then
