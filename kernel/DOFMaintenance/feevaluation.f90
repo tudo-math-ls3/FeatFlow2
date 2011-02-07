@@ -2002,8 +2002,9 @@ contains
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
   
-  npoints = ubound(Dvalues,1)
-  nelements = ubound(Dvalues,2)
+  
+  npoints = revalElementSet%npointsPerElement
+  nelements = revalElementSet%nelements
   
   ! What to evaluate?
   Bder = .false.
@@ -2208,9 +2209,10 @@ contains
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
   integer, dimension(:,:), pointer :: p_IdofsTrial
-  
-  npoints = ubound(Dvalues,2)
-  nelements = ubound(Dvalues,3)
+
+
+  npoints = rdomainIntSubset%npointsPerElement
+  nelements = rdomainIntSubset%nelements
   
   ! What to evaluate?
   Bder = .false.
@@ -2227,7 +2229,7 @@ contains
   ! Evaluate the basis functions
   call elem_generic_sim2 (celement, rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
   
-  ! Get the pointer to the trail DOF`s.
+  ! Get the pointer to the trial DOF`s.
   ! If the IdofsTrial in the domain subset fits to our current element,
   ! take that. Otherwise, we have to compute the actual DOF`s.
   if (rdomainIntSubset%celement .eq. celement) then
@@ -2421,8 +2423,9 @@ contains
   real(SP), dimension(:), pointer :: p_Fdata
   integer, dimension(:,:), pointer :: p_IdofsTrial
   
-  npoints = ubound(Dvalues,1)
-  nelements = ubound(Dvalues,2)
+  
+  npoints = rdomainIntSubset%npointsPerElement
+  nelements = rdomainIntSubset%nelements
   
   ! What to evaluate?
   Bder = .false.
@@ -2439,7 +2442,7 @@ contains
   ! Evaluate the basis functions
   call elem_generic_sim2 (celement, rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
   
-  ! Get the pointer to the trail DOF`s.
+  ! Get the pointer to the trial DOF`s.
   ! If the IdofsTrial in the domain subset fits to our current element,
   ! take that. Otherwise, we have to compute the actual DOF`s.
   if (rdomainIntSubset%celement .eq. celement) then
