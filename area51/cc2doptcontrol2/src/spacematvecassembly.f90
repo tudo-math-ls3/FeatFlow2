@@ -1332,6 +1332,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
               dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
+              rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)      
         case (2)
           call assembleConvection (&
@@ -1342,6 +1343,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
               dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
+              rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)      
         case (3)
           call assembleConvection (&
@@ -1352,6 +1354,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
               dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
+              rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)      
         end select
 
@@ -1406,6 +1409,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
               dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
+              rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
 
           ! Assemble the additional term for the natural BDC in the dual equation.
@@ -1427,6 +1431,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
               dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
+              rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
 
           ! Assemble the additional term for the natural BDC in the dual equation.
@@ -1448,6 +1453,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
               dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
+              rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
 
           ! Assemble the additional term for the natural BDC in the dual equation.
@@ -1505,7 +1511,8 @@ contains
             dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,1),&
-            rstabilisation)
+            rstabilisation,&
+            rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal)
             
         if (rtempVector%NEQ .ne. 0) &
           call lsysbl_releaseVector (rtempVector)
@@ -1529,7 +1536,8 @@ contains
             rnonlinearSpatialMatrix,rtempMatrix,rtempVector,0.0_DP,&
             dweightConvection*rnonlinearSpatialMatrix%DgammaT2(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dnewton2(2,1),&
-            0.0_DP,rstabilisation)      
+            0.0_DP,rstabilisation,&
+            rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal)      
 
         if (rtempVector%NEQ .ne. 0) &
           call lsysbl_releaseVector (rtempVector)
@@ -2195,7 +2203,7 @@ contains
 
     subroutine assembleConvection (&
         rnonlinearSpatialMatrix,rmatrix,rvector,dgamma,dgammaT,dnewton,dnewtonT,&
-        rstabilisation,rmatrixEOJ)
+        rstabilisation,rphysics,rmatrixEOJ)
         
     ! Assembles the convection matrix in the block matrix rmatrix at position (1,1):
     !
@@ -2230,6 +2238,9 @@ contains
     
     ! Stabilisation parameters.
     type(t_settings_stabil), intent(in) :: rstabilisation
+    
+    ! Physics of the problem.
+    type(t_settings_physics), intent(in) :: rphysics
     
     ! OPTIONAL: EOJ matrix in case the precomputed EOJ stabilisation is active.
     type(t_matrixScalar), intent(in), optional :: rmatrixEOJ
@@ -2542,62 +2553,66 @@ contains
         
       else
       
-        ! That's the Stokes-case. Jump stabilisation is possible...
-      
-        if (rstabilisation%dupsam .ne. 0.0_DP) then
-          select case (rstabilisation%cupwind)
-          case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
-            
-            ! Set up the jump stabilisation structure.
-            ! There's not much to do, only initialise the viscosity...
-            rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-            
-            ! Set stabilisation parameter
-            rjumpStabil%dgamma = abs(rstabilisation%dupsam)
-            
-            ! Matrix weight. Compensate for any "-" sign in dgamma!
-            rjumpStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
+        if (rphysics%cequation .eq. 1) then
+        
+          ! That's the Stokes-case. Jump stabilisation is possible...
+        
+          if (rstabilisation%dupsam .ne. 0.0_DP) then
+            select case (rstabilisation%cupwind)
+            case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
+              
+              ! Set up the jump stabilisation structure.
+              ! There's not much to do, only initialise the viscosity...
+              rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+              
+              ! Set stabilisation parameter
+              rjumpStabil%dgamma = abs(rstabilisation%dupsam)
+              
+              ! Matrix weight. Compensate for any "-" sign in dgamma!
+              rjumpStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
 
-            ! Call the jump stabilisation technique to stabilise that stuff.   
-            ! We can assemble the jump part any time as it's independent of any
-            ! convective parts...
-            call conv_jumpStabilisation2d (&
-                                rjumpStabil, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(1,1))
-            if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
-              call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
-            end if
-
-            if (.not. bshared) then
+              ! Call the jump stabilisation technique to stabilise that stuff.   
+              ! We can assemble the jump part any time as it's independent of any
+              ! convective parts...
               call conv_jumpStabilisation2d (&
                                   rjumpStabil, CONV_MODMATRIX, &
-                                  rmatrix%RmatrixBlock(2,2))
+                                  rmatrix%RmatrixBlock(1,1))
               if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
-                call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
+                call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1))
               end if
-            end if
-            
-          case (CCMASM_STAB_EDGEORIENTED3)
-            
-            ! We use the precomputed EOJ matrix and sum it up to the
-            ! existing matrix.
-            call lsyssc_matrixLinearComb(rmatrixEOJ,&
-                dgamma*mprim_signum(rstabilisation%dupsam),&
-                rmatrix%RmatrixBlock(1,1),1.0_DP,&
-                rmatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 
-            if (.not. bshared) then
-              ! Also for the Y-velocity.
+              if (.not. bshared) then
+                call conv_jumpStabilisation2d (&
+                                    rjumpStabil, CONV_MODMATRIX, &
+                                    rmatrix%RmatrixBlock(2,2))
+                if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+                  call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(2,2))
+                end if
+              end if
+              
+            case (CCMASM_STAB_EDGEORIENTED3)
+              
+              ! We use the precomputed EOJ matrix and sum it up to the
+              ! existing matrix.
               call lsyssc_matrixLinearComb(rmatrixEOJ,&
                   dgamma*mprim_signum(rstabilisation%dupsam),&
-                  rmatrix%RmatrixBlock(2,2),1.0_DP,&
-                  rmatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
-            end if
+                  rmatrix%RmatrixBlock(1,1),1.0_DP,&
+                  rmatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
+
+              if (.not. bshared) then
+                ! Also for the Y-velocity.
+                call lsyssc_matrixLinearComb(rmatrixEOJ,&
+                    dgamma*mprim_signum(rstabilisation%dupsam),&
+                    rmatrix%RmatrixBlock(2,2),1.0_DP,&
+                    rmatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
+              end if
+              
+            case default
+              ! No stabilisation
             
-          case default
-            ! No stabilisation
+            end select
+          end if
           
-          end select
         end if
         
       end if
@@ -3349,7 +3364,8 @@ contains
           dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
-          rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,dcx,&
+          rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
+          rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)    
       
       call lsysbl_releaseVector (rtempVectorX)
@@ -3373,7 +3389,8 @@ contains
           dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
           dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
           dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
-          rnonlinearSpatialMatrix%rdiscrData%rstabilDual,dcx,&
+          rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
+          rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)    
       
       ! 2a) Dual equation, natural boundary condition.
@@ -3407,7 +3424,7 @@ contains
           dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,1),&
-          rstabilisation,dcx)    
+          rstabilisation,rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,dcx)    
       
       ! There is probably a 2nd reactive term involved stemming from
       ! the next timestep when Crank-Nicolson is used.
@@ -3418,7 +3435,7 @@ contains
           rnonlinearSpatialMatrix,rtempMatrix,rvectorDual2,rtempVectorX,rtempVectorB,0.0_DP,&
           dweightConvection*rnonlinearSpatialMatrix%DgammaT2(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dnewton2(2,1),&
-          0.0_DP,rstabilisation,dcx)    
+          0.0_DP,rstabilisation,rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,dcx)    
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
@@ -3730,7 +3747,7 @@ contains
 
     subroutine assembleConvectionDefect (&
         rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dgamma,dgammaT,dnewton,dnewtonT,&
-        rstabilisation,dcx,rmatrixEOJ)
+        rstabilisation,rphysics,dcx,rmatrixEOJ)
         
     ! Assembles the convection matrix in the block matrix rmatrix at position (1,1):
     !
@@ -3775,6 +3792,9 @@ contains
     ! Stabilisation parameters
     type(t_settings_stabil), intent(in) :: rstabilisation
 
+    !Physics of the problem
+    type(t_settings_physics) :: rphysics
+    
     ! OPTIONAL: EOJ matrix in case the precomputed EOJ stabilisation is active.
     type(t_matrixScalar), intent(in), optional :: rmatrixEOJ
     
@@ -4056,58 +4076,61 @@ contains
 
       else
       
-        ! That's the Stokes-case. Jump stabilisation is possible...
-        if (rstabilisation%dupsam .ne. 0.0_DP) then
-          print *,"WARNING: Stokes case wrong. Applies stabilisation also to"
-          print *,"pure mass matrices!!! (-> offdiagonal matrices used in the time stepping)"
-          select case (rstabilisation%cupwind)
-          case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
-            
-            ! Set up the jump stabilisation structure.
-            ! There's not much to do, only initialise the viscosity...
-            rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-            
-            ! Set stabilisation parameter
-            rjumpStabil%dgamma = abs(rstabilisation%dupsam)
-            
-            ! Matrix weight. Compensate for any "-" sign in dgamma!
-            rjumpStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
-
-            ! Call the jump stabilisation technique to stabilise that stuff.   
-            ! We can assemble the jump part any time as it's independent of any
-            ! convective parts...
-            call conv_jumpStabilisation2d (&
-                                rjumpStabil, CONV_MODDEFECT, &
-                                rmatrix%RmatrixBlock(1,1),rx,rb)
-            if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
-              call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
-            end if
-
-!            if (.not. bshared) then
-!              call conv_jumpStabilisation2d (&
-!                                  rjumpStabil, CONV_MODDEFECT, &
-!                                  rmatrix%RmatrixBlock(2,2),rx,rb)   
-!            end if
-            
-          case (CCMASM_STAB_EDGEORIENTED3)
+        if (rphysics%cequation .eq. 1) then
+        
+          ! That's the Stokes-case. Jump stabilisation is possible...
           
-            ! Jump stabilisation, precomputed matrix.
-            !
-            ! Just do some mat-vec's to compute the defect.
-            ! The stabilisation parameter is already incorporated into
-            ! the matrix -- only its sign is not incorporated, so we do that here.
-            call lsyssc_scalarMatVec(rmatrixEOJ,&
-                rx%RvectorBlock(1),rb%RvectorBlock(1),&
-                -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
+          if (rstabilisation%dupsam .ne. 0.0_DP) then
+            select case (rstabilisation%cupwind)
+            case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
+              
+              ! Set up the jump stabilisation structure.
+              ! There's not much to do, only initialise the viscosity...
+              rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+              
+              ! Set stabilisation parameter
+              rjumpStabil%dgamma = abs(rstabilisation%dupsam)
+              
+              ! Matrix weight. Compensate for any "-" sign in dgamma!
+              rjumpStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
 
-            call lsyssc_scalarMatVec(rmatrixEOJ,&
-                rx%RvectorBlock(2),rb%RvectorBlock(2),&
-                -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
+              ! Call the jump stabilisation technique to stabilise that stuff.   
+              ! We can assemble the jump part any time as it's independent of any
+              ! convective parts...
+              call conv_jumpStabilisation2d (&
+                                  rjumpStabil, CONV_MODDEFECT, &
+                                  rmatrix%RmatrixBlock(1,1),rx,rb)
+              if (rstabilisation%ceojStabilOnBoundary .eq. 0) then
+                call smva_addBdEOJvector (rjumpStabil,-1.0_DP,rmatrix%RmatrixBlock(1,1),rx,rb)
+              end if
 
-          case default
-            ! No stabilisation
+  !            if (.not. bshared) then
+  !              call conv_jumpStabilisation2d (&
+  !                                  rjumpStabil, CONV_MODDEFECT, &
+  !                                  rmatrix%RmatrixBlock(2,2),rx,rb)   
+  !            end if
+              
+            case (CCMASM_STAB_EDGEORIENTED3)
+            
+              ! Jump stabilisation, precomputed matrix.
+              !
+              ! Just do some mat-vec's to compute the defect.
+              ! The stabilisation parameter is already incorporated into
+              ! the matrix -- only its sign is not incorporated, so we do that here.
+              call lsyssc_scalarMatVec(rmatrixEOJ,&
+                  rx%RvectorBlock(1),rb%RvectorBlock(1),&
+                  -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
+
+              call lsyssc_scalarMatVec(rmatrixEOJ,&
+                  rx%RvectorBlock(2),rb%RvectorBlock(2),&
+                  -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
+
+            case default
+              ! No stabilisation
+            
+            end select
+          end if
           
-          end select
         end if
         
       end if
