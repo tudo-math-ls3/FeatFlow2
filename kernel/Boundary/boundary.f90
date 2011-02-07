@@ -60,14 +60,16 @@
 !#      -> Calculate the outward unit normal vector 
 !#         of a boundary component in 2D
 !#
+!# 14.) boundary_calcNormalVec2D = boundary_calcNormalVec2D /
+!#                                 boundary_calcNormalVec2D_mult /
+!#                                 boundary_calcNormalVec2D_sim
+!#     -> Calculates the normal to a curve given by a set 
+!#        of sampling points at a point on the curve.
+!#
 !# It contains the following set of auxiliary routines:
 !#
 !# 1.) boundary_getNormal2D
 !#     -> Calculates the normal vector at a point on a specific boundary segment.
-!#
-!# 2.) boundary_calcNormal2D
-!#     -> Calculates the normal to a curve given by a set of sampling points
-!#        at a point on the curve.
 !#
 !# </purpose>
 !##############################################################################
