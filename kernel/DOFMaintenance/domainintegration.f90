@@ -92,7 +92,7 @@ module domainintegration
     ! On each element in the current set of elements, this gives the
     ! coordinates of the cubature points on the reference element.
     ! Remark: As long as the same cubature formula is used on all
-    !  elements, the coordinates here are the same for each element.
+    ! elements, the coordinates here are the same for each element.
     ! array [1..dimension,1..npointsPerElement,1..Number of elements] of double
     real(DP), dimension(:,:,:), pointer :: p_DcubPtsRef => null()
 
