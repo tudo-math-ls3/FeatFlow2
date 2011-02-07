@@ -28,6 +28,9 @@
 !#     -> From the initial solution vector at time t=0, generate a
 !#        RHS vector for the initial condition.
 !#
+!# 6.) stlin_dampDual
+!#     -> Applies damping to the dual solution
+!#
 !# Auxiliary routines:
 !#
 !# 1.) stlin_setupMatrixWeights
@@ -345,6 +348,7 @@ module spacetimelinearsystem
   public :: stlin_initSpaceAssembly
   public :: stlin_doneSpaceAssembly
   public :: stlin_spaceTimeMatVec
+  public :: stlin_dampDualSolution
 
 contains
 
@@ -1426,7 +1430,8 @@ contains
       ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
       ! of the spatial matrix.
       call smva_initNonlinearData (rnonlinearity,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3),&
-          rspaceTimeMatrix%p_rneumannBoundary%p_rneumannBoundary(ieqTime))
+          rspaceTimeMatrix%p_rneumannBoundary%p_rneumannBoundary(ieqTime),&
+          rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
       
       if (ieqTime .ne. neqTime) then
       
@@ -1695,6 +1700,54 @@ contains
     
   end subroutine 
    
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine stlin_dampDualSolution (rphysics,rx,cx)
+
+!<description>
+  ! Applies damping to the dual solution. Multiplies all components of the dual
+  ! solution by cx.
+!</description>
+
+!<input>
+  ! Current physics structure of the primal equation
+  type(t_settings_physics), intent(in) :: rphysics
+
+  ! Damping factor
+  real(DP), intent(in) :: cx
+!</input>
+
+!<inputoutput>
+  ! Space-time vector to apply damping to.
+  type(t_spacetimeVector), intent(inout) :: rx
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    type(t_vectorBlock) :: rvector
+    
+    call lsysbl_createVectorBlock (rx%p_rspaceDiscr,rvector)
+
+    select case (rphysics%cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes
+      do i=1,rx%NEQtime
+        ! Fetch the vector, scale, write back.
+        call sptivec_getTimestepData(rx,i,rvector)
+        
+        call lsyssc_scaleVector (rvector%RvectorBlock(4),cx)
+        call lsyssc_scaleVector (rvector%RvectorBlock(5),cx)
+        call lsyssc_scaleVector (rvector%RvectorBlock(6),cx)
+        
+        call sptivec_setTimestepData(rx,i,rvector)
+      end do
+    end select
+
+  end subroutine
 
 !  ! ***************************************************************************
 !  

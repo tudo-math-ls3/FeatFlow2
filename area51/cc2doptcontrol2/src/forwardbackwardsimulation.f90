@@ -112,7 +112,7 @@ module forwardbackwardsimulation
 
 !<constantblock description="ID's that define the type of the solver.">
 
-  ! Nonlinear forward simulation.
+  ! Nonlinear forward simulation. Dual solution is ignored.
   integer, parameter, public :: FBSIM_SOLVER_NLFORWARD = 0
 
   ! Linear forward simulation with prescribed nonlinearity.
@@ -121,6 +121,8 @@ module forwardbackwardsimulation
   ! Linear backward simulation with prescribed nonlinearity.
   integer, parameter, public :: FBSIM_SOLVER_LINBACKWARD = 2
 
+  ! Nonlinear forward simulation. Dual solution is used as RHS.
+  integer, parameter, public :: FBSIM_SOLVER_NLFORWARDFULL = 3
 !</constantblock>
 
 !</constants>
@@ -873,7 +875,7 @@ contains
     rsimsolver%csimtype = csimtype
     
     select case (csimtype)
-    case (FBSIM_SOLVER_NLFORWARD)
+    case (FBSIM_SOLVER_NLFORWARD,FBSIM_SOLVER_NLFORWARDFULL)
       cspace = CCSPACE_PRIMAL
       
       ! Get the parameters of the nonlinear solver 
@@ -2232,7 +2234,8 @@ contains
       ! analytically!
       call smva_initNonlinearData (rlocalNonlinearity,&
           p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3,&
-          rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(ieqTime+ioffdiag))
+          rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(ieqTime+ioffdiag),&
+          rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
 
       ! Create a nonlinear matrix on the current level.
       call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
@@ -2832,7 +2835,7 @@ contains
 !<subroutine>
 
   subroutine fbsim_getNonlinearDefect (cspace,rspaceTimeMatrix,ieqTime,&
-      rdiscrData,rnonlinearData,rsolution,rrhs,rdefect)
+      rdiscrData,rnonlinearData,rsolution,rrhs,rdefect,buseImplicitRHS)
   
 !<description>
   ! Calculates the nonlinear defect in a timestep.
@@ -2861,6 +2864,13 @@ contains
 
   ! Right hand side vector
   type(t_vectorBlock), intent(in) :: rrhs
+  
+  ! Defines whether the RHS given by the dual solution is used
+  ! in the primal solution and vice versa.
+  ! =.true.: Dual solution is incorporated as RHS to primal and primal solution
+  !    incorporated as RHS to the dual
+  ! =.false.: The corresponding defect is set to zero.
+  logical, intent(in) :: buseImplicitRHS
 !</input>
 
 !<inputoutput>
@@ -2892,7 +2902,9 @@ contains
 
       call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
       call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
-      call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+      if (.not. buseImplicitRHS) then
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+      end if
       
     case (CCSPACE_DUAL)
       ! Only dual space, set the primal defect to zero
@@ -2905,7 +2917,9 @@ contains
 
       call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
       call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
-      call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+      if (.not. buseImplicitRHS) then
+        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+      end if
     case default
       call lsysbl_copyVector (rrhs,rdefect)
     end select
@@ -3560,7 +3574,7 @@ contains
     
     ! What to do?
     select case (rsimsolver%csimtype)
-    case (FBSIM_SOLVER_NLFORWARD)
+    case (FBSIM_SOLVER_NLFORWARD,FBSIM_SOLVER_NLFORWARDFULL)
       ! (Navier-)Stokes forward simulation. This iteration type is nonlinear 
       ! in each timestep.
 
@@ -3640,7 +3654,8 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
 
           ! RHS.
           call sptivec_getVectorFromPool(rrhsAccess, iiterate-1, p_rprevrhs)
@@ -3675,7 +3690,8 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
 
           ! Current RHS
           call lsysbl_copyVector (p_rcurrentrhs,rrhs)
@@ -3693,7 +3709,8 @@ contains
         ! Create the initial nonlinear defect
         call stat_startTimer(rtimerDefectCalc)
         call fbsim_getNonlinearDefect (rsimSolver%rpreconditioner%cspace,p_rspaceTimeMatrix,&
-            iiterate,rsimsolver%rdiscrData,rnonlinearData,p_rcurrentsol,rrhs,rdefect)
+            iiterate,rsimsolver%rdiscrData,rnonlinearData,p_rcurrentsol,rrhs,rdefect,&
+            rsimSolver%csimType .eq. FBSIM_SOLVER_NLFORWARDFULL)
         call stat_stopTimer(rtimerDefectCalc)
 
         ! Implement the boundary conditions        
@@ -3917,7 +3934,8 @@ contains
             ! Create the new nonlinear defect
             call stat_startTimer(rtimerDefectCalc)
             call fbsim_getNonlinearDefect (rsimSolver%rpreconditioner%cspace,p_rspaceTimeMatrix,&
-                iiterate,rsimsolver%rdiscrData,rnonlinearData,p_rcurrentsol,rrhs,rdefect)
+                iiterate,rsimsolver%rdiscrData,rnonlinearData,p_rcurrentsol,rrhs,rdefect,&
+                rsimSolver%csimType .eq. FBSIM_SOLVER_NLFORWARDFULL)
             call stat_stopTimer(rtimerDefectCalc)
 
             ! Implement the boundary conditions        
@@ -4034,7 +4052,8 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
           
           ! Calculate the defect. For that purpose, start with the
           ! defect. Remember that the time stepping scheme is already
@@ -4067,7 +4086,8 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
           
           ! There is no previous timestep. Load the RHS into the defect vector
           call lsysbl_copyVector (p_rcurrentrhs,rdefect)
@@ -4194,7 +4214,8 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
 
           ! Calculate the defect. For that purpose, start with the
           ! defect. Remember that the time stepping scheme is already
@@ -4230,7 +4251,8 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
 
           ! There is next timestep. Load the RHS into the defect vector
           call lsysbl_copyVector (p_rcurrentrhs,rdefect)

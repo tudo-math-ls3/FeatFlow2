@@ -2890,6 +2890,7 @@ contains
     integer :: ctypeStartVector,i,ispacelevel,isuccess
     real(dp) :: dtime,dstartVectorWeight
     logical :: bsuccess
+    real(DP) :: dsimDualSolWeight
     type(t_anSolution) :: rlocalsolution
     character(len=SYS_STRLEN) :: sstartVector,sstartVectorSolver
     character(len=SYS_STRLEN) :: sstartVectorBackwardSolver
@@ -2906,6 +2907,9 @@ contains
     ! Get the definition of the start vector
     call parlst_getvalue_int (rparlist, ssection, &
         'ctypeStartVector', ctypeStartVector, 0)
+        
+    call parlst_getvalue_double (rparlist, ssection, &
+        'dsimDualSolWeight', dsimDualSolWeight, 1.0_DP)
 
     call parlst_getvalue_double (rparlist, ssection, &
         'dstartVectorWeight', dstartVectorWeight, 1.0_DP)
@@ -2979,6 +2983,7 @@ contains
         
         ! Project it down to all timesteps.
         do i=1,rvector%neqTime
+          call output_line (" Projecting timestep "//trim(sys_siL(i,10)))
           call tdiscr_getTimestep(rvector%p_rtimeDiscr,i-1,dtime)
           call ansol_prjToVector (rlocalsolution,dtime,rvectorSpace,&
               1,min(rlocalsolution%ncomponents,6),rmassMatrix)
@@ -3008,7 +3013,8 @@ contains
             rdiscrData)
         
         ! Discretise the Neumann boundary conditions.
-        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,rsptiNeumannBC)
+        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiNeumannBC)
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
             
         ! Create a nonlinear space-time matrix that resembles the current
@@ -3083,7 +3089,8 @@ contains
             rdiscrData)
             
         ! Discretise the Neumann boundary conditions.
-        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,rsptiNeumannBC)
+        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiNeumannBC)
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
         
         ! Create a nonlinear space-time matrix that resembles the current
@@ -3152,6 +3159,9 @@ contains
         ! Clean up
         call fbsim_done (rsimsolverBackward)
         
+        ! Damp the dual
+        call stlin_dampDualSolution(rsettings%rphysicsPrimal,rvector,dsimDualSolWeight)
+        
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
@@ -3204,6 +3214,7 @@ contains
         
         ! Project it down to all timesteps.
         do i=1,rvector%neqTime
+          call output_line (" Projecting timestep "//trim(sys_siL(i,10)))
           call tdiscr_getTimestep(rvector%p_rtimeDiscr,i-1,dtime)
           call ansol_prjToVector (rlocalsolution,dtime,rvectorSpace,&
               1,min(rlocalsolution%ncomponents,6),rmassMatrix)
@@ -3218,7 +3229,8 @@ contains
             rdiscrData)
       
         ! Discretise the Neumann boundary conditions.
-        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,rsptiNeumannBC)
+        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiNeumannBC)
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
       
         ! Create a nonlinear space-time matrix that resembles the current
@@ -3261,6 +3273,304 @@ contains
             
         ! Clean up
         call fbsim_done (rsimsolverBackward)
+        
+        ! Damp the dual
+        call stlin_dampDualSolution(rsettings%rphysicsPrimal,rvector,dsimDualSolWeight)
+        
+        ! Release the matrix.
+        call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
+        call stnm_releaseNeumannBoundary (rsptiNeumannBC)
+      
+        ! Probably print some statistical data
+        if (ioutputLevel .ge. 1) then
+          call output_lbrk ()
+
+          call output_line ("Total time for backward simulation:      "//&
+              trim(sys_sdL(rsimsolverBackward%dtimeTotal,10)))
+
+          call output_line ("Total time for simulation:               "//&
+              trim(sys_sdL(rsimsolverBackward%dtimeTotal,10)))
+
+          call output_line ("Total time for nonlinear solver:        "//&
+            trim(sys_sdL(rsimsolverBackward%dtimeNonlinearSolver,10)))
+            
+          call output_line ("Total time for defect calculation:      "//&
+            trim(sys_sdL(rsimsolverBackward%dtimeDefectCalculation,10)))
+
+          call output_line ("Total time for matrix assembly:         "//&
+            trim(sys_sdL(rsimsolverBackward%dtimeMatrixAssembly,10)))
+            
+          call output_line ("Total time for linear solver:           "//&
+            trim(sys_sdL(rsimsolverBackward%dtimeLinearSolver,10)))
+            
+          call output_line ("Total time for postprocessing:          "//&
+            trim(sys_sdL(rsimsolverBackward%dtimePostprocessing,10)))
+            
+          call output_line ("Total #iterations nonlinear solver:     "//&
+            trim(sys_siL(rsimsolverBackward%nnonlinearIterations,10)))
+            
+          call output_line ("Total #iterations linear solver:        "//&
+            trim(sys_siL(rsimsolverBackward%nlinearIterations,10)))
+        end if
+      
+      case (6)
+        ! Initialise with zero.
+        call sptivec_clearVector(rvector)
+        
+        ! Put the initial solution to the first timestep.
+        call ansol_prjToVector (rinitialCondition,rinitialCondition%rtimeDiscr%dtimeInit,&
+            rvectorSpace,1,3,rmassMatrix)
+            
+        call sptivec_setTimestepData (rvector, 1, rvectorSpace)
+
+        ! Get the discretisation data of the current level.        
+        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
+            rdiscrData)
+            
+        ! Discretise the Neumann boundary conditions.
+        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiNeumannBC)
+        call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
+        
+        ! Create a nonlinear space-time matrix that resembles the current
+        ! forward equation.
+        call stlin_initSpaceTimeMatrix (&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,&
+            rsettings%rglobalData,rsettings%rdebugFlags)
+
+        ! Get the boundary conditions
+        call init_initBoundaryConditions (rparlist,SEC_SBDEXPRESSIONS,&
+            sstartVectorBoundaryConditions,rsettings%rphysicsPrimal,rboudaryConditions)
+        
+        ! Implement the boundary conditions into the solution
+        call tbc_implementBCsolution (rboudaryConditions,rvector,rsettings%rglobalData)
+        
+        ! #############
+        ! Forward sweep
+        ! #############
+        
+        ! Initialise a forward simulation solver that simulates the function to calculate the
+        ! start vector.
+        call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
+            1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARD, rsimsolver)
+
+        ! Attach the matrix to the solver.            
+        call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
+        
+        ! Get settings about postprocessing
+        if (sstartVectorPostprocessing .ne. "") then
+          call init_initForwardSimPostproc (rparlist,&
+              sstartVectorPostprocessing,rsimsolver%rpostprocessing)
+        end if
+        
+        ! Simulate...
+        call fbsim_simulate (rsimsolver, rvector, rrhs, &
+            rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
+            
+        ! Clean up
+        call fbsim_done (rsimsolver)
+        
+        ! ##############
+        ! Backward sweep
+        ! ##############
+        
+        ! Initialise a forward simulation solver that simulates the function to calculate the
+        ! start vector.
+        call fbsim_init (rsettings, rparlist, sstartVectorBackwardSolver, &
+            1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_LINBACKWARD, rsimsolverBackward)
+            
+        ! Attach the matrix to the solver.
+        call fbsim_setMatrix (rsimsolverBackward,rspaceTimeMatrix)
+        
+        ! Get settings about postprocessing
+        if (sstartVectorPostprocessing .ne. "") then
+          call init_initForwardSimPostproc (rparlist,&
+              sstartVectorPostprocessing,rsimsolverBackward%rpostprocessing)
+
+          ! Postprocessing of the combined solution!
+          rsimsolverBackward%rpostprocessing%cspace = CCSPACE_PRIMALDUAL
+        end if
+        
+        ! Simulate...
+        call fbsim_simulate (rsimsolverBackward, rvector, rrhs, &
+            rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
+            
+        ! Clean up
+        call fbsim_done (rsimsolverBackward)
+        
+        ! Damp the dual
+        call stlin_dampDualSolution(rsettings%rphysicsPrimal,rvector,dsimDualSolWeight)
+
+        ! #############
+        ! Forward sweep
+        ! #############
+        
+        ! Initialise a forward simulation solver that simulates the function to calculate the
+        ! start vector.
+        call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
+            1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARDFULL, rsimsolver)
+
+        ! Attach the matrix to the solver.            
+        call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
+        
+        ! Get settings about postprocessing
+        if (sstartVectorPostprocessing .ne. "") then
+          call init_initForwardSimPostproc (rparlist,&
+              sstartVectorPostprocessing,rsimsolver%rpostprocessing)
+
+          ! Postprocessing of the combined solution!
+          rsimsolver%rpostprocessing%cspace = CCSPACE_PRIMALDUAL
+        end if
+        
+        ! Simulate...
+        call fbsim_simulate (rsimsolver, rvector, rrhs, &
+            rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
+            
+        ! Clean up
+        call fbsim_done (rsimsolver)
+        
+        ! Release the matrix.
+        call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
+        call stnm_releaseNeumannBoundary (rsptiNeumannBC)
+      
+        ! Probably print some statistical data
+        if (ioutputLevel .ge. 1) then
+          call output_lbrk ()
+          call output_line ("Total time for forward simulation:      "//&
+              trim(sys_sdL(rsimsolver%dtimeTotal,10)))
+
+          call output_line ("Total time for backward simulation:      "//&
+              trim(sys_sdL(rsimsolverBackward%dtimeTotal,10)))
+
+          call output_line ("Total time for simulation:               "//&
+              trim(sys_sdL(rsimsolver%dtimeTotal+rsimsolverBackward%dtimeTotal,10)))
+
+          call output_line ("Total time for nonlinear solver:        "//&
+            trim(sys_sdL(rsimsolver%dtimeNonlinearSolver+rsimsolverBackward%dtimeNonlinearSolver,10)))
+            
+          call output_line ("Total time for defect calculation:      "//&
+            trim(sys_sdL(rsimsolver%dtimeDefectCalculation+rsimsolverBackward%dtimeDefectCalculation,10)))
+
+          call output_line ("Total time for matrix assembly:         "//&
+            trim(sys_sdL(rsimsolver%dtimeMatrixAssembly+rsimsolverBackward%dtimeMatrixAssembly,10)))
+            
+          call output_line ("Total time for linear solver:           "//&
+            trim(sys_sdL(rsimsolver%dtimeLinearSolver+rsimsolverBackward%dtimeLinearSolver,10)))
+            
+          call output_line ("Total time for postprocessing:          "//&
+            trim(sys_sdL(rsimsolver%dtimePostprocessing+rsimsolverBackward%dtimePostprocessing,10)))
+            
+          call output_line ("Total #iterations nonlinear solver:     "//&
+            trim(sys_siL(rsimsolver%nnonlinearIterations+rsimsolverBackward%nnonlinearIterations,10)))
+            
+          call output_line ("Total #iterations linear solver:        "//&
+            trim(sys_siL(rsimsolver%nlinearIterations+rsimsolverBackward%nlinearIterations,10)))
+        end if
+      
+      case (7)
+      
+        ! Read the analytic solution.
+        call init_initFunction (rparlist,sstartVector,rlocalsolution,&
+            rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
+            rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
+        if (isuccess .eq. 1) then
+          call output_line ('Function created by simulation not yet supported!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'init_initStartVector')
+          call sys_halt()
+        end if
+        
+        ! Project it down to all timesteps.
+        do i=1,rvector%neqTime
+          call output_line (" Projecting timestep "//trim(sys_siL(i,10)))
+          call tdiscr_getTimestep(rvector%p_rtimeDiscr,i-1,dtime)
+          call ansol_prjToVector (rlocalsolution,dtime,rvectorSpace,&
+              1,min(rlocalsolution%ncomponents,6),rmassMatrix)
+          call sptivec_setTimestepData (rvector, i, rvectorSpace)
+        end do
+        
+        ! Release the analytic function.
+        call ansol_done(rlocalsolution)
+
+        ! Get the discretisation data of the current level.
+        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
+            rdiscrData)
+      
+        ! Discretise the Neumann boundary conditions.
+        call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiNeumannBC)
+        call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
+      
+        ! Create a nonlinear space-time matrix that resembles the current
+        ! forward equation.
+        call stlin_initSpaceTimeMatrix (&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,&
+            rsettings%rglobalData,rsettings%rdebugFlags)
+
+        ! Get the boundary conditions
+        call init_initBoundaryConditions (rparlist,SEC_SBDEXPRESSIONS,&
+            sstartVectorBoundaryConditions,rsettings%rphysicsPrimal,rboudaryConditions)
+            
+        ! Implement the boundary conditions into the solution
+        call tbc_implementBCsolution (rboudaryConditions,rvector,rsettings%rglobalData)
+        
+        ! ##############
+        ! Backward sweep
+        ! ##############
+        
+        ! Initialise a forward simulation solver that simulates the function to calculate the
+        ! start vector.
+        call fbsim_init (rsettings, rparlist, sstartVectorBackwardSolver, &
+            1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_LINBACKWARD, rsimsolverBackward)
+            
+        ! Attach the matrix to the solver.
+        call fbsim_setMatrix (rsimsolverBackward,rspaceTimeMatrix)
+        
+        ! Get settings about postprocessing
+        if (sstartVectorPostprocessing .ne. "") then
+          call init_initForwardSimPostproc (rparlist,&
+              sstartVectorPostprocessing,rsimsolverBackward%rpostprocessing)
+
+          ! Postprocessing of the combined solution!
+          rsimsolverBackward%rpostprocessing%cspace = CCSPACE_PRIMALDUAL
+        end if
+        
+        ! Simulate...
+        call fbsim_simulate (rsimsolverBackward, rvector, rrhs, &
+            rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
+            
+        ! Clean up
+        call fbsim_done (rsimsolverBackward)
+        
+        ! Damp the dual
+        call stlin_dampDualSolution(rsettings%rphysicsPrimal,rvector,dsimDualSolWeight)
+
+        ! #############
+        ! Forward sweep
+        ! #############
+        
+        ! Initialise a forward simulation solver that simulates the function to calculate the
+        ! start vector.
+        call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
+            1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARDFULL, rsimsolver)
+
+        ! Attach the matrix to the solver.            
+        call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
+        
+        ! Get settings about postprocessing
+        if (sstartVectorPostprocessing .ne. "") then
+          call init_initForwardSimPostproc (rparlist,&
+              sstartVectorPostprocessing,rsimsolver%rpostprocessing)
+
+          ! Postprocessing of the combined solution!
+          rsimsolver%rpostprocessing%cspace = CCSPACE_PRIMALDUAL
+        end if
+        
+        ! Simulate...
+        call fbsim_simulate (rsimsolver, rvector, rrhs, &
+            rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
+            
+        ! Clean up
+        call fbsim_done (rsimsolver)
         
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
@@ -3641,13 +3951,17 @@ contains
       ! DEBUG!!!
       call lsysbl_getbase_double (rb,p_DdataB)
       call lsysbl_getbase_double (rx,p_DdataX)
+      
+      ! Get the guiding discretisation data.
+      call smva_getDiscrData (rsettings,rsettings%rfeHierPrimalDual%nlevels,rmatrixDiscr)
 
       ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
       ! of the spatial matrix.
       ! Pass an empty Neumann bonudary structure. The initial condition does not
       ! care about the Neumann boundary as it just cares about the initial condition
       ! in the primal equation. Neumann BC is only necessary for the dual eqn!
-      call smva_initNonlinearData (rnonlinearity,rx,rx,rx,rneumannBoundary)
+      call smva_initNonlinearData (rnonlinearity,rx,rx,rx,rneumannBoundary,&
+          rmatrixDiscr%p_rstaticAsmTemplates%rmatrixTemplateFEM)
       
       ! The initial condition is implemented as:
       !
@@ -3657,7 +3971,6 @@ contains
       ! (Navier--)Stokes equation and what we receive is the RHS for the
       ! terminal condition. We only have to take care of bondary conditions.
 
-      call smva_getDiscrData (rsettings,rsettings%rfeHierPrimalDual%nlevels,rmatrixDiscr)
       call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rmatrixDiscr,rnonlinearity)
       
       rnonlinearSpatialMatrix%iprimalSol = 2

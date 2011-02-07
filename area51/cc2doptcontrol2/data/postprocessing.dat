@@ -50,8 +50,23 @@ swriteSolutionFilename = ''
 #     simulation.
 # =5: The start vector is created by evaluating the section sstartVector.
 #     The dual solution is initialised by a backward simulation.
+# =6: The start vector is created by a forward simulation starting from
+#     the initial condition. 
+#     The dual solution is initialised by a backward simulation.
+#     After the backward iteration, another forward iteration is applied
+#     to incorporate the first guess of the dual solution
+# =7: The start vector is created by evaluating the section sstartVector.
+#     The dual solution is initialised by a backward simulation.
+#     After the backward iteration, another forward iteration is applied
+#     to incorporate the first guess of the dual solution
 
 ctypeStartVector = 5
+
+# Multiplication weight for the dual solution during backward iteration.
+# After each backward iteration, the dual solution is multiplied/damped
+# with this factor
+
+dsimDualSolWeight = 0.5
 
 # Multiplication factor for the start vector (excluding the initial condition).
 # May be used to scale the start vector after creation.

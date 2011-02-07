@@ -35,6 +35,7 @@ module spacetimeneumannbc
   use dofmapping
   use discretebc
   use discretefbc
+  use derivatives
   
   use collection
   use convection
@@ -49,6 +50,9 @@ module spacetimeneumannbc
   use spacediscretisation
   use timediscretisation
   use spacetimevectors
+  
+  use scalarpde
+  use assemblytemplates
 
   !use timeanalysis
   
@@ -64,6 +68,12 @@ module spacetimeneumannbc
   ! Contains the definition of the Neumann boundary conditions for all timesteps
   ! in a space-time discretisation.
   type t_sptiNeumannBoundary
+  
+    ! Type of Neumann boundary conditions.
+    ! =0: Position of the Neumann BC's fixed for all timesteps.
+    ! =1: Neumann BC change in time.
+    ! WARNING: Currently, only cneumannType=0 supported!!!
+    integer :: cneumannType = 0
     
     ! Underlying space discretisation
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr => null()
@@ -71,11 +81,20 @@ module spacetimeneumannbc
     ! Underlying time-discretisation
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr => null()
     
+    ! Underlying assembly templates
+    type(t_staticSpaceAsmTemplates), pointer :: p_rasmTemplates => null()
+    
     ! Number of unknowns in time
     integer :: NEQtime = 0
     
     ! Analytical definition of the Neumann boundary segments
     type(t_neumannBoundary), dimension(:), pointer :: p_RneumannBoundary => null()
+    
+    ! Neumann boundary integral template matrix. This matrix contains the structure
+    ! of an operator that works on the Neumann boundary. To save time, it is
+    ! saved as 'differential' matrix to the standard velocity 'template' matrix.
+    ! The matrix can be used for all timesteps as it contains a common structure.
+    type(t_matrixScalar) :: rneumannBoudaryOperator
     
   end type
   
@@ -93,7 +112,8 @@ contains
 
 !<subroutine>
 
-  subroutine stnm_createNeumannBoundary (rspaceDiscr,rtimeDiscr,rsptiNeumannBC)
+  subroutine stnm_createNeumannBoundary (rspaceDiscr,rtimeDiscr,rasmTemplates,&
+      rsptiNeumannBC)
 
 !<description>
   ! Creates a space-time Neumann boundary definition structure
@@ -106,6 +126,9 @@ contains
 
   ! Underlying time-discretisation.
   type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
+  
+  ! Assembly template structure.
+  type(t_staticSpaceAsmTemplates), intent(in), target :: rasmTemplates
 !</input>
 
 !<output>
@@ -118,6 +141,7 @@ contains
     ! Initialise the structure.
     rsptiNeumannBC%p_rtimeDiscr => rtimeDiscr
     rsptiNeumannBC%p_rspaceDiscr => rspaceDiscr
+    rsptiNeumannBC%p_rasmTemplates => rasmTemplates
     rsptiNeumannBC%NEQtime = rtimeDiscr%nintervals+1
     allocate(rsptiNeumannBC%p_RneumannBoundary(rsptiNeumannBC%NEQtime))
   
@@ -145,6 +169,10 @@ contains
     rsptiNeumannBC%NEQtime = 0
     nullify(rsptiNeumannBC%p_rtimeDiscr)
     nullify(rsptiNeumannBC%p_rspaceDiscr)
+    nullify(rsptiNeumannBC%p_rasmTemplates)
+    if (rsptiNeumannBC%rneumannBoudaryOperator%NA .ne. 0) then
+      call lsyssc_releaseMatrix (rsptiNeumannBC%rneumannBoudaryOperator)
+    end if
   
   end subroutine
 
@@ -176,8 +204,24 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i
+    integer :: i,j
     real(DP) :: dtimePrimal, dtimeDual, dtstep
+    type(t_bilinearForm) :: rform
+    type(t_neumannBdRegion), pointer :: p_rdualNeumannBd
+    type(t_matrixScalar) :: rneumannBoudaryOperator
+    
+    ! Prepare a bilinear form.
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff(1) = .true.
+    rform%Dcoefficients(1:rform%itermCount) = 1.0_DP
+    
+    ! Create a temp matrix for boundary integrals. At first: Full structure, zero content.
+    call lsyssc_duplicateMatrix (rsptiNeumannBC%p_rasmTemplates%rmatrixTemplateFEM,&
+        rneumannBoudaryOperator, LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    call lsyssc_clearMatrix (rneumannBoudaryOperator)
     
     ! Loop through all timesteps
     do i=1,rsptiNeumannBC%NEQtime
@@ -191,7 +235,29 @@ contains
             CCSPACE_PRIMALDUAL,rglobalData,SBC_NEUMANN,&
             rsptiNeumannBC%p_rtimediscr,rsptiNeumannBC%p_rspacediscr,&
             rneumannBoundary=rsptiNeumannBC%p_RneumannBoundary(i))
+            
+      ! Assemble the operator on all boundary components in rneumannBoundary.
+      p_rdualNeumannBd => rsptiNeumannBC%p_RneumannBoundary(i)%p_rdualNeumannBdHead
+      do j = 1,rsptiNeumannBC%p_RneumannBoundary(i)%nregionsDual
+        ! Discretise a mass-operator on the boundary to mark the rows which may contain
+        ! boundary integrals.
+        call bilf_buildMatrixScalarBdr2D (rform, CUB_G2_1D, .false., &
+            rneumannBoudaryOperator,&
+            rboundaryRegion=p_rdualNeumannBd%rboundaryRegion)
+
+        ! Next segment            
+        p_rdualNeumannBd => p_rdualNeumannBd%p_nextNeumannRegion
+      end do
     end do
+    
+    ! Remove the matrix content and compress the matrix.
+    ! The result is a matrix with the minimum stencil that can be used for
+    ! all timesteps.
+    call lsyssc_createRowCMatrix(rneumannBoudaryOperator,rsptiNeumannBC%rneumannBoudaryOperator)
+    call lsyssc_releaseMatrixContent(rsptiNeumannBC%rneumannBoudaryOperator)
+    
+    ! Release the temp matrix
+    call lsyssc_releaseMatrix (rneumannBoudaryOperator)
   
   end subroutine
 

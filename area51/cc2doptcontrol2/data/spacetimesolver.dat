@@ -29,6 +29,8 @@ ctypeNonlinearIteration = 2
 
 # Whether to postprocess intermediate solutions.
 # =1: After each nonlinear step, apply postprocessing to the solution.
+# =2: After each nonlinear step, apply postprocessing to the solution.
+#     Write postprocessing files with unique filename.
 
 cpostprocessIterates = 0
 

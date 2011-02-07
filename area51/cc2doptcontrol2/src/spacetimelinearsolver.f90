@@ -2771,7 +2771,8 @@ contains
 
       ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
-          rsolverNode%rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
+          rsolverNode%rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
+          rsolverNode%rmatrix%p_rneumannBoundary%rneumannBoudaryOperator)
 
       if (rsolverNode%p_rsubnodeBlockJacobi%ssectionAlternative .eq. "") then
       
@@ -3537,7 +3538,8 @@ contains
       
         ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
         call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
-            rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
+            rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
+            rmatrix%p_rneumannBoundary%rneumannBoudaryOperator)
       
         ! Is there a previous timestep?
         if (iiterate .gt. 1) then
@@ -3796,7 +3798,8 @@ contains
       
         ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
         call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
-            rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate))
+            rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
+            rmatrix%p_rneumannBoundary%rneumannBoudaryOperator)
       
         ! Is there a nect timestep?
         if (iiterate .lt. NEQtime) then
@@ -5107,7 +5110,8 @@ contains
     
       ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
-          rsupermatrix%p_rneumannBoundary%p_RneumannBoundary(isubstep))
+          rsupermatrix%p_rneumannBoundary%p_RneumannBoundary(isubstep),&
+          rsupermatrix%p_rneumannBoundary%rneumannBoudaryOperator)
       
       ! Current time step?
       call tdiscr_getTimestep(rsupermatrix%rdiscrData%p_rtimeDiscr,isubstep-1,dtimePrimal,dtstep)

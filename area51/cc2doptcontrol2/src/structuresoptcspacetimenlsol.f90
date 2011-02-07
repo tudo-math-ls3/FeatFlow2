@@ -262,7 +262,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ilev
+    integer :: ilev,ispaceLevel
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
 
@@ -276,7 +276,7 @@ contains
     
       ! Get the level
       call sth_getLevel (rsettings%rspaceTimeHierPrimalDual,ilev,&
-          p_rfeSpaceLevel,p_rtimeDiscr)
+          p_rfeSpaceLevel,p_rtimeDiscr,ispaceLevel)
       
       ! Create the vector.
       call sptivec_initVector (rsolver%p_Rsolutions(ilev),&
@@ -285,7 +285,9 @@ contains
       ! Prepare arrays for the Neumann boundary conditions.
       ! Used for nonlinear boundary conditions.
       call stnm_createNeumannBoundary (&
-          p_rfeSpaceLevel%p_rdiscretisation,p_rtimeDiscr,rsolver%p_rsptiNeumannBC(ilev))
+          p_rfeSpaceLevel%p_rdiscretisation,p_rtimeDiscr,&
+          rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),&
+          rsolver%p_rsptiNeumannBC(ilev))
     
     end do
         

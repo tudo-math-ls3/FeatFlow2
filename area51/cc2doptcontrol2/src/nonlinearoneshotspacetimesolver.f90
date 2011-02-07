@@ -13,22 +13,11 @@
 !#
 !# The following subroutines can be found here:
 !#
-!# 1.) cc_solveSupersysDirectCN
-!#     -> Only for nonstationary Stokes problem. Executes Crank-Nicolson on the
-!#        fully space-time coupled system
+!# 1.) nlstslv_initStdDiscrData
+!#     -> Initialisation
 !#
-!# 2.) cc_solveSupersystemMultigrid
-!#     -> Solves the Stokes and Navier-Stokes problem with a preconditioned
-!#        defect correction approach. Crank Nicolson is used for the time
-!#        discretisation.
-!#
-!# Auxiliary routines:
-!#
-!# 1.) cc_assembleSpaceTimeDefect
-!#     -> Calculates a space-time defect
-!#
-!# 2.) cc_precondDefectSupersystem
-!#     -> Executes preconditioning on a space-time defect vector
+!# 2.) nlstslv_solve
+!#     -> Applies a nonlinear loop to solve the system.
 !#
 !# </purpose>
 !##############################################################################
@@ -343,7 +332,8 @@ contains
     
     ! Initialise the Neumann boundary conditions on the maximum level.
     ! Used for nonlinear boundary conditions.
-    call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,rsptiNeumannBC)
+    call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+        rdiscrData%p_rstaticSpaceAsmTempl,rsptiNeumannBC)
     call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
     
     ! Initialise a space-time matrix of the corresponding system.
@@ -437,15 +427,24 @@ contains
               .and. (rnlstsolver%nnonlinearIterations .lt. rnlstsolver%nmaxIterations)))
     
       
-      if (rnlstsolver%cpostprocessIterates .eq. 1) then
+      if (rnlstsolver%cpostprocessIterates .ne. 1) then
         ! Postprocessing of the current this iterate.
         call stat_startTimer (rtimerPostproc)
         if (rnlstsolver%ioutputLevel .ge. 1) then
           call output_separator (OU_SEP_MINUS)
           call output_line ("Postprocessing of the current iterate.")
         end if
-        call optcpp_postprocessSpaceTimeVec (rpostproc,rx,rb,&
-            rsettings%rsettingsOptControl,rsettings)
+        
+        select case (rnlstsolver%cpostprocessIterates)
+        case (1)
+          call optcpp_postprocessSpaceTimeVec (rpostproc,rx,rb,&
+              rsettings%rsettingsOptControl,rsettings)
+        case (2)
+          call optcpp_postprocessSpaceTimeVec (rpostproc,rx,rb,&
+              rsettings%rsettingsOptControl,rsettings,&
+              rnlstsolver%nnonlinearIterations)
+        end select
+        
         call stat_stopTimer (rtimerPostproc)
       end if
                   

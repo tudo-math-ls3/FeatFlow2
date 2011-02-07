@@ -561,7 +561,8 @@ contains
       ifileid,bfirstFile,blastFile,&
       dtimePrimal,dtimeDual,rvector,rrhs,&
       dtimePrimalPrev,dtimeDualPrev,rvectorPrev,rrhsPrev,&
-      dtimePrimalNext,dtimeDualNext,rvectorNext,rrhsNext)
+      dtimePrimalNext,dtimeDualNext,rvectorNext,rrhsNext,&
+      itag)
   
 !<description>
   ! Postprocessing of a single solution at a definite time.
@@ -622,6 +623,10 @@ contains
   ! Simulation time in the primal and dual equation of the next timestep
   real(dp), intent(in) :: dtimePrimalNext
   real(dp), intent(in) :: dtimeDualNext
+
+  ! OPTIONAL: An integer tag which is included into filenames of
+  ! output files. If not specified, the tag is not included.
+  integer, intent(in), optional :: itag
 !</input>
 
 !</subroutine>
@@ -713,7 +718,11 @@ contains
         if (rpostproc%iwriteBodyForces .ne. 0) then
           ! Write the result to a text file.
           ! Format: timestep current-time value
-          call io_openFileForWriting(rpostproc%sfilenameBodyForces, iunit, &
+          sfilename = rpostproc%sfilenameBodyForces
+          if (present(itag)) then
+            sfilename = trim(sfilename)//"."//trim(sys_siL(itag,10))
+          end if
+          call io_openFileForWriting(sfilename, iunit, &
               cflag, bfileExists,.true.)
           if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
             ! Write a headline
@@ -742,7 +751,11 @@ contains
         if (rpostproc%iwriteflux .ne. 0) then
           ! Write the result to a text file.
           ! Format: timestep current-time value
-          call io_openFileForWriting(rpostproc%sfilenameFlux, iunit, &
+          sfilename = rpostproc%sfilenameFlux
+          if (present(itag)) then
+            sfilename = trim(sfilename)//"."//trim(sys_siL(itag,10))
+          end if
+          call io_openFileForWriting(sfilename, iunit, &
               cflag, bfileExists,.true.)
           if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
             ! Write a headline
@@ -775,7 +788,11 @@ contains
         if (rpostproc%iwriteKineticEnergy .ne. 0) then
           ! Write the result to a text file.
           ! Format: timestep current-time value
-          call io_openFileForWriting(rpostproc%sfilenameKineticEnergy, iunit, &
+          sfilename = rpostproc%sfilenameKineticEnergy
+          if (present(itag)) then
+            sfilename = trim(sfilename)//"."//trim(sys_siL(itag,10))
+          end if
+          call io_openFileForWriting(sfilename, iunit, &
               cflag, bfileExists,.true.)
           if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
             ! Write a headline
@@ -800,7 +817,13 @@ contains
       if ((rpostproc%sfinalSolutionFileName .ne. "") .and. &
           (rpostproc%cwriteFinalSolution .gt. 0)) then
         ! Write the current solution to disc as it is.
-        sfilename = trim(rpostproc%sfinalSolutionFileName)//'.'//sys_si0(ifileid,5)
+        sfilename = rpostproc%sfinalSolutionFileName
+
+        if (present(itag)) then
+          sfilename = trim(sfilename)//"."//trim(sys_siL(itag,10))
+        end if
+        
+        sfilename = trim(sfilename)//'.'//sys_si0(ifileid,5)
         
         call output_lbrk ()
         call output_line ('Writing solution file: '//trim(sfilename))
@@ -833,8 +856,14 @@ contains
             roptControl%dalphaC,dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
       
         ! Write the current solution to disc as it is.
-        sfilename = trim(rpostproc%sfinalControlFileName)//'.'//sys_si0(ifileid,5)
+        sfilename = rpostproc%sfinalControlFileName
         
+        if (present(itag)) then
+          sfilename = trim(sfilename)//"."//trim(sys_siL(itag,10))
+        end if
+        
+        sfilename = trim(sfilename)//'.'//sys_si0(ifileid,5)
+
         call output_lbrk ()
         call output_line ('Writing control file: '//trim(sfilename))
         
@@ -932,7 +961,13 @@ contains
         if (rpostproc%sfilenameUCD .ne. "") then
         
           ! Start UCD export:
-          sfilename = trim(rpostproc%sfilenameUCD)//'.'//sys_si0(ifileid,5)
+          sfilename = rpostproc%sfilenameUCD
+          
+          if (present(itag)) then
+            sfilename = trim(sfilename)//"."//trim(sys_siL(itag,10))
+          end if
+          
+          sfilename = trim(sfilename)//'.'//sys_si0(ifileid,5)
           
           call output_lbrk ()
           call output_line ('Writing visualisation file: '//trim(sfilename))
@@ -1074,7 +1109,8 @@ contains
 
 !<subroutine>
 
-  subroutine optcpp_postprocessSpaceTimeVec (rpostproc,rvector,rrhs,roptcontrol,rsettings)
+  subroutine optcpp_postprocessSpaceTimeVec (rpostproc,rvector,rrhs,roptcontrol,rsettings,&
+      itag)
   
 !<description>
   ! Postprocessing of a space-time vector.
@@ -1098,6 +1134,10 @@ contains
   
   ! Parameters about the optimal control
   type(t_settings_optcontrol), intent(inout) :: roptControl
+  
+  ! OPTIONAL: An integer tag which is included into filenames of
+  ! output files. If not specified, the tag is not included.
+  integer, intent(in), optional :: itag
 !</input>
 
 !</subroutine>
@@ -1166,7 +1206,8 @@ contains
             istep-1,istep .eq. 1,istep .eq. rvector%NEQtime,&
             dtimePrimal,dtimeDual,p_rvecTemp2,p_rrhsTemp2,&
             dtimePrimalPrev,dtimeDualPrev,p_rvecTemp1,p_rrhsTemp1,&
-            dtimePrimalNext,dtimeDualNext,p_rvecTemp3,p_rrhsTemp3)
+            dtimePrimalNext,dtimeDualNext,p_rvecTemp3,p_rrhsTemp3,&
+            itag)
       end do
       
       call sptivec_releaseAccessPool (raccessPoolRhs)
@@ -1226,7 +1267,7 @@ contains
 !<subroutine>
 
   subroutine optcpp_postprocSpaceVisOutput (rsettings,rspaceDiscr,rspaceDiscrPrimal,&
-      rtimeDiscr,rvector,rrhs,ioutputUCD,sfilename)
+      rtimeDiscr,rvector,rrhs,ioutputUCD,sfilename,itag)
   
 !<description>
   ! For every sub-solution in the global space-time vector rvector,
@@ -1268,6 +1309,10 @@ contains
   ! A path + basic filename for the GMV-files. A number '.00000','.00001',...
   ! is appended for every timestep.
   character(LEN=*), intent(in) :: sfilename
+
+  ! OPTIONAL: An integer tag which is included into filenames of
+  ! output files. If not specified, the tag is not included.
+  integer, intent(in), optional :: itag
 !</input>
 
 !</subroutine>
@@ -1300,7 +1345,8 @@ contains
           istep, istep .eq. 1, istep .eq. rvector%NEQtime,&
           dtimePrimal,dtimeDual,rvecTemp,rrhsTemp,&
           dtimePrimal,dtimeDual,rvecTemp,rrhsTemp,&
-          dtimePrimal,dtimeDual,rvecTemp,rrhsTemp)
+          dtimePrimal,dtimeDual,rvecTemp,rrhsTemp,&
+          itag)
     end do
     
     ! Release all created stuff

@@ -282,6 +282,10 @@ module spacematvecassembly
     ! BC'S ARE THE SAME FOR ALL TIMESTEPS AND THIS ONE AND ONLY STRUCTURE IS ENOGH!!!
     type(t_neumannBoundary), pointer :: p_rneumannBoundary => null()
 
+    ! Neumann boundary integral template matrix. This matrix contains the structure
+    ! of an operator that works on the Neumann boundary. 
+    type(t_matrixScalar), pointer :: p_rneumannBoundaryOperator => null()
+    
   end type
   
 !</typeblock>
@@ -3375,7 +3379,7 @@ contains
       ! 2a) Dual equation, natural boundary condition.
       call assembleConvectionDefectDualBd (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
-          dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),dcx)      
+          dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),dcx)
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
@@ -3702,9 +3706,12 @@ contains
       real(DP) :: dweight
       type(t_matrixScalar) :: rmatrixTemp
     
-      ! Create an empty temp matrix
-      call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),rmatrixTemp,&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      if (dcx*dweightBdIntegral .eq. 0.0_DP) return
+    
+      ! Create an empty temp matrix for the boundary operator.
+      call lsyssc_duplicateMatrix (&
+          rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundaryOperator,&
+          rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
       call lsyssc_clearMatrix (rmatrixTemp)
       
       ! Create the operator
@@ -4051,6 +4058,8 @@ contains
       
         ! That's the Stokes-case. Jump stabilisation is possible...
         if (rstabilisation%dupsam .ne. 0.0_DP) then
+          print *,"WARNING: Stokes case wrong. Applies stabilisation also to"
+          print *,"pure mass matrices!!! (-> offdiagonal matrices used in the time stepping)"
           select case (rstabilisation%cupwind)
           case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
             
@@ -4561,7 +4570,7 @@ contains
 !<subroutine>
 
   subroutine smva_initNonlinearData (rnonlinearData,rvector1,rvector2,rvector3,&
-      rneumannBoundary)
+      rneumannBoundary,rneumannBdOperator)
 
 !<description>
   ! Initialises a nonlinear-data structure that defines the nonlinearity
@@ -4585,6 +4594,9 @@ contains
     
     ! Specifies the Neumann boundary.
     type(t_neumannBoundary), intent(in), target :: rneumannBoundary
+    
+    ! Template matrix for Neumann boundary integral operators
+    type(t_matrixScalar), intent(in), target :: rneumannBdOperator
 !</input>
 
 !<inputoutput>
@@ -4599,6 +4611,7 @@ contains
     rnonlinearData%p_rvector2 => rvector2
     rnonlinearData%p_rvector3 => rvector3
     rnonlinearData%p_rneumannBoundary => rneumannBoundary
+    rnonlinearData%p_rneumannBoundaryOperator => rneumannBdOperator
 
   end subroutine   
 
