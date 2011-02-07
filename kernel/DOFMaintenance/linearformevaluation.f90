@@ -2578,7 +2578,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementList
   
   ! List of element orientations where to assemble the linear form.
-  integer, dimension(:), intent(in) :: IelementOrientation
+  integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -2697,6 +2697,7 @@ contains
       rintSubset%ielementDistribution = 0
       rintSubset%ielementStartIdx = 1
       rintSubset%p_Ielements => IelementList
+      rintSubset%p_IelementOrientation => IelementOrientation
       rintSubset%p_IdofsTrial => p_Idofs
       rintSubset%celement = rvectorAssembly%celement
       call fcoeff_buildVectorScBdr1D_sim (rvector%p_rspatialDiscr,&
@@ -2808,7 +2809,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementList
   
   ! List of element orientations where to assemble the linear form.
-  integer, dimension(:), intent(in) :: IelementOrientation
+  integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! List of start- and end-parameter values of the edges on the boundary
   real(DP), dimension(:,:), intent(in) :: DedgePosition
@@ -3046,6 +3047,7 @@ contains
         rintSubset%ielementDistribution = 0
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => IelementList(IELset:IELmax)
+        rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
         rintSubset%p_IdofsTrial => p_Idofs
         rintSubset%celement = rlocalVectorAssembly%celement
         call fcoeff_buildVectorScBdr2D_sim (rvector%p_rspatialDiscr,&
@@ -3222,7 +3224,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementList
   
   ! List of element orientations where to assemble the linear form.
-  integer, dimension(:), intent(in) :: IelementOrientation
+  integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -3345,6 +3347,7 @@ contains
       rintSubset%ielementDistribution = 0
       rintSubset%ielementStartIdx = 1
       rintSubset%p_Ielements => IelementList
+      rintSubset%p_IelementOrientation => IelementOrientation
       rintSubset%p_IdofsTrial => p_Idofs
       rintSubset%celement = rvectorAssembly%celement
       call fcoeff_buildVectorBlBdr1D_sim (rvector%p_rspatialDiscr,&
@@ -3459,7 +3462,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementList
   
   ! List of element orientations where to assemble the linear form.
-  integer, dimension(:), intent(in) :: IelementOrientation
+  integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! List of start- and end-parameter values of the edges on the boundary
   real(DP), dimension(:,:), intent(in) :: DedgePosition
@@ -3699,6 +3702,7 @@ contains
         rintSubset%ielementDistribution = 0
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => IelementList(IELset:IELmax)
+        rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
         rintSubset%p_IdofsTrial => p_Idofs
         rintSubset%celement = rlocalVectorAssembly%celement
         call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rspatialDiscr,&
@@ -4203,7 +4207,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementList
   
   ! List of element orientations where to assemble the linear form.
-  integer, dimension(:), intent(in) :: IelementOrientation
+  integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -4327,6 +4331,7 @@ contains
       rintSubset%ielementDistribution = 0
       rintSubset%ielementStartIdx = 1
       rintSubset%p_Ielements => IelementList
+      rintSubset%p_IelementOrientation => IelementOrientation
       rintSubset%p_IdofsTrial => p_Idofs
       rintSubset%celement = rvectorAssembly%celement
       call fcoeff_buildVectorBlBdr1D_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
@@ -4442,7 +4447,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementList
   
   ! List of element orientations where to assemble the linear form.
-  integer, dimension(:), intent(in) :: IelementOrientation
+  integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! List of start- and end-parameter values of the edges on the boundary
   real(DP), dimension(:,:), intent(in) :: DedgePosition
@@ -4683,6 +4688,7 @@ contains
         rintSubset%ielementDistribution = 0
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => IelementList(IELset:IELmax)
+        rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
         rintSubset%p_IdofsTrial => p_Idofs
         rintSubset%celement = rlocalVectorAssembly%celement
         call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
