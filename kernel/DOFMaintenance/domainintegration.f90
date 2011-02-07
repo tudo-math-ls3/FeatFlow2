@@ -66,6 +66,12 @@ module domainintegration
     ! routine.
     integer, dimension(:), pointer :: p_Ielements => null()
     
+    ! The orientation of the elements of the current element set.
+    ! Typically, this pointer is not associated since the orientation of elements
+    ! is not needed. At the boundary, it may be useful to know which edge/face
+    ! of the element is located at the boundary
+    integer, dimension(:), pointer :: p_IelementOrientation => null()
+
     ! If p_IdofsTrial is assigned, this is an element identifier that
     ! indicates the trial space.
     integer(I32) :: celement = 0
