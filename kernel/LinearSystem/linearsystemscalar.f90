@@ -8840,7 +8840,7 @@ contains
     ! Release the matrix data if the handle is not a copy of another matrix
     if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. 0) then
       select case (rmatrix%cmatrixFormat)
-      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
+      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
           &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
         ! Release matrix data, structure 9,7
         if (rmatrix%h_Da .ne. ST_NOHANDLE) then
