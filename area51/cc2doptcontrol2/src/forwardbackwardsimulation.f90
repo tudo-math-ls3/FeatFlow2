@@ -368,7 +368,8 @@ module forwardbackwardsimulation
     ! This flag is set to .TRUE. if there are no Neumann boundary
     ! components. In that case, the pressure matrices of direct
     ! solvers must be changed.
-    logical :: bneedPressureDiagonalBlock = .false.
+    logical :: bneedPressureDiagBlockPrimal = .false.
+    logical :: bneedPressureDiagBlockDual = .false.
     
     ! Set to TRUE if the preconditioner needs virtually transposed B matrices
     ! as D matrices on all levels except for the coarse mesh.
@@ -1165,7 +1166,8 @@ contains
       ! if necessary.
       rpreconditioner%RfilterChain(6)%ifilterType = FILTER_DONOTHING
     end select
-    rpreconditioner%bneedPressureDiagonalBlock = .false.
+    rpreconditioner%bneedPressureDiagBlockPrimal = .false.
+    rpreconditioner%bneedPressureDiagBlockDual = .false.
     
     ! Depending on the space, initialise the projection hierarchy with primal
     ! and/or dual space parameters.
@@ -1942,27 +1944,32 @@ contains
     ! If this is a pure Dirichlet problem, install pressure filters
     ! to get the problem definite.
 
-    rpreconditioner%bneedPressureDiagonalBlock = .true.
+    rpreconditioner%bneedPressureDiagBlockPrimal = .false.
+    rpreconditioner%bneedPressureDiagBlockDual = .false.
     rpreconditioner%RfilterChain(3)%ifilterType = FILTER_DONOTHING
     rpreconditioner%RfilterChain(6)%ifilterType = FILTER_DONOTHING
     select case (rpreconditioner%cspace)
     case (CCSPACE_PRIMAL)
       if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
+        rpreconditioner%bneedPressureDiagBlockPrimal = .true.
         rpreconditioner%RfilterChain(3)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(3)%itoL20component = 3
       end if
     case (CCSPACE_DUAL)
       if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
+        rpreconditioner%bneedPressureDiagBlockDual = .true.
         rpreconditioner%RfilterChain(6)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(6)%itoL20component = 6
       end if
     case (CCSPACE_PRIMALDUAL)
       if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
+        rpreconditioner%bneedPressureDiagBlockPrimal = .true.
         rpreconditioner%RfilterChain(3)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(3)%itoL20component = 3
       end if
 
       if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
+        rpreconditioner%bneedPressureDiagBlockDual = .true.
         rpreconditioner%RfilterChain(6)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(6)%itoL20component = 6
       end if
@@ -2271,7 +2278,7 @@ contains
 
     end do
     
-    if (rpreconditioner%bneedPressureDiagonalBlock .and. bincorporateBC) then
+    if (rpreconditioner%bneedPressureDiagBlockPrimal .and. bincorporateBC) then
       
       ! The 3,3-matrix must exist! This is ensured by the initialisation routine.
       !
@@ -2298,21 +2305,8 @@ contains
           call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,6),Irows)
         end if
 
-        ! Also in the dual equation, as the BC type coincides
-        if (rnonlinearSpatialMatrix%Dkappa(2,2) .eq. 0.0_DP) then
-          ! Switch the pressure matrix on and clear it; we don't know what is inside.
-          p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
-          call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(6,6))
-          call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,1),Irows)
-          call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,2),Irows)
-          call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,3),Irows)
-          call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,4),Irows)
-          call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,5),Irows)
-          call mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(6,6),Irows)
-        end if
-        
       end if
-      
+
       if (rpreconditioner%isolverType .eq. 1) then
       
         ! If we have a MG solver, We also check the coarse grid solver for 
@@ -2338,7 +2332,54 @@ contains
             call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,6),Irows)
           end if
 
-          ! Also in the dual equation, as the BC type coincides
+        end if
+        
+      end if
+        
+    end if
+
+    if (rpreconditioner%bneedPressureDiagBlockDual .and. bincorporateBC) then
+      
+      ! The 3,3-matrix must exist! This is ensured by the initialisation routine.
+      !
+      ! We have a pure Dirichlet problem. This may give us some difficulties
+      ! in the case, the preconditioner uses a direct solver (UMFPACK).
+      ! In this case, we have to include a unit vector to the pressure
+      ! matrix to make the problem definite!
+      if (rpreconditioner%isolverType .eq. 0) then
+        p_rmatrix => rpreconditioner%p_RmatrixPrecondFullSpace(rpreconditioner%NLMAX)
+        
+        ! Include a unit vector to the matrix part of the pressure in
+        ! the dual equation -- as long as there is not a full identity
+        ! matrix in the pressure matrix (what would be the case for 
+        ! the initial condition).
+        if (rnonlinearSpatialMatrix%Dkappa(2,2) .eq. 0.0_DP) then
+          ! Switch the pressure matrix on and clear it; we don't know what is inside.
+          p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
+          call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(6,6))
+          call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,1),Irows)
+          call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,2),Irows)
+          call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,3),Irows)
+          call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,4),Irows)
+          call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(6,5),Irows)
+          call mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(6,6),Irows)
+        end if
+        
+      end if
+      
+      if (rpreconditioner%isolverType .eq. 1) then
+      
+        ! If we have a MG solver, We also check the coarse grid solver for 
+        ! the same thing!
+        ! What we don't check is the smoother, thus we assume that smoothers
+        ! are always solvers that allow the applicance of a filter chain.
+        if (rpreconditioner%icoarseGridSolverType .eq. 0) then
+          p_rmatrix => rpreconditioner%p_RmatrixPrecondFullSpace(rpreconditioner%NLMIN)
+          
+          ! Include a unit vector to the matrix part of the pressure in
+          ! the dual equation -- as long as there is not a full identity
+          ! matrix in the pressure matrix (what would be the case for 
+          ! the initial condition).
           if (rnonlinearSpatialMatrix%Dkappa(2,2) .eq. 0.0_DP) then
             ! Switch the pressure matrix on and clear it; we don't know what is inside.
             p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
