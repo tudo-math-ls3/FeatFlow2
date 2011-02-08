@@ -3764,6 +3764,7 @@ contains
         ! Set pointers
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
         call lsyssc_getbase_Kld (rmatrix,p_Kld)
+        call lsyssc_getbase_KrowIdx (rmatrix,p_KrowIdx)
         
         ! Take care of the precision of the matrix
         select case (rmatrix%cdataType)
@@ -3779,7 +3780,7 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
             
             ! double precision matrix, double precision vectors
-            call lsyssc_LAX79DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
+            call lsyssc_LAX9rowcDbleDble (p_Kld,p_Kcol,p_KrowIdx,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,rmatrix%nnzrows,rx%NVAR)
           
           case DEFAULT
@@ -5115,6 +5116,246 @@ contains
    
     end subroutine
             
+    !**************************************************************
+    ! Format 9 row-compressed multiplication
+    ! double precision matrix,
+    ! double precision vectors (may be interleaved)
+    
+    subroutine lsyssc_LAX9rowcDbleDble (Kld,Kcol,KrowIdx,Da,Dx,Dy,cx,cy,NEQ,NVAR)
+
+      real(DP), dimension(:), intent(in) :: Da, Dx
+      real(DP), dimension(:), intent(inout) :: Dy
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      integer, dimension(:), intent(in) :: KrowIdx
+      real(DP), intent(in) :: cx
+      real(DP), intent(in) :: cy
+      integer, intent(in) :: NEQ,NVAR
+      
+      integer :: ia,icol,irow,ivar
+      real(DP), dimension(NVAR) :: Ddtmp
+      real(DP) :: dtmp
+      
+      if (NVAR .eq. 1) then
+
+        !--- non-interleaved vectors -------------------------------------------
+
+        ! Perform the multiplication
+        if(cx .ne. 1.0_DP) then
+          
+          if(cy .eq. 0.0_DP) then
+            
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
+              end do
+              Dy(KrowIdx(irow)) = cx*dtmp
+            end do
+            !$omp end parallel do
+            
+          else if(cy .eq. 1.0_DP) then
+            
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
+              end do
+              Dy(KrowIdx(irow)) = Dy(KrowIdx(irow)) + cx*dtmp
+            end do
+            !$omp end parallel do
+            
+          else   ! arbitrary cy value
+            
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
+              end do
+              Dy(KrowIdx(irow)) = cy*Dy(KrowIdx(irow)) + cx*dtmp
+            end do
+            !$omp end parallel do
+            
+          end if
+          
+        else   ! arbitrary cx value
+          
+          if(cy .eq. 0.0_DP) then
+            
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
+              end do
+              Dy(KrowIdx(irow)) = dtmp
+            end do
+            !$omp end parallel do
+            
+          else if(cy .eq. 1.0_DP) then
+            
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
+              end do
+              Dy(KrowIdx(irow)) = Dy(KrowIdx(irow)) + dtmp
+            end do
+            !$omp end parallel do
+            
+          else   ! arbitrary cy value
+            
+            !$omp parallel do private(ia,dtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
+              end do
+              Dy(KrowIdx(irow)) = cy*Dy(KrowIdx(irow)) + dtmp
+            end do
+            !$omp end parallel do
+            
+          end if
+          
+        end if
+
+      else   ! NVAR .ne. 1
+
+        !--- interleaved vectors -----------------------------------------------
+
+        ! Perform the multiplication
+        if(cx .ne. 1.0_DP) then
+          
+          if(cy .eq. 0.0_DP) then
+            
+            !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                icol = Kcol(ia)
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + Da(ia)*Dx(NVAR*(icol-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                Dy(NVAR*(KrowIdx(irow)-1)+ivar) = cx*Ddtmp(ivar)
+              end do
+            end do
+            !$omp end parallel do
+            
+          else if(cy .eq. 1.0_DP) then
+            
+            !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                icol = Kcol(ia)
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + Da(ia)*Dx(NVAR*(icol-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                Dy(NVAR*(KrowIdx(irow)-1)+ivar) = Dy(NVAR*(KrowIdx(irow)-1)+ivar) + cx*Ddtmp(ivar)
+              end do
+            end do
+            !$omp end parallel do
+        
+          else   ! arbitrary cy value
+            
+            !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                icol = Kcol(ia)
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + Da(ia)*Dx(NVAR*(icol-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                Dy(NVAR*(KrowIdx(irow)-1)+ivar) = cy*Dy(NVAR*(KrowIdx(irow)-1)+ivar) + cx*Ddtmp(ivar)
+              end do
+            end do
+            !$omp end parallel do
+            
+          end if
+          
+        else   ! arbitrary cx value
+          
+          if(cy .eq. 0.0_DP) then
+            
+            !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                icol = Kcol(ia)
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + Da(ia)*Dx(NVAR*(icol-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                Dy(NVAR*(KrowIdx(irow)-1)+ivar) = Ddtmp(ivar)
+              end do
+            end do
+            !$omp end parallel do
+            
+          else if(cy .eq. 1.0_DP) then
+            
+            !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                icol = Kcol(ia)
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + Da(ia)*Dx(NVAR*(icol-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                Dy(NVAR*(KrowIdx(irow)-1)+ivar) = Dy(NVAR*(KrowIdx(irow)-1)+ivar) + Ddtmp(ivar)
+              end do
+            end do
+            !$omp end parallel do
+            
+          else   ! arbitrary cy value
+            
+            !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
+            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = Kld(irow), Kld(irow+1)-1
+                icol = Kcol(ia)
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + Da(ia)*Dx(NVAR*(icol-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                Dy(NVAR*(KrowIdx(irow)-1)+ivar) = cy*Dy(NVAR*(KrowIdx(irow)-1)+ivar) + Ddtmp(ivar)
+              end do
+            end do
+            !$omp end parallel do
+            
+          end if
+          
+        end if
+
+      end if
+   
+    end subroutine
+
     !**************************************************************
     ! Format 7 and Format 9 full interleaved multiplication
     ! double precision matrix,
