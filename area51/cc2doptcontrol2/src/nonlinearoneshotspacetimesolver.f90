@@ -143,6 +143,43 @@ contains
   
 !<subroutine>
 
+  subroutine nlstslv_assembleNeumannBC (rsettings,RneumannBC)
+  
+!<description>
+  ! Sets up the Neumann boundary condition structures for all levels.
+!</description>
+
+!<input>
+  ! Settings structure with global parametes.
+  type(t_settings_optflow), intent(inout) :: rsettings
+!</input>
+
+!<inputoutput>
+  ! Array with Neumann boundary definitions for nonlinear boundary conditions,
+  ! for all levels.
+  type(t_sptiNeumannBoundary), dimension(:), intent(inout), target :: RneumannBC
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ilev, nlevels
+    
+    ! How many levels do we have in the hierarchy?
+    nlevels = size(RneumannBC)
+    
+    ! Loop through all levels to set up the matrices.
+    do ilev = 1,nlevels
+      ! Create the Neumann boundary conditions      
+      call stnm_assembleNeumannBoundary (rsettings%roptcBDC,RneumannBC(ilev),rsettings%rglobalData)
+    end do
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
   subroutine nlstslv_initPrecMatrices (rsettings,ctypeNonlinearIteration,rmatrix,&
       RprecMatrices,Rsolutions,RneumannBC)
   
@@ -169,7 +206,7 @@ contains
   
   ! Array with Neumann boundary definitions for nonlinear boundary conditions,
   ! for all levels.
-  type(t_sptiNeumannBoundary), dimension(:), intent(inout), target :: RneumannBC
+  type(t_sptiNeumannBoundary), dimension(:), intent(in), target :: RneumannBC
 !</inputoutput>
 
 !<output>
@@ -207,9 +244,6 @@ contains
       ! Get the discretisation data of the level
       call nlstslv_initStdDiscrData (rsettings,ilev,rdiscrData)
 
-      ! Create the Neumann boundary conditions      
-      call stnm_assembleNeumannBoundary (rsettings%roptcBDC,RneumannBC(ilev),rsettings%rglobalData)
-      
       ! Initialise the corresponding space-time matrix
       call stlin_initSpaceTimeMatrix (&
           RprecMatrices(ilev),cmatrixType,rdiscrData,&
@@ -375,6 +409,9 @@ contains
 
     ! ---------------------------------------------------------------
     ! Start the nonlinear iteration
+    
+    ! Initialise Neumann boundary conditions.
+    call nlstslv_assembleNeumannBC (rsettings,rnlstsolver%p_rsptiNeumannBC)
     
     ! Initialise the nonlinear matrices on all levels for the first iteration
     if (bnewtonAllowed .or. (rnlstsolver%ctypeNonlinearIteration .eq. 1)) then

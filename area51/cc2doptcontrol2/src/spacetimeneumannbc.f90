@@ -253,6 +253,9 @@ contains
     ! Remove the matrix content and compress the matrix.
     ! The result is a matrix with the minimum stencil that can be used for
     ! all timesteps.
+    if (rsptiNeumannBC%rneumannBoudaryOperator%NEQ .ne. 0) then
+      call lsyssc_releaseMatrix (rsptiNeumannBC%rneumannBoudaryOperator)
+    end if
     call lsyssc_createRowCMatrix(rneumannBoudaryOperator,rsptiNeumannBC%rneumannBoudaryOperator)
     call lsyssc_releaseMatrixContent(rsptiNeumannBC%rneumannBoudaryOperator)
     
