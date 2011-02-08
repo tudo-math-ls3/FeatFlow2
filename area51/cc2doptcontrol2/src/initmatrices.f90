@@ -525,12 +525,13 @@ contains
       end if
     end if
 
-    if ((rstabilPrimal%cupwind .eq. CCSTAB_EDGEORIENTED3)) then
+    if ((rstabilDual%cupwind .eq. CCSTAB_EDGEORIENTED3)) then
     
       ! Perhaps the second matrix is like the first, then we don't
       ! have to assemble it.
       if ((rstabilPrimal%dupsam .eq. rstabilDual%dupsam) .and. &
-          (rstabilPrimal%cupwind .eq. rstabilDual%cupwind)) then
+          (rstabilPrimal%cupwind .eq. rstabilDual%cupwind) .and. &
+          (rstabilPrimal%ceojStabilOnBoundary .eq. rstabilDual%ceojStabilOnBoundary)) then
         ! Take that from the primal space.
         call lsyssc_duplicateMatrix (rstaticAsmTemplatesOptC%rmatrixEOJ1,& 
             rstaticAsmTemplatesOptC%rmatrixEOJ2,&

@@ -2416,6 +2416,7 @@ contains
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
+          call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1), p_Ddata1)
           call conv_streamlineDiffusionBlk2d (&
                               rvector, rvector, &
                               1.0_DP, 0.0_DP,&
@@ -4759,7 +4760,7 @@ contains
 
         ! Add the jump
         call conv_jumpStabilisation2d (&
-                              rjumpStabil, CONV_MODDEFECT, &
+                              rjumpStabilLocal, CONV_MODDEFECT, &
                               rmatrix,rx,rb,&
                               InodeList=p_Iedges(1:nedgecount))   
 
