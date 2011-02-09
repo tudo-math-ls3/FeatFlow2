@@ -576,7 +576,7 @@ contains
     ! local variable
     real(DP), dimension(:), pointer :: p_DsolutionHydro
     real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
-    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    real(DP) :: Ei,Ej,ui,uj,vi,vj,ci,cj
     integer :: iedge,idx,jdx
 
     ! This subroutine assumes that the first quick access vector
@@ -595,6 +595,10 @@ contains
     
     do iedge = 1, nedges
 
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !-------------------------------------------------------------------------
+      
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
@@ -615,6 +619,10 @@ contains
           +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
+      !---------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation of Rusanov-type
+      !---------------------------------------------------------------------------
+
       ! Compute base indices
       idx = 4*(IverticesAtEdge(1,iedge)-1)
       jdx = 4*(IverticesAtEdge(2,iedge)-1)
@@ -627,13 +635,35 @@ contains
       vj = p_DsolutionHydro(jdx+3)/p_DsolutionHydro(jdx+1)
       Ej = p_DsolutionHydro(jdx+4)/p_DsolutionHydro(jdx+1)
       
-      ! Compute auxiliary quantities
-      hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
-      hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+      ! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+#else
+#error "Speed of sound must be implemented!"
+#endif
       
-      ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
-      
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      DcoefficientsAtEdge(1,iedge) = dscale*&
+          max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,iedge)-&
+                           DmatrixCoeffsAtEdge(1,2,iedge))*uj+&
+                   0.5_DP*(DmatrixCoeffsAtEdge(2,1,iedge)-&
+                           DmatrixCoeffsAtEdge(2,2,iedge))*vj)+&
+              0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,iedge)-&
+                           DmatrixCoeffsAtEdge(1,2,iedge))**2+&
+                          (DmatrixCoeffsAtEdge(2,1,iedge)-&
+                           DmatrixCoeffsAtEdge(2,2,iedge))**2)*cj,&
+               abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,iedge)-&
+                           DmatrixCoeffsAtEdge(1,1,iedge))*ui+&
+                   0.5_DP*(DmatrixCoeffsAtEdge(2,2,iedge)-&
+                           DmatrixCoeffsAtEdge(2,1,iedge))*vi)+&
+              0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,iedge)-&
+                           DmatrixCoeffsAtEdge(1,1,iedge))**2+&
+                          (DmatrixCoeffsAtEdge(2,2,iedge)-&
+                           DmatrixCoeffsAtEdge(2,1,iedge))**2)*ci )
+#else
       ! Compute dissipation tensor D_ij
       DcoefficientsAtEdge(1,iedge) = dscale*&
           max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj +&
@@ -644,6 +674,7 @@ contains
                    DmatrixCoeffsAtEdge(2,2,iedge)*vi) +&
                    sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2 +&
                         DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+#endif
     end do
     
   end subroutine zpinch_calcMatRusConvIntlP2d_sim
@@ -772,7 +803,7 @@ contains
     ! local variable
     real(DP), dimension(:), pointer :: p_DsolutionHydro
     real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
-    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    real(DP) :: Ei,Ej,ui,uj,vi,vj,ci,cj
     integer :: iedge,idx,jdx
 
     ! This subroutine assumes that the first quick access vector
@@ -790,6 +821,10 @@ contains
         p_rvectorQuickAccess1, p_DsolutionHydro)
 
     do iedge = 1, nedges
+
+      !---------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation of Rusanov-type
+      !---------------------------------------------------------------------------
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
@@ -811,6 +846,10 @@ contains
           +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
+      !-------------------------------------------------------------------------
+      ! Build both contributions into the fluxes
+      !-------------------------------------------------------------------------
+
       ! Compute base indices
       idx = 4*(IverticesAtEdge(1,iedge)-1)
       jdx = 4*(IverticesAtEdge(2,iedge)-1)
@@ -823,13 +862,35 @@ contains
       vj = p_DsolutionHydro(jdx+3)/p_DsolutionHydro(jdx+1)
       Ej = p_DsolutionHydro(jdx+4)/p_DsolutionHydro(jdx+1)
       
-      ! Compute auxiliary quantities
-      hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
-      hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+      ! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+#else
+#error "Speed of sound must be implemented!"
+#endif
       
-      ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
-      
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      DcoefficientsAtEdge(1,iedge) = dscale*&
+          max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,iedge)-&
+                           DmatrixCoeffsAtEdge(1,2,iedge))*uj+&
+                   0.5_DP*(DmatrixCoeffsAtEdge(2,1,iedge)-&
+                           DmatrixCoeffsAtEdge(2,2,iedge))*vj)+&
+              0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,iedge)-&
+                           DmatrixCoeffsAtEdge(1,2,iedge))**2+&
+                          (DmatrixCoeffsAtEdge(2,1,iedge)-&
+                           DmatrixCoeffsAtEdge(2,2,iedge))**2)*cj,&
+               abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,iedge)-&
+                           DmatrixCoeffsAtEdge(1,1,iedge))*ui+&
+                   0.5_DP*(DmatrixCoeffsAtEdge(2,2,iedge)-&
+                           DmatrixCoeffsAtEdge(2,1,iedge))*vi)+&
+              0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,iedge)-&
+                           DmatrixCoeffsAtEdge(1,1,iedge))**2+&
+                          (DmatrixCoeffsAtEdge(2,2,iedge)-&
+                           DmatrixCoeffsAtEdge(2,1,iedge))**2)*ci )
+#else 
       ! Compute dissipation tensor D_ij
       DcoefficientsAtEdge(1,iedge) = dscale*&
           max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj +&
@@ -840,6 +901,7 @@ contains
                    DmatrixCoeffsAtEdge(2,2,iedge)*vi) +&
                    sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2 +&
                         DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+#endif
     end do
     
   end subroutine zpinch_calcMatRusConvIntlD2d_sim
@@ -968,7 +1030,7 @@ contains
     ! local variable
     real(DP), dimension(:), pointer :: p_DsolutionHydro
     real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
-    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    real(DP) :: Ei,Ej,ui,uj,vi,vj,ci,cj
     integer :: iedge,neq,i,j
 
     ! This subroutine assumes that the first quick access vector
@@ -986,6 +1048,10 @@ contains
         p_rvectorQuickAccess1, p_DsolutionHydro)
 
     do iedge = 1, nedges
+
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !-------------------------------------------------------------------------
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
@@ -1007,6 +1073,10 @@ contains
           +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
+      !---------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation of Rusanov-type
+      !---------------------------------------------------------------------------
+
       ! Get number of equations for single variable
       neq = size(p_DvelocityX)
 
@@ -1021,14 +1091,36 @@ contains
       uj = p_DsolutionHydro(neq  +j)/p_DsolutionHydro(j)
       vj = p_DsolutionHydro(neq*2+j)/p_DsolutionHydro(j)
       Ej = p_DsolutionHydro(neq*3+j)/p_DsolutionHydro(j)
-      
-      ! Compute auxiliary quantities
-      hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
-      hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
-      
-      ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
-      
+            
+! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+#else
+#error "Speed of sound must be implemented!"
+#endif
+
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      DcoefficientsAtEdge(1,iedge) = dscale*&
+          max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,iedge)-&
+                           DmatrixCoeffsAtEdge(1,2,iedge))*uj+&
+                   0.5_DP*(DmatrixCoeffsAtEdge(2,1,iedge)-&
+                           DmatrixCoeffsAtEdge(2,2,iedge))*vj)+&
+              0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,iedge)-&
+                           DmatrixCoeffsAtEdge(1,2,iedge))**2+&
+                          (DmatrixCoeffsAtEdge(2,1,iedge)-&
+                           DmatrixCoeffsAtEdge(2,2,iedge))**2)*cj,&
+               abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,iedge)-&
+                           DmatrixCoeffsAtEdge(1,1,iedge))*ui+&
+                   0.5_DP*(DmatrixCoeffsAtEdge(2,2,iedge)-&
+                           DmatrixCoeffsAtEdge(2,1,iedge))*vi)+&
+              0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,iedge)-&
+                           DmatrixCoeffsAtEdge(1,1,iedge))**2+&
+                          (DmatrixCoeffsAtEdge(2,2,iedge)-&
+                           DmatrixCoeffsAtEdge(2,1,iedge))**2)*ci )
+#else      
       ! Compute dissipation tensor D_ij
       DcoefficientsAtEdge(1,iedge) = dscale*&
           max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj +&
@@ -1039,6 +1131,7 @@ contains
                    DmatrixCoeffsAtEdge(2,2,iedge)*vi) +&
                    sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2 +&
                         DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+#endif
     end do
     
   end subroutine zpinch_calcMatRusConvBlockP2d_sim
@@ -1167,7 +1260,7 @@ contains
     ! local variable
     real(DP), dimension(:), pointer :: p_DsolutionHydro
     real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
-    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    real(DP) :: Ei,Ej,ui,uj,vi,vj,ci,cj
     integer :: iedge,neq,i,j
 
     ! This subroutine assumes that the first quick access vector
@@ -1185,6 +1278,10 @@ contains
         p_rvectorQuickAccess1, p_DsolutionHydro)
 
     do iedge = 1, nedges
+
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      !-------------------------------------------------------------------------
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
@@ -1206,6 +1303,10 @@ contains
           +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
+      !---------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation of Rusanov-type
+      !---------------------------------------------------------------------------
+
       ! Get number of equations for single variable
       neq = size(p_DvelocityX)
       
@@ -1221,13 +1322,35 @@ contains
       vj = p_DsolutionHydro(neq*2+j)/p_DsolutionHydro(j)
       Ej = p_DsolutionHydro(neq*3+j)/p_DsolutionHydro(j)
       
-      ! Compute auxiliary quantities
-      hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
-      hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+! Compute the speed of sound
+#ifdef THERMALLY_IDEAL_GAS
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+#else
+#error "Speed of sound must be implemented!"
+#endif
       
-      ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
-      
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      DcoefficientsAtEdge(1,iedge) = dscale*&
+          max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,iedge)-&
+                           DmatrixCoeffsAtEdge(1,2,iedge))*uj+&
+                   0.5_DP*(DmatrixCoeffsAtEdge(2,1,iedge)-&
+                           DmatrixCoeffsAtEdge(2,2,iedge))*vj)+&
+              0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,iedge)-&
+                           DmatrixCoeffsAtEdge(1,2,iedge))**2+&
+                          (DmatrixCoeffsAtEdge(2,1,iedge)-&
+                           DmatrixCoeffsAtEdge(2,2,iedge))**2)*cj,&
+               abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,iedge)-&
+                           DmatrixCoeffsAtEdge(1,1,iedge))*ui+&
+                   0.5_DP*(DmatrixCoeffsAtEdge(2,2,iedge)-&
+                           DmatrixCoeffsAtEdge(2,1,iedge))*vi)+&
+              0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,iedge)-&
+                           DmatrixCoeffsAtEdge(1,1,iedge))**2+&
+                          (DmatrixCoeffsAtEdge(2,2,iedge)-&
+                           DmatrixCoeffsAtEdge(2,1,iedge))**2)*ci )
+#else
       ! Compute dissipation tensor D_ij
       DcoefficientsAtEdge(1,iedge) = dscale*&
           max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj +&
@@ -1238,6 +1361,7 @@ contains
                    DmatrixCoeffsAtEdge(2,2,iedge)*vi) +&
                    sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2 +&
                         DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+#endif
     end do
     
   end subroutine zpinch_calcMatRusConvBlockD2d_sim

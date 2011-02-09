@@ -184,8 +184,10 @@ module hydro_callback2d
   use boundaryaux
   use boundarycondaux
   use collection
+  use cubature
   use derivatives
   use domainintegration
+  use element
   use feevaluation
   use flagship_callback
   use fparser
@@ -442,8 +444,8 @@ contains
       
       ! Assemble symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale *&
-          (0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))*Fx_ij+&
-           0.5*(DmatrixCoeffsAtEdge(2,1,idx)-DmatrixCoeffsAtEdge(2,2,idx))*Fy_ij)
+          (0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))*Fx_ij+&
+           0.5_DP*(DmatrixCoeffsAtEdge(2,1,idx)-DmatrixCoeffsAtEdge(2,2,idx))*Fy_ij)
       DfluxesAtEdge(:,2,idx) = DfluxesAtEdge(:,1,idx)
     end do
 
@@ -551,7 +553,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       ! Compute Roe mean values
@@ -568,11 +570,11 @@ contains
       
       ! Compute auxiliary variables
       vel_ij = u_ij*a(1) + v_ij*a(2)
-      q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
+      q_ij   = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+      c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -707,7 +709,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       
       ! Compute Roe mean values
       aux  = ROE_MEAN_RATIO(\
@@ -722,11 +724,11 @@ contains
              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx),aux)
       
       ! Compute auxiliary variable
-      q_ij = 0.5*(u_ij*u_ij+v_ij*v_ij)
+      q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
 ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+      c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -860,7 +862,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       if (anorm .gt. SYS_EPSREAL) then
@@ -876,17 +878,17 @@ contains
         v_ij = ROE_MEAN_VALUE(vi,vj,aux)
         H_ij = ROE_MEAN_VALUE(\
                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+pi)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+pj)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx),aux)
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx),aux)
 
         ! Compute auxiliary variables
         vel_ij = u_ij*a(1) + v_ij*a(2)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij   = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        c2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -902,20 +904,20 @@ contains
         Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = (GAMMA-1.0)/2.0/c2_ij*(q_ij*Diff(1)&
-                                     -u_ij*Diff(2)&
-                                     -v_ij*Diff(3)&
-                                          +Diff(4))
-        aux2 = 0.5*(vel_ij*Diff(1)&
-                     -a(1)*Diff(2)&
-                     -a(2)*Diff(3))/c_ij
+        aux1 = (GAMMA-1.0_DP)*(q_ij*Diff(1)&
+                              -u_ij*Diff(2)&
+                              -v_ij*Diff(3)&
+                                   +Diff(4))/2.0_DP/c2_ij
+        aux2 = (vel_ij*Diff(1)&
+                 -a(1)*Diff(2)&
+                 -a(2)*Diff(3))/2.0_DP/c_ij
         
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*Diff(1)&
-                             +(GAMMA-1.0)*(u_ij*Diff(2)&
-                                          +v_ij*Diff(3)&
-                                               -Diff(4))/c2_ij)
+        w2 = l2 * ((1.0_DP-(GAMMA-1.0_DP)*q_ij/c2_ij)*Diff(1)&
+                                +(GAMMA-1.0_DP)*(u_ij*Diff(2)&
+                                                +v_ij*Diff(3)&
+                                                     -Diff(4))/c2_ij)
         w3 = l3 * (aux1 - aux2)
         w4 = l4 * ((a(1)*v_ij-a(2)*u_ij)*Diff(1)&
                                    +a(2)*Diff(2)&
@@ -1069,7 +1071,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       if (anorm .gt. SYS_EPSREAL) then
@@ -1085,16 +1087,16 @@ contains
         v_ij = ROE_MEAN_VALUE(vi,vj,aux)
         H_ij = ROE_MEAN_VALUE(\
                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx)+pi)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,1,idx),\
                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)+pj)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx),aux)
+               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx),aux)
 
         ! Compute auxiliary variable
-        q_ij = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        c2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1114,24 +1116,27 @@ contains
         DiffX = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = (GAMMA-1.0)/2.0/c2_ij*(q_ij*DiffX(1)&
-                                     -u_ij*DiffX(2)&
-                                     -v_ij*DiffX(3)&
-                                          +DiffX(4))
-        aux2 = 0.5*(u_ij*DiffX(1)&
-                        -DiffX(2))/c_ij
+        aux1 = (GAMMA-1.0_DP)*(q_ij*DiffX(1)&
+                              -u_ij*DiffX(2)&
+                              -v_ij*DiffX(3)&
+                                   +DiffX(4))/2.0_DP/c2_ij
+        aux2 = (u_ij*DiffX(1)&
+                    -DiffX(2))/2.0_DP/c_ij
         
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*DiffX(1)+&
-                              (GAMMA-1.0)*(u_ij*DiffX(2)+v_ij*DiffX(3)-DiffX(4))/c2_ij)
+        w2 = l2 * ((1.0_DP-(GAMMA-1.0_DP)*q_ij/c2_ij)*DiffX(1)&
+                                +(GAMMA-1.0_DP)*(u_ij*DiffX(2)&
+                                                +v_ij*DiffX(3)&
+                                                     -DiffX(4))/c2_ij)
         w3 = l3 * (aux1 - aux2)
-        w4 = l4 * (v_ij*DiffX(1)-DiffX(3))
+        w4 = l4 * (v_ij*DiffX(1)&
+                       -DiffX(3))
         
         ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
         DiffX(1) = a(1) * ( w1 + w2 + w3 )
         DiffX(2) = a(1) * ( (u_ij-c_ij)*w1 + u_ij*w2 + (u_ij+c_ij)*w3 )
-        DiffX(3) = a(1) * ( v_ij*w1 + v_ij*w2 + v_ij*w3 - w4 )
+        DiffX(3) = a(1) * (        v_ij*w1 + v_ij*w2 +        v_ij*w3 - w4 )
         DiffX(4) = a(1) * ( (H_ij-c_ij*u_ij)*w1 + q_ij*w2 +&
                             (H_ij+c_ij*u_ij)*w3 - v_ij*w4 )
         
@@ -1149,23 +1154,26 @@ contains
         DiffY = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = (GAMMA-1.0)/2.0/c2_ij*(q_ij*DiffY(1)&
-                                     -u_ij*DiffY(2)&
-                                     -v_ij*DiffY(3)&
-                                          +DiffY(4))
-        aux2 = 0.5*(v_ij*DiffY(1)&
-                        -DiffY(3))/c_ij
+        aux1 = (GAMMA-1.0_DP)*(q_ij*DiffY(1)&
+                              -u_ij*DiffY(2)&
+                              -v_ij*DiffY(3)&
+                                   +DiffY(4))/2.0_DP/c2_ij
+        aux2 = (v_ij*DiffY(1)&
+                    -DiffY(3))/2.0_DP/c_ij
 
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*DiffY(1)+&
-                   (GAMMA-1.0)*(u_ij*DiffY(2)+v_ij*DiffY(3)-DiffY(4))/c2_ij)
+        w2 = l2 * ((1.0_DP-(GAMMA-1.0_DP)*q_ij/c2_ij)*DiffY(1)&
+                                +(GAMMA-1.0_DP)*(u_ij*DiffY(2)&
+                                                +v_ij*DiffY(3)&
+                                                     -DiffY(4))/c2_ij)
         w3 = l3 * (aux1 - aux2)
-        w4 = l4 * (-u_ij*DiffY(1)+DiffY(2))
+        w4 = l4 * (-u_ij*DiffY(1)&
+                        +DiffY(2))
         
         ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
         DiffY(1) = a(2) * ( w1 + w2 + w3 )
-        DiffY(2) = a(2) * ( u_ij*w1 + u_ij*w2 + u_ij*w3 + w4 )
+        DiffY(2) = a(2) * (        u_ij*w1 + u_ij*w2 +        u_ij*w3 + w4 )
         DiffY(3) = a(2) * ( (v_ij-c_ij)*w1 + v_ij*w2 + (v_ij+c_ij)*w3 )
         DiffY(4) = a(2) * ( (H_ij-c_ij*v_ij)*w1 + q_ij*w2 +&
                             (H_ij+c_ij*v_ij)*w3 + u_ij*w4 )
@@ -1312,12 +1320,32 @@ contains
       
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
       
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))*uj+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx))*vj)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))**2+&
+                             (DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx))**2)*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))*ui+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx))*vi)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))**2+&
+                             (DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx))**2)*ci )
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
                       DmatrixCoeffsAtEdge(2,1,idx)*vj)+&
@@ -1327,6 +1355,7 @@ contains
                       DmatrixCoeffsAtEdge(2,2,idx)*vi)+&
                  sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
                       DmatrixCoeffsAtEdge(2,2,idx)**2)*ci )
+#endif
 
       ! Multiply the solution difference by the scalar dissipation
       Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
@@ -1456,12 +1485,33 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
-      
+
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation with dimensional splitting based on
+      ! the skew-symmetric part which does not include the symmetric
+      ! boundary contribution
+      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))*uj)+&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx)))*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))*ui)+&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx)))*ci )&
+           + max( abs(0.5_DP*(DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx))*vj)+&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx)))*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx))*vi)+&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx)))*ci )
+#else      
       ! Compute scalar dissipation with dimensional splitting
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
                   abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
@@ -1471,6 +1521,7 @@ contains
                   abs(DmatrixCoeffsAtEdge(2,1,idx))*cj,&
                   abs(DmatrixCoeffsAtEdge(2,2,idx)*vi)+&
                   abs(DmatrixCoeffsAtEdge(2,2,idx))*ci )
+#endif
 
       ! Multiply the solution difference by the artificial diffusion factor
       Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
@@ -1683,7 +1734,7 @@ contains
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
 
       ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
+      DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
 #ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
@@ -1764,7 +1815,7 @@ contains
       Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
       
       ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
+      DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
@@ -1869,7 +1920,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
       if (anorm .gt. SYS_EPSREAL) then
@@ -1890,11 +1941,11 @@ contains
                
         ! Compute auxiliary variables
         vel_ij = u_ij*a(1) + v_ij*a(2)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij   = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1905,7 +1956,7 @@ contains
       else
         
         ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,idx) = 0.0
+        DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
       end if
     end do
@@ -1974,7 +2025,7 @@ contains
       Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
       
       ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
+      DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
 #ifdef HYDRO_USE_IBP
       
@@ -2001,7 +2052,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
       if (anorm .gt. SYS_EPSREAL) then
@@ -2022,12 +2073,12 @@ contains
         
         ! Compute auxiliary variables
         vel_ij = u_ij*a(1) + v_ij*a(2)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij   = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2105,7 +2156,7 @@ contains
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
 
       ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
+      DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
 #ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
@@ -2130,7 +2181,7 @@ contains
       !---------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
       if (anorm .gt. SYS_EPSREAL) then
@@ -2154,11 +2205,11 @@ contains
         
         ! Compute auxiliary variables
         vel_ij = u_ij*a(1)+v_ij*a(2)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij   = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
         
         ! Compute speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2186,31 +2237,31 @@ contains
         R_ij(3,3) =  l3*(v_ij+c_ij*a(2))
         R_ij(4,3) =  l3*(H_ij+c_ij*vel_ij)
         
-        R_ij(1,4) =  0.0
+        R_ij(1,4) =  0.0_DP
         R_ij(2,4) =  l4*a(2)
         R_ij(3,4) = -l4*a(1)
         R_ij(4,4) =  l4*(u_ij*a(2)-v_ij*a(1))
         
         ! Matrix of left eigenvectors
-        L_ij(1,1) =  0.5*((GAMMA-1.0)*q_ij+c_ij*vel_ij)/cPow2_ij
-        L_ij(2,1) =  (cPow2_ij-(GAMMA-1.0)*q_ij)/cPow2_ij
-        L_ij(3,1) =  0.5*((GAMMA-1.0)*q_ij-c_ij*vel_ij)/cPow2_ij
+        L_ij(1,1) =  0.5_DP*((GAMMA-1.0_DP)*q_ij+c_ij*vel_ij)/cPow2_ij
+        L_ij(2,1) =  (cPow2_ij-(GAMMA-1.0_DP)*q_ij)/cPow2_ij
+        L_ij(3,1) =  0.5_DP*((GAMMA-1.0_DP)*q_ij-c_ij*vel_ij)/cPow2_ij
         L_ij(4,1) =  v_ij*a(1)-u_ij*a(2)
         
-        L_ij(1,2) =  0.5*(-(GAMMA-1.0)*u_ij-c_ij*a(1))/cPow2_ij
-        L_ij(2,2) =  (GAMMA-1.0)*u_ij/cPow2_ij
-        L_ij(3,2) =  0.5*(-(GAMMA-1.0)*u_ij+c_ij*a(1))/cPow2_ij
+        L_ij(1,2) =  0.5_DP*(-(GAMMA-1.0_DP)*u_ij-c_ij*a(1))/cPow2_ij
+        L_ij(2,2) =  (GAMMA-1.0_DP)*u_ij/cPow2_ij
+        L_ij(3,2) =  0.5_DP*(-(GAMMA-1.0_DP)*u_ij+c_ij*a(1))/cPow2_ij
         L_ij(4,2) =  a(2)
 
-        L_ij(1,3) =  0.5*(-(GAMMA-1.0)*v_ij-c_ij*a(2))/cPow2_ij
-        L_ij(2,3) =  (GAMMA-1.0)*v_ij/cPow2_ij
-        L_ij(3,3) =  0.5*(-(GAMMA-1.0)*v_ij+c_ij*a(2))/cPow2_ij
+        L_ij(1,3) =  0.5_DP*(-(GAMMA-1.0_DP)*v_ij-c_ij*a(2))/cPow2_ij
+        L_ij(2,3) =  (GAMMA-1.0_DP)*v_ij/cPow2_ij
+        L_ij(3,3) =  0.5_DP*(-(GAMMA-1.0_DP)*v_ij+c_ij*a(2))/cPow2_ij
         L_ij(4,3) = -a(1)
         
-        L_ij(1,4) =  0.5*(GAMMA-1.0)/cPow2_ij
-        L_ij(2,4) = -(GAMMA-1.0)/cPow2_ij
-        L_ij(3,4) =  0.5*(GAMMA-1.0)/cPow2_ij
-        L_ij(4,4) =  0.0
+        L_ij(1,4) =  0.5_DP*(GAMMA-1.0_DP)/cPow2_ij
+        L_ij(2,4) = -(GAMMA-1.0_DP)/cPow2_ij
+        L_ij(3,4) =  0.5_DP*(GAMMA-1.0_DP)/cPow2_ij
+        L_ij(4,4) =  0.0_DP
         
         ! Include scaling parameter
         anorm = dscale*anorm
@@ -2235,7 +2286,7 @@ contains
       else
         
         ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,idx) = 0.0
+        DcoefficientsAtEdge(:,1,idx) = 0.0_DP
         
       end if
     end do
@@ -2327,7 +2378,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
       if (anorm .gt. SYS_EPSREAL) then
@@ -2351,11 +2402,11 @@ contains
         
         ! Compute auxiliary variables
         vel_ij = u_ij*a(1)+v_ij*a(2)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij   = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
         ! Compute speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2383,31 +2434,31 @@ contains
         R_ij(3,3) =  l3*(v_ij+c_ij*a(2))
         R_ij(4,3) =  l3*(H_ij+c_ij*vel_ij)
         
-        R_ij(1,4) =  0.0
+        R_ij(1,4) =  0.0_DP
         R_ij(2,4) =  l4*a(2)
         R_ij(3,4) = -l4*a(1)
         R_ij(4,4) =  l4*(u_ij*a(2)-v_ij*a(1))
         
         ! Matrix of left eigenvectors
-        L_ij(1,1) =  0.5*((GAMMA-1.0)*q_ij+c_ij*vel_ij)/cPow2_ij
-        L_ij(2,1) =  (cPow2_ij-(GAMMA-1.0)*q_ij)/cPow2_ij
-        L_ij(3,1) =  0.5*((GAMMA-1.0)*q_ij-c_ij*vel_ij)/cPow2_ij
+        L_ij(1,1) =  0.5_DP*((GAMMA-1.0_DP)*q_ij+c_ij*vel_ij)/cPow2_ij
+        L_ij(2,1) =  (cPow2_ij-(GAMMA-1.0_DP)*q_ij)/cPow2_ij
+        L_ij(3,1) =  0.5_DP*((GAMMA-1.0_DP)*q_ij-c_ij*vel_ij)/cPow2_ij
         L_ij(4,1) =  v_ij*a(1)-u_ij*a(2)
         
-        L_ij(1,2) =  0.5*(-(GAMMA-1.0)*u_ij-c_ij*a(1))/cPow2_ij
-        L_ij(2,2) =  (GAMMA-1.0)*u_ij/cPow2_ij
-        L_ij(3,2) =  0.5*(-(GAMMA-1.0)*u_ij+c_ij*a(1))/cPow2_ij
+        L_ij(1,2) =  0.5_DP*(-(GAMMA-1.0_DP)*u_ij-c_ij*a(1))/cPow2_ij
+        L_ij(2,2) =  (GAMMA-1.0_DP)*u_ij/cPow2_ij
+        L_ij(3,2) =  0.5_DP*(-(GAMMA-1.0_DP)*u_ij+c_ij*a(1))/cPow2_ij
         L_ij(4,2) =  a(2)
         
-        L_ij(1,3) =  0.5*(-(GAMMA-1.0)*v_ij-c_ij*a(2))/cPow2_ij
-        L_ij(2,3) =  (GAMMA-1.0)*v_ij/cPow2_ij
-        L_ij(3,3) =  0.5*(-(GAMMA-1.0)*v_ij+c_ij*a(2))/cPow2_ij
+        L_ij(1,3) =  0.5_DP*(-(GAMMA-1.0_DP)*v_ij-c_ij*a(2))/cPow2_ij
+        L_ij(2,3) =  (GAMMA-1.0_DP)*v_ij/cPow2_ij
+        L_ij(3,3) =  0.5_DP*(-(GAMMA-1.0_DP)*v_ij+c_ij*a(2))/cPow2_ij
         L_ij(4,3) = -a(1)
         
-        L_ij(1,4) =  (GAMMA-1.0)/2.0/cPow2_ij
-        L_ij(2,4) = -(GAMMA-1.0)/cPow2_ij
-        L_ij(3,4) =  (GAMMA-1.0)/2.0/cPow2_ij
-        L_ij(4,4) =  0.0
+        L_ij(1,4) =  (GAMMA-1.0_DP)/2.0_DP/cPow2_ij
+        L_ij(2,4) = -(GAMMA-1.0_DP)/cPow2_ij
+        L_ij(3,4) =  (GAMMA-1.0_DP)/2.0_DP/cPow2_ij
+        L_ij(4,4) =  0.0_DP
         
         ! Include scaling parameter
         anorm = dscale*anorm
@@ -2415,7 +2466,7 @@ contains
         ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
         do i = 1, NVAR2D
           do j = 1, NVAR2D
-            aux = 0.0
+            aux = 0.0_DP
             do k = 1, NVAR2D
               aux = aux + R_ij(i,k)*L_ij(k,j)
             end do
@@ -2426,7 +2477,7 @@ contains
       else
         
         ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,idx) = 0.0
+        DcoefficientsAtEdge(:,1,idx) = 0.0_DP
         
       end if
     end do
@@ -2516,8 +2567,8 @@ contains
       
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2618,8 +2669,8 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2635,7 +2686,7 @@ contains
                    sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
                         DmatrixCoeffsAtEdge(2,2,idx)**2)*ci )
 
-      DcoefficientsAtEdge( :,1,idx) = 0.0
+      DcoefficientsAtEdge( :,1,idx) = 0.0_DP
       DcoefficientsAtEdge( 1,1,idx) = aux
       DcoefficientsAtEdge( 6,1,idx) = aux
       DcoefficientsAtEdge(11,1,idx) = aux
@@ -2710,10 +2761,10 @@ contains
 
     ! Check if weighting coefficient is zero
     if (anorm .le. SYS_EPSREAL) then
-      if (present(DcharVariablesAtEdge))     DcharVariablesAtEdge     = 0.0
-      if (present(DeigenvaluesAtEdge))       DeigenvaluesAtEdge       = 0.0
-      if (present(DrightEigenvectorsAtEdge)) DrightEigenvectorsAtEdge = 0.0
-      if (present(DleftEigenvectorsAtEdge))  DleftEigenvectorsAtEdge  = 0.0
+      if (present(DcharVariablesAtEdge))     DcharVariablesAtEdge     = 0.0_DP
+      if (present(DeigenvaluesAtEdge))       DeigenvaluesAtEdge       = 0.0_DP
+      if (present(DrightEigenvectorsAtEdge)) DrightEigenvectorsAtEdge = 0.0_DP
+      if (present(DleftEigenvectorsAtEdge))  DleftEigenvectorsAtEdge  = 0.0_DP
 
       ! That`s it
       return
@@ -2748,11 +2799,11 @@ contains
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx),aux)
         
         ! Compute auxiliary variables
-        q_ij  = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
         ! Compute speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2763,20 +2814,20 @@ contains
         Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = (GAMMA-1.0)/2.0/cPow2_ij*(q_ij*Diff(1)&
-                                        -u_ij*Diff(2)&
-                                        -v_ij*Diff(3)&
-                                             +Diff(4))
-        aux2 = 0.5*(aux*Diff(1)&
-                  -a(1)*Diff(2)&
-                  -a(2)*Diff(3))/c_ij
+        aux1 = (GAMMA-1.0_DP)*(q_ij*Diff(1)&
+                              -u_ij*Diff(2)&
+                              -v_ij*Diff(3)&
+                                   +Diff(4))/2.0_DP/cPow2_ij
+        aux2 = (aux*Diff(1)&
+              -a(1)*Diff(2)&
+              -a(2)*Diff(3))/2.0_DP/c_ij
 
         ! Compute characteristic variables
         DcharVariablesAtEdge(1,idx) = anorm * (aux1 + aux2)
-        DcharVariablesAtEdge(2,idx) = anorm * ((1.0-(GAMMA-1.0)*q_ij/cPow2_ij)*Diff(1)+&
-                                                             (GAMMA-1.0)*(u_ij*Diff(2)+&
-                                                                          v_ij*Diff(3)-&
-                                                                      Diff(4))/cPow2_ij)
+        DcharVariablesAtEdge(2,idx) = anorm * ((1.0_DP-(GAMMA-1.0_DP)*q_ij/cPow2_ij)*Diff(1)+&
+                                                                (GAMMA-1.0_DP)*(u_ij*Diff(2)+&
+                                                                                v_ij*Diff(3)-&
+                                                                                     Diff(4))/cPow2_ij)
         DcharVariablesAtEdge(3,idx) = anorm * (aux1 - aux2)
         DcharVariablesAtEdge(4,idx) = anorm * ((a(1)*v_ij-a(2)*u_ij)*Diff(1)+&
                                                                 a(2)*Diff(2)-&
@@ -2810,9 +2861,9 @@ contains
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx),aux)
         
         ! Compute auxiliary variables
-        q_ij  = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 #ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2852,31 +2903,31 @@ contains
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx),aux)
         
         ! Compute auxiliary variables
-        q_ij  = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 #ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
         aux  = a(1)*u_ij+a(2)*v_ij
 
         ! Compute right eigenvectors
-        DrightEigenvectorsAtEdge( 1,idx) =  1.0
+        DrightEigenvectorsAtEdge( 1,idx) =  1.0_DP
         DrightEigenvectorsAtEdge( 2,idx) =  u_ij-c_ij*a(1)
         DrightEigenvectorsAtEdge( 3,idx) =  v_ij-c_ij*a(2)
         DrightEigenvectorsAtEdge( 4,idx) =  H_ij-c_ij*aux
 
-        DrightEigenvectorsAtEdge( 5,idx) =  1.0
+        DrightEigenvectorsAtEdge( 5,idx) =  1.0_DP
         DrightEigenvectorsAtEdge( 6,idx) =  u_ij
         DrightEigenvectorsAtEdge( 7,idx) =  v_ij
         DrightEigenvectorsAtEdge( 8,idx) =  q_ij
 
-        DrightEigenvectorsAtEdge( 9,idx) =  1.0
+        DrightEigenvectorsAtEdge( 9,idx) =  1.0_DP
         DrightEigenvectorsAtEdge(10,idx) =  u_ij+c_ij*a(1)
         DrightEigenvectorsAtEdge(11,idx) =  v_ij+c_ij*a(2)
         DrightEigenvectorsAtEdge(12,idx) =  H_ij+c_ij*aux
 
-        DrightEigenvectorsAtEdge(13,idx) =  0.0
+        DrightEigenvectorsAtEdge(13,idx) =  0.0_DP
         DrightEigenvectorsAtEdge(14,idx) =  a(2)
         DrightEigenvectorsAtEdge(15,idx) = -a(1)
         DrightEigenvectorsAtEdge(16,idx) =  u_ij*a(2)-v_ij*a(1)
@@ -2909,9 +2960,9 @@ contains
                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx),aux)
         
         ! Compute auxiliary variables
-        q_ij  = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 #ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2919,25 +2970,25 @@ contains
         aux  = a(1)*u_ij+a(2)*v_ij
 
         ! Compute left eigenvectors
-        DleftEigenvectorsAtEdge( 1,idx) =  0.5*((GAMMA-1.0)*q_ij+c_ij*aux)/cPow2_ij
-        DleftEigenvectorsAtEdge( 2,idx) = (cPow2_ij-(GAMMA-1.0)*q_ij)/cPow2_ij
-        DleftEigenvectorsAtEdge( 3,idx) =  0.5*((GAMMA-1.0)*q_ij-c_ij*aux)/cPow2_ij
+        DleftEigenvectorsAtEdge( 1,idx) =  0.5_DP*((GAMMA-1.0_DP)*q_ij+c_ij*aux)/cPow2_ij
+        DleftEigenvectorsAtEdge( 2,idx) = (cPow2_ij-(GAMMA-1.0_DP)*q_ij)/cPow2_ij
+        DleftEigenvectorsAtEdge( 3,idx) =  0.5_DP*((GAMMA-1.0_DP)*q_ij-c_ij*aux)/cPow2_ij
         DleftEigenvectorsAtEdge( 4,idx) =  v_ij*a(1)-u_ij*a(2)
 
-        DleftEigenvectorsAtEdge( 5,idx) =  0.5*(-(GAMMA-1.0)*u_ij-c_ij*a(1))/cPow2_ij
-        DleftEigenvectorsAtEdge( 6,idx) =  (GAMMA-1.0)*u_ij/cPow2_ij
-        DleftEigenvectorsAtEdge( 7,idx) =  0.5*(-(GAMMA-1.0)*u_ij+c_ij*a(1))/cPow2_ij
+        DleftEigenvectorsAtEdge( 5,idx) =  0.5_DP*(-(GAMMA-1.0_DP)*u_ij-c_ij*a(1))/cPow2_ij
+        DleftEigenvectorsAtEdge( 6,idx) =  (GAMMA-1.0_DP)*u_ij/cPow2_ij
+        DleftEigenvectorsAtEdge( 7,idx) =  0.5_DP*(-(GAMMA-1.0_DP)*u_ij+c_ij*a(1))/cPow2_ij
         DleftEigenvectorsAtEdge( 8,idx) =  a(2)
 
-        DleftEigenvectorsAtEdge( 9,idx) =  0.5*(-(GAMMA-1.0)*v_ij-c_ij*a(2))/cPow2_ij
-        DleftEigenvectorsAtEdge(10,idx) =  (GAMMA-1.0)*v_ij/cPow2_ij
-        DleftEigenvectorsAtEdge(11,idx) =  0.5*(-(GAMMA-1.0)*v_ij+c_ij*a(2))/cPow2_ij
+        DleftEigenvectorsAtEdge( 9,idx) =  0.5_DP*(-(GAMMA-1.0_DP)*v_ij-c_ij*a(2))/cPow2_ij
+        DleftEigenvectorsAtEdge(10,idx) =  (GAMMA-1.0_DP)*v_ij/cPow2_ij
+        DleftEigenvectorsAtEdge(11,idx) =  0.5_DP*(-(GAMMA-1.0_DP)*v_ij+c_ij*a(2))/cPow2_ij
         DleftEigenvectorsAtEdge(12,idx) = -a(1)
 
-        DleftEigenvectorsAtEdge(13,idx) =  (GAMMA-1.0)/2.0/cPow2_ij
-        DleftEigenvectorsAtEdge(14,idx) = -(GAMMA-1.0)/cPow2_ij
-        DleftEigenvectorsAtEdge(15,idx) =  (GAMMA-1.0)/2.0/cPow2_ij
-        DleftEigenvectorsAtEdge(16,idx) =  0.0
+        DleftEigenvectorsAtEdge(13,idx) =  (GAMMA-1.0_DP)/2.0_DP/cPow2_ij
+        DleftEigenvectorsAtEdge(14,idx) = -(GAMMA-1.0_DP)/cPow2_ij
+        DleftEigenvectorsAtEdge(15,idx) =  (GAMMA-1.0_DP)/2.0_DP/cPow2_ij
+        DleftEigenvectorsAtEdge(16,idx) =  0.0_DP
       end do
     end if
 
@@ -3014,7 +3065,7 @@ contains
       pj = PRESSURE_2T_FROM_CONSVAR_2D(DdataAtEdge,NVAR2D,2,idx)
 
       ! Compute skew-symmetric coefficient
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       ! Compute Roe mean values
@@ -3031,11 +3082,11 @@ contains
       
       ! Compute auxiliary variables
       vel_ij = u_ij*a(1) + v_ij*a(2)
-      q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
+      q_ij   = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
 ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+      c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -3120,7 +3171,7 @@ contains
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
       
       ! Compute the skew-symmetric coefficient and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       if (anorm .gt. SYS_EPSREAL) then
@@ -3144,11 +3195,11 @@ contains
 
         ! Compute auxiliary variables
         vel_ij = u_ij*a(1) + v_ij*a(2)
-        q_ij   = 0.5*(u_ij*u_ij+v_ij*v_ij)
+        q_ij   = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        c2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -3164,20 +3215,21 @@ contains
         Diff = DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = (GAMMA-1.0)/2.0/c2_ij*(q_ij*Diff(1)&
-                                     -u_ij*Diff(2)&
-                                     -v_ij*Diff(3)&
-                                          +Diff(4))
-        aux2 = 0.5*(vel_ij*Diff(1)&
-                     -a(1)*Diff(2)&
-                     -a(2)*Diff(3))/c_ij
+        aux1 = (GAMMA-1.0_DP)*(q_ij*Diff(1)&
+                              -u_ij*Diff(2)&
+                              -v_ij*Diff(3)&
+                                   +Diff(4/2.0_DP/c2_ij))
+
+        aux2 = (vel_ij*Diff(1)&
+                 -a(1)*Diff(2)&
+                 -a(2)*Diff(3))/2.0_DP/c_ij
         
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
-        w2 = l2 * ((1.0-(GAMMA-1.0)*q_ij/c2_ij)*Diff(1)&
-                             +(GAMMA-1.0)*(u_ij*Diff(2)&
-                                          +v_ij*Diff(3)&
-                                               -Diff(4))/c2_ij)
+        w2 = l2 * ((1.0_DP-(GAMMA-1.0_DP)*q_ij/c2_ij)*Diff(1)&
+                                +(GAMMA-1.0_DP)*(u_ij*Diff(2)&
+                                                +v_ij*Diff(3)&
+                                                     -Diff(4))/c2_ij)
         w3 = l3 * (aux1 - aux2)
         w4 = l4 * ((a(1)*v_ij-a(2)*u_ij)*Diff(1)&
                                    +a(2)*Diff(2)&
@@ -3272,12 +3324,32 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 #else
 #error "Speed of sound must be implemented!"
 #endif
       
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))*uj+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx))*vj)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))**2+&
+                             (DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx))**2)*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))*ui+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx))*vi)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))**2+&
+                             (DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx))**2)*ci )
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
                       DmatrixCoeffsAtEdge(2,1,idx)*vj)+&
@@ -3287,6 +3359,7 @@ contains
                       DmatrixCoeffsAtEdge(2,2,idx)*vi)+&
                  sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
                       DmatrixCoeffsAtEdge(2,2,idx)**2)*ci )
+#endif
       
       ! Compute conservative flux
       DfluxesAtEdge(:,idx) = dscale*d_ij*(DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx))
@@ -3558,13 +3631,13 @@ contains
       
       ! Transformed pressure fluxes
 #ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(1,1,idx) = (GAMMA-1.0)*&
-          (0.5*(ui*ui+vi*vi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
+      DtransformedFluxesAtEdge(1,1,idx) = (GAMMA-1.0_DP)*&
+          (0.5_DP*(ui*ui+vi*vi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)+&
           TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx))
-      DtransformedFluxesAtEdge(1,2,idx) =-(GAMMA-1.0)*&
-          (0.5*(uj*uj+vj*vj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
+      DtransformedFluxesAtEdge(1,2,idx) =-(GAMMA-1.0_DP)*&
+          (0.5_DP*(uj*uj+vj*vj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)+&
           TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx))
@@ -4047,13 +4120,13 @@ contains
       
       ! Transformed pressure fluxes
 #ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(2,1,idx) = (GAMMA-1.0)*&
-          (0.5*(ui*ui+vi*vi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
+      DtransformedFluxesAtEdge(2,1,idx) = (GAMMA-1.0_DP)*&
+          (0.5_DP*(ui*ui+vi*vi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)+&
           TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx))
-      DtransformedFluxesAtEdge(2,2,idx) =-(GAMMA-1.0)*&
-          (0.5*(uj*uj+vj*vj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
+      DtransformedFluxesAtEdge(2,2,idx) =-(GAMMA-1.0_DP)*&
+          (0.5_DP*(uj*uj+vj*vj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)+&
           TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx))
@@ -4200,13 +4273,13 @@ contains
 
       ! Transformed pressure fluxes
 #ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(4,1,idx) =(GAMMA-1.0)*&
-          (0.5*(ui*ui+vi*vi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
+      DtransformedFluxesAtEdge(4,1,idx) =(GAMMA-1.0_DP)*&
+          (0.5_DP*(ui*ui+vi*vi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)+&
           TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx))
-      DtransformedFluxesAtEdge(4,2,idx) =-(GAMMA-1.0)*&
-          (0.5*(uj*uj+vj*vj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
+      DtransformedFluxesAtEdge(4,2,idx) =-(GAMMA-1.0_DP)*&
+          (0.5_DP*(uj*uj+vj*vj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)-&
           vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx)+&
           TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR2D,idx))
@@ -4375,7 +4448,7 @@ contains
       v1  = Du(2)/rho
       v2  = Du(3)/rho
       E   = Du(4)/rho
-      p   = (GAMMA-1.0)*rho*(E-0.5*(v1*v1+v2*v2))
+      p   = (GAMMA-1.0_DP)*rho*(E-0.5_DP*(v1*v1+v2*v2))
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
 
       ! Precompute auxiliary data
@@ -4385,16 +4458,16 @@ contains
 
       if (ibdrCondType .eq. BDRC_FREESLIP) then
         ! Compute reflected velocities at the boundary
-        v1_b = (dny2-dnx2)*v1 - 2.0*dnxy*v2
-        v2_b = (dnx2-dny2)*v2 - 2.0*dnxy*v1
+        v1_b = (dny2-dnx2)*v1 - 2.0_DP*dnxy*v2
+        v2_b = (dnx2-dny2)*v2 - 2.0_DP*dnxy*v1
       else
         ! Compute initial velocity from previous time step
         v1_0 = Du0(2)/Du0(1)
         v2_0 = Du0(3)/Du0(1)
 
         ! Compute semi-reflected velocities at the boundary
-        v1_b = (dny2-dnx2)*v1-2.0*dnxy*v2 + 2*DbdrValue(1)*(v1_0*dnx2+v2_0*dnxy)
-        v2_b = (dnx2-dny2)*v2-2.0*dnxy*v1 + 2*DbdrValue(1)*(v2_0*dny2+v1_0*dnxy)
+        v1_b = (dny2-dnx2)*v1-2.0_DP*dnxy*v2 + 2*DbdrValue(1)*(v1_0*dnx2+v2_0*dnxy)
+        v2_b = (dnx2-dny2)*v2-2.0_DP*dnxy*v1 + 2*DbdrValue(1)*(v2_0*dny2+v1_0*dnxy)
       end if
 
       ! Compute normal velocities at the boundary and the ghost state
@@ -4403,7 +4476,7 @@ contains
       vn_b = DpointNormal(1)*v1_b + DpointNormal(2)*v2_b
 
       ! Compute the tangential velocity depending on the sign of N*v
-      if (vn .gt. 0.0) then
+      if (vn .gt. 0.0_DP) then
         vt = DpointNormal(2)*v1   - DpointNormal(1)*v2
       else
         vt = DpointNormal(2)*v1_b - DpointNormal(1)*v2_b
@@ -4427,7 +4500,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check the pressure positivity condition
-      if (2.0*(2.0/(GAMMA-1.0))*c .le. vn_b-vn) then
+      if (2.0_DP*(2.0_DP/(GAMMA-1.0_DP))*c .le. vn_b-vn) then
         if (present(istatus)) then
           istatus = -ibdrCondType
           return
@@ -4442,7 +4515,7 @@ contains
       ! by using the PVRS Riemann solver as suggested by Toro
 
       cup  = rho*c
-      ppv  = p+0.5*(vn-vn_b)*cup
+      ppv  = p+0.5_DP*(vn-vn_b)*cup
       ppv  = max(0.0_DP, ppv)
 
       if (ppv .eq. p) then
@@ -4453,21 +4526,21 @@ contains
         if (ppv .lt. p) then
 
           ! Guess pressure from the Two-Rarefaction Riemann solver
-          vm    = 0.5*(vn+vn_b)
-          ptl   = 1.0 + (GAMMA-1.0)/2.0*(vn-vm)/c
-          ptr   = 1.0 + (GAMMA-1.0)/2.0*(vm-vn_b)/c
-          pstar = 0.5*(p*ptl + p*ptr)**(2.0*GAMMA/(GAMMA-1.0))
+          vm    = 0.5_DP*(vn+vn_b)
+          ptl   = 1.0_DP + (GAMMA-1.0_DP)/2.0_DP*(vn-vm)/c
+          ptr   = 1.0_DP + (GAMMA-1.0_DP)/2.0_DP*(vm-vn_b)/c
+          pstar = 0.5_DP*(p*ptl + p*ptr)**(2.0_DP*GAMMA/(GAMMA-1.0_DP))
         else
 
           ! Guess pressure from the Two-Shock Riemann solver
           ! with PVRS as estimated pressure value
-          ge    = sqrt((2.0/(GAMMA+1.0)/rho)/((GAMMA-1.0)/(GAMMA+1.0)*p+ppv))
-          pstar = p - 0.5*(vn_b-vn)/ge
+          ge    = sqrt((2.0_DP/(GAMMA+1.0_DP)/rho)/((GAMMA-1.0_DP)/(GAMMA+1.0_DP)*p+ppv))
+          pstar = p - 0.5_DP*(vn_b-vn)/ge
         end if
       end if
 
       ! Initialize solution difference and pressure
-      vdiff = (vn_b-vn)/2.0
+      vdiff = (vn_b-vn)/2.0_DP
       pold  = pstar
 
       newton: do ite = 1, 100
@@ -4478,26 +4551,26 @@ contains
           ! Rarefaction wave
           prat = pold/p
 
-          f  = (2.0/(GAMMA-1.0))*c*(prat**((GAMMA-1.0)/(2.0*GAMMA)) - 1.0)
-          fd = (1.0/(rho*c))*prat**(-(GAMMA+1.0)/(2.0*GAMMA))
+          f  = (2.0_DP/(GAMMA-1.0_DP))*c*(prat**((GAMMA-1.0_DP)/(2.0_DP*GAMMA)) - 1.0_DP)
+          fd = (1.0_DP/(rho*c))*prat**(-(GAMMA+1.0_DP)/(2.0_DP*GAMMA))
         else
 
           ! Shock wave
-          auxA = 2.0/(GAMMA+1.0)/rho
-          auxB = (GAMMA-1.0)/(GAMMA+1.0)*p
+          auxA = 2.0_DP/(GAMMA+1.0_DP)/rho
+          auxB = (GAMMA-1.0_DP)/(GAMMA+1.0_DP)*p
           qrt  = sqrt(auxA/(auxB + pold))
 
           f  = (pold-p)*qrt
-          fd = (1.0 - 0.5*(pold - p)/(auxB + pold))*qrt
+          fd = (1.0_DP - 0.5_DP*(pold - p)/(auxB + pold))*qrt
         end if
 
         pstar = pold - (f+vdiff)/fd
-        if (pstar .lt. 0.0) then
+        if (pstar .lt. 0.0_DP) then
           pold = 1.0E-6
           cycle newton
         end if
 
-        aux = 2.0*abs((pstar-pold)/(pstar+pold))
+        aux = 2.0_DP*abs((pstar-pold)/(pstar+pold))
         if (aux .le. 1.0E-6)  exit newton
 
         pold = pstar
@@ -4522,7 +4595,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Note that the contribution fR-fL vanishes due to constant states
-      vn = 0.5*(vn+vn_b)
+      vn = 0.5_DP*(vn+vn_b)
 
 
       !-------------------------------------------------------------------------
@@ -4532,18 +4605,18 @@ contains
       if (pstar .le. p) then
 
         ! Rarefaction wave
-        rho = rho*(pstar/p)**(1.0/GAMMA)
+        rho = rho*(pstar/p)**(1.0_DP/GAMMA)
       else
 
         ! Shock wave
-        rho = rho*(pstar/p+(GAMMA-1.0)/(GAMMA+1.0))/((GAMMA-1.0)/(GAMMA+1.0)*(pstar/p)+1.0)
+        rho = rho*(pstar/p+(GAMMA-1.0_DP)/(GAMMA+1.0_DP))/((GAMMA-1.0_DP)/(GAMMA+1.0_DP)*(pstar/p)+1.0_DP)
       end if
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*( DpointNormal(2)*vt+DpointNormal(1)*vn)
       Du(3) = rho*(-DpointNormal(1)*vt+DpointNormal(2)*vn)
-      Du(4) = pstar/(GAMMA-1.0)+0.5*rho*(vn*vn+vt*vt)
+      Du(4) = pstar/(GAMMA-1.0_DP)+0.5_DP*rho*(vn*vn+vt*vt)
 
 
     case(BDRC_VISCOUSWALL)
@@ -4554,12 +4627,12 @@ contains
       v1  = Du(2)/rho
       v2  = Du(3)/rho
       E   = Du(4)/rho
-      p   = (GAMMA-1.0)*rho*(E-0.5*(v1*v1+v2*v2))
+      p   = (GAMMA-1.0_DP)*rho*(E-0.5_DP*(v1*v1+v2*v2))
 
       ! Update the solution vector and let vn:=0 and vt:=0
-      Du(2) = 0.0
-      Du(3) = 0.0
-      Du(4) = p/(GAMMA-1.0)
+      Du(2) = 0.0_DP
+      Du(3) = 0.0_DP
+      Du(4) = p/(GAMMA-1.0_DP)
 
 
     case(BDRC_SUPERINLET)
@@ -4573,15 +4646,15 @@ contains
       vt  = DbdrNormal(2)*DbdrValue(2)-DbdrNormal(1)*DbdrValue(3)
 
       ! Compute Riemann invariants based on the free stream values
-      W(1) = vn-2*c/(GAMMA-1.0)
-      W(2) = vn+2*c/(GAMMA-1.0)
+      W(1) = vn-2*c/(GAMMA-1.0_DP)
+      W(2) = vn+2*c/(GAMMA-1.0_DP)
       W(3) = p/(rho**GAMMA)
       W(4) = vt
 
       ! Transform back into conservative variables
-      vn   = 0.5*(W(1)+W(2))
-      c    = 0.25*(GAMMA-1.0)*(W(2)-W(1))
-      rho  = (c*c/GAMMA/W(3))**(1.0/(GAMMA-1.0))
+      vn   = 0.5_DP*(W(1)+W(2))
+      c    = 0.25*(GAMMA-1.0_DP)*(W(2)-W(1))
+      rho  = (c*c/GAMMA/W(3))**(1.0_DP/(GAMMA-1.0_DP))
       p    = rho*c*c/GAMMA
       vt   = W(4)
 
@@ -4589,7 +4662,7 @@ contains
       Du(1) = rho
       Du(2) = rho*( DbdrNormal(2)*vt+DbdrNormal(1)*vn)
       Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
-      Du(4) = p/(GAMMA-1.0)+0.5*rho*(vn*vn+vt*vt)
+      Du(4) = p/(GAMMA-1.0_DP)+0.5_DP*rho*(vn*vn+vt*vt)
 
 
     case(BDRC_FREESTREAM)
@@ -4603,8 +4676,8 @@ contains
       vt  = DbdrNormal(2)*DbdrValue(2)-DbdrNormal(1)*DbdrValue(3)
 
       ! Compute Riemann invariants based on the free stream values
-      Winf(1) = vn-2.0*c/(GAMMA-1.0)
-      Winf(2) = vn+2.0*c/(GAMMA-1.0)
+      Winf(1) = vn-2.0_DP*c/(GAMMA-1.0_DP)
+      Winf(2) = vn+2.0_DP*c/(GAMMA-1.0_DP)
       Winf(3) = p/(rho**GAMMA)
       Winf(4) = vt
 
@@ -4613,15 +4686,15 @@ contains
       v1  = Du(2)/rho
       v2  = Du(3)/rho
       E   = Du(4)/rho
-      p   = (GAMMA-1.0)*rho*(E-0.5*(v1*v1+v2*v2))
+      p   = (GAMMA-1.0_DP)*rho*(E-0.5_DP*(v1*v1+v2*v2))
 
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
       vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
       vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
 
       ! Compute Riemann invariants based on the solution values
-      Wu(1) = vn-2.0*c/(GAMMA-1.0)
-      Wu(2) = vn+2.0*c/(GAMMA-1.0)
+      Wu(1) = vn-2.0_DP*c/(GAMMA-1.0_DP)
+      Wu(2) = vn+2.0_DP*c/(GAMMA-1.0_DP)
       Wu(3) = p/(rho**GAMMA)
       Wu(4) = vt
 
@@ -4632,9 +4705,9 @@ contains
       W(4) = merge(Winf(4), Wu(4), vn <  SYS_EPSREAL)
 
       ! Transform back into conservative variables
-      vn   = 0.5*(W(1)+W(2))
-      c    = 0.25*(GAMMA-1.0)*(W(2)-W(1))
-      rho  = (c*c/GAMMA/W(3))**(1.0/(GAMMA-1.0))
+      vn   = 0.5_DP*(W(1)+W(2))
+      c    = 0.25*(GAMMA-1.0_DP)*(W(2)-W(1))
+      rho  = (c*c/GAMMA/W(3))**(1.0_DP/(GAMMA-1.0_DP))
       p    = rho*c*c/GAMMA
       vt   = W(4)
 
@@ -4642,7 +4715,7 @@ contains
       Du(1) = rho
       Du(2) = rho*( DbdrNormal(2)*vt+DbdrNormal(1)*vn)
       Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
-      Du(4) = p/(GAMMA-1.0)+0.5*rho*(vn*vn+vt*vt)
+      Du(4) = p/(GAMMA-1.0_DP)+0.5_DP*rho*(vn*vn+vt*vt)
 
 
     case(BDRC_SUBINLET)
@@ -4653,7 +4726,7 @@ contains
       v1  = Du(2)/rho
       v2  = Du(3)/rho
       E   = Du(4)/rho
-      p   = (GAMMA-1.0)*rho*(E-0.5*(v1*v1+v2*v2))
+      p   = (GAMMA-1.0_DP)*rho*(E-0.5_DP*(v1*v1+v2*v2))
 
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
       vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
@@ -4664,15 +4737,15 @@ contains
       p   = DbdrValue(2)
 
       ! Compute Riemann invariants
-      W(1) = vn-2.0*c/(GAMMA-1.0)
-      W(2) = vn+2.0*c/(GAMMA-1.0)
+      W(1) = vn-2.0_DP*c/(GAMMA-1.0_DP)
+      W(2) = vn+2.0_DP*c/(GAMMA-1.0_DP)
       W(3) = p/(rho**GAMMA)
       W(4) = vt
 
       ! Transform back into conservative variables
-      vn   = 0.5*(W(1)+W(2))
-      c    = 0.25*(GAMMA-1.0)*(W(2)-W(1))
-      rho  = (c*c/GAMMA/W(3))**(1.0/(GAMMA-1.0))
+      vn   = 0.5_DP*(W(1)+W(2))
+      c    = 0.25*(GAMMA-1.0_DP)*(W(2)-W(1))
+      rho  = (c*c/GAMMA/W(3))**(1.0_DP/(GAMMA-1.0_DP))
       p    = rho*c*c/GAMMA
       vt   = W(4)
 
@@ -4680,7 +4753,7 @@ contains
       Du(1) = rho
       Du(2) = rho*( DbdrNormal(2)*vt+DbdrNormal(1)*vn)
       Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
-      Du(4) = p/(GAMMA-1.0)+0.5*rho*(vn*vn+vt*vt)
+      Du(4) = p/(GAMMA-1.0_DP)+0.5_DP*rho*(vn*vn+vt*vt)
 
 
     case(BDRC_SUBOUTLET)
@@ -4699,22 +4772,22 @@ contains
       v1  = Du(2)/rho
       v2  = Du(3)/rho
       E   = Du(4)/rho
-      p   = (GAMMA-1.0)*rho*(E-0.5*(v1*v1+v2*v2))
+      p   = (GAMMA-1.0_DP)*rho*(E-0.5_DP*(v1*v1+v2*v2))
 
       vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
       vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
 
       ! Compute Riemann invariants based on the solution values and prescribed exit pressure
-      W(2) = 2*c/(GAMMA-1.0)-vn
+      W(2) = 2*c/(GAMMA-1.0_DP)-vn
       W(3) = p/(rho**GAMMA)
       W(4) = vt
-      W(1) = 4/(GAMMA-1.0)*sqrt(max(GAMMA*ps/rho*(p/ps)**(1.0/GAMMA), SYS_EPSREAL))-W(2)
+      W(1) = 4/(GAMMA-1.0_DP)*sqrt(max(GAMMA*ps/rho*(p/ps)**(1.0_DP/GAMMA), SYS_EPSREAL))-W(2)
 
       ! Transform back into conservative variables
-      vn  = 0.5*(W(1)-W(2))
-      c   = 0.25*(GAMMA-1.0)*(W(1)+W(2))
-      rho = (c*c/GAMMA/W(3))**(1.0/(GAMMA-1.0))
+      vn  = 0.5_DP*(W(1)-W(2))
+      c   = 0.25*(GAMMA-1.0_DP)*(W(1)+W(2))
+      rho = (c*c/GAMMA/W(3))**(1.0_DP/(GAMMA-1.0_DP))
       p   = rho*c*c/GAMMA
       vt  = W(4)
 
@@ -4722,7 +4795,7 @@ contains
       Du(1) = rho
       Du(2) = rho*( DbdrNormal(2)*vt+DbdrNormal(1)*vn)
       Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
-      Du(4) = p/(GAMMA-1.0)+0.5*rho*(vn*vn+vt*vt)
+      Du(4) = p/(GAMMA-1.0_DP)+0.5_DP*rho*(vn*vn+vt*vt)
 
 
     case DEFAULT
@@ -4824,13 +4897,19 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution
     type(t_boundaryRegion), pointer :: p_rboundaryRegionMirror
-    real(DP), dimension(:,:), pointer :: Daux1,Daux3,Dnx,Dny,DpointParMirror
-    real(DP), dimension(:,:,:), pointer :: Daux2,Daux4
-    real(DP), dimension(NVAR2D) :: DstateI,DstateM,Dflux,Diff
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(:), pointer :: Domega,DlocalData
+    real(DP), dimension(:,:), pointer :: Daux,Dnx,Dny,DpointParMirror
+    real(DP), dimension(:,:), pointer :: DcubPtsRef,Dbas,Dflux,Ddiff
+    real(DP), dimension(:,:,:), pointer :: DstateI,DstateM,Dcoords
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
-    real(DP) :: dtime,dscale,cI,cM,dvnI,dvnM,dvtI,dvtM,pI,pM,rM,w1,w4
-    integer :: ibdrtype,isegment,iel,ipoint,ndim,ivar,nvar,iexpr,nmaxExpr
+    real(DP) :: dtime,dscale,cI,cM,dvnI,dvnM,dvtI,dvtM,rM
+    real(DP) :: uI,vI,pI,uM,vM,pM,w1,w2,w3,w4,l1,l2,l3,l4
+    real(DP) :: aux,aux1,aux2,u_IM,v_IM,H_IM,vel_IM,q_IM,c_IM,c2_IM
+    integer :: idissipationtype,ibdrtype,isegment,nmaxExpr,ccubTypeBdr
+    integer :: iel,icubp,ipoint,npoints,ivar,nvar,iexpr,ivt,nve,neq
+    
 
 #ifndef HYDRO_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -4849,12 +4928,15 @@ contains
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
     p_rsolution => rcollection%p_rvectorQuickAccess1
+    call lsysbl_getbase_double(p_rsolution, p_Ddata)
 
     ! Check if the solution is given in block or interleaved format
     if (p_rsolution%nblocks .eq. 1) then
       nvar = p_rsolution%RvectorBlock(1)%NVAR
+      neq  = p_rsolution%NEQ/nvar
     else
       nvar = p_rsolution%nblocks
+      neq  = p_rsolution%NEQ/nvar
     end if
     
     ! The first two quick access double values hold the simulation
@@ -4866,1214 +4948,830 @@ contains
     ! - the type of boundary condition
     ! - the segment number
     ! - the maximum number of expressions
+    ! - the type of dissipation
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
     nmaxExpr = rcollection%IquickAccess(3)
+    idissipationtype = rcollection%IquickAccess(4)
+    ccubTypeBdr      = rcollection%IquickAccess(5)
+    
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+    ! Evaluate one-dimensional basis functions on the boundary edge
+    if (npointsPerElement .ne. cub_igetNumPts(ccubTypeBdr)) then
+      call output_line('Type of cubature rule at boundary mismatch!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr2d_sim')
+      call sys_halt()
+    else
+      ! Allocate temporal memory for one-dimensional
+      ! cubature along the boundary edge
+      allocate(Dbas(2,npointsPerElement))
+      allocate(Domega(npointsPerElement))
+      allocate(DcubPtsRef(1,npointsPerElement))
 
-    ! Allocate temporal memory
-    allocate(Dnx(npointsPerElement, nelements))
-    allocate(Dny(npointsPerElement, nelements))
+      ! Get the coordinates of the cubature points and the
+      ! corresponding weights for the given cubature rule
+      call cub_getCubature(ccubTypeBdr, DcubPtsRef, Domega)
+      
+      ! Evaluate the one-dimensional basis functions 
+      ! in the cubature points on the boundary
+      do icubp = 1, npointsPerElement
+        Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
+        Dbas(2,icubp) = 0.5_DP*(1.0_DP+DcubPtsRef(1,icubp))
+      end do
 
-    ! Get the normal vectors in the cubature points on the boundary
-    call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-!!$    call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-!!$        ibct, DpointPar, Dnx, Dny, cparType=BDR_PAR_LENGTH)
+      ! Deallocate temporal memory which is no longer required
+      deallocate(DcubPtsRef,Domega)
+    end if
 
+    ! How many DOFs are located at the boundary? This should be made
+    ! more flexible by checking the type of element. For the time
+    ! being, only linear and bilinear finite elements are supported
+    npoints = 2
+
+    ! How many vertices per element do we have?
+    nve = elem_igetNVE(rdomainIntSubset%celement)
+#else
+    ! Evaluate the Galerkin fluxes at the cubature points
+    npoints = npointsPerElement
+#endif
+    
+    ! Allocate temporal memory for normal vectors, the coordinates and
+    ! the solution state vectors in the DOFs located at the boundary
+    allocate(Dnx(npoints,nelements), Dny(npoints,nelements))
+    allocate(DstateI(nvar,npoints,nelements))
+    allocate(DstateM(nvar,npoints,nelements))
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+    allocate(Dcoords(NDIM2D,npoints,nelements))
+#endif
+    
+    ! Get coordinates and internal state vector ...
     if (p_rsolution%nblocks .eq. 1) then
 
-      !-------------------------------------------------------------------------
-      ! Solution is stored in interleaved format
-      !-------------------------------------------------------------------------
-      
+      ! ... for solutions stored in interleaved format
+
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+      do iel = 1, nelements
+        ! Get global DOF of first endpoints
+        ipoint = rdomainIntSubset%p_IelementOrientation(iel)
+        ivt    = IdofsTest(ipoint,iel)
+
+        ! Store internal state vector
+        DstateI(1,1,iel) = p_Ddata(nvar*(ivt-1)+1)
+        DstateI(2,1,iel) = p_Ddata(nvar*(ivt-1)+2)
+        DstateI(3,1,iel) = p_Ddata(nvar*(ivt-1)+3)
+        DstateI(4,1,iel) = p_Ddata(nvar*(ivt-1)+4)
+
+        ! Store vertex coordinate
+        Dcoords(1:2,1,iel) = rdomainIntSubset%p_Dcoords(1:2,ipoint,iel)
+
+        ! Get global DOF of second endpoints
+        ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
+        ivt    = IdofsTest(ipoint,iel)
+        
+        ! Store internal state vector
+        DstateI(1,2,iel) = p_Ddata(nvar*(ivt-1)+1)
+        DstateI(2,2,iel) = p_Ddata(nvar*(ivt-1)+2)
+        DstateI(3,2,iel) = p_Ddata(nvar*(ivt-1)+3)
+        DstateI(4,2,iel) = p_Ddata(nvar*(ivt-1)+4)
+
+        ! Store vertex coordinate
+        Dcoords(1:2,2,iel) = rdomainIntSubset%p_Dcoords(1:2,ipoint,iel)
+      end do
+#else
       ! Allocate temporal memory
-      allocate(Daux1(npointsPerElement*nvar, nelements))
+      allocate(Daux(npointsPerElement*nvar, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
-      call fevl_evaluate_sim(DER_FUNC, Daux1, p_rsolution%RvectorBlock(1),&
+      call fevl_evaluate_sim(DER_FUNC, Daux, p_rsolution%RvectorBlock(1),&
           Dpoints, rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-      ! What type of boundary conditions are we?
-      select case(iand(ibdrtype, BDRC_TYPEMASK))
-        
-      case (BDRC_FREESTREAM)
-        !-----------------------------------------------------------------------
-        ! Free-stream boundary conditions:
-        !
-        ! Compute the Riemann invariants based on the computed (internal)
-        ! state vector and the given freestream state vector and select
-        ! the Riemann invariant for each characteristic field based on the
-        ! sign of the corresponding eigenvalue.
-        
-        ! Initialize values for function parser
-        Dvalue = 0.0
-        Dvalue(NDIM3D+1) = dtime
-
-        ! Set number of spatial dimensions
-        ndim = size(Dpoints, 1)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Set values for function parser
-            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-            ! Compute free stream values from function parser given in
-            ! term of the primitive variables [rho,v1,v2,p]
-            do iexpr = 1, 4
-              call fparser_evalFunction(p_rfparser,&
-                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
-            end do
-
-            ! Compute auxiliary quantities based on free stream state vector
-            rM = DstateM(1)
-            pM = DstateM(4)
-            cM = sqrt(GAMMA*pM/rM)
-            dvnM =  Dnx(ipoint,iel)*DstateM(2)+Dny(ipoint,iel)*DstateM(3)
-            dvtM = -Dny(ipoint,iel)*DstateM(2)+Dnx(ipoint,iel)*DstateM(3)
-            
-            ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
-                              0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
-                                   Daux1((ipoint-1)*NVAR2D+3,iel)**2)/&
-                                   Daux1((ipoint-1)*NVAR2D+1,iel))
-            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
-
-            ! Compute the normal and tangential velocities based
-            ! on internal state vector
-            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
-            dvtI = (-Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
-
-            ! Select free stream or computed Riemann invariant depending
-            ! on the sign of the corresponding eigenvalue
-            if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-2.0*cM/(GAMMA-1.0)
-            else
-              DstateM(1) = dvnI-2.0*cI/(GAMMA-1.0)
-            end if
-
-            if (dvnI .lt. 0.0_DP) then
-              DstateM(2) = pM/(rM**GAMMA)
-              DstateM(3) = dvtM
-            else
-              DstateM(2) = pI/(Daux1((ipoint-1)*NVAR2D+1,iel)**GAMMA)
-              DstateM(3) = dvtI
-            end if
-
-            if (dvnI .lt. -cI) then
-              DstateM(4) = dvnM+2.0*cM/(GAMMA-1.0)
-            else
-              DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
-            end if
-
-            ! Convert Riemann invariants into conservative state variables
-            cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
-            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
-            pM = rM*cM*cM/GAMMA
-            dvnM = 0.5*(DstateM(1)+DstateM(4))
-            dvtM = DstateM(3)
-
-            ! Setup the state vector based on Riemann invariants
-            DstateM(1) = rM
-            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
-            
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
-            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
-            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
-            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
-
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
+      
+      ! Distribute solution values to the internal state vector
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+          DstateI(1,ipoint,iel) = Daux((ipoint-1)*NVAR2D+1,iel)
+          DstateI(2,ipoint,iel) = Daux((ipoint-1)*NVAR2D+2,iel)
+          DstateI(3,ipoint,iel) = Daux((ipoint-1)*NVAR2D+3,iel)
+          DstateI(4,ipoint,iel) = Daux((ipoint-1)*NVAR2D+4,iel)
         end do
-
-
-      case (BDRC_FREESLIP)
-        !-----------------------------------------------------------------------
-        ! Free-slip boundary condition:
-        !
-        ! Compute the mirrored state vector based on the values of the
-        ! computed state vector and use an approximate Riemann solver
-        
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-            
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
-            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
-            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
-            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
-            
-            ! Compute the normal and tangential velocities based
-            ! on the internal state vector
-            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
-            dvtI = (-Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
-
-            ! Compute the mirrored state vector
-            DstateM(1) = DstateI(1)
-            DstateM(2) = DstateM(1)*(-dvnI*Dnx(ipoint,iel) - dvtI*Dny(ipoint,iel))
-            DstateM(3) = DstateM(1)*(-dvnI*Dny(ipoint,iel) + dvtI*Dnx(ipoint,iel))
-            DstateM(4) = DstateI(4)
-            
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-
-      case (BDRC_SUPERINLET)
-        !-----------------------------------------------------------------------
-        ! Supersonic inlet boundary conditions:
-        !
-        ! Prescribe the state vector in conservative variables
-        
-        ! Initialize values for function parser
-        Dvalue = 0.0
-        Dvalue(NDIM3D+1) = dtime
-
-        ! Set number of spatial dimensions
-        ndim = size(Dpoints, 1)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Set values for function parser
-            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-            ! Compute boundary values from function parser given in
-            ! term of the primitive variables [rho,v1,v2,p]
-            do iexpr = 1, 4
-              call fparser_evalFunction(p_rfparser,&
-                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
-            end do
-
-            ! Compute convervative variables
-            DstateM(4) = DstateM(4)/(GAMMA-1.0)&
-                       + DstateM(1)*0.5*(DstateM(2)**2+DstateM(3)**2)
-            DstateM(2) = DstateM(1)*DstateM(2)
-            DstateM(3) = DstateM(1)*DstateM(3)
-
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
-            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
-            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
-            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
-
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-        
-      case (BDRC_SUPEROUTLET)
-        !-----------------------------------------------------------------------
-        ! Supersonic outlet boundary conditions:
-        !
-        ! Evaluate the boundary fluxes based on the computed state vector
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
-            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
-            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
-            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
-
-            ! Assemble Galerkin fluxes at the boundary
-            call doGalerkinFlux(DstateI, Dnx(ipoint,iel), Dny(ipoint,iel), Dflux)
-
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*Dflux
-          end do
-        end do
-
-        
-      case (BDRC_SUBINLET)
-        !-----------------------------------------------------------------------
-        ! Subsonic pressure-density inlet boundary conditions:
-        !
-        ! Prescribe the density, pressure and tangential velocity at the inlet
-
-        ! Initialize values for function parser
-        Dvalue = 0.0
-        Dvalue(NDIM3D+1) = dtime
-
-        ! Set number of spatial dimensions
-        ndim = size(Dpoints, 1)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Set values for function parser
-            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-            ! Compute boundary values from function parser given in
-            ! terms of the density, pressure and tangential velocity
-            do iexpr = 1, 3
-              call fparser_evalFunction(p_rfparser,&
-                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
-            end do
-
-            ! Compute auxiliary quantities based on prescribed boundary values
-            rM   = DstateM(1)
-            pM   = DstateM(2)
-            dvtM = DstateM(3)
-            cM   = sqrt(GAMMA*pM/rM)
-            
-            ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
-                              0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
-                                   Daux1((ipoint-1)*NVAR2D+3,iel)**2)/&
-                                   Daux1((ipoint-1)*NVAR2D+1,iel))
-            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
-
-            ! Compute the normal velocity based on the internal state vector
-            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
-
-            ! Compute fourth Riemann invariant based on the internal state vector
-            w4 = dvnI+2.0*cI/(GAMMA-1.0)
-
-            ! Compute the first Riemann invariant based on the fourth Riemann
-            ! invariant and the prescribed boundary values
-            w1 = w4-4.0*cM/(GAMMA-1.0)
-
-            ! Compute the normal velocity based on the first and fourth Riemann
-            ! invarient
-            dvnM = 0.5*(w1+w4)
-
-            ! Setup the state vector based on Rimann invariants
-            DstateM(1) = rM
-            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
-
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
-            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
-            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
-            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
-            
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-
-      case (BDRC_SUBOUTLET)
-        !-----------------------------------------------------------------------
-        ! Subsonic pressure outlet boundary condition:
-        !
-        ! Prescribe the pressure at the outlet
-
-        ! Initialize values for function parser
-        Dvalue = 0.0
-        Dvalue(NDIM3D+1) = dtime
-
-        ! Set number of spatial dimensions
-        ndim = size(Dpoints, 1)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Set values for function parser
-            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-            ! Compute pressure value from function parser
-            call fparser_evalFunction(p_rfparser,&
-                nmaxExpr*(isegment-1)+1, Dvalue, pM)
-
-            ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
-                              0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
-                                   Daux1((ipoint-1)*NVAR2D+3,iel)**2)/&
-                                   Daux1((ipoint-1)*NVAR2D+1,iel))
-            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
-
-            ! Compute the normal and tangential velocities based
-            ! on internal state vector
-            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
-            dvtI = (-Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
-            
-            ! Compute three Riemann invariants based on internal state vector
-            DstateM(2) = pI/(Daux1((ipoint-1)*NVAR2D+1,iel)**GAMMA)
-            DstateM(3) = dvtI
-            DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
-            
-            ! Compute first Riemann invariant based on fourth Riemann invariant,
-            ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(4)-4.0/(GAMMA-1.0)*sqrt(&
-                GAMMA*pM/Daux1((ipoint-1)*NVAR2D+1,iel)*(pI/pM)**(1.0/GAMMA))
-
-            ! Convert Riemann invariants into conservative state variables
-            cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
-            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
-            pM = rM*cM*cM/GAMMA
-            dvnM = 0.5*(DstateM(1)+DstateM(4))
-            dvtM = DstateM(3)
-
-            ! Setup the state vector based on Riemann invariants
-            DstateM(1) = rM
-            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
-            
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
-            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
-            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
-            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
-            
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-
-      case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
-        !-----------------------------------------------------------------------
-        ! Periodic boundary conditions:
-        !
-        ! Compute the Riemann invariants based on the computed
-        ! (internal) state vector and on the state vector evaluated at
-        ! the mirror boundary and select the Riemann invariant for
-        ! each characteristic field based on the sign of the
-        ! corresponding eigenvalue.
-
-        ! Get mirrored boundary region from collection structure
-        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
-            'rboundaryRegionMirror')
-        
-        ! Get minimum/maximum parameter values from collection structure
-        dminParam = rcollection%DquickAccess(3)
-        dmaxParam = rcollection%DquickAccess(4)
-        dminParamMirror = rcollection%DquickAccess(5)
-        dmaxParamMirror = rcollection%DquickAccess(6)
-
-        ! Allocate temporal memory
-        allocate(DpointParMirror(npointsPerElement,nelements))
-        allocate(Daux3(npointsPerElement*nvar, nelements))
-
-        ! Rescale parameter values DpointPar on the boundary segment
-        ! where to compute the boundary conditions into parameter
-        ! values on the mirror boundary region
-        if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
-          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
-              dmaxParamMirror, dminParamMirror, DpointParMirror)
-        else
-          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
-              dmaxParamMirror, dminParamMirror, DpointParMirror)
-        end if
-
-        ! Evaluate the solution in the cubature points on the mirrored boundary
-        call doEvaluateAtBdrScalar(DER_FUNC, npointsPerElement*nelements*nvar,&
-            Daux3, p_rsolution%RvectorBlock(1), npointsPerElement*nelements,&
-            DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-        
-            ! Compute auxiliary quantities based on the internal state
-            ! vector evaluated on the boundary
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
-                              0.5*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
-                                   Daux1((ipoint-1)*NVAR2D+3,iel)**2)/&
-                                   Daux1((ipoint-1)*NVAR2D+1,iel))
-            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
-
-            ! Compute the normal and tangential velocities based on
-            ! the internal state vector evaluated on the boundary
-            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
-            dvtI = (-Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
-                     Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux1((ipoint-1)*NVAR2D+1,iel)
-
-            ! Compute auxiliary quantities based on state vector
-            ! evaluated on the mirrored boundary
-            pM = (GAMMA-1.0)*(Daux3((ipoint-1)*NVAR2D+4,iel)-&
-                              0.5*(Daux3((ipoint-1)*NVAR2D+2,iel)**2+&
-                                   Daux3((ipoint-1)*NVAR2D+3,iel)**2)/&
-                                   Daux3((ipoint-1)*NVAR2D+1,iel))
-            cM = sqrt(max(GAMMA*pM/Daux3((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
-
-            ! Compute the normal and tangential velocities based on
-            ! state vector evaluated on the mirrored boundary
-            dvnM = ( Dnx(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+2,iel)+&
-                     Dny(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux3((ipoint-1)*NVAR2D+1,iel)
-            dvtM = (-Dny(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+2,iel)+&
-                     Dnx(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+3,iel) )/&
-                     Daux3((ipoint-1)*NVAR2D+1,iel)
-
-            ! Select internal or mirrored Riemann invariant depending
-            ! on the sign of the corresponding eigenvalue
-            if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-2.0*cM/(GAMMA-1.0)
-            else
-              DstateM(1) = dvnI-2.0*cI/(GAMMA-1.0)
-            end if
-
-            if (dvnI .lt. SYS_EPSREAL) then
-              DstateM(2) = pM/(Daux3((ipoint-1)*NVAR2D+1,iel)**GAMMA)
-              DstateM(3) = dvtM
-            else
-              DstateM(2) = pI/(Daux1((ipoint-1)*NVAR2D+1,iel)**GAMMA)
-              DstateM(3) = dvtI
-            end if
-
-            if (dvnI .lt. -cI) then
-              DstateM(4) = dvnM+2.0*cM/(GAMMA-1.0)
-            else
-              DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
-            end if
-            
-            ! Convert Riemann invariants into conservative state variables
-            cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
-            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
-            pM = rM*cM*cM/GAMMA
-            dvnM = 0.5*(DstateM(1)+DstateM(4))
-            dvtM = DstateM(3)
-
-            ! Setup the state vector based on Riemann invariants
-            DstateM(1) = rM
-            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
-            
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
-            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
-            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
-            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
-            
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-        ! Deallocate temporal memory
-        deallocate(DpointParMirror, Daux3)
-
-      case default
-        call output_line('Invalid type of boundary conditions!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr2d_sim')
-        call sys_halt()
-        
-      end select
+      end do
 
       ! Deallocate temporal memory
-      deallocate(Daux1)
-        
+      deallocate(Daux)
+#endif
+
     else
 
-      !-------------------------------------------------------------------------
-      ! Solution is stored in block format
-      !-------------------------------------------------------------------------
-      
+      ! ... for solutions stored in block format
+
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+      do iel = 1, nelements
+        ! Get global DOF of first endpoints
+        ipoint = rdomainIntSubset%p_IelementOrientation(iel)
+        ivt    = IdofsTest(ipoint,iel)
+        
+        ! Store internal state vector
+        DstateI(1,1,iel) = p_Ddata(      ivt)
+        DstateI(2,1,iel) = p_Ddata(neq  +ivt)
+        DstateI(3,1,iel) = p_Ddata(neq*2+ivt)
+        DstateI(4,1,iel) = p_Ddata(neq*3+ivt)
+
+        ! Store vertex coordinate
+        Dcoords(1:2,1,iel) = rdomainIntSubset%p_Dcoords(1:2,ipoint,iel)
+
+        ! Get global DOF of second endpoints
+        ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
+        ivt    = IdofsTest(ipoint,iel)
+        
+        ! Store internal state vector
+        DstateI(1,2,iel) = p_Ddata(      ivt)
+        DstateI(2,2,iel) = p_Ddata(neq  +ivt)
+        DstateI(3,2,iel) = p_Ddata(neq*2+ivt)
+        DstateI(4,2,iel) = p_Ddata(neq*3+ivt)
+
+        ! Store vertex coordinate
+        Dcoords(1:2,2,iel) = rdomainIntSubset%p_Dcoords(1:2,ipoint,iel)
+      end do
+#else
       ! Allocate temporal memory
-      allocate(Daux2(npointsPerElement, nelements, nvar))
+      allocate(Daux(npointsPerElement, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
       do ivar = 1, nvar
-        call fevl_evaluate_sim(DER_FUNC, Daux2(:,:,ivar),&
+        call fevl_evaluate_sim(DER_FUNC, Daux,&
             p_rsolution%RvectorBlock(ivar), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+      
+        ! Distribute solution values to the internal state vector
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            DstateI(ivar,ipoint,iel) = Daux(ipoint,iel)
+          end do
+        end do
       end do
 
-      ! What type of boundary conditions are we?
-      select case(iand(ibdrtype, BDRC_TYPEMASK))
-        
-      case (BDRC_FREESTREAM)
-        !-----------------------------------------------------------------------
-        ! Free-stream boundary conditions:
-        !
-        ! Compute the Riemann invariants based on the computed (internal)
-        ! state vector and the given freestream state vector and select
-        ! the Riemann invariant for each characteristic field based on the
-        ! sign of the corresponding eigenvalue.
-
-        ! Initialize values for function parser
-        Dvalue = 0.0
-        Dvalue(NDIM3D+1) = dtime
-
-        ! Set number of spatial dimensions
-        ndim = size(Dpoints, 1)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Set values for function parser
-            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-            ! Compute free stream values from function parser given in
-            ! term of the primitive variables [rho,v1,v2,p]
-            do iexpr = 1, 4
-              call fparser_evalFunction(p_rfparser,&
-                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
-            end do
-
-            ! Compute auxiliary quantities based on free stream state vector
-            rM = DstateM(1)
-            pM = DstateM(4)
-            cM = sqrt(GAMMA*pM/rM)
-            dvnM =  Dnx(ipoint,iel)*DstateM(2)+Dny(ipoint,iel)*DstateM(3)
-            dvtM = -Dny(ipoint,iel)*DstateM(2)+Dnx(ipoint,iel)*DstateM(3)
-
-            ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-&
-                              0.5*(Daux2(ipoint,iel,2)**2+&
-                                   Daux2(ipoint,iel,3)**2)/Daux2(ipoint,iel,1))
-            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
-
-            ! Compute the normal and tangential velocities based
-            ! on internal state vector
-            dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
-                     Dny(ipoint,iel)*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
-            dvtI = (-Dny(ipoint,iel)*Daux2(ipoint,iel,2)+&
-                     Dnx(ipoint,iel)*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
-
-            ! Select free stream or computed Riemann invariant depending
-            ! on the sign of the corresponding eigenvalue
-            if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-2.0*cM/(GAMMA-1.0)
-            else
-              DstateM(1) = dvnI-2.0*cI/(GAMMA-1.0)
-            end if
-
-            if (dvnI .lt. SYS_EPSREAL) then
-              DstateM(2) = pM/(rM**GAMMA)
-              DstateM(3) = dvtM
-            else
-              DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
-              DstateM(3) = dvtI
-            end if
-
-            if (dvnI .lt. -cI) then
-              DstateM(4) = dvnM+2.0*cM/(GAMMA-1.0)
-            else
-              DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
-            end if
-
-            ! Convert Riemann invariants into conservative state variables
-            cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
-            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
-            pM = rM*cM*cM/GAMMA
-            dvnM = 0.5*(DstateM(1)+DstateM(4))
-            dvtM = DstateM(3)
-
-            ! Setup the state vector based on Riemann invariants
-            DstateM(1) = rM
-            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
-            
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux2(ipoint,iel,1)
-            DstateI(2) = Daux2(ipoint,iel,2)
-            DstateI(3) = Daux2(ipoint,iel,3)
-            DstateI(4) = Daux2(ipoint,iel,4)
-            
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-
-      case (BDRC_FREESLIP)
-        !-----------------------------------------------------------------------
-        ! Free-slip boundary condition:
-        !
-        ! Compute the mirrored state vector based on the values of the
-        ! computed state vector and use an approximate Riemann solver
-        
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-            
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux2(ipoint,iel,1)
-            DstateI(2) = Daux2(ipoint,iel,2)
-            DstateI(3) = Daux2(ipoint,iel,3)
-            DstateI(4) = Daux2(ipoint,iel,4)
-
-            ! Compute the normal and tangential velocities based
-            ! on the internal state vector
-            dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
-                     Dny(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
-            dvtI = (-Dny(ipoint,iel)*Daux2(ipoint,iel,2)+&
-                     Dnx(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
-
-            ! Compute the mirrored state vector
-            DstateM(1) = DstateI(1)
-            DstateM(2) = DstateM(1)*(-dvnI*Dnx(ipoint,iel) - dvtI*Dny(ipoint,iel))
-            DstateM(3) = DstateM(1)*(-dvnI*Dny(ipoint,iel) + dvtI*Dnx(ipoint,iel))
-            DstateM(4) = DstateI(4)
-
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-
-        case (BDRC_SUPERINLET)
-        !-----------------------------------------------------------------------
-        ! Supersonic inlet boundary conditions:
-        !
-        ! Prescribe the state vector in conservative variables
-        
-        ! Initialize values for function parser
-        Dvalue = 0.0
-        Dvalue(NDIM3D+1) = dtime
-
-        ! Set number of spatial dimensions
-        ndim = size(Dpoints, 1)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Set values for function parser
-            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-            ! Compute boundary values from function parser given in
-            ! term of the primitive variables [rho,v1,v2,p]
-            do iexpr = 1, 4
-              call fparser_evalFunction(p_rfparser,&
-                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
-            end do
-
-            ! Compute convervative variables
-            DstateM(4) = DstateM(4)/(GAMMA-1.0)&
-                       + DstateM(1)*0.5*(DstateM(2)**2+DstateM(3)**2)
-            DstateM(2) = DstateM(1)*DstateM(2)
-            DstateM(3) = DstateM(1)*DstateM(3)
-            
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux2(ipoint,iel,1)
-            DstateI(2) = Daux2(ipoint,iel,2)
-            DstateI(3) = Daux2(ipoint,iel,3)
-            DstateI(4) = Daux2(ipoint,iel,4)
-            
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-
-      case (BDRC_SUPEROUTLET)
-        !-----------------------------------------------------------------------
-        ! Supersonic outlet boundary conditions:
-        !
-        ! Evaluate the boundary fluxes based on the computed state vector
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux2(ipoint,iel,1)
-            DstateI(2) = Daux2(ipoint,iel,2)
-            DstateI(3) = Daux2(ipoint,iel,3)
-            DstateI(4) = Daux2(ipoint,iel,4)
-
-            ! Assemble Galerkin fluxes at the boundary
-            call doGalerkinFlux(DstateI, Dnx(ipoint,iel), Dny(ipoint,iel), Dflux)
-
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*Dflux
-          end do
-        end do
-
-
-      case (BDRC_SUBINLET)
-        !-----------------------------------------------------------------------
-        ! Subsonic pressure-density inlet boundary conditions:
-        !
-        ! Prescribe the density, pressure and tangential velocity at the inlet
-        
-        ! Initialize values for function parser
-        Dvalue = 0.0
-        Dvalue(NDIM3D+1) = dtime
-
-        ! Set number of spatial dimensions
-        ndim = size(Dpoints, 1)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Set values for function parser
-            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-            ! Compute boundary values from function parser given in
-            ! term of the density, pressure and tangential velocity
-            do iexpr = 1, 3
-              call fparser_evalFunction(p_rfparser,&
-                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
-            end do
-
-            ! Compute auxiliary quantities based on prescribed boundary values
-            rM   = DstateM(1)
-            pM   = DstateM(2)
-            dvtM = DstateM(3)
-            cM   = sqrt(GAMMA*pM/rM)
-
-            ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-&
-                              0.5*(Daux2(ipoint,iel,2)**2+&
-                                   Daux2(ipoint,iel,3)**2)/Daux2(ipoint,iel,1))
-            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
-
-            ! Compute the normal velocity based on the internal state vector
-            dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
-                     Dny(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
-
-            ! Compute fourth Riemann invariant based on the internal state vector
-            w4 = dvnI+2.0*cI/(GAMMA-1.0)
-
-            ! Compute the first Riemann invariant based on the fourth Riemann
-            ! invariant and the prescribed boundary values
-            w1 = w4-4.0*cM/(GAMMA-1.0)
-
-            ! Compute the normal velocity based on the first and fourth Riemann
-            ! invarient
-            dvnM = 0.5*(w1+w4)
-
-            ! Setup the state vector based on Rimann invariants
-            DstateM(1) = rM
-            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
-
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux2(ipoint,iel,1)
-            DstateI(2) = Daux2(ipoint,iel,2)
-            DstateI(3) = Daux2(ipoint,iel,3)
-            DstateI(4) = Daux2(ipoint,iel,4)
-            
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-
-      case (BDRC_SUBOUTLET)
-        !-----------------------------------------------------------------------
-        ! Subsonic pressure outlet boundary condition:
-        !
-        ! Prescribe the pressure at the outlet
-
-        ! Initialize values for function parser
-        Dvalue = 0.0
-        Dvalue(NDIM3D+1) = dtime
-
-        ! Set number of spatial dimensions
-        ndim = size(Dpoints, 1)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Set values for function parser
-            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-            ! Compute pressure value from function parser
-            call fparser_evalFunction(p_rfparser,&
-                nmaxExpr*(isegment-1)+1, Dvalue, pM)
-
-            ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-&
-                              0.5*(Daux2(ipoint,iel,2)**2+&
-                                   Daux2(ipoint,iel,3)**2)/Daux2(ipoint,iel,1))
-            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
-
-            ! Compute the normal and tangential velocities based
-            ! on internal state vector
-            dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
-                     Dny(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
-            dvtI = (-Dny(ipoint,iel)*Daux2(ipoint,iel,2)+&
-                     Dnx(ipoint,iel)*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
-            
-            ! Compute three Riemann invariants based on internal state vector
-            DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
-            DstateM(3) = dvtI
-            DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
-            
-            ! Compute first Riemann invariant based on fourth Riemann invariant,
-            ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(4)-4.0/(GAMMA-1.0)*sqrt(&
-                GAMMA*pM/Daux2(ipoint,iel,1)*(pI/pM)**(1.0/GAMMA))
-
-            ! Convert Riemann invariants into conservative state variables
-            cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
-            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
-            pM = rM*cM*cM/GAMMA
-            dvnM = 0.5*(DstateM(1)+DstateM(4))
-            dvtM = DstateM(3)
-
-            ! Setup the state vector based on Riemann invariants
-            DstateM(1) = rM
-            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
-            
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux2(ipoint,iel,1)
-            DstateI(2) = Daux2(ipoint,iel,2)
-            DstateI(3) = Daux2(ipoint,iel,3)
-            DstateI(4) = Daux2(ipoint,iel,4)
-            
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-        
-      case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
-        !-----------------------------------------------------------------------
-        ! Periodic boundary conditions:
-        !
-        ! Compute the Riemann invariants based on the computed
-        ! (internal) state vector and on the state vector evaluated at
-        ! the mirror boundary and select the Riemann invariant for
-        ! each characteristic field based on the sign of the
-        ! corresponding eigenvalue.
-
-        ! Get mirrored boundary region from collection structure
-        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
-            'rboundaryRegionMirror')
-        
-        ! Get minimum/maximum parameter values from collection structure
-        dminParam = rcollection%DquickAccess(3)
-        dmaxParam = rcollection%DquickAccess(4)
-        dminParamMirror = rcollection%DquickAccess(5)
-        dmaxParamMirror = rcollection%DquickAccess(6)
-
-        ! Allocate temporal memory
-        allocate(DpointParMirror(npointsPerElement,nelements))
-        allocate(Daux4(nvar, npointsPerElement, nelements))
-
-        ! Rescale parameter values DpointPar on the boundary segment
-        ! where to compute the boundary conditions into parameter
-        ! values on the mirror boundary region
-        if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
-          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
-              dmaxParamMirror, dminParamMirror, DpointParMirror)
-        else
-          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
-              dmaxParamMirror, dminParamMirror, DpointParMirror)
-        end if
-        
-        ! Evaluate the solution in the cubature points on the mirrored boundary
-        call doEvaluateAtBdrBlock(DER_FUNC, nvar, npointsPerElement*nelements,&
-            Daux4, p_rsolution, npointsPerElement*nelements,&
-            DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-        
-            ! Compute auxiliary quantities based on the internal state
-            ! vector evaluated on the boundary
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,4)-&
-                              0.5*(Daux2(ipoint,iel,2)**2+&
-                                   Daux2(ipoint,iel,3)**2)/Daux2(ipoint,iel,1))
-            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
-
-            ! Compute the normal and tangential velocities based on
-            ! the internal state vector evaluated on the boundary
-            dvnI = ( Dnx(ipoint,iel)*Daux2(ipoint,iel,2)+&
-                     Dny(ipoint,iel)*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
-            dvtI = (-Dny(ipoint,iel)*Daux2(ipoint,iel,2)+&
-                     Dnx(ipoint,iel)*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
-
-            ! Compute auxiliary quantities based on state vector
-            ! evaluated on the mirrored boundary
-            pM = (GAMMA-1.0)*(Daux4(4,ipoint,iel)-&
-                              0.5*(Daux4(2,ipoint,iel)**2+&
-                                   Daux4(3,ipoint,iel)**2)/Daux4(1,ipoint,iel))
-            cM = sqrt(max(GAMMA*pI/Daux4(1,ipoint,iel), SYS_EPSREAL))
-
-            ! Compute the normal and tangential velocities based on
-            ! state vector evaluated on the mirrored boundary
-            dvnM = ( Dnx(ipoint,iel)*Daux4(2,ipoint,iel)+&
-                     Dny(ipoint,iel)*Daux4(3,ipoint,iel))/Daux4(1,ipoint,iel)
-            dvtM = (-Dny(ipoint,iel)*Daux4(2,ipoint,iel)+&
-                     Dnx(ipoint,iel)*Daux4(3,ipoint,iel))/Daux4(1,ipoint,iel)
-
-            ! Select internal or mirrored Riemann invariant depending
-            ! on the sign of the corresponding eigenvalue
-            if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-2.0*cM/(GAMMA-1.0)
-            else
-              DstateM(1) = dvnI-2.0*cI/(GAMMA-1.0)
-            end if
-
-            if (dvnI .lt. SYS_EPSREAL) then
-              DstateM(2) = pM/(Daux4(1,ipoint,iel)**GAMMA)
-              DstateM(3) = dvtM
-            else
-              DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
-              DstateM(3) = dvtI
-            end if
-
-            if (dvnI .lt. -cI) then
-              DstateM(4) = dvnM+2.0*cM/(GAMMA-1.0)
-            else
-              DstateM(4) = dvnI+2.0*cI/(GAMMA-1.0)
-            end if
-            
-            ! Convert Riemann invariants into conservative state variables
-            cM = 0.25*(GAMMA-1.0)*(DstateM(4)-DstateM(1))
-            rM = (cM*cM/GAMMA/DstateM(2))**(1.0/(GAMMA-1.0))
-            pM = rM*cM*cM/GAMMA
-            dvnM = 0.5*(DstateM(1)+DstateM(4))
-            dvtM = DstateM(3)
-
-            ! Setup the state vector based on Riemann invariants
-            DstateM(1) = rM
-            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
-            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
-            DstateM(4) = pM/(GAMMA-1.0) + 0.5*rM*(dvnM**2+dvtM**2)
-            
-            ! Setup the computed internal state vector
-            DstateI(1) = Daux2(ipoint,iel,1)
-            DstateI(2) = Daux2(ipoint,iel,2)
-            DstateI(3) = Daux2(ipoint,iel,3)
-            DstateI(4) = Daux2(ipoint,iel,4)
-            
-            ! Invoke Riemann solver
-            call doRiemannSolver(DstateI, DstateM,&
-                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Diff)
-            
-            ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
-          end do
-        end do
-
-        ! Deallocate temporal memory
-        deallocate(DpointParMirror, Daux4)
-
-      case default
-        call output_line('Invalid type of boundary conditions!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr2d_sim')
-        call sys_halt()
-        
-      end select
-
       ! Deallocate temporal memory
-      deallocate(Daux2)
-      
+      deallocate(Daux)
+#endif
     end if
+    
+    ! Calculate the normal vectors in DOFs on the boundary
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+    call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+#else
+    call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+#endif
 
-    ! Deallocate temporal memory
-    deallocate(Dnx,Dny)
-
-  contains
-
-    ! Here come the working routines
-
-    !***************************************************************************
-    ! Approximate Riemann solver along the outward unit normal
-    !***************************************************************************
-
-    pure subroutine doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
-
-      ! input parameters
-      real(DP), dimension(NVAR2D), intent(in) :: DstateI, DstateM
-      real(DP), intent(in) :: dnx, dny
-
-      ! output parameters
-      real(DP), dimension(NVAR2D), intent(out) :: Dflux, Diff
-
-      ! local variables
-      real(DP) :: uI,vI,pI,uM,vM,pM
-      real(DP) :: H_IM,c2_IM,c_IM,q_IM,u_IM,v_IM,vel_IM
-      real(DP) :: l1,l2,l3,l4,w1,w2,w3,w4,aux,aux1,aux2
+    ! What type of boundary conditions are we?
+    select case(iand(ibdrtype, BDRC_TYPEMASK))
       
-      ! Compute auxiliary quantities
-      uI = X_VELOCITY_FROM_CONSVAR(DstateI,NVAR2D)
-      vI = Y_VELOCITY_FROM_CONSVAR(DstateI,NVAR2D)
-      pI = PRESSURE_FROM_CONSVAR_2D(DstateI,NVAR2D)
+    case (BDRC_FREESTREAM)
+      !-----------------------------------------------------------------------
+      ! Free-stream boundary conditions:
+      !
+      ! Compute the Riemann invariants based on the computed (internal)
+      ! state vector and the given freestream state vector and select
+      ! the Riemann invariant for each characteristic field based on the
+      ! sign of the corresponding eigenvalue.
       
-      ! Compute auxiliary quantities
-      uM = X_VELOCITY_FROM_CONSVAR(DstateM,NVAR2D)
-      vM = Y_VELOCITY_FROM_CONSVAR(DstateM,NVAR2D)
-      pM = PRESSURE_FROM_CONSVAR_2D(DstateM,NVAR2D)
+      ! Initialize values for function parser
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      do iel = 1, nelements
+        do ipoint = 1, npoints
+          
+          ! Set values for function parser
+          Dvalue(1:2) = Dcoords(1:2,ipoint,iel)
+          
+          ! Compute free stream values from function parser given in
+          ! term of the primitive variables [rho,v1,v2,p]
+          do iexpr = 1, 4
+            call fparser_evalFunction(p_rfparser,&
+                nmaxExpr*(isegment-1)+iexpr,&
+                Dvalue, DstateM(iexpr,ipoint,iel))
+          end do
+          
+          ! Compute auxiliary quantities based on free stream state vector
+          rM = DstateM(1,ipoint,iel)
+          pM = DstateM(4,ipoint,iel)
+          cM = sqrt(GAMMA*pM/rM)
+          dvnM =  Dnx(ipoint,iel)*DstateM(2,ipoint,iel)+&
+                  Dny(ipoint,iel)*DstateM(3,ipoint,iel)
+          dvtM = -Dny(ipoint,iel)*DstateM(2,ipoint,iel)+&
+                  Dnx(ipoint,iel)*DstateM(3,ipoint,iel)
+          
+          ! Compute auxiliary quantities based on internal state vector
+          pI = PRESSURE_2T_FROM_CONSVAR_2D(DstateI,NVAR2D,ipoint,iel)
+          cI = sqrt(max(GAMMA*pI/&
+               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel), SYS_EPSREAL))
+          
+          ! Compute the normal and tangential velocities based
+          ! on internal state vector
+          dvnI = ( Dnx(ipoint,iel)*&
+                   X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+&
+                   Dny(ipoint,iel)*&
+                   Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel))/&
+                   DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+          dvtI = (-Dny(ipoint,iel)*&
+                   X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+&
+                   Dnx(ipoint,iel)*&
+                   Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel))/&
+                   DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
 
-      ! Calculate $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
-      Dflux(1) = dnx*(X_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)+&
-                      X_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D))&
-               + dny*(Y_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)+&
-                      Y_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D))
-      Dflux(2) = dnx*(X_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)*uI+pI+&
-                      X_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D)*uM+pM)&
-               + dny*(X_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)*vI+&
-                      X_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D)*vM)
-      Dflux(3) = dnx*(Y_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)*uI+&
-                      Y_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D)*uM)&
-               + dny*(Y_MOMENTUM_FROM_CONSVAR(DstateI,NVAR2D)*vI+pI+&
-                      Y_MOMENTUM_FROM_CONSVAR(DstateM,NVAR2D)*vM+pM)
-      Dflux(4) = dnx*((TOTAL_ENERGY_FROM_CONSVAR(DstateI,NVAR2D)+pI)*uI+&
-                      (TOTAL_ENERGY_FROM_CONSVAR(DstateM,NVAR2D)+pM)*uM)&
-               + dny*((TOTAL_ENERGY_FROM_CONSVAR(DstateI,NVAR2D)+pI)*vI+&
-                      (TOTAL_ENERGY_FROM_CONSVAR(DstateM,NVAR2D)+pM)*vM)
-      
-      ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-             DENSITY_FROM_CONSVAR(DstateI,NVAR2D),\
-             DENSITY_FROM_CONSVAR(DstateM,NVAR2D))
-      u_IM = ROE_MEAN_VALUE(uI,uM,aux)
-      v_IM = ROE_MEAN_VALUE(vI,vM,aux)
-      H_IM = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_FROM_CONSVAR(DstateI,NVAR2D)+pI)/\
-             DENSITY_FROM_CONSVAR(DstateI,NVAR2D),\
-             (TOTAL_ENERGY_FROM_CONSVAR(DstateM,NVAR2D)+pM)/\
-             DENSITY_FROM_CONSVAR(DstateM,NVAR2D),aux)
-      
-      ! Compute auxiliary variables
-      vel_IM = dnx*u_IM + dny*v_IM
-      q_IM   = 0.5*(u_IM*u_IM+v_IM*v_IM)
+          ! Select free stream or computed Riemann invariant depending
+          ! on the sign of the corresponding eigenvalue
+          if (dvnI .lt. cI) then
+            w1 = dvnM-2.0_DP*cM/(GAMMA-1.0_DP)
+          else
+            w1 = dvnI-2.0_DP*cI/(GAMMA-1.0_DP)
+          end if
+          
+          if (dvnI .lt. 0.0_DP) then
+            w2 = pM/(rM**GAMMA)
+            w3 = dvtM
+          else
+            w2 = pI/DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)**GAMMA
+            w3 = dvtI
+          end if
+          
+          if (dvnI .lt. -cI) then
+            w4 = dvnM+2.0_DP*cM/(GAMMA-1.0_DP)
+          else
+            w4 = dvnI+2.0_DP*cI/(GAMMA-1.0_DP)
+          end if
+          
+          ! Convert Riemann invariants into conservative state variables
+          cM = 0.25*(GAMMA-1.0_DP)*(w4-w1)
+          rM = (cM*cM/GAMMA/w2)**(1.0_DP/(GAMMA-1.0_DP))
+          pM = rM*cM*cM/GAMMA
+          dvnM = 0.5_DP*(w1+w4)
+          dvtM = w3
+          
+          ! Calculate the state vector based on Riemann invariants
+          DstateM(1,ipoint,iel) = rM
+          DstateM(2,ipoint,iel) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+          DstateM(3,ipoint,iel) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+          DstateM(4,ipoint,iel) = pM/(GAMMA-1.0_DP)+0.5_DP*rM*(dvnM**2+dvtM**2)
+        end do
+      end do
 
-      ! Compute the speed of sound
+      
+    case (BDRC_FREESLIP)
+      !-----------------------------------------------------------------------
+      ! Free-slip boundary condition:
+      !
+      ! Compute the mirrored state vector based on the values of the
+      ! computed state vector and use an approximate Riemann solver
+      
+      do iel = 1, nelements
+        do ipoint = 1, npoints
+          
+          ! Compute the normal and tangential velocities based
+          ! on the internal state vector
+          dvnI = ( Dnx(ipoint,iel)*&
+                   X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+&
+                   Dny(ipoint,iel)*&
+                   Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel))/&
+                   DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+          dvtI = (-Dny(ipoint,iel)*&
+                   X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+&
+                   Dnx(ipoint,iel)*&
+                   Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel))/&
+                   DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+
+          ! Compute the mirrored state vector
+          DstateM(1,ipoint,iel) = DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+          DstateM(2,ipoint,iel) = DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*&
+                                 (-dvnI*Dnx(ipoint,iel)-dvtI*Dny(ipoint,iel))
+          DstateM(3,ipoint,iel) = DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*&
+                                 (-dvnI*Dny(ipoint,iel)+dvtI*Dnx(ipoint,iel))
+          DstateM(4,ipoint,iel) = TOTAL_ENERGY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+        end do
+      end do
+
+
+    case (BDRC_SUPERINLET)
+      !-----------------------------------------------------------------------
+      ! Supersonic inlet boundary conditions:
+      !
+      ! Prescribe the state vector in conservative variables
+      
+      ! Initialize values for function parser
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      do iel = 1, nelements
+        do ipoint = 1, npoints
+          
+          ! Set values for function parser
+          Dvalue(1:2) = Dcoords(1:2,ipoint,iel)
+          
+          ! Compute boundary values from function parser given in
+          ! term of the primitive variables [rho,v1,v2,p]
+          do iexpr = 1, 4
+            call fparser_evalFunction(p_rfparser,&
+                nmaxExpr*(isegment-1)+iexpr,&
+                Dvalue, DstateM(iexpr,ipoint,iel))
+          end do
+          
+          ! Compute convervative variables
+          DstateM(4,ipoint,iel) = DstateM(4,ipoint,iel)/(GAMMA-1.0_DP)&
+              + DstateM(1,ipoint,iel)*0.5_DP*(DstateM(2,ipoint,iel)**2+&
+                                              DstateM(3,ipoint,iel)**2)
+          DstateM(2,ipoint,iel) = DstateM(1,ipoint,iel)*DstateM(2,ipoint,iel)
+          DstateM(3,ipoint,iel) = DstateM(1,ipoint,iel)*DstateM(3,ipoint,iel)
+        end do
+      end do
+
+        
+    case (BDRC_SUPEROUTLET)
+      !-----------------------------------------------------------------------
+      ! Supersonic outlet boundary conditions:
+      !
+      ! Evaluate the boundary fluxes based on the computed state
+      ! vector; since no Riemann problem is solved at the boundary we can
+      ! treat this case in a special way and leave this routine immediately.
+      
+      ! Allocate temporal memory
+      allocate(Dflux(nvar,npoints))
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+      allocate(DlocalData(nvar))
+#endif
+      
+      do iel = 1, nelements
+        
+        ! Loop over the DOFs and evaluate the Galerkin fluxes at DOFs
+        do ipoint = 1, npoints
+          
+          ! Compute velocities and pressure
+          uI = X_VELOCITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+          vI = Y_VELOCITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+          pI = PRESSURE_2T_FROM_CONSVAR_2D(DstateI,NVAR2D,ipoint,iel)
+
+          ! Calculate normal flux: ${\bf n}\cdot{\bf F}(U)$
+          Dflux(1,ipoint) = Dnx(ipoint,iel)*&
+                            X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)&
+                          + Dny(ipoint,iel)*&
+                            Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+          Dflux(2,ipoint) = Dnx(ipoint,iel)*&
+                            (X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*uI+pI)&
+                          + Dny(ipoint,iel)*&
+                            (X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*vI)
+          Dflux(3,ipoint) = Dnx(ipoint,iel)*&
+                            (Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*uI)&
+                          + Dny(ipoint,iel)*&
+                            (Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*vI+pI)
+          Dflux(4,ipoint) = Dnx(ipoint,iel)*&
+                            (TOTAL_ENERGY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+pI)*uI&
+                          + Dny(ipoint,iel)*&
+                            (TOTAL_ENERGY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+pI)*vI
+        end do
+        
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+        ! Loop over the cubature points and interpolate the Galerkin
+        ! fluxes from the DOFs to the cubature points, where they are
+        ! needed by the linear form assembly routine
+        do icubp = 1, npointsPerElement
+          
+          DlocalData = 0.0_DP
+          
+          ! Loop over the DOFs and interpolate the Galerkin fluxes
+          do ipoint = 1, npoints
+            DlocalData = DlocalData + Dbas(ipoint,icubp)*Dflux(:,ipoint)
+          end do
+          
+          ! Store flux in the cubature points
+          Dcoefficients(:,1,icubp,iel) = dscale*DlocalData
+        end do
+#else
+        ! Loop over the cubature points and store the fluxes
+        do ipoint = 1, npointsPerElement
+          Dcoefficients(:,1,ipoint,iel) = dscale*Dflux(:,ipoint)
+        end do
+#endif
+      end do
+      
+      ! Deallocate temporal memory
+      deallocate(Dnx,Dny,DstateI,DstateM,Dflux)
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+      deallocate(Dcoords,Dbas,DlocalData)
+#endif
+
+      ! That`s it
+      return
+
+      
+    case (BDRC_SUBINLET)
+      !-----------------------------------------------------------------------
+      ! Subsonic pressure-density inlet boundary conditions:
+      !
+      ! Prescribe the density, pressure and tangential velocity at the inlet
+      
+      ! Initialize values for function parser
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+          
+          ! Set values for function parser
+          Dvalue(1:2) = Dpoints(1:2,ipoint,iel)
+          
+          ! Compute boundary values from function parser given in
+          ! terms of the density, pressure and tangential velocity
+          do iexpr = 1, 3
+            call fparser_evalFunction(p_rfparser,&
+                nmaxExpr*(isegment-1)+iexpr,&
+                Dvalue, DstateM(iexpr,ipoint,iel))
+          end do
+          
+          ! Compute auxiliary quantities based on prescribed boundary values
+          rM   = DstateM(1,ipoint,iel)
+          pM   = DstateM(2,ipoint,iel)
+          dvtM = DstateM(3,ipoint,iel)
+          cM   = sqrt(GAMMA*pM/rM)
+          
+          ! Compute auxiliary quantities based on internal state vector
+          pI = PRESSURE_2T_FROM_CONSVAR_2D(DstateI,NVAR2D,ipoint,iel)
+          cI = sqrt(max(GAMMA*pI/&
+               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel), SYS_EPSREAL))
+          
+          ! Compute the normal velocity based on the internal state vector
+          dvnI = ( Dnx(ipoint,iel)*&
+                   X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+&
+                   Dny(ipoint,iel)*&
+                   Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel))/&
+                   DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+          
+          ! Compute fourth Riemann invariant based on the internal state vector
+          w4 = dvnI+2.0_DP*cI/(GAMMA-1.0_DP)
+          
+          ! Compute the first Riemann invariant based on the fourth Riemann
+          ! invariant and the prescribed boundary values
+          w1 = w4-4.0*cM/(GAMMA-1.0_DP)
+          
+          ! Compute the normal velocity based on the first and fourth Riemann
+          ! invarient
+          dvnM = 0.5_DP*(w1+w4)
+          
+          ! Setup the state vector based on Rimann invariants
+          DstateM(1,ipoint,iel) = rM
+          DstateM(2,ipoint,iel) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+          DstateM(3,ipoint,iel) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+          DstateM(4,ipoint,iel) = pM/(GAMMA-1.0_DP)+0.5_DP*rM*(dvnM**2+dvtM**2)
+        end do
+      end do
+
+
+    case (BDRC_SUBOUTLET)
+      !-----------------------------------------------------------------------
+      ! Subsonic pressure outlet boundary condition:
+      !
+      ! Prescribe the pressure at the outlet
+      
+      ! Initialize values for function parser
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      do iel = 1, nelements
+        do ipoint = 1, npoints
+          
+          ! Set values for function parser
+          Dvalue(1:2) = Dcoords(1:2,ipoint,iel)
+          
+          ! Compute pressure value from function parser
+          call fparser_evalFunction(p_rfparser,&
+              nmaxExpr*(isegment-1)+1, Dvalue, pM)
+          
+          ! Compute auxiliary quantities based on internal state vector
+          pI = PRESSURE_2T_FROM_CONSVAR_2D(DstateI,NVAR2D,ipoint,iel)
+          cI = sqrt(max(GAMMA*pI/&
+               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel), SYS_EPSREAL))
+          
+          ! Compute the normal and tangential velocities based
+          ! on internal state vector
+          dvnI = ( Dnx(ipoint,iel)*&
+                   X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+&
+                   Dny(ipoint,iel)*&
+                   Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel))/&
+                   DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+          dvtI = (-Dny(ipoint,iel)*&
+                   X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+&
+                   Dnx(ipoint,iel)*&
+                   Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel))/&
+                   DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+          
+          ! Compute three Riemann invariants based on internal state vector
+          w2 = pI/DENSITY_2T_FROM_CONSVAR(DstateI,MVAR2D,ipoint,iel)**GAMMA
+          w3 = dvtI
+          w4 = dvnI+2.0_DP*cI/(GAMMA-1.0_DP)
+          
+          ! Compute first Riemann invariant based on fourth Riemann invariant,
+          ! the computed density and pressure and the prescribed exit pressure
+          w1 = w4-4.0/(GAMMA-1.0_DP)*sqrt(GAMMA*pM/&
+               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*(pI/pM)**(1.0_DP/GAMMA))
+          
+          ! Convert Riemann invariants into conservative state variables
+          cM = 0.25*(GAMMA-1.0_DP)*(w4-w1)
+          rM = (cM*cM/GAMMA/w2)**(1.0_DP/(GAMMA-1.0_DP))
+          pM = rM*cM*cM/GAMMA
+          dvnM = 0.5_DP*(w1+w4)
+          dvtM = w3
+          
+          ! Setup the state vector based on Riemann invariants
+          DstateM(1,ipoint,iel) = rM
+          DstateM(2,ipoint,iel) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+          DstateM(3,ipoint,iel) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+          DstateM(4,ipoint,iel) = pM/(GAMMA-1.0_DP)+0.5_DP*rM*(dvnM**2+dvtM**2)
+        end do
+      end do
+
+
+!!$      case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+!!$        !-----------------------------------------------------------------------
+!!$        ! Periodic boundary conditions:
+!!$        !
+!!$        ! Compute the Riemann invariants based on the computed
+!!$        ! (internal) state vector and on the state vector evaluated at
+!!$        ! the mirror boundary and select the Riemann invariant for
+!!$        ! each characteristic field based on the sign of the
+!!$        ! corresponding eigenvalue.
+!!$
+!!$        ! Get mirrored boundary region from collection structure
+!!$        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
+!!$            'rboundaryRegionMirror')
+!!$        
+!!$        ! Get minimum/maximum parameter values from collection structure
+!!$        dminParam = rcollection%DquickAccess(3)
+!!$        dmaxParam = rcollection%DquickAccess(4)
+!!$        dminParamMirror = rcollection%DquickAccess(5)
+!!$        dmaxParamMirror = rcollection%DquickAccess(6)
+!!$
+!!$        ! Allocate temporal memory
+!!$        allocate(DpointParMirror(npointsPerElement,nelements))
+!!$        allocate(Daux3(npointsPerElement*nvar, nelements))
+!!$
+!!$        ! Rescale parameter values DpointPar on the boundary segment
+!!$        ! where to compute the boundary conditions into parameter
+!!$        ! values on the mirror boundary region
+!!$        if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+!!$          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
+!!$              dmaxParamMirror, dminParamMirror, DpointParMirror)
+!!$        else
+!!$          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
+!!$              dmaxParamMirror, dminParamMirror, DpointParMirror)
+!!$        end if
+!!$
+!!$        ! Evaluate the solution in the cubature points on the mirrored boundary
+!!$        call doEvaluateAtBdrScalar(DER_FUNC, npointsPerElement*nelements*nvar,&
+!!$            Daux3, p_rsolution%RvectorBlock(1), npointsPerElement*nelements,&
+!!$            DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+!!$
+!!$        do iel = 1, nelements
+!!$          do ipoint = 1, npointsPerElement
+!!$        
+!!$            ! Compute auxiliary quantities based on the internal state
+!!$            ! vector evaluated on the boundary
+!!$            pI = (GAMMA-1.0_DP)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
+!!$                              0.5_DP*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
+!!$                                   Daux1((ipoint-1)*NVAR2D+3,iel)**2)/&
+!!$                                   Daux1((ipoint-1)*NVAR2D+1,iel))
+!!$            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
+!!$
+!!$            ! Compute the normal and tangential velocities based on
+!!$            ! the internal state vector evaluated on the boundary
+!!$            dvnI = ( Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+!!$                     Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+!!$                     Daux1((ipoint-1)*NVAR2D+1,iel)
+!!$            dvtI = (-Dny(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+!!$                     Dnx(ipoint,iel)*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+!!$                     Daux1((ipoint-1)*NVAR2D+1,iel)
+!!$
+!!$            ! Compute auxiliary quantities based on state vector
+!!$            ! evaluated on the mirrored boundary
+!!$            pM = (GAMMA-1.0_DP)*(Daux3((ipoint-1)*NVAR2D+4,iel)-&
+!!$                              0.5_DP*(Daux3((ipoint-1)*NVAR2D+2,iel)**2+&
+!!$                                   Daux3((ipoint-1)*NVAR2D+3,iel)**2)/&
+!!$                                   Daux3((ipoint-1)*NVAR2D+1,iel))
+!!$            cM = sqrt(max(GAMMA*pM/Daux3((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
+!!$
+!!$            ! Compute the normal and tangential velocities based on
+!!$            ! state vector evaluated on the mirrored boundary
+!!$            dvnM = ( Dnx(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+2,iel)+&
+!!$                     Dny(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+3,iel) )/&
+!!$                     Daux3((ipoint-1)*NVAR2D+1,iel)
+!!$            dvtM = (-Dny(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+2,iel)+&
+!!$                     Dnx(ipoint,iel)*Daux3((ipoint-1)*NVAR2D+3,iel) )/&
+!!$                     Daux3((ipoint-1)*NVAR2D+1,iel)
+!!$
+!!$            ! Select internal or mirrored Riemann invariant depending
+!!$            ! on the sign of the corresponding eigenvalue
+!!$            if (dvnI .lt. cI) then
+!!$              DstateM(1) = dvnM-2.0_DP*cM/(GAMMA-1.0_DP)
+!!$            else
+!!$              DstateM(1) = dvnI-2.0_DP*cI/(GAMMA-1.0_DP)
+!!$            end if
+!!$
+!!$            if (dvnI .lt. SYS_EPSREAL) then
+!!$              DstateM(2) = pM/(Daux3((ipoint-1)*NVAR2D+1,iel)**GAMMA)
+!!$              DstateM(3) = dvtM
+!!$            else
+!!$              DstateM(2) = pI/(Daux1((ipoint-1)*NVAR2D+1,iel)**GAMMA)
+!!$              DstateM(3) = dvtI
+!!$            end if
+!!$
+!!$            if (dvnI .lt. -cI) then
+!!$              DstateM(4) = dvnM+2.0_DP*cM/(GAMMA-1.0_DP)
+!!$            else
+!!$              DstateM(4) = dvnI+2.0_DP*cI/(GAMMA-1.0_DP)
+!!$            end if
+!!$            
+!!$            ! Convert Riemann invariants into conservative state variables
+!!$            cM = 0.25*(GAMMA-1.0_DP)*(DstateM(4)-DstateM(1))
+!!$            rM = (cM*cM/GAMMA/DstateM(2))**(1.0_DP/(GAMMA-1.0_DP))
+!!$            pM = rM*cM*cM/GAMMA
+!!$            dvnM = 0.5_DP*(DstateM(1)+DstateM(4))
+!!$            dvtM = DstateM(3)
+!!$
+!!$            ! Setup the state vector based on Riemann invariants
+!!$            DstateM(1) = rM
+!!$            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
+!!$            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
+!!$            DstateM(4) = pM/(GAMMA-1.0_DP) + 0.5_DP*rM*(dvnM**2+dvtM**2)
+!!$            
+!!$            ! Setup the computed internal state vector
+!!$            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
+!!$            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
+!!$            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
+!!$            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
+!!$            
+!!$            ! Invoke Riemann solver
+!!$            call doRiemannSolver(DstateI, DstateM,&
+!!$                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Ddiff)
+!!$            
+!!$            ! Store flux in the cubature points
+!!$            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Ddiff)
+!!$          end do
+!!$        end do
+!!$
+!!$        ! Deallocate temporal memory
+!!$        deallocate(DpointParMirror, Daux3)
+
+    case default
+      call output_line('Invalid type of boundary conditions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr2d_sim')
+      call sys_halt()
+      
+    end select
+
+
+    ! Allocate temporal memory
+    allocate(Dflux(nvar,npoints), Ddiff(nvar,npoints))
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+    allocate(DlocalData(nvar))
+#endif
+    
+    do iel = 1, nelements
+      
+      ! Loop over the DOFs and evaluate the Galerkin fluxes at DOFs
+      do ipoint = 1, npoints
+        
+        !-----------------------------------------------------------------------
+        ! Solve the boundary Riemann problem by Roe`s approximate Riemann solver
+        !-----------------------------------------------------------------------
+
+        ! Compute velocities and pressure from internal state
+        uI = X_VELOCITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+        vI = Y_VELOCITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)
+        pI = PRESSURE_2T_FROM_CONSVAR_2D(DstateI,NVAR2D,ipoint,iel)
+        
+        ! Compute velocities and pressure from mirrored state
+        uM = X_VELOCITY_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel)
+        vM = Y_VELOCITY_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel)
+        pM = PRESSURE_2T_FROM_CONSVAR_2D(DstateM,NVAR2D,ipoint,iel)
+
+        ! Calculate normal flux: $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+        Dflux(1,ipoint) = Dnx(ipoint,iel)*&
+                          (X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+&
+                           X_MOMENTUM_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel))&
+                        + Dny(ipoint,iel)*&
+                          (Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+&
+                           Y_MOMENTUM_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel))
+        Dflux(2,ipoint) = Dnx(ipoint,iel)*&
+                          (X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*uI+pI+&
+                           X_MOMENTUM_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel)*uM+pM)&
+                        + Dny(ipoint,iel)*&
+                          (X_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*vI+&
+                           X_MOMENTUM_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel)*vM)
+        Dflux(3,ipoint) = Dnx(ipoint,iel)*&
+                          (Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*uI+&
+                           Y_MOMENTUM_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel)*uM)&
+                        + Dny(ipoint,iel)*&
+                          (Y_MOMENTUM_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)*vI+pI+&
+                           Y_MOMENTUM_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel)*vM+pM)
+        Dflux(4,ipoint) = Dnx(ipoint,iel)*&
+                          ((TOTAL_ENERGY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+pI)*uI+&
+                           (TOTAL_ENERGY_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel)+pM)*uM)&
+                        + Dny(ipoint,iel)*&
+                          ((TOTAL_ENERGY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+pI)*vI+&
+                           (TOTAL_ENERGY_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel)+pM)*vM)
+
+        ! Compute Roe mean values
+        aux  = ROE_MEAN_RATIO(\
+               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel),\
+               DENSITY_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel))
+        u_IM = ROE_MEAN_VALUE(uI,uM,aux)
+        v_IM = ROE_MEAN_VALUE(vI,vM,aux)
+        H_IM = ROE_MEAN_VALUE(\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel)+pI)/\
+               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel),\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel)+pM)/\
+               DENSITY_2T_FROM_CONSVAR(DstateM,NVAR2D,ipoint,iel),aux)
+      
+        ! Compute auxiliary variables
+        vel_IM = Dnx(ipoint,iel)*u_IM + Dny(ipoint,iel)*v_IM
+        q_IM   = 0.5_DP*(u_IM*u_IM+v_IM*v_IM)
+
+        ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      c2_IM = max((GAMMA-1.0)*(H_IM-q_IM), SYS_EPSREAL)
+        c2_IM = max((GAMMA-1.0_DP)*(H_IM-q_IM), SYS_EPSREAL)
 #else
 #error "Speed of sound must be implemented!"
 #endif
-      c_IM = sqrt(c2_IM)
-
-      ! Compute eigenvalues
-      l1 = abs(vel_IM-c_IM)
-      l2 = abs(vel_IM)
-      l3 = abs(vel_IM+c_IM)
-      l4 = abs(vel_IM)
+        c_IM = sqrt(c2_IM)
+        
+        ! Compute eigenvalues
+        l1 = abs(vel_IM-c_IM)
+        l2 = abs(vel_IM)
+        l3 = abs(vel_IM+c_IM)
+        l4 = abs(vel_IM)
       
-      ! Compute solution difference U_M-U_I
-      Diff = DstateM-DstateI
+        ! Compute solution difference U_M-U_I
+        Ddiff(:,ipoint) = DstateM(:,ipoint,iel)-DstateI(:,ipoint,iel)
       
-      ! Compute auxiliary quantities for characteristic variables
-      aux1 = (GAMMA-1.0)/2.0/c2_IM*(q_IM*Diff(1)&
-                                   -u_IM*Diff(2)&
-                                   -v_IM*Diff(3)&
-                                        +Diff(4))
-      aux2 = 0.5*(vel_IM*Diff(1)&
-                    -dnx*Diff(2)&
-                    -dny*Diff(3))/c_IM
+        ! Compute auxiliary quantities for characteristic variables
+        aux1 = (GAMMA-1.0_DP)*(q_IM*Ddiff(1,ipoint)&
+                              -u_IM*Ddiff(2,ipoint)&
+                              -v_IM*Ddiff(3,ipoint)&
+                                   +Ddiff(4,ipoint))/2.0_DP/c2_IM
+        aux2 =        (vel_IM*Ddiff(1,ipoint)&
+             -Dnx(ipoint,iel)*Ddiff(2,ipoint)&
+             -Dny(ipoint,iel)*Ddiff(3,ipoint))/2.0_DP/c_IM
       
-      ! Compute characteristic variables multiplied by the
-      ! corresponding eigenvalue
-      w1 = l1 * (aux1 + aux2)
-      w2 = l2 * ((1.0-(GAMMA-1.0)*q_IM/c2_IM)*Diff(1)&
-                           +(GAMMA-1.0)*(u_IM*Diff(2)&
-                                        +v_IM*Diff(3)&
-                                             -Diff(4))/c2_IM)
-      w3 = l3 * (aux1 - aux2)
-      w4 = l4 * ((dnx*v_IM-dny*u_IM)*Diff(1)&
-                                +dny*Diff(2)&
-                                -dnx*Diff(3))
+        ! Compute characteristic variables multiplied by the
+        ! corresponding eigenvalue
+        w1 = l1 * (aux1 + aux2)
+        w2 = l2 * ((1.0_DP-(GAMMA-1.0_DP)*q_IM/c2_IM)*Ddiff(1,ipoint)&
+                                +(GAMMA-1.0_DP)*(u_IM*Ddiff(2,ipoint)&
+                                                +v_IM*Ddiff(3,ipoint)&
+                                                     -Ddiff(4,ipoint))/c2_IM)
+        w3 = l3 * (aux1 - aux2)
+        w4 = l4 * ((Dnx(ipoint,iel)*v_IM-Dny(ipoint,iel)*u_IM)*Ddiff(1,ipoint)&
+                                              +Dny(ipoint,iel)*Ddiff(2,ipoint)&
+                                              -Dnx(ipoint,iel)*Ddiff(3,ipoint))
       
-      ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-      Diff(1) = w1 + w2 + w3
-      Diff(2) = (u_IM-c_IM*dnx)*w1 + u_IM*w2 +&
-                (u_IM+c_IM*dnx)*w3 +  dny*w4
-      Diff(3) = (v_IM-c_IM*dny)*w1 + v_IM*w2 +&
-                (v_IM+c_IM*dny)*w3 -  dnx*w4
-      Diff(4) = (H_IM-c_IM*vel_IM)*w1 + q_IM*w2 +&
-                (H_IM+c_IM*vel_IM)*w3 + (u_IM*dny-v_IM*dnx)*w4
+        ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+        Ddiff(1,ipoint) = w1 + w2 + w3
+        Ddiff(2,ipoint) = (u_IM-c_IM*Dnx(ipoint,iel))*w1 + u_IM*w2 +&
+                          (u_IM+c_IM*Dnx(ipoint,iel))*w3 + Dny(ipoint,iel)*w4
+        Ddiff(3,ipoint) = (v_IM-c_IM*Dny(ipoint,iel))*w1 + v_IM*w2 +&
+                          (v_IM+c_IM*Dny(ipoint,iel))*w3 - Dnx(ipoint,iel)*w4
+        Ddiff(4,ipoint) = (H_IM-c_IM*vel_IM)*w1 + q_IM*w2 + (H_IM+c_IM*vel_IM)*w3 +&
+                          (u_IM*Dny(ipoint,iel)-v_IM*Dnx(ipoint,iel))*w4
+      end do
+        
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+      ! Loop over the cubature points and interpolate the Galerkin
+      ! fluxes from the DOFs to the cubature points, where they are
+      ! needed by the linear form assembly routine
+      do icubp = 1, npointsPerElement
+        
+        DlocalData = 0.0_DP
+        
+        ! Loop over the DOFs and interpolate the Galerkin fluxes
+        do ipoint = 1, npoints
+          DlocalData = DlocalData + Dbas(ipoint,icubp)*0.5_DP*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+        end do
+        
+        ! Store flux in the cubature points
+        Dcoefficients(:,1,icubp,iel) = dscale*DlocalData
+      end do
+#else
+      ! Loop over the cubature points and store the fluxes
+      do ipoint = 1, npointsPerElement
+        Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux(:,ipoint)-Ddiff(:,ipoint))
+      end do
+#endif
+    end do
 
-    end subroutine doRiemannSolver
+    ! Deallocate temporal memory
+    deallocate(Dnx,Dny,DstateI,DstateM,Dflux,Ddiff)
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+    deallocate(Dcoords,Dbas,DlocalData)
+#endif
 
-    !***************************************************************************
-    ! Compute the Galerkin flux (used for supersonic outflow)
-    !***************************************************************************
-
-    pure subroutine doGalerkinFlux(Dstate, dnx, dny, Dflux)
-
-      ! input parameters
-      real(DP), dimension(NVAR2D), intent(in) :: Dstate
-      real(DP), intent(in) :: dnx, dny
-
-      ! output parameters
-      real(DP), dimension(NVAR2D), intent(out) :: Dflux
-
-      ! local variables
-      real(DP) :: u,v,p
-      
-      
-      ! Compute auxiliary quantities
-      u = X_VELOCITY_FROM_CONSVAR(Dstate,NVAR2D)
-      v = Y_VELOCITY_FROM_CONSVAR(Dstate,NVAR2D)
-      p = PRESSURE_FROM_CONSVAR_2D(Dstate,NVAR2D)
-      
-      ! Calculate ${\bf n}\cdot{\bf F}(U)$
-      Dflux(1) = dnx * X_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)&
-               + dny * Y_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)
-      Dflux(2) = dnx *(X_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)*u+p)&
-               + dny * X_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)*v
-      Dflux(3) = dnx * Y_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)*u&
-               + dny *(Y_MOMENTUM_FROM_CONSVAR(Dstate,NVAR2D)*v+p)
-      Dflux(4) = dnx *(TOTAL_ENERGY_FROM_CONSVAR(Dstate,NVAR2D)+p)*u&
-               + dny *(TOTAL_ENERGY_FROM_CONSVAR(Dstate,NVAR2D)+p)*v
-
-    end subroutine doGalerkinFlux
-
+  contains
+    
     !***************************************************************************
     ! Evaluate th solution vector at some boundary points given in
     ! terms of their parameter values. This ugly trick is necessary
@@ -6202,7 +5900,7 @@ contains
       end if
       do ivar = 1, NVAR2D
         p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
-            0.5*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
+            0.5_DP*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
                     p_Dsolution((rcollection%IquickAccess(3)-1)*NVAR2D+ivar))
       end do
 
@@ -6238,7 +5936,7 @@ contains
         end do
       else
         do ivar = 1, NVAR2D
-          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = 0.0
+          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = 0.0_DP
         end do
       end if
 
@@ -6337,7 +6035,7 @@ contains
       neq = rsolution%NEQ/NVAR2D
       do ivar = 1, NVAR2D
         p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-            0.5*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
+            0.5_DP*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
                     p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(3)) )
       end do
 
@@ -6376,7 +6074,7 @@ contains
       else
         neq = rsolution%NEQ/NVAR2D
         do ivar = 1, NVAR2D
-          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = 0.0
+          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = 0.0_DP
         end do
       end if
 

@@ -1520,7 +1520,35 @@ contains
 #else
 #error "Speed of sound must be implemented!"
 #endif
-      
+
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))*uj+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx))*vj+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(3,1,idx)-&
+                              DmatrixCoeffsAtEdge(3,2,idx))*wj)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))**2+&
+                             (DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx))**2+&
+                             (DmatrixCoeffsAtEdge(3,1,idx)-&
+                              DmatrixCoeffsAtEdge(3,2,idx))**2)*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))*ui+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx))*vi+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(3,2,idx)-&
+                              DmatrixCoeffsAtEdge(3,1,idx))*wi)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))**2+&
+                             (DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx))**2+&
+                             (DmatrixCoeffsAtEdge(3,2,idx)-&
+                              DmatrixCoeffsAtEdge(3,1,idx))**2)*ci )
+#else      
       ! Compute scalar dissipation
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
                       DmatrixCoeffsAtEdge(2,1,idx)*vj+&
@@ -1534,6 +1562,7 @@ contains
                  sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
                       DmatrixCoeffsAtEdge(2,2,idx)**2+&
                       DmatrixCoeffsAtEdge(3,2,idx)**2)*ci )
+#endif
 
       ! Multiply the solution difference by the scalar dissipation
       Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
@@ -1682,6 +1711,35 @@ contains
 #error "Speed of sound must be implemented!"
 #endif
       
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation with dimensional splitting based on
+      ! the skew-symmetric part which does not include the symmetric
+      ! boundary contribution
+      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))*uj)+&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx)))*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))*ui)+&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx)))*ci )&
+           + max( abs(0.5_DP*(DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx))*vj)+&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx)))*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx))*vi)+&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx)))*ci )&
+           + max( abs(0.5_DP*(DmatrixCoeffsAtEdge(3,1,idx)-&
+                              DmatrixCoeffsAtEdge(3,2,idx))*wj)+&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(3,1,idx)-&
+                              DmatrixCoeffsAtEdge(3,2,idx)))*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(3,2,idx)-&
+                              DmatrixCoeffsAtEdge(3,1,idx))*wi)+&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(3,2,idx)-&
+                              DmatrixCoeffsAtEdge(3,1,idx)))*ci )
+#else
       ! Compute scalar dissipation with dimensional splitting
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
                   abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
@@ -1695,6 +1753,7 @@ contains
                   abs(DmatrixCoeffsAtEdge(3,1,idx))*cj,&
                   abs(DmatrixCoeffsAtEdge(3,2,idx)*wi)+&
                   abs(DmatrixCoeffsAtEdge(3,2,idx))*ci )
+#endif
 
       ! Multiply the solution difference by the artificial diffusion factor
       Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
@@ -3728,6 +3787,34 @@ contains
 #error "Speed of sound must be implemented!"
 #endif
       
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))*uj+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx))*vj+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(3,1,idx)-&
+                              DmatrixCoeffsAtEdge(3,2,idx))*wj)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))**2+&
+                             (DmatrixCoeffsAtEdge(2,1,idx)-&
+                              DmatrixCoeffsAtEdge(2,2,idx))**2+&
+                             (DmatrixCoeffsAtEdge(3,1,idx)-&
+                              DmatrixCoeffsAtEdge(3,2,idx))**2)*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))*ui+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx))*vi+&
+                      0.5_DP*(DmatrixCoeffsAtEdge(3,2,idx)-&
+                              DmatrixCoeffsAtEdge(3,1,idx))*wi)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))**2+&
+                             (DmatrixCoeffsAtEdge(2,2,idx)-&
+                              DmatrixCoeffsAtEdge(2,1,idx))**2+&
+                             (DmatrixCoeffsAtEdge(3,2,idx)-&
+                              DmatrixCoeffsAtEdge(3,1,idx))**2)*ci )
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
                       DmatrixCoeffsAtEdge(2,1,idx)*vj+&
@@ -3741,6 +3828,7 @@ contains
                  sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
                       DmatrixCoeffsAtEdge(2,2,idx)**2+&
                       DmatrixCoeffsAtEdge(3,2,idx)**2)*ci )
+#endif
 
       ! Compute antidiffusive flux
       DfluxesAtEdge(:,idx) = dscale* d_ij*(DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx))

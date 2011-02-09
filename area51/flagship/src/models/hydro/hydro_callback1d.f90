@@ -817,12 +817,25 @@ contains
 #else
 #error "Speed of sound must be implemented!"
 #endif
-      
+
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))*uj)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))**2)*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))*ui)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))**2)*ci )
+#else   
       ! Compute scalar dissipation
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
                   abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
                   abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
                   abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )
+#endif
 
       ! Multiply the solution difference by the scalar dissipation
       Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
@@ -2479,12 +2492,25 @@ contains
 #else
 #error "Speed of sound must be implemented!"
 #endif
-      
+     
+#ifdef HYDRO_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))*uj)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,idx)-&
+                              DmatrixCoeffsAtEdge(1,2,idx))**2)*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))*ui)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,idx)-&
+                              DmatrixCoeffsAtEdge(1,1,idx))**2)*ci )
+#else  
       ! Compute scalar dissipation
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
                   abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
                   abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
                   abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )
+#endif
       
       ! Compute conservative fluxes
       DfluxesAtEdge(:,idx) = dscale*d_ij*(DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx))
