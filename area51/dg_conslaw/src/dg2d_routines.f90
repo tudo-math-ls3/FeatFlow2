@@ -9352,9 +9352,6 @@ end do
     rvectorAssembly%cevaluationTag = elem_getEvaluationTag(rvectorAssembly%celement)
         
   end subroutine
-  
-  !****************************************************************************  
-
  
   
 end module

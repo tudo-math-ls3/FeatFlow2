@@ -38,6 +38,7 @@ module dg2d_systems
   use collection
   use linearalgebra
   use paramlist
+  use matrixio
   
   implicit none
 
@@ -410,6 +411,12 @@ contains
     call lsyssc_copyMatrix (rmatrixMC, rmatrixiMC)
     call dg_invertMassMatrix(rmatrixiMC)  
     
+!    ! Output MC and iMC
+!    call matio_writeMatrixHR (rmatrixiMC, 'iMC',&
+!                                  .true., 0, './gmv/iMC.txt', '(E20.10)')
+!    call matio_writeMatrixHR (rmatrixMC, 'MC',&
+!                                  .true., 0, './gmv/MC.txt', '(E20.10)')
+    
     
 !    ! Calculate the condition number of MC    
 !    call lsyssc_getbase_double (rmatrixMC, p_DMCdata)
@@ -632,6 +639,9 @@ if (iwithoutlimiting==2) ilimiter = 0
        write(*,*) 'TIME STEP: t =', ttime,'dt =', dt
        write(*,*)
        
+       ! Set time level in collection
+       rcollection%Dquickaccess(1) = ttime
+       
        call profiler_measure(rprofiler,1)
        
 !       call lsyssc_getbase_double (rsol,p_Ddata)
@@ -641,6 +651,11 @@ if (iwithoutlimiting==2) ilimiter = 0
        call lsysbl_copyVector(rsolBlock,rsolOldBlock)
        
        ! Step 1/3
+       
+       ! Output total mass
+       call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+       call output_line ('Total mass: ' // sys_sdEL(derror,10) )
+       
        
        ! Create RHS-Vector
              
@@ -1553,16 +1568,16 @@ if (iwithoutlimiting==2) ilimiter = 0
 !    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
    
  
-!    ! Calculate the error to the reference function.
-!    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
-!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-!                       getReferenceFunction_2D)
-!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-!
-!    ! Calculate the error to the reference function.
-!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-!                       getReferenceFunction_2D)
-!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+    ! Calculate the error to the reference function.
+    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+                       getReferenceFunction_2D)
+    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+
+    ! Calculate the error to the reference function.
+    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
+                       getReferenceFunction_2D)
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
     
     
     

@@ -1025,13 +1025,30 @@ contains
       Flux(1) = Q(2)
       Flux(2) = Q(2)*u+p
       Flux(3) = Q(3)*u
-      Flux(4) = rho*H*u
+      Flux(4) = Q(2)*H
+      
+      
+      ! Stolen from Matthias :)
+      Flux(1) = Q(2)
+      Flux(2) = (gamma - 1.0_dp)*Q(4)-0.5_dp*(gamma-3.0_dp)*u*Q(2)-0.5_dp*(gamma-1.0_dp)*v*Q(3)
+      Flux(3) = Q(3)*u
+      Flux(4) = (gamma*Q(4)-0.5_dp*(gamma-1.0_dp)*(u*Q(2)+v*Q(3)))*u
+      
+      
     else
       ! build Flux in y direction
       Flux(1) = Q(3)
       Flux(2) = Q(2)*v
       Flux(3) = Q(3)*v+p
-      Flux(4) = rho*H*v
+      Flux(4) = Q(3)*H
+      
+      ! Stolen from Matthias :)
+      Flux(1) = Q(3)
+      Flux(2) = Q(3)*u
+      Flux(3) = (gamma - 1.0_dp)*Q(4)-0.5_dp*(gamma-3.0_dp)*v*Q(3)-0.5_dp*(gamma-1.0_dp)*u*Q(2)
+      Flux(4) = (gamma*Q(4)-0.5_dp*(gamma-1.0_dp)*(u*Q(2)+v*Q(3)))*v
+      
+      
     end if
 
   end function Euler_buildFlux
@@ -1054,7 +1071,7 @@ contains
     real(DP), dimension(5)					:: Qroe
 
     ! temp variables
-    real(DP)		:: rhol, rhor, denom, Hl, Hr, El, Er, pl, pr, velnorm
+    real(DP)		:: rhol, rhor, denom, Hl, Hr, El, Er, pl, pr, velnorm, aux, ul, ur, vl, vr
 
     ! Gamma
     real(dp) :: gamma = 1.4_dp
@@ -1094,6 +1111,29 @@ contains
     
     ! Calculate the speed of sound for the Roe-values
     Qroe(5) = sqrt( (gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ) )
+    
+    
+    
+    
+    
+!    ! Stolen from Matthias :)
+!    ! Compute Roe mean values
+!    ul = Ql(2)/Ql(1)
+!    ur = Qr(2)/Qr(1)
+!    vl = Ql(3)/Ql(1)
+!    vr = Qr(3)/Qr(1)
+!    Qroe(1) = sqrt(rhol*rhor)
+!    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL))
+!    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+!    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+!    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+!    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+!    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    
+    
+    
+    
+    
     
   end function Euler_calculateQroec
     

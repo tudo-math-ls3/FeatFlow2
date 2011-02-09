@@ -340,10 +340,23 @@ contains
 integer :: iunit,i,j
 real(dp),dimension(4000001) :: Dreference
 real(dp) :: r,n,r1
-real(dp) :: dx,dy, dr
+real(dp) :: dx,dy, dr, dt, drad
 
 integer :: ielement, ipoint
 
+
+
+! Euler: Isentropic vortex
+dt = 1.0_dp
+
+do i = 1, size(Dvalues,1)
+    do j = 1, size(Dvalues,2)
+       dx = Dpoints(1,i,j)
+       dy = Dpoints(2,i,j)
+       drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+       Dvalues(i,j) = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+    end do
+    end do
 
 
 
@@ -454,116 +467,116 @@ integer :: ielement, ipoint
   
   
 
-    ! Compare to less refined solution
-
-      ! An object for saving the domain:
-    type(t_boundary) :: rboundary
-    
-    ! An object for saving the triangulation on the domain
-    type(t_triangulation) :: rtriangulation
-    
-    type(t_vectorScalar) :: rsolLoaded
-    
-    ! An object specifying the discretisation.
-    ! This contains also information about trial/test functions,...
-    type(t_blockDiscretisation) :: rdiscretisation2
-    
-    integer :: NLMAX
-    
-    real(DP), dimension(:), pointer :: p_Ddata
-    
-    integer :: ielementtype, iel,i1,i2,i3
-    
-    character (LEN=SYS_STRLEN) :: sofile
-    
-    integer :: ilength
-  
-  
-  
-    
-    
-    ielementtype = EL_DG_T2_2D
-    
-    NLMAX = 8
-    
-    sofile = 'l8.data'
-    
-    call boundary_read_prm(rboundary, './pre/quad.PRM')
-    
-    ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, './pre/quad.TRI', rboundary, .true.)  
-    
-    
-      
-    
-    ! Refine it.
-    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
-    
-    ! And create information about adjacencies and everything one needs from
-    ! a triangulation.
-    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
-  
-    ! Now we can start to initialise the discretisation. At first, set up
-    ! a block discretisation structure that specifies the blocks in the
-    ! solution vector. In this simple problem, we only have one block.
-    call spdiscr_initBlockDiscr (rdiscretisation2,1,&
-                                 rtriangulation, rboundary)
-    
-    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
-    ! structures for every component of the solution vector.
-    ! Initialise the first element of the list to specify the element
-    ! and cubature rule for this solution component:
-    call spdiscr_initDiscr_simple (rdiscretisation2%RspatialDiscr(1), &
-                                   ielementType,CUB_G5X5,rtriangulation, rboundary)
-                 
-    
-    
-    call lsyssc_createVecByDiscr (rdiscretisation2%RspatialDiscr(1),rsolloaded ,.true.,ST_DOUBLE)
-    
-    
-    
-  ! Get pointers to the data form the truangulation
-  call lsyssc_getbase_double(rsolloaded,p_Ddata)
-
-  ! Get the length of the data array
-  ilength = size(p_Ddata,1)  
-  
-  
-  ! ************ WRITE TO FILE PHASE *******************
-  
-  iunit = sys_getFreeUnit()
-  open(iunit, file=trim(sofile))
- 
-  
-  read(iunit,'(I10)') ilength
-
-  do i=1, ilength
-    read(iunit,'(E25.16E3)') p_Ddata(i)
-  end do
-  
-  close(iunit)
-    
-    
-    
-    do iel = 1, nelements
-      ielement=0
-      call tsrch_getElem_raytrace2D (&
-            Dpoints(:,1,iel),rtriangulation,ielement,i1,i2,i3,100000)
-      call fevl_evaluate_mult1 (DER_FUNC, Dvalues(:,iel), rsolloaded, ielement, &
-                                Dpoints=Dpoints(:,:,iel))
-    end do
-
-            
-    
-    call lsyssc_releaseVector (rsolloaded)
-        
-    call spdiscr_releaseBlockDiscr(rdiscretisation2)
-
-    ! Release the triangulation. 
-    call tria_done (rtriangulation)
-        
-    ! Finally release the domain, that is it.
-    call boundary_release (rboundary)
+!    ! Compare to less refined solution
+!
+!      ! An object for saving the domain:
+!    type(t_boundary) :: rboundary
+!    
+!    ! An object for saving the triangulation on the domain
+!    type(t_triangulation) :: rtriangulation
+!    
+!    type(t_vectorScalar) :: rsolLoaded
+!    
+!    ! An object specifying the discretisation.
+!    ! This contains also information about trial/test functions,...
+!    type(t_blockDiscretisation) :: rdiscretisation2
+!    
+!    integer :: NLMAX
+!    
+!    real(DP), dimension(:), pointer :: p_Ddata
+!    
+!    integer :: ielementtype, iel,i1,i2,i3
+!    
+!    character (LEN=SYS_STRLEN) :: sofile
+!    
+!    integer :: ilength
+!  
+!  
+!  
+!    
+!    
+!    ielementtype = EL_DG_T2_2D
+!    
+!    NLMAX = 8
+!    
+!    sofile = 'l8.data'
+!    
+!    call boundary_read_prm(rboundary, './pre/quad.PRM')
+!    
+!    ! Now read in the basic triangulation.
+!    call tria_readTriFile2D (rtriangulation, './pre/quad.TRI', rboundary, .true.)  
+!    
+!    
+!      
+!    
+!    ! Refine it.
+!    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
+!    
+!    ! And create information about adjacencies and everything one needs from
+!    ! a triangulation.
+!    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+!  
+!    ! Now we can start to initialise the discretisation. At first, set up
+!    ! a block discretisation structure that specifies the blocks in the
+!    ! solution vector. In this simple problem, we only have one block.
+!    call spdiscr_initBlockDiscr (rdiscretisation2,1,&
+!                                 rtriangulation, rboundary)
+!    
+!    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
+!    ! structures for every component of the solution vector.
+!    ! Initialise the first element of the list to specify the element
+!    ! and cubature rule for this solution component:
+!    call spdiscr_initDiscr_simple (rdiscretisation2%RspatialDiscr(1), &
+!                                   ielementType,CUB_G5X5,rtriangulation, rboundary)
+!                 
+!    
+!    
+!    call lsyssc_createVecByDiscr (rdiscretisation2%RspatialDiscr(1),rsolloaded ,.true.,ST_DOUBLE)
+!    
+!    
+!    
+!  ! Get pointers to the data form the truangulation
+!  call lsyssc_getbase_double(rsolloaded,p_Ddata)
+!
+!  ! Get the length of the data array
+!  ilength = size(p_Ddata,1)  
+!  
+!  
+!  ! ************ WRITE TO FILE PHASE *******************
+!  
+!  iunit = sys_getFreeUnit()
+!  open(iunit, file=trim(sofile))
+! 
+!  
+!  read(iunit,'(I10)') ilength
+!
+!  do i=1, ilength
+!    read(iunit,'(E25.16E3)') p_Ddata(i)
+!  end do
+!  
+!  close(iunit)
+!    
+!    
+!    
+!    do iel = 1, nelements
+!      ielement=0
+!      call tsrch_getElem_raytrace2D (&
+!            Dpoints(:,1,iel),rtriangulation,ielement,i1,i2,i3,100000)
+!      call fevl_evaluate_mult1 (DER_FUNC, Dvalues(:,iel), rsolloaded, ielement, &
+!                                Dpoints=Dpoints(:,:,iel))
+!    end do
+!
+!            
+!    
+!    call lsyssc_releaseVector (rsolloaded)
+!        
+!    call spdiscr_releaseBlockDiscr(rdiscretisation2)
+!
+!    ! Release the triangulation. 
+!    call tria_done (rtriangulation)
+!        
+!    ! Finally release the domain, that is it.
+!    call boundary_release (rboundary)
 
 
 
@@ -2134,7 +2147,9 @@ integer :: iel
     
   !</subroutine>
   
-    real(DP) :: r1, dx, dy, dr
+    real(DP) :: r1, dx, dy, dr, drho, dt, drad, du, dv
+    
+    real(dp), parameter :: gamma = 1.4_dp
 
     integer :: iel, ipoint
     
@@ -2198,12 +2213,20 @@ integer :: iel
 !            Dcoefficients (1,ipoint,iel) = 1.0_dp
 !          end if
           
-          ! Shock tube
-          if ( dy<0.5_dp) then
-            Dcoefficients (1,ipoint,iel) = 1.0_dp
-          else
-            Dcoefficients (1,ipoint,iel) = 0.25_dp
-          end if 
+!          ! Shock tube
+!          if (dx<0.5_dp) then
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp
+!          else
+!            Dcoefficients (1,ipoint,iel) = 0.25_dp
+!          end if 
+
+
+        ! Isentropicvortex
+        dt = 0
+        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+        
+        Dcoefficients (1,ipoint,iel) = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+
 
 
 
@@ -2223,11 +2246,48 @@ integer :: iel
       
       case (2) ! Set x-momentum
       
-        Dcoefficients (1,:,:) = 0.0_dp
+      Dcoefficients (1,:,:) = 0.0_dp
       
+      do iel = 1, size(Dcoefficients,3)
+          do ipoint = 1, size(Dcoefficients,2)
+
+          ! Get coordinates          
+          dx = Dpoints(1,ipoint,iel)
+          dy = Dpoints(2,ipoint,iel)
+          
+          
+       ! Isentropicvortex
+        dt = 0
+        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+        
+        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+        Dcoefficients (1,ipoint,iel) = drho*(1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi))
+
+      
+          end do
+        end do
       case (3) ! Set y-momentum
       
         Dcoefficients (1,:,:) = 0.0_dp
+        
+        do iel = 1, size(Dcoefficients,3)
+          do ipoint = 1, size(Dcoefficients,2)
+
+          ! Get coordinates          
+          dx = Dpoints(1,ipoint,iel)
+          dy = Dpoints(2,ipoint,iel)
+          
+          
+       ! Isentropicvortex
+        dt = 0
+        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+        
+        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+        Dcoefficients (1,ipoint,iel) = drho*(5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi))
+        
+      
+          end do
+        end do
         
       case (4) ! Set energy
       
@@ -2240,13 +2300,22 @@ integer :: iel
             dx = Dpoints(1,ipoint,iel)
             dy = Dpoints(2,ipoint,iel)
         
-            ! Shock tube
-            if ( dy<0.5_dp) then
-              Dcoefficients (1,ipoint,iel) = 2.5_dp
-            else
-              Dcoefficients (1,ipoint,iel) = 0.25_dp
-            end if
+!            ! Shock tube
+!            if (dx<0.5_dp) then
+!              Dcoefficients (1,ipoint,iel) = 2.5_dp
+!            else
+!              Dcoefficients (1,ipoint,iel) = 0.25_dp
+!            end if
             
+            
+            ! Isentropic vortex
+            dt = 0.0_dp
+            drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+        
+            drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+            du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
+            dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
+            Dcoefficients (1,ipoint,iel) = drho*((drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv))
             
 !            ! Circular dambreak (for Euler equations)
 !            r = sqrt(2.0_dp*(dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp)
@@ -2835,9 +2904,9 @@ integer :: iel
         !if ((dx<0.00001).or.(dy<0.00001)) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.1_dp,0.0_dp,0.0_dp/)
         
         ! No BCs
-        Dsolutionvalues(2,ubound(DfluxValues,3),iel,1) = Dsolutionvalues(1,ipoint,iel,1)
-        Dsolutionvalues(2,ubound(DfluxValues,3),iel,2) = Dsolutionvalues(1,ipoint,iel,2)
-        Dsolutionvalues(2,ubound(DfluxValues,3),iel,3) = Dsolutionvalues(1,ipoint,iel,3)
+        Dsolutionvalues(2,ipoint,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
+        Dsolutionvalues(2,ipoint,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
+        Dsolutionvalues(2,ipoint,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
 
 !        ! BC for Source term 1
 !        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = (1.0_dp+dx+dy)
@@ -3580,7 +3649,7 @@ integer :: iel
   real(dp), dimension(:,:,:,:), allocatable :: Dsolutionvalues
   real(dp) :: dx, dy
   real(dp) :: dh, du, dv, dnormalPart, dtangentialPart
-  real(dp), dimension(4) :: DF1i, DF1a, DF2i, DF2a, DFx, DFy
+  real(dp), dimension(4) :: DFxi, DFxa, DFyi, DFya, DFx, DFy
   real(dp), dimension(4,4) :: DL, DR, DaLambda
   real(dp) :: dmaxEV
   
@@ -3588,7 +3657,7 @@ integer :: iel
   
   real(dp), dimension(2) :: Dvel
   real(dp) :: dvn, drad, dvt
-  real(dp) :: drho, dE, dpr, dc
+  real(dp) :: drho, dE, dpr, dc, dt
   real(dp) :: dW1, dW2, dW3, dW4, dW1o, dW2o, dW3o, dW4o
   real(dp) :: dlambda
   real(dp) :: gamma = 1.4_dp
@@ -3619,23 +3688,24 @@ integer :: iel
   
   
   do iedge = 1, ubound(DfluxValues,4)
-  
+    
     do ipoint= 1, ubound(DfluxValues,3)
       
       ! Get coordinates
       dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
       dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
-      
+
+    
     
       ! Set boundary conditions
       ! Test, if we are at a boundary
       if (IelementList(iedge)==0) then
       
-        ! No BCs
-        Dsolutionvalues(2,ipoint,iedge,1) = Dsolutionvalues(1,ipoint,iedge,1)
-        Dsolutionvalues(2,ipoint,iedge,2) = Dsolutionvalues(1,ipoint,iedge,2)
-        Dsolutionvalues(2,ipoint,iedge,3) = Dsolutionvalues(1,ipoint,iedge,3)
-        Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
+!        ! No BCs
+!        Dsolutionvalues(2,ipoint,iedge,1) = Dsolutionvalues(1,ipoint,iedge,1)
+!        Dsolutionvalues(2,ipoint,iedge,2) = Dsolutionvalues(1,ipoint,iedge,2)
+!        Dsolutionvalues(2,ipoint,iedge,3) = Dsolutionvalues(1,ipoint,iedge,3)
+!        Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
 
 
 !        !!! Boundary conditions by Riemann invariants !!!
@@ -3694,10 +3764,10 @@ integer :: iel
 !        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
 !        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
 !        
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,1) = drho
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,2) = drho*du
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,3) = drho*dv
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,4) = dpr/(gamma-1.0_dp) + drho*0.5_dp*(du*du+dv*dv)
+!        Dsolutionvalues(2,ipoint,iedge,1) = drho
+!        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
+!        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
+!        Dsolutionvalues(2,ipoint,iedge,4) = dpr/(gamma-1.0_dp) + drho*0.5_dp*(du*du+dv*dv)
         
         
         
@@ -3716,21 +3786,82 @@ integer :: iel
 !        dvt = +dvt
 !        
 !        ! Calculate new velocity
-!        du =  dvn*normal(1,iedge) + dvt*normal(2,iedge)
-!        dv = -dvn*normal(2,iedge) + dvt*normal(1,iedge)
+!        du = dvn*normal(1,iedge) - dvt*normal(2,iedge)
+!        dv = dvn*normal(2,iedge) + dvt*normal(1,iedge)
 !        
 !        ! Set new momentum
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,1) = drho
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,2) = drho * du
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,3) = drho * dv
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iedge,4) = Dsolutionvalues(2,ipoint,iedge,4)
+!        Dsolutionvalues(2,ipoint,iedge,1) = drho
+!        Dsolutionvalues(2,ipoint,iedge,2) = drho * du
+!        Dsolutionvalues(2,ipoint,iedge,3) = drho * dv
+!        Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
+
+
+        !!! Boundary conditions by Riemann invariants for isentropic vortex !!!
+        
+        ! Calculate Riemann invariants from outer (freestream) state
+        ! Here you can set the desired freestream state
+        dt = rcollection%Dquickaccess(1)
+        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+        
+        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+        du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
+        dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
+        dE = (drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv)
+        
+        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
+        dH = dE + dpr/drho
+        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
+        
+        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
+        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
+        
+        dW1o = dvn - 2.0_dp*dc/(gamma-1)
+        dW2o = dpr/(drho**gamma)
+        dW3o = dvt
+        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
+        
+        ! Calculate Riemann invariants from inner values
+        drho = Dsolutionvalues(1,ipoint,iedge,1)
+        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
+        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
+        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
+        
+        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
+        dH = dE + dpr/drho
+        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
+        
+        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
+        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
+        
+        dW1 = dvn - 2.0_dp*dc/(gamma-1)
+        dW2 = dpr/(drho**gamma)
+        dW3 = dvt
+        dW4 = dvn + 2.0_dp*dc/(gamma-1)
+        
+        ! Choose inner/outer state depending on the sign of the
+        ! eigenvalues
+        if ((dvn-dc)<0.0_dp) dW1 = dW1o
+        if (dvn<0.0_dp) then
+          dW2 = dW2o
+          dW3 = dW3o
+        end if
+        if ((dvn+dc)<0.0_dp) dW4 = dW4o
+        
+        ! Transform back to conservative variables and set value
+        ! in the ghost node
+        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
+        drho = (dc*dc/(gamma*dW2))**(1.0_dp/(gamma-1.0_dp))
+        dpr = dc*dc*drho/gamma
+        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
+        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
+        
+        Dsolutionvalues(2,ipoint,iedge,1) = drho
+        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
+        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
+        Dsolutionvalues(2,ipoint,iedge,4) = dpr/(gamma-1.0_dp) + drho*0.5_dp*(du*du+dv*dv)
         
       end if
       
-    
-
-
-
 
       ! *** Upwind flux without dimensional splitting (Roe-Flux) and new c ***
       
@@ -3739,21 +3870,21 @@ integer :: iel
       DQa = Dsolutionvalues(2,ipoint,iedge,:)
       
       ! Get fluxes on the in and outside in x- and y-direction
-      DF1i = Euler_buildFlux(DQi,1)
-      DF1a = Euler_buildFlux(DQa,1)
-      DF2i = Euler_buildFlux(DQi,2)
-      DF2a = Euler_buildFlux(DQa,2)
+      DFxi = Euler_buildFlux(DQi,1)
+      DFxa = Euler_buildFlux(DQa,1)
+      DFyi = Euler_buildFlux(DQi,2)
+      DFya = Euler_buildFlux(DQa,2)
             
       ! Calculate Roevalues
       DQroec = Euler_calculateQroec(DQi,DQa)
       
       ! First calculate flux in x-direction
-      DFx= 0.5_dp*(DF1i+DF1a)
-!      DFx = buildFlux(DQRoe,1)
+      DFx = 0.5_dp*(DFxi+DFxa)
+      !DFx = Euler_buildFlux(DQRoe,1)
       
       ! First calculate flux in y-direction
-      DFy= 0.5_dp*(DF2i+DF2a)
-!      DFy = buildFlux(DQRoe,2)
+      DFy = 0.5_dp*(DFyi+DFya)
+      !DFy = Euler_buildFlux(DQRoe,2)
       
       ! Add the fluxes of the two dimensional directions to get Flux * normal
       DFlux = DFx*normal(1,iedge) + DFy*normal(2,iedge)
@@ -3770,14 +3901,14 @@ integer :: iel
 !      DfluxValues(:,1,ipoint,iedge) =  Euler_buildFlux(0.5_dp*(DQi+DQa),1)*normal(1,iedge) + Euler_buildFlux(0.5_dp*(DQi+DQa),2)*normal(2,iedge)
       
       
-      ! Lax Friedrichs #1
-      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*maxval(DaLambda)*(DQi - DQa)
+!      ! Lax Friedrichs #1
+!      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*maxval(DaLambda)*(DQi - DQa)
             
 !     ! Lax Friedrichs #2
 !     dlambda = max(sqrt(DQi(2)*DQi(2)+dQi(3)*DQi(3))/DQi(1)+sqrt(gamma/DQi(1)*(gamma-1.0_dp)*DQi(1)*(DQi(4)/DQi(1)-0.5_dp*( (DQi(2)/DQi(1))**2.0_dp + (DQi(3)/DQi(1))**2.0_dp ) )) , sqrt(DQa(2)*DQa(2)+dQa(3)*DQa(3))/DQa(1)+sqrt(gamma/DQa(1)*(gamma-1.0_dp)*DQa(1)*(DQa(4)/DQa(1)-0.5_dp*( (DQa(2)/DQa(1))**2.0_dp + (DQa(3)/DQa(1))**2.0_dp ) )))
 !     DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*dlambda*(DQi - DQa)
 
-!      ! Lax Friedrichs with rusanov dissipation
+!      ! Lax Friedrichs with Rusanov dissipation
 !      El = dQi(4)/dQi(1)
 !      Er = dQa(4)/dQa(1)
 !      pl = (gamma-1.0_dp)*dQi(1)*(El-0.5_dp*( (dQi(2)/dQi(1))**2.0_dp + (dQi(3)/dQi(1))**2.0_dp ) )
@@ -3785,9 +3916,11 @@ integer :: iel
 !      dlambda = max( sqrt((DQi(2)/DQi(1)*normal(1,iedge))**2.0_dp + (DQi(3)/DQi(1)*normal(2,iedge))**2.0_dp)+sqrt(gamma/DQi(1)*pl) , sqrt((DQa(2)/DQa(1)*normal(1,iedge))**2.0_dp + (DQa(3)/DQa(1)*normal(2,iedge))**2.0_dp)+sqrt(gamma/DQa(1)*pr) )
 !      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*dlambda*(DQi - DQa)
 
-!      ! Save the calculated flux (HLL)
-!      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLL2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
+      ! Save the calculated flux (HLL)
+      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLL2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
 
+!      ! Galerkin
+!      DfluxValues(:,1,ipoint,iedge) = DFlux
       
     end do ! ipoint
   end do ! iedge
@@ -4614,5 +4747,6 @@ integer :: iel
     deallocate(DsolutionValues)
     
   end subroutine
+
 
 end module
