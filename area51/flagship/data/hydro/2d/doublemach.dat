@@ -56,7 +56,7 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 2
+idissipationtype = 1
 
 # type of system coupling
 # 0 = segregated approach
@@ -339,10 +339,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 7
+nlmin = 6
 
 # maximum multigrid level number
-nlmax = 7
+nlmax = 6
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -594,7 +594,7 @@ npostsmooth = 2
 nsmoothfactor = 1
 
 # linear relaxation parameter
-domega = 1
+domega = 1.0
 
 # absolute tolerance for residual
 depsAbs = 1e-12

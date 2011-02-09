@@ -60,4 +60,4 @@ CoeffMatrix_CXZ = 0
 CoeffMatrix_CYZ = 0
 
 # Type of cubature rule used at the boundary
-ccubTypeBdr = 104
+ccubTypeBdr = 103

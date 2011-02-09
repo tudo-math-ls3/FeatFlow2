@@ -512,7 +512,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.8
+dfinalTime = 1e-3
 
 # initial time step size
 dinitialStep = 1e-5

@@ -126,7 +126,7 @@ imasstype = 2
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 0
+imassantidiffusiontype = 1
 
 # type of dissipation
 # 0 = no dissipation
@@ -312,7 +312,7 @@ imassantidiffusiontype = %{Hydro.imassantidiffusiontype}
 # 6 = Burgers' equation in 2D
 # 7 = Burgers' equation in 3D
 # 8 = Buckley Leverett equation in 1D
-ivelocitytype = 999
+ivelocitytype = 1
 
 # section name of velocity field
 svelocityname = 
@@ -460,7 +460,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-sucdsolution = out/zpinch_60x240_fct_nomass
+sucdsolution = out/zpinch_be_120x480_fct
 
 # file for UCD import of solution
 sucdimport =
@@ -515,13 +515,13 @@ dinitialTime = 0.0
 dfinalTime = 1.1
 
 # initial time step size
-dinitialStep = 1e-5
+dinitialStep = 5e-6
 
 # lower bound for the admissible time step
-dminStep = 1e-4
+dminStep = 5e-6
 
 # upper bound for the admissible time step
-dmaxStep = 1e-4
+dmaxStep = 5e-6
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -612,10 +612,10 @@ ssolvername(2) =
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 2
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 2
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -653,10 +653,10 @@ ssolvername = NonlinearSolverHydro
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 2
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 2
 
 # type of multigrid cycle
 # 0 = F-cylce

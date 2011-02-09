@@ -12,18 +12,17 @@
 defconst: r0 = 0.13
 defconst: x0 = 0.5
 defconst: y0 = 0.5
-defexpr:  sqr1 = SQRT((x-_x0)^2+(y-_y0)^2)
+#defexpr:  sqr1 = SQRT((x-_x0)^2+(y-_y0)^2)
+defexpr:  sqr1 = ABS(x)
 
 # Specify the initial solution
 
-deffunc: @initsol_rho = if(@sqr1 >= 0.3 & @sqr1 <= 0.4, 1.0, 0.01) ; x,y,z,t
-#deffunc: @initsol_rho = if(@sqr1 < _r0, 2.0, 1.0) ; x,y,z,t
+deffunc: @initsol_rho = if(@sqr1 < _r0, 2.0, 1.0) ; x,y,z,t
 deffunc: @initsol_vel = 0.0 ; x,y,z,t
-#deffunc: @initsol_Etot = if(@sqr1 < _r0, 37.5, 2.5) ; x,y,z,t
-deffunc: @initsol_Etot = 2.5 ; x,y,z,t
+deffunc: @initsol_Etot = if(@sqr1 < _r0, 37.5, 2.5) ; x,y,z,t
 
 # Specify the boundary conditions
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR
@@ -31,6 +30,9 @@ NEXPR
 IBCT
 1
 NCOMP
-1
+4
 PARAMETERS
+1.0  T  'FREESLIP_WEAK'
+2.0  T  'FREESLIP_WEAK'
+3.0  T  'FREESLIP_WEAK'
 4.0  T  'FREESLIP_WEAK'
