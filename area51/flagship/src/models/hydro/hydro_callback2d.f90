@@ -5141,7 +5141,11 @@ contains
         do ipoint = 1, npoints
           
           ! Set values for function parser
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
           Dvalue(1:2) = Dcoords(1:2,ipoint,iel)
+#else
+          Dvalue(1:2) = Dpoints(1:2,ipoint,iel)
+#endif
           
           ! Compute free stream values from function parser given in
           ! term of the primitive variables [rho,v1,v2,p]
@@ -5264,7 +5268,11 @@ contains
         do ipoint = 1, npoints
           
           ! Set values for function parser
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
           Dvalue(1:2) = Dcoords(1:2,ipoint,iel)
+#else
+          Dvalue(1:2) = Dpoints(1:2,ipoint,iel)
+#endif
           
           ! Compute boundary values from function parser given in
           ! term of the primitive variables [rho,v1,v2,p]
@@ -5437,7 +5445,11 @@ contains
         do ipoint = 1, npoints
           
           ! Set values for function parser
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
           Dvalue(1:2) = Dcoords(1:2,ipoint,iel)
+#else
+          Dvalue(1:2) = Dpoints(1:2,ipoint,iel)
+#endif
           
           ! Compute pressure value from function parser
           call fparser_evalFunction(p_rfparser,&
