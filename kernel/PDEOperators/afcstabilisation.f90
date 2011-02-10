@@ -423,7 +423,7 @@ module afcstabilisation
     integer :: NNVEDGE = 0
 
     ! Flag: compute auxiliary structures for flux prelimiting
-    logical :: bprelimiting = .true.
+    logical :: bprelimiting = .false.
 
     ! Handle to index pointer for edge structure
     ! The numbers IverticesAtEdgeIdx(k):IverticesAtEdgeIdx(k+1)-1
@@ -607,7 +607,7 @@ contains
 
     ! Get type of prelimiting from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
-        "iprelimiting", iprelimiting, 1)
+        "iprelimiting", iprelimiting, 0)
 
     ! Set flag for prelimiting
     rafcstab%bprelimiting = (iprelimiting .ne. 0)
