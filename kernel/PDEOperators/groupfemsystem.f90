@@ -7925,11 +7925,11 @@ contains
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       
       ! local variables
-      integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
+      integer :: idx,iedge,IEDGEset,IEDGEmax
 
       
       !$omp parallel default(shared)&
-      !$omp private(DdataAtEdge,i,j,idx,iedge,IEDGEmax)
+      !$omp private(DdataAtEdge,idx,iedge,IEDGEmax)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
@@ -8365,11 +8365,11 @@ contains
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       
       ! local variables
-      integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
+      integer :: idx,iedge,IEDGEset,IEDGEmax
 
 
       !$omp parallel default(shared)&
-      !$omp private(DdataAtEdge,i,j,idx,iedge,IEDGEmax)
+      !$omp private(DdataAtEdge,idx,iedge,IEDGEmax)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
