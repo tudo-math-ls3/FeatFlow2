@@ -235,7 +235,7 @@ module linearformevaluation
   ! A vector assembly structure that saves crucial data during the vector assembly.
   type t_linfVectorAssembly
   
-    ! The bilinear form specifying the underlying PDE of the discretisation.
+    ! The linear form specifying the underlying PDE of the discretisation.
     type(t_linearForm) :: rform
 
     ! Number of local DOF`s.
@@ -546,7 +546,7 @@ contains
   
   
   ! Which derivatives of basis functions are needed?
-  ! Check the descriptors of the bilinear form and set BDER
+  ! Check the descriptors of the linear form and set BDER
   ! according to these.
   
   Bder = .false.
@@ -742,17 +742,16 @@ contains
       ! Now it is time to call our coefficient function to calculate the
       ! function values in the cubature points:
       call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
-      rintSubset%ielementDistribution = icurrentElementDistr
-      rintSubset%ielementStartIdx = IELset
-      rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-      rintSubset%p_IdofsTrial => IdofsTest
-      rintSubset%celement = p_relementDistribution%celement
+      rintSubset%ielementDistribution =  icurrentElementDistr
+      rintSubset%ielementStartIdx     =  IELset
+      rintSubset%p_Ielements          => p_IelementList(IELset:IELmax)
+      rintSubset%p_IdofsTrial         => IdofsTest
+      rintSubset%celement             =  p_relementDistribution%celement
       
       if (present(fcoeff_buildVectorSc_sim)) then
         call fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
             IELmax-IELset+1,ncubp,revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1), &
-            IdofsTest,rintSubset, &
-            Dcoefficients(:,:,1:IELmax-IELset+1),rcollection)
+            IdofsTest,rintSubset, Dcoefficients(:,:,1:IELmax-IELset+1),rcollection)
       else
         Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
       end if
@@ -1723,7 +1722,7 @@ contains
 !</description>
 
 !<input>
-  ! The bilinear form specifying the underlying PDE of the discretisation.
+  ! The linear form specifying the underlying PDE of the discretisation.
   type(t_linearForm), intent(in) :: rform
   
   ! Type of element in the test space.
@@ -1759,7 +1758,7 @@ contains
     rvectorAssembly%indof = elem_igetNDofLoc(celement)
     
     ! Which derivatives of basis functions are needed?
-    ! Check the descriptors of the bilinear form and set BDERxxxx
+    ! Check the descriptors of the linear form and set BDERxxxx
     ! according to these.
     rvectorAssembly%Bder(:) = .false.
     
@@ -1929,7 +1928,7 @@ contains
   
 !<input>
   
-  ! List of elements where to assemble the bilinear form.
+  ! List of elements where to assemble the linear form.
   integer, dimension(:), intent(in), target :: IelementList
   
   ! A callback routine which is able to calculate the values of the
@@ -2001,11 +2000,11 @@ contains
     call linf_allocAssemblyData(rlocalVectorAssembly)
     
     ! Get some more pointers to local data.
-    p_Domega => rlocalVectorAssembly%p_Domega
-    p_Dbas => rlocalVectorAssembly%p_Dbas
-    p_Dcoefficients => rlocalVectorAssembly%p_Dcoefficients(1,:,:,:)
-    p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
-    p_Idofs => rlocalVectorAssembly%p_Idofs
+    p_Domega          => rlocalVectorAssembly%p_Domega
+    p_Dbas            => rlocalVectorAssembly%p_Dbas
+    p_Dcoefficients   => rlocalVectorAssembly%p_Dcoefficients(1,:,:,:)
+    p_Idescriptors    => rlocalVectorAssembly%rform%Idescriptors
+    p_Idofs           => rlocalVectorAssembly%p_Idofs
     p_revalElementSet => rlocalVectorAssembly%revalElementSet
 
     ! Allocate memory for the local data.
@@ -2101,15 +2100,15 @@ contains
       if (present(fcoeff_buildVectorSc_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
         rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx = IELset
-        rintSubset%p_Ielements => IelementList(IELset:IELmax)
-        rintSubset%p_IdofsTrial => p_Idofs
-        rintSubset%celement = rlocalVectorAssembly%celement
+        rintSubset%ielementStartIdx =  IELset
+        rintSubset%p_Ielements      => IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial     => p_Idofs
+        rintSubset%celement         =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorSc_sim (rvector%p_rspatialDiscr,&
             rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
-            p_Idofs, rintSubset,&
-            p_Dcoefficients(:,:,1:IELmax-IELset+1), rcollection)
+            p_Idofs, rintSubset, p_Dcoefficients(:,:,1:IELmax-IELset+1),&
+            rcollection)
         call domint_doneIntegration (rintSubset)
       else
         p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
@@ -2150,7 +2149,7 @@ contains
 
           domega = p_Domega(icubp)*abs(p_Ddetj(icubp,iel))
 
-          ! Loop over the additive factors in the bilinear form.
+          ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
             ! Get from Idescriptors the type of the derivatives for the 
@@ -2246,7 +2245,7 @@ contains
   
 !<input>
   
-  ! List of elements where to assemble the bilinear form.
+  ! List of elements where to assemble the linear form.
   integer, dimension(:), intent(in), target :: IelementList
   
   ! A callback routine which is able to calculate the values of the
@@ -2319,11 +2318,11 @@ contains
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%NVAR)
    
     ! Get some more pointers to local data.
-    p_Domega => rlocalVectorAssembly%p_Domega
-    p_Dbas => rlocalVectorAssembly%p_Dbas
-    p_Dcoefficients => rlocalVectorAssembly%p_Dcoefficients
-    p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
-    p_Idofs => rlocalVectorAssembly%p_Idofs
+    p_Domega          => rlocalVectorAssembly%p_Domega
+    p_Dbas            => rlocalVectorAssembly%p_Dbas
+    p_Dcoefficients   => rlocalVectorAssembly%p_Dcoefficients
+    p_Idescriptors    => rlocalVectorAssembly%rform%Idescriptors
+    p_Idofs           => rlocalVectorAssembly%p_Idofs
     p_revalElementSet => rlocalVectorAssembly%revalElementSet
 
     ! Allocate memory for the local data.
@@ -2420,15 +2419,15 @@ contains
       if (present(fcoeff_buildVectorBl_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
         rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx = IELset
-        rintSubset%p_Ielements => IelementList(IELset:IELmax)
-        rintSubset%p_IdofsTrial => p_Idofs
-        rintSubset%celement = rlocalVectorAssembly%celement
+        rintSubset%ielementStartIdx =  IELset
+        rintSubset%p_Ielements      => IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial     => p_Idofs
+        rintSubset%celement         =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorBl_sim (rvector%p_rspatialDiscr,&
             rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
-            p_Idofs, rintSubset,&
-            p_Dcoefficients(:,:,:,1:IELmax-IELset+1), rcollection)
+            p_Idofs, rintSubset, p_Dcoefficients(:,:,:,1:IELmax-IELset+1),&
+            rcollection)
         call domint_doneIntegration (rintSubset)
       else
         p_Dcoefficients(:,:,:,1:IELmax-IELset+1) = 1.0_DP
@@ -2469,7 +2468,7 @@ contains
 
           domega = p_Domega(icubp)*abs(p_Ddetj(icubp,iel))
 
-          ! Loop over the additive factors in the bilinear form.
+          ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
             ! Get from Idescriptors the type of the derivatives for the 
@@ -2640,11 +2639,11 @@ contains
     end if
    
     ! Get some more pointers for faster access
-    p_Domega => rvectorAssembly%p_Domega
-    p_Dbas => rvectorAssembly%p_Dbas
-    p_Dcoefficients => rvectorAssembly%p_Dcoefficients(1,:,:,:)
-    p_Idescriptors => rvectorAssembly%rform%Idescriptors
-    p_Idofs => rvectorAssembly%p_Idofs
+    p_Domega          => rvectorAssembly%p_Domega
+    p_Dbas            => rvectorAssembly%p_Dbas
+    p_Dcoefficients   => rvectorAssembly%p_Dcoefficients(1,:,:,:)
+    p_Idescriptors    => rvectorAssembly%rform%Idescriptors
+    p_Idofs           => rvectorAssembly%p_Idofs
     p_revalElementSet => rvectorAssembly%revalElementSet
 
     ! Allocate memory for the coordinates of the reference points
@@ -2725,7 +2724,7 @@ contains
       ! Clear the output vector.
       DlocalData(1:indof) = 0.0_DP
       
-      ! Loop over the additive factors in the bilinear form.
+      ! Loop over the additive factors in the linear form.
       do ialbet = 1,rvectorAssembly%rform%itermcount
         
         ! Get from Idescriptors the type of the derivatives for the 
@@ -2840,20 +2839,21 @@ contains
 
     ! local variables, used by all processors
     real(DP), dimension(:), pointer :: p_Ddata
-    integer :: indof,ncubp
+    integer(I32) :: icoordSystem
+    integer :: IELset,indof,ncubp,nve
+    logical :: bisLinearTrafo
     
     ! local data of every processor when using OpenMP
-    integer :: IELset,IELmax,ibdc,k
-    integer :: iel,icubp,ialbet,ia,idofe,nve
+    integer :: IELmax,ia,ialbet,ibdc,icubp,idofe,iel,k
     real(DP) :: domega,daux,dlen
     integer(I32) :: cevaluationTag
     type(t_linfVectorAssembly), target :: rlocalVectorAssembly
     type(t_domainIntSubset) :: rintSubset
-    real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:), pointer :: p_Domega
-    real(DP), dimension(:,:,:,:), pointer :: p_Dbas
-    real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
     real(DP), dimension(:,:), pointer :: p_DcubPtsRef
+    real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
+    real(DP), dimension(:,:,:), pointer :: p_Dcoords
+    real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     integer, dimension(:),pointer :: p_Idescriptors
     integer, dimension(:,:), pointer :: p_Idofs
     type(t_evalElementSet), pointer :: p_revalElementSet
@@ -2863,12 +2863,10 @@ contains
 
     ! Arrays for cubature points 1D->2D
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
-    real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
-    real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:), allocatable :: DedgeLength
+    real(DP), dimension(:,:), allocatable :: DpointsPar
+    real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     
-    integer(i32) :: icoordSystem
-    logical :: bisLinearTrafo
 
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
@@ -2877,6 +2875,13 @@ contains
     call lsyssc_getbase_double (rvector, p_Ddata)
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
+
+    ! Get the type of coordinate system
+    icoordSystem = elem_igetCoordSystem(rvectorAssembly%celement)
+
+    ! Do we have a (multi-)linear transformation?
+    bisLinearTrafo = trafo_isLinearTrafo(rvectorAssembly%ctrafoType)
+    nve            = trafo_igetNVE(rvectorAssembly%ctrafoType)
 
     ! Open-MP-Extension: Copy the assembly data to the local assembly
     ! data, where we can allocate memory.
@@ -2888,21 +2893,21 @@ contains
     ! stucture or disturbing the data of the other processors.
     !
     !$omp parallel default(shared) &
-    !$omp private(DedgeLength,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
-    !$omp         bisLinearTrafo,cevaluationTag,daux,dlen,domega,ia,ialbet,icoordSystem,&
-    !$omp         icubp,idofe,iel,k,p_Dbas,p_Dcoefficients,p_Dcoords,p_DcubPtsRef,&
+    !$omp private(DedgeLength,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,&
+    !$omp         IELmax,cevaluationTag,daux,dlen,domega,ia,ialbet,icubp,idofe,&
+    !$omp         iel,k,p_Dbas,p_Dcoefficients,p_Dcoords,p_DcubPtsRef,&
     !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
     !$omp         rintSubset,rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly)
     
     ! Get some more pointers to local data.
-    p_Domega => rlocalVectorAssembly%p_Domega
-    p_Dbas => rlocalVectorAssembly%p_Dbas
-    p_Dcoefficients => rlocalVectorAssembly%p_Dcoefficients(1,:,:,:)
-    p_DcubPtsRef => rlocalVectorAssembly%p_DcubPtsRef
-    p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
-    p_Idofs => rlocalVectorAssembly%p_Idofs
+    p_Domega          => rlocalVectorAssembly%p_Domega
+    p_Dbas            => rlocalVectorAssembly%p_Dbas
+    p_Dcoefficients   => rlocalVectorAssembly%p_Dcoefficients(1,:,:,:)
+    p_DcubPtsRef      => rlocalVectorAssembly%p_DcubPtsRef
+    p_Idescriptors    => rlocalVectorAssembly%rform%Idescriptors
+    p_Idofs           => rlocalVectorAssembly%p_Idofs
     p_revalElementSet => rlocalVectorAssembly%revalElementSet
 
     ! Transpose the coordinate array such that we get coordinates we
@@ -2928,9 +2933,6 @@ contains
     ! Allocate memory for the length of edges on the boundary
     allocate(DedgeLength(rlocalVectorAssembly%nelementsPerBlock))
 
-    ! Get the type of coordinate system
-    icoordSystem = elem_igetCoordSystem(rlocalVectorAssembly%celement)
-
     ! Loop over the elements - blockwise.
     !
     ! Open-MP-Extension: Each loop cycle is executed in a different thread,
@@ -2939,14 +2941,14 @@ contains
     ! The blocks have all the same size, so we can use static scheduling.
     !
     !$omp do schedule(static,1)
-    do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
+    do IELset = 1, size(IelementList), rvectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most
       ! nelementsPerBlock elements simultaneously.
       
-      IELmax = min(size(IelementList),IELset-1+rlocalVectorAssembly%nelementsPerBlock)
+      IELmax = min(size(IelementList),IELset-1+rvectorAssembly%nelementsPerBlock)
       
       ! Map the 1D cubature points to the edges in 2D.
       do iel = 1,IELmax-IELset+1
@@ -3020,16 +3022,10 @@ contains
       ! The cubature points are already initialised by 1D->2D mapping.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
-      ! Do we have a (multi-)linear transformation?
-      bisLinearTrafo = trafo_isLinearTrafo(rlocalVectorAssembly%ctrafoType)
-
-      if (bisLinearTrafo) then
-        ! We need the vertices of the element corners and the number
-        ! of vertices per element to compute the length of the element
-        ! edge at the boundary
-        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
-        nve = trafo_igetNVE(rlocalVectorAssembly%ctrafoType)
-      end if
+      ! We need the vertices of the element corners and the number
+      ! of vertices per element to compute the length of the element
+      ! edge at the boundary
+      if (bisLinearTrafo) cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
 
       ! Calculate all information that is necessary to evaluate the
       ! finite element on all cells of our subset. This includes the
@@ -3044,12 +3040,12 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorScBdr2D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx = IELset
-        rintSubset%p_Ielements => IelementList(IELset:IELmax)
+        rintSubset%ielementDistribution  =  0
+        rintSubset%ielementStartIdx      =  IELset
+        rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
-        rintSubset%p_IdofsTrial => p_Idofs
-        rintSubset%celement = rlocalVectorAssembly%celement
+        rintSubset%p_IdofsTrial          => p_Idofs
+        rintSubset%celement              =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorScBdr2D_sim (rvector%p_rspatialDiscr,&
             rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
@@ -3119,7 +3115,7 @@ contains
 
           domega = dlen * p_Domega(icubp)
           
-          ! Loop over the additive factors in the bilinear form.
+          ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
             ! Get from Idescriptors the type of the derivatives for the 
@@ -3286,11 +3282,11 @@ contains
     end if
    
     ! Get some more pointers for faster access
-    p_Domega => rvectorAssembly%p_Domega
-    p_Dbas => rvectorAssembly%p_Dbas
-    p_Dcoefficients => rvectorAssembly%p_Dcoefficients
-    p_Idescriptors => rvectorAssembly%rform%Idescriptors
-    p_Idofs => rvectorAssembly%p_Idofs
+    p_Domega          => rvectorAssembly%p_Domega
+    p_Dbas            => rvectorAssembly%p_Dbas
+    p_Dcoefficients   => rvectorAssembly%p_Dcoefficients
+    p_Idescriptors    => rvectorAssembly%rform%Idescriptors
+    p_Idofs           => rvectorAssembly%p_Idofs
     p_revalElementSet => rvectorAssembly%revalElementSet
 
     ! Allocate temporal array
@@ -3375,7 +3371,7 @@ contains
       ! Clear the output vector.
       DlocalData(:,1:indof) = 0.0_DP
       
-      ! Loop over the additive factors in the bilinear form.
+      ! Loop over the additive factors in the linear form.
       do ialbet = 1,rvectorAssembly%rform%itermcount
         
         ! Get from Idescriptors the type of the derivatives for the 
@@ -3493,37 +3489,36 @@ contains
 
     ! local variables, used by all processors
     real(DP), dimension(:), pointer :: p_Ddata
-    integer :: indof,ncubp
+    integer(I32) :: icoordSystem
+    integer :: IELset,ibdc,indof,ncubp,nve
+    logical :: bisLinearTrafo
     
     ! local data of every processor when using OpenMP
-    integer :: IELset,IELmax,ibdc,k
-    integer :: iel,icubp,ialbet,ia,idofe,ivar,nve
-    real(DP) :: domega,dlen
     integer(I32) :: cevaluationTag
+    integer :: IELmax,ia,ialbet,icubp,idofe,iel,ivar,k
+    real(DP) :: domega,dlen
     type(t_linfVectorAssembly), target :: rlocalVectorAssembly
     type(t_domainIntSubset) :: rintSubset
-    real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:), pointer :: p_Domega
+    real(DP), dimension(:,:), pointer :: p_DcubPtsRef
+    real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     real(DP), dimension(:,:,:,:), pointer :: p_Dcoefficients
-    real(DP), dimension(:,:), pointer :: p_DcubPtsRef
     integer, dimension(:),pointer :: p_Idescriptors
     integer, dimension(:,:), pointer :: p_Idofs
     type(t_evalElementSet), pointer :: p_revalElementSet
 
     ! A small vector holding only the additive contributions of one element
-    real(DP), dimension(:,:,:), allocatable :: DlocalData
     real(DP), dimension(:), allocatable :: Daux
+    real(DP), dimension(:,:,:), allocatable :: DlocalData
     
     ! Arrays for cubature points 1D->2D
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
-    real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
-    real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:), allocatable :: DedgeLength
+    real(DP), dimension(:,:), allocatable :: DpointsPar
+    real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     
-    integer(i32) :: icoordSystem
-    logical :: bisLinearTrafo
-
+    
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
 
@@ -3531,6 +3526,13 @@ contains
     call lsyssc_getbase_double (rvector, p_Ddata)
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
+    
+    ! Get the type of coordinate system
+    icoordSystem = elem_igetCoordSystem(rvectorAssembly%celement)
+
+    ! Do we have a (multi-)linear transformation?
+    bisLinearTrafo = trafo_isLinearTrafo(rvectorAssembly%ctrafoType)
+    nve            = trafo_igetNVE(rvectorAssembly%ctrafoType)
 
     ! Open-MP-Extension: Copy the assembly data to the local assembly
     ! data, where we can allocate memory.
@@ -3542,21 +3544,21 @@ contains
     ! stucture or disturbing the data of the other processors.
     !
     !$omp parallel default(shared) &
-    !$omp private(DedgeLength,Daux,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
-    !$omp         bisLinearTrafo,cevaluationTag,dlen,domega,ia,ialbet,icoordSystem,icubp,&
-    !$omp         idofe,iel,ivar,k,p_Dbas,p_Dcoefficients,p_Dcoords,p_DcubPtsRef,&
+    !$omp private(DedgeLength,Daux,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,&
+    !$omp         IELmax,cevaluationTag,dlen,domega,ia,ialbet,icubp,idofe,&
+    !$omp         iel,ivar,k,p_Dbas,p_Dcoefficients,p_Dcoords,p_DcubPtsRef,&
     !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
     !$omp         rintSubset,rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%NVAR)
     
     ! Get some more pointers to local data.
-    p_Domega => rlocalVectorAssembly%p_Domega
-    p_Dbas => rlocalVectorAssembly%p_Dbas
-    p_Dcoefficients => rlocalVectorAssembly%p_Dcoefficients
-    p_DcubPtsRef => rlocalVectorAssembly%p_DcubPtsRef
-    p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
-    p_Idofs => rlocalVectorAssembly%p_Idofs
+    p_Domega          => rlocalVectorAssembly%p_Domega
+    p_Dbas            => rlocalVectorAssembly%p_Dbas
+    p_Dcoefficients   => rlocalVectorAssembly%p_Dcoefficients
+    p_DcubPtsRef      => rlocalVectorAssembly%p_DcubPtsRef
+    p_Idescriptors    => rlocalVectorAssembly%rform%Idescriptors
+    p_Idofs           => rlocalVectorAssembly%p_Idofs
     p_revalElementSet => rlocalVectorAssembly%revalElementSet
     
     ! Transpose the coordinate array such that we get coordinates we
@@ -3582,10 +3584,7 @@ contains
 
     ! Allocate memory for the length of edges on the boundary
     allocate(DedgeLength(rlocalVectorAssembly%nelementsPerBlock))
-
-    ! Get the type of coordinate system
-    icoordSystem = elem_igetCoordSystem(rlocalVectorAssembly%celement)
-
+   
     ! Loop over the elements - blockwise.
     !
     ! Open-MP-Extension: Each loop cycle is executed in a different thread,
@@ -3594,14 +3593,14 @@ contains
     ! The blocks have all the same size, so we can use static scheduling.
     !
     !$omp do schedule(static,1)
-    do IELset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
+    do IELset = 1, size(IelementList), rvectorAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most
       ! nelementsPerBlock elements simultaneously.
       
-      IELmax = min(size(IelementList),IELset-1+rlocalVectorAssembly%nelementsPerBlock)
+      IELmax = min(size(IelementList),IELset-1+rvectorAssembly%nelementsPerBlock)
       
       ! Map the 1D cubature points to the edges in 2D.
       do iel = 1,IELmax-IELset+1
@@ -3674,17 +3673,11 @@ contains
       
       ! The cubature points are already initialised by 1D->2D mapping.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
-
-      ! Do we have a (multi-)linear transformation?
-      bisLinearTrafo = trafo_isLinearTrafo(rlocalVectorAssembly%ctrafoType)
-
-      if (bisLinearTrafo) then
-        ! We need the vertices of the element corners and the number
-        ! of vertices per element to compute the length of the element
-        ! edge at the boundary
-        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
-        nve = trafo_igetNVE(rlocalVectorAssembly%ctrafoType)
-      end if
+     
+      ! Do we need the vertices of the element corners and the number
+      ! of vertices per element to compute the length of the element
+      ! edge at the boundary?
+      if (bisLinearTrafo) cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
 
       ! Calculate all information that is necessary to evaluate the
       ! finite element on all cells of our subset. This includes the
@@ -3699,17 +3692,16 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBlBdr2D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx = IELset
-        rintSubset%p_Ielements => IelementList(IELset:IELmax)
+        rintSubset%ielementDistribution  =  0
+        rintSubset%ielementStartIdx      =  IELset
+        rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
-        rintSubset%p_IdofsTrial => p_Idofs
-        rintSubset%celement = rlocalVectorAssembly%celement
+        rintSubset%p_IdofsTrial          => p_Idofs
+        rintSubset%celement              =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rspatialDiscr,&
             rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
-            ibdc, DpointsPar(:,1:IELmax-IELset+1),&
-            p_Idofs, rintSubset, &
+            ibdc, DpointsPar(:,1:IELmax-IELset+1), p_Idofs, rintSubset, &
             p_Dcoefficients(:,:,:,1:IELmax-IELset+1), rcollection)
         call domint_doneIntegration (rintSubset)
       else
@@ -3774,7 +3766,7 @@ contains
 
           domega = dlen * p_Domega(icubp)
           
-          ! Loop over the additive factors in the bilinear form.
+          ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
             ! Get from Idescriptors the type of the derivatives for the 
@@ -3874,7 +3866,7 @@ contains
   
 !<input>
   
-  ! List of elements where to assemble the bilinear form.
+  ! List of elements where to assemble the linear form.
   integer, dimension(:), intent(in), target :: IelementList
   
   ! A callback routine which is able to calculate the values of the
@@ -3947,11 +3939,11 @@ contains
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks)
     
     ! Get some more pointers to local data.
-    p_Domega => rlocalVectorAssembly%p_Domega
-    p_Dbas => rlocalVectorAssembly%p_Dbas
-    p_Dcoefficients => rlocalVectorAssembly%p_Dcoefficients
-    p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
-    p_Idofs => rlocalVectorAssembly%p_Idofs
+    p_Domega          => rlocalVectorAssembly%p_Domega
+    p_Dbas            => rlocalVectorAssembly%p_Dbas
+    p_Dcoefficients   => rlocalVectorAssembly%p_Dcoefficients
+    p_Idescriptors    => rlocalVectorAssembly%rform%Idescriptors
+    p_Idofs           => rlocalVectorAssembly%p_Idofs
     p_revalElementSet => rlocalVectorAssembly%revalElementSet
 
     ! Allocate temporal array
@@ -4049,15 +4041,15 @@ contains
       if (present(fcoeff_buildVectorBl_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
         rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx = IELset
-        rintSubset%p_Ielements => IelementList(IELset:IELmax)
-        rintSubset%p_IdofsTrial => p_Idofs
-        rintSubset%celement = rlocalVectorAssembly%celement
+        rintSubset%ielementStartIdx =  IELset
+        rintSubset%p_Ielements      => IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial     => p_Idofs
+        rintSubset%celement         =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorBl_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
             rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
-            p_Idofs, rintSubset,&
-            p_Dcoefficients(:,:,:,1:IELmax-IELset+1), rcollection)
+            p_Idofs, rintSubset, p_Dcoefficients(:,:,:,1:IELmax-IELset+1),&
+            rcollection)
         call domint_doneIntegration (rintSubset)
       else
         p_Dcoefficients(:,:,:,1:IELmax-IELset+1) = 1.0_DP
@@ -4098,7 +4090,7 @@ contains
 
           domega = p_Domega(icubp)*abs(p_Ddetj(icubp,iel))
 
-          ! Loop over the additive factors in the bilinear form.
+          ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
             ! Get from Idescriptors the type of the derivatives for the 
@@ -4269,11 +4261,11 @@ contains
     end if
    
     ! Get some more pointers for faster access
-    p_Domega => rvectorAssembly%p_Domega
-    p_Dbas => rvectorAssembly%p_Dbas
-    p_Dcoefficients => rvectorAssembly%p_Dcoefficients
-    p_Idescriptors => rvectorAssembly%rform%Idescriptors
-    p_Idofs => rvectorAssembly%p_Idofs
+    p_Domega          => rvectorAssembly%p_Domega
+    p_Dbas            => rvectorAssembly%p_Dbas
+    p_Dcoefficients   => rvectorAssembly%p_Dcoefficients
+    p_Idescriptors    => rvectorAssembly%rform%Idescriptors
+    p_Idofs           => rvectorAssembly%p_Idofs
     p_revalElementSet => rvectorAssembly%revalElementSet
 
     ! Allocate temporal array
@@ -4359,7 +4351,7 @@ contains
       ! Clear the output vector.
       DlocalData(:,1:indof) = 0.0_DP
       
-      ! Loop over the additive factors in the bilinear form.
+      ! Loop over the additive factors in the linear form.
       do ialbet = 1,rvectorAssembly%rform%itermcount
         
         ! Get from Idescriptors the type of the derivatives for the 
@@ -4478,20 +4470,21 @@ contains
 
     ! local variables, used by all processors
     real(DP), dimension(:), pointer :: p_Ddata
-    integer :: indof,ncubp
+    integer(I32) :: icoordSystem
+    integer :: IELset,indof,ncubp,nve
+    logical :: bisLinearTrafo
     
     ! local data of every processor when using OpenMP
-    integer :: IELset,IELmax,ibdc,k
-    integer :: iel,icubp,ialbet,ia,idofe,iblock,nve
+    integer :: IELmax,ia,ialbet,ibdc,iblock,icubp,idofe,iel,k
     real(DP) :: domega,dlen
     integer(I32) :: cevaluationTag
     type(t_linfVectorAssembly), target :: rlocalVectorAssembly
     type(t_domainIntSubset) :: rintSubset
-    real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:), pointer :: p_Domega
+    real(DP), dimension(:,:), pointer :: p_DcubPtsRef
+    real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     real(DP), dimension(:,:,:,:), pointer :: p_Dcoefficients
-    real(DP), dimension(:,:), pointer :: p_DcubPtsRef
     integer, dimension(:),pointer :: p_Idescriptors
     integer, dimension(:,:), pointer :: p_Idofs
     type(t_evalElementSet), pointer :: p_revalElementSet
@@ -4502,13 +4495,11 @@ contains
     
     ! Arrays for cubature points 1D->2D
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
-    real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
-    real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:), allocatable :: DedgeLength
+    real(DP), dimension(:,:), allocatable :: DpointsPar
+    real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     
-    integer(i32) :: icoordSystem
-    logical :: bisLinearTrafo
-
+    
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
 
@@ -4516,6 +4507,13 @@ contains
     call lsysbl_getbase_double (rvector, p_Ddata)
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
+
+    ! Get the type of coordinate system
+    icoordSystem = elem_igetCoordSystem(rvectorAssembly%celement)
+
+    ! Do we have a (multi-)linear transformation?
+    bisLinearTrafo = trafo_isLinearTrafo(rvectorAssembly%ctrafoType)
+    nve            = trafo_igetNVE(rvectorAssembly%ctrafoType)
 
     ! Open-MP-Extension: Copy the assembly data to the local assembly
     ! data, where we can allocate memory.
@@ -4527,21 +4525,21 @@ contains
     ! stucture or disturbing the data of the other processors.
     !
     !$omp parallel default(shared) &
-    !$omp private(DedgeLength,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
-    !$omp         bisLinearTrafo,cevaluationTag,daux,dlen,domega,ia,ialbet,icoordSystem,&
-    !$omp         iblock,icubp,idofe,iel,k,p_Dbas,p_Dcoefficients,p_Dcoords,&
-    !$omp         p_DcubPtsRef,p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
+    !$omp private(DedgeLength,DlocalData,DpointsPar,DpointsRef,Dxi1D,Dxi2D,&
+    !$omp         IELmax,cevaluationTag,daux,dlen,domega,ia,ialbet,iblock,icubp,&
+    !$omp         idofe,iel,k,p_Dbas,p_Dcoefficients,p_Dcoords,p_DcubPtsRef,&
+    !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
     !$omp         rintSubset,rlocalVectorAssembly)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks)
     
     ! Get some more pointers to local data.
-    p_Domega => rlocalVectorAssembly%p_Domega
-    p_Dbas => rlocalVectorAssembly%p_Dbas
-    p_Dcoefficients => rlocalVectorAssembly%p_Dcoefficients
-    p_DcubPtsRef => rlocalVectorAssembly%p_DcubPtsRef
-    p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
-    p_Idofs => rlocalVectorAssembly%p_Idofs
+    p_Domega          => rlocalVectorAssembly%p_Domega
+    p_Dbas            => rlocalVectorAssembly%p_Dbas
+    p_Dcoefficients   => rlocalVectorAssembly%p_Dcoefficients
+    p_DcubPtsRef      => rlocalVectorAssembly%p_DcubPtsRef
+    p_Idescriptors    => rlocalVectorAssembly%rform%Idescriptors
+    p_Idofs           => rlocalVectorAssembly%p_Idofs
     p_revalElementSet => rlocalVectorAssembly%revalElementSet
     
     ! Transpose the coordinate array such that we get coordinates we
@@ -4567,9 +4565,6 @@ contains
 
     ! Allocate memory for the length of edges on the boundary
     allocate(DedgeLength(rlocalVectorAssembly%nelementsPerBlock))
-
-    ! Get the type of coordinate system
-    icoordSystem = elem_igetCoordSystem(rlocalVectorAssembly%celement)
 
     ! Loop over the elements - blockwise.
     !
@@ -4661,17 +4656,11 @@ contains
       ! The cubature points are already initialised by 1D->2D mapping.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
-      ! Do we have a (multi-)linear transformation?
-      bisLinearTrafo = trafo_isLinearTrafo(rlocalVectorAssembly%ctrafoType)
-
-      if (bisLinearTrafo) then
-        ! We need the vertices of the element corners and the number
-        ! of vertices per element to compute the length of the element
-        ! edge at the boundary
-        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
-        nve = trafo_igetNVE(rlocalVectorAssembly%ctrafoType)
-      end if
-
+      ! We need the vertices of the element corners and the number
+      ! of vertices per element to compute the length of the element
+      ! edge at the boundary
+      if (bisLinearTrafo) cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
+      
       ! Calculate all information that is necessary to evaluate the
       ! finite element on all cells of our subset. This includes the
       ! coordinates of the points on the cells.
@@ -4685,17 +4674,16 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBlBdr2D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx = IELset
-        rintSubset%p_Ielements => IelementList(IELset:IELmax)
+        rintSubset%ielementDistribution  =  0
+        rintSubset%ielementStartIdx      =  IELset
+        rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
-        rintSubset%p_IdofsTrial => p_Idofs
-        rintSubset%celement = rlocalVectorAssembly%celement
+        rintSubset%p_IdofsTrial          => p_Idofs
+        rintSubset%celement              =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
             rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
-            ibdc, DpointsPar(:,1:IELmax-IELset+1),&
-            p_Idofs, rintSubset, &
+            ibdc, DpointsPar(:,1:IELmax-IELset+1), p_Idofs, rintSubset, &
             p_Dcoefficients(:,:,:,1:IELmax-IELset+1), rcollection)
         call domint_doneIntegration (rintSubset)
       else
@@ -4760,7 +4748,7 @@ contains
 
           domega = dlen * p_Domega(icubp)
           
-          ! Loop over the additive factors in the bilinear form.
+          ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
             ! Get from Idescriptors the type of the derivatives for the 

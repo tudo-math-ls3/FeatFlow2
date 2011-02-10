@@ -5430,9 +5430,9 @@ contains
   
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rmatrix,p_DA)
-    indofTest = rmatrixAssembly%indofTest
+    indofTest  = rmatrixAssembly%indofTest
     indofTrial = rmatrixAssembly%indofTrial
-    ncubp = rmatrixAssembly%ncubp
+    ncubp      = rmatrixAssembly%ncubp
 
     ! Open-MP-Extension: Copy the matrix assembly data to the local
     ! matrix assembly data, where we can allocate memory.
@@ -5453,16 +5453,16 @@ contains
     call bilf_allocAssemblyData(rlocalMatrixAssembly)
     
     ! Get some more pointers to local data.
-    p_Kentry => rlocalMatrixAssembly%p_Kentry
-    p_Dentry => rlocalMatrixAssembly%p_Dentry
-    p_Domega => rlocalMatrixAssembly%p_Domega
-    p_DbasTest => rlocalMatrixAssembly%p_DbasTest
-    p_DbasTrial => rlocalMatrixAssembly%p_DbasTrial
-    p_Dcoefficients => rlocalMatrixAssembly%p_Dcoefficients
-    p_Idescriptors => rlocalMatrixAssembly%rform%Idescriptors
-    p_IdofsTest => rlocalMatrixAssembly%p_IdofsTest
-    p_IdofsTrial => rlocalMatrixAssembly%p_IdofsTrial
-    p_revalElementSet => rlocalMatrixAssembly%revalElementSet
+    p_Kentry            => rlocalMatrixAssembly%p_Kentry
+    p_Dentry            => rlocalMatrixAssembly%p_Dentry
+    p_Domega            => rlocalMatrixAssembly%p_Domega
+    p_DbasTest          => rlocalMatrixAssembly%p_DbasTest
+    p_DbasTrial         => rlocalMatrixAssembly%p_DbasTrial
+    p_Dcoefficients     => rlocalMatrixAssembly%p_Dcoefficients
+    p_Idescriptors      => rlocalMatrixAssembly%rform%Idescriptors
+    p_IdofsTest         => rlocalMatrixAssembly%p_IdofsTest
+    p_IdofsTrial        => rlocalMatrixAssembly%p_IdofsTrial
+    p_revalElementSet   => rlocalMatrixAssembly%revalElementSet
     p_DcoefficientsBilf => rlocalMatrixAssembly%rform%Dcoefficients
         
     ! Loop over the elements - blockwise.
@@ -5473,14 +5473,14 @@ contains
     ! The blocks have all the same size, so we can use static scheduling.
     !
     !$omp do schedule(static,1)
-    do IELset = 1, size(IelementList), rlocalMatrixAssembly%nelementsPerBlock
+    do IELset = 1, size(IelementList), rmatrixAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
       ! elements simultaneously.
       
-      IELmax = min(size(IelementList),IELset-1+rlocalMatrixAssembly%nelementsPerBlock)
+      IELmax = min(size(IelementList),IELset-1+rmatrixAssembly%nelementsPerBlock)
     
       ! --------------------- DOF SEARCH PHASE ------------------------
     
@@ -5590,11 +5590,11 @@ contains
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildMatrixSc_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-          rintSubset%ielementDistribution = 0
-          rintSubset%ielementStartIdx = IELset
-          rintSubset%p_Ielements => IelementList(IELset:IELmax)
-          rintSubset%p_IdofsTrial => p_IdofsTrial
-          rintSubset%celement = rlocalMatrixAssembly%celementTrial
+          rintSubset%ielementDistribution =  0
+          rintSubset%ielementStartIdx     =  IELset
+          rintSubset%p_Ielements          => IelementList(IELset:IELmax)
+          rintSubset%p_IdofsTrial         => p_IdofsTrial
+          rintSubset%celement             =  rlocalMatrixAssembly%celementTrial
           call fcoeff_buildMatrixSc_sim (rmatrix%p_rspatialDiscrTest,&
               rmatrix%p_rspatialDiscrTrial,&
               rlocalMatrixAssembly%rform, IELmax-IELset+1, ncubp,&
@@ -5834,7 +5834,7 @@ contains
     ! Release the local matrix assembly structure
     call bilf_releaseAssemblyData(rlocalMatrixAssembly)
     !$omp end parallel
-  
+
   end subroutine
 
   !****************************************************************************
@@ -6313,11 +6313,13 @@ contains
   
     ! local variables, used by all processors
     real(DP), dimension(:), pointer :: p_DA
-    integer :: indofTest,indofTrial,ncubp
+    integer(I32) :: icoordSystem
+    integer :: indofTest,indofTrial,ncubp,nve
+    logical :: bisLinearTrafo
     
     ! local data of every processor when using OpenMP
     integer :: IELset,IELmax,ibdc,k
-    integer :: iel,icubp,ialbet,ia,ib,idofe,jdofe,nve
+    integer :: iel,icubp,ialbet,ia,ib,idofe,jdofe
     real(DP) :: domega,daux,db,dlen
     integer(I32) :: cevaluationTag
     type(t_bilfMatrixAssembly), target :: rlocalMatrixAssembly
@@ -6341,18 +6343,23 @@ contains
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:), allocatable :: DedgeLength
-    
-    integer(i32) :: icoordSystem
-    logical :: bisLinearTrafo
+
 
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
 
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rmatrix,p_DA)
-    indofTest = rmatrixAssembly%indofTest
+    indofTest  = rmatrixAssembly%indofTest
     indofTrial = rmatrixAssembly%indofTrial
-    ncubp = rmatrixAssembly%ncubp
+    ncubp      = rmatrixAssembly%ncubp
+
+    ! Get the type of coordinate system
+    icoordSystem = elem_igetCoordSystem(rmatrixAssembly%celementTrial)
+
+    ! Do we have a (multi-)linear transformation?
+    bisLinearTrafo = trafo_isLinearTrafo(rmatrixAssembly%ctrafoType)
+    nve            = trafo_igetNVE(rmatrixAssembly%ctrafoType)
 
     ! Open-MP-Extension: Copy the matrix assembly data to the local
     ! matrix assembly data, where we can allocate memory.
@@ -6364,8 +6371,8 @@ contains
     ! stucture or disturbing the data of the other processors.
     !
     !$omp parallel default(shared) &
-    !$omp private(DedgeLength,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,bisLinearTrafo,&
-    !$omp         cevaluationTag,daux,db,dlen,domega,ia,ialbet,ib,icoordSystem,icubp,&
+    !$omp private(DedgeLength,DpointsPar,DpointsRef,Dxi1D,Dxi2D,IELmax,&
+    !$omp         cevaluationTag,daux,db,dlen,domega,ia,ialbet,ib,icubp,&
     !$omp         idofe,iel,jdofe,k,p_DbasTest,p_DbasTrial,p_Dcoefficients,&
     !$omp         p_DcoefficientsBilf,p_Dcoords,p_DcubPtsRef,p_Dentry,p_Domega,&
     !$omp         p_Idescriptors,p_IdofsTest,p_IdofsTrial,p_Kentry,&
@@ -6374,17 +6381,17 @@ contains
     call bilf_allocAssemblyData(rlocalMatrixAssembly)
     
     ! Get some more pointers to local data.
-    p_Kentry => rlocalMatrixAssembly%p_Kentry
-    p_Dentry => rlocalMatrixAssembly%p_Dentry
-    p_Domega => rlocalMatrixAssembly%p_Domega
-    p_DbasTest => rlocalMatrixAssembly%p_DbasTest
-    p_DbasTrial => rlocalMatrixAssembly%p_DbasTrial
-    p_Dcoefficients => rlocalMatrixAssembly%p_Dcoefficients
-    p_DcubPtsRef => rlocalMatrixAssembly%p_DcubPtsRef
-    p_Idescriptors => rlocalMatrixAssembly%rform%Idescriptors
-    p_IdofsTest => rlocalMatrixAssembly%p_IdofsTest
-    p_IdofsTrial => rlocalMatrixAssembly%p_IdofsTrial
-    p_revalElementSet => rlocalMatrixAssembly%revalElementSet
+    p_Kentry            => rlocalMatrixAssembly%p_Kentry
+    p_Dentry            => rlocalMatrixAssembly%p_Dentry
+    p_Domega            => rlocalMatrixAssembly%p_Domega
+    p_DbasTest          => rlocalMatrixAssembly%p_DbasTest
+    p_DbasTrial         => rlocalMatrixAssembly%p_DbasTrial
+    p_Dcoefficients     => rlocalMatrixAssembly%p_Dcoefficients
+    p_DcubPtsRef        => rlocalMatrixAssembly%p_DcubPtsRef
+    p_Idescriptors      => rlocalMatrixAssembly%rform%Idescriptors
+    p_IdofsTest         => rlocalMatrixAssembly%p_IdofsTest
+    p_IdofsTrial        => rlocalMatrixAssembly%p_IdofsTrial
+    p_revalElementSet   => rlocalMatrixAssembly%revalElementSet
     p_DcoefficientsBilf => rlocalMatrixAssembly%rform%Dcoefficients
       
     ! Transpose the coordinate array such that we get coordinates we
@@ -6406,9 +6413,6 @@ contains
 
     ! Allocate memory for the length of edges on the boundary
     allocate(DedgeLength(rlocalMatrixAssembly%nelementsPerBlock))
-
-    ! Get the type of coordinate system
-    icoordSystem = elem_igetCoordSystem(rlocalMatrixAssembly%celementTrial)
   
     ! Loop over the elements - blockwise.
     !
@@ -6418,14 +6422,14 @@ contains
     ! The blocks have all the same size, so we can use static scheduling.
     !
     !$omp do schedule(static,1)
-    do IELset = 1, size(IelementList), rlocalMatrixAssembly%nelementsPerBlock
+    do IELset = 1, size(IelementList), rmatrixAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
       ! elements simultaneously.
       
-      IELmax = min(size(IelementList),IELset-1+rlocalMatrixAssembly%nelementsPerBlock)
+      IELmax = min(size(IelementList),IELset-1+rmatrixAssembly%nelementsPerBlock)
 
       ! Map the 1D cubature points to the edges in 2D.
       do iel = 1,IELmax-IELset+1
@@ -6535,16 +6539,10 @@ contains
       ! The cubature points are already initialised by 1D->2D mapping.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
-      ! Do we have a (multi-)linear transformation?
-      bisLinearTrafo = trafo_isLinearTrafo(rlocalMatrixAssembly%ctrafoType)
-
-      if (bisLinearTrafo) then
-        ! We need the vertices of the element corners and the number
-        ! of vertices per element to compute the length of the element
-        ! edge at the boundary
-        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
-        nve = trafo_igetNVE(rlocalMatrixAssembly%ctrafoType)
-      end if
+      ! We need the vertices of the element corners and the number
+      ! of vertices per element to compute the length of the element
+      ! edge at the boundary
+      if (bisLinearTrafo) cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
 
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
@@ -6559,11 +6557,11 @@ contains
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildMatrixScBdr2D_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-          rintSubset%ielementDistribution = 0
-          rintSubset%ielementStartIdx = IELset
-          rintSubset%p_Ielements => IelementList(IELset:IELmax)
-          rintSubset%p_IdofsTrial => p_IdofsTrial
-          rintSubset%celement = rlocalMatrixAssembly%celementTrial
+          rintSubset%ielementDistribution =  0
+          rintSubset%ielementStartIdx     =  IELset
+          rintSubset%p_Ielements          => IelementList(IELset:IELmax)
+          rintSubset%p_IdofsTrial         => p_IdofsTrial
+          rintSubset%celement             =  rlocalMatrixAssembly%celementTrial
           call fcoeff_buildMatrixScBdr2D_sim (rmatrix%p_rspatialDiscrTest,&
               rmatrix%p_rspatialDiscrTrial,&
               rlocalMatrixAssembly%rform, IELmax-IELset+1, ncubp,&
