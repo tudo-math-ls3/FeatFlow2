@@ -1730,6 +1730,7 @@ contains
     integer :: i
     type(t_vectorBlock) :: rvector
     
+    if (cx .eq. 1.0_DP) return
     call lsysbl_createVectorBlock (rx%p_rspaceDiscr,rvector)
 
     select case (rphysics%cequation)
