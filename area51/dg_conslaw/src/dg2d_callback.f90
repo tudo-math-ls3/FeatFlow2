@@ -2259,7 +2259,6 @@ integer :: iel
        ! Isentropicvortex
         dt = 0
         drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-        
         drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
         Dcoefficients (1,ipoint,iel) = drho*(1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi))
 
@@ -2281,7 +2280,6 @@ integer :: iel
        ! Isentropicvortex
         dt = 0
         drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-        
         drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
         Dcoefficients (1,ipoint,iel) = drho*(5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi))
         
@@ -2311,7 +2309,6 @@ integer :: iel
             ! Isentropic vortex
             dt = 0.0_dp
             drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-        
             drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
             du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
             dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
@@ -3701,11 +3698,11 @@ integer :: iel
       ! Test, if we are at a boundary
       if (IelementList(iedge)==0) then
       
-!        ! No BCs
-!        Dsolutionvalues(2,ipoint,iedge,1) = Dsolutionvalues(1,ipoint,iedge,1)
-!        Dsolutionvalues(2,ipoint,iedge,2) = Dsolutionvalues(1,ipoint,iedge,2)
-!        Dsolutionvalues(2,ipoint,iedge,3) = Dsolutionvalues(1,ipoint,iedge,3)
-!        Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
+        ! No BCs
+        Dsolutionvalues(2,ipoint,iedge,1) = Dsolutionvalues(1,ipoint,iedge,1)
+        Dsolutionvalues(2,ipoint,iedge,2) = Dsolutionvalues(1,ipoint,iedge,2)
+        Dsolutionvalues(2,ipoint,iedge,3) = Dsolutionvalues(1,ipoint,iedge,3)
+        Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
 
 
 !        !!! Boundary conditions by Riemann invariants !!!
@@ -3916,8 +3913,11 @@ integer :: iel
 !      dlambda = max( sqrt((DQi(2)/DQi(1)*normal(1,iedge))**2.0_dp + (DQi(3)/DQi(1)*normal(2,iedge))**2.0_dp)+sqrt(gamma/DQi(1)*pl) , sqrt((DQa(2)/DQa(1)*normal(1,iedge))**2.0_dp + (DQa(3)/DQa(1)*normal(2,iedge))**2.0_dp)+sqrt(gamma/DQa(1)*pr) )
 !      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*dlambda*(DQi - DQa)
 
-      ! Save the calculated flux (HLL)
-      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLL2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
+!      ! Save the calculated flux (HLL)
+!      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLL2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
+      
+      ! Save the calculated flux (HLLC)
+      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLLC2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
 
 !      ! Galerkin
 !      DfluxValues(:,1,ipoint,iedge) = DFlux

@@ -1368,9 +1368,8 @@ contains
     
     
     
-  ! This routine returns the flux vector for the 2d compressible euler
-  ! equations of gas dynamics in direction d
-  ! d=1: x-direction, d=2: y-direction
+  ! This routine returns the HLL flux for the 2d compressible euler
+  ! equations of gas dynamics 
   function Euler_buildFlux_HLL2D(Qii,Qaa,a,b) result(Flux)
 
     ! The flux vector in direction d at Q
@@ -1476,6 +1475,136 @@ contains
     
 
   end function Euler_buildFlux_HLL2D
+  
+  
+  
+  
+  ! This routine returns the HLLC flux for the 2d compressible euler
+  ! equations of gas dynamics 
+  function Euler_buildFlux_HLLC2D(Qii,Qaa,a,b) result(Flux)
+
+    ! The flux vector in direction d at Q
+    real(DP), dimension(4)	:: Flux
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(4), intent(IN)		:: Qii, Qaa
+
+    ! the direction: d=1: x-direction, d=2: y-direction
+    real(dp), intent(IN)                     :: a, b
+    
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(4)		:: Qi, Qa, FX
+
+    ! pressure, stagnation enthalpy
+    real(DP)                                :: pi, pa, Hi, Ha, Ei, Ea, ui, ua, vi, va, rhoi, rhoa, t1, t2, t3, SL, SR, SS
+
+    ! temporary variable
+    real(DP)                                :: rho, u, v, E, ci, ca, denom, H, c
+    
+    ! Constant Gamma
+    real(dp) :: gamma = 1.4_dp
+    
+    Qi=Qii
+    Qa=Qaa
+    
+    ! Rotate inner trace
+    t2 = Qi(2)
+    t3 = Qi(3)
+    Qi(2) =  a*t2 + b*t3
+    Qi(3) = -b*t2 + a*t3
+    
+    ! Rotate outer trace
+    t2 = Qa(2)
+    t3 = Qa(3)
+    Qa(2) =  a*t2 + b*t3
+    Qa(3) = -b*t2 + a*t3
+
+    ! Calculate primitive variables
+    rhoi=Qi(1)
+    ui=Qi(2)/rhoi
+    vi=Qi(3)/rhoi
+    Ei=Qi(4)/rhoi
+    
+    rhoa=Qa(1)
+    ua=Qa(2)/rhoa
+    va=Qa(3)/rhoa
+    Ea=Qa(4)/rhoa
+
+    ! Compute the pressure
+    pi = (gamma - 1.0_dp)*rhoi*(Ei-0.5_dp*(ui*ui+vi*vi))
+    pa = (gamma - 1.0_dp)*rhoa*(Ea-0.5_dp*(ua*ua+va*va))
+    
+    ! Compute H, the stagnation enthalpy
+    Hi = Ei + pi/rhoi
+    Ha = Ea + pa/rhoa
+    
+    ! Compute speed of sound
+    ci = sqrt( (gamma-1.0_dp)*(Hi - 0.5_dp*(ui*ui+vi*vi) ) )
+    ca = sqrt( (gamma-1.0_dp)*(Ha - 0.5_dp*(ua*ua+va*va) ) )
+    
+    ! Compute Roe-average variables
+    
+    
+    
+    
+    ! Calculate auxiliary variable
+    denom = (sqrt(rhoi)+sqrt(rhoa))
+    
+    ! Set Roe-density
+    rho = sqrt(rhoi*rhoa)
+    
+    ! Set Roe-x-velocity
+    u = (ui*sqrt(rhoi) + ua*sqrt(rhoa))/denom
+    
+    ! Set Roe-y-velocity
+    v = (vi*sqrt(rhoi) + va*sqrt(rhoa))/denom
+    
+    ! Calculate Roe-stagnation enthalpy
+    H = (sqrt(rhoi)*Hi + sqrt(rhoa)*Ha)/denom
+    
+    ! Calculate the speed of sound for the Roe-values
+    c = sqrt( (gamma-1.0_dp)*(H - 0.5_dp*(u*u+v*v) ) )
+    
+    
+    ! Compute estimate wave speeds
+    SL = min(ui - ci,u-c)
+    SR = max(ua + ca,u+c)
+    SS = 0.5*dp*(ui+ua) + (pi-pa)/(0.25_dp*(rhoi+rhoa)*(ci+ca))
+    
+    SS = max(SS,SL)
+    SS = min(SS,SR)
+    
+    if(SL>SR) then
+    write(*,*) 'Warning**************'
+    end if
+    if (SL>SS) then
+      write(*,*) 'Warning'
+    end if
+    if (SS>SR) then
+      write(*,*) 'Warning'
+    end if
+    
+    if (SL.ge.0.0_dp) then
+      FX = Euler_buildFlux(Qi,1)
+    elseif ((SL<0.0_dp).and.(SS.ge.0.0_dp)) then
+      FX = Euler_buildFlux(Qi,1) + SL*( rhoi*(SL-ui)/min((SL-SS),-SYS_EPSREAL)*(/ 1.0_dp, SS, vi, Ei/rhoi+(SS-ui)*(SS+pi/(rhoi*(SL-ui))) /) -Qi)
+    elseif ((SS<0.0_dp).and.(SR>0.0_dp)) then
+      FX = Euler_buildFlux(Qa,1) + SR*( rhoa*(SR-ua)/max((SR-SS),SYS_EPSREAL)*(/ 1.0_dp, SS, va, Ea/rhoa+(SS-ua)*(SS+pa/(rhoa*(SR-ua))) /) -Qa)
+    elseif (SR.le.0.0_dp) then
+      FX = Euler_buildFlux(Qa,1)
+    end if
+    
+    
+    
+    ! Rotate back
+    Flux(1) = FX(1)
+    Flux(2) = a*FX(2)-b*FX(3)
+    Flux(3) = b*FX(2)+a*FX(3)
+    Flux(4) = FX(4)
+    
+    
+
+  end function Euler_buildFlux_HLLC2D
     
     
     
