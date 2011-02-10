@@ -257,6 +257,8 @@ contains
       call lsyssc_releaseMatrix (rsptiNeumannBC%rneumannBoudaryOperator)
     end if
     call lsyssc_createRowCMatrix(rneumannBoudaryOperator,rsptiNeumannBC%rneumannBoudaryOperator)
+    !call lsyssc_duplicateMatrix (rneumannBoudaryOperator,rsptiNeumannBC%rneumannBoudaryOperator,&
+    !    LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
     call lsyssc_releaseMatrixContent(rsptiNeumannBC%rneumannBoudaryOperator)
     
     ! Release the temp matrix

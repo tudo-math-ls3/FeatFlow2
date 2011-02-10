@@ -1746,6 +1746,8 @@ contains
         call sptivec_setTimestepData(rx,i,rvector)
       end do
     end select
+    
+    call lsysbl_releaseVector (rvector)
 
   end subroutine
 
