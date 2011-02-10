@@ -879,7 +879,7 @@ contains
         auxz = auxz/aux
         
         ! Compute the sign if the magnetic field
-        S = sign(1.0, X_MAGNETICFIELD_CONSTANT_1D)
+        S = sign(1.0_DP, X_MAGNETICFIELD_CONSTANT_1D)
 
         ! Compute matrix of right eigenvectors       
         Reig(1,1) = auxf/aPow2_ij
@@ -2039,7 +2039,7 @@ contains
         auxz = auxz/aux
         
         ! Compute the sign if the magnetic field
-        S = sign(1.0, X_MAGNETICFIELD_CONSTANT_1D)
+        S = sign(1.0_DP, X_MAGNETICFIELD_CONSTANT_1D)
 
         ! Compute matrix of right eigenvectors       
         Reig(1,1) = auxf/aPow2_ij
