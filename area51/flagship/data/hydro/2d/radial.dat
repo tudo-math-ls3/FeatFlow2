@@ -147,10 +147,12 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
+#prmfile = grids/2d/square_01x01_quads.prm
 prmfile = grids/2d/rect_-05x05_quads.prm
 
 # file which contains the triangulation
 trifile = grids/2d/rect_-05x05_quads.tri
+#trifile = grids/2d/square_01x01_quads.tri
 
 # type of finite element space
 #  1 = P1 finite elements

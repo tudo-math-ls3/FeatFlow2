@@ -1,22 +1,30 @@
 # -*- mode: any-ini; -*-
-#
-# Input data for the radially symmetric Riemann problem
-#
-# Initial conditions:
-#  rho1 = 2.0; p1 = 15.0
-#  rho2 = 1.0; p2 = 1.0
-# and states 1 and 2 are separated by a circle at 
-# (x0,y0)=(0.5,0.5) with radius 0.13
-#
 
+################################################################################
+#                     Input data for the FEM-AFC solver                        #
+#                                                                              #
+#                     Radially symmetric Riemann problem                       #
+#                                                                              #
+# Initial conditions:                                                          #
+#  rho1 = 2.0; p1 = 15.0                                                       #
+#  rho2 = 1.0; p2 = 1.0                                                        #
+# and states 1 and 2 are separated by a circle at                              #
+# (x0,y0)=(0.5,0.5) with radius 0.13                                           #
+#                                                                              #
+################################################################################
+
+# global constants
 defconst: r0 = 0.13
 defconst: x0 = 0.5
 defconst: y0 = 0.5
+
+# global expressions for simulation in xy-plane
 #defexpr:  sqr1 = SQRT((x-_x0)^2+(y-_y0)^2)
+
+# global expressions for simulation in rz-plane
 defexpr:  sqr1 = ABS(x)
 
 # Specify the initial solution
-
 deffunc: @initsol_rho = if(@sqr1 < _r0, 2.0, 1.0) ; x,y,z,t
 deffunc: @initsol_vel = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = if(@sqr1 < _r0, 37.5, 2.5) ; x,y,z,t
