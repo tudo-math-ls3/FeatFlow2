@@ -2099,11 +2099,11 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorSc_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-        rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx =  IELset
-        rintSubset%p_Ielements      => IelementList(IELset:IELmax)
-        rintSubset%p_IdofsTrial     => p_Idofs
-        rintSubset%celement         =  rlocalVectorAssembly%celement
+        rintSubset%ielementDistribution =  0
+        rintSubset%ielementStartIdx     =  IELset
+        rintSubset%p_Ielements          => IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial         => p_Idofs
+        rintSubset%celement             =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorSc_sim (rvector%p_rspatialDiscr,&
             rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
@@ -2418,11 +2418,11 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBl_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-        rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx =  IELset
-        rintSubset%p_Ielements      => IelementList(IELset:IELmax)
-        rintSubset%p_IdofsTrial     => p_Idofs
-        rintSubset%celement         =  rlocalVectorAssembly%celement
+        rintSubset%ielementDistribution =  0
+        rintSubset%ielementStartIdx     =  IELset
+        rintSubset%p_Ielements          => IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial         => p_Idofs
+        rintSubset%celement             =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorBl_sim (rvector%p_rspatialDiscr,&
             rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
@@ -2693,12 +2693,12 @@ contains
     ! function values in the cubature points:
     if (present(fcoeff_buildVectorScBdr1D_sim)) then
       call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-      rintSubset%ielementDistribution = 0
-      rintSubset%ielementStartIdx = 1
-      rintSubset%p_Ielements => IelementList
+      rintSubset%ielementDistribution  =  0
+      rintSubset%ielementStartIdx      =  1
+      rintSubset%p_Ielements           => IelementList
       rintSubset%p_IelementOrientation => IelementOrientation
-      rintSubset%p_IdofsTrial => p_Idofs
-      rintSubset%celement = rvectorAssembly%celement
+      rintSubset%p_IdofsTrial          => p_Idofs
+      rintSubset%celement              =  rvectorAssembly%celement
       call fcoeff_buildVectorScBdr1D_sim (rvector%p_rspatialDiscr,&
           rvectorAssembly%rform, rvectorAssembly%nelementsPerBlock,&
           ncubp, p_revalElementSet%p_DpointsReal, iboundaryComp, p_Idofs,&
@@ -3340,11 +3340,11 @@ contains
     ! function values in the cubature points:
     if (present(fcoeff_buildVectorBlBdr1D_sim)) then
       call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-      rintSubset%ielementDistribution = 0
-      rintSubset%ielementStartIdx = 1
-      rintSubset%p_Ielements => IelementList
+      rintSubset%ielementDistribution  =  0
+      rintSubset%ielementStartIdx      =  1
+      rintSubset%p_Ielements           => IelementList
       rintSubset%p_IelementOrientation => IelementOrientation
-      rintSubset%p_IdofsTrial => p_Idofs
+      rintSubset%p_IdofsTrial          => p_Idofs
       rintSubset%celement = rvectorAssembly%celement
       call fcoeff_buildVectorBlBdr1D_sim (rvector%p_rspatialDiscr,&
           rvectorAssembly%rform, rvectorAssembly%nelementsPerBlock,&
@@ -4041,10 +4041,10 @@ contains
       if (present(fcoeff_buildVectorBl_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
         rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx =  IELset
-        rintSubset%p_Ielements      => IelementList(IELset:IELmax)
-        rintSubset%p_IdofsTrial     => p_Idofs
-        rintSubset%celement         =  rlocalVectorAssembly%celement
+        rintSubset%ielementStartIdx     =  IELset
+        rintSubset%p_Ielements          => IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial         => p_Idofs
+        rintSubset%celement             =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorBl_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
             rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
             p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
@@ -4320,11 +4320,11 @@ contains
     ! function values in the cubature points:
     if (present(fcoeff_buildVectorBlBdr1D_sim)) then
       call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-      rintSubset%ielementDistribution = 0
-      rintSubset%ielementStartIdx = 1
-      rintSubset%p_Ielements => IelementList
+      rintSubset%ielementDistribution  =  0
+      rintSubset%ielementStartIdx      =  1
+      rintSubset%p_Ielements           => IelementList
       rintSubset%p_IelementOrientation => IelementOrientation
-      rintSubset%p_IdofsTrial => p_Idofs
+      rintSubset%p_IdofsTrial          => p_Idofs
       rintSubset%celement = rvectorAssembly%celement
       call fcoeff_buildVectorBlBdr1D_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
           rvectorAssembly%rform, rvectorAssembly%nelementsPerBlock,&
