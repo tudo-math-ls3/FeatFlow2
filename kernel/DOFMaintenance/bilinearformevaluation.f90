@@ -5932,17 +5932,17 @@ contains
     end if
     
     ! Get some more pointers for faster access
-    p_Kentry => rmatrixAssembly%p_Kentry
-    p_Dentry => rmatrixAssembly%p_Dentry
-    p_Domega => rmatrixAssembly%p_Domega
-    p_DbasTest => rmatrixAssembly%p_DbasTest
-    p_DbasTrial => rmatrixAssembly%p_DbasTrial
-    p_Dcoefficients => rmatrixAssembly%p_Dcoefficients
-    p_DcubPtsRef => rmatrixAssembly%p_DcubPtsRef
-    p_Idescriptors => rmatrixAssembly%rform%Idescriptors
-    p_IdofsTest => rmatrixAssembly%p_IdofsTest
-    p_IdofsTrial => rmatrixAssembly%p_IdofsTrial
-    p_revalElementSet => rmatrixAssembly%revalElementSet
+    p_Kentry            => rmatrixAssembly%p_Kentry
+    p_Dentry            => rmatrixAssembly%p_Dentry
+    p_Domega            => rmatrixAssembly%p_Domega
+    p_DbasTest          => rmatrixAssembly%p_DbasTest
+    p_DbasTrial         => rmatrixAssembly%p_DbasTrial
+    p_Dcoefficients     => rmatrixAssembly%p_Dcoefficients
+    p_DcubPtsRef        => rmatrixAssembly%p_DcubPtsRef
+    p_Idescriptors      => rmatrixAssembly%rform%Idescriptors
+    p_IdofsTest         => rmatrixAssembly%p_IdofsTest
+    p_IdofsTrial        => rmatrixAssembly%p_IdofsTrial
+    p_revalElementSet   => rmatrixAssembly%revalElementSet
     p_DcoefficientsBilf => rmatrixAssembly%rform%Dcoefficients
 
     ! Allocate memory for the coordinates of the reference points
@@ -6030,11 +6030,11 @@ contains
     if (.not. rmatrixAssembly%rform%ballCoeffConstant) then
       if (present(fcoeff_buildMatrixScBdr1D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx = 1
-        rintSubset%p_Ielements => IelementList
-        rintSubset%p_IdofsTrial => p_IdofsTrial
-        rintSubset%celement = rmatrixAssembly%celementTrial
+        rintSubset%ielementDistribution =  0
+        rintSubset%ielementStartIdx     =  1
+        rintSubset%p_Ielements          => IelementList
+        rintSubset%p_IdofsTrial         => p_IdofsTrial
+        rintSubset%celement             =  rmatrixAssembly%celementTrial
         call fcoeff_buildMatrixScBdr1D_sim (rmatrix%p_rspatialDiscrTest,&
             rmatrix%p_rspatialDiscrTrial, rmatrixAssembly%rform,&
             rmatrixAssembly%nelementsPerBlock, ncubp,&
@@ -6278,7 +6278,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementList
   
   ! List of element orientations where to assemble the bilinear form.
-  integer, dimension(:), intent(in) :: IelementOrientation
+  integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! List of start- and end-parameter values of the edges on the boundary
   real(DP), dimension(:,:), intent(in) :: DedgePosition
@@ -6557,11 +6557,12 @@ contains
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildMatrixScBdr2D_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-          rintSubset%ielementDistribution =  0
-          rintSubset%ielementStartIdx     =  IELset
-          rintSubset%p_Ielements          => IelementList(IELset:IELmax)
-          rintSubset%p_IdofsTrial         => p_IdofsTrial
-          rintSubset%celement             =  rlocalMatrixAssembly%celementTrial
+          rintSubset%ielementDistribution  =  0
+          rintSubset%ielementStartIdx      =  IELset
+          rintSubset%p_Ielements           => IelementList(IELset:IELmax)
+          rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
+          rintSubset%p_IdofsTrial          => p_IdofsTrial
+          rintSubset%celement              =  rlocalMatrixAssembly%celementTrial
           call fcoeff_buildMatrixScBdr2D_sim (rmatrix%p_rspatialDiscrTest,&
               rmatrix%p_rspatialDiscrTrial,&
               rlocalMatrixAssembly%rform, IELmax-IELset+1, ncubp,&
