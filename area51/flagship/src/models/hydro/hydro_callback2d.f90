@@ -4879,6 +4879,8 @@ contains
     !   IquickAccess(1):     boundary type
     !   IquickAccess(2):     segment number
     !   IquickAccess(3):     maximum number of expressions
+    !   IquickAccess(4):     dissipation type
+    !   IquickAccess(5):     cubature rule
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
@@ -4928,7 +4930,11 @@ contains
     ! This subroutine assumes that the first quick access vector
     ! points to the solution vector
     p_rsolution => rcollection%p_rvectorQuickAccess1
+
+#ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+    ! Set pointers
     call lsysbl_getbase_double(p_rsolution, p_Ddata)
+#endif
 
     ! Check if the solution is given in block or interleaved format
     if (p_rsolution%nblocks .eq. 1) then
@@ -5114,10 +5120,11 @@ contains
 #endif
     end if
     
-    ! Calculate the normal vectors in DOFs on the boundary
 #ifdef HYDRO_USE_GFEM_AT_BOUNDARY
+    ! Calculate the normal vectors in DOFs on the boundary
     call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
+    ! Calculate the normal vectors in cubature on the boundary
     call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
 #endif
 
