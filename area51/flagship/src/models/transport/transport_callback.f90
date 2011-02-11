@@ -5615,9 +5615,62 @@ contains
       ! We are in dual mode
       !-------------------------------------------------------------------------
 
-      print *, "Dual mode not implemented yet"
-      stop
+      ! @FAQ2: Which type of velocity are we?
+      select case(abs(ivelocitytype))
 
+      case (VELOCITY_ZERO)
+        ! zero velocity, do nothing (i.e. clear the source vector if required)
+        if (bclear) call lsysbl_clearVector(rsource)
+
+      case (VELOCITY_EXTERNAL,VELOCITY_CONSTANT,VELOCITY_TIMEDEP)
+
+        !-----------------------------------------------------------------------
+        ! problem structure has an explicit velocity field
+        !-----------------------------------------------------------------------
+        
+        ! Get further parameters from parameter list
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'icoordsystem', icoordsystem, COORDS_CARTESIAN)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'igeometricsourcetype', igeometricsourcetype, MASS_LUMPED)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'velocityfield', velocityfield, VELOCITY_ZERO)
+        call parlst_getvalue_double(rparlist,&
+            ssectionName, 'deffectiveRadius', deffectiveRadius, 1e-4_DP)
+
+        
+        ! Get pointers
+        call lsysbl_getbase_double(rsolution, p_DdataSolution)
+        call lsysbl_getbase_double(rsource, p_DdataSource)
+        call lsysbl_getbase_double(&
+            rproblemLevel%RvectorBlock(velocityfield), p_DdataVelocity)
+        
+        ! Get coordinates of the triangulation
+        ! NOTE: This implementation only works for linear and bilinear finite
+        !       elements where the nodal degrees of freedom are located at the
+        !       vertices of the triangulation. For higher-order finite elements
+        !       the linearform needs to be assembled by numerical integration
+        call storage_getbase_double2d(&
+            rproblemLevel%rtriangulation%h_DvertexCoords, p_Dcoords)
+        
+        ! What type of coordinate system are we?
+        select case(icoordsystem)
+        case (COORDS_CARTESIAN)
+          ! No geometric source term required, clear vector (if required)
+          if (bclear) call lsysbl_clearVector(rsource)
+
+        case default
+          call output_line('Invalid coordinate system!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
+          call sys_halt()
+        end select
+        
+      case default
+        call output_line('Unsupported velocity type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
+        call sys_halt()
+      end select
+      
     else
       call output_line('Invalid mode!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
