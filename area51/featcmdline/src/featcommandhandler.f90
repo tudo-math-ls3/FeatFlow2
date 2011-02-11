@@ -1255,20 +1255,17 @@ contains
     select case (cexecmode)
     case (FCMD_EXECSHORTHELP)
       ! Print a short help message and return
-      call output_line ("  info()             - Detailed information about an environment variable.")
+      call output_line ("  destroy()          - Destroys a variable and releases memory.")
       
       ! Ok.
       rreturn%ctype = STYPE_INTEGER
       return
     case (FCMD_EXECLONGHELP)
       ! Print a long help message and return
-      call output_line ("info - Detailed information about environment variables.")
+      call output_line ("destroy - Destroys a variable. Releases any associated memory..")
       call output_lbrk ()
       call output_line ("Usage:")
-      call output_line ("  info [name]")
-      call output_lbrk ()
-      call output_line ("Shows detailed information about an environment variable.")
-      call output_line ("This includes type, value,...")
+      call output_line ("  destroy([name])")
     
       ! Ok.
       rreturn%ctype = STYPE_INTEGER
