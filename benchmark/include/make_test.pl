@@ -20,6 +20,7 @@ my %ENVIRONMENT = ( "DEBUGGER" => 0,
                     "KEEPGOING" => 0,
                     "MPIENV" => "",
                     "OVERWRITE_LOG_DIRECTORY" => "",
+                    "COMPILERVERSION" => "",
                     "SUPPRESSOUTPUT" => "1",
                     
                     # Filename of the output file.
