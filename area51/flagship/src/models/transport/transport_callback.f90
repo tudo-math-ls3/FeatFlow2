@@ -3672,6 +3672,7 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
+    rcollectionTmp%IquickAccess(3) = ccubTypeBdr
 
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)
@@ -4281,6 +4282,7 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
+    rcollectionTmp%IquickAccess(3) = ccubTypeBdr
 
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)

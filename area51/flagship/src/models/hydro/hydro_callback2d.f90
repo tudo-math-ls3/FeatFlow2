@@ -4909,7 +4909,7 @@ contains
     real(DP) :: dtime,dscale,cI,cM,dvnI,dvnM,dvtI,dvtM,rM
     real(DP) :: uI,vI,pI,uM,vM,pM,w1,w2,w3,w4,l1,l2,l3,l4
     real(DP) :: aux,aux1,aux2,u_IM,v_IM,H_IM,vel_IM,q_IM,c_IM,c2_IM
-    integer :: idissipationtype,ibdrtype,isegment,nmaxExpr,ccubTypeBdr
+    integer :: idissipationtype,ibdrtype,isegment,nmaxExpr,ccubType
     integer :: iel,icubp,ipoint,npoints,ivar,nvar,iexpr,ivt,nve,neq
     
 
@@ -4932,7 +4932,7 @@ contains
     p_rsolution => rcollection%p_rvectorQuickAccess1
 
 #ifdef HYDRO_USE_GFEM_AT_BOUNDARY
-    ! Set pointers
+    ! Set pointer
     call lsysbl_getbase_double(p_rsolution, p_Ddata)
 #endif
 
@@ -4959,24 +4959,32 @@ contains
     isegment = rcollection%IquickAccess(2)
     nmaxExpr = rcollection%IquickAccess(3)
     idissipationtype = rcollection%IquickAccess(4)
-    ccubTypeBdr      = rcollection%IquickAccess(5)
+    ccubType = rcollection%IquickAccess(5)
     
 #ifdef HYDRO_USE_GFEM_AT_BOUNDARY
     ! Evaluate one-dimensional basis functions on the boundary edge
-    if (npointsPerElement .ne. cub_igetNumPts(ccubTypeBdr)) then
+    if (npointsPerElement .ne. cub_igetNumPts(ccubType)) then
       call output_line('Type of cubature rule at boundary mismatch!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorBdr2d_sim')
       call sys_halt()
     else
+      ! How many DOFs are located at the boundary? This should be made
+      ! more flexible by checking the type of element. For the time
+      ! being, only linear and bilinear finite elements are supported
+      npoints = 2
+      
+      ! How many vertices per element do we have?
+      nve = elem_igetNVE(rdomainIntSubset%celement)
+      
       ! Allocate temporal memory for one-dimensional
       ! cubature along the boundary edge
-      allocate(Dbas(2,npointsPerElement))
+      allocate(Dbas(npoints,npointsPerElement))
       allocate(Domega(npointsPerElement))
       allocate(DcubPtsRef(1,npointsPerElement))
 
       ! Get the coordinates of the cubature points and the
       ! corresponding weights for the given cubature rule
-      call cub_getCubature(ccubTypeBdr, DcubPtsRef, Domega)
+      call cub_getCubature(ccubType, DcubPtsRef, Domega)
       
       ! Evaluate the one-dimensional basis functions 
       ! in the cubature points on the boundary
@@ -4988,16 +4996,8 @@ contains
       ! Deallocate temporal memory which is no longer required
       deallocate(DcubPtsRef,Domega)
     end if
-
-    ! How many DOFs are located at the boundary? This should be made
-    ! more flexible by checking the type of element. For the time
-    ! being, only linear and bilinear finite elements are supported
-    npoints = 2
-
-    ! How many vertices per element do we have?
-    nve = elem_igetNVE(rdomainIntSubset%celement)
 #else
-    ! Evaluate the Galerkin fluxes at the cubature points
+    ! Boundary values are evaluated directly at the cubature points
     npoints = npointsPerElement
 #endif
     
@@ -5028,7 +5028,7 @@ contains
         DstateI(4,1,iel) = p_Ddata(nvar*(ivt-1)+4)
 
         ! Store vertex coordinate
-        Dcoords(1:2,1,iel) = rdomainIntSubset%p_Dcoords(1:2,ipoint,iel)
+        Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
 
         ! Get global DOF of second endpoints
         ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
@@ -5041,7 +5041,7 @@ contains
         DstateI(4,2,iel) = p_Ddata(nvar*(ivt-1)+4)
 
         ! Store vertex coordinate
-        Dcoords(1:2,2,iel) = rdomainIntSubset%p_Dcoords(1:2,ipoint,iel)
+        Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
       end do
 #else
       ! Allocate temporal memory
@@ -5082,7 +5082,7 @@ contains
         DstateI(4,1,iel) = p_Ddata(neq*3+ivt)
 
         ! Store vertex coordinate
-        Dcoords(1:2,1,iel) = rdomainIntSubset%p_Dcoords(1:2,ipoint,iel)
+        Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
 
         ! Get global DOF of second endpoints
         ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
@@ -5095,7 +5095,7 @@ contains
         DstateI(4,2,iel) = p_Ddata(neq*3+ivt)
 
         ! Store vertex coordinate
-        Dcoords(1:2,2,iel) = rdomainIntSubset%p_Dcoords(1:2,ipoint,iel)
+        Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
       end do
 #else
       ! Allocate temporal memory
@@ -5149,9 +5149,9 @@ contains
           
           ! Set values for function parser
 #ifdef HYDRO_USE_GFEM_AT_BOUNDARY
-          Dvalue(1:2) = Dcoords(1:2,ipoint,iel)
+          Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
 #else
-          Dvalue(1:2) = Dpoints(1:2,ipoint,iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
 #endif
           
           ! Compute free stream values from function parser given in
@@ -5276,9 +5276,9 @@ contains
           
           ! Set values for function parser
 #ifdef HYDRO_USE_GFEM_AT_BOUNDARY
-          Dvalue(1:2) = Dcoords(1:2,ipoint,iel)
+          Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
 #else
-          Dvalue(1:2) = Dpoints(1:2,ipoint,iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
 #endif
           
           ! Compute boundary values from function parser given in
@@ -5390,7 +5390,7 @@ contains
         do ipoint = 1, npointsPerElement
           
           ! Set values for function parser
-          Dvalue(1:2) = Dpoints(1:2,ipoint,iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
           
           ! Compute boundary values from function parser given in
           ! terms of the density, pressure and tangential velocity
@@ -5453,9 +5453,9 @@ contains
           
           ! Set values for function parser
 #ifdef HYDRO_USE_GFEM_AT_BOUNDARY
-          Dvalue(1:2) = Dcoords(1:2,ipoint,iel)
+          Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
 #else
-          Dvalue(1:2) = Dpoints(1:2,ipoint,iel)
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
 #endif
           
           ! Compute pressure value from function parser
