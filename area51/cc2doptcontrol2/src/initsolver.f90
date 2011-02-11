@@ -1924,7 +1924,7 @@ contains
       return
     
     case (0)
-      ! Zero functino
+      ! Zero function
       call ansol_init(rfunction,ncomponents)
       rfunction%iid = iid
       return

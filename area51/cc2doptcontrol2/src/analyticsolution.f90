@@ -780,6 +780,8 @@ contains
 
     ! local variables
     character(len=SYS_STRLEN) :: svector
+    integer :: i
+    type(t_vectorblock) :: rtempVector
 
     ! Basic checks
     if ((rsolution%ctype .ne. ANSOL_TP_MBUNDEFINED) .and. &
@@ -804,9 +806,18 @@ contains
           rsolution%rstationary)
     endif
     
-    ! Read the vector from the file.
+    ! Read a vector from the file.
     call vecio_readBlockVectorHR (&
-        rsolution%rstationary, svector, .true., 0, sfilename, bformatted)
+        rtempVector, svector, .true., 0, sfilename, bformatted)
+        
+    ! Copy the subvectors and release the memory.
+    do i=1,min(rsolution%rstationary%nblocks,rtempVector%nblocks)
+      call lsyssc_duplicateVector (rtempVector%RvectorBlock(i),&
+          rsolution%rstationary%RvectorBlock(i),&
+          LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+    end do
+    
+    call lsysbl_releaseVector (rtempVector)
 
     rsolution%ctype = ANSOL_TP_MBSTATIONARYFILE
 
