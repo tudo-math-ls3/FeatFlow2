@@ -3218,7 +3218,7 @@ contains
         aux1 = (GAMMA-1.0_DP)*(q_ij*Diff(1)&
                               -u_ij*Diff(2)&
                               -v_ij*Diff(3)&
-                                   +Diff(4/2.0_DP/c2_ij))
+                                   +Diff(4))/2.0_DP/c2_ij
 
         aux2 = (vel_ij*Diff(1)&
                  -a(1)*Diff(2)&
