@@ -117,6 +117,13 @@ module domainintegration
     ! reference element to each real element in progress.
     ! array [1..npointsPerElement,1..Number of elements]
     real(DP), dimension(:,:), pointer :: p_Ddetj => null()
+
+    ! For elements adjacent to the boundary, p_DedgePosition holds the parameter
+    ! values of the endpoints of the element edges located on the boundary
+    ! Typically, this pointer is not associated since the position of edge endpoints
+    ! is not needed. At the boundary in 2D, it may be useful to know where an edge
+    ! is located at the boundary.
+    real(DP), dimension(:,:), pointer :: p_DedgePosition => null()
     
   end type
   

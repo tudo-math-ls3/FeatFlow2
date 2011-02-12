@@ -2811,7 +2811,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! List of start- and end-parameter values of the edges on the boundary
-  real(DP), dimension(:,:), intent(in) :: DedgePosition
+  real(DP), dimension(:,:), intent(in), target :: DedgePosition
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -3044,6 +3044,7 @@ contains
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
+        rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
         rintSubset%p_IdofsTrial          => p_Idofs
         rintSubset%celement              =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorScBdr2D_sim (rvector%p_rspatialDiscr,&
@@ -3461,7 +3462,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! List of start- and end-parameter values of the edges on the boundary
-  real(DP), dimension(:,:), intent(in) :: DedgePosition
+  real(DP), dimension(:,:), intent(in), target :: DedgePosition
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -3696,6 +3697,7 @@ contains
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
+        rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
         rintSubset%p_IdofsTrial          => p_Idofs
         rintSubset%celement              =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rspatialDiscr,&
@@ -4442,7 +4444,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! List of start- and end-parameter values of the edges on the boundary
-  real(DP), dimension(:,:), intent(in) :: DedgePosition
+  real(DP), dimension(:,:), intent(in), target :: DedgePosition
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -4678,6 +4680,7 @@ contains
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
+        rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
         rintSubset%p_IdofsTrial          => p_Idofs
         rintSubset%celement              =  rlocalVectorAssembly%celement
         call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&

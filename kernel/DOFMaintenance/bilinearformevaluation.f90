@@ -6281,7 +6281,7 @@ contains
   integer, dimension(:), intent(in), target :: IelementOrientation
 
   ! List of start- and end-parameter values of the edges on the boundary
-  real(DP), dimension(:,:), intent(in) :: DedgePosition
+  real(DP), dimension(:,:), intent(in), target :: DedgePosition
 
   ! One of the BILF_MATC_xxxx constants that allow to specify the
   ! matrix construction method.
@@ -6561,6 +6561,7 @@ contains
           rintSubset%ielementStartIdx      =  IELset
           rintSubset%p_Ielements           => IelementList(IELset:IELmax)
           rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
+          rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
           rintSubset%p_IdofsTrial          => p_IdofsTrial
           rintSubset%celement              =  rlocalMatrixAssembly%celementTrial
           call fcoeff_buildMatrixScBdr2D_sim (rmatrix%p_rspatialDiscrTest,&
