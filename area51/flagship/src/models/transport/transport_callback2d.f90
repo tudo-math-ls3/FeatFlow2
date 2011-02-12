@@ -1275,11 +1275,15 @@ contains
     ! using a function parser which is passed using the collection.
     !
     ! The routine accepts a set of elements and a set of points on
-    ! these elements (cubature points) in real coordinates.  According
+    ! these elements (cubature points) in real coordinates. According
     ! to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points and all the terms in the
     ! linear form the corresponding coefficients in front of the
-    ! terms.
+    ! terms. If the code is compiled with TRANSP_USE_GFEM_AT_BOUNDARY
+    ! then the boundary values are not computed directly in the
+    ! cubature points. In contrast, they are computed in the degrees
+    ! of freedom and their values in the cubature points it inter-
+    ! polated using one-dimensional finite elements at the boundary.
     !
     ! This routine handles the primal problem for the
     ! convection-diffusion equation.
@@ -1881,11 +1885,40 @@ contains
         dmaxParamMirror = rcollection%DquickAccess(6)
         
         ! Allocate temporal memory
-        allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
-        allocate(Dnx(npointsPerElement, nelements))
-        allocate(Dny(npointsPerElement, nelements))
-        allocate(DpointParMirror(npointsPerElement, nelements))
-        
+        allocate(Dnx(npoints,nelements), Dny(npoints,nelements))
+        allocate(DpointParMirror(npoints,nelements), Daux(npoints,nelements,3))
+
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+        ! Allocate temporal memory
+        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
+
+        do iel = 1, nelements
+          ! Get global DOF of first endpoints
+          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
+          ivt    = IdofsTest(ipoint,iel)
+
+          ! Store velocity data
+          Daux(1,iel,1) = p_DvelocityX(ivt)
+          Daux(1,iel,2) = p_DvelocityY(ivt)
+          
+          ! Store vertex coordinate
+          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+
+          ! Get global DOF of second endpoints
+          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
+          ivt    = IdofsTest(ipoint,iel)
+
+          ! Store velocity data
+          Daux(2,iel,1) = p_DvelocityX(ivt)
+          Daux(2,iel,2) = p_DvelocityY(ivt)
+
+          ! Store vertex coordinate
+          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+        end do
+
+        ! Calculate the normal vectors in DOFs on the boundary
+        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+#else  
         ! Evaluate the velocity field (if any) in the cubature points on
         ! the boundary and store the result in Daux(:,:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
@@ -1898,26 +1931,46 @@ contains
         
         ! Get the normal vectors in the cubature points on the boundary
         call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+#endif
         
-        ! Rescale parameter values DpointPar on the boundary segment
-        ! where to compute the boundary conditions into parameter
-        ! values on the mirror boundary region
         if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+          ! Rescale parameter values DedgePosition on the boundary
+          ! segment where to compute the boundary conditions into
+          ! parameter values on the mirror boundary region
+          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
+              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
+#else
+          ! Rescale parameter values DpointPar on the boundary segment
+          ! where to compute the boundary conditions into parameter
+          ! values on the mirror boundary region
           call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
               dmaxParamMirror, dminParamMirror, DpointParMirror)
+#endif
         else
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+          ! Rescale parameter values DedgePosition on the boundary
+          ! segment where to compute the boundary conditions into
+          ! parameter values on the reversely mirror boundary region
+          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
+              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
+#else
+          ! Rescale parameter values DpointPar on the boundary segment
+          ! where to compute the boundary conditions into parameter
+          ! values on the reversely mirror boundary region
           call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
               dmaxParamMirror, dminParamMirror, DpointParMirror)
+#endif
         end if
         
         ! Evaluate the solution in the cubature points on the mirrored
         ! boundary and store the result in Daux(:,:,3)
-        call doEvaluateAtBdr2d(DER_FUNC, npointsPerElement*nelements,&
+        call doEvaluateAtBdr2d(DER_FUNC, npoints*nelements,&
             Daux(:,:,3), p_rsolution%RvectorBlock(1), npointsPerElement*nelements,&
             DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
 
         do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
+          do ipoint = 1, npoints
                         
             ! Compute the normal velocity
             dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
@@ -1925,15 +1978,45 @@ contains
 
             ! Check if we are at the primal inflow boundary
             if (dnv .lt. 0.0_DP) then
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+              DcoeffAtDOF(ipoint) = -dscale * dnv * Daux(ipoint,iel,3)
+#else
               Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,3)
+#endif
             else
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+              DcoeffAtDOF(ipoint) = 0.0_DP
+#else
               Dcoefficients(1,ipoint,iel) = 0.0_DP
+#endif
             end if
           end do
+
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+        ! Loop over the cubature points and interpolate the Robin
+        ! boundary conditions from the DOFs to the cubature points,
+        ! where they are needed by the linear form assembly routine
+        do icubp = 1, npointsPerElement
+          
+          dlocalData = 0.0_DP
+          
+          ! Loop over the DOFs and interpolate the Robin boundary conditions
+          do ipoint = 1, npoints
+            dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
+          end do
+          
+          ! Store Robin boundary condition in the cubature points
+          Dcoefficients(1,icubp,iel) = dlocalData
+        end do
+#endif
         end do
         
         ! Deallocate temporal memory
         deallocate(Daux, Dnx, Dny)
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+      ! Deallocate temporal memory
+      deallocate(Dcoords, DcoeffAtDOF)
+#endif
 
       else
 
@@ -1998,11 +2081,16 @@ contains
     ! forms for which the coefficients are evaluated analytically
     ! using a function parser which is passed using the collection.
     !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
+    ! The routine accepts a set of elements and a set of points on
+    ! these elements (cubature points) in real coordinates.  According
+    ! to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the
+    ! linear form the corresponding coefficients in front of the
+    ! terms. If the code is compiled with TRANSP_USE_GFEM_AT_BOUNDARY
+    ! then the boundary values are not computed directly in the
+    ! cubature points. In contrast, they are computed in the degrees
+    ! of freedom and their values in the cubature points it inter-
+    ! polated using one-dimensional finite elements at the boundary.
     !
     ! This routine handles the dual problem for the
     ! convection-diffusion equation.
@@ -2604,11 +2692,40 @@ contains
         dmaxParamMirror = rcollection%DquickAccess(6)
         
         ! Allocate temporal memory
-        allocate(Daux(npointsPerElement, nelements, NDIM2D+1))
-        allocate(Dnx(npointsPerElement, nelements))
-        allocate(Dny(npointsPerElement, nelements))
-        allocate(DpointParMirror(npointsPerElement, nelements))
-        
+        allocate(Dnx(npoints,nelements), Dny(npoints,nelements))
+        allocate(DpointParMirror(npoints,nelements), Daux(npoints,nelements,3))
+
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+        ! Allocate temporal memory
+        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
+
+        do iel = 1, nelements
+          ! Get global DOF of first endpoints
+          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
+          ivt    = IdofsTest(ipoint,iel)
+
+          ! Store velocity data
+          Daux(1,iel,1) = p_DvelocityX(ivt)
+          Daux(1,iel,2) = p_DvelocityY(ivt)
+          
+          ! Store vertex coordinate
+          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+
+          ! Get global DOF of second endpoints
+          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
+          ivt    = IdofsTest(ipoint,iel)
+
+          ! Store velocity data
+          Daux(2,iel,1) = p_DvelocityX(ivt)
+          Daux(2,iel,2) = p_DvelocityY(ivt)
+
+          ! Store vertex coordinate
+          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+        end do
+
+        ! Calculate the normal vectors in DOFs on the boundary
+        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+#else
         ! Evaluate the velocity field (if any) in the cubature points on
         ! the boundary and store the result in Daux(:,:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
@@ -2621,16 +2738,36 @@ contains
         
         ! Get the normal vectors in the cubature points on the boundary
         call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+#endif
         
-        ! Rescale parameter values DpointPar on the boundary segment
-        ! where to compute the boundary conditions into parameter
-        ! values on the mirror boundary region
         if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+          ! Rescale parameter values DedgePosition on the boundary
+          ! segment where to compute the boundary conditions into
+          ! parameter values on the mirror boundary region
+          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
+              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
+#else
+          ! Rescale parameter values DpointPar on the boundary segment
+          ! where to compute the boundary conditions into parameter
+          ! values on the mirror boundary region
           call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
               dmaxParamMirror, dminParamMirror, DpointParMirror)
+#endif
         else
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+          ! Rescale parameter values DedgePosition on the boundary
+          ! segment where to compute the boundary conditions into
+          ! parameter values on the reversely mirror boundary region
+          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
+              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
+#else
+          ! Rescale parameter values DpointPar on the boundary segment
+          ! where to compute the boundary conditions into parameter
+          ! values on the reversely mirror boundary region
           call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
               dmaxParamMirror, dminParamMirror, DpointParMirror)
+#endif
         end if
         
         ! Evaluate the solution in the cubature points on the mirrored
@@ -2646,17 +2783,47 @@ contains
             dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
                   Dny(ipoint,iel) * Daux(ipoint,iel,2)
 
-            ! Check if we are at the primal inflow boundary
+            ! Check if we are at the dual inflow boundary
             if (dnv .gt. 0.0_DP) then
-              Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,3)
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+              DcoeffAtDOF(ipoint) = dscale * dnv * Daux(ipoint,iel,3)
+#else
+              Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
+#endif
             else
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+              DcoeffAtDOF(ipoint) = 0.0_DP
+#else
               Dcoefficients(1,ipoint,iel) = 0.0_DP
+#endif
             end if
           end do
+
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+        ! Loop over the cubature points and interpolate the Robin
+        ! boundary conditions from the DOFs to the cubature points,
+        ! where they are needed by the linear form assembly routine
+        do icubp = 1, npointsPerElement
+          
+          dlocalData = 0.0_DP
+          
+          ! Loop over the DOFs and interpolate the Robin boundary conditions
+          do ipoint = 1, npoints
+            dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
+          end do
+          
+          ! Store Robin boundary condition in the cubature points
+          Dcoefficients(1,icubp,iel) = dlocalData
+        end do
+#endif
         end do
         
         ! Deallocate temporal memory
         deallocate(Daux, Dnx, Dny)
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+      ! Deallocate temporal memory
+      deallocate(Dcoords, DcoeffAtDOF)
+#endif
 
       else
 
@@ -2711,14 +2878,20 @@ contains
       rdomainIntSubset, Dcoefficients, rcollection)
 
 !<description>
-    ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form.
+    ! This subroutine is called during the matrix assembly. It has to
+    ! compute the coefficients in front of the terms of the bilinear
+    ! form.
     !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the bilinear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the bilinear form
-    ! the corresponding coefficients in front of the terms.
+    ! The routine accepts a set of elements and a set of points on
+    ! these elements (cubature points) in real coordinates.  According
+    ! to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the
+    ! bilinear form the corresponding coefficients in front of the
+    ! terms. If the code is compiled with TRANSP_USE_GFEM_AT_BOUNDARY
+    ! then the boundary values are not computed directly in the
+    ! cubature points. In contrast, they are computed in the degrees
+    ! of freedom and their values in the cubature points it inter-
+    ! polated using one-dimensional finite elements at the boundary.
     !
     ! This routine handles the primal problem for the
     ! convection-diffusion equation.
@@ -3150,14 +3323,20 @@ contains
       rdomainIntSubset, Dcoefficients, rcollection)
 
 !<description>
-    ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form.
+    ! This subroutine is called during the matrix assembly. It has to
+    ! compute the coefficients in front of the terms of the bilinear
+    ! form.
     !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the bilinear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the bilinear form
-    ! the corresponding coefficients in front of the terms.
+    ! The routine accepts a set of elements and a set of points on
+    ! these elements (cubature points) in real coordinates.  According
+    ! to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the
+    ! bilinear form the corresponding coefficients in front of the
+    ! terms. If the code is compiled with TRANSP_USE_GFEM_AT_BOUNDARY
+    ! then the boundary values are not computed directly in the
+    ! cubature points. In contrast, they are computed in the degrees
+    ! of freedom and their values in the cubature points it inter-
+    ! polated using one-dimensional finite elements at the boundary.
     !
     ! This routine handles the dual problem for the
     ! convection-diffusion equation.
@@ -3443,7 +3622,7 @@ contains
 
     case (BDRC_ROBIN)
       !-------------------------------------------------------------------------
-      ! Dirichlet or Robin boundary conditions:
+      ! Robin boundary conditions:
       ! Do nothing since the boundary values are build into the linear form.
 
       Dcoefficients = 0.0_DP
