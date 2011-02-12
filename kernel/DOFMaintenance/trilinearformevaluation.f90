@@ -1630,10 +1630,10 @@ contains
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rmatrix,p_DA)
     call lsyssc_getbase_double (rvector,p_Ddata)
-    indofTest = rmatrixAssembly%indofTest
+    indofTest  = rmatrixAssembly%indofTest
     indofTrial = rmatrixAssembly%indofTrial
-    indofFunc = rmatrixAssembly%indofFunc
-    ncubp = rmatrixAssembly%ncubp
+    indofFunc  = rmatrixAssembly%indofFunc
+    ncubp      = rmatrixAssembly%ncubp
 
     ! Open-MP-Extension: Copy the matrix assembly data to the local
     ! matrix assembly data, where we can allocate memory.
@@ -1654,18 +1654,18 @@ contains
     call trilf_allocAssemblyData(rlocalMatrixAssembly)
 
     ! Get some more pointers to local data.
-    p_Kentry => rlocalMatrixAssembly%p_Kentry
-    p_Dentry => rlocalMatrixAssembly%p_Dentry
-    p_Domega => rlocalMatrixAssembly%p_Domega
-    p_DbasTest => rlocalMatrixAssembly%p_DbasTest
-    p_DbasTrial => rlocalMatrixAssembly%p_DbasTrial
-    p_DbasFunc => rlocalMatrixAssembly%p_DbasFunc
-    p_Dcoefficients => rlocalMatrixAssembly%p_Dcoefficients
-    p_Idescriptors => rlocalMatrixAssembly%rform%Idescriptors
-    p_IdofsTest => rlocalMatrixAssembly%p_IdofsTest
-    p_IdofsTrial => rlocalMatrixAssembly%p_IdofsTrial
-    p_IdofsFunc => rlocalMatrixAssembly%p_IdofsFunc
-    p_revalElementSet => rlocalMatrixAssembly%revalElementSet
+    p_Kentry             => rlocalMatrixAssembly%p_Kentry
+    p_Dentry             => rlocalMatrixAssembly%p_Dentry
+    p_Domega             => rlocalMatrixAssembly%p_Domega
+    p_DbasTest           => rlocalMatrixAssembly%p_DbasTest
+    p_DbasTrial          => rlocalMatrixAssembly%p_DbasTrial
+    p_DbasFunc           => rlocalMatrixAssembly%p_DbasFunc
+    p_Dcoefficients      => rlocalMatrixAssembly%p_Dcoefficients
+    p_Idescriptors       => rlocalMatrixAssembly%rform%Idescriptors
+    p_IdofsTest          => rlocalMatrixAssembly%p_IdofsTest
+    p_IdofsTrial         => rlocalMatrixAssembly%p_IdofsTrial
+    p_IdofsFunc          => rlocalMatrixAssembly%p_IdofsFunc
+    p_revalElementSet    => rlocalMatrixAssembly%revalElementSet
     p_DcoefficientsTrilf => rlocalMatrixAssembly%rform%Dcoefficients
 
     ! Loop over the elements - blockwise.
@@ -1800,11 +1800,11 @@ contains
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildTrilMatrixSc_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-          rintSubset%ielementDistribution = 0
-          rintSubset%ielementStartIdx = IELset
-          rintSubset%p_Ielements => IelementList(IELset:IELmax)
-          rintSubset%p_IdofsTrial => p_IdofsTrial
-          rintSubset%celement = rlocalMatrixAssembly%celementTrial
+          rintSubset%ielementDistribution  =  0
+          rintSubset%ielementStartIdx      =  IELset
+          rintSubset%p_Ielements           => IelementList(IELset:IELmax)
+          rintSubset%p_IdofsTrial          => p_IdofsTrial
+          rintSubset%celement              =  rlocalMatrixAssembly%celementTrial
           call fcoeff_buildTrilMatrixSc_sim (rmatrix%p_rspatialDiscrTest,&
               rmatrix%p_rspatialDiscrTrial,&
               rlocalMatrixAssembly%rform, IELmax-IELset+1, ncubp,&
