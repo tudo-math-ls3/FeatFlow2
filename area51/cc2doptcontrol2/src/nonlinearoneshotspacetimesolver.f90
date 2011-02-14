@@ -463,12 +463,15 @@ contains
                 (abs(ddefNorm-dlastDefNorm) .ge. rnlstsolver%depsDiff*dlastDefNorm)) &
               .and. (rnlstsolver%nnonlinearIterations .lt. rnlstsolver%nmaxIterations)))
     
-      
+      ! Measure time for the current iterate.
+      call stat_clearTimer (rtimerIterate)
+      call stat_startTimer (rtimerIterate)
+    
       ! Time for postprocessing in this iterate.
       call stat_clearTimer (rtimerPostproc)
-    
+         
       if (rnlstsolver%cpostprocessIterates .ne. 1) then
-        ! Postprocessing of the current this iterate.
+        ! Postprocessing of the current iterate.
         call stat_startTimer (rtimerPostproc)
         if (rnlstsolver%ioutputLevel .ge. 1) then
           call output_separator (OU_SEP_MINUS)
@@ -488,10 +491,6 @@ contains
         call stat_stopTimer (rtimerPostproc)
       end if
                   
-      ! Measure time for the current iterate.
-      call stat_clearTimer (rtimerIterate)
-      call stat_startTimer (rtimerIterate)
-    
       rnlstsolver%nnonlinearIterations = rnlstsolver%nnonlinearIterations+1
       
       if (rnlstsolver%ctypeNonlinearIteration .eq. CCNLS_INEXACTNEWTON) then
