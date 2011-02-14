@@ -1069,11 +1069,19 @@ contains
             celement = rpostproc%p_rspaceDiscr%RspatialDiscr(1)%RelementDistr(1)%celement
                       
             if (elem_getPrimaryElement(celement) .eq. EL_Q1T) then
-                
-              call ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
+              
+              ! Primal streamfunction
+              call ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1),1)
               
               call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-              call ucd_addVariableVertexBased (rexport,'streamfunction',&
+              call ucd_addVariableVertexBased (rexport,'streamfunction_p',&
+                  UCD_VAR_STANDARD, p_Ddata)
+
+              ! Dual streamfunction
+              call ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1),4)
+              
+              call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+              call ucd_addVariableVertexBased (rexport,'streamfunction_d',&
                   UCD_VAR_STANDARD, p_Ddata)
                   
             end if
