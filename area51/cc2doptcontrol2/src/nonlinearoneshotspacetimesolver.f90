@@ -464,6 +464,9 @@ contains
               .and. (rnlstsolver%nnonlinearIterations .lt. rnlstsolver%nmaxIterations)))
     
       
+      ! Time for postprocessing in this iterate.
+      call stat_clearTimer (rtimerPostproc)
+    
       if (rnlstsolver%cpostprocessIterates .ne. 1) then
         ! Postprocessing of the current this iterate.
         call stat_startTimer (rtimerPostproc)
@@ -488,9 +491,6 @@ contains
       ! Measure time for the current iterate.
       call stat_clearTimer (rtimerIterate)
       call stat_startTimer (rtimerIterate)
-    
-      ! Time for postprocessing in this iterate.
-      call stat_clearTimer (rtimerPostproc)
     
       rnlstsolver%nnonlinearIterations = rnlstsolver%nnonlinearIterations+1
       
