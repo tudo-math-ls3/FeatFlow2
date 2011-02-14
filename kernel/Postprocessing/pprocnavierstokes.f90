@@ -2388,7 +2388,7 @@ contains
 
 !<subroutine>
 
-  subroutine ppns2D_streamfct_uniform (rvector,rdestVector)
+  subroutine ppns2D_streamfct_uniform (rvector,rdestVector,isubvectorVel)
 
 !<description>
   ! Calculates the streamfunction of a 2D velocity field rvector.
@@ -2413,6 +2413,10 @@ contains
 !<input>
   ! The FE solution vector.
   type(t_vectorBlock), intent(in)    :: rvector
+  
+  ! OPTIONAL: Defines the start index in rvector where the velocity starts.
+  ! Default = 1.
+  integer, intent(in), optional :: isubvectorVel
 !</input>
 
 !<inputoutput>
@@ -2427,7 +2431,7 @@ contains
     ! local variables
     integer, parameter :: NVE = 4
 
-    integer :: iel,ielaux,icurrentelement
+    integer :: iel,ielaux,icurrentelement,ivelstart
     integer :: jve
     integer(I32) :: ieltype1,ieltype2,ieltypeDest
     integer :: haux,ive,iadj
@@ -2507,8 +2511,10 @@ contains
     end if
 
     ! Get pointers to the subvectors from the block vector
-    call lsyssc_getbase_double (rvector%RvectorBlock(1),p_DdataUX)
-    call lsyssc_getbase_double (rvector%RvectorBlock(2),p_DdataUY)
+    ivelstart = 1
+    if (present(isubvectorVel)) ivelstart = isubvectorVel
+    call lsyssc_getbase_double (rvector%RvectorBlock(ivelstart),p_DdataUX)
+    call lsyssc_getbase_double (rvector%RvectorBlock(ivelstart+1),p_DdataUY)
     call lsyssc_getbase_double (rdestVector,p_Dx)
 
     ! Auxiliary array
