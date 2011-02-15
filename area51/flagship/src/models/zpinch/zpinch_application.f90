@@ -752,8 +752,8 @@ contains
         p_DvertexCoords)
     call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,&
         p_IverticesAtElement)
-    call storage_getbase_int2D(p_rtriangulation&
-        %h_IneighboursAtElement, p_IneighboursAtElement)
+    call storage_getbase_int2D(p_rtriangulation%h_IneighboursAtElement,&
+        p_IneighboursAtElement)
     call lsyssc_getbase_double(rdensity, p_Ddensity)
     call lsyssc_getbase_double(rpressure, p_Dpressure)
     call lsyssc_getbase_double(rindicator, p_Dindicator)
@@ -974,6 +974,34 @@ contains
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
 
+          elseif (trim(cvariable) .eq. 'momentum') then
+            
+            ! Special treatment of momentum vector
+            select case(ndim)
+            case (NDIM1D)
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
+
+            case (NDIM2D)
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
+                  'momentum_y', p_Dsolution, p_Ddata2)
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2)
+
+            case (NDIM3D)
+              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
+                  'momentum_y', p_Dsolution, p_Ddata2)
+              call hydro_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
+                  'momentum_z', p_Dsolution, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
+            end select
+
           elseif(trim(cvariable) .eq. 'advect') then
 
             ! Special treatment for tracer quantity
@@ -1029,6 +1057,34 @@ contains
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
         
+          elseif (trim(cvariable) .eq. 'momentum') then
+
+            ! Special treatment of momentum vector
+            select case(ndim)
+            case (NDIM1D)
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
+
+            case (NDIM2D)
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+                  'momentum_y', p_Dsolution, p_Ddata2)
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2)
+
+            case (NDIM3D)
+              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
+                  'momentum_y', p_Dsolution, p_Ddata2)
+              call hydro_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
+                  'momentum_z', p_Dsolution, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
+            end select
+
           elseif(trim(cvariable) .eq. 'advect') then
             
             ! Special treatment for tracer quantity
@@ -1081,7 +1137,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! adaptation structure
@@ -1421,8 +1477,8 @@ contains
 	! adopted from the transport model.
         call parlst_getvalue_int(rparlist,&
             ssectionNameHydro, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(p_rproblemLevel&
-            %Rmatrix(templateMatrix), rgraph)
+        call grph_createGraphFromMatrix(&
+            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection,&
             'sparsitypattern', rgraph, .true.)
 
@@ -1444,20 +1500,20 @@ contains
             rcollection%p_rvectorQuickAccess2 => rsolution(2)
 
             ! Perform h-adaptation and update the triangulation structure
-            call zpinch_adaptTriangulation(rparlist,&
-                ssectionnameHydro, rhadapt, p_rproblemLevel&
-                %rtriangulation, relementError, rcollection)
+            call zpinch_adaptTriangulation(rparlist, ssectionnameHydro,&
+                rhadapt, p_rproblemLevel%rtriangulation,&
+                relementError, rcollection)
 
             ! Release element-wise error distribution
             call lsyssc_releaseVector(rElementError)
 
             ! Generate standard mesh from raw mesh
-            call tria_initStandardMeshFromRaw(p_rproblemLevel&
-                %rtriangulation, rproblem%rboundary)
+            call tria_initStandardMeshFromRaw(&
+                p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
             ! Update the template matrix according to the sparsity pattern
-            call grph_generateMatrix(rgraph, p_rproblemLevel&
-                %Rmatrix(templateMatrix))
+            call grph_generateMatrix(rgraph,&
+                p_rproblemLevel%Rmatrix(templateMatrix))
 
             ! Re-initialize all constant coefficient matrices
             call hydro_initProblemLevel(rparlist,&
@@ -1468,8 +1524,9 @@ contains
             ! Resize the solution vector for the hydrodynamic model accordingly
             call parlst_getvalue_int(rparlist,&
                 ssectionNameHydro, 'systemMatrix', systemMatrix)
-            call lsysbl_resizeVecBlockIndMat(p_rproblemLevel&
-                %RmatrixBlock(systemMatrix), p_rsolutionHydro, .false., .true.)
+            call lsysbl_resizeVecBlockIndMat(&
+                p_rproblemLevel%RmatrixBlock(systemMatrix),&
+                p_rsolutionHydro, .false., .true.)
 
             ! Resize the solution vector for the transport model accordingly
             call lsysbl_resizeVectorBlock(p_rsolutionTransport, &
@@ -1594,18 +1651,7 @@ contains
         call zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
             ssectionNameHydro, ssectionNameTransport, p_rproblemLevel,&
             p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime, &
-            dscale, .true., Rforce(1), rcollection)
-
-        ! Calculate explicit part of the geometric source term (if any)
-        call zpinch_calcGeometricSourceTerm(rparlist, ssectionName,&
-            ssectionNameHydro, ssectionNameTransport, p_rproblemLevel,&
-            p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime, &
-            dscale, .false., 1, Rforce(1), rcollection)
-        
-        call zpinch_calcGeometricSourceTerm(rparlist, ssectionName,&
-            ssectionNameHydro, ssectionNameTransport, p_rproblemLevel,&
-            p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime, &
-            dscale, .false., 2, Rforce(2), rcollection)
+            dscale, .true., Rforce(1), rcollection)       
       end if
       
       ! Prepare quick access arrays/vectors
@@ -1667,7 +1713,7 @@ contains
       ! Calculate velocity field (\rho v)
       call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
           p_rproblemLevel, p_rsolutionHydro, rcollection)
-
+    
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
       
@@ -1715,9 +1761,9 @@ contains
         call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
 !!$        ! Compute the error estimator using recovery techniques
-!!$        call hydro_estimateRecoveryError(rparlist, ssectionnameHydro,&
-!!$            p_rproblemLevel, p_rsolutionHydro, rtimestep&
-!!$            %dinitialTime, relementError, derror)
+!!$        call hydro_estimateRecoveryError(rparlist,&
+!!$            ssectionnameHydro, p_rproblemLevel, p_rsolutionHydro,&
+!!$            rtimestep%dinitialTime, relementError, derror)
 
         ! Compute the error indicator based on the tracer
         call zpinch_calcAdaptationIndicator(p_rsolutionHydro,&
@@ -1750,8 +1796,8 @@ contains
         call lsyssc_releaseVector(relementError)
 
         ! Update the template matrix according to the sparsity pattern
-        call grph_generateMatrix(rgraph, p_rproblemLevel&
-            %Rmatrix(templateMatrix))
+        call grph_generateMatrix(rgraph,&
+            p_rproblemLevel%Rmatrix(templateMatrix))
 
         ! Stop time measurement for mesh adaptation
         call stat_stopTimer(p_rtimerAdaptation)
@@ -1765,8 +1811,8 @@ contains
         call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
 
         ! Generate standard mesh from raw mesh
-        call tria_initStandardMeshFromRaw(p_rproblemLevel&
-            %rtriangulation, rproblem%rboundary)
+        call tria_initStandardMeshFromRaw(&
+            p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
         ! Stop time measurement for generation of the triangulation
         call stat_stopTimer(p_rtimerTriangulation)
@@ -1784,8 +1830,9 @@ contains
         ! Resize the solution vector for the hydrodynamic model accordingly
         call parlst_getvalue_int(rparlist,&
             ssectionNameHydro, 'systemmatrix', systemMatrix)
-        call lsysbl_resizeVecBlockIndMat(p_rproblemLevel&
-            %RmatrixBlock(systemMatrix), p_rsolutionHydro, .false., .true.)
+        call lsysbl_resizeVecBlockIndMat(&
+            p_rproblemLevel%RmatrixBlock(systemMatrix),&
+            p_rsolutionHydro, .false., .true.)
 
         ! Resize the solution vector for the transport model accordingly
         call lsysbl_resizeVectorBlock(p_rsolutionTransport, &
@@ -1821,7 +1868,6 @@ contains
 
     ! Release Lorentz force vector
     call lsysbl_releaseVector(Rforce(1))
-    call lsysbl_releaseVector(Rforce(2))
 
     ! Release adaptation structure
     if (trim(adjustl(sadaptivityName)) .ne. '') then
@@ -1911,62 +1957,5 @@ contains
     end do cmdarg
 
   end subroutine zpinch_parseCmdlArguments
-
-  !*****************************************************************************
-
-  function zpinch_checkConservation(rparlist, ssectionName,&
-      rproblemLevel, rvector, isolution) result(dvalue)
-
-    type(t_parlist), intent(in) :: rparlist
-    character(LEN=*), intent(in) :: ssectionName
-    type(t_problemLevel), intent(in) :: rproblemLevel
-    type(t_vectorBlock), intent(in) :: rvector
-    integer :: isolution
-
-    real(DP) :: dvalue
-
-    ! local variables
-    type(t_vectorScalar) :: rvectorScalar
-    real(DP), dimension(:), pointer :: p_Dmatrix, p_Dvector
-    integer :: lumpedMassMatrix
-
-    ! Get global configuration from parameter list
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
-
-    ! Get lumped mass matrix
-    call lsyssc_getbase_double(rproblemLevel&
-        %Rmatrix(lumpedMassMatrix), p_Dmatrix)
-
-    select case(isolution)
-
-    case(1)
-
-      ! Get density distribution from the solution of the hydrodynamic model
-      call hydro_getVariable(rvector, 'density', rvectorScalar)
-
-      ! Get density distribution
-      call lsyssc_getbase_double(rvectorScalar, p_Dvector)
-
-      ! Compute total mass
-      dvalue = sum(p_Dmatrix * p_Dvector)
-
-      ! Release temporal vector
-      call lsyssc_releaseVector(rvectorScalar)
-
-    case(2)
-
-      ! Get solution vector
-      call lsysbl_getbase_double(rvector, p_Dvector)
-
-      ! Compute total mass
-      dvalue = sum(p_Dmatrix * p_Dvector)
-
-    case default
-      print *, "Does not exist"
-      stop
-    end select
-
-  end function zpinch_checkConservation
 
 end module zpinch_application
