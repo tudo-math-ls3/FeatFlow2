@@ -11,8 +11,8 @@ defconst: width = 0.05
 defconst: timp  = 1.0
 
 # Definition of user-defined expressions
-defexpr:  sqr1 = SQRT(x^2+y^2)
-defexpr:  rad  = (1-t^4)
+defexpr:  sqr = SQRT(x^2+y^2)
+defexpr:  rad = (1-t^4)
 
 
 ################################################################################
@@ -22,12 +22,12 @@ defexpr:  rad  = (1-t^4)
 ################################################################################
 
 # Specify the initial solution for the Euler model (dimensionless)
-deffunc: @initsol_rho  = if(@sqr1 < @rad, 1.0, if (@sqr1 > @rad + _width, 0.5, 1e6)) ; x,y,z,t
+deffunc: @initsol_rho  = if(@sqr < @rad, 1.0, if (@sqr > @rad + _width, 0.5, 1e6)) ; x,y,z,t
 deffunc: @initsol_vel  = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = 2.5 ; x,y,z,t
 
 # Specify the initial solution for the Euler model (physical dimensions)
-#deffunc: @initsol_rho = if(@sqr1 < @rad, 1e-6, if (@sqr1 > @rad + _width, 5e-7, 1.0)) ; x,y,z,t
+#deffunc: @initsol_rho = if(@sqr < @rad, 1e-6, if (@sqr > @rad + _width, 5e-7, 1.0)) ; x,y,z,t
 #deffunc: @initsol_vel = 0.0 ; x,y,z,t
 #deffunc: @initsol_Etot = 2.5e-6 ; x,y,z,t
 
@@ -47,8 +47,6 @@ NCOMP
 1
 PARAMETERS
 1.0  T  'SUBINLET_WEAK'  0.5  1.0  0.0
-2.0  T  'PERIODIC_WEAK'  1  3
-3.0  T  'PERIODIC_WEAK'  1  2
 #1.0  T  'FREESTREAM_WEAK'  5e-7  0.0  0.0  1e-6
 #1.0  T  'FREESTREAM_WEAK'  0.025  0.0  0.0  0.01
 
@@ -59,7 +57,7 @@ PARAMETERS
 ################################################################################
 
 # Specify the initial solution for the scalar transport model
-deffunc: @initsol_tracer = if(@sqr1 < @rad | @sqr1 > @rad + _width, 0.0, 1e6) ; x,y,z,t
+deffunc: @initsol_tracer = if(@sqr < @rad | @sqr > @rad + _width, 0.0, 1e6) ; x,y,z,t
 
 
 # Specify the boundary conditions for the scalar transport model
@@ -74,5 +72,3 @@ NCOMP
 1
 PARAMETERS
 1.0  T  'FLUX_WEAK'  0.0
-2.0  T  'PERIODIC_WEAK'  1  3
-3.0  T  'PERIODIC_WEAK'  1  2

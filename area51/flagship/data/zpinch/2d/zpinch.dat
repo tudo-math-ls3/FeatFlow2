@@ -3,7 +3,7 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                           Z-pinch implosion problem                          #
+#                  Z-pinch implosion problem in x-y coordinates                #
 ################################################################################
 
 simportdatafiles(3) =
@@ -45,21 +45,24 @@ algorithm = transient_primal
 
 #-------------------------------------------------------------------------------
 
-# type of coordinate system
-# 1 = Cartesian coordinates (x-y)
-# 2 = Cylindrical coordinates (r-z)
-icoordinateSystem = 1
-
-# type of Lorentz force term treatment
-# 0 = segregated approach
-# 1 = fully-coupled approach
-ilorentzforcetype = 1
-
 # section name of Lorentz force term
 slorentzforcename = @forceterm
 
 # minimum effective radius
 deffectiveradius = 1e-4
+
+# type of coordinate system
+#  0 = Cartesian coodinate system (x,y,z) 1D, 2D, 3D
+#  1 = axi-symmetric coordinate system (r,z) 2D
+#  2 = cylindrically symmetric coordinate system (r) 1D
+#  3 = spherically symmetric coordinate system (r) 1D
+icoordsystem = 0
+
+# type of geometric source term
+# 0 = evaluate linear form by numerical integration
+# 1 = group formulation with consistent mass matrix
+# 2 = group formulation with lumped mass matrix
+ilorentzforcetype = 2
 
 # type of synchronization used for flux correction
 # 0 = no synchronization
@@ -73,10 +76,10 @@ ilimitersynchronisation = 3
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/zpinch_paper.prm
+prmfile = grids/2d/zpinch_60x240.prm
 
 # file which contains the triangulation
-trifile = grids/2d/zpinch_paper.tri
+trifile = grids/2d/zpinch_60x240.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -104,7 +107,7 @@ errorestimator = ErrorEstimator
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/zpinch/2d/zpinch.indat
+indatfile = %{Zpinch.indatfile}
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = %{Zpinch.sprimalbdrcondname:1}
@@ -210,8 +213,9 @@ iexactsolutiontype = 0
 sexactsolutionname = 
 
 # variables for constrained initialization
-ssolutionconstrainvariable(1) =
+ssolutionconstrainvariable(2) =
   density
+  pressure
   
 # number of failsafe steps in constrained initialization
 nsolutionfailsafe = 0
@@ -252,6 +256,21 @@ nsumcubRefLinForm = 2
 # section name of the inviscid stabilization
 inviscid = Inviscid
 
+#-------------------------------------------------------------------------------
+
+# type of coordinate system
+#  0 = Cartesian coodinate system (x,y,z) 1D, 2D, 3D
+#  1 = axi-symmetric coordinate system (r,z) 2D
+#  2 = cylindrically symmetric coordinate system (r) 1D
+#  3 = spherically symmetric coordinate system (r) 1D
+icoordsystem = %{Zpinch.icoordsystem}
+
+# type of geometric source term
+# 0 = evaluate linear form by numerical integration
+# 1 = group formulation with consistent mass matrix
+# 2 = group formulation with lumped mass matrix
+igeometricsourcetype = 2
+
 
 ################################################################################
 [Inviscid]
@@ -278,7 +297,7 @@ iprelimiting = 0
 ################################################################################
 
 # file which contains the application specific data
-indatfile = %{Hydro.indatfile}
+indatfile = %{Zpinch.indatfile}
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = %{Zpinch.sprimalbdrcondname:2}
@@ -312,7 +331,7 @@ imassantidiffusiontype = %{Hydro.imassantidiffusiontype}
 # 6 = Burgers' equation in 2D
 # 7 = Burgers' equation in 3D
 # 8 = Buckley Leverett equation in 1D
-ivelocitytype = 1
+ivelocitytype = -1
 
 # section name of velocity field
 svelocityname = 
@@ -424,6 +443,21 @@ nsumcubRefLinForm = %{Hydro.nsumcubRefLinForm}
 # section name of the convection stabilization
 convection = Convection
 
+#-------------------------------------------------------------------------------
+
+# type of coordinate system
+#  0 = Cartesian coodinate system (x,y,z) 1D, 2D, 3D
+#  1 = axi-symmetric coordinate system (r,z) 2D
+#  2 = cylindrically symmetric coordinate system (r) 1D
+#  3 = spherically symmetric coordinate system (r) 1D
+icoordsystem = %{Hydro.icoordsystem}
+
+# type of geometric source term
+# 0 = evaluate linear form by numerical integration
+# 1 = group formulation with consistent mass matrix
+# 2 = group formulation with lumped mass matrix
+igeometricsourcetype = %{Hydro.igeometricsourcetype}
+
 
 ################################################################################
 [Convection]
@@ -460,7 +494,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-sucdsolution = out/zpinch_be_120x480_fct
+sucdsolution = out/zpinch
 
 # file for UCD import of solution
 sucdimport =
@@ -503,10 +537,10 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
@@ -515,13 +549,13 @@ dinitialTime = 0.0
 dfinalTime = 1.1
 
 # initial time step size
-dinitialStep = 5e-6
+dinitialStep = 1e-5
 
 # lower bound for the admissible time step
-dminStep = 5e-6
+dminStep = 1e-5
 
 # upper bound for the admissible time step
-dmaxStep = 5e-6
+dmaxStep = 1e-5
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -612,10 +646,10 @@ ssolvername(2) =
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -650,31 +684,31 @@ ssolvername = NonlinearSolverHydro
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = %{FullMultigridSolverHydro.ioutputlevel}
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = %{FullMultigridSolverHydro.nlmin}
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = %{FullMultigridSolverHydro.nlmax}
 
 # type of multigrid cycle
 # 0 = F-cylce
 # 1 = V-cycle
 # 2 = W-cycle
 # 3,4,5 = corresponding saw tooth variants
-icycle = 0
+icycle = %{FullMultigridSolverHydro.icycle}
 
 # minimum number of multigrid steps
-ilmin = 1
+ilmin = %{FullMultigridSolverHydro.ilmin}
 
 # maximum number of multigrid steps
-ilmax = 1
+ilmax = %{FullMultigridSolverHydro.ilmax}
 
 # nonlinear subsolver
 # 1 = nonlinear single-grid solver
 # 3 = nonlinear multigrid solver
-isolver = 1
+isolver = %{FullMultigridSolverHydro.isolver}
 
 # name of the subsolver
 ssolvername = NonlinearSolverTransport
@@ -682,84 +716,6 @@ ssolvername = NonlinearSolverTransport
 
 ################################################################################
 [NonlinearSolverHydro]
- csolverType = 1
-################################################################################
-
-# level of output information:
-# 0 = no output
-# 1 = errors
-# 2 = errors+warnings
-# 3 = information
-# 4 = verbose output
-ioutputlevel = 3
-
-# norm to use for defect checking
-# 0 = Euclidian norm
-# 1 = L1-norm
-# 2 = L2-norm
-# 3 = MAX-norm
-iresNorm = 0
-
-# minimum number of nonlinear steps
-nminIterations = 1
-
-# maximum number of nonlinear steps
-nmaxIterations = 25
-
-# preconditioner for the nonlinear solver
-# 1 = block-diagonal preconditioner
-# 2 = defect-correction algorithm
-# 3 = algebraic Newton algorithm
-iprecond = 2
-
-# nonlinear solver
-# 101 = fixed-point iteration
-# 102 = predictor-corrector fixed-point iteration
-isolver = 101
-
-# strategy for choosing the perturbation parameter in Newton's method
-# 1 = NITSOL
-# 2 = SQRT(EPS)
-# otherwise, user-defined value
-dperturbationStrategy = 2
-
-# strategy for choosing the forcing term in Newton's method
-# 1 = choice 1 by Eisenstat/Walker
-# 2 = choice 2 by Eisenstat/Walker
-# 3 = choice by Brown/Saad
-# 4 = choice by Dembo/Steihaug
-# otherwise, user-defined fixed value
-dforcingStrategy = 1e-1
-
-# check sufficient decrease condition in globalization
-# 0 = apply Newton increment without globalization
-# 1 = check sufficient decrease condition and perform backtracking if required
-icheckSufficientDecrease = 0
-
-# maximum number of backtracking steps
-nmaxBacktrackingSteps = 5
-
-# update frequency of Jacobian
-iupdateFrequency = 0
-
-# nonlinear relaxation parameter
-domega = 1.0
-
-# absolute tolerance for residual
-depsAbs = 1e-10
-
-# relative tolerance for residual
-depsRel = 1e-2
-
-# relative tolerance for stagnation
-depsStag = 0.0
-
-# name of linear sub-solver
-ssolvername = LinearSolver
-
-
-################################################################################
-[NonlinearSolverTransport]
  csolverType = 1
 ################################################################################
 
@@ -827,10 +783,88 @@ domega = 1.0
 depsAbs = 1e-10
 
 # relative tolerance for residual
-depsRel = 0.0
+depsRel = 1e-8
 
 # relative tolerance for stagnation
 depsStag = 0.0
+
+# name of linear sub-solver
+ssolvername = LinearSolver
+
+
+################################################################################
+[NonlinearSolverTransport]
+ csolverType = 1
+################################################################################
+
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = %{NonlinearSolverHydro.ioutputlevel}
+
+# norm to use for defect checking
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
+iresNorm = %{NonlinearSolverHydro.iresNorm}
+
+# minimum number of nonlinear steps
+nminIterations = %{NonlinearSolverHydro.nminIterations}
+
+# maximum number of nonlinear steps
+nmaxIterations = %{NonlinearSolverHydro.nmaxIterations}
+
+# preconditioner for the nonlinear solver
+# 1 = block-diagonal preconditioner
+# 2 = defect-correction algorithm
+# 3 = algebraic Newton algorithm
+iprecond = %{NonlinearSolverHydro.iprecond}
+
+# nonlinear solver
+# 101 = fixed-point iteration
+# 102 = predictor-corrector fixed-point iteration
+isolver = %{NonlinearSolverHydro.isolver}
+
+# strategy for choosing the perturbation parameter in Newton's method
+# 1 = NITSOL
+# 2 = SQRT(EPS)
+# otherwise, user-defined value
+dperturbationStrategy = %{NonlinearSolverHydro.dperturbationStrategy}
+
+# strategy for choosing the forcing term in Newton's method
+# 1 = choice 1 by Eisenstat/Walker
+# 2 = choice 2 by Eisenstat/Walker
+# 3 = choice by Brown/Saad
+# 4 = choice by Dembo/Steihaug
+# otherwise, user-defined fixed value
+dforcingStrategy = %{NonlinearSolverHydro.dforcingStrategy}
+
+# check sufficient decrease condition in globalization
+# 0 = apply Newton increment without globalization
+# 1 = check sufficient decrease condition and perform backtracking if required
+icheckSufficientDecrease = %{NonlinearSolverHydro.icheckSufficientDecrease}
+
+# maximum number of backtracking steps
+nmaxBacktrackingSteps = %{NonlinearSolverHydro.nmaxBacktrackingSteps}
+
+# update frequency of Jacobian
+iupdateFrequency = %{NonlinearSolverHydro.iupdateFrequency}
+
+# nonlinear relaxation parameter
+domega = %{NonlinearSolverHydro.domega}
+
+# absolute tolerance for residual
+depsAbs = %{NonlinearSolverHydro.depsAbs}
+
+# relative tolerance for residual
+depsRel = %{NonlinearSolverHydro.depsRel}
+
+# relative tolerance for stagnation
+depsStag = %{NonlinearSolverHydro.depsStag}
 
 # name of linear sub-solver
 ssolvername = LinearSolver
@@ -887,7 +921,7 @@ depsRel = 1e-3
 depsStag = 0.0
 
 # name of preconditioner
-sprecondName =
+sprecondName = LinearPrecond
 
 
 ################################################################################
