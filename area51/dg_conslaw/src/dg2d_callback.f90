@@ -2213,19 +2213,25 @@ integer :: iel
 !            Dcoefficients (1,ipoint,iel) = 1.0_dp
 !          end if
           
-!          ! Shock tube
-!          if (dx<0.5_dp) then
-!            Dcoefficients (1,ipoint,iel) = 1.0_dp
-!          else
-!            Dcoefficients (1,ipoint,iel) = 0.25_dp
-!          end if 
+          ! Shock tube
+          if (dx<0.5_dp) then
+            Dcoefficients (1,ipoint,iel) = 1.0_dp
+          else
+            Dcoefficients (1,ipoint,iel) = 0.25_dp
+          end if 
+          
+                    if (dx<0.5_dp) then
+            Dcoefficients (1,ipoint,iel) = 1.0_dp
+          else
+            Dcoefficients (1,ipoint,iel) = 0.125_dp
+          end if 
 
 
-        ! Isentropicvortex
-        dt = 0
-        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-        
-        Dcoefficients (1,ipoint,iel) = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+!        ! Isentropicvortex
+!        dt = 0
+!        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+!        
+!        Dcoefficients (1,ipoint,iel) = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
 
 
 
@@ -2256,11 +2262,11 @@ integer :: iel
           dy = Dpoints(2,ipoint,iel)
           
           
-       ! Isentropicvortex
-        dt = 0
-        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
-        Dcoefficients (1,ipoint,iel) = drho*(1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi))
+!       ! Isentropicvortex
+!        dt = 0
+!        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+!        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+!        Dcoefficients (1,ipoint,iel) = drho*(1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi))
 
       
           end do
@@ -2277,11 +2283,11 @@ integer :: iel
           dy = Dpoints(2,ipoint,iel)
           
           
-       ! Isentropicvortex
-        dt = 0
-        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
-        Dcoefficients (1,ipoint,iel) = drho*(5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi))
+!       ! Isentropicvortex
+!        dt = 0
+!        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+!        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+!        Dcoefficients (1,ipoint,iel) = drho*(5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi))
         
       
           end do
@@ -2298,21 +2304,22 @@ integer :: iel
             dx = Dpoints(1,ipoint,iel)
             dy = Dpoints(2,ipoint,iel)
         
-!            ! Shock tube
-!            if (dx<0.5_dp) then
-!              Dcoefficients (1,ipoint,iel) = 2.5_dp
-!            else
-!              Dcoefficients (1,ipoint,iel) = 0.25_dp
-!            end if
+            ! Shock tube
+            if (dx<0.5_dp) then
+              Dcoefficients (1,ipoint,iel) = 2.5_dp
+            else
+              Dcoefficients (1,ipoint,iel) = 0.25_dp
+            end if
             
             
-            ! Isentropic vortex
-            dt = 0.0_dp
-            drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-            drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
-            du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
-            dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
-            Dcoefficients (1,ipoint,iel) = drho*((drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv))
+            
+!            ! Isentropic vortex
+!            dt = 0.0_dp
+!            drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+!            drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+!            du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
+!            dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
+!            Dcoefficients (1,ipoint,iel) = drho*((drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv))
             
 !            ! Circular dambreak (for Euler equations)
 !            r = sqrt(2.0_dp*(dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp)
@@ -3768,94 +3775,94 @@ integer :: iel
         
         
         
-!        ! Reflecting BCs
-!        ! Calculate x- and y- velocity from momentum
-!        drho = Dsolutionvalues(1,ipoint,iedge,1)
-!        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
-!        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
-!        
-!        ! Calculate normal and tangential part
-!        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
-!        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-!        
-!        ! Invert the normal part
-!        dvn = -dvn
-!        dvt = +dvt
-!        
-!        ! Calculate new velocity
-!        du = dvn*normal(1,iedge) - dvt*normal(2,iedge)
-!        dv = dvn*normal(2,iedge) + dvt*normal(1,iedge)
-!        
-!        ! Set new momentum
-!        Dsolutionvalues(2,ipoint,iedge,1) = drho
-!        Dsolutionvalues(2,ipoint,iedge,2) = drho * du
-!        Dsolutionvalues(2,ipoint,iedge,3) = drho * dv
-!        Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
-
-
-        !!! Boundary conditions by Riemann invariants for isentropic vortex !!!
-        
-        ! Calculate Riemann invariants from outer (freestream) state
-        ! Here you can set the desired freestream state
-        dt = rcollection%Dquickaccess(1)
-        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-        
-        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
-        du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
-        dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
-        dE = (drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv)
-        
-        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
-        dH = dE + dpr/drho
-        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-        
-        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
-        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-        
-        dW1o = dvn - 2.0_dp*dc/(gamma-1)
-        dW2o = dpr/(drho**gamma)
-        dW3o = dvt
-        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
-        
-        ! Calculate Riemann invariants from inner values
+        ! Reflecting BCs
+        ! Calculate x- and y- velocity from momentum
         drho = Dsolutionvalues(1,ipoint,iedge,1)
         du = Dsolutionvalues(1,ipoint,iedge,2)/drho
         dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
-        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
         
-        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
-        dH = dE + dpr/drho
-        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-        
+        ! Calculate normal and tangential part
         dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
         dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
         
-        dW1 = dvn - 2.0_dp*dc/(gamma-1)
-        dW2 = dpr/(drho**gamma)
-        dW3 = dvt
-        dW4 = dvn + 2.0_dp*dc/(gamma-1)
+        ! Invert the normal part
+        dvn = -dvn
+        dvt = +dvt
         
-        ! Choose inner/outer state depending on the sign of the
-        ! eigenvalues
-        if ((dvn-dc)<0.0_dp) dW1 = dW1o
-        if (dvn<0.0_dp) then
-          dW2 = dW2o
-          dW3 = dW3o
-        end if
-        if ((dvn+dc)<0.0_dp) dW4 = dW4o
+        ! Calculate new velocity
+        du = dvn*normal(1,iedge) - dvt*normal(2,iedge)
+        dv = dvn*normal(2,iedge) + dvt*normal(1,iedge)
         
-        ! Transform back to conservative variables and set value
-        ! in the ghost node
-        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
-        drho = (dc*dc/(gamma*dW2))**(1.0_dp/(gamma-1.0_dp))
-        dpr = dc*dc*drho/gamma
-        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
-        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
-        
+        ! Set new momentum
         Dsolutionvalues(2,ipoint,iedge,1) = drho
-        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
-        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
-        Dsolutionvalues(2,ipoint,iedge,4) = dpr/(gamma-1.0_dp) + drho*0.5_dp*(du*du+dv*dv)
+        Dsolutionvalues(2,ipoint,iedge,2) = drho * du
+        Dsolutionvalues(2,ipoint,iedge,3) = drho * dv
+        Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
+
+
+!        !!! Boundary conditions by Riemann invariants for isentropic vortex !!!
+!        
+!        ! Calculate Riemann invariants from outer (freestream) state
+!        ! Here you can set the desired freestream state
+!        dt = rcollection%Dquickaccess(1)
+!        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+!        
+!        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+!        du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
+!        dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
+!        dE = (drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv)
+!        
+!        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
+!        dH = dE + dpr/drho
+!        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
+!        
+!        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
+!        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
+!        
+!        dW1o = dvn - 2.0_dp*dc/(gamma-1)
+!        dW2o = dpr/(drho**gamma)
+!        dW3o = dvt
+!        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
+!        
+!        ! Calculate Riemann invariants from inner values
+!        drho = Dsolutionvalues(1,ipoint,iedge,1)
+!        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
+!        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
+!        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
+!        
+!        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
+!        dH = dE + dpr/drho
+!        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
+!        
+!        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
+!        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
+!        
+!        dW1 = dvn - 2.0_dp*dc/(gamma-1)
+!        dW2 = dpr/(drho**gamma)
+!        dW3 = dvt
+!        dW4 = dvn + 2.0_dp*dc/(gamma-1)
+!        
+!        ! Choose inner/outer state depending on the sign of the
+!        ! eigenvalues
+!        if ((dvn-dc)<0.0_dp) dW1 = dW1o
+!        if (dvn<0.0_dp) then
+!          dW2 = dW2o
+!          dW3 = dW3o
+!        end if
+!        if ((dvn+dc)<0.0_dp) dW4 = dW4o
+!        
+!        ! Transform back to conservative variables and set value
+!        ! in the ghost node
+!        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
+!        drho = (dc*dc/(gamma*dW2))**(1.0_dp/(gamma-1.0_dp))
+!        dpr = dc*dc*drho/gamma
+!        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
+!        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
+!        
+!        Dsolutionvalues(2,ipoint,iedge,1) = drho
+!        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
+!        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
+!        Dsolutionvalues(2,ipoint,iedge,4) = dpr/(gamma-1.0_dp) + drho*0.5_dp*(du*du+dv*dv)
         
       end if
       
@@ -3900,6 +3907,14 @@ integer :: iel
       
 !      ! Lax Friedrichs #1
 !      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*maxval(DaLambda)*(DQi - DQa)
+      
+      
+!      ! Foreign Roe-Flux
+!      DfluxValues(:,1,ipoint,iedge) = Roe(DQi, DQa, normal(1,iedge), normal(2,iedge))
+      
+!      ! Foreign Rotated_RHLL-Flux
+!      DfluxValues(:,1,ipoint,iedge) = Rotated_RHLL(DQi, DQa, normal(1,iedge), normal(2,iedge))
+      
             
 !     ! Lax Friedrichs #2
 !     dlambda = max(sqrt(DQi(2)*DQi(2)+dQi(3)*DQi(3))/DQi(1)+sqrt(gamma/DQi(1)*(gamma-1.0_dp)*DQi(1)*(DQi(4)/DQi(1)-0.5_dp*( (DQi(2)/DQi(1))**2.0_dp + (DQi(3)/DQi(1))**2.0_dp ) )) , sqrt(DQa(2)*DQa(2)+dQa(3)*DQa(3))/DQa(1)+sqrt(gamma/DQa(1)*(gamma-1.0_dp)*DQa(1)*(DQa(4)/DQa(1)-0.5_dp*( (DQa(2)/DQa(1))**2.0_dp + (DQa(3)/DQa(1))**2.0_dp ) )))
@@ -3913,11 +3928,11 @@ integer :: iel
 !      dlambda = max( sqrt((DQi(2)/DQi(1)*normal(1,iedge))**2.0_dp + (DQi(3)/DQi(1)*normal(2,iedge))**2.0_dp)+sqrt(gamma/DQi(1)*pl) , sqrt((DQa(2)/DQa(1)*normal(1,iedge))**2.0_dp + (DQa(3)/DQa(1)*normal(2,iedge))**2.0_dp)+sqrt(gamma/DQa(1)*pr) )
 !      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*dlambda*(DQi - DQa)
 
-!      ! Save the calculated flux (HLL)
-!      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLL2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
+      ! Save the calculated flux (HLL)
+      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLL2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
       
-      ! Save the calculated flux (HLLC)
-      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLLC2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
+!      ! Save the calculated flux (HLLC)
+!      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLLC2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
 
 !      ! Galerkin
 !      DfluxValues(:,1,ipoint,iedge) = DFlux
