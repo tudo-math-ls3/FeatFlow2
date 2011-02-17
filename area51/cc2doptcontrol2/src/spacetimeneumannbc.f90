@@ -211,11 +211,15 @@ contains
     type(t_matrixScalar) :: rneumannBoudaryOperator
     
     ! Prepare a bilinear form.
-    rform%itermCount = 1
+    rform%itermCount = 3
     rform%Idescriptors(1,1) = DER_FUNC
     rform%Idescriptors(2,1) = DER_FUNC
+    rform%Idescriptors(1,2) = DER_DERIV_X
+    rform%Idescriptors(2,2) = DER_DERIV_X
+    rform%Idescriptors(1,3) = DER_DERIV_Y
+    rform%Idescriptors(2,3) = DER_DERIV_Y
     rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff(1) = .true.
+    rform%BconstantCoeff(1:3) = .true.
     rform%Dcoefficients(1:rform%itermCount) = 1.0_DP
     
     ! Create a temp matrix for boundary integrals. At first: Full structure, zero content.
