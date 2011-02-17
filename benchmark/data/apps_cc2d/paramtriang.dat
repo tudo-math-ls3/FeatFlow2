@@ -15,3 +15,8 @@ sMesh = '%{spredirectory}/bench1.tri'
 
 # Whether to convert the mesh into a pure triangular mesh or not
 iconvertToTriangleMesh = 0
+
+# This defines a percentage factor (0..1) how far the fine mesh
+# is disturbed. Should usually be set to 0.0 except for debug
+# purposes.
+ddisturbMeshFactor = 0.0

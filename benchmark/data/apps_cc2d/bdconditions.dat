@@ -68,18 +68,18 @@ bdExpressions(6) =
 
 ineumannBoundary = -1
 
-# For each boundary component, a boundary component specifier
-# 'bdComponentX([n])' must exist. [n] defines the number of sub-segments
+# For each boundary component, a bondary component specifier 
+# 'bdComponentX([n])' must exist. [n] defined the number of sub-segments
 # that follow. A sub-segment either corresponds to an actual boundary
 # segment or is a 'free' boundary segment anywhere on the boundary.
 # To each sub-segment, a boundary condition is associated.
 #
-# Definition of boundary segments always starts at parameter value 0.0.
+# Definition of boundary segments always start at parameter value 0.0.
 # Each specified sub-segment allows to specify the end parameter
 # value of the segment:
 # "    0  4.0  3  [bdcid] ..."
-#   Creates a boundary condition segment starting from the 'current'
-#   parameter value, ending at parameter value '4.0'. '3' specifies
+#   Creates a boundary condition segment starting from the 'current' 
+#   parameter value, ending at parameter value '4.0'. '3' specifies 
 #   that both, starting and ending point should belong to the segment.
 #   '1' is the number X of the boundary condition 'bdExpressionX'
 #   defined above.
@@ -119,17 +119,17 @@ ineumannBoundary = -1
 
 # Benchmark configuration:
 bdComponent1(4)=
-   1.0  3  1  'Dirichlet0'  'Dirichlet0'   # param=[0.0,1.0] : Dirichlet-0 boundary
-   2.0  0  0                               # param=]1.0,2.0[ : Neumann boundary = do-nothing
-   3.0  3  1  'Dirichlet0'  'Dirichlet0'   # param=[2.0,3.0] : Dirichlet-0 boundary
-   4.0  3  1  'ParProfile'  'Dirichlet0'   # param=[3.0,4.0] : parabolic profile in X, 0.0 in Y
+   1.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
+   2.0  0  0                               # ]1.0,2.0[ : Neumann boundary = do-nothing
+   3.0  3  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
+   4.0  3  1  'ParProfile'  'Dirichlet0'   # [3.0,4.0] : parabolic profile in X, 0.0 in Y
 
 # Driven cavity would be (for grid cavity.{prm,tri}):
 #bdComponent1(4)=
-#   1.0  2  1  'Dirichlet0'  'Dirichlet0'   # param=[0.0,1.0] : Dirichlet-0 boundary
-#   2.0  2  1  'Dirichlet0'  'Dirichlet0'   # param=[1.0,2.0] : Dirichlet-0 boundary
-#   3.0  0  1  'Dirichlet0'  'Dirichlet0'   # param=[2.0,3.0] : Dirichlet-1/0 boundary
-#   4.0  3  1  'Dirichlet1'  'Dirichlet0'   # param=[3.0,4.0] : Dirichlet-0 boundary
+#   1.0  2  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
+#   2.0  2  1  'Dirichlet0'  'Dirichlet0'   # [1.0,2.0] : Dirichlet-0 boundary
+#   3.0  0  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-1/0 boundary
+#   4.0  3  1  'Dirichlet1'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
 
 bdComponent2(1)=
    4.0  3  1  'Dirichlet0'  'Dirichlet0'   # Complete boundary component Dirichlet-0 boundary

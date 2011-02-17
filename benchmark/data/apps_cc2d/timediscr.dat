@@ -50,6 +50,14 @@ itimeStepScheme = 0                       # IFRSTP
 
 dtimeStepTheta = 1.0                      # THETA
 
+# Timestep-scheme for the pressure.
+# =0: Use the same timestep scheme as for the velocity.
+# =1: Calculate the pressure fully implicitely (standard)
+# No effect if Implicit-Euler is used.
+# Difference can only be seen for higher order time-discretisation.
+
+ipressureFullyImplicit = 1
+
 # ----------------------------------------------------------------------
 
 # Adaptive time stepping (similar to IADTIM)
@@ -62,7 +70,7 @@ dtimeStepTheta = 1.0                      # THETA
 
 cadaptiveTimeStepping = 0                 # IADTIM
 
-# max. number of repetitions for cadaptiveTimeStepping > 0 (IREPIT)
+# max. number of repetitions for |iadaptiveTimeStepping|=3 (IREPIT)
 
 irepetitions = 3                          # IREPIT
 
@@ -74,7 +82,7 @@ dtimeStepMin = 0.000001                   # DTMIN
 
 dtimeStepMax = 1.000000001                # DTMAX
 
-# max. changes for time step (DTFACT) for |cadaptiveTimeStepping|<>0.
+# max. changes for time step (DTFACT) for |iadaptiveTimeStepping|<>0.
 # When decreasing the time step size, the new time step size is 
 # estimated in the range
 #  (old time step)/dtimeStepFactor .. (old time step)/SQRT(dtimeStepFactor).
@@ -85,7 +93,7 @@ dtimeStepMax = 1.000000001                # DTMAX
 dtimeStepFactor = 9.000000001             # DTFACT  
 
 # max. rel. change of time step such that the step is not repeated
-# (EPSADU). Applies only for |cadaptiveTimeStepping|=3.
+# (EPSADU). Applies only for |iadaptiveTimeStepping|=3.
 # If 
 #  (new time step size)/(old time step size) < depsilonAdaptiveRelTimeStep, 
 # the time step is repeated.
@@ -95,7 +103,7 @@ depsAdaptiveRelTimeStep = 0.5             # EPSADU
 # ----------------------------------------------------------------------
 
 # Type of start procedure (IADIN) when starting a nonstationary 
-# simulation if cadaptiveTimeStepping<>0 (to prevent time step
+# simulation if iadaptiveTimeStepping<>0 (to prevent time step
 # to be reduced to 0.0)
 # 0=constant start
 # 1=linear start (linear blending between dadTimeStepEpsDuringInit
@@ -105,7 +113,7 @@ depsAdaptiveRelTimeStep = 0.5             # EPSADU
 
 cadTimeStepInit = 2                       # IADIN
 
-# Time length of start procedure; must be >0 if cadaptiveTimeStepping<>0,
+# Time length of start procedure; must be >0 if iadaptiveTimeStepping<>0,
 # otherwise nonsteady simulations will stuck at the initial time
 # reducing the time step size to 0.0
 

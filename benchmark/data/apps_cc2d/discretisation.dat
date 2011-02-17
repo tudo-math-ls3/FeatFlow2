@@ -135,8 +135,10 @@ isubEquation = 0
 # A value > 0 requires to set iupwind >= 4 to activate the extended assembly!
 # =0: Constant viscosity NU = 1/RE (standard)
 # =1: Power law: nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
-# =2: Bingham fluid: nu = nu_0 + dviscoyield / sqrt(|D(u)||^2+dviscoEps^2), nu_0 = 1/RE
-# >2: User defined viscosity defined in the callback function 
+# =2: Bingham fluid: nu = nu_0 + sqrt(2)/2 * dviscoyield / sqrt(|D(u)||^2+dviscoEps^2), nu_0 = 1/RE
+# =3: General viscoplastic fluid: nu = nu_0 +  + sqrt(2)/2 * dviscoyield * z^(dviscoexponent/2 - 1), 
+#     nu_0 = 1/RE, z = ||D(u)||^2 + dviscoEps^2
+# >3: User defined viscosity defined in the callback function 
 #     cccallback.f90: getNonconstantViscosity
 
 cviscoModel = 0
@@ -156,15 +158,6 @@ dviscoyield = 1.0
 # Viscosity parmeter 1/NU if the viscosity is constant
 
 RE = 1000
-
-# Type of right hand side. 
-# 0=zero
-# 1=steady inhomog., analytically defined by coeff_RHS_x/coeff_RHS_y 
-#   before the simulation
-# 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y 
-#   in every timestep of the simulation
-
-iRHS = 2
 
 # Type of bdry. conditions.
 # 0=DIRICHLET stationary, 
@@ -189,6 +182,63 @@ imovingFrame = 0
 
 # ------------------------------------------------------------------------
 
+# Type of right hand side. 
+# 0=zero
+# 1=steady inhomog., analytically defined by coeff_RHS_x/coeff_RHS_y 
+#   before the simulation
+# 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y 
+#   in every timestep of the simulation
+# 3=Stationary RHS prescribed by a file.
+# 4=Nonstationary RHS prescribed by a sequence of files.
+#   The files are linearly interpolated in time if necessary.
+#   The parameters srhsfilename, drhsXXXX and irhsXXXX below
+#   define the file sequence.
+
+iRHS = 2
+
+# Fir irhs=4: Basic filename of the file sequence defining the right hand
+# side. An index ".00000", ".00001",... is appended to this filename.
+# The files are uniformly distributed in the time interval 
+# [drhsTimeInit..drhsTimeMax] and interpolated in time if necessary.
+
+sfilenameRHS = ""
+
+# Index of the first RHS-file. Standard=0 which starts the file sequence
+# with extension ".00000".
+
+irhsFirstIndex = 0
+
+# Number of files in the file sequence.
+
+irhsFileCount = 0
+
+# Defines if the files in the file sequence are formatted.
+# =0: unformatted. =1: Formatted (standard)
+
+irhsFormatted = 1
+
+# Defines the starting point in time of the right hand side defined by
+# a file sequence. Standard=default initial time.
+
+drhsTimeInit = %{TIME-DISCRETISATION.dtimeInit}
+
+# Defines the maximum simulation time for the file sequence defining
+# the RHS. Standard=Default max. time.
+
+drhsTimeMax = %{TIME-DISCRETISATION.dtimeMax}
+
+# Multiplier for the RHS, X-component. If a RHS was read from a file sequence, 
+# it is multiplied by this value before being used.
+
+drhsMultiplyX = 1.0
+
+# Multiplier for the RHS, Y-component. If a RHS was read from a file sequence, 
+# it is multiplied by this value before being used.
+
+drhsMultiplyY = 1.0
+
+# ------------------------------------------------------------------------
+
 # Type of element pair to use for the discretisation.
 #  0 = Q1~(E031) / Q1~(E031) / Q0
 #  1 = Q1~(E030) / Q1~(E030) / Q0
@@ -201,6 +251,8 @@ imovingFrame = 0
 #  8 = Q1~(EB30) / Q1~(EB30) / Q0 (experimental, works only with NLMIN=NLMAX and general VANKA/UMFPACK)
 # 10 = Q2~(EB50) / Q2~(EB50) / QP1
 # 11 = Q2~(EM50) / Q2~(EM50) / QP1
+# 12 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric)
+# 13 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric, solves local system; slower than 12 but more stable)
 # 20 = Q1        / Q1        / Q1 (unstabilised!)
 # 30 = P1~(E020) / P1~(E020) / P0 
 
@@ -275,22 +327,22 @@ istrongDerivativeBmatrix = 0
 # cubature formula for Mass matrix. 
 # ="": use default cubature formula.
 
-scubMass           = G4X4
+scubMass           = 
 
 # cubature formula for Stokes/Laplacian matrix.
 # ="": use default cubature formula.
 
-scubStokes         = G4X4
+scubStokes         = 
 
 # cubature formula for Pressure matrices B.
 # ="": use default cubature formula.
 
-scubB              = G4X4
+scubB              = 
 
 # cubature formula for RHS F.
 # ="": use default cubature formula.
 
-scubF              = G4X4
+scubF              = 
 
 # cubature formula for the EOJ stabilisation (1D along edges).
 # ="": use default cubature formula.

@@ -9,6 +9,16 @@
 [CC-POSTPROCESSING]
 ###################
 
+# Whether to apply postprocessing to a time interpolated solution or not.
+# This is used for error analysis as well as drag/lift calculation but
+# not for UCD/film output.
+# =0: Apply postprocessing to the raw solution vector.
+# =1 (standard): Apply postprocessing to a time-interpolated solution
+#   with velocity and pressure matching the same point in time.
+#   Necessary for higher order time stepping schemes like Crank-Nicolson.
+
+ipostprocTimeInterpSolution = 1
+
 # ------------------------------------------------------------------------
 # UCD output (GMV, AVS, Paraview...)
 
@@ -18,6 +28,7 @@
 # 2=AVS
 # 3=Paraview (VTK)
 # 4=Matlab
+# 5=binary GMV
 
 ioutputUCD = 1
 
@@ -175,9 +186,9 @@ icalcBodyForces = 2
 
 # Specifies the tensor structure to use for the computation.
 # =-1: automatic
-# = 0: simple gradient tensor, constant nu
-# = 1: full gradient tensor, constant nu
-# = 2: deformation tensor, constant nu
+# = 0: simple gradient tensor
+# = 1: full gradient tensor
+# = 2: deformation tensor
 
 ibodyForcesFormulation = -1
 
@@ -200,7 +211,7 @@ ibodyForcesBdComponent = 2
 
 # Whether to write the body forces to a file
 
-iwriteBodyForces = 0
+iwriteBodyForces = 1
 
 # Filename for the body forces
 
@@ -236,3 +247,30 @@ iwritePointValues = 0
 # Filename for the point values
 
 sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
+
+# ------------------------------------------------------------------------
+# Flux values
+
+# Calculate the flux through one or multilple lines.
+# The number in braces "(n)" defines the number of lines where to
+# evaluate the flux. Afterwards follows a list of points in the
+# format
+#   "x-start y-start x-end y-end"
+# that defines the starting and ending point of the line.
+#
+# Example: Don't evaluate anything:
+#   cevaluateFluxValues(0) =
+#
+# Example: Evaluate the flux through the line (0.5,0.5)->(0.5,0.0)
+#   cevaluateFluxValues(1) =
+#     0.5 0.5 0.5 0.0
+
+cevaluateFluxValues(0) =
+
+# Whether to write the point values to a file
+
+iwriteFluxValues = 0
+
+# Filename for the point values
+
+sfilenameFluxValues = '%{ssolutiondirectory}/flux'
