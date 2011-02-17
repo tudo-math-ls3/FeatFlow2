@@ -191,7 +191,7 @@ imovingFrame = 0
 # 3=Stationary RHS prescribed by a file.
 # 4=Nonstationary RHS prescribed by a sequence of files.
 #   The files are linearly interpolated in time if necessary.
-#   The parameters srhsfilename, drhsXXXX and irhsXXXX below
+#   The parameters sfilenameRHS, drhsXXXX and irhsXXXX below
 #   define the file sequence.
 
 iRHS = 2

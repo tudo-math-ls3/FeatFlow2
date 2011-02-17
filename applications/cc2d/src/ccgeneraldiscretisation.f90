@@ -1928,9 +1928,31 @@ contains
       
       ! Can we directly read in the solution?
       if (ielementTypeInitialSolution .eq. -1) then
-        ! Read in the vector
+        ! Read in the vector to the 2nd temp vector.
+        ! This will automatically create rvector2.
         call vecio_readBlockVectorHR (&
-          rvector1, sarray, .true., 0, sfile, ctypeInitialSolution .eq. 1)
+          rvector2, sarray, .true., 0, sfile, ctypeInitialSolution .eq. 1)
+          
+        ! Copy the first three components; maybe rvector2 has more...
+        ! Copy only the data, ignore the discretisation.
+        if ((rvector2%RvectorBlock(1)%NEQ .ne. rvector1%RvectorBlock(1)%NEQ) .or.&
+            (rvector2%RvectorBlock(2)%NEQ .ne. rvector1%RvectorBlock(2)%NEQ) .or.&
+            (rvector2%RvectorBlock(3)%NEQ .ne. rvector1%RvectorBlock(3)%NEQ)) then
+          call output_line (&
+              'Start vector has invalid size!', &
+              OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
+          call sys_halt()
+        end if
+        
+        call lsyssc_duplicateVector (rvector2%RvectorBlock(1),rvector1%RvectorBlock(1),&
+            LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+        call lsyssc_duplicateVector (rvector2%RvectorBlock(2),rvector1%RvectorBlock(2),&
+            LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+        call lsyssc_duplicateVector (rvector2%RvectorBlock(3),rvector1%RvectorBlock(3),&
+            LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+            
+        ! Release the temp vector
+        call lsysbl_releaseVector (rvector2)
       else
         ! Create a compatible discretisation for the alternative element type
         call cc_deriveDiscretisation (ielementTypeInitialSolution,&
