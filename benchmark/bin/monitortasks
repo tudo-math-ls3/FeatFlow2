@@ -91,7 +91,6 @@ if test "$HELP" == "1"
 
     USERNAMESHORT=${USERNAME:0:8}
 
-    clear
     TCOUNT=-1
     while test $TCOUNT -ne "0"
       do
@@ -212,7 +211,6 @@ if test "$HELP" == "1"
                         ;;
                 esac
               else
-                clear
                 cat $FILE2
               fi
     
