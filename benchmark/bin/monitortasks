@@ -13,6 +13,7 @@ ALL=0
 ANSI=1
 PAUSE=0
 SHORT=0
+FULL=0
 
 while test "$1" != ""
   do
@@ -50,6 +51,10 @@ while test "$1" != ""
       then
         SHORT="1"
       fi
+    if test "$1" == "--full"
+      then
+        FULL="1"
+      fi
     if test "$1" == "--queue"
       then
         shift
@@ -65,7 +70,7 @@ if test "$HELP" == "1"
   
     echo "Usage:"
     echo "      monitortasks [--tillempty|--continuous] [--user username] [--wait sec] [--queue name] [--all]"
-    echo "                   [--noansi] [--short]"
+    echo "                   [--noansi] [--short] [--FULL]"
     echo
     echo "  --tillempty   : Repeats task monitoring until all tasks are done."
     echo "  --continuous  : Repeats task monitoring forever."
@@ -75,6 +80,7 @@ if test "$HELP" == "1"
     echo "  --all         : Monitors also not-running tasks."
     echo "  --noansi      : Disables ANSI sequences for output."
     echo "  --short       : Short form, no list of running jobs."
+    echo "  --full        : List of tasks plus full job information from queuing system."
     echo
     echo "Monitors a cluster queue via qstat."
     echo "Pressing the key 'q' stops monitoring."
@@ -180,6 +186,15 @@ if test "$HELP" == "1"
               then
                 echo >> $FILE2
                 echo "Queue empty." >> $FILE2
+              else
+                if test "$FULL" -eq "1"
+                  then
+                    # Get full task information
+                    # But first, get a list of all tasks from FILE1.
+                    TASKLIST=`grep $USERNAMESHORT $FILE1 | cut -f 1 -d ' ' | tr '\n' ' '`
+                    echo >> $FILE2
+                    qstat -f $TASKLIST >> $FILE2
+                  fi
               fi
             
             if test "$ANSI" -eq "1"
