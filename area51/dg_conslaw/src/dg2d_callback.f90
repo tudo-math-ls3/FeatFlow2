@@ -337,26 +337,84 @@ contains
   
 !</subroutine>
 
-integer :: iunit,i,j
-real(dp),dimension(4000001) :: Dreference
+integer :: iunit,i,j,iunit1,iunit2
+real(dp),dimension(4000001) :: Dreference, Drefx
 real(dp) :: r,n,r1
-real(dp) :: dx,dy, dr, dt, drad
+real(dp) :: dx,dy, dr, dt, drad, dh
 
 integer :: ielement, ipoint
 
 
 
-! Euler: Isentropic vortex
-dt = 1.0_dp
+!! Euler: Isentropic vortex
+!dt = 1.0_dp
+!
+!do i = 1, size(Dvalues,1)
+!    do j = 1, size(Dvalues,2)
+!       dx = Dpoints(1,i,j)
+!       dy = Dpoints(2,i,j)
+!       drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
+!       Dvalues(i,j) = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+!    end do
+!    end do
 
-do i = 1, size(Dvalues,1)
-    do j = 1, size(Dvalues,2)
-       dx = Dpoints(1,i,j)
-       dy = Dpoints(2,i,j)
-       drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-       Dvalues(i,j) = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
+
+
+
+
+
+
+! Euler: SODs shock tube
+
+iunit1 = sys_getFreeUnit()
+open(iunit1, file='./SODx.out')
+iunit2 = sys_getFreeUnit()
+open(iunit2, file='./SODrho.out')
+
+do i = 1, 1601
+  read(iunit1,*) Drefx(i)
+  read(iunit2,*) Dreference(i)
+end do
+
+close(iunit1)
+close(iunit2)
+
+
+  select case (cderivative)
+  case (DER_FUNC)
+    
+                    
+    do ielement = 1, nelements
+    do ipoint = 1, npointsPerElement
+      dx = Dpoints(1,ipoint,ielement)
+      do i = 1, 1601
+        if (dx < Drefx(i)) then
+          exit
+        end if
+      end do
+      
+      dh = (dx-Drefx(i-1))/(Drefx(i)-Drefx(i-1))
+            
+      Dvalues(ipoint,ielement) =(1.0_dp-dh)* Dreference(i-1) +(dh)* Dreference(i)
+      
     end do
     end do
+                              
+  case (DER_DERIV_X)
+  write(*,*) 'Error in calculating L2-error'
+    
+  case (DER_DERIV_Y)
+  write(*,*) 'Error in calculating L2-error'
+    
+  case DEFAULT
+    ! Unknown. Set the result to 0.0.
+    Dvalues = 0.0_DP
+  end select
+
+
+
+
+
 
 
 
@@ -2217,12 +2275,6 @@ integer :: iel
           if (dx<0.5_dp) then
             Dcoefficients (1,ipoint,iel) = 1.0_dp
           else
-            Dcoefficients (1,ipoint,iel) = 0.25_dp
-          end if 
-          
-                    if (dx<0.5_dp) then
-            Dcoefficients (1,ipoint,iel) = 1.0_dp
-          else
             Dcoefficients (1,ipoint,iel) = 0.125_dp
           end if 
 
@@ -3787,7 +3839,7 @@ integer :: iel
         
         ! Invert the normal part
         dvn = -dvn
-        dvt = +dvt
+        dvt =  dvt
         
         ! Calculate new velocity
         du = dvn*normal(1,iedge) - dvt*normal(2,iedge)
@@ -3928,8 +3980,8 @@ integer :: iel
 !      dlambda = max( sqrt((DQi(2)/DQi(1)*normal(1,iedge))**2.0_dp + (DQi(3)/DQi(1)*normal(2,iedge))**2.0_dp)+sqrt(gamma/DQi(1)*pl) , sqrt((DQa(2)/DQa(1)*normal(1,iedge))**2.0_dp + (DQa(3)/DQa(1)*normal(2,iedge))**2.0_dp)+sqrt(gamma/DQa(1)*pr) )
 !      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*dlambda*(DQi - DQa)
 
-      ! Save the calculated flux (HLL)
-      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLL2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
+!      ! Save the calculated flux (HLL)
+!      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLL2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
       
 !      ! Save the calculated flux (HLLC)
 !      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLLC2D(DQi,DQa,normal(1,iedge),normal(2,iedge))

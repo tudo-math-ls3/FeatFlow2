@@ -1254,7 +1254,7 @@ contains
        L(1,1) = 0.5_dp*(b1+ve/c)
        L(2,1) = 1.0_dp-b1
        L(3,1) = 0.5_dp*(b1-ve/c)
-       L(4,1) = a*ve-b*u
+       L(4,1) = a*v-b*u
        L(1,2) = 0.5_dp*(-b2*u-a/c)
        L(2,2) = b2*u
        L(3,2) = 0.5_dp*(-b2*u+a/c)
@@ -1780,13 +1780,13 @@ contains
 
 !Wave Strengths
    drho = rhoR - rhoL 
-     dpp =   pR - pL
-    dvn =  vnR - vnL
-    dvt =  vtR - vtL
+    dpp = pR - pL
+    dvn = vnR - vnL
+    dvt = vtR - vtL
 
   dV(1) = (dpp - rho*a*dvn )/(two*a*a)
   dV(2) = rho*dvt/a
-  dV(3) =  drho - dpp/(a*a)
+  dV(3) = drho - dpp/(a*a)
   dV(4) = (dpp + rho*a*dvn )/(two*a*a)
 
 !Wave Speed
@@ -1798,9 +1798,9 @@ contains
 !Harten's Entropy Fix JCP(1983), 49, pp357-393:
 ! only for the nonlinear fields.
   dws(1) = fifth
-   if ( ws(1) < dws(1) ) ws(1) = half * ( ws(1)*ws(1)/dws(1)+dws(1) )
+  if ( ws(1) < dws(1) ) ws(1) = half * ( ws(1)*ws(1)/dws(1)+dws(1) )
   dws(4) = fifth
-   if ( ws(4) < dws(4) ) ws(4) = half * ( ws(4)*ws(4)/dws(4)+dws(4) )
+  if ( ws(4) < dws(4) ) ws(4) = half * ( ws(4)*ws(4)/dws(4)+dws(4) )
 
 !Right Eigenvectors
   Rv(1,1) = one    

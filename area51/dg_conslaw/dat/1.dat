@@ -2,13 +2,14 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 6
+nlmax = 2
 
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-prmname = ./pre/QUAD.prm
+#prmname = ./pre/QUAD.prm
+prmname = ./pre/rect_01x0.1_quads.prm
 #prmname = ./pre/quadm5t5.prm
 #prmname = ./pre/isentrvort.prm
 #prmname = ./pre/zehnm.prm
@@ -22,7 +23,8 @@ prmname = ./pre/QUAD.prm
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-triname = ./pre/QUAD.tri
+#triname = ./pre/QUAD.tri
+triname = ./pre/rect_01x0.1_quads.tri
 #triname = ./pre/quadm5t5.tri
 #triname = ./pre/isentrvort.tri
 #triname = ./pre/zehnm.tri
@@ -61,7 +63,7 @@ theta = 1.0
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 0
+limiter = 12
 
 # What kind of time stepping to use
 # 1: RK SSP 3rd order
@@ -95,7 +97,7 @@ gravconst = 1.0
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 0
+extrapoints = 3
 
 # Name of output file
 ofile = ./gmv/u2d
