@@ -809,7 +809,7 @@ contains
 !<subroutine>
 
   subroutine fbsim_init (rsettings, rparlist, ssection, nlmin, nlmax, csimtype, rsimsolver,&
-      rphysics)
+      rphysics,ssectionAlternative)
   
 !<description>
   ! Initialises a rsimsolver structure based on the general problem structure
@@ -823,11 +823,6 @@ contains
   ! Param,eter list containing the parameters for the solver.
   type(t_parlist), intent(in) :: rparlist
   
-  ! Name of the section containing the parameters of the solver in
-  ! each timestep. This section identifies either a linear or a nonlinear
-  ! solver, depending on csimtype.
-  character(len=*), intent(in) :: ssection
-
   ! Minimum space level allowed to be used by the preconditioner.
   ! Relative to the global space-hierarchy in rsettings.
   integer, intent(in) :: nlmin
@@ -846,9 +841,18 @@ contains
   !     ssection must identify a parameter block of a linear solver.
   integer, intent(in) :: csimtype
   
+  ! Name of the section containing the parameters of the solver in
+  ! each timestep. This section identifies either a linear or a nonlinear
+  ! solver, depending on csimtype.
+  character(len=*), intent(in) :: ssection
+
   ! OPTIONAL: Alternative physics definition to use.
   ! If not present, the standard global physics settings are used.
   type(t_settings_physics), intent(in), optional :: rphysics
+
+  ! OPTIONAL: If csimType=1, this allows to define the section of an alternative
+  ! linear solver which is used in case the standard solver breaks down.
+  character(len=*), intent(in), optional :: ssectionAlternative
 !</input>
 
 !<output>
@@ -900,6 +904,10 @@ contains
       ssectionLinSol = ssection
       ssectionLinSol2 = ""
       
+      if (present(ssectionAlternative)) then
+        ssectionLinSol2 = ssectionAlternative
+      end if
+      
     case (FBSIM_SOLVER_LINBACKWARD)
       cspace = CCSPACE_DUAL
 
@@ -909,6 +917,10 @@ contains
       ssectionLinSol = ssection
       ssectionLinSol2 = ""
       
+      if (present(ssectionAlternative)) then
+        ssectionLinSol2 = ssectionAlternative
+      end if
+
     end select
     
     ! Initialise the preconditioner.
@@ -4156,6 +4168,12 @@ contains
             iiterate,0,p_rspaceTimeMatrix,rnonlinearData,.true.)
         call stat_stopTimer (rtimerMatrixAssembly)
             
+        if (rsimsolver%rpreconditionerAlternative%ctypePreconditioner .ne. 0) then
+          ! There is an alternative preconditioner, so make a backup of our
+          ! defect in case we have to apply that.
+          call lsysbl_copyVector (rdefect,rdefectBackup)
+        end if
+
         ! Do preconditioning to the defect
         call fbsim_precondSpaceDefect (rsimsolver%rpreconditioner,&
             rdefectPrimal,blocalsuccess,rsimsolver%rnonlinearIteration)
@@ -4165,6 +4183,58 @@ contains
             rsimsolver%rnonlinearIteration%dtimeLinearSolver
         rsimsolver%nlinearIterations = rsimsolver%nlinearIterations + &
             rsimsolver%rnonlinearIteration%nlinearIterations
+
+        ! If bsuccess=false, the preconditioner had an error.
+        if (.not. blocalsuccess) then
+          if (rsimSolver%rnonlinearIteration%ioutputLevel .ge. 0) then
+            call output_line ('fbsim_simulate: Iteration '//&
+                trim(sys_siL(iiterate,10))//' canceled as the preconditioner went down!',&
+                coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
+          end if
+          if (rsimsolver%rpreconditionerAlternative%ctypePreconditioner .eq. 0) then
+            blocalsuccess = .false.
+            exit
+          else
+            if (rsimSolver%rnonlinearIteration%ioutputLevel .ge. 0) then
+              call output_line ('fbsim_simulate: Trying alternative preconditioner...',&
+                  coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
+            end if
+            
+            ! Restore the backup of the defect.
+            call lsysbl_copyVector (rdefectBackup,rdefect)
+            
+            ! Prepeare the alternative preconditioner.
+            call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
+                rsimsolver%rpreconditionerAlternative,dtimePrimal,dtimeDual)
+
+            ! Assemble the preconditioner matrices on all levels.
+            call stat_startTimer (rtimerMatrixAssembly)
+            call fbsim_assemblePrecMatrices (rsimsolver%rpreconditionerAlternative,&
+                iiterate,0,p_rspaceTimeMatrix,rnonlinearData,.true.)
+            call stat_stopTimer (rtimerMatrixAssembly)
+
+            ! Do preconditioning to the defect
+            call fbsim_precondSpaceDefect (rsimsolver%rpreconditionerAlternative,&
+                rdefectPrimal,blocalsuccess,rsimsolver%rnonlinearIteration)
+            
+            ! Gather statistics
+            rsimsolver%dtimeLinearSolver = rsimsolver%dtimeLinearSolver + &
+                rsimsolver%rnonlinearIteration%dtimeLinearSolver
+            rsimsolver%nlinearIterations = rsimsolver%nlinearIterations + &
+                rsimsolver%rnonlinearIteration%nlinearIterations
+
+            if (.not. blocalsuccess) then
+              if (rsimSolver%rnonlinearIteration%ioutputLevel .ge. 0) then
+                call output_line ('fbsim_simulate: Iteration '//&
+                    trim(sys_siL(ite,10))//' canceled as the alternative preconditioner went down!',&
+                    coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
+              end if
+              blocalsuccess = .false.
+              exit
+            end if
+
+          end if
+        end if
 
         if (rsimSolver%ioutputLevel .ge. 2) then
           call output_line ("fbsim_simulate: Forward Iteration "//&
@@ -4338,6 +4408,12 @@ contains
             iiterate,0,p_rspaceTimeMatrix,rnonlinearData,.true.)
         call stat_stopTimer (rtimerMatrixAssembly)
             
+        if (rsimsolver%rpreconditionerAlternative%ctypePreconditioner .ne. 0) then
+          ! There is an alternative preconditioner, so make a backup of our
+          ! defect in case we have to apply that.
+          call lsysbl_copyVector (rdefect,rdefectBackup)
+        end if
+
         ! Do preconditioning to the defect
         call fbsim_precondSpaceDefect (rsimsolver%rpreconditioner,&
             rdefectDual,blocalsuccess,rsimsolver%rnonlinearIteration)
@@ -4347,6 +4423,58 @@ contains
             rsimsolver%rnonlinearIteration%dtimeLinearSolver
         rsimsolver%nlinearIterations = rsimsolver%nlinearIterations + &
             rsimsolver%rnonlinearIteration%nlinearIterations
+
+        ! If bsuccess=false, the preconditioner had an error.
+        if (.not. blocalsuccess) then
+          if (rsimSolver%rnonlinearIteration%ioutputLevel .ge. 0) then
+            call output_line ('fbsim_simulate: Iteration '//&
+                trim(sys_siL(iiterate,10))//' canceled as the preconditioner went down!',&
+                coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
+          end if
+          if (rsimsolver%rpreconditionerAlternative%ctypePreconditioner .eq. 0) then
+            blocalsuccess = .false.
+            exit
+          else
+            if (rsimSolver%rnonlinearIteration%ioutputLevel .ge. 0) then
+              call output_line ('fbsim_simulate: Trying alternative preconditioner...',&
+                  coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
+            end if
+            
+            ! Restore the backup of the defect.
+            call lsysbl_copyVector (rdefectBackup,rdefect)
+            
+            ! Prepeare the alternative preconditioner.
+            call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
+                rsimsolver%rpreconditionerAlternative,dtimePrimal,dtimeDual)
+
+            ! Assemble the preconditioner matrices on all levels.
+            call stat_startTimer (rtimerMatrixAssembly)
+            call fbsim_assemblePrecMatrices (rsimsolver%rpreconditionerAlternative,&
+                iiterate,0,p_rspaceTimeMatrix,rnonlinearData,.true.)
+            call stat_stopTimer (rtimerMatrixAssembly)
+
+            ! Do preconditioning to the defect
+            call fbsim_precondSpaceDefect (rsimsolver%rpreconditionerAlternative,&
+                rdefectDual,blocalsuccess,rsimsolver%rnonlinearIteration)
+            
+            ! Gather statistics
+            rsimsolver%dtimeLinearSolver = rsimsolver%dtimeLinearSolver + &
+                rsimsolver%rnonlinearIteration%dtimeLinearSolver
+            rsimsolver%nlinearIterations = rsimsolver%nlinearIterations + &
+                rsimsolver%rnonlinearIteration%nlinearIterations
+
+            if (.not. blocalsuccess) then
+              if (rsimSolver%rnonlinearIteration%ioutputLevel .ge. 0) then
+                call output_line ('fbsim_simulate: Iteration '//&
+                    trim(sys_siL(ite,10))//' canceled as the alternative preconditioner went down!',&
+                    coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
+              end if
+              blocalsuccess = .false.
+              exit
+            end if
+
+          end if
+        end if
 
         if (rsimSolver%ioutputLevel .ge. 2) then
           call output_line ("fbsim_simulate: Backward Iteration "//&

@@ -753,8 +753,12 @@ module spacetimelinearsolver
     ! Parameter list containing the configuration of the forward-backward solvers.
     type(t_parlist), pointer :: p_rparlist
     
-    ! Name of a section in the parameter list configuring the forward-backward solver.
+    ! Name of the section configuring the spatial solver.
     character(len=SYS_STRLEN) :: ssection
+
+    ! Name of the section configuring an alternative spatial solver.
+    ! ="": Use ssection.
+    character(len=SYS_STRLEN) :: ssectionAlternative
 
     ! The forward solver
     type(t_simSolver) :: rforwardsolver
@@ -2432,7 +2436,11 @@ contains
     ! Remember the parameter list and the section for later.
     p_rsolverNode%p_rsubnodeBlockJacobi%p_rparlist => rparlist
     p_rsolverNode%p_rsubnodeBlockJacobi%ssection = ssection
-    p_rsolverNode%p_rsubnodeBlockJacobi%ssectionAlternative = ssectionAlternative
+
+    p_rsolverNode%p_rsubnodeBlockJacobi%ssectionAlternative = ""
+    if (present(ssectionAlternative)) then
+      p_rsolverNode%p_rsubnodeBlockJacobi%ssectionAlternative = ssectionAlternative
+    end if
     
   end subroutine
 
@@ -2932,7 +2940,11 @@ contains
     ! Remember the parameter list and the section for later.
     p_rsolverNode%p_rsubnodeBlockFBSOR%p_rparlist => rparlist
     p_rsolverNode%p_rsubnodeBlockFBSOR%ssection = ssection
-    p_rsolverNode%p_rsubnodeBlockFBSOR%ssectionAlternative = ssectionAlternative
+    
+    p_rsolverNode%p_rsubnodeBlockFBSOR%ssectionAlternative = ""
+    if (present(ssectionAlternative)) then
+      p_rsolverNode%p_rsubnodeBlockFBSOR%ssectionAlternative = ssectionAlternative
+    end if
     
   end subroutine
 
@@ -9195,7 +9207,7 @@ contains
 !<subroutine>
   
   recursive subroutine sptils_initFBsim (rsettings,ispaceTimeLevel,&
-      rparlist,ssection,drelax,p_rsolverNode)
+      rparlist,ssection,drelax,p_rsolverNode,ssectionAlternative)
   
 !<description>
   ! Creates a t_sptilsNode solver structure for the forward-backward preconditioner.
@@ -9213,11 +9225,17 @@ contains
   ! Parameter list containing the configuration of the forward-backward solvers.
   type(t_parlist), intent(in), target :: rparlist
   
-  ! Name of a section in the parameter list configuring the forward-backward solver.
+  ! Name of a section in the parameter list configuring the linear solver
+  ! in each timestep.
   character(len=*), intent(in) :: ssection
   
   ! Relaxation parameter to damp solutions during the simulation. Standard = 1.0.
   real(dp), intent(in) :: drelax
+
+  ! OPTIONAL: Name of a section in the parameter list that configures
+  ! an alternative linear solver. This solver is used if the standard solver fails.
+  ! If not specified, no alternative linear solver is set up.
+  character(len=*), intent(in), optional :: ssectionAlternative
 !</input>
   
 !<output>
@@ -9248,6 +9266,11 @@ contains
     p_rsolverNode%p_rsubnodeFBsim%ssection = ssection
     p_rsolverNode%p_rsubnodeFBsim%drelax = drelax
     
+    p_rsolverNode%p_rsubnodeFBsim%ssectionAlternative = ""
+    if (present(ssectionAlternative)) then
+      p_rsolverNode%p_rsubnodeFBsim%ssectionAlternative = ssectionAlternative
+    end if
+
   end subroutine
 
   ! ***************************************************************************
@@ -9340,12 +9363,14 @@ contains
     call fbsim_init (rsolverNode%p_rsettings, rsolverNode%p_rsubnodeFBsim%p_rparlist, &
         rsolverNode%p_rsubnodeFBsim%ssection, 1,&
         ispaceLevel,FBSIM_SOLVER_LINFORWARD,&
-        rsolverNode%p_rsubnodeFBsim%rforwardsolver)
+        rsolverNode%p_rsubnodeFBsim%rforwardsolver,&
+        ssectionAlternative=rsolverNode%p_rsubnodeFBsim%ssectionAlternative)
 
     call fbsim_init (rsolverNode%p_rsettings, rsolverNode%p_rsubnodeFBsim%p_rparlist, &
         rsolverNode%p_rsubnodeFBsim%ssection, 1,&
         ispaceLevel,FBSIM_SOLVER_LINBACKWARD,&
-        rsolverNode%p_rsubnodeFBsim%rbackwardsolver)
+        rsolverNode%p_rsubnodeFBsim%rbackwardsolver,&
+        ssectionAlternative=rsolverNode%p_rsubnodeFBsim%ssectionAlternative)
 
     ! Allocate memory for a temp vector.
     call sptivec_initVector (rsolverNode%p_rsubnodeFBsim%rtempVector,&
