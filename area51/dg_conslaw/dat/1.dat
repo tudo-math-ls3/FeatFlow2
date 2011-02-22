@@ -39,7 +39,7 @@ triname = ./pre/rect_01x0.1_quads.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 1
+FEkind = 2
 
 
 

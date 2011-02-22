@@ -3925,33 +3925,33 @@ integer :: iel
       DQi = Dsolutionvalues(1,ipoint,iedge,:)
       DQa = Dsolutionvalues(2,ipoint,iedge,:)
       
-      ! Get fluxes on the in and outside in x- and y-direction
-      DFxi = Euler_buildFlux(DQi,1)
-      DFxa = Euler_buildFlux(DQa,1)
-      DFyi = Euler_buildFlux(DQi,2)
-      DFya = Euler_buildFlux(DQa,2)
-            
-      ! Calculate Roevalues
-      DQroec = Euler_calculateQroec(DQi,DQa)
-      
-      ! First calculate flux in x-direction
-      DFx = 0.5_dp*(DFxi+DFxa)
-      !DFx = Euler_buildFlux(DQRoe,1)
-      
-      ! First calculate flux in y-direction
-      DFy = 0.5_dp*(DFyi+DFya)
-      !DFy = Euler_buildFlux(DQRoe,2)
-      
-      ! Add the fluxes of the two dimensional directions to get Flux * normal
-      DFlux = DFx*normal(1,iedge) + DFy*normal(2,iedge)
-      
-      ! Add artificial diffusion
-      DL       = Euler_buildMixedLcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
-      DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iedge),normal(2,iedge))
-      DR       = Euler_buildMixedRcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
-      
-      ! Save the calculated flux (Roe)
-      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
+!      ! Get fluxes on the in and outside in x- and y-direction
+!      DFxi = Euler_buildFlux(DQi,1)
+!      DFxa = Euler_buildFlux(DQa,1)
+!      DFyi = Euler_buildFlux(DQi,2)
+!      DFya = Euler_buildFlux(DQa,2)
+!            
+!      ! Calculate Roevalues
+!      DQroec = Euler_calculateQroec(DQi,DQa)
+!      
+!      ! First calculate flux in x-direction
+!      DFx = 0.5_dp*(DFxi+DFxa)
+!      !DFx = Euler_buildFlux(DQRoe,1)
+!      
+!      ! First calculate flux in y-direction
+!      DFy = 0.5_dp*(DFyi+DFya)
+!      !DFy = Euler_buildFlux(DQRoe,2)
+!      
+!      ! Add the fluxes of the two dimensional directions to get Flux * normal
+!      DFlux = DFx*normal(1,iedge) + DFy*normal(2,iedge)
+!      
+!      ! Add artificial diffusion
+!      DL       = Euler_buildMixedLcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
+!      DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iedge),normal(2,iedge))
+!      DR       = Euler_buildMixedRcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
+!      
+!      ! Save the calculated flux (Roe)
+!      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
       
 !      ! Save the calculated flux (Mean)
 !      DfluxValues(:,1,ipoint,iedge) =  Euler_buildFlux(0.5_dp*(DQi+DQa),1)*normal(1,iedge) + Euler_buildFlux(0.5_dp*(DQi+DQa),2)*normal(2,iedge)
@@ -3980,8 +3980,8 @@ integer :: iel
 !      dlambda = max( sqrt((DQi(2)/DQi(1)*normal(1,iedge))**2.0_dp + (DQi(3)/DQi(1)*normal(2,iedge))**2.0_dp)+sqrt(gamma/DQi(1)*pl) , sqrt((DQa(2)/DQa(1)*normal(1,iedge))**2.0_dp + (DQa(3)/DQa(1)*normal(2,iedge))**2.0_dp)+sqrt(gamma/DQa(1)*pr) )
 !      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*dlambda*(DQi - DQa)
 
-!      ! Save the calculated flux (HLL)
-!      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLL2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
+      ! Save the calculated flux (HLL)
+      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLL2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
       
 !      ! Save the calculated flux (HLLC)
 !      DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLLC2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
