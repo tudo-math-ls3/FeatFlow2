@@ -264,6 +264,9 @@ contains
 
     iel = 1
 
+    !$omp parallel do default(shared) firstprivate(iel) schedule(dynamic,4)&
+    !$omp private(Dbas,DparPoint,Idofs,celement,cevaluationTag,ctrafoType,&
+    !$omp         dval,ibas,iellast,indof,iresult,nve,revalElement)
     do ipoint = 1,ubound(Dpoints,2)
     
       ! Get the element number that contains the point. 
