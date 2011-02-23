@@ -4517,7 +4517,7 @@ contains
       p_relementDistribution    => p_rdiscretisation%RelementDistr(ielementDistr)
       p_relementDistributionRef => p_rdiscretisationRef%RelementDistr(ielementDistr)
 
-      ! Check if element distrbutions have different number of elements
+      ! Check if element distributions have different number of elements
       if (p_relementDistribution%NEL .ne. &
           p_relementDistributionRef%NEL) then
         call output_line('Number of elements in distributions mismatch!',&
