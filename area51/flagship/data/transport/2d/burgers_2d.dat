@@ -1,3 +1,4 @@
+
 # -*- mode: any-ini; -*-
 
 ################################################################################
@@ -189,7 +190,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 0
@@ -253,7 +254,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 0.5
+theta = 1.0
 
 # number of steps for multisteps scheme
 multisteps = 2
@@ -262,7 +263,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.0
+dfinalTime = 0.4
 
 # initial time step size
 dinitialStep = 0.001

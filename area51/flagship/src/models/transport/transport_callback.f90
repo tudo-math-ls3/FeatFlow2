@@ -3438,6 +3438,7 @@ contains
     ! - Dirichlet boundary conditions
     ! - Robin boundary conditions
     ! - Flux boundary conditions
+    ! - (Anti-)periodic boundary conditions
 !</description>
 
 !<input>
@@ -3555,7 +3556,8 @@ contains
         ! linear form and the bilinear form has no boundary term
           
       case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN,&
-            BDRC_FLUX, BDRC_DIRICHLET)
+            BDRC_FLUX, BDRC_DIRICHLET,&
+            BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           
         ! Initialize the bilinear form
         rform%itermCount = 1
@@ -3601,6 +3603,7 @@ contains
     ! - Dirichlet boundary conditions
     ! - Robin boundary conditions
     ! - Flux boundary conditions
+    ! - (Anti-)periodic boundary conditions
 !</description>
 
 !<input>
@@ -4062,6 +4065,7 @@ contains
     ! - Dirichlet boundary conditions
     ! - Robin boundary conditions
     ! - Flux boundary conditions
+    ! - (Anti-)periodic boundary conditions
 !</description>
 
 !<input>
@@ -4103,6 +4107,7 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondType
+    integer, dimension(:), pointer :: p_IbdrCompPeriodic
     integer :: ivelocitytype, velocityfield
     integer :: ibdc
 
@@ -4155,6 +4160,12 @@ contains
     call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
         p_IbdrCondType)
 
+    ! Set additional pointers for periodic boundary conditions
+    if (p_rboundaryCondition%bPeriodic) then
+      call storage_getbase_int(p_rboundaryCondition%h_IbdrCompPeriodic,&
+          p_IbdrCompPeriodic)
+    end if
+
     ! Loop over all boundary components
     do ibdc = 1, p_rboundaryCondition%iboundarycount
       
@@ -4174,16 +4185,26 @@ contains
         ! since the boundary integral vanishes by construction
         
       case (BDRC_INHOMNEUMANN, BDRC_ROBIN,&
-            BDRC_FLUX, BDRC_DIRICHLET)
+            BDRC_FLUX, BDRC_DIRICHLET,&
+            BDRC_PERIODIC, BDRC_ANTIPERIODIC)
         
         ! Initialize the linear form
         rform%itermCount = 1
         rform%Idescriptors(1) = DER_FUNC
         
+        ! Check if special treatment of mirror boundary condition is required
+        if ((iand(p_IbdrCondType(ibdc), BDRC_TYPEMASK) .eq. BDRC_PERIODIC) .or.&
+            (iand(p_IbdrCondType(ibdc), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
+
+          ! Prepare further quick access arrays of temporal collection
+          ! with mirror boundary component number
+          rcollectionTmp%IquickAccess(3) = p_IbdrCompPeriodic(ibdc)
+        end if
+
         ! Assemble the linear form
         call linf_buildVectorScalarBdr1d(rform, .false., rvector,&
-            fcoeff_buildVectorScBdr1D_sim, ibdc, rcollectionTmp)
-        
+            fcoeff_buildVectorScBdr1D_sim, ibdc, rcollectionTmp)     
+
       case default
         call output_line('Unsupported type of boundary copnditions !',&
             OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCond1D')
@@ -4215,6 +4236,7 @@ contains
     ! - Dirichlet boundary conditions
     ! - Robin boundary conditions
     ! - Flux boundary conditions
+    ! - (Anti-)periodic boundary conditions
 !</description>
 
 !<input>
@@ -4347,22 +4369,8 @@ contains
           ! since the boundary integral vanishes by construction
           
         case (BDRC_INHOMNEUMANN, BDRC_ROBIN,&
-              BDRC_FLUX, BDRC_DIRICHLET)
-                        
-          ! Initialize the linear form
-          rform%itermCount = 1
-          rform%Idescriptors(1) = DER_FUNC
-          
-          ! Create boundary segment
-          call bdrc_createRegion(p_rboundaryCondition, ibdc,&
-              isegment-p_IbdrCondCpIdx(ibdc)+1, rboundaryRegion)
-          
-          ! Assemble the linear form
-          call linf_buildVectorScalarBdr2d(rform, ccubTypeBdr,&
-              .false., rvector, fcoeff_buildVectorScBdr2D_sim,&
-              rboundaryRegion, rcollectionTmp)
-          
-        case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+              BDRC_FLUX, BDRC_DIRICHLET,&
+              BDRC_PERIODIC, BDRC_ANTIPERIODIC)
 
           ! Initialize the linear form
           rform%itermCount = 1
@@ -4381,7 +4389,7 @@ contains
                 p_IbdrCondPeriodic(isegment)-p_IbdrCondCpIdx(p_IbdrCompPeriodic(isegment))+1,&
                 rboundaryRegionMirror)
             
-            ! Attach boundary regin to temporal collection structure
+            ! Attach boundary region to temporal collection structure
             call collct_setvalue_bdreg(rcollectionTmp, 'rboundaryRegionMirror',&
                 rboundaryRegionMirror, .true.)
             
@@ -5493,8 +5501,9 @@ contains
       ! @FAQ2: Which type of velocity are we?
       select case(abs(ivelocitytype))
         
-      case (VELOCITY_ZERO)
-        ! zero velocity, do nothing (i.e. clear the source vector if required)
+      case (VELOCITY_ZERO, VELOCITY_BURGERS1D, VELOCITY_BURGERS2D, VELOCITY_BUCKLEV1D)
+        ! zero velocity, Burgers or Buckley-Leverett equation
+        ! do nothing (i.e. clear the source vector if required)
         if (bclear) call lsysbl_clearVector(rsource)
         
       case (VELOCITY_EXTERNAL,VELOCITY_CONSTANT,VELOCITY_TIMEDEP)
@@ -5618,8 +5627,9 @@ contains
       ! @FAQ2: Which type of velocity are we?
       select case(abs(ivelocitytype))
 
-      case (VELOCITY_ZERO)
-        ! zero velocity, do nothing (i.e. clear the source vector if required)
+      case (VELOCITY_ZERO, VELOCITY_BURGERS1D, VELOCITY_BUCKLEV1D)
+        ! zero velocity, 1D-Burgers or 1D-Buckley-Leverett equation
+        ! do nothing (i.e. clear the source vector if required)
         if (bclear) call lsysbl_clearVector(rsource)
 
       case (VELOCITY_EXTERNAL,VELOCITY_CONSTANT,VELOCITY_TIMEDEP)

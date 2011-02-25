@@ -407,7 +407,7 @@ contains
 #endif
 
       ! Set artificial diffusion to zero
-      DcoefficientsAtEdge(1,iedge) = 0
+      DcoefficientsAtEdge(1,iedge) = 0.0_DP
     end do
 
   end subroutine transp_calcMatGalConvP1d_sim
@@ -565,6 +565,9 @@ contains
     !   IquickAccess(2):     segment number
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for periodic boundary conditions
+    !   IquickAccess(3):     number of the mirror boundary component
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -713,7 +716,7 @@ contains
       if (associated(p_rvelocity)) then
 
         ! Allocate temporal memory
-        allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+        allocate(Daux(npointsPerElement,nelements,2))
         
         ! Evaluate the velocity field in the cubature points on the boundary
         ! and store the result in Daux(:,:,:,1)
@@ -746,7 +749,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity and impose Dirichlet boundary condition
             dnv = dnx * Daux(ipoint,iel,1)
@@ -780,7 +783,7 @@ contains
       if (associated(p_rvelocity)) then
         
         ! Allocate temporal memory
-        allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+        allocate(Daux(npointsPerElement,nelements,2))
         
         ! Evaluate the velocity field in the cubature points on the boundary
         ! and store the result in Daux(:,:,:,1)
@@ -813,7 +816,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
             dnv = dnx * Daux(ipoint,iel,1)
@@ -850,8 +853,51 @@ contains
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
       
-      print *, "Periodic boundary conditions in 1D are not implemented yet"
-      stop
+      if (associated(p_rvelocity)) then
+        
+        ! Allocate temporal memory
+        allocate(Daux(npointsPerElement,nelements,2))
+        
+        ! Evaluate the velocity field in the cubature points on the boundary
+        ! and store the result in Daux(:,:,:,1)
+        call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
+            p_rvelocity%RvectorBlock(1), Dpoints, &
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+        ! Evaluate the solution in the cubature points on the mirrored
+        ! boundary and store the result in Daux(:,:,2)
+        call doEvaluateAtBdr1d(DER_FUNC1D, npointsPerElement*nelements, Daux(:,:,2),&
+            p_rsolution%RvectorBlock(1), rcollection%IquickAccess(3))
+        
+        ! Multiply the velocity vector with the normal in each point
+        ! to get the normal velocity.
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            
+            ! Compute the normal velocity
+            dnv = dnx * Daux(ipoint,iel,1)
+            
+            ! Check if we are at the primal inflow boundary
+            if (dnv .lt. 0.0_DP) then
+              Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
+            else
+              Dcoefficients(1,ipoint,iel) = 0.0_DP
+            end if
+          end do
+        end do
+        
+        ! Deallocate temporal memory
+        deallocate(Daux)
+
+      else
+        
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+        
+      end if
 
       
     case default
@@ -860,6 +906,28 @@ contains
       call sys_halt()
       
     end select
+
+  contains
+
+    ! Here come the working routines
+
+    !***************************************************************************
+    ! Evaluate th solution vector at some boundary points given in
+    ! terms of their parameter values. This ugly trick is necessary
+    ! since we have to pass the 2d-array Dvalues and DpointsPar to a
+    ! subroutine which accepts only 1d-arrays.
+    ! ***************************************************************************
+    
+    subroutine doEvaluateAtBdr1d(iderType, n, Dvalues, rvectorScalar, ibdc)
+      
+      integer, intent(in) :: iderType,ibdc,n
+      type(t_vectorScalar), intent(in) :: rvectorScalar
+      
+      real(DP), dimension(n), intent(out) :: Dvalues
+
+      call fevl_evaluateBdr1D(iderType, Dvalues, rvectorScalar, ibdc)
+      
+    end subroutine doEvaluateAtBdr1d
 
   end subroutine transp_coeffVecBdrConvP1d_sim
 
@@ -935,6 +1003,9 @@ contains
     !   IquickAccess(2):     segment number
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for periodic boundary conditions
+    !   IquickAccess(3):     number of the mirror boundary component
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -1116,7 +1187,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity and impose Dirichlet boundary condition
             dnv = dnx * Daux(ipoint,iel,1)
@@ -1183,13 +1254,13 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
             dnv = dnx * Daux(ipoint,iel,1)
             
             ! Check if we are at the dual inflow boundary
-            if (dnv .gt. SYS_EPSREAL) then
+            if (dnv .gt. 0.0_DP) then
               Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,2)
             else
               Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -1220,9 +1291,51 @@ contains
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
 
-      print *, "Periodic boundary conditions in 1D are not implemented yet"
-      stop
+      if (associated(p_rvelocity)) then
+        
+        ! Allocate temporal memory
+        allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+        
+        ! Evaluate the velocity field in the cubature points on the boundary
+        ! and store the result in Daux(:,:,:,1)
+        call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
+            p_rvelocity%RvectorBlock(1), Dpoints, &
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
+        ! Evaluate the solution in the cubature points on the mirrored
+        ! boundary and store the result in Daux(:,:,2)
+        call doEvaluateAtBdr1d(DER_FUNC1D, npointsPerElement*nelements, Daux(:,:,2),&
+            p_rsolution%RvectorBlock(1), rcollection%IquickAccess(3))
+        
+        ! Multiply the velocity vector with the normal in each point
+        ! to get the normal velocity.
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            
+            ! Compute the normal velocity
+            dnv = dnx * Daux(ipoint,iel,1)
+            
+            ! Check if we are at the dual inflow boundary
+            if (dnv .gt. 0.0_DP) then
+              Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,2)
+            else
+              Dcoefficients(1,ipoint,iel) = 0.0_DP
+            end if
+          end do
+        end do
+        
+        ! Deallocate temporal memory
+        deallocate(Daux)
+
+      else
+        
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+        
+      end if
 
     case default
       call output_line('Invalid type of boundary conditions!',&
@@ -1230,6 +1343,28 @@ contains
       call sys_halt()
       
     end select
+
+  contains
+
+    ! Here come the working routines
+
+    !***************************************************************************
+    ! Evaluate th solution vector at some boundary points given in
+    ! terms of their parameter values. This ugly trick is necessary
+    ! since we have to pass the 2d-array Dvalues and DpointsPar to a
+    ! subroutine which accepts only 1d-arrays.
+    ! ***************************************************************************
+    
+    subroutine doEvaluateAtBdr1d(iderType, n, Dvalues, rvectorScalar, ibdc)
+      
+      integer, intent(in) :: iderType,ibdc,n
+      type(t_vectorScalar), intent(in) :: rvectorScalar
+      
+      real(DP), dimension(n), intent(out) :: Dvalues
+
+      call fevl_evaluateBdr1D(iderType, Dvalues, rvectorScalar, ibdc)
+      
+    end subroutine doEvaluateAtBdr1d
     
   end subroutine transp_coeffVecBdrConvD1d_sim
 
@@ -1374,7 +1509,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
             dnv = dnx * Daux(ipoint,iel,1)
@@ -1420,7 +1555,7 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrConvP1d_sim')
 
       
-    case(BDRC_FLUX)
+    case(BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s at the outlet)
       ! Assemble the convective part of the boundary integral at the outflow
@@ -1440,7 +1575,7 @@ contains
         do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1)
@@ -1608,7 +1743,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
             dnv = dnx * Daux(ipoint,iel,1)
@@ -1654,7 +1789,7 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrConvD1d_sim')
       
 
-    case(BDRC_FLUX)
+    case(BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s at the outlet)
 
@@ -1679,7 +1814,7 @@ contains
           dnv = dnx * Daux(ipoint,iel,1)
 
           ! Check if we are at the dual outflow boundary
-          if (dnv .lt. -SYS_EPSREAL) then
+          if (dnv .lt. 0.0_DP) then
             Dcoefficients(1,ipoint,iel) = dscale * dnv
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -1842,7 +1977,7 @@ contains
 #endif
 
       ! Set artificial diffusion to zero
-      DcoefficientsAtEdge(1,iedge) = 0
+      DcoefficientsAtEdge(1,iedge) = 0.0_DP
     end do
     
   end subroutine transp_calcMatGalConvD1d_sim
@@ -1977,11 +2112,11 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficients  $k_{ii} = 0.5*u_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          0.5*DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)
+          0.5_DP*DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)
 #else
       ! Compute convective coefficients  $k_{ii} = -0.5*u_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          0.5*DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)
+          0.5_DP*DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)
 #endif
     end do
     
@@ -2053,7 +2188,7 @@ contains
 #endif
       
       ! Set artificial diffusion to zero
-      DcoefficientsAtEdge(1,iedge) = 0
+      DcoefficientsAtEdge(1,iedge) = 0.0_DP
     end do
 
   end subroutine transp_calcMatGalBurgP1d_sim
@@ -2118,15 +2253,19 @@ contains
       ! Compute convective coefficient  $k_{ij} = -0.5*u_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           0.5_DP*DdataAtEdge(2,iedge)*DmatrixCoeffsAtEdge(1,1,iedge)
-          
+.          
       ! Compute convective coefficient  $k_{ji} = -0.5*u_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           0.5_DP*DdataAtEdge(1,iedge)*DmatrixCoeffsAtEdge(1,2,iedge)
 #endif
       
-      ! Compute artificial diffusion coefficient $d_{ij} = \max\{abs(k_{ij}),abs(k_{ji})\}$
+      ! Compute artificial diffusion coefficient 
+      ! $d_{ij} = \max\{abs(v_{ij}*0.5*(c_{ij}-c_{ji})\}$,
+      ! where $v_{ij} = 0.5*(f(u_j)-f(u_i))/(u_j-u_i) = 0.5*(u_i+u_j)$
       DcoefficientsAtEdge(1,iedge) =&
-          max(abs(DcoefficientsAtEdge(2,iedge)), abs(DcoefficientsAtEdge(3,iedge)))
+          abs(0.25_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
+              (DmatrixCoeffsAtEdge(1,1,iedge)-DmatrixCoeffsAtEdge(1,2,iedge)))
+
     end do
 
   end subroutine transp_calcMatUpwBurgP1d_sim
@@ -2203,6 +2342,9 @@ contains
     !   IquickAccess(2):     segment number
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for periodic boundary conditions
+    !   IquickAccess(3):     number of the mirror boundary component
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -2282,7 +2424,7 @@ contains
       !
       ! $$ d\nabla u\cdot{\bf n}=0 $$
       !
-      ! The convective part is included into the bilinear form (if any).
+      ! The convective part is included into the bilinear form.
 
       ! Initialize values
       Dvalue = 0.0_DP
@@ -2378,7 +2520,7 @@ contains
           dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = dnx * 0.5*Daux(ipoint,iel,1)
+          dnv = dnx * 0.5_DP*Daux(ipoint,iel,1)
           Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,1)
         end do
       end do
@@ -2394,7 +2536,7 @@ contains
       ! Evaluate coefficient for both the convective and diffusive
       ! part for the linear form at the inflow boundary part.
       !
-      ! $$ -([0.5*u]*u-d\nabla u)\cdot{\bf n} = -([0.5*g]g)\cdot{\bf n} $$
+      ! $$ -([0.5*u]*u-d\nabla u)\cdot{\bf n} = -([0.5*g]*g)\cdot{\bf n} $$
       !
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
@@ -2402,7 +2544,7 @@ contains
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 2))
 
-      ! Evaluate the velocity field in the cubature points on the boundary
+      ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
       call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
           p_rsolution%RvectorBlock(1), Dpoints, &
@@ -2436,7 +2578,7 @@ contains
           dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
 
           ! Compute the normal velocity
-          dnv = dnx * 0.5*Daux(ipoint,iel,1)
+          dnv = dnx * 0.5_DP*Daux(ipoint,iel,1)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
@@ -2446,10 +2588,60 @@ contains
           end if
         end do
       end do
-
+      
       ! Deallocate temporal memory
       deallocate(Daux)
 
+
+    case(BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+      !-------------------------------------------------------------------------
+      ! Periodic/Antiperiodic boundary conditions (Flux boundary conditions):
+      !
+      ! Evaluate coefficient for both the convective and diffusive
+      ! part for the linear form at the inflow boundary part.
+      !
+      ! $$ -([0.5*u]*u-d\nabla u)\cdot{\bf n} = -([0.5*g]*g)\cdot{\bf n} $$
+      !
+      ! The boundary integral at the outflow boundary is included
+      ! into the bilinear form.
+      
+      ! Allocate temporal memory
+      allocate(Daux(npointsPerElement,nelements,2))
+      
+      ! Evaluate the solution in the cubature points on the boundary
+      ! and store the result in Daux(:,:,:,1)
+      call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
+          p_rsolution%RvectorBlock(1), Dpoints, &
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+      
+      ! Evaluate the solution in the cubature points on the mirrored
+      ! boundary and store the result in Daux(:,:,2)
+      call doEvaluateAtBdr1d(DER_FUNC1D, npointsPerElement*nelements, Daux(:,:,2),&
+          p_rsolution%RvectorBlock(1), rcollection%IquickAccess(3))
+      
+      ! Multiply the velocity vector [0.5*u] with the normal in each
+      ! point to get the normal velocity.
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+          
+          ! Get the normal vector in the point from the boundary
+          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+          
+          ! Compute the normal velocity
+          dnv = dnx * 0.5_DP*(Daux(ipoint,iel,1)+Daux(ipoint,iel,2))
+          
+          ! Check if we are at the primal inflow boundary
+          if (dnv .lt. 0.0_DP) then
+            Dcoefficients(1,ipoint,iel) = -dscale * dnx*0.5_DP*Daux(ipoint,iel,2)**2
+          else
+            Dcoefficients(1,ipoint,iel) = 0.0_DP
+          end if
+        end do
+      end do
+      
+      ! Deallocate temporal memory
+      deallocate(Daux)
+      
       
     case default
       call output_line('Invalid type of boundary conditions!',&
@@ -2458,6 +2650,28 @@ contains
       
     end select
 
+  contains
+
+    ! Here come the working routines
+
+    !***************************************************************************
+    ! Evaluate th solution vector at some boundary points given in
+    ! terms of their parameter values. This ugly trick is necessary
+    ! since we have to pass the 2d-array Dvalues and DpointsPar to a
+    ! subroutine which accepts only 1d-arrays.
+    ! ***************************************************************************
+    
+    subroutine doEvaluateAtBdr1d(iderType, n, Dvalues, rvectorScalar, ibdc)
+      
+      integer, intent(in) :: iderType,ibdc,n
+      type(t_vectorScalar), intent(in) :: rvectorScalar
+      
+      real(DP), dimension(n), intent(out) :: Dvalues
+
+      call fevl_evaluateBdr1D(iderType, Dvalues, rvectorScalar, ibdc)
+      
+    end subroutine doEvaluateAtBdr1d
+    
   end subroutine transp_coeffVecBdrBurgP1d_sim
 
   !*****************************************************************************
@@ -2585,7 +2799,7 @@ contains
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
       
-      ! Evaluate the velocity field in the cubature points on the boundary
+      ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1)
       call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
           p_rsolution%RvectorBlock(1), Dpoints,&
@@ -2600,7 +2814,7 @@ contains
           dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity
-          dnv = dnx * 0.5*Daux(ipoint,iel,1)
+          dnv = dnx * 0.5_DP*Daux(ipoint,iel,1)
           
           ! Scale normal velocity by scaling parameter
           Dcoefficients(1,ipoint,iel) = -dscale * dnv
@@ -2636,7 +2850,7 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrBurgP1d_sim')
 
       
-    case(BDRC_FLUX)
+    case(BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s at the outlet)
       ! Assemble the convective part of the boundary integral at the outflow
@@ -2659,7 +2873,7 @@ contains
             dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity
-          dnv = dnx * 0.5*Daux(ipoint,iel,1)
+          dnv = dnx * 0.5_DP*Daux(ipoint,iel,1)
 
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
@@ -2736,13 +2950,15 @@ contains
       ui = DdataAtNode(inode)
 
 #ifdef TRANSP_USE_IBP
-      ! Compute convective coefficient  $k_{ii} = a_i*C_{ii}$
+      ! Compute convective coefficient  $k_{ii} = a_i*C_{ii}$,
+      ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
       DcoefficientsAtNode(1,inode) = dscale*&
-          ui/(ui**2+0.5*(1-ui)**2)*DmatrixCoeffsAtNode(1,inode)
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtNode(1,inode)
 #else
-      ! Compute convective coefficient  $k_{ii} = -a_i*C_{ii}$
+      ! Compute convective coefficient  $k_{ii} = -a_i*C_{ii}$,
+      ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          ui/(ui**2+0.5*(1-ui)**2)*DmatrixCoeffsAtNode(1,inode)
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtNode(1,inode)
 #endif
 
     end do
@@ -2802,25 +3018,29 @@ contains
       ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
 
 #ifdef TRANSP_USE_IBP
-      ! Compute convective coefficient  $k_{ij} = a_j*C_{ji}$
+      ! Compute convective coefficient  $k_{ij} = a_j*C_{ji}$,
+      ! where $a_j=u_j/(u_^2+0.5*(1-u_j)^2)$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          uj/(uj**2+0.5*(1-uj)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
+          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DmatrixCoeffsAtEdge(1,2,iedge)
 
-      ! Compute convective coefficient  $k_{ji} = a_i*C_{ij}$
+      ! Compute convective coefficient  $k_{ji} = a_i*C_{ij}$,
+      ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          ui/(ui**2+0.5*(1-ui)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtEdge(1,1,iedge)
 #else
-      ! Compute convective coefficient  $k_{ij} = -a_j*C_{ij}$
+      ! Compute convective coefficient  $k_{ij} = -a_j*C_{ij}$,
+      ! where $a_j=u_j/(u_j^2+0.5*(1-u_j)^2)$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          uj/(uj**2+0.5*(1-uj)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
+          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DmatrixCoeffsAtEdge(1,1,iedge)
 
-      ! Compute convective coefficient  $k_{ji} = -a_i*C_{ji}$
+      ! Compute convective coefficient  $k_{ji} = -a_i*C_{ji}$,
+      ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          ui/(ui**2+0.5*(1-ui)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtEdge(1,2,iedge)
 #endif
 
       ! Set artificial diffusion to zero
-      DcoefficientsAtEdge(1,iedge) = 0
+      DcoefficientsAtEdge(1,iedge) = 0.0_DP
     end do
     
   end subroutine transp_calcMatGalBLevP1d_sim
@@ -2872,7 +3092,7 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP) :: ui,uj
+    real(DP) :: ui,uj,vij
     integer :: iedge
     
     do iedge = 1, nedges
@@ -2880,26 +3100,39 @@ contains
       ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
 
 #ifdef TRANSP_USE_IBP
-      ! Compute convective coefficient  $k_{ij} = a_j*C_{ji}$
+      ! Compute convective coefficient  $k_{ij} = a_j*C_{ji}$,
+      ! where $a_j=u_j/(u_^2+0.5*(1-u_j)^2)$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          uj/(uj**2+0.5*(1-uj)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
+          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DmatrixCoeffsAtEdge(1,2,iedge)
 
-      ! Compute convective coefficient  $k_{ji} = a_i*C_{ij}$
+      ! Compute convective coefficient  $k_{ji} = a_i*C_{ij}$,
+      ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          ui/(ui**2+0.5*(1-ui)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtEdge(1,1,iedge)
 #else
-      ! Compute convective coefficient  $k_{ij} = -a_j*C_{ij}$
+      ! Compute convective coefficient  $k_{ij} = -a_j*C_{ij}$,
+      ! where $a_j=u_j/(u_j^2+0.5*(1-u_j)^2)$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          uj/(uj**2+0.5*(1-uj)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
+          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DmatrixCoeffsAtEdge(1,1,iedge)
 
-      ! Compute convective coefficient  $k_{ji} = -a_i*C_{ji}$
+      ! Compute convective coefficient  $k_{ji} = -a_i*C_{ji}$,
+      ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          ui/(ui**2+0.5*(1-ui)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtEdge(1,2,iedge)
 #endif
 
-      ! Compute artificial diffusion coefficient $d_{ij} = \max\{abs(k_{ij}),abs(k_{ji})\}$
+      ! Calculate the characteristic speed
+      if (abs(ui-uj) .gt. SYS_EPSREAL) then
+        vij = (uj*uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))&
+              -ui*ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui)))/(uj-ui)
+      else
+        vij = ui*(1.0_DP-ui)/(ui*ui-0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))**2
+      end if
+
+      ! Compute artificial diffusion coefficient 
+      ! $d_{ij} = \max\{abs(0.5*v_{ij}*(c_{ij}-c_{ji})\}$      
       DcoefficientsAtEdge(1,iedge) =&
-          max(abs(DcoefficientsAtEdge(2,iedge)), abs(DcoefficientsAtEdge(3,iedge)))
+          abs(0.5_DP*vij*(DmatrixCoeffsAtEdge(1,1,iedge)-DmatrixCoeffsAtEdge(1,2,iedge)))
     end do
     
   end subroutine transp_calcMatUpwBLevP1d_sim
@@ -3156,7 +3389,7 @@ contains
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
           dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                      + 0.5*(1-Daux(ipoint,iel,1))**2)
+                      + 0.5_DP*(1-Daux(ipoint,iel,1))**2)
           Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,1)
         end do
       end do
@@ -3217,13 +3450,13 @@ contains
 
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                      + 0.5*(1-Daux(ipoint,iel,1))**2)
+                      + 0.5_DP*(1-Daux(ipoint,iel,1))**2)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
             ! Compute the prescribed normal velocity
             dnv = dnx * Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2&
-                        + 0.5*(1-Daux(ipoint,iel,2))**2)
+                        + 0.5_DP*(1-Daux(ipoint,iel,2))**2)
             Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -3385,7 +3618,7 @@ contains
           
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                      + 0.5*(1-Daux(ipoint,iel,1))**2)
+                      + 0.5_DP*(1-Daux(ipoint,iel,1))**2)
           
           ! Scale normal velocity by scaling parameter
           Dcoefficients(1,ipoint,iel) = -dscale * dnv
@@ -3445,7 +3678,7 @@ contains
           
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                      + 0.5*(1-Daux(ipoint,iel,1))**2)  
+                      + 0.5_DP*(1-Daux(ipoint,iel,1))**2)  
 
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then

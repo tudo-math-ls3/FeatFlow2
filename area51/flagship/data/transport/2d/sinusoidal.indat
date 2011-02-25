@@ -19,8 +19,9 @@ deffunc: @exactsol = SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t)) ; x,y,z,t
 deffunc: @velocity_x = 1.0 ; x,y,z,t
 deffunc: @velocity_y = 1.0 ; x,y,z,t
 
-# Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
+# Specify the boundary conditions for the primal problem:
+# This boundary conditions realises time-dependent flux boundary conditions
+[bdrcond1_strong_primal]
 NBCT
 1
 NEXPR
@@ -33,8 +34,11 @@ PARAMETERS
 2.0  T  'DIRICHLET_STRONG'   SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t))
 4.0  F  'HOMNEUMANN_STRONG'
 
-# Specify the boundary conditions for the primal problem
-[bdrcond_weak_primal]
+
+
+# Specify the boundary conditions for the primal problem:
+# This boundary conditions realises time-dependent flux boundary conditions
+[bdrcond1_weak_primal]
 NBCT
 1
 NEXPR
@@ -46,3 +50,20 @@ NCOMP
 PARAMETERS
 2.0  T  'FLUX_WEAK'  SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t))
 4.0  F  'FLUX_WEAK'  0.0
+
+# Specify the boundary conditions for the primal problem:
+# This boundary conditions realises periodic boundary conditions
+[bdrcond2_weak_primal]
+NBCT
+1
+NEXPR
+1
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+1.0  T  'PERIODIC_WEAK'  1  3
+2.0  T  'PERIODIC_WEAK'  1  4
+3.0  T  'PERIODIC_WEAK'  1  1
+4.0  T  'PERIODIC_WEAK'  1  2
