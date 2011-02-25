@@ -24,10 +24,13 @@
 !# 4.) fevl_getVectorMagnitude
 !#     -> Calculate the maximum norm of a given FEM vector field.
 !#
-!# 5.) fevl_evaluateBdr2d
+!# 5.) fevl_evaluateBdr1d
+!#     -> Evaluate a FE funtion in the unique boundary point in 1D.
+!#
+!# 6.) fevl_evaluateBdr2d
 !#     -> Evaluate a FE funtion in an arbitrary set of points on the
 !#        boundary in 2D. Determines automatically the elements that
-!#        contain the points
+!#        contain the points.
 !#
 !# </purpose>
 !##############################################################################
@@ -86,8 +89,8 @@ module feevaluation
     module procedure fevl_evaluate2
   end interface
   
-  ! There are two functions fevl_evaluate_mult which do the same -- with
-  ! different calling conventions and different complexities.
+  ! There are multiple functions fevl_evaluate_mult which do the same --
+  ! with different calling conventions and different complexities.
   interface fevl_evaluate_mult
     module procedure fevl_evaluate_mult1
     module procedure fevl_evaluate_mult2
@@ -97,8 +100,8 @@ module feevaluation
   public :: fevl_evaluate_mult1
   public :: fevl_evaluate_mult2
 
-  ! There are two functions fevl_evaluate_sim which do the same -- with
-  ! different calling conventions and different complexities.
+  ! There are multiple functions fevl_evaluate_sim which do the same --
+  ! with different calling conventions and different complexities.
   interface fevl_evaluate_sim
     module procedure fevl_evaluate_sim1
     module procedure fevl_evaluate_sim2
@@ -115,8 +118,23 @@ module feevaluation
   public :: fevl_evaluate_sim4
   public :: fevl_evaluate_sim5
 
-  ! There are two functions fevl_evaluateBdr2d which do the same -- with
-  ! different calling conventions and different complexities.
+  ! There are multiple functions fevl_evaluateBdr1d which do the same --
+  ! with different calling conventions and different complexities.
+  interface fevl_evaluateBdr1d
+    module procedure fevl_evaluateBdr1d1
+    module procedure fevl_evaluateBdr1d2
+    module procedure fevl_evaluateBdr1d3
+    module procedure fevl_evaluateBdr1d4
+  end interface
+
+  public :: fevl_evaluateBdr1d
+  public :: fevl_evaluateBdr1d1
+  public :: fevl_evaluateBdr1d2
+  public :: fevl_evaluateBdr1d3
+  public :: fevl_evaluateBdr1d4
+
+  ! There are multiple functions fevl_evaluateBdr2d which do the same --
+  ! with different calling conventions and different complexities.
   interface fevl_evaluateBdr2d
     module procedure fevl_evaluateBdr2d1
     module procedure fevl_evaluateBdr2d2
@@ -625,7 +643,7 @@ contains
     Bder = .false.
     do ider = 1, size(CderType)
       Bder(CderType(ider)) = .true.
-    enddo
+    end do
 
     cnonmesh = FEVL_NONMESHPTS_NONE
     if (present(cnonmeshPoints)) then
@@ -748,8 +766,8 @@ contains
                             * Dbas(ibas,CderType(ider))
             end do
             Dvalues(iblock, ider, ipoint) = dval
-          enddo
-        enddo
+          end do
+        end do
       else if (rvectorBlock%cdataType .eq. ST_SINGLE) then
         do ider = 1,size(CderType)
           do iblock = iblMin,iblMax
@@ -759,8 +777,8 @@ contains
                             * Dbas(ibas,CderType(ider))
             end do
             Dvalues(iblock, ider, ipoint) = dval
-          enddo
-        enddo
+          end do
+        end do
       end if
 
     end do ! ipoint
@@ -2593,6 +2611,690 @@ contains
 
 !<subroutine>
 
+  subroutine fevl_evaluateBdr1d1 (iderType, Dvalues, rvectorScalar, ibdc)
+
+!<description>
+  ! This is the most general (and completely slowest) finite element
+  ! evaluation routine. It allows to evaluate a general (scalar) FE
+  ! function specified by rvectorScalar at the unique boundary
+  ! point. The values of the FE function are written into Dvalues. The
+  ! routine is called via the interface fevl_evaluatBdr1d(...).
+!</description>
+
+!<input>
+  ! Type of function value to evaluate. One of the DER_xxxx constants,
+  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+  integer, intent(in) :: iderType
+
+  ! The scalar solution vector that is to be evaluated.
+  type(t_vectorScalar), intent(in) :: rvectorScalar
+  
+  ! Number of the boundary component
+  integer, intent(in) :: ibdc
+!</input>
+
+!<output>
+  ! Values of the FE function at the points specified by DpointsPar.
+  real(DP), dimension(:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialdiscretisation), pointer :: p_rspatialDiscr
+    integer, dimension(:), pointer :: IelementList, IelementOrientation
+    integer :: NELbdc
+
+    ! The vector must provide a discretisation structure
+    if (associated(rvectorScalar%p_rspatialDiscr)) then
+      p_rspatialDiscr => rvectorScalar%p_rspatialDiscr
+    else
+      call output_line('Vector does not provide discretisation structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr1d1')
+      call sys_halt()
+    end if
+    
+    ! The discretisation must provide a triangulation structure
+    if (associated(p_rspatialDiscr%p_rtriangulation)) then
+      p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+    else
+      call output_line('Discretisation does not provide triangulation structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr1d1')
+      call sys_halt()
+    end if
+
+    ! Get number of elements at boundary component
+    NELbdc = bdraux_getNELAtBdrComp(ibdc, p_rtriangulation)
+
+    ! Allocate temporal memory
+    allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+
+    ! Get list of elements at boundary region
+    call bdraux_getElementsAtBdrComp(ibdc, p_rspatialDiscr, NELbdc,&
+        IelementList, IelementOrientation)
+    
+    ! Call FE-evaluation routine
+    call fevl_evaluateBdr1d2(iderType, Dvalues, rvectorScalar,&
+        IelementList, IelementOrientation)
+    
+    ! Deallocate temporal memory
+    deallocate(IelementList, IelementOrientation)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_evaluateBdr1d2 (iderType, Dvalues, rvectorScalar, &
+      IelementList, IelementOrientation)
+
+!<description>
+  ! This is the most general (and completely slowest) finite element
+  ! evaluation routine. It allows to evaluate a general (scalar) FE
+  ! function specified by rvectorScalar in the unique boundary
+  ! point. The values of the FE function are written into Dvalues. The
+  ! routine is called via the interface fevl_evaluatBdr1d(...).
+!</description>
+
+!<input>
+  ! Type of function value to evaluate. One of the DER_xxxx constants,
+  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+  integer, intent(in) :: iderType
+
+  ! The scalar solution vector that is to be evaluated.
+  type(t_vectorScalar), intent(in) :: rvectorScalar
+  
+  ! A list of elements adjacent to the boundary
+  ! containing the points DpointsPar.
+  integer, dimension(:), intent(in) :: IelementList
+
+  ! The orientation of elements adjacent to the boundary region
+  integer, dimension(:), intent(in) :: IelementOrientation
+!</input>
+
+!<output>
+  ! Values of the FE function at the points specified by DpointsPar.
+  real(DP), dimension(:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: icoordSystem
+    integer :: indof,nve,ibas
+    integer(I32) :: celement
+    integer :: iel,idx,ivar
+    integer, dimension(:), pointer :: p_IelementDistr
+    logical, dimension(EL_MAXNDER) :: Bder
+    real(DP), dimension(NDIM1D+2) :: DpointRef
+    real(DP) :: dval
+    
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+    
+    ! Transformation
+    integer(I32) :: ctrafoType
+        
+    ! Values of basis functions and DOF`s
+    real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
+    integer, dimension(EL_MAXNBAS) :: Idofs
+    
+    ! List of element distributions in the discretisation structure
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
+
+    ! Evaluation structure and tag
+    type(t_evalElement) :: revalElement
+    integer(I32) :: cevaluationTag
+
+    ! Ok, slow but general.
+    
+    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
+
+    ! For uniform discretisations, we get the element type in advance...
+    if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      
+      ! Element type
+      celement = rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement
+      
+      ! Get the number of local DOF`s for trial and test functions
+      indof = elem_igetNDofLoc(celement)
+      
+      ! Number of vertices on the element
+      nve = elem_igetNVE(celement)
+      
+      ! Type of transformation from/to the reference element
+      ctrafoType = elem_igetTrafoType(celement)
+      
+      ! Get the element evaluation tag; necessary for the preparation of the element
+      cevaluationTag = elem_getEvaluationTag(celement)
+
+      ! Type of coordinate system
+      icoordSystem = elem_igetCoordSystem(celement)
+      
+      nullify(p_IelementDistr)
+    else
+      call storage_getbase_int (&
+          rvectorScalar%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+    end if
+
+    ! Get the data vector
+    select case (rvectorScalar%cdataType)
+    case (ST_DOUBLE) 
+      call lsyssc_getbase_double(rvectorScalar,p_Ddata)
+    case (ST_SINGLE)
+      call lsyssc_getbase_single(rvectorScalar,p_Fdata)
+    case DEFAULT
+      call output_line ('Unsupported vector precision!',&
+          OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluateBdr1d2')
+      call sys_halt()
+    end select
+
+    ! What to evaluate?
+    Bder = .false.
+    Bder(iderType) = .true.
+
+    ! We loop over all elements.
+    do idx = 1, size(IelementList)
+
+      ! Get element number
+      iel = IelementList(idx)
+
+      ! Get the type of the element iel
+      if (associated(p_IelementDistr)) then
+        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+        
+        ! Get the number of local DOF`s for trial and test functions
+        indof = elem_igetNDofLoc(celement)
+        
+        ! Number of vertices on the element
+        nve = elem_igetNVE(celement)
+        
+        ! Type of transformation from/to the reference element
+        ctrafoType = elem_igetTrafoType(celement)
+        
+        ! Get the element evaluation tag; necessary for the preparation of the element
+        cevaluationTag = elem_getEvaluationTag(celement)
+
+        ! Type of coordinate system
+        icoordSystem = elem_igetCoordSystem(celement)
+      end if
+
+      ! Calculate the global DOF`s on that element into IdofsTest.
+      call dof_locGlobMapping (rvectorScalar%p_rspatialDiscr, iel, Idofs)
+      
+      ! Compute coordinate of cubature point on reference element
+      if (IelementOrientation(idx) .eq. 1) then
+        DpointRef = -1.0
+      else
+        DpointRef = 1.0
+      end if
+
+      ! Now calculate everything else what is necessary for the element    
+      call elprep_prepareForEvaluation (revalElement, &
+          cevaluationTag, rvectorScalar%p_rspatialDiscr%p_rtriangulation,&
+          iel, ctrafoType, DpointRef=DpointRef)
+      
+      ! Call the element to calculate the values of the basis functions
+      ! in the point.
+      call elem_generic2 (celement, revalElement, Bder, Dbas)
+
+      ! Combine the basis functions to get the function value.
+      if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
+      
+        ! Check if vector is stored in interleaved format
+        if (rvectorScalar%NVAR .eq. 1) then
+
+          ! Now that we have the basis functions, we want to have the
+          ! function values.  We get them by multiplying the
+          ! FE-coefficients with the values of the basis functions and
+          ! summing up.
+
+          dval = 0.0_DP
+          
+          ! Calculate the value in the point
+          do ibas = 1,indof
+            dval = dval + p_Ddata(Idofs(ibas)) * Dbas(ibas,iderType)
+          end do
+
+          ! Save the value in the point
+          Dvalues(idx) = dval
+
+        else
+          
+          do ivar = 1, rvectorScalar%NVAR
+            ! Now that we have the basis functions, we want to have the
+            ! function values.  We get them by multiplying the
+            ! FE-coefficients with the values of the basis functions and
+            ! summing up.
+            
+            dval = 0.0_DP
+            
+            ! Calculate the value in the point
+            do ibas = 1,indof
+              dval = dval + p_Ddata((Idofs(ibas)-1)*rvectorScalar%NVAR+ivar) *&
+                            Dbas(ibas,iderType)
+            end do
+            
+            ! Save the value in the point
+            Dvalues((idx-1)*rvectorScalar%NVAR+ivar) = dval
+          end do
+
+        end if
+      
+      else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
+      
+        ! Check if vector is stored in interleaved format
+        if (rvectorScalar%NVAR .eq. 1) then
+          
+          ! Now that we have the basis functions, we want to have the
+          ! function values.  We get them by multiplying the
+          ! FE-coefficients with the values of the basis functions and
+          ! summing up.
+
+          dval = 0.0_DP
+          
+          ! Calculate the value in the point
+          do ibas = 1,indof
+            dval = dval + p_Fdata(Idofs(ibas)) * Dbas(ibas,iderType)
+          end do
+
+          ! Save the value in the point
+          Dvalues(idx) = dval
+
+        else
+
+          do ivar = 1, rvectorScalar%NVAR
+            ! Now that we have the basis functions, we want to have the
+            ! function values.  We get them by multiplying the
+            ! FE-coefficients with the values of the basis functions and
+            ! summing up.
+            
+            dval = 0.0_DP
+            
+            ! Calculate the value in the point
+            do ibas = 1,indof
+              dval = dval + p_Fdata((Idofs(ibas)-1)*rvectorScalar%NVAR+ivar) *&
+                            Dbas(ibas,iderType)
+            end do
+            
+            ! Save the value in the point
+            Dvalues((idx-1)*rvectorScalar%NVAR+ivar) = dval
+          end do
+
+        end if
+        
+      end if
+
+    end do ! idx
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_evaluateBdr1d3 (CderType, Dvalues, rvectorBlock, ibdc,&
+      iblockMin, iblockMax)
+
+!<description>
+  ! This subroutine is an extension of fevl_evaluateBdr1d1(). It
+  ! simultaneously evaluates several types of function values (given
+  ! by CderType) for all components of a multivariate FE function
+  ! (given by rvectorBlock) in the unique boundary point. Thus, the
+  ! evaluation of all the element basis functions etc. has to be
+  ! performed only once. The routine is called via the interface
+  ! fevl_evaluateBdr1D(...).
+  ! E.g., instead of,
+  !
+  !   real(DP), dimension(nblocks,npoints) :: Dvalues
+  !   call fevl_evaluateBdr1d(DER_FUNC, Dvalues(1,:), rsol%RvectorBlock(1), ibdc)
+  !   call fevl_evaluateBdr1d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), ibdc) 
+  !   call fevl_evaluateBdr1d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), ibdc) 
+  !   call fevl_evaluateBdr1d(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), ibdc)
+  !   call fevl_evaluateBdr1d(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), ibdc)
+  !   call fevl_evaluateBdr1d(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), ibdc)
+  !
+  ! one can use
+  !
+  !   integer, dimension(3) :: CderType = (/DER_FUNC, DER_DERIV_X, DER_DERIV_Y/)
+  !   real(DP), dimension(nblocks,3,npoints) :: Dvalues
+  !   call fevl_evaluateBdr1d(CderType, Dvalues, rsol, ibdc)
+  !
+!</description>
+
+!<input>
+  ! array of type of function values to evaluate (DER_FUNC, DER_DERIV_X etc.)
+  integer, dimension(:), intent(in) :: CderType
+
+  ! block solution vector representing the FE function that is to be evaluated
+  ! It is assumed that all components correspond to the same spatial discretisation and
+  ! use the same element type (i.e., only that of the first component is inquired)
+  type(t_vectorBlock), intent(in) :: rvectorBlock
+    
+  ! Number of the boundary component
+  integer, intent(in) :: ibdc
+
+  ! OPTIONAL: For the case that not all components of the vector are to be processed, the
+  ! user can provide these two parameters so that only the components from iblockMin to
+  ! iblockMax are processed. This can be necessary, e.g., in case of a saddle point
+  ! problem where the last component of the solution vector (=pressure) is discretised
+  ! in a different way than the first components (=velocity/displacement).
+  ! If iblockMin (iblockMax) is not present, the minimal (maximal) block number is
+  ! assumed to be 1 (rvectorBlock%nblocks).
+  integer, intent(in), optional :: iblockMin, iblockMax
+!</input>
+
+!<output>
+  ! values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(rvectorBlock%nblocks, size(CderType), npoints)
+  real(DP), dimension(:,:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialdiscretisation), pointer :: p_rspatialDiscr
+    integer, dimension(:), pointer :: IelementList, IelementOrientation
+    integer :: NELbdc,iblMin
+
+    if (present(iblockMin)) then
+      iblMin = iblockMin
+    else
+      iblMin = 1
+    endif
+
+    ! The vector must provide a discretisation structure
+    if (associated(rvectorBlock%p_rblockDiscr%RspatialDiscr)) then
+      p_rspatialDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(iblMin)
+    else
+      call output_line('Vector does not provide discretisation structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr1d3')
+      call sys_halt()
+    end if
+    
+    ! The discretisation must provide a triangulation structure
+    if (associated(p_rspatialDiscr%p_rtriangulation)) then
+      p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+    else
+      call output_line('Discretisation does not provide triangulation structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluateBdr1d3')
+      call sys_halt()
+    end if
+    
+    ! Get number of elements at boundary component
+    NELbdc = bdraux_getNELAtBdrComp(ibdc, p_rtriangulation)
+    
+    ! Allocate temporal memory
+    allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+    
+    ! Get list of elements at boundary region
+    call bdraux_getElementsAtBdrComp(ibdc, p_rspatialDiscr, NELbdc,&
+        IelementList, IelementOrientation)
+    
+    ! Call FE-evaluation routine
+    call fevl_evaluateBdr1d4(CderType, Dvalues, rvectorBlock,&
+        IelementList, IelementOrientation, iblockMin, iblockMax)
+    
+    ! Deallocate temporal memory
+    deallocate(IelementList, IelementOrientation)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_evaluateBdr1d4 (CderType, Dvalues, rvectorBlock,&
+      IelementList, IelementOrientation, iblockMin, iblockMax)
+
+!<description>
+  ! This is the most general (and completely slowest) finite element
+  ! evaluation routine. It allows to evaluate a general (scalar) FE
+  ! function specified by rvectorScalar in the unique boundary
+  ! point. The values of the FE function are written into Dvalues. The
+  ! routine is called via the interface fevl_evaluatBdr1d(...).
+!</description>
+
+!<description>
+
+  ! This subroutine is an extension of fevl_evaluateBdr2d1(). It
+  ! simultaneously evaluates several types of function values (given
+  ! by CderType) for all components of a multivariate FE function
+  ! (given by rvectorBlock) in a set of points on the boundary
+  ! specified by its parameter values DpointsPar. Thus, the evaluation
+  ! of all the element basis functions etc. has to be performed only
+  ! once. The routine is called via the interface fevl_evaluate(...).
+  ! E.g., instead of,
+  !
+  !   real(DP), dimension(nblocks,npoints) :: Dvalues
+  !   call fevl_evaluateBdr1d(DER_FUNC, Dvalues(1,:), rsol%RvectorBlock(1), ibdc)
+  !   call fevl_evaluateBdr1d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), ibdc) 
+  !   call fevl_evaluateBdr1d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), ibdc) 
+  !   call fevl_evaluateBdr1d(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), ibdc)
+  !   call fevl_evaluateBdr1d(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), ibdc)
+  !   call fevl_evaluateBdr1d(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), ibdc)
+  !
+  ! one can use
+  !
+  !   integer, dimension(3) :: CderType = (/DER_FUNC, DER_DERIV_X, DER_DERIV_Y/)
+  !   real(DP), dimension(nblocks,3,npoints) :: Dvalues
+  !   call fevl_evaluateBdr1d(CderType, Dvalues, rsol, ibdc)
+  !
+!</description>
+
+!<input>
+  ! array of type of function values to evaluate (DER_FUNC, DER_DERIV_X etc.)
+  integer, dimension(:), intent(in) :: CderType
+
+  ! block solution vector representing the FE function that is to be evaluated
+  ! It is assumed that all components correspond to the same spatial discretisation and
+  ! use the same element type (i.e., only that of the first component is inquired)
+  type(t_vectorBlock), intent(in) :: rvectorBlock
+  
+  ! A list of elements adjacent to the boundary
+  ! containing the points DpointsPar.
+  integer, dimension(:), intent(in) :: IelementList
+
+  ! The orientation of elements adjacent to the boundary region
+  integer, dimension(:), intent(in) :: IelementOrientation
+
+  ! OPTIONAL: For the case that not all components of the vector are to be processed, the
+  ! user can provide these two parameters so that only the components from iblockMin to
+  ! iblockMax are processed. This can be necessary, e.g., in case of a saddle point
+  ! problem where the last component of the solution vector (=pressure) is discretised
+  ! in a different way than the first components (=velocity/displacement).
+  ! If iblockMin (iblockMax) is not present, the minimal (maximal) block number is
+  ! assumed to be 1 (rvectorBlock%nblocks).
+  integer, intent(in), optional :: iblockMin, iblockMax
+!</input>
+
+!<output>
+  ! values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(rvectorBlock%nblocks, size(CderType), npoints)
+  real(DP), dimension(:,:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: icoordSystem
+    integer :: ipoint,indof,nve,ibas,ider,iblock,iblMin,iblMax
+    integer(I32) :: celement
+    integer :: iel,idx
+    integer, dimension(:), pointer :: p_IelementDistr
+    logical, dimension(EL_MAXNDER) :: Bder
+    real(DP), dimension(NDIM1D+2) :: DpointRef
+    real(DP) :: dval
+
+    ! number of equations in one scalar component of the block vector
+    integer :: neqsc
+
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+    
+    ! Transformation
+    integer(I32) :: ctrafoType
+        
+    ! Values of basis functions and DOF`s
+    real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
+    integer, dimension(EL_MAXNBAS) :: Idofs
+    
+    ! List of element distributions in the discretisation structure
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
+
+    ! pointer to the spatial discretisation structure
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    
+    ! Evaluation structure and tag
+    type(t_evalElement) :: revalElement
+    integer(I32) :: cevaluationTag
+
+    if (present(iblockMin)) then
+      iblMin = iblockMin
+    else
+      iblMin = 1
+    endif
+    if (present(iblockMax)) then
+      iblMax = iblockMax
+    else
+      iblMax = rvectorBlock%nblocks
+    endif
+
+    ! Ok, slow but general.
+
+    p_rspatialDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(iblMin)
+    p_RelementDistribution => p_rspatialDiscr%RelementDistr
+
+    ! For uniform discretisations, we get the element type in advance...
+    if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      
+      ! Element type
+      celement = p_rspatialDiscr%RelementDistr(1)%celement
+      
+      ! Get the number of local DOF`s for trial and test functions
+      indof = elem_igetNDofLoc(celement)
+      
+      ! Number of vertices on the element
+      nve = elem_igetNVE(celement)
+      
+      ! Type of transformation from/to the reference element
+      ctrafoType = elem_igetTrafoType(celement)
+      
+      ! Get the element evaluation tag; necessary for the preparation of the element
+      cevaluationTag = elem_getEvaluationTag(celement)
+
+      ! Type of coordinate system
+      icoordSystem = elem_igetCoordSystem(celement)
+      
+      nullify(p_IelementDistr)
+    else
+      call storage_getbase_int (p_rspatialDiscr%h_IelementDistr,p_IelementDistr)
+    end if
+
+    ! Get the data vector
+    select case (rvectorBlock%cdataType)
+    case (ST_DOUBLE) 
+      call lsysbl_getbase_double(rvectorBlock,p_Ddata)
+    case (ST_SINGLE)
+      call lsysbl_getbase_single(rvectorBlock,p_Fdata)
+    case DEFAULT
+      call output_line ('Unsupported vector precision!',&
+          OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluateBdr1d4')
+      call sys_halt()
+    end select
+
+    ! inquire which types of function values are to be evaluated
+    Bder = .false.
+    do ider = 1, size(CderType)
+      Bder(CderType(ider)) = .true.
+    end do
+
+    ! We loop over all elements.
+    do idx = 1, size(IelementList)
+
+      ! Get element number
+      iel = IelementList(idx)
+
+      ! Get the type of the element iel
+      if (associated(p_IelementDistr)) then
+        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+        
+        ! Get the number of local DOF`s for trial and test functions
+        indof = elem_igetNDofLoc(celement)
+        
+        ! Number of vertices on the element
+        nve = elem_igetNVE(celement)
+        
+        ! Type of transformation from/to the reference element
+        ctrafoType = elem_igetTrafoType(celement)
+        
+        ! Get the element evaluation tag; necessary for the preparation of the element
+        cevaluationTag = elem_getEvaluationTag(celement)
+
+        ! Type of coordinate system
+        icoordSystem = elem_igetCoordSystem(celement)
+      end if
+
+      ! Calculate the global DOF`s on that element into IdofsTest.
+      call dof_locGlobMapping (p_rspatialDiscr, iel, Idofs)
+      
+      ! Compute coordinate of cubature point on reference element
+      if (IelementOrientation(idx) .eq. 1) then
+        DpointRef = -1.0
+      else
+        DpointRef = 1.0
+      end if
+
+      ! Now calculate everything else what is necessary for the element    
+      call elprep_prepareForEvaluation (revalElement, &
+          cevaluationTag, p_rspatialDiscr%p_rtriangulation,&
+          iel, ctrafoType, DpointRef=DpointRef)
+      
+      ! Call the element to calculate the values of the basis functions
+      ! in the point.
+      call elem_generic2 (celement, revalElement, Bder, Dbas)
+
+      ! number of equations in one scalar component
+      neqsc = rvectorBlock%RvectorBlock(iblMin)%neq
+
+      ! calculate function values by multiplying the FE-coefficients with the values of
+      ! the basis functions and summing up
+      Dvalues(iblMin:iblMax,:,ipoint) = 0.0_DP
+      if (rvectorBlock%cdataType .eq. ST_DOUBLE) then
+        do ider = 1,size(CderType)
+          do iblock = iblMin,iblMax
+            dval = 0.0_DP
+            do ibas = 1,indof
+              dval = dval +   p_Ddata((iblock-1)*neqsc + Idofs(ibas)) &
+                            * Dbas(ibas,CderType(ider))
+            end do
+            Dvalues(iblock, ider, ipoint) = dval
+          end do
+        end do
+      else if (rvectorBlock%cdataType .eq. ST_SINGLE) then
+        do ider = 1,size(CderType)
+          do iblock = iblMin,iblMax
+            dval = 0.0_DP
+            do ibas = 1,indof
+              dval = dval +   p_Fdata((iblock-1)*neqsc + Idofs(ibas)) &
+                            * Dbas(ibas,CderType(ider))
+            end do
+            Dvalues(iblock, ider, ipoint) = dval
+          end do
+        end do
+      end if
+
+    end do ! idx
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine fevl_evaluateBdr2d1 (iderType, Dvalues, rvectorScalar, DpointsPar,&
       ibdc, cparType, rboundaryRegion)
 
@@ -2836,7 +3538,6 @@ contains
     Bder(iderType) = .true.
 
     ! We loop over all points.
-    
     do ipoint = 1,size(DpointsPar)
             
       iel = 0
@@ -3013,16 +3714,16 @@ contains
   ! (given by rvectorBlock) in a set of points on the boundary
   ! specified by its parameter values DpointsPar. Thus, the evaluation
   ! of all the element basis functions etc. has to be performed only
-  ! once. The routine is called via the interface fevl_evaluate(...).
+  ! once. The routine is called via the interface fevl_evaluateBdr2D(...).
   ! E.g., instead of,
   !
   !   real(DP), dimension(nblocks,npoints) :: Dvalues
   !   call fevl_evaluateBdr2d(DER_FUNC, Dvalues(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType)
-  !   call fevl_evaluateBdr2(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType) 
+  !   call fevl_evaluateBdr2d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType) 
   !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType) 
-  !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), Dpoints,Par, ibdc, cparType)
-  !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), Dpoints,Par, ibdc, cparType)
-  !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), Dpoints,Par, ibdc, cparType)
+  !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType)
+  !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType)
+  !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType)
   !
   ! one can use
   !
@@ -3184,11 +3885,11 @@ contains
   !
   !   real(DP), dimension(nblocks,npoints) :: Dvalues
   !   call fevl_evaluateBdr2d(DER_FUNC, Dvalues(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType)
-  !   call fevl_evaluateBdr2(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType) 
+  !   call fevl_evaluateBdr2d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType) 
   !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType) 
-  !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), Dpoints,Par, ibdc, cparType)
-  !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), Dpoints,Par, ibdc, cparType)
-  !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), Dpoints,Par, ibdc, cparType)
+  !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType)
+  !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType)
+  !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType)
   !
   ! one can use
   !
@@ -3326,7 +4027,7 @@ contains
       call lsysbl_getbase_single(rvectorBlock,p_Fdata)
     case DEFAULT
       call output_line ('Unsupported vector precision!',&
-          OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluateBdr2d3')
+          OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluateBdr2d4')
       call sys_halt()
     end select
 
@@ -3334,7 +4035,7 @@ contains
     Bder = .false.
     do ider = 1, size(CderType)
       Bder(CderType(ider)) = .true.
-    enddo
+    end do
 
     ! We loop over all points.
     
@@ -3423,8 +4124,8 @@ contains
                             * Dbas(ibas,CderType(ider))
             end do
             Dvalues(iblock, ider, ipoint) = dval
-          enddo
-        enddo
+          end do
+        end do
       else if (rvectorBlock%cdataType .eq. ST_SINGLE) then
         do ider = 1,size(CderType)
           do iblock = iblMin,iblMax
@@ -3434,8 +4135,8 @@ contains
                             * Dbas(ibas,CderType(ider))
             end do
             Dvalues(iblock, ider, ipoint) = dval
-          enddo
-        enddo
+          end do
+        end do
       end if
 
     end do ! ipoint
