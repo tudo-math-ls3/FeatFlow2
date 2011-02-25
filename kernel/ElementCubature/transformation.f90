@@ -642,7 +642,7 @@ contains
       case (TRAFO_ID_MLINCUBE)
         ! 1D simplex -> linear line transformation. 
         ! Transfer the corners of the element.
-        Dcoords (1,1:3) = p_DvertexCoords(1, p_IverticesAtElement(1:3, iel))
+        Dcoords (1,1:2) = p_DvertexCoords(1, p_IverticesAtElement(1:2, iel))
                                 
       end select
     
