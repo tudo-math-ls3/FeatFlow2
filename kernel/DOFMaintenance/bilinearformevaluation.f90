@@ -3373,7 +3373,7 @@ contains
 !    ! Get cubature weights and point coordinates on the reference element
 !    CALL cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
 !    
-!    ! Open-MP-Extension: Open threads here.
+!    ! OpenMP-Extension: Open threads here.
 !    ! "j" is declared as private; shared gave errors with the Intel compiler
 !    ! in Windows!?!
 !    ! Each thread will allocate its own local memory...
@@ -3533,7 +3533,7 @@ contains
 !                              
 !    ! Loop over the elements - blockwise.
 !    !
-!    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+!    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
 !    ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
 !    ! inner loop(s).
 !    ! The blocks have all the same size, so we can use static scheduling.
@@ -4311,7 +4311,7 @@ contains
       end if
     end do
 
-    ! Open-MP-Extension: Open threads here.
+    ! OpenMP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
     !$omp parallel default(shared) &
@@ -4404,7 +4404,7 @@ contains
                               
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
@@ -5434,7 +5434,7 @@ contains
     indofTrial = rmatrixAssembly%indofTrial
     ncubp      = rmatrixAssembly%ncubp
 
-    ! Open-MP-Extension: Copy the matrix assembly data to the local
+    ! OpenMP-Extension: Copy the matrix assembly data to the local
     ! matrix assembly data, where we can allocate memory.
     !
     ! For single processor machines, this is actually boring and nonsense.
@@ -5467,7 +5467,7 @@ contains
         
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so nelementsPerBlock local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
@@ -6361,7 +6361,7 @@ contains
     bisLinearTrafo = trafo_isLinearTrafo(rmatrixAssembly%ctrafoType)
     nve            = trafo_igetNVE(rmatrixAssembly%ctrafoType)
 
-    ! Open-MP-Extension: Copy the matrix assembly data to the local
+    ! OpenMP-Extension: Copy the matrix assembly data to the local
     ! matrix assembly data, where we can allocate memory.
     !
     ! For single processor machines, this is actually boring and nonsense.
@@ -6416,7 +6416,7 @@ contains
   
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so nelementsPerBlock local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.

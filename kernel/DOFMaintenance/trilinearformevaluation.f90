@@ -716,7 +716,7 @@ contains
       end if
     end do
 
-    ! Open-MP-Extension: Open threads here.
+    ! OpenMP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
     !$omp parallel default(shared) &
@@ -830,7 +830,7 @@ contains
 
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so nelementsPerBlock local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
@@ -1635,7 +1635,7 @@ contains
     indofFunc  = rmatrixAssembly%indofFunc
     ncubp      = rmatrixAssembly%ncubp
 
-    ! Open-MP-Extension: Copy the matrix assembly data to the local
+    ! OpenMP-Extension: Copy the matrix assembly data to the local
     ! matrix assembly data, where we can allocate memory.
     !
     ! For single processor machines, this is actually boring and nonsense.
@@ -1670,7 +1670,7 @@ contains
 
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so nelementsPerBlock local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.

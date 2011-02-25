@@ -513,7 +513,7 @@ contains
       ! Get the cubature formula
       call cub_getCubature(ccubature,DcubPts, Domega)
       
-      ! Open-MP-Extension: Open threads here.
+      ! OpenMP-Extension: Open threads here.
       ! Each thread will allocate its own local memory...
       !
       !$omp parallel default(shared) &

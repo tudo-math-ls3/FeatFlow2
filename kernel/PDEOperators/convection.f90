@@ -4202,7 +4202,7 @@ contains
     ! Get the cubature formula
     call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
 
-    ! Open-MP-Extension: Open threads here.
+    ! OpenMP-Extension: Open threads here.
     ! "csysTrial" is declared as private; shared gave errors with the Intel compiler
     ! in Windows!?!
     ! Each thread will allocate its own local memory...
@@ -4349,7 +4349,7 @@ contains
 
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
@@ -8126,7 +8126,7 @@ contains
     ! Get the cubature formula
     call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
 
-    ! Open-MP-Extension: Open threads here.
+    ! OpenMP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
 
     !%omp parallel private(csysTrial, p_DcubPtsReal, &
@@ -8270,7 +8270,7 @@ contains
 
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.

@@ -651,7 +651,7 @@ contains
       end if
     end do
 
-    ! Open-MP-Extension: Open threads here.
+    ! OpenMP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
     !
     !$omp parallel default(shared) &
@@ -1982,7 +1982,7 @@ contains
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
 
-    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! OpenMP-Extension: Copy the assembly data to the local assembly
     ! data, where we can allocate memory.
     !
     ! For single processor machines, this is actually boring and nonsense.
@@ -2012,7 +2012,7 @@ contains
 
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so nelementsPerBlock local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
@@ -2300,7 +2300,7 @@ contains
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
 
-    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! OpenMP-Extension: Copy the assembly data to the local assembly
     ! data, where we can allocate memory.
     !
     ! For single processor machines, this is actually boring and nonsense.
@@ -2331,7 +2331,7 @@ contains
         
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so nelementsPerBlock local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
@@ -2883,7 +2883,7 @@ contains
     bisLinearTrafo = trafo_isLinearTrafo(rvectorAssembly%ctrafoType)
     nve            = trafo_igetNVE(rvectorAssembly%ctrafoType)
 
-    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! OpenMP-Extension: Copy the assembly data to the local assembly
     ! data, where we can allocate memory.
     !
     ! For single processor machines, this is actually boring and nonsense.
@@ -2935,7 +2935,7 @@ contains
 
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so nelementsPerBlock local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
@@ -3535,7 +3535,7 @@ contains
     bisLinearTrafo = trafo_isLinearTrafo(rvectorAssembly%ctrafoType)
     nve            = trafo_igetNVE(rvectorAssembly%ctrafoType)
 
-    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! OpenMP-Extension: Copy the assembly data to the local assembly
     ! data, where we can allocate memory.
     !
     ! For single processor machines, this is actually boring and nonsense.
@@ -3588,7 +3588,7 @@ contains
    
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so nelementsPerBlock local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
@@ -3923,7 +3923,7 @@ contains
     indof = rvectorAssembly%indof
     ncubp = rvectorAssembly%ncubp
 
-    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! OpenMP-Extension: Copy the assembly data to the local assembly
     ! data, where we can allocate memory.
     !
     ! For single processor machines, this is actually boring and nonsense.
@@ -3954,7 +3954,7 @@ contains
 
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so nelementsPerBlock local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
@@ -4517,7 +4517,7 @@ contains
     bisLinearTrafo = trafo_isLinearTrafo(rvectorAssembly%ctrafoType)
     nve            = trafo_igetNVE(rvectorAssembly%ctrafoType)
 
-    ! Open-MP-Extension: Copy the assembly data to the local assembly
+    ! OpenMP-Extension: Copy the assembly data to the local assembly
     ! data, where we can allocate memory.
     !
     ! For single processor machines, this is actually boring and nonsense.
@@ -4570,7 +4570,7 @@ contains
 
     ! Loop over the elements - blockwise.
     !
-    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
     ! so nelementsPerBlock local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
