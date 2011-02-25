@@ -2602,7 +2602,7 @@ contains
   ! function specified by rvectorScalar in a set of points on the
   ! boundary specified by its parameter values DpointsPar. The values
   ! of the FE function are written into Dvalues. The routine is called
-  ! via the interface fevl_evaluatBdr2de(...).
+  ! via the interface fevl_evaluatBdr2d(...).
 !</description>
 
 !<input>
@@ -2724,7 +2724,7 @@ contains
   ! function specified by rvectorScalar in a set of points on the
   ! boundary specified by its parameter values DpointsPar. The values
   ! of the FE function are written into Dvalues. The routine is called
-  ! via the interface fevl_evaluatBdr2de(...).
+  ! via the interface fevl_evaluatBdr2d(...).
 !</description>
 
 !<input>
@@ -3168,7 +3168,7 @@ contains
   ! function specified by rvectorScalar in a set of points on the
   ! boundary specified by its parameter values DpointsPar. The values
   ! of the FE function are written into Dvalues. The routine is called
-  ! via the interface fevl_evaluatBdr2de(...).
+  ! via the interface fevl_evaluatBdr2d(...).
 !</description>
 
 !<description>
