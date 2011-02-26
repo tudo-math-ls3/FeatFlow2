@@ -1966,8 +1966,8 @@ contains
         ! Evaluate the solution in the cubature points on the mirrored
         ! boundary and store the result in Daux(:,:,3)
         call doEvaluateAtBdr2d(DER_FUNC, npoints*nelements,&
-            Daux(:,:,3), p_rsolution%RvectorBlock(1), npointsPerElement*nelements,&
-            DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+            Daux(:,:,3), p_rsolution%RvectorBlock(1), DpointParMirror,&
+            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
 
         do iel = 1, nelements
           do ipoint = 1, npoints
@@ -2050,10 +2050,10 @@ contains
     ! ***************************************************************************
     
     subroutine doEvaluateAtBdr2d(iderType, n, Dvalues, rvectorScalar,&
-        m, DpointsPar, ibdc, cparType, rboundaryRegion)
+        DpointsPar, ibdc, cparType, rboundaryRegion)
       
-      integer, intent(in) :: iderType,ibdc,cparType,n,m
-      real(DP), dimension(m), intent(in) :: DpointsPar
+      integer, intent(in) :: iderType,ibdc,cparType,n
+      real(DP), dimension(n), intent(in) :: DpointsPar
       type(t_vectorScalar), intent(in) :: rvectorScalar
       type(t_boundaryRegion), intent(in) :: rboundaryRegion
       
@@ -2773,8 +2773,8 @@ contains
         ! Evaluate the solution in the cubature points on the mirrored
         ! boundary and store the result in Daux(:,:,3)
         call doEvaluateAtBdr2d(DER_FUNC, npointsPerElement*nelements,&
-            Daux(:,:,3), p_rsolution%RvectorBlock(1), npointsPerElement*nelements,&
-            DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+            Daux(:,:,3), p_rsolution%RvectorBlock(1), DpointParMirror,&
+            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
 
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
@@ -2852,10 +2852,10 @@ contains
     ! ***************************************************************************
     
     subroutine doEvaluateAtBdr2d(iderType, n, Dvalues, rvectorScalar,&
-        m, DpointsPar, ibdc, cparType, rboundaryRegion)
+        DpointsPar, ibdc, cparType, rboundaryRegion)
       
-      integer, intent(in) :: iderType,ibdc,cparType,n,m
-      real(DP), dimension(m), intent(in) :: DpointsPar
+      integer, intent(in) :: iderType,ibdc,cparType,n
+      real(DP), dimension(n), intent(in) :: DpointsPar
       type(t_vectorScalar), intent(in) :: rvectorScalar
       type(t_boundaryRegion), intent(in) :: rboundaryRegion
       
@@ -5680,6 +5680,8 @@ contains
     real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
     integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
 
+    real(DP) :: dx,dy
+
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
     ! parser in the collection, respectively.
@@ -6166,7 +6168,7 @@ contains
       call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
           p_rsolution%RvectorBlock(1), Dpoints, &
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-      
+
       ! Get the normal vectors in the cubature points on the boundary
       call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
 #endif
@@ -6204,8 +6206,8 @@ contains
       ! Evaluate the solution in the cubature points on the mirrored
       ! boundary and store the result in Daux(:,:,2)
       call doEvaluateAtBdr2d(DER_FUNC, npoints*nelements,&
-          Daux(:,:,2), p_rsolution%RvectorBlock(1), npointsPerElement*nelements,&
-          DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+          Daux(:,:,2), p_rsolution%RvectorBlock(1), DpointParMirror,&
+          ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
 
       do iel = 1, nelements
         do ipoint = 1, npoints
@@ -6282,10 +6284,10 @@ contains
     ! ***************************************************************************
     
     subroutine doEvaluateAtBdr2d(iderType, n, Dvalues, rvectorScalar,&
-        m, DpointsPar, ibdc, cparType, rboundaryRegion)
+        DpointsPar, ibdc, cparType, rboundaryRegion)
       
-      integer, intent(in) :: iderType,ibdc,cparType,n,m
-      real(DP), dimension(m), intent(in) :: DpointsPar
+      integer, intent(in) :: iderType,ibdc,cparType,n
+      real(DP), dimension(n), intent(in) :: DpointsPar
       type(t_vectorScalar), intent(in) :: rvectorScalar
       type(t_boundaryRegion), intent(in) :: rboundaryRegion
       
