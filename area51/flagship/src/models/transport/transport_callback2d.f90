@@ -1614,6 +1614,8 @@ contains
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
+        ! We need the solution values and the physical coordinates of the DOFs 
+        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
           ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -1744,6 +1746,8 @@ contains
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
         
+        ! We need the solution values and the physical coordinates of the DOFs 
+        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
           ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -1892,6 +1896,8 @@ contains
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
+        ! We need the solution values and the physical coordinates of the DOFs 
+        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
           ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -2421,6 +2427,8 @@ contains
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
+        ! We need the solution values and the physical coordinates of the DOFs 
+        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
           ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -2551,6 +2559,8 @@ contains
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
         
+        ! We need the solution values and the physical coordinates of the DOFs 
+        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
           ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -2699,6 +2709,8 @@ contains
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
+        ! We need the solution values and the physical coordinates of the DOFs 
+        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
           ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -3069,6 +3081,8 @@ contains
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
+        ! We need the solution values and the physical coordinates of the DOFs 
+        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
           ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -3205,6 +3219,8 @@ contains
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
+        ! We need the solution values and the physical coordinates of the DOFs 
+        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
           ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -3514,6 +3530,8 @@ contains
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
+        ! We need the solution values and the physical coordinates of the DOFs 
+        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
           ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -3650,6 +3668,8 @@ contains
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
+        ! We need the solution values and the physical coordinates of the DOFs 
+        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
           ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -5905,6 +5925,7 @@ contains
       ! Allocate temporal memory
       allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
       
+      ! We need the physical coordinates of the DOFs on the boundary,
       do iel = 1, nelements
         ! Get global DOF of first endpoints
         ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -6005,6 +6026,8 @@ contains
       ! Allocate temporal memory
       allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
       
+      ! We need the solution values and the physical coordinates of the DOFs 
+      ! on the boundary, so compute them and store the result in Daux
       do iel = 1, nelements
         ! Get global DOF of first endpoints
         ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -6138,6 +6161,8 @@ contains
       ! Allocate temporal memory
       allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
       
+      ! We need the solution values and the physical coordinates of the DOFs 
+      ! on the boundary, so compute them and store the result in Daux
       do iel = 1, nelements
         ! Get global DOF of first endpoints
         ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -6402,6 +6427,17 @@ contains
     real(DP) :: dlocalData,dnv,dscale,dtime
     integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
 
+    ! REMARK: This subroutine makes use of a lot of preprocessor flags
+    ! to distinguish between the classical boundary integal evaluation,
+    ! that is, the boundary integrals are approximated by evaluating
+    ! the FE-function at the cubature points and computing the flux
+    ! based on the FE-function in the cubature points.
+    ! This approach is not fully compatible with the group finite
+    ! element formulation which approximates the fluxes in the same
+    ! way as the approxitame solution in the degrees of freedom. In
+    ! this case, the fluxes are evaluated in the degrees of freedom
+    ! and interpolated to the cubature points on the boundary afterwards.
+
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
@@ -6432,6 +6468,10 @@ contains
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
     ! Evaluate one-dimensional basis functions on the boundary edge
+    ! which will be used to (a) interpolate the FE-functions evaluated
+    ! at the degrees of freedom into the cubature points for numerical
+    ! integration and to redistribute the function values given at the
+    ! cubature points to the degrees of freefom.
     if (npointsPerElement .ne. cub_igetNumPts(ccubType)) then
       call output_line('Type of cubature rule at boundary mismatch!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrBurgP2d_sim')
@@ -6485,6 +6525,8 @@ contains
       ! Allocate temporal memory
       allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
       
+      ! We need the solution values and the physical coordinates of the DOFs 
+      ! on the boundary, so compute them and store the result in Daux
       do iel = 1, nelements
         ! Get global DOF of first endpoints
         ipoint = rdomainIntSubset%p_IelementOrientation(iel)
@@ -6510,8 +6552,8 @@ contains
       ! Calculate the normal vectors in DOFs on the boundary
       call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
-      ! Evaluate the solution vector in the cubature points
-      ! on the boundary and store the result in Daux
+      ! Evaluate the solution vector in the cubature points on the
+      ! boundary and store the result in Daux
       call fevl_evaluate_sim(DER_FUNC2D, Daux,&
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -6604,7 +6646,9 @@ contains
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       ! Allocate temporal memory
       allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
-      
+     
+      ! We need the solution values and the physical coordinates of the DOFs 
+      ! on the boundary, so compute them and store the result in Daux
       do iel = 1, nelements
         ! Get global DOF of first endpoints
         ipoint = rdomainIntSubset%p_IelementOrientation(iel)
