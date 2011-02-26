@@ -2253,7 +2253,7 @@ contains
       ! Compute convective coefficient  $k_{ij} = -0.5*u_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           0.5_DP*DdataAtEdge(2,iedge)*DmatrixCoeffsAtEdge(1,1,iedge)
-.          
+
       ! Compute convective coefficient  $k_{ji} = -0.5*u_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           0.5_DP*DdataAtEdge(1,iedge)*DmatrixCoeffsAtEdge(1,2,iedge)

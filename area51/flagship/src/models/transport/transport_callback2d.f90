@@ -5496,7 +5496,7 @@ contains
           (DmatrixCoeffsAtEdge(1,1,iedge)+DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = -(0.5*u_j*I)*C_{ij}$
-      DcoefficientsAtEdge(2,iedge) = -dscale*0.5_DP*DdataAtEdge(2,iedge)*&x
+      DcoefficientsAtEdge(2,iedge) = -dscale*0.5_DP*DdataAtEdge(2,iedge)*&
           (DmatrixCoeffsAtEdge(1,1,iedge)+DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji} = -(0.5*u_i*I)*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*0.5_DP*DdataAtEdge(1,iedge)*&
@@ -5566,7 +5566,7 @@ contains
           (DmatrixCoeffsAtEdge(1,1,iedge)+DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = -(0.5*u_j*I)*C_{ij}$
-      DcoefficientsAtEdge(2,iedge) = -dscale*0.5_DP*DdataAtEdge(2,iedge)*&x
+      DcoefficientsAtEdge(2,iedge) = -dscale*0.5_DP*DdataAtEdge(2,iedge)*&
           (DmatrixCoeffsAtEdge(1,1,iedge)+DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji} = -(0.5*u_i*I)*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*0.5_DP*DdataAtEdge(1,iedge)*&
@@ -5679,13 +5679,6 @@ contains
 
 !</subroutine>
 
-#ifndef TRANSP_USE_IBP
-    call output_line('Application must be compiled with flag &
-        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
-        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrBurgP2d_sim')
-    call sys_halt()
-#endif
-
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution
@@ -5700,7 +5693,12 @@ contains
     real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
     integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
 
-    real(DP) :: dx,dy
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_coeffVecBdrBurgP2d_sim')
+    call sys_halt()
+#endif
 
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
