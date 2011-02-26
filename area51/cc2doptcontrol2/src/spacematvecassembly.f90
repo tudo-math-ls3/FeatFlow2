@@ -3721,6 +3721,7 @@ contains
       type(t_matrixScalar) :: rmatrixTemp
     
       if (dcx*dweightBdIntegral .eq. 0.0_DP) return
+      if (rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundaryOperator%NEQ .eq. 0) return
     
       ! Create an empty temp matrix for the boundary operator.
       call lsyssc_duplicateMatrix (&

@@ -263,7 +263,11 @@ contains
     call lsyssc_createRowCMatrix(rneumannBoudaryOperator,rsptiNeumannBC%rneumannBoudaryOperator)
     !call lsyssc_duplicateMatrix (rneumannBoudaryOperator,rsptiNeumannBC%rneumannBoudaryOperator,&
     !    LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
-    call lsyssc_releaseMatrixContent(rsptiNeumannBC%rneumannBoudaryOperator)
+    
+    if (rsptiNeumannBC%rneumannBoudaryOperator%NEQ .ne. 0) then
+      ! If the matrix exist, release its content, we don't need it.
+      call lsyssc_releaseMatrixContent(rsptiNeumannBC%rneumannBoudaryOperator)
+    end if
     
     ! Release the temp matrix
     call lsyssc_releaseMatrix (rneumannBoudaryOperator)
