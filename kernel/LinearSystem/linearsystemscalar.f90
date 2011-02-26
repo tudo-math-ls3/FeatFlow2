@@ -24742,6 +24742,8 @@ contains
 
 !<output>
     ! Destination matrix that receives the compressed data.
+    ! If the matrix does not contain any nonzero data, an empty matrix
+    ! is returned.
     type(t_matrixScalar), intent(out) :: rdestMatrix
 !</output>
 !</subroutine>
@@ -24790,6 +24792,9 @@ contains
         na = na + p_Kld(irow+1) - p_Kld(irow)
       end if
     end do
+
+    ! Cancel if the matrix is empty.   
+    if (nnzrows .eq. 0) return
     
     ! Allocate Kld, Kcol, KrowIdx.
     call storage_new ("lsyssc_createDiffMatrix", "Kld2", nnzrows+1, &
