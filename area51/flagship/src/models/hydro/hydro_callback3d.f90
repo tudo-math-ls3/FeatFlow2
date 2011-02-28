@@ -5044,7 +5044,7 @@ contains
       call flagship_hadaptCallback3d(iOperation, rcollection)
 
 
-    case DEFAULT
+    case default
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
 
@@ -5182,7 +5182,7 @@ contains
       call flagship_hadaptCallback3d(iOperation, rcollection)
 
 
-    case DEFAULT
+    case default
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
 

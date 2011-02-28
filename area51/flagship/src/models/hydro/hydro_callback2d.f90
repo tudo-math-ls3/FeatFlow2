@@ -4798,7 +4798,7 @@ contains
       Du(4) = p/(GAMMA-1.0_DP)+0.5_DP*rho*(vn*vn+vt*vt)
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported type of boundary condition!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcBoundaryvalues2d')
       call sys_halt()
@@ -5963,7 +5963,7 @@ contains
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
 
-    case DEFAULT
+    case default
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
@@ -6101,7 +6101,7 @@ contains
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
 
-    case DEFAULT
+    case default
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 

@@ -290,7 +290,7 @@ contains
             call output_lbrk()
           end if
 
-        case DEFAULT
+        case default
           call output_line('Unsupported single-grid solver!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveMultigridBlock')
           call sys_halt()
@@ -426,7 +426,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line(' Invalid solver!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveMultigridBlock')
       call sys_halt()
@@ -641,7 +641,7 @@ contains
       call linsol_solveFgmres(rsolver, ru, rf)
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid linear solver!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveSinglegrid')
       call sys_halt()
@@ -746,7 +746,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveUMFPACK')
       call sys_halt()
 
-    case DEFAULT
+    case default
       ! Unknown error
       call output_line('Internal error!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveUMFPACK')
@@ -1724,7 +1724,7 @@ contains
       call linsol_precondILU(rsolver, ru)
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported preconditioner type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_precond')
       call sys_halt()
@@ -1816,7 +1816,7 @@ contains
           call jacobi_Mat79Intl1_double(p_Kdiagonal,&
               p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
 
-        case DEFAULT
+        case default
           call output_line('Unsupported interleave matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondJacobi')
           call sys_halt()
@@ -1838,13 +1838,13 @@ contains
           call jacobi_Mat79Intl1_double(p_Kdiagonal,&
               p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
 
-        case DEFAULT
+        case default
           call output_line('Unsupported interleave matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondJacobi')
           call sys_halt()
         end select
 
-      case DEFAULT
+      case default
         call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondJacobi')
         call sys_halt()
@@ -2060,7 +2060,7 @@ contains
                 p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
           end if
 
-        case DEFAULT
+        case default
           call output_line('Unsupported interleave matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondSSOR')
           call sys_halt()
@@ -2094,13 +2094,13 @@ contains
                 p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
           end if
 
-        case DEFAULT
+        case default
           call output_line('Unsupported interleave matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondSSOR')
           call sys_halt()
         end select
 
-      case DEFAULT
+      case default
         call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondSSOR')
         call sys_halt()
@@ -2853,7 +2853,7 @@ contains
                                    p_rmatrix%NEQ, p_rmatrix%NVAR, p_Du)
 
 
-          case DEFAULT
+          case default
             call output_line('Unsupported interleave matrix format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
             call sys_halt()
@@ -2888,14 +2888,14 @@ contains
                                    p_Kdiagonal, p_rmatrix%NEQ, p_rmatrix%NVAR, p_Du)
 
 
-          case DEFAULT
+          case default
             call output_line('Unsupported interleave matrix format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
             call sys_halt()
           end select
 
 
-        case DEFAULT
+        case default
           call output_line('Unsupported matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
           call sys_halt()
@@ -3259,7 +3259,7 @@ contains
       rsolver%iiterations = nsmooth
       rsolver%niterations = rsolver%niterations + nsmooth
 
-    case DEFAULT
+    case default
       call output_line('Unsupported smoother type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_smooth')
       call sys_halt()

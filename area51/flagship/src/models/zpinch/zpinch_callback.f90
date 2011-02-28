@@ -327,7 +327,7 @@ contains
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
               fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
-        case DEFAULT
+        case default
           call output_line('Invalid system format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
           call sys_halt()
@@ -388,7 +388,7 @@ contains
                   fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
                   fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
-            case DEFAULT
+            case default
               call output_line('Invalid system format!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
               call sys_halt()
@@ -438,7 +438,7 @@ contains
                 fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
                 fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
-          case DEFAULT
+          case default
             call output_line('Invalid system format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
             call sys_halt()
@@ -492,7 +492,7 @@ contains
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
               fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
-        case DEFAULT
+        case default
           call output_line('Invalid system format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
           call sys_halt()
@@ -531,7 +531,7 @@ contains
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
               fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
-        case DEFAULT
+        case default
           call output_line('Invalid system format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
           call sys_halt()
@@ -919,7 +919,7 @@ contains
         call sys_halt()
       end select
       
-    case DEFAULT
+    case default
       call output_line('Invalid system format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
       call sys_halt()

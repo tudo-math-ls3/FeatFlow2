@@ -364,7 +364,7 @@ contains
           call lsyssc_spreadMatrix(&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rproblemLevel%Rmatrix(systemMatrix))
-        case DEFAULT
+        case default
           call output_line('Empty system matrix is invalid!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
           call sys_halt()
@@ -391,13 +391,13 @@ contains
                 1.0_DP, 1.0_DP, .false., .false., .true., .true.)
           end do
 
-        case DEFAULT
+        case default
           call output_line('Empty system matrix is invalid!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
-      case DEFAULT
+      case default
         call output_line('Invalid system format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
         call sys_halt()
@@ -493,7 +493,7 @@ contains
               mhd_calcMatDiagMatD3d_sim, mhd_calcMatGalMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
-        case DEFAULT
+        case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
           call sys_halt()
@@ -523,7 +523,7 @@ contains
               mhd_calcMatDiagMatD3d_sim, mhd_calcMatScDissMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
-        case DEFAULT
+        case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecond')
           call sys_halt()
@@ -553,7 +553,7 @@ contains
               mhd_calcMatDiagMatD3d_sim, mhd_calcMatRoeDissMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
-        case DEFAULT
+        case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
           call sys_halt()
@@ -583,14 +583,14 @@ contains
               mhd_calcMatDiagMatD3d_sim, mhd_calcMatRusDissMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
-        case DEFAULT
+        case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
 
-      case DEFAULT
+      case default
         ! Clear system matrix and apply (lumped) mass matrix only
         call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
       end select
@@ -628,7 +628,7 @@ contains
               mhd_calcMatDiag3d_sim, mhd_calcMatGal3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
-        case DEFAULT
+        case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
           call sys_halt()
@@ -658,7 +658,7 @@ contains
               mhd_calcMatDiag3d_sim, mhd_calcMatScDiss3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
-        case DEFAULT
+        case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
           call sys_halt()
@@ -688,7 +688,7 @@ contains
               mhd_calcMatDiag3d_sim, mhd_calcMatRoeDiss3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
-        case DEFAULT
+        case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
           call sys_halt()
@@ -718,20 +718,20 @@ contains
               mhd_calcMatDiag3d_sim, mhd_calcMatRusDiss3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
-        case DEFAULT
+        case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
 
-      case DEFAULT
+      case default
         ! Clear system matrix and apply (lumped) mass matrix only
         call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
       end select
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of flow coupling!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
       call sys_halt()
@@ -794,7 +794,7 @@ contains
             rproblemLevel%Rmatrix(systemMatrix),&
             1.0_DP, 1.0_DP, .false., .false., .true., .true.)
 
-      case DEFAULT
+      case default
 
         !-----------------------------------------------------------------------
         ! Use the global operator for steady-state flow
@@ -858,7 +858,7 @@ contains
         end do
 
 
-      case DEFAULT
+      case default
 
         !-----------------------------------------------------------------------
         ! Use the global operator for steady-state flow
@@ -871,7 +871,7 @@ contains
       end select
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid system format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
       call sys_halt()
@@ -1222,7 +1222,7 @@ contains
                   mhd_calcFluxRusDissDiSp3d_sim, dscale, .true., rrhs)
             end select
 
-          case DEFAULT
+          case default
             call output_line('Invalid type of dissipation!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcRhsThetaScheme')
             call sys_halt()
@@ -1256,7 +1256,7 @@ contains
                 mhd_calcCharacteristics3d_sim, dscale, .true., rrhs)
           end select
 
-        case DEFAULT
+        case default
           call output_line('Invalid type of stabilisation!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcRhsThetaScheme')
           call sys_halt()
@@ -1324,7 +1324,7 @@ contains
       end if ! theta
 
 
-    case DEFAULT
+    case default
 
       !-------------------------------------------------------------------------
       ! Initialize the constant right-hand side by zeros
@@ -1492,7 +1492,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
 
       !-----------------------------------------------------------------------
       ! Initialize the residual for stationary flows zeros
@@ -1724,7 +1724,7 @@ contains
               mhd_calcFluxRusDissDiSp3d_sim, dscale, .false., rres)
         end select
 
-      case DEFAULT
+      case default
         call output_line('Invalid type of dissipation!',&
             OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcResidualThetaScheme')
         call sys_halt()
@@ -1758,7 +1758,7 @@ contains
             mhd_calcCharacteristics3d_sim, dscale , .false., rres)
       end select
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcResidualThetaScheme')
       call sys_halt()
@@ -1975,7 +1975,7 @@ contains
             rrhs%RvectorBlock(iblock), 1.0_DP, 0.0_DP)
       end do
 
-    case DEFAULT
+    case default
 
       ! Initialize the right-hand side vector by zeros
       call lsysbl_clearVector(rrhs)
@@ -2123,7 +2123,7 @@ contains
               mhd_calcFluxRusDiss3d_sim, dscale, .false., rrhs)
         end select
 
-      case DEFAULT
+      case default
         call output_line('Invalid type of dissipation!',&
             OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcRhsRungeKuttaScheme')
         call sys_halt()
@@ -2158,7 +2158,7 @@ contains
 
       end select
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcRhsRungeKuttaScheme')
       call sys_halt()
@@ -2233,7 +2233,7 @@ contains
       call parlst_getvalue_int(p_rparlist,&
           ssectionName, 'jacobianmatrix', imatrix)
 
-    case DEFAULT
+    case default
       call output_line('Invalid nonlinear preconditioner!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mhd_setBoundaryCondition')
       call sys_halt()
@@ -2266,7 +2266,7 @@ contains
           rsolution, rres, rsolution0, rtimestep%dTime,&
           mhd_calcBoundaryvalues3d, istatus)
 
-    case DEFAULT
+    case default
       call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mhd_setBoundaryCondition')
       call sys_halt()
@@ -2666,7 +2666,7 @@ contains
       end select
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of dissipation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcFluxFCT')
       call sys_halt()

@@ -579,7 +579,7 @@ contains
             rsolution, rsolutionInitial, fcb_nlsolverCallback,&
             rcollection, rsource)
 
-      case DEFAULT
+      case default
         call output_line('Invalid solver type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveMultigridBlock')
         call sys_halt()
@@ -623,7 +623,7 @@ contains
               p_solverNonlinear, rsolution, rsolutionInitial,&
               fcb_nlsolverCallback, rcollection, rsource)
 
-        case DEFAULT
+        case default
           call output_line('Invalid solver type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveMultigridBlock')
           call sys_halt()
@@ -700,7 +700,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveMultigridBlock')
       call sys_halt()
@@ -1016,7 +1016,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid nonlinear preconditioner!',&
           OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveFixedpointBlock')
       call sys_halt()
@@ -1306,7 +1306,7 @@ contains
         end if
 
 
-      case DEFAULT
+      case default
         call output_line('Invalid nonlinear preconditioner!',&
             OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveFixedpointBlock')
         call sys_halt()
@@ -1655,7 +1655,7 @@ contains
       case (1, 2, 3, 4)
         eta = eta_0
 
-      case DEFAULT
+      case default
         eta = dforcingStrategy
       end select
       return
@@ -1711,7 +1711,7 @@ contains
       eta=min(1.0_DP/real(iiterations+2, DP), dDefect)
 
 
-    case DEFAULT
+    case default
       ! Constant forcing term specified in the input file which
       ! results in local q-linear convergence
       etamin = SYS_EPSREAL
@@ -1777,7 +1777,7 @@ contains
       Ddef(2) = log10(rsolver%dfinalDefect)
 
 
-    case DEFAULT
+    case default
       Ddef(3) = log10(rsolver%dfinalDefect)
       Dy      = matmul(X3,Ddef)
       Ddef    = cshift(Ddef,1)

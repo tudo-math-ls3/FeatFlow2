@@ -243,7 +243,7 @@ contains
         allocate(rtimestep%DmultistepWeights(4*npc))
         rtimestep%DmultistepWeights = TSTEP_RK4
 
-      case DEFAULT
+      case default
         allocate(rtimestep%DmultistepWeights(&
             abs(rtimestep%multisteps)))
         rtimestep%DmultistepWeights = 1._DP
@@ -252,7 +252,7 @@ contains
       ! Allocate array of temporal vectors
       allocate(rtimestep%RtempVectors(4))
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of time stepping algorithm!',&
           OU_CLASS_ERROR,OU_MODE_STD,'tstep_createTimestepDirect')
       call sys_halt()
@@ -307,7 +307,7 @@ contains
       call parlst_getvalue_double(rparlist, ssectionName,&
           "dmaxRel", rtimestep%p_rpidController%dmaxRel)
 
-    case DEFAULT
+    case default
        call output_line('Invalid type of adaptive time-stepping algorithm!',&
            OU_CLASS_ERROR,OU_MODE_STD,'tstep_createTimestepDirect')
       call sys_halt()
@@ -1939,7 +1939,7 @@ contains
         call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver,&
             rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
-      case DEFAULT
+      case default
         call output_line('Unsupported time-stepping algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingBl')
         call sys_halt()
@@ -2020,7 +2020,7 @@ contains
         call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver,&
             rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
-      case DEFAULT
+      case default
         call output_line('Unsupported time-stepping algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingSc')
         call sys_halt()
@@ -2304,7 +2304,7 @@ contains
                                      lalg_normDble(p_Ddata1, rtimestep%isolNorm))
 
 
-    case DEFAULT
+    case default
       ! Accept time step unconditionally
       breject = .false.
 

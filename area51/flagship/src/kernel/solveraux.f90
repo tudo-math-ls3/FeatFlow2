@@ -980,7 +980,7 @@ contains
         call solver_createSolver(rparlist, ssolverName,&
                                  rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
-      case DEFAULT
+      case default
         call output_line('Invalid nonlinear solver for full multigrid solver!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
@@ -1030,7 +1030,7 @@ contains
         call solver_createSolver(rparlist, ssolverName,&
                                  rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
-      case DEFAULT
+      case default
         call output_line('Invalid coarse grid solver for nonlinear multigrid solver!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
@@ -1066,7 +1066,7 @@ contains
           rsolver%p_solverMultigrid%csmootherType = ismoother
           call create_smoother(rparlist, ssmootherName, rsolver%p_solverMultigrid)
 
-        case DEFAULT
+        case default
           call output_line('Invalid smoother for nonlinear multigrid solver!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
           call sys_halt()
@@ -1117,7 +1117,7 @@ contains
         call solver_createSolver(rparlist, ssolverName,&
                                  rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
-      case DEFAULT
+      case default
         call output_line('Invalid coarse grid solver for linear multigrid solver!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
@@ -1149,7 +1149,7 @@ contains
         case (SV_LINEAR, SV_LINEARMG)
           call create_smoother(rparlist, ssmootherName, rsolver%p_solverMultigrid)
 
-        case DEFAULT
+        case default
           call output_line('Invalid smoother for nonlinear multigrid solver!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
           call sys_halt()
@@ -1174,7 +1174,7 @@ contains
         ! Ok, set up the nonlinear preconditioner
         call create_preconditioner(rparlist, ssectionName, rsolver)
 
-      case DEFAULT
+      case default
         call output_line('Unsupported nonlinear solver!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
@@ -1264,13 +1264,13 @@ contains
         call parlst_getvalue_int(rparlist, ssectionName, "ifill", &
                                  rsolver%p_solverILU%ifill)
 
-      case DEFAULT
+      case default
         call output_line('Unsupported linear solver!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
       end select
 
-    case DEFAULT
+    case default
       call output_line('Unsupported solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
       call sys_halt()
@@ -1380,7 +1380,7 @@ contains
           call parlst_getvalue_double(rparlist, ssectionName, "dperturbationStrategy",&
                                       rsolver%p_solverNewton%dperturbationStrategy)
 
-        case DEFAULT
+        case default
           call output_line('Unsupported nonlinear preconditioner!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
           call sys_halt()
@@ -1420,7 +1420,7 @@ contains
           call parlst_getvalue_int(rparlist, ssectionName, "ifill", &
                                    rsolver%p_solverILU%ifill)
 
-        case DEFAULT
+        case default
           ! Ok, we could not identify one of the simple preconditioners.
           ! Let us try to create the preconditioner as real solver subnode
           call solver_createSolver(rparlist, ssectionName, rsolver)
@@ -1438,7 +1438,7 @@ contains
         rsolver%ddivRel          = SYS_INFINITY
         rsolver%ddivAbs          = SYS_INFINITY
 
-      case DEFAULT
+      case default
         call output_line('Unsupported preconditioner type!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
         call sys_halt()
@@ -1503,7 +1503,7 @@ contains
           end do
         end if
 
-      case DEFAULT
+      case default
         call output_line('Unsupported type of smoother!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'create_smoother')
         call sys_halt()
@@ -2441,7 +2441,7 @@ contains
           call output_line('cycle: V-cycle')
         case (-2,2)
           call output_line('cycle: W-cycle')
-        case DEFAULT
+        case default
           call output_line('cycle: unknown !!!')
         end select
         call output_line('nlmin:         '//trim(sys_siL(rsolver%p_solverMultigrid%initialNlmin,5))//', '//&
@@ -3425,7 +3425,7 @@ contains
     case(SV_STAGNATED)
       cstat = "failed [ stagnation ]"
 
-    case DEFAULT
+    case default
       cstat = "undefined status"
     end select
 
@@ -3499,7 +3499,7 @@ contains
         nullify(p_rsubsolver)
       end if
 
-    case DEFAULT
+    case default
       nullify(p_rsubsolver)
     end select
 
@@ -4146,7 +4146,7 @@ contains
                                   SV_SSPEC_NEEDSUPDATE)
       end if
 
-    case DEFAULT
+    case default
       call output_line('Unsupported solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
       call sys_halt()
@@ -4316,7 +4316,7 @@ contains
                                   SV_SSPEC_NEEDSUPDATE)
       end if
 
-    case DEFAULT
+    case default
       call output_line('Unsupported solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
       call sys_halt()
@@ -4374,7 +4374,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_setPrecondMatrixScalar')
       call sys_halt()
@@ -4432,7 +4432,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_setPrecondMatrixBlock')
       call sys_halt()
@@ -4513,7 +4513,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
       call sys_halt()
@@ -4595,7 +4595,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixBlock')
       call sys_halt()
@@ -5048,7 +5048,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported solver type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'solver_updateStructure')
       call sys_halt()
@@ -5124,7 +5124,7 @@ contains
         end do
 
 
-      case DEFAULT
+      case default
         call output_line('Unsupported solver type!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'smoother_updateStructure')
         call sys_halt()
@@ -5281,7 +5281,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_updateContent')
       call sys_halt()
@@ -5425,7 +5425,7 @@ contains
 
           DxFine(:,IverticesAtElementFine(3,iel)) = 0.25_DP*sum(Dxloc,2)
 
-        case DEFAULT
+        case default
           call output_line('Invalid number of vertices per element!',&
               OU_CLASS_ERROR,OU_MODE_STD,'do_prolongationP1Q1')
           call sys_halt()
@@ -5606,7 +5606,7 @@ contains
               DxCoarse(:,iloc(1)) = DxCoarse(:,iloc(1)) + 0.25_DP*DxFine(:,iloc(4))
 
 
-        case DEFAULT
+        case default
           call output_line('Invalid number of vertices per element!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'do_restrictionP1Q1')
           call sys_halt()
@@ -6156,13 +6156,13 @@ contains
 
             end if
 
-          case DEFAULT
+          case default
             call output_line('Unsupported interleave matrix format!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
             call sys_halt()
           end select
 
-        case DEFAULT
+        case default
           call output_line('Unsupported matrix format!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
           call sys_halt()
@@ -6185,7 +6185,7 @@ contains
                              abs(rsolver%domega), rsolver%lu, rsolver%jlu,&
                              rsolver%ilup, rsolver%h_Idata)
 
-        case DEFAULT
+        case default
           call output_line('Unsupported matrix format!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
           call sys_halt()
@@ -6282,7 +6282,7 @@ contains
             ! Insufficient memory
             maxstr = maxstr+max(mneed, NEQ)
 
-          case DEFAULT
+          case default
             ! Unknown error
             call output_line('Internal error!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'solver_initILU')
@@ -6830,7 +6830,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
 
-    case DEFAULT
+    case default
       ! Internal error
       call output_line('Internal UMFPACK error!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
@@ -6860,7 +6860,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
 
-    case DEFAULT
+    case default
       ! Unknown error
       call output_line('Internal UMFPACK error!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
@@ -6904,7 +6904,7 @@ contains
           ! Convert to format 9
           call lsyssc_convertMatrix(rmatrixDest, LSYSSC_MATRIX9, .true.)
 
-        case DEFAULT
+        case default
           call output_line('Unsupported matrix format!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
           call sys_halt()

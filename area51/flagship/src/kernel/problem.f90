@@ -344,7 +344,7 @@ contains
         call sys_halt()
       end if
 
-    case DEFAULT
+    case default
       call output_line('Invalid spatial dimension!',&
           OU_CLASS_WARNING,OU_MODE_STD,'problem_initProblem')
       call sys_halt()

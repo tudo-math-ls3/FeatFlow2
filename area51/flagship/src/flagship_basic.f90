@@ -304,7 +304,7 @@ contains
                           trim(adjustl(sfilename))//'.vtu')
       end if
 
-    case DEFAULT
+    case default
       call output_line('Invalid UCD output type!', &
                        OU_CLASS_ERROR,OU_MODE_STD,'flagship_initUCDexport')
       call sys_halt()
@@ -521,7 +521,7 @@ contains
                 end if
               end if
 
-            case DEFAULT
+            case default
               call output_line('Unsupported system format!',&
                                OU_CLASS_ERROR,OU_MODE_STD,'updateMatrix')
               call sys_halt()
@@ -584,7 +584,7 @@ contains
                   rproblemLevel%RmatrixBlock(imatrix))
             end if
 
-          case DEFAULT
+          case default
             call output_line('Unsupported system format!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'updateMatrix')
             call sys_halt()
@@ -642,14 +642,14 @@ contains
                   p_rproblemLevelTmp%RmatrixBlock(imatrix))
             end if
 
-          case DEFAULT
+          case default
             call output_line('Unsupported system format!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'updateMatrix')
             call sys_halt()
           end select
         end if
 
-      case DEFAULT
+      case default
         call output_line('Unsupported solver type!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'updateMatrix')
         call sys_halt()

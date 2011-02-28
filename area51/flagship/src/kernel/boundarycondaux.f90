@@ -640,7 +640,7 @@ contains
             p_IverticesAtBoundary, p_IboundaryCpIdx,&
             p_DvertexParameterValue, p_Irows, nrows)
 
-      case DEFAULT
+      case default
         call output_line('Unsupported spatial dimension!',&
             OU_CLASS_ERROR,OU_MODE_STD,'bdrc_calcMatrixScalarPeriodic')
         call sys_halt()

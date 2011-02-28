@@ -1126,7 +1126,7 @@ contains
           .false., .false., .true., .true.,&
           rproblemLevel%Rmatrix(systemMatrix))
 
-    case DEFAULT
+    case default
 
       !-------------------------------------------------------------------------
       ! Compute the global operator for steady-state flow
@@ -1279,7 +1279,7 @@ contains
     case (PERTURB_SQRTEPS)
       hstep= sqrt(SYS_EPSREAL)
 
-    case DEFAULT
+    case default
       hstep = max(SYS_EPSREAL,&
                   rsolver%p_solverNewton%dperturbationStrategy)
     end select
@@ -1329,7 +1329,7 @@ contains
       print *, "Variable diffusion matrices are yet not implemented!"
       stop
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of diffusion!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
       call sys_halt()
@@ -1661,7 +1661,7 @@ contains
           .false., .false., .true., bisExactStructure,&
           rproblemLevel%Rmatrix(jacobianMatrix))
 
-    case DEFAULT
+    case default
 
       !-------------------------------------------------------------------------
       ! Compute the global Jacobian for steady-state flow
@@ -1701,7 +1701,7 @@ contains
       print *, "Variable diffusion matrices are yet not implemented!"
       stop
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of diffusion!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
       call sys_halt()
@@ -2581,7 +2581,7 @@ contains
           jacobianMatrix, SYSTEM_INTERLEAVEFORMAT,&
           UPDMAT_JAC_TRANSIENT, rproblemLevel%ilev, rproblemLevel%ilev)
 
-    case DEFAULT
+    case default
       call flagship_updateSolverMatrix(rproblemLevel, rsolver,&
           jacobianMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_JAC_STEADY,&
           rproblemLevel%ilev, rproblemLevel%ilev)
@@ -2959,7 +2959,7 @@ contains
 
       end if ! theta
 
-    case DEFAULT
+    case default
 
       !-------------------------------------------------------------------------
       ! Initialize the constant right-hand side by zeros
@@ -3158,7 +3158,7 @@ contains
           rsolution%RvectorBlock(1), rres%RvectorBlock(1), -1.0_DP, 1.0_DP)
       
 
-    case DEFAULT
+    case default
 
       !-------------------------------------------------------------------------
       ! Compute the residual for stationary flows
@@ -3406,7 +3406,7 @@ contains
       call parlst_getvalue_int(p_rparlist,&
           ssectionName, 'jacobianmatrix', imatrix)
 
-    case DEFAULT
+    case default
       call output_line('Invalid nonlinear preconditioner!',&
           OU_CLASS_ERROR, OU_MODE_STD,'transp_setBoundaryCondition')
       call sys_halt()

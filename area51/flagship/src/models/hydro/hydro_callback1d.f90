@@ -3807,7 +3807,7 @@ contains
       Du(3) = p/(GAMMA-1.0)+0.5*rho*(vn*vn)
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported type of boundary condition!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcBoundaryvalues1d')
       call sys_halt()
