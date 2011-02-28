@@ -13,6 +13,7 @@
 			  DfluxValues,&
 			  rvectorSolBlock,&
 			  IelementList,&
+			  Dside,&
               normal,&
 !              DpointsReal,&
               rintSubSet,&
@@ -39,13 +40,14 @@
     
   !<input>
 !  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
-  real(DP), dimension(:,:,:,:), intent(out) :: DfluxValues
+  real(DP), dimension(:,:,:), intent(out) :: DfluxValues
   real(DP), dimension(:,:), intent(in) :: normal
 !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_collection), intent(inout), target, optional :: rcollection
   type(t_vectorBlock), intent(in) :: rvectorSolBlock
   integer, dimension(:), intent(in) :: IelementList
+  real(DP), dimension(:,:), intent(out) :: Dside
     
   !</input>
   
