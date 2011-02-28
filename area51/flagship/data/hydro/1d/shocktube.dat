@@ -51,7 +51,7 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
 # 3 = Rusanov type
-idissipationtype = 2
+idissipationtype = 3
 
 # type of system coupling
 # 0 = segregated approach
@@ -64,6 +64,8 @@ isystemcoupling = 0
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
 isystemPrecond = 1
+
+#-------------------------------------------------------------------------------
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -89,8 +91,11 @@ sfailsafevariable(2) =
 
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution
-isolutiontype = 1
+# 1 = analytical initial solution: pointwise values
+# 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
+isolutiontype = 3
 
 # section name of initial solution
 ssolutionname(3) = 
@@ -105,6 +110,21 @@ iexactsolutiontype = 0
 
 # section name of exact solution
 sexactsolutionname =
+
+# variables for constrained initialization
+ssolutionconstrainvariable(2) =
+  density
+  pressure
+
+# number of failsafe steps in constrained initialization
+nsolutionfailsafe = 3
+
+# variables for failsafe constrained initialization
+ssolutionfailsafevariable(4) =
+  density
+  pressure
+  velocity_x
+  energy
 
 #-------------------------------------------------------------------------------
 
@@ -168,7 +188,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 1
 
 # perform prelimiting
 iprelimiting = 0
@@ -237,7 +257,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.231
+dfinalTime = 0.01
 
 # initial time step size
 dinitialStep = 0.001
@@ -629,7 +649,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-1
+depsRel = 0.0
 
 # relative tolerance for stagnation
 depsStag = 0.0
