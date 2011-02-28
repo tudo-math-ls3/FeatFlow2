@@ -133,14 +133,8 @@ prmfile = grids/2d/square_01x01_quads.prm
 # file which contains the triangulation
 trifile = grids/2d/square_01x01_quads.tri
 
-# type of finite element space
-#  1 = P1 finite elements
-#  2 = P2 finite elements
-# 11 = Q1 finite elements
-# 12 = Q2 finite elements
-# -1 = mixed P1/Q1 finite elements
-# -2 = mixed P2/Q2 finite elements
-celement = 11
+# type of finite element space(s)
+celement = EL_Q1_2D
 
 # convert mesh to triangular mesh?
 iconvToTria = 0

@@ -227,14 +227,8 @@ ssolutionfailsafevariable(2) =
 
 #-------------------------------------------------------------------------------
 
-# type of finite element space
-#  1 = P1 finite elements
-#  2 = P2 finite elements
-# 11 = Q1 finite elements
-# 12 = Q2 finite elements
-# -1 = mixed P1/Q1 finite elements
-# -2 = mixed P2/Q2 finite elements
-celement = 11
+# type of finite element space(s)
+celement = EL_Q1_2D
 
 # type of matrix format
 # 7 = matrix format 7
@@ -414,7 +408,7 @@ sexacttargetfuncname =
 
 #-------------------------------------------------------------------------------
 
-# type of finite element space
+# type of finite element space(s)
 #  1 = P1 finite elements
 #  2 = P2 finite elements
 # 11 = Q1 finite elements
