@@ -408,11 +408,13 @@ module element
   integer(I32), parameter, public :: EL_Q2      = EL_2D + 13
   integer(I32), parameter, public :: EL_E013    = EL_Q2
   integer(I32), parameter, public :: EL_Q2_2D   = EL_Q2
+  integer(I32), parameter, public :: EL_E013_2D = EL_Q2
 
   ! ID of bicubic conforming quadrilateral FE, Q3
   integer(I32), parameter, public :: EL_Q3      = EL_2D + 14
   integer(I32), parameter, public :: EL_E014    = EL_Q3
   integer(I32), parameter, public :: EL_Q3_2D   = EL_Q3
+  integer(I32), parameter, public :: EL_E014_2D = EL_Q3
   
   ! ID of nonconforming parametric linear P1 element on a quadrilareral
   ! element, given by function value in the midpoint and the two
