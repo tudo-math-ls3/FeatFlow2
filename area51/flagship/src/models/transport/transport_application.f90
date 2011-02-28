@@ -837,7 +837,8 @@ contains
     type(t_boundary) , pointer :: p_rboundary
     type(t_fparser), pointer :: p_rfparser
 
-    integer :: i,j,nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval,nmatrices
+    integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
+    integer :: i,j,nmatrices,nsubstrings,ccubType
 
     ! Retrieve application specific parameters from the parameter list
     call parlst_getvalue_int(rparlist,&
@@ -912,7 +913,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
           call sys_halt()
         end select
-
+      
       case (NDIM2D)
         select case(celement)
         case (1)
@@ -990,6 +991,69 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
         call sys_halt()
       end select
+      
+      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeBilForm')) then
+        ! Check if special cubature formula for evaluating integral
+        ! terms of the bilinear form are requested by the user
+        nsubstrings = max(1, parlst_querysubstrings(rparlist,&
+                             ssectionName, 'ccubTypeBilForm'))
+        if (nsubstrings .ne. 0) then
+          if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
+            do i = 1, nsubstrings
+              call parlst_getvalue_int(rparlist,&
+                  ssectionName, 'ccubTypeBilForm', ccubType, 0, i)
+              if (ccubType .ne. 0)&
+                  p_rdiscretisation%RspatialDiscr(1)%RelementDistr(i)%ccubTypeBilForm = ccubType
+            end do
+          else
+            call output_line('Number of substrings does not match number of FE spaces!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
+            call sys_halt()
+          end if
+        end if
+      end if
+      
+      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeLinForm')) then
+        ! Check if special cubature formula for evaluating integral
+        ! terms of the linear form are requested by the user
+        nsubstrings = max(1, parlst_querysubstrings(rparlist,&
+                             ssectionName, 'ccubTypeLinForm'))
+        if (nsubstrings .ne. 0) then
+          if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
+            do i = 1, nsubstrings
+              call parlst_getvalue_int(rparlist,&
+                  ssectionName, 'ccubTypeLinForm', ccubType, 0, i)
+              if (ccubType .ne. 0)&
+                  p_rdiscretisation%RspatialDiscr(1)%RelementDistr(i)%ccubTypeLinForm = ccubType
+            end do
+          else
+            call output_line('Number of substrings does not match number of FE spaces!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
+            call sys_halt()
+          end if
+        end if
+      end if
+
+      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeEval')) then
+        ! Check if special cubature formula for evaluating integral
+        ! terms of allother terms are requested by the user
+        nsubstrings = max(1, parlst_querysubstrings(rparlist,&
+                             ssectionName, 'ccubTypeEval'))
+        if (nsubstrings .ne. 0) then
+          if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
+            do i = 1, nsubstrings
+              call parlst_getvalue_int(rparlist,&
+                  ssectionName, 'ccubTypeEval', ccubType, 0, i)
+              if (ccubType .ne. 0)&
+                  p_rdiscretisation%RspatialDiscr(1)%RelementDistr(i)%ccubTypeEval = ccubType
+            end do
+          else
+            call output_line('Number of substrings does not match number of FE spaces!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
+            call sys_halt()
+          end if
+        end if
+      end if
 
       ! Enforce using summed cubature formula (if any)
       do i = 1, p_rdiscretisation%ncomponents
@@ -1005,7 +1069,6 @@ contains
               %RelementDistr(j)%ccubTypeEval, nsumcubRefEval)
         end do
       end do
-
     end if
 
 

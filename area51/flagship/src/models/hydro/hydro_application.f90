@@ -747,8 +747,9 @@ contains
     integer :: isystemCoupling
     integer :: imatrixFormat
 
-    integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed,nmatrices
+    integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
+    integer :: nmatrices,nsubstrings,ccubType
 
     ! Retrieve application specific parameters from the collection
     call parlst_getvalue_int(rparlist,&
@@ -925,6 +926,69 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
         call sys_halt()
       end select
+
+      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeBilForm')) then
+        ! Check if special cubature formula for evaluating integral
+        ! terms of the bilinear form are requested by the user
+        nsubstrings = max(1, parlst_querysubstrings(rparlist,&
+                             ssectionName, 'ccubTypeBilForm'))
+        if (nsubstrings .ne. 0) then
+          if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
+            do i = 1, nsubstrings
+              call parlst_getvalue_int(rparlist,&
+                  ssectionName, 'ccubTypeBilForm', ccubType, 0, i)
+              if (ccubType .ne. 0)&
+                  p_rdiscretisation%RspatialDiscr(1)%RelementDistr(i)%ccubTypeBilForm = ccubType
+            end do
+          else
+            call output_line('Number of substrings does not match number of FE spaces!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
+            call sys_halt()
+          end if
+        end if
+      end if
+      
+      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeLinForm')) then
+        ! Check if special cubature formula for evaluating integral
+        ! terms of the linear form are requested by the user
+        nsubstrings = max(1, parlst_querysubstrings(rparlist,&
+                             ssectionName, 'ccubTypeLinForm'))
+        if (nsubstrings .ne. 0) then
+          if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
+            do i = 1, nsubstrings
+              call parlst_getvalue_int(rparlist,&
+                  ssectionName, 'ccubTypeLinForm', ccubType, 0, i)
+              if (ccubType .ne. 0)&
+                  p_rdiscretisation%RspatialDiscr(1)%RelementDistr(i)%ccubTypeLinForm = ccubType
+            end do
+          else
+            call output_line('Number of substrings does not match number of FE spaces!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
+            call sys_halt()
+          end if
+        end if
+      end if
+
+      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeEval')) then
+        ! Check if special cubature formula for evaluating integral
+        ! terms of allother terms are requested by the user
+        nsubstrings = max(1, parlst_querysubstrings(rparlist,&
+                             ssectionName, 'ccubTypeEval'))
+        if (nsubstrings .ne. 0) then
+          if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
+            do i = 1, nsubstrings
+              call parlst_getvalue_int(rparlist,&
+                  ssectionName, 'ccubTypeEval', ccubType, 0, i)
+              if (ccubType .ne. 0)&
+                  p_rdiscretisation%RspatialDiscr(1)%RelementDistr(i)%ccubTypeEval = ccubType
+            end do
+          else
+            call output_line('Number of substrings does not match number of FE spaces!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
+            call sys_halt()
+          end if
+        end if
+      end if
 
       ! Duplicate scalar discretisation structure for block matrix format
       if (isystemFormat .eq. SYSTEM_BLOCKFORMAT) then
