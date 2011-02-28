@@ -1530,6 +1530,7 @@ contains
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
+      ! Loop over all elements
       do iel = 1, nelements
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -1548,6 +1549,7 @@ contains
         Dcoords(1:NDIM2D,2,1) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
 #endif
 
+        ! Loop over all points
         do ipoint = 1, npoints
 
           ! Set values for function parser
@@ -1567,7 +1569,7 @@ contains
           ! Impose Dirichlet value via penalty method
           Dcoefficients(1,ipoint,iel) = dscale * dval * BDRC_DIRICHLET_PENALTY
 #endif
-        end do
+        end do ! ipoint
         
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
         ! Loop over the cubature points and interpolate the Robin
@@ -1584,9 +1586,9 @@ contains
           
           ! Store Robin boundary condition in the cubature points
           Dcoefficients(1,icubp,iel) = dlocalData
-        end do
+        end do ! icubp
 #endif
-      end do
+      end do ! iel
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       ! Deallocate temporal memory
@@ -1608,7 +1610,8 @@ contains
       if (associated(p_rvelocity)) then
         
         ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements), Daux(npoints,nelements,3))
+        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
+                 Daux(npoints,nelements,2))
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
         ! Allocate temporal memory
@@ -1644,7 +1647,7 @@ contains
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
         ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,:,1:2)
+        ! the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints, &
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -1676,8 +1679,7 @@ contains
 #endif
             
             ! Evaluate function parser
-            call fparser_evalFunction(p_rfparser, isegment,&
-                Dvalue, Daux(ipoint,iel,3))
+            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
             
             ! Compute the normal velocity
             dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
@@ -1685,12 +1687,12 @@ contains
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
             ! Store the Robin boundary condition at the DOF on the boundary
-            DcoeffAtDOF(ipoint) = -dscale * dnv * Daux(ipoint,iel,3)
+            DcoeffAtDOF(ipoint) = -dscale * dnv * dval
 #else
             ! Store the Robin boundary condition at the cubature point on the boundary
-            Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,3)
+            Dcoefficients(1,ipoint,iel) = -dscale * dnv * dval
 #endif
-          end do
+          end do ! ipoint
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Loop over the cubature points and interpolate the Robin
@@ -1707,9 +1709,9 @@ contains
             
             ! Store Robin boundary condition in the cubature points
             Dcoefficients(1,icubp,iel) = dlocalData
-          end do
+          end do ! icubp
 #endif
-        end do
+        end do ! iel
         
         ! Deallocate temporal memory
         deallocate(Daux, Dnx, Dny)
@@ -1740,7 +1742,8 @@ contains
       if (associated(p_rvelocity)) then
         
         ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements),Dny(npoints,nelements), Daux(npoints,nelements,3))
+        allocate(Dnx(npoints,nelements),Dny(npoints,nelements),&
+                 Daux(npoints,nelements,2))
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
         ! Allocate temporal memory
@@ -1776,7 +1779,7 @@ contains
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
         ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,:,1:2)
+        ! the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints, &
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -1799,28 +1802,28 @@ contains
         ! with the normal in each point to get the normal velocity.
         do iel = 1, nelements
           do ipoint = 1, npoints
-            
-            ! Set values for function parser
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
-#else
-            Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
-#endif
-            
-            ! Evaluate function parser
-            call fparser_evalFunction(p_rfparser, isegment,&
-                Dvalue, Daux(ipoint,iel,3))
-            
+                        
             ! Compute the normal velocity
             dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
                   Dny(ipoint,iel) * Daux(ipoint,iel,2)
             
             ! Check if we are at the primal inflow boundary
             if (dnv .lt. 0.0_DP) then
+              
+              ! Set values for function parser
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = -dscale * dnv * Daux(ipoint,iel,3)
+              Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
 #else
-              Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,3)
+              Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
+#endif
+              
+              ! Evaluate function parser
+              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+              DcoeffAtDOF(ipoint) = -dscale * dnv * dval
+#else
+              Dcoefficients(1,ipoint,iel) = -dscale * dnv * dval
 #endif
             else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -1829,8 +1832,8 @@ contains
               Dcoefficients(1,ipoint,iel) = 0.0_DP
 #endif
             end if
-          end do
-
+          end do ! ipoint
+          
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Loop over the cubature points and interpolate the Robin
           ! boundary conditions from the DOFs to the cubature points,
@@ -1846,9 +1849,9 @@ contains
             
             ! Store Robin boundary condition in the cubature points
             Dcoefficients(1,icubp,iel) = dlocalData
-          end do
+          end do ! icubp
 #endif
-        end do
+        end do ! iel
         
         ! Deallocate temporal memory
         deallocate(Daux, Dnx, Dny)
@@ -1926,7 +1929,7 @@ contains
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else  
         ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,:,1:2)
+        ! the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints, &
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -2421,7 +2424,8 @@ contains
       if (associated(p_rvelocity)) then
         
         ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements), Daux(npoints,nelements,3))
+        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
+                 Daux(npoints,nelements,2))
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
         ! Allocate temporal memory
@@ -2457,7 +2461,7 @@ contains
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
         ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,:,1:2)
+        ! the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints, &
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -2489,8 +2493,7 @@ contains
 #endif
             
             ! Evaluate function parser
-            call fparser_evalFunction(p_rfparser, isegment,&
-                Dvalue, Daux(ipoint,iel,3))
+            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
             
             ! Compute the normal velocity
             dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
@@ -2498,12 +2501,12 @@ contains
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
             ! Store the Robin boundary condition at the DOF on the boundary
-            DcoeffAtDOF(ipoint) = dscale * dnv * Daux(ipoint,iel,3)
+            DcoeffAtDOF(ipoint) = dscale * dnv * dval
 #else
             ! Store the Robin boundary condition at the cubature point on the boundary
-            Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
+            Dcoefficients(1,ipoint,iel) = dscale * dnv * dval
 #endif
-          end do
+          end do ! ipoint
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Loop over the cubature points and interpolate the Robin
@@ -2520,9 +2523,9 @@ contains
             
             ! Store Robin boundary condition in the cubature points
             Dcoefficients(1,icubp,iel) = dlocalData
-          end do
+          end do ! icubp
 #endif
-        end do
+        end do ! iel
         
         ! Deallocate temporal memory
         deallocate(Daux, Dnx, Dny)
@@ -2553,7 +2556,8 @@ contains
       if (associated(p_rvelocity)) then
         
         ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements),Dny(npoints,nelements), Daux(npoints,nelements,3))
+        allocate(Dnx(npoints,nelements),Dny(npoints,nelements),&
+                 Daux(npoints,nelements,2))
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
         ! Allocate temporal memory
@@ -2589,7 +2593,7 @@ contains
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
         ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,:,1:2)
+        ! the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints, &
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -2613,27 +2617,27 @@ contains
         do iel = 1, nelements
           do ipoint = 1, npoints
             
-            ! Set values for function parser
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
-#else
-            Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
-#endif
-            
-            ! Evaluate function parser
-            call fparser_evalFunction(p_rfparser, isegment,&
-                Dvalue, Daux(ipoint,iel,3))
-            
             ! Compute the normal velocity
             dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
                   Dny(ipoint,iel) * Daux(ipoint,iel,2)
             
             ! Check if we are at the dual inflow boundary
             if (dnv .gt. 0.0_DP) then
+              
+              ! Set values for function parser
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = dscale * dnv * Daux(ipoint,iel,3)
+              Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
 #else
-              Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
+              Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
+#endif
+              
+              ! Evaluate function parser
+              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+              
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+              DcoeffAtDOF(ipoint) = dscale * dnv * dval
+#else
+              Dcoefficients(1,ipoint,iel) = dscale * dnv * dval
 #endif
             else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -2642,7 +2646,7 @@ contains
               Dcoefficients(1,ipoint,iel) = 0.0_DP
 #endif
             end if
-          end do
+          end do ! ipoint
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Loop over the cubature points and interpolate the Robin
@@ -2659,9 +2663,9 @@ contains
             
             ! Store Robin boundary condition in the cubature points
             Dcoefficients(1,icubp,iel) = dlocalData
-          end do
+          end do ! icubp
 #endif
-        end do
+        end do ! iel
         
         ! Deallocate temporal memory
         deallocate(Daux, Dnx, Dny)
@@ -2739,7 +2743,7 @@ contains
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
         ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,:,1:2)
+        ! the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints, &
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -2809,7 +2813,7 @@ contains
               Dcoefficients(1,ipoint,iel) = 0.0_DP
 #endif
             end if
-          end do
+          end do ! ipoint
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
         ! Loop over the cubature points and interpolate the Robin
@@ -2826,12 +2830,12 @@ contains
           
           ! Store Robin boundary condition in the cubature points
           Dcoefficients(1,icubp,iel) = dlocalData
-        end do
+        end do ! icubp
 #endif
-        end do
-        
-        ! Deallocate temporal memory
-        deallocate(Daux, Dnx, Dny)
+      end do ! iel
+      
+      ! Deallocate temporal memory
+      deallocate(Daux, Dnx, Dny)
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       ! Deallocate temporal memory
       deallocate(Dcoords, DcoeffAtDOF)
@@ -3075,7 +3079,8 @@ contains
       if (associated(p_rvelocity)) then
 
         ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements), Daux(npoints,nelements,2))
+        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
+                 Daux(npoints,nelements,2))
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
         ! Allocate temporal memory
@@ -3111,7 +3116,7 @@ contains
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
         ! Evaluate the velocity field (if any) in the cubature points
-        ! on the boundary and store the result in Daux(:,:,:,1:2)
+        ! on the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -3140,7 +3145,7 @@ contains
             ! Scale normal velocity by scaling parameter
             Dcoefficients(1,ipoint,iel) = -dscale * dnv
 #endif
-          end do
+          end do ! ipoint
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Loop over the cubature points and interpolate the Robin
@@ -3157,9 +3162,9 @@ contains
             
             ! Store Robin boundary condition in the cubature points
             Dcoefficients(1,icubp,iel) = dlocalData
-          end do
+          end do ! icubp
 #endif
-        end do
+        end do ! iel
         
         ! Free temporal memory
         deallocate(Daux, Dnx, Dny)
@@ -3213,7 +3218,8 @@ contains
       if (associated(p_rvelocity)) then
 
         ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements), Daux(npoints,nelements,2))
+        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
+                 Daux(npoints,nelements,2))
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
         ! Allocate temporal memory
@@ -3248,8 +3254,8 @@ contains
         ! Calculate the normal vectors in DOFs on the boundary
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
-        ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,:,1:2)
+        ! Evaluate the velocity field (if any) in the cubature points
+        ! on the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -3285,7 +3291,7 @@ contains
               Dcoefficients(1,ipoint,iel) = 0.0_DP
 #endif
             end if
-          end do
+          end do ! ipoint
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Loop over the cubature points and interpolate the Robin
@@ -3302,9 +3308,9 @@ contains
             
             ! Store Robin boundary condition in the cubature points
             Dcoefficients(1,icubp,iel) = dlocalData
-          end do
+          end do ! icubp
 #endif
-        end do
+        end do ! iel
         
         ! Free temporal memory
         deallocate(Daux, Dnx, Dny)
@@ -3524,7 +3530,8 @@ contains
       if (associated(p_rvelocity)) then
 
         ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements), Daux(npoints,nelements,3))
+        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
+                 Daux(npoints,nelements,2))
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
         ! Allocate temporal memory
@@ -3560,7 +3567,7 @@ contains
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
         ! Evaluate the velocity field (if any) in the cubature points
-        ! on the boundary and store the result in Daux(:,:,:,1:2)
+        ! on the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -3589,7 +3596,7 @@ contains
             ! Scale normal velocity by scaling parameter
             Dcoefficients(1,ipoint,iel) = dscale * dnv
 #endif
-          end do
+          end do ! ipoint
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Loop over the cubature points and interpolate the Robin
@@ -3606,9 +3613,9 @@ contains
             
             ! Store Robin boundary condition in the cubature points
             Dcoefficients(1,icubp,iel) = dlocalData
-          end do
+          end do ! icubp
 #endif
-        end do
+        end do ! iel
         
         ! Free temporal memory
         deallocate(Daux, Dnx, Dny)
@@ -3662,7 +3669,8 @@ contains
       if (associated(p_rvelocity)) then
 
         ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements), Daux(npoints,nelements,3))
+        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
+                 Daux(npoints,nelements,2))
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
         ! Allocate temporal memory
@@ -3697,8 +3705,8 @@ contains
         ! Calculate the normal vectors in DOFs on the boundary
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
 #else
-        ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,:,1:2)
+        ! Evaluate the velocity field (if any) in the cubature points
+        ! on the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -3734,7 +3742,7 @@ contains
               Dcoefficients(1,ipoint,iel) = 0.0_DP
 #endif
             end if
-          end do
+          end do ! ipoint
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Loop over the cubature points and interpolate the Robin
@@ -3751,9 +3759,9 @@ contains
             
             ! Store Robin boundary condition in the cubature points
             Dcoefficients(1,icubp,iel) = dlocalData
-          end do
+          end do ! icubp
 #endif
-        end do
+        end do ! iel
         
         ! Free temporal memory
         deallocate(Daux, Dnx, Dny)
@@ -4281,7 +4289,7 @@ contains
       allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the solution in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
+      ! and store the result in Daux(:,:,:1)
       call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
           p_rsolution%RvectorBlock(1), Dpoints, &
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -4469,7 +4477,7 @@ contains
       allocate(Dny(npointsPerElement, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
+      ! and store the result in Daux(:,:,1)
       call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -4530,7 +4538,7 @@ contains
       allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the solution field in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
+      ! and store the result in Daux(:,:,1)
       call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -5087,7 +5095,7 @@ contains
       allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the solution in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
+      ! and store the result in Daux(:,:,1)
       call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
           p_rsolution%RvectorBlock(1), Dpoints, &
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -5277,7 +5285,7 @@ contains
       allocate(Dny(npointsPerElement, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
+      ! and store the result in Daux(:,:,1)
       call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -5339,7 +5347,7 @@ contains
       allocate(Dny(npointsPerElement, nelements))
 
       ! Evaluate the solution field in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
+      ! and store the result in Daux(:,:,1)
       call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
           p_rsolution%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -6018,7 +6026,8 @@ contains
       ! into the bilinear form.
 
       ! Allocate temporal memory
-      allocate(Dnx(npoints,nelements),Dny(npoints,nelements), Daux(npoints,nelements,1))
+      allocate(Dnx(npoints,nelements),Dny(npoints,nelements),&
+               Daux(npoints,nelements,1))
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       ! Allocate temporal memory
@@ -6517,7 +6526,8 @@ contains
       ! Assemble the convective part of the boundary integral
 
       ! Allocate temporal memory
-      allocate(Dnx(npoints,nelements), Dny(npoints,nelements), Daux(npoints,nelements))
+      allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
+               Daux(npoints,nelements))
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       ! Allocate temporal memory
@@ -6639,7 +6649,8 @@ contains
       ! likewise assembled for periodic and antiperiodic boundary conditions
 
       ! Allocate temporal memory
-      allocate(Dnx(npoints,nelements), Dny(npoints,nelements), Daux(npoints,nelements))
+      allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
+               Daux(npoints,nelements))
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       ! Allocate temporal memory
