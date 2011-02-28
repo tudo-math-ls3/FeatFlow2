@@ -83,7 +83,7 @@ PARAMETERS
 4.0  T  'FLUX_WEAK'  '0.0'
 
 # Specify the boundary conditions for the primal problem no.2
-[bdrcond_weak_primal1]
+[bdrcond_weak_primal2]
 NBCT
 1
 NEXPR
@@ -97,7 +97,7 @@ PARAMETERS
 4.0  T  'FLUX_WEAK'  '0.0'
 
 # Specify the boundary conditions for the primal problem no.3
-[bdrcond_weak_primal1]
+[bdrcond_weak_primal3]
 NBCT
 1
 NEXPR
