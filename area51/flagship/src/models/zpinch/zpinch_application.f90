@@ -925,7 +925,7 @@ contains
         call lsyssc_getbase_double(rvector2, p_Ddata2)
         call lsyssc_getbase_double(rvector3, p_Ddata3)
 
-      case DEFAULT
+      case default
         call output_line('Invalid number of spatial dimensions',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_outputSolution')
         call sys_halt()
@@ -1212,7 +1212,7 @@ contains
         call sys_halt()
       end if
 
-    case DEFAULT
+    case default
 
       call output_line('Invalid type of system format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'zpinch_adaptTriangulation')
@@ -1695,7 +1695,7 @@ contains
         end if
 
 
-      case DEFAULT
+      case default
         call output_line('Unsupported time-stepping algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
         call sys_halt()

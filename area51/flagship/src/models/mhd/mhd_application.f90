@@ -641,10 +641,12 @@ contains
     integer :: coeffMatrix_CYZ
     integer :: inviscidAFC
     integer :: discretisation
-    integer :: celement
     integer :: isystemFormat
     integer :: isystemCoupling
     integer :: imatrixFormat
+
+    integer, dimension(:), allocatable :: Celement
+    character(len=SYS_STRLEN) :: selemName
 
     integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
@@ -690,8 +692,6 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isystemCoupling', isystemCoupling)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'celement', celement)
-    call parlst_getvalue_int(rparlist,&
         ssectionName, 'nsumcubRefBilForm', nsumcubRefBilForm, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'nsumcubRefLinForm', nsumcubRefLinForm, 0)
@@ -718,120 +718,66 @@ contains
           call spdiscr_initBlockDiscr(p_rdiscretisation,&
               mhd_getNVAR(rproblemLevel), p_rtriangulation)
 
-        case DEFAULT
+        case default
           call output_line('Unsupported system format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_initProblemLevel')
           call sys_halt()
         end select
       end if
 
+      ! Allocate temporal memory
+      nsubstrings = max(1, parlst_querysubstrings(rparlist,&
+                           ssectionName, 'celement'))
+      allocate(Celement(nsubstrings))
+
+      ! Get IDs of element types
+      do i = 1, nsubstrings
+        call parlst_getvalue_string(rparlist,&
+            ssectionName, 'celement', selemName, isubstring=i)
+        Celement(i) = elem_igetID(selemName)
+      end do
+      
       ! Get spatial dimension
-      select case(p_rtriangulation%ndim)
+      select case(p_rdiscretisation%ndimension)
       case (NDIM1D)
-        select case(celement)
-        case (-1,1,11)
-          ! P1=Q1 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case (-2,2,12)
-          ! P2=Q2 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case DEFAULT
-          call output_line('Unsupproted element type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_initProblemLevel')
-          call sys_halt()
-        end select
+        call spdiscr_initDiscr_simple(&
+            p_rdiscretisation%RspatialDiscr(1),&
+            Celement(1), SPDISC_CUB_AUTOMATIC,&
+            p_rtriangulation, p_rboundary)
 
       case (NDIM2D)
-        select case(celement)
-        case (1)
-          ! P1 finite elements
+        if (size(Celement) .eq. 1) then
           call spdiscr_initDiscr_simple(&
               p_rdiscretisation%RspatialDiscr(1),&
-              EL_E001, SPDISC_CUB_AUTOMATIC,&
+              Celement(1), SPDISC_CUB_AUTOMATIC,&
               p_rtriangulation, p_rboundary)
-
-        case (2)
-          ! P2 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E002, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case (11)
-          ! Q1 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E011, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case (12)
-          ! Q2 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E013, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case (-1)
-          ! mixed P1/Q1 finite elements
+        else
           call spdiscr_initDiscr_triquad(&
-              p_rdiscretisation%RspatialDiscr(1), EL_E001, EL_E011,&
+              p_rdiscretisation%RspatialDiscr(1), Celement(1), Celement(2),&
               SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC,&
               p_rtriangulation, p_rboundary)
-
-        case (-2)
-          ! mixed P2/Q2 finite elements
-          call spdiscr_initDiscr_triquad(&
-              p_rdiscretisation%RspatialDiscr(1), EL_E002, EL_E013,&
-              SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case DEFAULT
-          call output_line('Unsupproted element type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_initProblemLevel')
-          call sys_halt()
-        end select
+        end if
 
       case (NDIM3D)
-        select case(celement)
-        case (1)
-          ! P1 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E001_3D, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case (11)
-          ! Q1 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E010_3D, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case DEFAULT
-          call output_line('Unsupproted element type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'mhd_initProblemLevel')
-          call sys_halt()
-        end select
-
-      case DEFAULT
+        call spdiscr_initDiscr_simple(&
+            p_rdiscretisation%RspatialDiscr(1),&
+            Celement(1), SPDISC_CUB_AUTOMATIC,&
+            p_rtriangulation, p_rboundary)
+      
+      case default
         call output_line('Invalid number of spatial dimensions',&
-            OU_CLASS_ERROR,OU_MODE_STD,'mhd_initProblemLevel')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
         call sys_halt()
       end select
-
-            if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeBilForm')) then
+      
+      ! Deallocate temporal memory
+      deallocate(Celement)
+      
+      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeBilForm')) then
         ! Check if special cubature formula for evaluating integral
         ! terms of the bilinear form are requested by the user
         nsubstrings = max(1, parlst_querysubstrings(rparlist,&
-                             ssectionName, 'ccubTypeBilForm'))
+            ssectionName, 'ccubTypeBilForm'))
         if (nsubstrings .ne. 0) then
           if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
             do i = 1, nsubstrings
@@ -968,7 +914,7 @@ contains
           case (LSYSSC_MATRIX9)
             rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX9INTL
 
-          case DEFAULT
+          case default
             call output_line('Unsupported matrix format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'mhd_initProblemLevel')
             call sys_halt()
@@ -982,7 +928,7 @@ contains
           case (SYSTEM_ALLCOUPLED)
             rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIX1
 
-          case DEFAULT
+          case default
             call output_line('Unsupported interleave matrix format!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'mhd_initProblemLevel')
             call sys_halt()
@@ -1029,7 +975,7 @@ contains
               end do
             end do
 
-          case DEFAULT
+          case default
             call output_line('Unsupported block matrix format!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'mhd_initProblemLevel')
             call sys_halt()
@@ -1069,7 +1015,7 @@ contains
               end do
             end do
 
-          case DEFAULT
+          case default
             call output_line('Unsupported block matrix format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'mhd_initProblemLevel')
             call sys_halt()
@@ -1080,7 +1026,7 @@ contains
         ! Update internal structure of block matrix
         call lsysbl_updateMatStrucInfo(rproblemLevel%RmatrixBlock(systemMatrix))
 
-      case DEFAULT
+      case default
         call output_line('Unsupported system format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'mhd_initProblemLevel')
         call sys_halt()
@@ -1958,7 +1904,7 @@ contains
       call lsyssc_releaseMatrix(rlumpedMassMatrix)
         
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of solution profile!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'mhd_initSolution')
       call sys_halt()
@@ -2425,7 +2371,7 @@ contains
         ! This is no error estimator
         derrorTmp = 1.0
 
-      case DEFAULT
+      case default
         call output_line('Invalid type of error estimator!',&
             OU_CLASS_ERROR,OU_MODE_STD,'mhd_estimateRecoveryError')
         call sys_halt()
@@ -2680,7 +2626,7 @@ contains
             rcollection, mhd_hadaptCallbackBlock3D)
       end select
 
-    case DEFAULT
+    case default
 
       ! How many spatial dimensions do we have?
       select case(rtriangulationSrc%ndim)
@@ -3028,7 +2974,7 @@ contains
         call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
             rsolver, rsolution, mhd_nlsolverCallback, rcollection)
 
-      case DEFAULT
+      case default
         call output_line('Unsupported time-stepping algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'mhd_solveTransientPrimal')
         call sys_halt()

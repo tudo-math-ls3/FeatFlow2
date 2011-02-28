@@ -829,13 +829,15 @@ contains
     integer :: diffusionAFC
     integer :: discretisation
     integer :: ijacobianFormat
-    integer :: celement
     integer :: imatrixFormat
 
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_triangulation) , pointer :: p_rtriangulation
     type(t_boundary) , pointer :: p_rboundary
     type(t_fparser), pointer :: p_rfparser
+
+    integer, dimension(:), allocatable :: Celement
+    character(len=SYS_STRLEN) :: selemName
 
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
     integer :: i,j,nmatrices,nsubstrings,ccubType
@@ -868,8 +870,6 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'discretisation', discretisation)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'celement', celement)
-    call parlst_getvalue_int(rparlist,&
         ssectionName, 'nsumcubRefBilForm', nsumcubRefBilForm, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'nsumcubRefLinForm', nsumcubRefLinForm, 0)
@@ -890,108 +890,54 @@ contains
         call spdiscr_initBlockDiscr(p_rdiscretisation, 1, p_rtriangulation)
       end if
 
+      ! Allocate temporal memory
+      nsubstrings = max(1, parlst_querysubstrings(rparlist,&
+                           ssectionName, 'celement'))
+      allocate(Celement(nsubstrings))
+
+      ! Get IDs of element types
+      do i = 1, nsubstrings
+        call parlst_getvalue_string(rparlist,&
+            ssectionName, 'celement', selemName, isubstring=i)
+        Celement(i) = elem_igetID(selemName)
+      end do
+      
       ! Get spatial dimension
       select case(p_rdiscretisation%ndimension)
       case (NDIM1D)
-        select case(celement)
-        case (-1,1,11)
-          ! P1=Q1 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
+        call spdiscr_initDiscr_simple(&
+            p_rdiscretisation%RspatialDiscr(1),&
+            Celement(1), SPDISC_CUB_AUTOMATIC,&
+            p_rtriangulation, p_rboundary)
 
-        case(-2,2,12)
-          ! P2=Q2 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case DEFAULT
-          call output_line('Unsupported element type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
-          call sys_halt()
-        end select
-      
       case (NDIM2D)
-        select case(celement)
-        case (1)
-          ! P1 finite elements
+        if (size(Celement) .eq. 1) then
           call spdiscr_initDiscr_simple(&
               p_rdiscretisation%RspatialDiscr(1),&
-              EL_E001, SPDISC_CUB_AUTOMATIC,&
+              Celement(1), SPDISC_CUB_AUTOMATIC,&
               p_rtriangulation, p_rboundary)
-
-        case (2)
-          ! P2 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E002, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case (11)
-          ! Q1 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E011, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case (12)
-          ! Q2 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E013, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case (-1)
-          ! mixed P1/Q1 finite elements
+        else
           call spdiscr_initDiscr_triquad(&
-              p_rdiscretisation%RspatialDiscr(1), EL_E001, EL_E011,&
+              p_rdiscretisation%RspatialDiscr(1), Celement(1), Celement(2),&
               SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC,&
               p_rtriangulation, p_rboundary)
-
-        case (-2)
-          ! mixed P2/Q2 finite elements
-          call spdiscr_initDiscr_triquad(&
-              p_rdiscretisation%RspatialDiscr(1), EL_E002, EL_E013,&
-              SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case DEFAULT
-          call output_line('Unsupproted element type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
-          call sys_halt()
-        end select
+        end if
 
       case (NDIM3D)
-        select case(celement)
-        case (1)
-          ! P1 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E001_3D, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case (11)
-          ! Q1 finite elements
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              EL_E010_3D, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
-
-        case DEFAULT
-          call output_line('Unsupproted element type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
-          call sys_halt()
-        end select
-
-      case DEFAULT
+        call spdiscr_initDiscr_simple(&
+            p_rdiscretisation%RspatialDiscr(1),&
+            Celement(1), SPDISC_CUB_AUTOMATIC,&
+            p_rtriangulation, p_rboundary)
+      
+      case default
         call output_line('Invalid number of spatial dimensions',&
             OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
         call sys_halt()
       end select
       
+      ! Deallocate temporal memory
+      deallocate(Celement)
+
       if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeBilForm')) then
         ! Check if special cubature formula for evaluating integral
         ! terms of the bilinear form are requested by the user
@@ -1234,7 +1180,7 @@ contains
       case (NDIM3D)
         call initDiffusionMatrix3D(p_rfparser,&
             rproblemLevel%Rmatrix(coeffMatrix_S))
-      case DEFAULT
+      case default
         call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(coeffMatrix_S))
       end select
     end if
@@ -1440,7 +1386,7 @@ contains
         ! of the physical diffusion parameter alpha
         call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha)
 
-      case DEFAULT
+      case default
         call lsyssc_clearMatrix(rmatrix)
       end select
 
@@ -1513,7 +1459,7 @@ contains
         ! Assemble the anisotropic diffusion matrix
         call bilf_buildMatrixScalar(rform, .true., rmatrix)
 
-      case DEFAULT
+      case default
         call lsyssc_clearMatrix(rmatrix)
       end select
 
@@ -1601,7 +1547,7 @@ contains
         ! Assemble the anisotropic diffusion matrix
         call bilf_buildMatrixScalar(rform, .true., rmatrix)
 
-      case DEFAULT
+      case default
         call lsyssc_clearMatrix(rmatrix)
       end select
 
@@ -1951,7 +1897,7 @@ contains
       call lsyssc_releaseMatrix(rlumpedMassMatrix)
 
       
-    case DEFAULT
+    case default
       call output_line('Invalid type of solution profile!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'transp_initSolution')
       call sys_halt()
@@ -2054,7 +2000,7 @@ contains
       call collct_done(rcollectionTmp)
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of target functional!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_initRHS')
       call sys_halt()
@@ -2163,7 +2109,7 @@ contains
       call collct_done(rcollectionTmp)
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of target functional!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_initTargetFunc')
       call sys_halt()
@@ -2918,7 +2864,7 @@ contains
     case (ERREST_ASIS)
       ! That is simple, do nothing.
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of grid indicator!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
       call sys_halt()
@@ -3145,7 +3091,7 @@ contains
 
       derror = 1.0
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of error estimator!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateRecoveryError')
       call sys_halt()
@@ -3198,7 +3144,7 @@ contains
       ! Release temporal collection structure
       call collct_done(rcollectionTmp)
 
-    case DEFAULT
+    case default
       call output_lbrk()
       call output_line('Error Analysis')
       call output_line('--------------')
@@ -3333,7 +3279,7 @@ contains
       call lsyssc_scaleVector(rerror, 1.0_DP/dvalue)
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid type of grid indicator!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateRecoveryError')
       call sys_halt()
@@ -3821,7 +3767,7 @@ contains
               rcollection)
         end if
 
-      case DEFAULT
+      case default
         call output_line('Unsupported time-stepping algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'transp_solveTransientPrimal')
         call sys_halt()
