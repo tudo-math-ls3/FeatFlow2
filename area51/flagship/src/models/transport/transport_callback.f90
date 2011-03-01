@@ -5501,7 +5501,9 @@ contains
       ! @FAQ2: Which type of velocity are we?
       select case(abs(ivelocitytype))
         
-      case (VELOCITY_ZERO, VELOCITY_BURGERS1D, VELOCITY_BURGERS2D, VELOCITY_BUCKLEV1D)
+      case (VELOCITY_ZERO, VELOCITY_BURGERS1D, VELOCITY_BURGERS2D,&
+            VELOCITY_BUCKLEV1D, VELOCITY_BURGERS_SPACETIME,&
+            VELOCITY_BUCKLEV_SPACETIME)
         ! zero velocity, Burgers or Buckley-Leverett equation
         ! do nothing (i.e. clear the source vector if required)
         if (bclear) call lsysbl_clearVector(rsource)
@@ -5627,7 +5629,9 @@ contains
       ! @FAQ2: Which type of velocity are we?
       select case(abs(ivelocitytype))
 
-      case (VELOCITY_ZERO, VELOCITY_BURGERS1D, VELOCITY_BUCKLEV1D)
+      case (VELOCITY_ZERO, VELOCITY_BURGERS1D, VELOCITY_BURGERS2D,&
+            VELOCITY_BUCKLEV1D, VELOCITY_BURGERS_SPACETIME,&
+            VELOCITY_BUCKLEV_SPACETIME)
         ! zero velocity, 1D-Burgers or 1D-Buckley-Leverett equation
         ! do nothing (i.e. clear the source vector if required)
         if (bclear) call lsysbl_clearVector(rsource)
