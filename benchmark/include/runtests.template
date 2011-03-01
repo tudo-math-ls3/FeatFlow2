@@ -918,9 +918,9 @@ fb_runAndEvalBenchmarkTest() {
 		# usually performed one at a time. In a scheduling environment, several
 		# copy/remove operations might occur simultaneously - which might raise
 		# problems.
-		if test "${DEBUGGER}" != "0"; then
-		    \cp -p ${MASTERDAT} master.dat
-		fi
+#		if test "${DEBUGGER}" != "0"; then
+#		    \cp -p ${DATFILE} master.dat
+#		fi
 
 		# ############################
 		# MPI
@@ -1085,6 +1085,10 @@ fb_runAndEvalBenchmarkTest() {
 				echo
 				echo "Warning! Warning! Warning! Warning! Warning! Warning!"
 				echo
+				echo
+				echo "Note: To start debugging, issue 'run ${DATFILE}' at the gdb command prompt"
+				echo
+				echo
 				eval gdb  ${PWD}/${appname} ${outputredirect}
 				;;
 
@@ -1142,9 +1146,9 @@ fb_runAndEvalBenchmarkTest() {
 		# usually performed one at a time. In a scheduling environment, several
 		# copy/remove operations might occur simultaneously - which might raise
 		# problems.
-		if test "${DEBUGGER}" != "0"; then
-		    rm -f master.dat
-		fi
+#		if test "${DEBUGGER}" != "0"; then
+#		    rm -f master.dat
+#		fi
 
 
 		# Aggregate the content of the benchmark result file
