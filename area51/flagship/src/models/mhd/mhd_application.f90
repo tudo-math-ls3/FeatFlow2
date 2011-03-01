@@ -773,7 +773,7 @@ contains
       ! Deallocate temporal memory
       deallocate(Celement)
       
-      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeBilForm')) then
+      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeBilForm') .ne. 0) then
         ! Check if special cubature formula for evaluating integral
         ! terms of the bilinear form are requested by the user
         nsubstrings = max(1, parlst_querysubstrings(rparlist,&
@@ -794,7 +794,7 @@ contains
         end if
       end if
       
-      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeLinForm')) then
+      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeLinForm') .ne. 0) then
         ! Check if special cubature formula for evaluating integral
         ! terms of the linear form are requested by the user
         nsubstrings = max(1, parlst_querysubstrings(rparlist,&
@@ -815,7 +815,7 @@ contains
         end if
       end if
 
-      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeEval')) then
+      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeEval') .ne. 0) then
         ! Check if special cubature formula for evaluating integral
         ! terms of allother terms are requested by the user
         nsubstrings = max(1, parlst_querysubstrings(rparlist,&
