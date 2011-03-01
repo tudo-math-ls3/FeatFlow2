@@ -485,14 +485,16 @@ contains
           p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
 #endif
       
-      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
+      ! Compute artificial diffusion coefficient 
+      !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
       DcoefficientsAtEdge(1,iedge) =&
-          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
+          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP,&
+              -DcoefficientsAtEdge(3,iedge))
     end do
 
   end subroutine transp_calcMatUpwConvP1d_sim
 
-  ! ***************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -916,7 +918,7 @@ contains
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
-    ! ***************************************************************************
+    !***************************************************************************
     
     subroutine doEvaluateAtBdr1d(iderType, n, Dvalues, rvectorScalar, ibdc)
       
@@ -931,7 +933,7 @@ contains
 
   end subroutine transp_coeffVecBdrConvP1d_sim
 
-  ! ***************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -1353,7 +1355,7 @@ contains
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
-    ! ***************************************************************************
+    !***************************************************************************
     
     subroutine doEvaluateAtBdr1d(iderType, n, Dvalues, rvectorScalar, ibdc)
       
@@ -2055,9 +2057,11 @@ contains
           p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
 #endif
 
-      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
-      DcoefficientsAtEdge(1,iedge) = dscale*&
-          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
+      ! Compute artificial diffusion coefficient 
+      !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
+      DcoefficientsAtEdge(1,iedge) =&
+          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP,&
+              -DcoefficientsAtEdge(3,iedge))
     end do
 
   end subroutine transp_calcMatUpwConvD1d_sim
@@ -2260,8 +2264,9 @@ contains
 #endif
       
       ! Compute artificial diffusion coefficient 
-      ! $d_{ij} = \max\{abs(v_{ij}*0.5*(c_{ij}-c_{ji})\}$,
-      ! where $v_{ij} = 0.5*(f(u_j)-f(u_i))/(u_j-u_i) = 0.5*(u_i+u_j)$
+      !   $d_{ij} = abs(v_{ij}*0.5*(c_{ij}-c_{ji})$,
+      ! where 
+      !   $v_{ij} = 0.5*(f(u_j)-f(u_i))/(u_j-u_i) = 0.5*(u_i+u_j)$
       DcoefficientsAtEdge(1,iedge) =&
           abs(0.25_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
               (DmatrixCoeffsAtEdge(1,1,iedge)-DmatrixCoeffsAtEdge(1,2,iedge)))
@@ -2270,7 +2275,7 @@ contains
 
   end subroutine transp_calcMatUpwBurgP1d_sim
 
-  ! ***************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -2659,7 +2664,7 @@ contains
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
-    ! ***************************************************************************
+    !***************************************************************************
     
     subroutine doEvaluateAtBdr1d(iderType, n, Dvalues, rvectorScalar, ibdc)
       
@@ -3130,14 +3135,15 @@ contains
       end if
 
       ! Compute artificial diffusion coefficient 
-      ! $d_{ij} = \max\{abs(0.5*v_{ij}*(c_{ij}-c_{ji})\}$      
+      ! $d_{ij} = abs(0.5*v_{ij}*(c_{ij}-c_{ji})$
       DcoefficientsAtEdge(1,iedge) =&
-          abs(0.5_DP*vij*(DmatrixCoeffsAtEdge(1,1,iedge)-DmatrixCoeffsAtEdge(1,2,iedge)))
+          abs(0.5_DP*vij*(DmatrixCoeffsAtEdge(1,1,iedge)-&
+                          DmatrixCoeffsAtEdge(1,2,iedge)))
     end do
     
   end subroutine transp_calcMatUpwBLevP1d_sim
 
-  ! ***************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -3543,7 +3549,7 @@ contains
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
-    ! ***************************************************************************
+    !***************************************************************************
     
     subroutine doEvaluateAtBdr1d(iderType, n, Dvalues, rvectorScalar, ibdc)
       

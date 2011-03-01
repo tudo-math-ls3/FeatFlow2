@@ -439,9 +439,11 @@ contains
           +p_DvelocityZ(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
 #endif
 
-      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
+      ! Compute artificial diffusion coefficient 
+      !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
       DcoefficientsAtEdge(1,iedge) =&
-          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
+          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP,&
+              -DcoefficientsAtEdge(3,iedge))
     end do
 
   end subroutine transp_calcMatUpwConvP3d_sim
@@ -698,9 +700,11 @@ contains
           +p_DvelocityZ(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
 #endif
 
-      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
+      ! Compute artificial diffusion coefficient
+      !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
       DcoefficientsAtEdge(1,iedge) =&
-          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
+          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP,&
+              -DcoefficientsAtEdge(3,iedge))
     end do
 
   end subroutine transp_calcMatUpwConvD3d_sim
