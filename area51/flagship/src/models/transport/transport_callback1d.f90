@@ -1575,7 +1575,7 @@ contains
         do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+          dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1)
@@ -3209,6 +3209,9 @@ contains
     !   IquickAccess(2):     segment number
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for periodic boundary conditions
+    !   IquickAccess(3):     number of the mirror boundary component
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3467,6 +3470,62 @@ contains
       ! Deallocate temporal memory
       deallocate(Daux)
 
+
+    case(BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+      !-------------------------------------------------------------------------
+      ! Periodic/Antiperiodic boundary conditions (Flux boundary conditions):
+      !
+      ! Evaluate coefficient for both the convective and diffusive
+      ! part for the linear form at the inflow boundary part.
+      !
+      ! $$ -([a]*u-d\nabla u)\cdot{\bf n} = -([a]*g)\cdot{\bf n} $$
+      !
+      ! where $ a = u/(u^2+0.5*(1-u)^2) $ is the velocity
+      !
+      ! The boundary integral at the outflow boundary is included
+      ! into the bilinear form.
+
+      ! Allocate temporal memory
+      allocate(Daux(npointsPerElement, nelements, 2))
+
+      ! Evaluate the velocity field in the cubature points on the boundary
+      ! and store the result in Daux(:,:,:,1)
+      call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
+          p_rsolution%RvectorBlock(1), Dpoints, &
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+      ! Evaluate the solution in the cubature points on the mirrored
+      ! boundary and store the result in Daux(:,:,2)
+      call doEvaluateAtBdr1d(DER_FUNC1D, npointsPerElement*nelements, Daux(:,:,2),&
+          p_rsolution%RvectorBlock(1), rcollection%IquickAccess(3))
+      
+      ! Multiply the velocity vector [a] with the normal in each point
+      ! to get the normal velocity.
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+
+          ! Get the normal vector in the point from the boundary
+          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+
+          ! Compute the normal velocity
+          dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
+                      + 0.5_DP*(1-Daux(ipoint,iel,1))**2)
+
+          ! Check if we are at the primal inflow boundary
+          if (dnv .lt. 0.0_DP) then
+            ! Compute the prescribed normal velocity
+            dnv = dnx * Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2&
+                        + 0.5_DP*(1-Daux(ipoint,iel,2))**2)
+            Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
+          else
+            Dcoefficients(1,ipoint,iel) = 0.0_DP
+          end if
+        end do
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(Daux)
+
       
     case default
       call output_line('Invalid type of boundary conditions!',&
@@ -3474,6 +3533,28 @@ contains
       call sys_halt()
       
     end select
+
+  contains
+
+    ! Here come the working routines
+
+    !***************************************************************************
+    ! Evaluate th solution vector at some boundary points given in
+    ! terms of their parameter values. This ugly trick is necessary
+    ! since we have to pass the 2d-array Dvalues and DpointsPar to a
+    ! subroutine which accepts only 1d-arrays.
+    ! ***************************************************************************
+    
+    subroutine doEvaluateAtBdr1d(iderType, n, Dvalues, rvectorScalar, ibdc)
+      
+      integer, intent(in) :: iderType,ibdc,n
+      type(t_vectorScalar), intent(in) :: rvectorScalar
+      
+      real(DP), dimension(n), intent(out) :: Dvalues
+
+      call fevl_evaluateBdr1D(iderType, Dvalues, rvectorScalar, ibdc)
+      
+    end subroutine doEvaluateAtBdr1d
 
   end subroutine transp_coeffVecBdrBLevP1d_sim
 
@@ -3654,7 +3735,7 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrBLevP1d_sim')
 
       
-    case(BDRC_FLUX)
+    case(BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s at the outlet)
       ! Assemble the convective part of the boundary integral at the outflow
