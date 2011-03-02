@@ -4736,7 +4736,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(daux,dradius,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
@@ -4764,7 +4765,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(daux,dradius,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
@@ -4841,7 +4843,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(daux,dradius,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
@@ -4869,7 +4872,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(daux,dradius,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
@@ -4950,7 +4954,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Clear temporal data
@@ -4991,7 +4996,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Clear temporal data
@@ -5085,7 +5091,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Clear temporal data
@@ -5126,7 +5133,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Clear temporal data
@@ -5215,7 +5223,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(daux,dradius,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
@@ -5245,7 +5254,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(daux,dradius,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
@@ -5323,7 +5333,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(daux,dradius,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
@@ -5353,7 +5364,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(daux,dradius,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(daux,dradius,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
@@ -5435,7 +5447,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Clear temporal data
@@ -5478,7 +5491,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Clear temporal data
@@ -5573,7 +5587,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Clear temporal data
@@ -5616,7 +5631,8 @@ contains
 
         ! Loop over all degrees of freedom
         !$omp parallel do default(shared)&
-        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel) if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
+        !$omp private(Ddata,daux,dradius,ia,jeq,dpre,dvel)&
+        !$omp if(neq > HYDRO_GEOMSOURCE_NEQMIN_OMP)
         do ieq = 1, neq
 
           ! Clear temporal data
