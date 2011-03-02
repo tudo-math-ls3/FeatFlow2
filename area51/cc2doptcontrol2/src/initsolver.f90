@@ -1683,8 +1683,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ieltype,iavaillevel
+    integer :: ieltype,iavaillevel,ncomponents
     type(t_collection) :: rcollection
+
+    ncomponents = 3
+    if (rfeHierarchy%p_rfeSpaces(1)%p_rdiscretisation%ncomponents .gt. 3) then
+      ncomponents = 6
+    end if
 
     ! Can we reuse our hierarchy?
     if (smesh .eq. "") then
@@ -1695,7 +1700,7 @@ contains
         !
         ! Set up the collection for the creation of appropriate discretisation structures
         rcollection%IquickAccess(1) = ielementType
-        rcollection%IquickAccess(2) = 2*(NDIM2D+1)
+        rcollection%IquickAccess(2) = ncomponents
         rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC
         rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC
         rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
@@ -1714,7 +1719,7 @@ contains
         ! Ok, here we can hope to reuse existing data structures.
         !
         ! Set up the collection for the creation of appropriate discretisation structures
-        rcollection%IquickAccess(2) = 2*(NDIM2D+1)
+        rcollection%IquickAccess(2) = ncomponents
         rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC
         rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC
         rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
@@ -1763,7 +1768,7 @@ contains
       !
       ! Set up the collection for the creation of appropriate discretisation structures
       rcollection%IquickAccess(1) = ielementType
-      rcollection%IquickAccess(2) = 2*(NDIM2D+1)
+      rcollection%IquickAccess(2) = ncomponents
       rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC
       rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC
       rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
