@@ -32,7 +32,7 @@ deffunc: @initsol_Bz  = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = if(x < 0.5, 3.28125, 1.03125) ; x,y,z,t
 
 # Specify the boundary conditions
-[bdrcond_strong_primal]
+[bdrcond_weak_primal]
 NBCT
 2
 NEXPR
@@ -46,5 +46,5 @@ IBCT
 NCOMP
 1
 PARAMETERS
-0.0 T  'DUMMYNONE_STRONG'
-0.0 T  'DUMMYNONE_STRONG'
+0.0 T  'SUPEROUTLET_WEAK'
+0.0 T  'SUPEROUTLET_WEAK'
