@@ -4088,12 +4088,11 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_parlist), pointer :: p_rparlist
     type(t_boundaryCondition), pointer :: p_rboundaryCondition
     type(t_collection) :: rcollectionTmp
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondType
-    integer :: ibct, idissipationtype
+    integer :: ibct
 
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
@@ -4107,14 +4106,6 @@ contains
       call sys_halt()
     end if
 
-    ! Get pointer to parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection,&
-        'rparlist', ssectionName=ssectionName)
-    
-    ! Get parameters from parameter list
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'idissipationtype', idissipationtype)
-
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
 
@@ -4123,7 +4114,6 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
-    rcollectionTmp%IquickAccess(4) = idissipationtype
     
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)
@@ -4228,7 +4218,7 @@ contains
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
-    integer :: ibct, isegment, ccubTypeBdr, idissipationtype
+    integer :: ibct, isegment, ccubTypeBdr
 
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
@@ -4249,8 +4239,6 @@ contains
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist, ssectionName,&
         'ccubTypeBdr', ccubTypeBdr)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'idissipationtype', idissipationtype)
 
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
@@ -4260,8 +4248,7 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
-    rcollectionTmp%IquickAccess(4) = idissipationtype
-    rcollectionTmp%IquickAccess(5) = ccubTypeBdr
+    rcollectionTmp%IquickAccess(4) = ccubTypeBdr
 
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)

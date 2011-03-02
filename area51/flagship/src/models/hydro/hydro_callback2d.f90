@@ -4879,8 +4879,7 @@ contains
     !   IquickAccess(1):     boundary type
     !   IquickAccess(2):     segment number
     !   IquickAccess(3):     maximum number of expressions
-    !   IquickAccess(4):     dissipation type
-    !   IquickAccess(5):     cubature rule
+    !   IquickAccess(4):     cubature rule
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
@@ -4909,7 +4908,7 @@ contains
     real(DP) :: dtime,dscale,cI,cM,dvnI,dvnM,dvtI,dvtM,rM
     real(DP) :: uI,vI,pI,uM,vM,pM,w1,w2,w3,w4,l1,l2,l3,l4
     real(DP) :: aux,aux1,aux2,u_IM,v_IM,H_IM,vel_IM,q_IM,c_IM,c2_IM
-    integer :: idissipationtype,ibdrtype,isegment,nmaxExpr,ccubType
+    integer :: ibdrtype,isegment,nmaxExpr,ccubType
     integer :: iel,icubp,ipoint,npoints,ivar,nvar,iexpr,ivt,nve,neq
     
 
@@ -4954,12 +4953,11 @@ contains
     ! - the type of boundary condition
     ! - the segment number
     ! - the maximum number of expressions
-    ! - the type of dissipation
+    ! - the cubature rule
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
     nmaxExpr = rcollection%IquickAccess(3)
-    idissipationtype = rcollection%IquickAccess(4)
-    ccubType = rcollection%IquickAccess(5)
+    ccubType = rcollection%IquickAccess(4)
     
 #ifdef HYDRO_USE_GFEM_AT_BOUNDARY
     ! Evaluate one-dimensional basis functions on the boundary edge
@@ -5048,7 +5046,7 @@ contains
       allocate(Daux(npointsPerElement*nvar, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
-      call fevl_evaluate_sim(DER_FUNC, Daux, p_rsolution%RvectorBlock(1),&
+      call fevl_evaluate_sim(DER_FUNC2D, Daux, p_rsolution%RvectorBlock(1),&
           Dpoints, rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Distribute solution values to the internal state vector
@@ -5103,7 +5101,7 @@ contains
       
       ! Evaluate the solution in the cubature points on the boundary
       do ivar = 1, nvar
-        call fevl_evaluate_sim(DER_FUNC, Daux,&
+        call fevl_evaluate_sim(DER_FUNC2D, Daux,&
             p_rsolution%RvectorBlock(ivar), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
@@ -5542,7 +5540,7 @@ contains
 !!$        end if
 !!$
 !!$        ! Evaluate the solution in the cubature points on the mirrored boundary
-!!$        call doEvaluateAtBdrScalar(DER_FUNC, npointsPerElement*nelements*nvar,&
+!!$        call doEvaluateAtBdrScalar(DER_FUNC2D, npointsPerElement*nelements*nvar,&
 !!$            Daux3, p_rsolution%RvectorBlock(1), npointsPerElement*nelements,&
 !!$            DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
 !!$
