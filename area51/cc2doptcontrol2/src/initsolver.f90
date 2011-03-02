@@ -1639,7 +1639,7 @@ contains
 !<subroutine>
 
   recursive subroutine init_initDiscreteAnalytFunc2D (ielementType,rboundary,&
-      smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
+      smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierarchy,&
       ilevel,rfunction)
   
 !<description>
@@ -1660,7 +1660,7 @@ contains
   ! Default mesh.
   type(t_triangulation), intent(in) :: rtriaCoarse
 
-  ! Description of the refinement in space, how rfeHierPrimal was created
+  ! Description of the refinement in space, how rfeHierarchy was created
   type(t_settings_refinement), intent(in) :: rrefinementSpace
 
   ! Space discretisation settings
@@ -1669,7 +1669,7 @@ contains
   ! A hierarchy of space levels for velocity+pressure (primal/dual space).
   ! If the element of the target function matches the one of the primary
   ! function, this hierarchy is used to save memory.
-  type(t_feHierarchy), intent(in) :: rfeHierPrimal
+  type(t_feHierarchy), intent(in) :: rfeHierarchy
   
   ! Refinement level, the analytical function should resemble.
   integer, intent(in) :: ilevel
@@ -1695,7 +1695,7 @@ contains
         !
         ! Set up the collection for the creation of appropriate discretisation structures
         rcollection%IquickAccess(1) = ielementType
-        rcollection%IquickAccess(2) = NDIM2D+1
+        rcollection%IquickAccess(2) = 2*(NDIM2D+1)
         rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC
         rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC
         rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
@@ -1714,7 +1714,7 @@ contains
         ! Ok, here we can hope to reuse existing data structures.
         !
         ! Set up the collection for the creation of appropriate discretisation structures
-        rcollection%IquickAccess(2) = NDIM2D+1
+        rcollection%IquickAccess(2) = 2*(NDIM2D+1)
         rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC
         rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC
         rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
@@ -1728,13 +1728,13 @@ contains
           ! Very nice, the element type matches.
           rcollection%IquickAccess(1) = ieltype
 
-          ! Get the maximum available level in rfeHierPrimal
-          iavaillevel = min(rfeHierPrimal%nlevels,ilevel-rrefinementSpace%npreref)
+          ! Get the maximum available level in rfeHierarchy
+          iavaillevel = min(rfeHierarchy%nlevels,ilevel-rrefinementSpace%npreref)
           
           ! And now create the basic function. Only in case ilevel>NLMAX,
           ! new levels are generated.
           call ansol_init (rfunction,ilevel-rrefinementSpace%npreref,&
-              rfeHierPrimal%p_rfeSpaces(iavaillevel)%p_rdiscretisation,iavaillevel,&
+              rfeHierarchy%p_rfeSpaces(iavaillevel)%p_rdiscretisation,iavaillevel,&
               rcollection%IquickAccess(1),fget1LevelDiscretisationNavSt2D,rcollection)
           
         else
@@ -1744,13 +1744,13 @@ contains
           
           ! That means, we can reuse the triangulation but not the discretisation.
           !
-          ! Get the maximum available level in rfeHierPrimal
-          iavaillevel = min(rfeHierPrimal%nlevels,ilevel-rrefinementSpace%npreref)
+          ! Get the maximum available level in rfeHierarchy
+          iavaillevel = min(rfeHierarchy%nlevels,ilevel-rrefinementSpace%npreref)
           
           ! And now create the basic function. Only in case ilevel>NLMAX,
           ! new levels are generated.
           call ansol_init (rfunction,ilevel-rrefinementSpace%npreref,&
-              rfeHierPrimal%rmeshHierarchy%p_Rtriangulations(iavaillevel),iavaillevel,&
+              rfeHierarchy%rmeshHierarchy%p_Rtriangulations(iavaillevel),iavaillevel,&
               rcollection%IquickAccess(1),fget1LevelDiscretisationNavSt2D,rcollection)
           
         end if
@@ -1763,7 +1763,7 @@ contains
       !
       ! Set up the collection for the creation of appropriate discretisation structures
       rcollection%IquickAccess(1) = ielementType
-      rcollection%IquickAccess(2) = NDIM2D+1
+      rcollection%IquickAccess(2) = 2*(NDIM2D+1)
       rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC
       rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC
       rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
@@ -1789,7 +1789,7 @@ contains
 !<subroutine>
 
   subroutine init_initFunction (rparlist,ssection,rfunction,&
-      rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,&
+      rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierarchy,rboundary,&
       ierror)
   
 !<description>
@@ -1808,16 +1808,16 @@ contains
   ! Space discretisation settings
   type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
 
-  ! Coarse mesh, corresponding to rfeHierPrimal.
+  ! Coarse mesh, corresponding to rfeHierarchy.
   type(t_triangulation), intent(in) :: rtriaCoarse
 
-  ! Description of the refinement in space, how rfeHierPrimal was created
+  ! Description of the refinement in space, how rfeHierarchy was created
   type(t_settings_refinement), intent(in) :: rrefinementSpace
 
   ! A hierarchy of space levels for velocity+pressure (primal/dual space).
   ! If the element of the target function matches the one of the primary
   ! function, this hierarchy is used to save memory.
-  type(t_feHierarchy), intent(in) :: rfeHierPrimal
+  type(t_feHierarchy), intent(in) :: rfeHierarchy
 
   ! Definition of the domain.
   type(t_boundary), intent(in), target :: rboundary
@@ -1946,7 +1946,7 @@ contains
     
     ! Create an analytical function that resembles a discrete function.
     call init_initDiscreteAnalytFunc2D (ielementType,rboundary,&
-        smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
+        smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierarchy,&
         ilevel,rfunction)  
         
     rfunction%iid = iid  
@@ -2064,13 +2064,13 @@ contains
 !    ! Prepare the flow
 !    call init_initDiscreteAnalytFunction (ielementType,rboundary,&
 !        smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,&
-!        rsettingsSolver%rfeHierPrimal,ilevel,rflow)
+!        rsettingsSolver%rfeHierarchy,ilevel,rflow)
 !
 !    rflow%iid = iid
 !    
 !    ! What is with the initial condition?  
 !    call init_initFunction (rparlist,ssectionInitSol,rinitcondflow,&
-!        rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,
+!        rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchy,
 !        rboundary,isuccess)
 !    
 !    if (isuccess .eq. 1) then
@@ -2974,7 +2974,7 @@ contains
         ! Read the analytic solution.
         call init_initFunction (rparlist,sstartVector,rlocalsolution,&
             rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
-            rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
+            rsettingsSpaceDiscr,rsettings%rfeHierPrimalDual,rsettings%rboundary,isuccess)
         if (isuccess .eq. 1) then
           call output_line ('Function created by simulation not yet supported!', &
               OU_CLASS_ERROR,OU_MODE_STD,'init_initStartVector')
@@ -3205,7 +3205,7 @@ contains
         ! Read the analytic solution.
         call init_initFunction (rparlist,sstartVector,rlocalsolution,&
             rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
-            rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
+            rsettingsSpaceDiscr,rsettings%rfeHierPrimalDual,rsettings%rboundary,isuccess)
         if (isuccess .eq. 1) then
           call output_line ('Function created by simulation not yet supported!', &
               OU_CLASS_ERROR,OU_MODE_STD,'init_initStartVector')
@@ -3472,7 +3472,7 @@ contains
         ! Read the analytic solution.
         call init_initFunction (rparlist,sstartVector,rlocalsolution,&
             rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
-            rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
+            rsettingsSpaceDiscr,rsettings%rfeHierPrimalDual,rsettings%rboundary,isuccess)
         if (isuccess .eq. 1) then
           call output_line ('Function created by simulation not yet supported!', &
               OU_CLASS_ERROR,OU_MODE_STD,'init_initStartVector')
