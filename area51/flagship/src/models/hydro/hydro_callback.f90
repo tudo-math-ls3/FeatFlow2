@@ -4633,7 +4633,7 @@ contains
         case (MASS_CONSISTENT)
           ! Use consistent mass matrix
           call parlst_getvalue_int(rparlist,&
-              ssectionName, 'lumpedmassmatrix', massmatrix)
+              ssectionName, 'consistentmassmatrix', massmatrix)
           call lsyssc_getbase_double(&
               rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
           call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
