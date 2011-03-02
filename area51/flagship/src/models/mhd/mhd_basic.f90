@@ -182,8 +182,10 @@ module mhd_basic
 
 !<constantblock description="Types of boundary conditions">
 
-  integer, parameter, public :: BDRC_DUMMYALL  = 1
-  integer, parameter, public :: BDRC_DUMMYNONE = 2
+  ! Supersonic outlet boundary condition
+  ! No boundary conditions are prescribed at all
+  
+  integer, parameter, public :: BDRC_SUPEROUTLET  = 11
 
 !</constantblock>
 
