@@ -423,6 +423,8 @@ module bilinearformevaluation
   public :: bilf_assembleSubmeshMatrix9
   public :: bilf_assembleSubmeshMat9Bdr1D
   public :: bilf_assembleSubmeshMat9Bdr2D
+  public :: bilf_allocAssemblyData
+  public :: bilf_releaseAssemblyData
   
 contains
 
