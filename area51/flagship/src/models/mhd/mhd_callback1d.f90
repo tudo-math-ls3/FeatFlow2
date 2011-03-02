@@ -50,34 +50,34 @@
 !#
 !# 12.) mhd_calcMatRoeDissMatD1d_sim
 !#      -> Computes local matrices for low-order discretisation
-!#         adopting tensorial artificial viscosities
+!#         adopting tensorial artificial viscosities of Roe-type
 !#
 !# 13.) mhd_calcMatRoeDiss1d_sim
 !#      -> Computes local matrices for low-order discretisation
-!#         adopting tensorial artificial viscosities
+!#         adopting tensorial artificial viscosities of Roe-type
 !#
 !# 14.) mhd_calcMatRusDissMatD1d_sim
 !#      -> Computes local matrices for low-order discretisation
-!#         adopting the Rusanov artificial viscosities
+!#         adopting scalar artificial viscosities of Rusanov-type
 !#
 !# 15.) mhd_calcMatRusDiss1d_sim
 !#      -> Computes local matrices for low-order discretisation
-!#         adopting the Rusanov flux artificial viscosities
+!#         adopting scalar artificial viscosities of Rusanov-type
 !#
 !# 16.) mhd_calcCharacteristics1d_sim
 !#      -> Computes characteristic variables
 !#
 !# 17.) mhd_calcFluxFCTScDiss1d_sim
-!#      -> Computes fluxes for FCT algorithm
-!#         adopting scalar artificial viscosities
+!#      -> Computes fluxes for FCT algorithm adopting scalar
+!#         artificial viscosities
 !#
 !# 18.) mhd_calcFluxFCTRoeDiss1d_sim
-!#      -> Computes fluxes for FCT algorithm
-!#         adopting tensorial artificial viscosities
+!#      -> Computes fluxes for FCT algorithm adopting tensorial
+!#         artificial viscosities of Roe-type
 !#
 !# 19.) mhd_calcFluxFCTRusDiss1d_sim
-!#      -> Computes fluxes for FCT algorithm
-!#         adopting the Rusanov artificial viscosities
+!#      -> Computes fluxes for FCT algorithm adopting scalar
+!#         artificial viscosities of Rusanov-type
 !#
 !# 20.) mhd_trafoFluxDensity1d_sim
 !#      -> Computes the transformation from conservative fluxes
@@ -175,8 +175,11 @@ module mhd_callback1d
 
   use boundarycondaux
   use collection
+  use derivatives
   use domainintegration
+  use feevaluation
   use flagship_callback
+  use fparser
   use fsystem
   use genoutput
   use graph
@@ -1020,7 +1023,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_calcFluxRusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxRusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
 
 
@@ -3554,6 +3557,15 @@ contains
 !<inputoutput>
     ! OPTIONAL: A collection structure to provide additional
     ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: solution vector
+    !   DquickAccess(1):     simulation time
+    !   DquickAccess(2):     scaling parameter
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   IquickAccess(3):     maximum number of expressions
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
@@ -3565,6 +3577,235 @@ contains
     real(DP), dimension(:,:,:,:), intent(out) :: Dcoefficients
 !</output>
 !</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    type(t_vectorBlock), pointer :: p_rsolution
+    real(DP), dimension(:,:), pointer :: Daux1
+    real(DP), dimension(:,:,:), pointer :: Daux2
+    real(DP), dimension(NVAR1D) :: DstateI,DstateM,Dflux,Diff
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dnx,dtime,dscale,pI,cI,rM,pM,cM,dvnI,dvnM,w1,w3
+    integer :: ibdrtype,isegment,iel,ipoint,ndim,ivar,nvar,iexpr,nmaxExpr
+
+#ifndef MHD_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DHYDRO_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'mhd_coeffVectorBdr1d_sim')
+    call sys_halt()
+#endif
+
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
+
+    ! This subroutine assumes that the first quick access vector
+    ! points to the solution vector
+    p_rsolution => rcollection%p_rvectorQuickAccess1
+
+    ! Check if the solution is given in block or interleaved format
+    if (p_rsolution%nblocks .eq. 1) then
+      nvar = p_rsolution%RvectorBlock(1)%NVAR
+    else
+      nvar = p_rsolution%nblocks
+    end if
+    
+    ! The first two quick access double values hold the simulation
+    ! time and the scaling parameter
+    dtime  = rcollection%DquickAccess(1)
+    dscale = rcollection%DquickAccess(2)
+
+    ! The first three quick access integer values hold:
+    ! - the type of boundary condition
+    ! - the segment number
+    ! - the maximum number of expressions
+    ibdrtype = rcollection%IquickAccess(1)
+    isegment = rcollection%IquickAccess(2)
+    nmaxExpr = rcollection%IquickAccess(3)
+
+    if (p_rsolution%nblocks .eq. 1) then
+
+      !-------------------------------------------------------------------------
+      ! Solution is stored in interleaved format
+      !-------------------------------------------------------------------------
+
+      ! Allocate temporal memory
+      allocate(Daux1(npointsPerElement*nvar, nelements))
+      
+      ! Evaluate the solution in the cubature points on the boundary
+      call fevl_evaluate_sim(DER_FUNC1D, Daux1, p_rsolution%RvectorBlock(1),&
+          Dpoints, rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+      
+      ! What type of boundary conditions are we?
+      select case(iand(ibdrtype, BDRC_TYPEMASK))
+
+      case (BDRC_SUPEROUTLET)
+        !-----------------------------------------------------------------------
+        ! Supersonic outlet boundary conditions:
+        !
+        ! Evaluate the boundary fluxes based on the computed state vector
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR1D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR1D+3,iel)
+            DstateI(4) = Daux1((ipoint-1)*NVAR1D+4,iel)
+            DstateI(5) = Daux1((ipoint-1)*NVAR1D+5,iel)
+            DstateI(6) = Daux1((ipoint-1)*NVAR1D+6,iel)
+            DstateI(7) = Daux1((ipoint-1)*NVAR1D+7,iel)
+            
+            ! Assemble Galerkin fluxes at the boundary
+            call doGalerkinFlux(DstateI, dnx, Dflux)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*Dflux
+          end do
+        end do
+
+      case default
+        call output_line('Invalid type of boundary conditions!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'mhd_coeffVectorBdr1d_sim')
+        call sys_halt()
+        
+      end select
+      
+      ! Deallocate temporal memory
+      deallocate(Daux1)
+
+    else
+
+      !-------------------------------------------------------------------------
+      ! Solution is stored in block format
+      !-------------------------------------------------------------------------
+
+      ! Allocate temporal memory
+      allocate(Daux2(npointsPerElement*nvar, nelements, nvar))
+      
+      ! Evaluate the solution in the cubature points on the boundary
+      do ivar = 1, nvar
+        call fevl_evaluate_sim(DER_FUNC1D, Daux2(:,:,ivar),&
+            p_rsolution%RvectorBlock(ivar), Dpoints,&
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+      end do
+      
+      ! What type of boundary conditions are we?
+      select case(iand(ibdrtype, BDRC_TYPEMASK))
+        
+      case (BDRC_SUPEROUTLET)
+        !-----------------------------------------------------------------------
+        ! Supersonic outlet boundary conditions:
+        !
+        ! Evaluate the boundary fluxes based on the computed state vector
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+        
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,3)
+            DstateI(4) = Daux2(ipoint,iel,4)
+            DstateI(5) = Daux2(ipoint,iel,5)
+            DstateI(6) = Daux2(ipoint,iel,6)
+            DstateI(7) = Daux2(ipoint,iel,7)
+
+            ! Assemble Galerkin fluxes at the boundary
+            call doGalerkinFlux(DstateI, dnx, Dflux)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*Dflux
+          end do
+        end do
+
+      case default
+        call output_line('Invalid type of boundary conditions!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'c')
+        call sys_halt()
+        
+      end select
+
+      ! Deallocate temporal memory
+      deallocate(Daux2)
+
+    end if
+
+  contains
+
+    ! Here come the working routines
+    
+    !***************************************************************************
+    ! Approximate Riemann solver along the outward unit normal
+    !***************************************************************************
+    
+    subroutine doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
+      
+      ! input parameters
+      real(DP), dimension(NVAR1D), intent(in) :: DstateI, DstateM
+      real(DP), intent(in) :: dnx
+      
+      ! output parameters
+      real(DP), dimension(NVAR1D), intent(out) :: Dflux, Diff
+
+      print *, "NOT IMPLEMENTED"
+      stop
+
+    end subroutine doRiemannSolver
+
+    !***************************************************************************
+    ! Compute the Galerkin flux (used for supersonic outflow)
+    !***************************************************************************
+
+    subroutine doGalerkinFlux(Dstate, dnx, Dflux)
+
+      ! input parameters
+      real(DP), dimension(NVAR1D), intent(in) :: Dstate
+      real(DP), intent(in) :: dnx
+
+      ! output parameters
+      real(DP), dimension(NVAR1D), intent(out) :: Dflux
+
+      ! local variables
+      real(DP) :: u,v,w,p,q
+      
+      
+      ! Compute auxiliary quantities
+      u = X_VELOCITY_FROM_CONSVAR(Dstate,NVAR1D)
+      v = Y_VELOCITY_FROM_CONSVAR(Dstate,NVAR1D)
+      w = Z_VELOCITY_FROM_CONSVAR(Dstate,NVAR1D)
+      p = TOTAL_PRESSURE_FROM_CONSVAR_1D(Dstate,NVAR1D)
+      q = X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*u +&
+          Y_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*v +&
+          Z_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*w
+      
+      ! Calculate ${\bf n}\cdot{\bf F}(U)$
+      Dflux(1) = dnx*(X_MOMENTUM_FROM_CONSVAR(Dstate,NVAR1D))
+      Dflux(2) = dnx*(X_MOMENTUM_FROM_CONSVAR(Dstate,NVAR1D)*u+p)
+      Dflux(3) = dnx*(Y_MOMENTUM_FROM_CONSVAR(Dstate,NVAR1D)*u-&
+                      X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*&
+                      Y_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D))
+      Dflux(4) = dnx*(Z_MOMENTUM_FROM_CONSVAR(Dstate,NVAR1D)*u-&
+                      X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*&
+                      Z_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D))
+      Dflux(5) = dnx*(Y_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*u-&
+                      X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*v)
+      Dflux(6) = dnx*(Z_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*u-&
+                      X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*w)
+      Dflux(7) = dnx*((TOTAL_ENERGY_FROM_CONSVAR(Dstate,NVAR1D)+p)*u-&
+                      X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*q)
+
+    end subroutine doGalerkinFlux
 
   end subroutine mhd_coeffVectorBdr1d_sim
 

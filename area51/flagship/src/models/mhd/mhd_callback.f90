@@ -83,7 +83,7 @@
 !#
 !# Frequently asked questions?
 !#
-!# 1.) What is the magic behind subroutine 'transp_nlsolverCallback'?
+!# 1.) What is the magic behind subroutine 'mhd_nlsolverCallback'?
 !#
 !#     -> This is the main callback routine which is called by the
 !#        nonlinear solution algorithm. The specifier ioperationSpec
@@ -220,7 +220,7 @@ contains
     ! local variables
     character(len=SYS_STRLEN) :: ssectionName
     
-    ! Get current section name
+    ! Get section name
     call collct_getvalue_string(rcollection,&
         'ssectionname', ssectionName)
 
@@ -240,7 +240,8 @@ contains
 
       ! Compute the right-hand side
       call mhd_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rrhs, istep, ssectionName, rcollection)
+          rsolver, rsolution, rsolution0, rrhs, istep, ssectionName,&
+	  rcollection)
     end if
 
 
@@ -250,12 +251,14 @@ contains
       if (istep .eq. 0) then
         ! Compute the constant right-hand side
         call mhd_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution0, rrhs, ssectionName, rcollection, rsource)
+            rsolver, rsolution0, rrhs, ssectionName, rcollection,&
+	    rsource)
       end if
 
       ! Compute the residual
       call mhd_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rrhs, rres, istep, ssectionName, rcollection)
+          rsolver, rsolution, rsolution0, rrhs, rres, istep,&
+	  ssectionName, rcollection)
     end if
 
 
@@ -327,30 +330,30 @@ contains
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection,&
           'rparlist', ssectionName=ssectionName)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'systemmatrix', systemMatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'systemmatrix', systemMatrix)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'inviscidAFC', inviscidAFC)
 
     !---------------------------------------------------------------------------
     ! Check if fully explicit time-stepping is used
     !---------------------------------------------------------------------------
     if (rtimestep%theta .le. SYS_EPSREAL) then
 
-      call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'isystemformat', isystemFormat)
-      call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'imasstype', imasstype)
-      call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
-      call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+      call parlst_getvalue_int(p_rparlist, ssectionName,&
+          'isystemformat', isystemFormat)
+      call parlst_getvalue_int(p_rparlist, ssectionName,&
+          'imasstype', imasstype)
+      call parlst_getvalue_int(p_rparlist, ssectionName,&
+          'lumpedmassmatrix', lumpedMassMatrix)
+      call parlst_getvalue_int(p_rparlist, ssectionName,&
+          'consistentmassmatrix', consistentMassMatrix)
 
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
@@ -742,11 +745,6 @@ contains
     ! Assemble the global system operator
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'isystemformat', isystemFormat)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'imasstype', imasstype)
-
     select case(isystemFormat)
 
     case (SYSTEM_INTERLEAVEFORMAT)
@@ -1023,7 +1021,7 @@ contains
     select case(imasstype)
     case (MASS_LUMPED, MASS_CONSISTENT)
 
-      ! Do we have some explicit part?
+      ! Do we have an explicit part?
       if (rtimestep%theta .lt. 1.0_DP) then
 
         ! Compute scaling parameter
@@ -1338,8 +1336,10 @@ contains
     end select
 
     ! Apply the source vector to the right-hand side (if any)
-    if (present(rsource))&
+    if (present(rsource)) then
+      if (rsource%NEQ .gt. 0)&
         call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
+    end if
 
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
@@ -1350,14 +1350,14 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rrhs, rres, ite, ssectionName,&
-      rcollection, rsource)
+  subroutine mhd_calcResidualThetaScheme(rproblemLevel,&
+      rtimestep, rsolver, rsolution, rsolution0, rrhs, rres,&
+      ite, ssectionName, rcollection, rsource)
 
 !<description>
     ! This subroutine computes the nonlinear residual vector
     !
-    ! $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]U^{(m)} - S^{(m)} + b.c.`s $$
+    ! $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]U^{(m)} - S^{(m)} - b.c.`s $$
     !
     ! for the standard two-level theta-scheme, whereby the (scaled)
     ! source term $s^{(m)}$ is optional. The constant right-hand side
@@ -1455,6 +1455,7 @@ contains
       ! Apply constant right-hand side
       call lsysbl_copyVector(rrhs, rres)
 
+      ! What type of mass matrix should be used?
       massMatrix = merge(lumpedMassMatrix,&
           consistentMassMatrix, imasstype .eq. MASS_LUMPED)
 
@@ -1467,7 +1468,7 @@ contains
       end do
 
       !-------------------------------------------------------------------------
-      ! Evaluate linear form for boundary integral (if any)
+      ! Evaluate linear form for boundary integral
       !-------------------------------------------------------------------------
       
       ! Do we have an implicit part?
@@ -1525,9 +1526,6 @@ contains
     !---------------------------------------------------------------------------
     ! Update the residual vector
     !---------------------------------------------------------------------------
-
-    ! Compute scaling parameter
-    dscale = rtimestep%theta*rtimestep%dStep
 
     ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
@@ -1801,7 +1799,8 @@ contains
 
       ! Assemble the raw antidiffusive fluxes
       call mhd_calcFluxFCT(rproblemLevel, rsolution, rtimestep%theta,&
-          rtimestep%dStep, 1.0_DP, (ite .eq. 0), rsolution, ssectionName, rcollection)
+          rtimestep%dStep, 1.0_DP, (ite .eq. 0), rsolution, ssectionName,&
+	  rcollection)
 
       !-------------------------------------------------------------------------
       ! Set operation specifier
@@ -1848,6 +1847,7 @@ contains
 
     ! Apply the source vector to the residual  (if any)
     if (present(rsource)) then
+      if (rsource%NEQ .gt. 0)&
       call lsysbl_vectorLinearComb(rsource, rres, -1.0_DP, 1.0_DP)
     end if
 
@@ -2319,7 +2319,7 @@ contains
     type(t_vectorBlock), pointer :: p_rpredictor
     type(t_parlist), pointer :: p_rparlist
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
-    integer :: inviscidAFC,lumpedMassMatrix
+    integer :: inviscidAFC,lumpedMassMatrix,imassantidiffusiontype
     integer :: nfailsafe,ivariable,nvariable
 
     ! Set pointer to parameter list
@@ -2339,31 +2339,44 @@ contains
     call parlst_getvalue_int(p_rparlist, ssectionName,&
         'lumpedmassmatrix', lumpedmassmatrix)
     call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'imassantidiffusiontype', imassantidiffusiontype)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
         'nfailsafe', nfailsafe)
     
     !---------------------------------------------------------------------------
     ! Linearised FEM-FCT algorithm
     !---------------------------------------------------------------------------
 
-    ! Initialize dummy timestep
-    rtimestepAux%dStep = 1.0_DP
-    rtimestepAux%theta = 0.0_DP
+    ! Should we apply consistent mass antidiffusion?
+    if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+      
+      ! Initialize dummy timestep
+      rtimestepAux%dStep = 1.0_DP
+      rtimestepAux%theta = 0.0_DP
 
-    ! Set pointer to predictor
-    p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
-    
-    ! Compute low-order "right-hand side" without theta parameter
-    call mhd_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolver, rsolution, p_rpredictor, ssectionName, rcollection, rsource)
+      ! Set pointer to predictor
+      p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+      
+      ! Compute low-order "right-hand side" without theta parameter
+      call mhd_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+          rsolver, rsolution, p_rpredictor, ssectionName, rcollection,&
+          rsource)
+      
+      ! Compute low-order predictor
+      call lsysbl_invertedDiagMatVec(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          p_rpredictor, 1.0_DP, p_rpredictor)
 
-    ! Compute low-order predictor
-    call lsysbl_invertedDiagMatVec(&
-        rproblemLevel%Rmatrix(lumpedMassMatrix),&
-        p_rpredictor, 1.0_DP, p_rpredictor)
-
-    ! Compute the raw antidiffusive fluxes
-    call mhd_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-        1.0_DP, 1.0_DP, .true., p_rpredictor, ssectionName, rcollection)
+      ! Build the raw antidiffusive fluxes with contribution from
+      ! consistent mass matrix
+      call mhd_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
+          1.0_DP, 1.0_DP, .true., p_rpredictor, ssectionName, rcollection)
+    else
+      ! Build the raw antidiffusive fluxes without contribution from
+      ! consistent mass matrix
+      call mhd_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
+          1.0_DP, 1.0_DP, .true., rsolution, ssectionName, rcollection)
+    end if
     
     !---------------------------------------------------------------------------
     ! Perform failsafe flux correction (if required)
@@ -2443,7 +2456,7 @@ contains
 !</description>
 
 !<input>
-    ! solution vectors
+    ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution1
 
     ! implicitness parameter
@@ -2499,7 +2512,7 @@ contains
 
 
     ! What type of dissipation is applied?
-    select case(idissipationtype)
+    select case(abs(idissipationtype))
 
     case (DISSIPATION_SCALAR)
 
@@ -4039,86 +4052,13 @@ contains
     ! Determine type of boundary condition in numeral form
     select case (sys_upcase(cbdrCondType))
 
-    case ('DUMMYALL_STRONG')
-      ibdrCondType = BDRC_DUMMYALL + BDRC_STRONG
-
-    case ('DUMMYNONE_STRONG')
-      ibdrCondType = BDRC_DUMMYNONE
+    case ('SUPEROUTLET_STRONG')
+      ibdrCondType = BDRC_SUPEROUTLET
       ! No strong boundary conditions are prescribed
-            
-!!$    case ('FREESLIP_STRONG')
-!!$      ibdrCondType = BDRC_FREESLIP + BDRC_STRONG
-!!$
-!!$    case ('FREESLIP_WEAK')
-!!$      ibdrCondType = BDRC_FREESLIP + BDRC_WEAK
-!!$
-!!$    case ('RLXFREESLIP_STRONG')
-!!$      ibdrCondType = BDRC_RLXFREESLIP + BDRC_STRONG
-!!$
-!!$    case ('RLXFREESLIP_WEAK')
-!!$      ibdrCondType = BDRC_RLXFREESLIP + BDRC_WEAK
-!!$
-!!$    case ('VISCOUSWALL_STRONG')
-!!$      ibdrCondType = BDRC_VISCOUSWALL + BDRC_STRONG
-!!$
-!!$    case ('VISCOUSWALL_WEAK')
-!!$      ibdrCondType = BDRC_VISCOUSWALL + BDRC_WEAK
-!!$
-!!$    case ('SUPEROUTLET_STRONG')
-!!$      ibdrCondType = BDRC_SUPEROUTLET
-!!$      ! No strong boundary conditions are prescribed
-!!$
-!!$    case ('SUPEROUTLET_WEAK')
-!!$      ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK
-!!$
-!!$    case ('SUBOUTLET_STRONG')
-!!$      ibdrCondType = BDRC_SUBOUTLET + BDRC_STRONG
-!!$
-!!$    case ('SUBOUTLET_WEAK')
-!!$      ibdrCondType = BDRC_SUBOUTLET + BDRC_WEAK
-!!$
-!!$    case ('MASSOUTLET_STRONG')
-!!$      ibdrCondType = BDRC_MASSOUTLET + BDRC_STRONG
-!!$
-!!$    case ('MASSOUTLET_WEAK')
-!!$      ibdrCondType = BDRC_MASSOUTLET + BDRC_WEAK
-!!$      
-!!$    case ('FREESTREAM_STRONG')
-!!$      ibdrCondType = BDRC_FREESTREAM + BDRC_STRONG
-!!$      
-!!$    case ('FREESTREAM_WEAK')
-!!$      ibdrCondType = BDRC_FREESTREAM + BDRC_WEAK
-!!$
-!!$    case ('SUPERINLET_STRONG')
-!!$      ibdrCondType = BDRC_SUPERINLET + BDRC_STRONG
-!!$
-!!$    case ('SUPERINLET_WEAK')
-!!$      ibdrCondType = BDRC_SUPERINLET + BDRC_WEAK
-!!$
-!!$    case ('SUBINLET_STRONG')
-!!$      ibdrCondType = BDRC_SUBINLET + BDRC_STRONG
-!!$
-!!$    case ('SUBINLET_WEAK')
-!!$      ibdrCondType = BDRC_SUBINLET + BDRC_WEAK
-!!$
-!!$    case ('MASSINLET_STRONG')
-!!$      ibdrCondType = BDRC_MASSINLET + BDRC_STRONG
-!!$
-!!$    case ('MASSINLET_WEAK')
-!!$      ibdrCondType = BDRC_MASSINLET + BDRC_WEAK
-!!$
-!!$    case ('PERIODIC_STRONG')
-!!$      ibdrCondType = BDRC_PERIODIC + BDRC_STRONG
-!!$      
-!!$    case ('PERIODIC_WEAK')
-!!$      ibdrCondType = BDRC_PERIODIC + BDRC_WEAK
-!!$      
-!!$    case ('ANTIPERIODIC_STRONG')
-!!$      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_STRONG
-!!$      
-!!$    case ('ANTIPERIODIC_WEAK')
-!!$      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK
-
+      
+    case ('SUPEROUTLET_WEAK')
+      ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK
+      
     case default
       read(cbdrCondType, '(I3)') ibdrCondType
     end select
@@ -4126,27 +4066,6 @@ contains
     
     ! Determine number of mathematical expressions
     select case (iand(ibdrCondType, BDRC_TYPEMASK))
-
-    case (BDRC_DUMMYALL)
-      nexpressions = 7
-
-!!$    case (BDRC_FREESLIP, BDRC_VISCOUSWALL, BDRC_SUPEROUTLET)
-!!$      nexpressions = 0
-!!$
-!!$    case (BDRC_SUBOUTLET, BDRC_MASSOUTLET, BDRC_RLXFREESLIP)
-!!$      nexpressions = 1
-!!$     
-!!$    case (BDRC_MASSINLET)
-!!$      nexpressions = 2
-!!$
-!!$    case (BDRC_SUBINLET)
-!!$      nexpressions = 3
-!!$
-!!$    case (BDRC_FREESTREAM, BDRC_SUPERINLET)
-!!$      nexpressions = ndimension+2
-!!$      
-!!$    case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
-!!$      nexpressions = -1
 
     case default
       nexpressions = 0
@@ -4194,7 +4113,7 @@ contains
     ! matrix
     type(t_matrixScalar), intent(inout) :: rmatrix
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -4215,8 +4134,7 @@ contains
 
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
-    ! imposition of boundary conditions. The following types of boundary
-    ! conditions are supported for this application
+    ! imposition of boundary conditions in 2D.
 !</description>
 
 !<input>
@@ -4251,7 +4169,7 @@ contains
     ! matrix
     type(t_matrixScalar), intent(inout) :: rmatrix
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -4302,7 +4220,7 @@ contains
     ! residual/right-hand side vector
     type(t_vectorBlock), intent(inout) :: rvector
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -4395,8 +4313,7 @@ contains
 
 !<description>
     ! This subroutine computes the linear form arising from the weak
-    ! imposition of boundary conditions. The following types of boundary
-    ! conditions are supported for this application
+    ! imposition of boundary conditions in 2D.
 !</description>
 
 !<input>
@@ -4426,7 +4343,7 @@ contains
     ! residual/right-hand side vector
     type(t_vectorBlock), intent(inout) :: rvector
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -4458,8 +4375,8 @@ contains
           'rparlist', ssectionName=ssectionName)
     
     ! Get parameters from parameter list
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'ccubTypeBdr', ccubTypeBdr)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'ccubTypeBdr', ccubTypeBdr)
 
     ! Initialize temporal collection structure
     call collct_init(rcollectionTmp)
@@ -4469,6 +4386,7 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
+    rcollectionTmp%IquickAccess(4) = ccubTypeBdr
 
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)
