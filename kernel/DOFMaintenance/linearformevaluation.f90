@@ -1062,7 +1062,12 @@ contains
         call output_line('Single precision vectors currently not supported!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
       end select
-    end if
+
+    else
+      call output_line('General discretisation not implemented!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+      call sys_halt()
+  end if
 
   end subroutine
 
@@ -1390,10 +1395,10 @@ contains
       case(ST_DOUBLE)
         
         if (present(iboundaryComp)) then
-          
+
           ! Number of elements on that boundary component?
           NELbdc = bdraux_getNELAtBdrComp(iboundaryComp, p_rtriangulation)
-          
+
           ! Allocate memory for element list and element orientation
           allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
 
@@ -1429,7 +1434,7 @@ contains
           deallocate(IelementList, IelementOrientation)
 
         else
-          
+
           ! Loop over the element distributions.
           do ielementDistr = 1,rvector%p_rspatialDiscr%inumFESpaces
             
@@ -1485,6 +1490,11 @@ contains
         call output_line('Single precision vectors currently not supported!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
       end select
+
+    else
+      call output_line('General discretisation not implemented!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+      call sys_halt()
     end if
 
   end subroutine
@@ -5448,6 +5458,11 @@ contains
         call output_line('Single precision vectors currently not supported!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
       end select
+
+    else
+      call output_line('General discretisation not implemented!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+      call sys_halt()
     end if
 
   end subroutine
