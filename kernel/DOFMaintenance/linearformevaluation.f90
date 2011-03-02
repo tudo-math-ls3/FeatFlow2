@@ -1418,7 +1418,7 @@ contains
             call linf_initAssembly(rvectorAssembly, rform,&
                 rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 CUB_G1_1D, NELbdc)
-            call linf_allocAssemblyData(rvectorAssembly)
+            call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
             
             ! Assemble the data all elements
             call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
@@ -1464,7 +1464,7 @@ contains
               call linf_initAssembly(rvectorAssembly, rform,&
                   rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                   CUB_G1_1D, NELbdc)
-              call linf_allocAssemblyData(rvectorAssembly)
+              call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
               
               ! Assemble the data for one element
               call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
@@ -5389,7 +5389,7 @@ contains
             call linf_initAssembly(rvectorAssembly, rform,&
                 p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 CUB_G1_1D, NELbdc)
-            call linf_allocAssemblyData(rvectorAssembly)
+            call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
             
             ! Assemble the data all elements
             call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
@@ -5435,7 +5435,7 @@ contains
               call linf_initAssembly(rvectorAssembly, rform,&
                   p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                   CUB_G1_1D, NELbdc)
-              call linf_allocAssemblyData(rvectorAssembly)
+              call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
               
               ! Assemble the data for one element
               call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly, rvectorBlock,&
