@@ -51,7 +51,7 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
 # 3 = Rusanov type
-idissipationtype = 3
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -76,10 +76,9 @@ isystemPrecond = 1
 # (ii) for sequential/multiplicative flux correction list
 #      all variables one by one, e.g.
 #
-slimitingvariable(3) =
+slimitingvariable(2) =
   density
   pressure
-  velocity
 
 # number of failsafe steps
 nfailsafe = 4
@@ -182,7 +181,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 0
@@ -251,7 +250,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.01
+dfinalTime = 0.231
 
 # initial time step size
 dinitialStep = 0.001
