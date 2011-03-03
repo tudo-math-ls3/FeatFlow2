@@ -1480,6 +1480,78 @@ if (iwithoutlimiting==2) ilimiter = 0
    call profiler_release(rprofiler)
    
    
+   case(5)
+   ! Implicit discretisation
+   
+   
+   
+   
+   ! Now as the discretisation is set up, we can start to generate
+    ! the structure of the system matrix which is to solve.
+    ! We create a scalar matrix, based on the discretisation structure
+    ! for our one and only solution component.
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+                                     LSYSSC_MATRIX9,rmatrixMC,&
+                                     rdiscretisation%RspatialDiscr(1),&
+                                     BILF_MATC_EDGEBASED)
+    
+    ! And now to the entries of the matrix. For assembling of the entries,
+    ! we need a bilinear form, which first has to be set up manually.
+    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+    ! scalar system matrix in 2D.
+
+    rform%itermCount = 2
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_DERIV_X
+    rform%Idescriptors(1,2) = DER_FUNC
+    rform%Idescriptors(2,2) = DER_DERIV_Y
+    
+    ! In the standard case, we have constant coefficients:
+    rform%ballCoeffConstant = .false.
+    rform%BconstantCoeff = .false.
+    
+    ! Now we can build the matrix entries.
+    ! We specify the callback function coeff_Laplace for the coefficients.
+    ! As long as we use constant coefficients, this routine is not used.
+    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+    ! the framework will call the callback routine to get analytical
+    ! data.
+    call bilf_buildMatrixScalar (rform,.true.,rmatrixMC,coeff_implicitDGconvection)
+   
+   
+   
+   
+   
+   
+   
+   
+   ! And now to the entries of the matrix. For assembling of the entries,
+    ! we need a bilinear form, which first has to be set up manually.
+    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+    ! scalar system matrix in 2D.
+
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    
+    ! In the standard case, we have constant coefficients:
+    rform%ballCoeffConstant = .false.
+    rform%BconstantCoeff = .false.
+    
+    ! Now we can build the matrix entries.
+    ! We specify the callback function coeff_Laplace for the coefficients.
+    ! As long as we use constant coefficients, this routine is not used.
+    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+    ! the framework will call the callback routine to get analytical
+    ! data.
+    call bilf_dg_buildMatrixScEdge2D (rform, ccubType, .false., rmatrixMC,&
+                                             rvectorSol, raddTriaData,&
+                                             flux_dg_implicitConvection_sim)!,&
+                                             !rcollection, cconstrType)
+   
+   
+   
+   
    end select
    
    
