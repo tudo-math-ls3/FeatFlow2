@@ -78,7 +78,7 @@ contains
     ! Shallow water : 3 (h, hu, hv)
     ! (h=Waterheights, u/v=speed in x/y-direction)
     ! Euler: 4 (rho, rho u, rho v, rho E)
-    integer, parameter :: nvar2d = 4
+    integer, parameter :: nvar2d = 1
     
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
@@ -1519,9 +1519,10 @@ if (iwithoutlimiting==2) ilimiter = 0
     call bilf_buildMatrixScalar (rform,.true.,rmatrixMC,coeff_implicitDGconvection)
    
    
+   call lsyssc_scaleMatrix (rmatrixMC,-1.0_DP)
    
    
-   
+!   call matio_writeMatrixHR(rmatrixMC,'./gmv/before.txt',.true.,0,'./gmv/before.txt','(E20.10)')
    
    
    
@@ -1544,13 +1545,167 @@ if (iwithoutlimiting==2) ilimiter = 0
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
     ! the framework will call the callback routine to get analytical
     ! data.
-    call bilf_dg_buildMatrixScEdge2D (rform, ccubType, .false., rmatrixMC,&
-                                             rvectorSol, raddTriaData,&
+    call bilf_dg_buildMatrixScEdge2D (rform, CUB_G5_1D, .false., rmatrixMC,&
+                                             rsol, raddTriaData,&
                                              flux_dg_implicitConvection_sim)!,&
                                              !rcollection, cconstrType)
+
+!    call matio_writeMatrixHR(rmatrixMC,'./gmv/after.txt',.true.,0,'./gmv/after.txt','(E20.10)')
+                                             
+                                             
+    ! Release solver data and structure
+    call linsol_doneData (p_rsolverNode)
+    call linsol_doneStructure (p_rsolverNode)
+    
+    ! Release the solver node and all subnodes attached to it (if at all):
+    call linsol_releaseSolver (p_rsolverNode)
+    
+        ! Now we have the raw problem. What is missing is the definition of the boundary
+    ! conditions.
+    ! For implementing boundary conditions, we use a `filter technique with
+    ! discretised boundary conditions`. This means, we first have to calculate
+    ! a discrete version of the analytic BC, which we can implement into the
+    ! solution/RHS vectors using the corresponding filter.
+    !
+    ! Create a t_discreteBC structure where we store all discretised boundary
+    ! conditions.
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    !
+    ! We 'know' already (from the problem definition) that we have four boundary
+    ! segments in the domain. Each of these, we want to use for enforcing
+    ! some kind of boundary condition.
+    !
+    ! We ask the bondary routines to create a 'boundary region' - which is
+    ! simply a part of the boundary corresponding to a boundary segment.
+    ! A boundary region roughly contains the type, the min/max parameter value
+    ! and whether the endpoints are inside the region or not.
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    
+    ! We use this boundary region and specify that we want to have Dirichlet
+    ! boundary there. The following call does the following:
+    ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
+    !   We specify icomponent='1' to indicate that we set up the
+    !   Dirichlet BC`s for the first (here: one and only) component in the 
+    !   solution vector.
+    ! - Discretise the boundary condition so that the BC`s can be applied
+    !   to matrices and vectors
+    ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D_ones)
+                             
+    ! Now to the edge 2 of boundary component 1 the domain.
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+!                                       rboundaryRegion,rdiscreteBC,&
+!                                       getBoundaryValues_2D)
+                             
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+!                                       rboundaryRegion,rdiscreteBC,&
+!                                       getBoundaryValues_2D)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D_zeros)
+                             
+    ! Hang the pointer into the vector and matrix. That way, these
+    ! boundary conditions are always connected to that matrix and that
+    ! vector.
+    rmatrixBlock%p_rdiscreteBC => rdiscreteBC
+    rrhsBlock%p_rdiscreteBC => rdiscreteBC
+    rsolBlock%p_rdiscreteBC => rdiscreteBC
+    rtempBlock%p_rdiscreteBC => rdiscreteBC
+!                             
+!    ! Now we have block vectors for the RHS and the matrix. What we
+!    ! need additionally is a block vector for the solution and
+!    ! temporary data. Create them using the RHS as template.
+!    ! Fill the solution vector with 0:
+!    call lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .true.)
+!    call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
+    
+    ! Next step is to implement boundary conditions into the RHS,
+    ! solution and matrix. This is done using a vector/matrix filter
+    ! for discrete boundary conditions.
+    ! The discrete boundary conditions are already attached to the
+    ! vectors/matrix. Call the appropriate vector/matrix filter that
+    ! modifies the vectors/matrix according to the boundary conditions.
+    
+!    call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+!    pause
+    
+    call lsyssc_duplicateMatrix (rmatrixMC, &
+           rmatrixBlock%Rmatrixblock(1,1), &
+           LSYSSC_DUP_SHARE, &
+           !LSYSSC_DUP_EMPTY)
+           LSYSSC_DUP_SHARE)
+           
+
+    
+    call lsysbl_clearVector (rrhsBlock)
+    
+    call vecfil_discreteBCrhs (rrhsBlock)
+    call vecfil_discreteBCsol (rsolBlock)
+    call matfil_discreteBC (rmatrixBlock)
+    
+!    call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+!    pause
+
+    ! During the linear solver, the boundary conditions are also
+    ! frequently imposed to the vectors. But as the linear solver
+    ! does not work with the actual solution vectors but with
+    ! defect vectors instead.
+    ! So, set up a filter chain that filters the defect vector
+    ! during the solution process to implement discrete boundary conditions.
+    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    
+    
+    ! Create a BiCGStab-solver.
+    nullify(p_rpreconditioner)
+    !call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    call linsol_initUMFPACK4 (p_rsolverNode)
+    
+    ! Set the output level of the solver to 2 for some output
+    p_rsolverNode%ioutputLevel = 2
+    
+        ! The linear solver stops, when this relative or absolut norm of
+    ! the residual is reached.
+    p_rsolverNode%depsRel = 1.0e-14
+    p_rsolverNode%depsAbs = 1.0e-14
+    
+    ! Attach the system matrix to the solver.
+    ! First create an array with the matrix data (on all levels, but we
+    ! only have one level here), then call the initialisation 
+    ! routine to attach all these matrices.
+    ! Remark: Do not make a call like
+    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
+    ! This does not work on all compilers, since the compiler would have
+    ! to create a temp array on the stack - which does not always work!
+    Rmatrices = (/rmatrixBlock/)
+    call linsol_setMatrices(p_RsolverNode,Rmatrices)
+    
+    ! Initialise structure/data of the solver. This allows the
+    ! solver to allocate memory / perform some precalculation
+    ! to the problem.
+    call linsol_initStructure (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      write(*,*) 'linsol_initStructure',ierror
+      pause
+      stop
+    end if
+    call linsol_initData (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      write(*,*) 'linsol_initData', ierror
+      pause
+      stop
+    end if
    
    
    
+   call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
    
    end select
    
@@ -1615,15 +1770,15 @@ if (iwithoutlimiting==2) ilimiter = 0
 
 
 
-        ! Output solution to vtk file
-        sofile = './gmv/u2d_rho'
-        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-        sofile = './gmv/u2d_rhou'
-        call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
-        sofile = './gmv/u2d_rhov'
-        call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
-        sofile = './gmv/u2d_rhoE'
-        call dg2vtk(rsolBlock%Rvectorblock(4),iextraPoints,sofile,ifilenumber)
+!        ! Output solution to vtk file
+!        sofile = './gmv/u2d_rho'
+!        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+!        sofile = './gmv/u2d_rhou'
+!        call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
+!        sofile = './gmv/u2d_rhov'
+!        call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
+!        sofile = './gmv/u2d_rhoE'
+!        call dg2vtk(rsolBlock%Rvectorblock(4),iextraPoints,sofile,ifilenumber)
 
 
       

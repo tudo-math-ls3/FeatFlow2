@@ -9303,7 +9303,7 @@ end do
   integer(I32), intent(in) :: ccubType
   
   ! The solution vector. Used to calculate the solution on the edges.
-  type(t_vectorBlock), intent(in) :: rvectorSol
+  type(t_vectorScalar), intent(in) :: rvectorSol
   
   ! Additional triangulation data
   type(t_additionalTriaData), intent(in) :: raddTriaData
@@ -9493,7 +9493,7 @@ end do
   integer, intent(in) :: cconstrType
   
   ! The solution vector. Used to calculate the solution on the edges.
-  type(t_vectorBlock), intent(in) :: rvectorSol
+  type(t_vectorScalar), intent(in) :: rvectorSol
   
   ! Additional triangulation data
   type(t_additionalTriaData), intent(in) :: raddTriaData
@@ -9649,26 +9649,26 @@ end do
 
 
     ! Get number of elements
-    NEL = rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+    NEL = rmatrix%p_rspatialDiscrTest%p_rtriangulation%NEL
   
     ! Get pointers to elements at edge
     call storage_getbase_int2D(&
-          rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%h_IelementsAtEdge,&
+          rmatrix%p_rspatialDiscrTest%p_rtriangulation%h_IelementsAtEdge,&
           p_IelementsAtEdge)
           
     ! Get pointers to the vertex coordinates
     call storage_getbase_double2D(&
-          rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%h_DvertexCoords,&
+          rmatrix%p_rspatialDiscrTest%p_rtriangulation%h_DvertexCoords,&
           p_DvertexCoords)
           
     ! Get pointers to vertices at edge
     call storage_getbase_int2D(&
-          rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%h_IverticesAtEdge,&
+          rmatrix%p_rspatialDiscrTest%p_rtriangulation%h_IverticesAtEdge,&
           p_IverticesAtEdge)
     
     ! Get pointers to vertices at elements
     call storage_getbase_int2D(&
-          rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%h_IverticesAtElement,&
+          rmatrix%p_rspatialDiscrTest%p_rtriangulation%h_IverticesAtElement,&
           p_IverticesAtElement)   
     
     ! Get the elements adjacent to the given edges
@@ -9713,14 +9713,14 @@ end do
     ! The blocks have all the same size, so we can use static scheduling.
     !
     !$omp do schedule(static,1)
-    do IELset = 1, size(IelementList), rlocalMatrixAssembly(1)%nelementsPerBlock
+    do IELset = 1, size(IedgeList), rlocalMatrixAssembly(1)%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
       ! elements simultaneously.
       
-      IELmax = min(size(IelementList),IELset-1+rlocalMatrixAssembly(1)%nelementsPerBlock)
+      IELmax = min(size(IedgeList),IELset-1+rlocalMatrixAssembly(1)%nelementsPerBlock)
 
       ! Map the 1D cubature points to the edges in 2D.
       do iel = 1,IELmax-IELset+1
@@ -9783,9 +9783,9 @@ end do
       ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
 !      call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTest, &
 !          IelementList(IELset:IELmax), p_IdofsTest)
-      call dof_locGlobMapping_mult( rvectorSol%RvectorBlock(1)%p_rspatialDiscr, &
+      call dof_locGlobMapping_mult( rmatrix%p_rspatialDiscrTrial, &
           IelementList(1,IELset:IELmax), rlocalMatrixAssembly(1)%p_IdofsTest)
-      call dof_locGlobMapping_mult( rvectorSol%RvectorBlock(1)%p_rspatialDiscr, &
+      call dof_locGlobMapping_mult( rmatrix%p_rspatialDiscrTrial, &
           IelementList(3,IELset:IELmax), rlocalMatrixAssembly(2)%p_IdofsTest)
           
                                    
@@ -10136,8 +10136,8 @@ end do
               ! This gives the actual value to multiply the
               ! function value with before summing up to the integral.
               ! Get the precalculated coefficient from the coefficient array.
-              daux1 = domega1 * p_Dcoefficients(ialbet,icubp,iel)
-              daux1 = domega2 * p_Dcoefficients(ialbet,icubp,iel) * (-1.0_dp)
+              daux1 = domega1 * DfluxValues(ialbet,icubp,iel)
+              daux2 = domega2 * DfluxValues(ialbet,icubp,iel) * (-1.0_dp)
             
               ! Now loop through all possible combinations of DOF`s
               ! in the current cubature point. The outer loop
@@ -10235,12 +10235,19 @@ end do
 
                 p_DA(p_Kentryii(jdofe,idofe,iel)) = &
                   p_DA(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(jdofe,idofe,iel)
-                p_DA(p_Kentryai(jdofe,idofe,iel)) = &
-                  p_DA(p_Kentryai(jdofe,idofe,iel)) + p_Dentryai(jdofe,idofe,iel)*real(min(1,IelementList(2,IELset+iel-1)))
+                
+                
+                
+                if (IelementList(2,IELset+iel-1).ne.0) then
+                
                 p_DA(p_Kentryia(jdofe,idofe,iel)) = &
                   p_DA(p_Kentryia(jdofe,idofe,iel)) + p_Dentryia(jdofe,idofe,iel)
+                
+                p_DA(p_Kentryai(jdofe,idofe,iel)) = &
+                  p_DA(p_Kentryai(jdofe,idofe,iel)) + p_Dentryai(jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
                 p_DA(p_Kentryaa(jdofe,idofe,iel)) = &
-                  p_DA(p_Kentryaa(jdofe,idofe,iel)) + p_Dentryaa(jdofe,idofe,iel)*real(min(1,IelementList(2,IELset+iel-1)))
+                  p_DA(p_Kentryaa(jdofe,idofe,iel)) + p_Dentryaa(jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
+                end if  
                 
             end do
           end do

@@ -2,14 +2,14 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 2
+nlmax = 6
 
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-#prmname = ./pre/QUAD.prm
-prmname = ./pre/rect_01x0.1_quads.prm
+prmname = ./pre/QUAD.prm
+#prmname = ./pre/rect_01x0.1_quads.prm
 #prmname = ./pre/quadm5t5.prm
 #prmname = ./pre/isentrvort.prm
 #prmname = ./pre/zehnm.prm
@@ -23,8 +23,8 @@ prmname = ./pre/rect_01x0.1_quads.prm
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-#triname = ./pre/QUAD.tri
-triname = ./pre/rect_01x0.1_quads.tri
+triname = ./pre/QUAD.tri
+#triname = ./pre/rect_01x0.1_quads.tri
 #triname = ./pre/quadm5t5.tri
 #triname = ./pre/isentrvort.tri
 #triname = ./pre/zehnm.tri
@@ -39,7 +39,7 @@ triname = ./pre/rect_01x0.1_quads.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 2
+FEkind = 1
 
 
 
@@ -63,14 +63,15 @@ theta = 1.0
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 12
+limiter = 0
 
 # What kind of time stepping to use
 # 1: RK SSP 3rd order
 # 2: dGP(2) 3rd/4th order
 # 3: Theta scheme
 # 4: Classical RK of 4th order
-timestepping = 1
+# 5: Implicit
+timestepping = 5
 
 # What type to build the RHS
 rhstype = 1

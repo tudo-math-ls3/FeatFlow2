@@ -11,7 +11,7 @@
 !              Dcoefficients,&
 !              DsolVals,&
 			  DfluxValues,&
-			  rvectorSolBlock,&
+			  rvectorSol,&
 			  IelementList,&
 			  Dside,&
               normal,&
@@ -45,7 +45,7 @@
 !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_collection), intent(inout), target, optional :: rcollection
-  type(t_vectorBlock), intent(in) :: rvectorSolBlock
+  type(t_vectorScalar), intent(in) :: rvectorSol
   integer, dimension(:), intent(in) :: IelementList
   real(DP), dimension(:,:), intent(out) :: Dside
     
