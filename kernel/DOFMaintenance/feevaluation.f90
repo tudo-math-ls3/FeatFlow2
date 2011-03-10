@@ -4179,7 +4179,7 @@ contains
     ! and get the maximum value from the values in the vertices.
     bevaluate = .true.
     
-    do i=2,rvector%nblocks
+    do i=1,rvector%nblocks
       ! All vectors must have the same shape
       if (rvector%RvectorBlock(i)%p_rspatialDiscr%inumFESpaces .ne. &
           rvector%RvectorBlock(1)%p_rspatialDiscr%inumFESpaces) then
@@ -4208,7 +4208,7 @@ contains
       end do
     end do
     
-    if (.not. bevaluate) then
+    if (bevaluate) then
     
       ! Evaluate directly
       call lsysbl_getVectorMagnitude (rvector,dumax=dumax)

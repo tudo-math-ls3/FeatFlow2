@@ -5805,9 +5805,10 @@ contains
           du2=du2+(da1*du1y(Idofs(idof,ielidx))+da2*du2y(Idofs(idof,ielidx)))
         end do
 
-        ! Calculate the norm of that local velocity:
-
-        dunorm = sqrt(du1**2+du2**2) / real(ubound(Idofs,1),DP)
+        ! Calculate the norm of the local velocity and the velocity itself.
+        du1 = du1 / real(ubound(Idofs,1),DP)
+        du2 = du2 / real(ubound(Idofs,1),DP)
+        dunorm = sqrt(du1**2+du2**2)
 
         ! Now we have:   dunorm = ||u||_T
         ! and:           u_T = a1*u1_T + a2*u2_T
@@ -11171,12 +11172,12 @@ contains
         if ((rconfig%dupsam .ne. 0.0_DP) .and. present(rvelocity)) then
           if (NVE .eq. 3) then
             call getLocalDeltaTriSim (rconfig%clocalh,&
-                          Dvelocity,Dnu,duMaxR,&
+                          Dvelocity,Dnu,Domega,p_Ddetj,duMaxR,&
                           rconfig%cstabiltype,rconfig%dupsam,&
                           p_IelementList(IELset:IELmax),p_rtriangulation,DlocalDelta)
           else
             call getLocalDeltaQuadSim (rconfig%clocalh,&
-                          Dvelocity,Dnu,duMaxR,&
+                          Dvelocity,Dnu,Domega,p_Ddetj,duMaxR,&
                           rconfig%cstabiltype,rconfig%dupsam,&
                           p_IelementList(IELset:IELmax),p_rtriangulation,DlocalDelta)
           end if
@@ -11944,7 +11945,7 @@ contains
   ! ----------------------------------------------------------------------
 
   subroutine getLocalDeltaTriSim (clocalh,&
-                      Dvelocity,Dnu,duMaxR,&
+                      Dvelocity,Dnu,DcubWeights,Ddetj,duMaxR,&
                       cstabiltype,dupsam,Ielements,rtriangulation,Ddelta)
 
   ! This routine calculates a local ddelta=DELTA_T for a set of finite
@@ -11968,6 +11969,13 @@ contains
 
   ! Viscosity coefficient in all cubature points on all selement
   real(DP), dimension(:,:), intent(in) :: Dnu
+
+  ! Cubature weights in the cubature points.
+  real(DP), dimension(:), intent(in) :: DcubWeights
+
+  ! Determinant of the mapping from the reference to the real element
+  ! in every cubature point.
+  real(DP), dimension(:,:), intent(in) :: Ddetj
 
   ! Type of SD method to apply.
   ! = 0: Use simple SD stabilisation:
@@ -11995,6 +12003,7 @@ contains
   integer, dimension(:,:), pointer :: p_IverticesAtElement
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   real(DP), dimension(:), pointer :: p_DelementVolume
+  real(DP) :: domega
 
     ! Currently, we only support clocalh=0!
 
@@ -12012,17 +12021,21 @@ contains
       du2 = 0.0_DP
       dnuRec = 0.0_DP
       do icubp = 1,ubound(Dvelocity,2)
-        du1 = du1 + Dvelocity(1,icubp,ielidx)
-        du2 = du2 + Dvelocity(2,icubp,ielidx)
-        dnuRec = dnuRec + Dnu(icubp,ielidx)
+        domega = DcubWeights(icubp)*Ddetj(icubp,ielidx)
+        du1 = du1 + domega*Dvelocity(1,icubp,ielidx)
+        du2 = du2 + domega*Dvelocity(2,icubp,ielidx)
+        dnuRec = dnuRec + domega*Dnu(icubp,ielidx)
       end do
 
-      ! Calculate the norm of that local velocity:
-      dunorm = sqrt(du1**2+du2**2) / real(ubound(Dvelocity,2),dp)
+      ! Calculate the norm of the mean local velocity
+      ! as well as the mean local velocity
+      du1 = du1 / p_DelementVolume(iel)
+      du2 = du2 / p_DelementVolume(iel)
+      dunorm = sqrt(du1**2+du2**2)
 
       ! Calculate the mean viscosity coefficient -- or more precisely,
       ! its reciprocal.
-      dnuRec = real(ubound(Dvelocity,2),dp) / dnuRec
+      dnuRec = p_DelementVolume(iel) / dnuRec
 
       ! Now we have:   dunorm = ||u||_T
       ! and:           u_T = a1*u1_T + a2*u2_T
@@ -12072,7 +12085,7 @@ contains
   ! ----------------------------------------------------------------------
 
   subroutine getLocalDeltaQuadSim (clocalh,&
-                      Dvelocity,Dnu,duMaxR,&
+                      Dvelocity,Dnu,DcubWeights,Ddetj,duMaxR,&
                       cstabiltype,dupsam,Ielements,rtriangulation,Ddelta)
 
   ! This routine calculates a local ddelta=DELTA_T for a set of finite
@@ -12096,6 +12109,13 @@ contains
 
   ! Viscosity coefficient in all cubature points on all selement
   real(DP), dimension(:,:), intent(in) :: Dnu
+  
+  ! Cubature weights in the cubature points on the reference element
+  real(DP), dimension(:), intent(in) :: DcubWeights
+  
+  ! Determinant of the mapping from the reference to the real element
+  ! in every cubature point.
+  real(DP), dimension(:,:), intent(in) :: Ddetj
 
   ! Type of SD method to apply.
   ! = 0: Use simple SD stabilisation:
@@ -12123,11 +12143,12 @@ contains
   integer, dimension(:,:), pointer :: p_IverticesAtElement
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   real(DP), dimension(:), pointer :: p_DelementVolume
+  real(DP) :: domega
+
+    call storage_getbase_double (rtriangulation%h_DelementVolume,p_DelementVolume)
 
     ! Get some crucial data
     if (clocalh .eq. 0) then
-
-      call storage_getbase_double (rtriangulation%h_DelementVolume,p_DelementVolume)
 
       ! Loop through all elements
       do ielidx = 1,size(Ielements)
@@ -12141,17 +12162,21 @@ contains
         du2 = 0.0_DP
         dnuRec = 0.0_DP
         do icubp = 1,ubound(Dvelocity,2)
-          du1 = du1 + Dvelocity(1,icubp,ielidx)
-          du2 = du2 + Dvelocity(2,icubp,ielidx)
-          dnuRec = dnuRec + Dnu(icubp,ielidx)
+          domega = DcubWeights(icubp)*Ddetj(icubp,ielidx)
+          du1 = du1 + domega*Dvelocity(1,icubp,ielidx)
+          du2 = du2 + domega*Dvelocity(2,icubp,ielidx)
+          dnuRec = dnuRec + domega*Dnu(icubp,ielidx)
         end do
 
-        ! Calculate the norm of that local velocity:
-        dunorm = sqrt(du1**2+du2**2) / real(ubound(Dvelocity,2),dp)
+        ! Calculate the norm of the mean local velocity
+        ! as well as the mean local velocity
+        du1 = du1 / p_DelementVolume(iel)
+        du2 = du2 / p_DelementVolume(iel)
+        dunorm = sqrt(du1**2+du2**2)
 
         ! Calculate the mean viscosity coefficient -- or more precisely,
         ! its reciprocal.
-        dnuRec = real(ubound(Dvelocity,2),dp) / dnuRec
+        dnuRec = p_DelementVolume(iel) / dnuRec
 
         ! Now we have:   dunorm = ||u||_T
         ! and:           u_T = a1*u1_T + a2*u2_T
@@ -12212,18 +12237,21 @@ contains
         du2 = 0.0_DP
         dnuRec = 0.0_DP
         do icubp = 1,ubound(Dvelocity,2)
-          du1 = du1 + Dvelocity(1,icubp,ielidx)
-          du2 = du2 + Dvelocity(2,icubp,ielidx)
-          dnuRec = dnuRec + Dnu(icubp,ielidx)
+          domega = DcubWeights(icubp)*Ddetj(icubp,ielidx)
+          du1 = du1 + domega*Dvelocity(1,icubp,ielidx)
+          du2 = du2 + domega*Dvelocity(2,icubp,ielidx)
+          dnuRec = dnuRec + domega*Dnu(icubp,ielidx)
         end do
 
-        ! Calculate the norm of that local velocity:
-
-        dunorm = sqrt(du1**2+du2**2) / real(ubound(Dvelocity,2),dp)
+        ! Calculate the norm of the mean local velocity
+        ! as well as the mean local velocity
+        du1 = du1 / p_DelementVolume(iel)
+        du2 = du2 / p_DelementVolume(iel)
+        dunorm = sqrt(du1**2+du2**2)
 
         ! Calculate the mean viscosity coefficient -- or more precisely,
         ! its reciprocal.
-        dnuRec = real(ubound(Dvelocity,2),dp) / dnuRec
+        dnuRec = p_DelementVolume(iel) / dnuRec
 
         ! Now we have:   dunorm = ||u||_T
         ! and:           u_T = a1*u1_T + a2*u2_T
