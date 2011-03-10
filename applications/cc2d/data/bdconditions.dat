@@ -126,10 +126,10 @@ bdComponent1(4)=
 
 # Driven cavity would be (for grid cavity.{prm,tri}):
 #bdComponent1(4)=
-#   1.0  2  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
-#   2.0  2  1  'Dirichlet0'  'Dirichlet0'   # [1.0,2.0] : Dirichlet-0 boundary
-#   3.0  0  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-1/0 boundary
-#   4.0  3  1  'Dirichlet1'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
+#   1.0  1  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
+#   2.0  1  1  'Dirichlet0'  'Dirichlet0'   # [1.0,2.0] : Dirichlet-0 boundary
+#   3.0  3  1  'Dirichlet1'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-1/0 boundary
+#   4.0  0  1  'Dirichlet0'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
 
 bdComponent2(1)=
    4.0  3  1  'Dirichlet0'  'Dirichlet0'   # Complete boundary component Dirichlet-0 boundary
