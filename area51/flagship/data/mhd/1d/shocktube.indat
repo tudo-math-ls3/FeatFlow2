@@ -18,7 +18,7 @@
 #   Bx1 = 3/4;    Bx2 = 3/4                                                    #
 #   By1 = 1.0;    By2 =-1.0                                                    #
 #   Bz1 = 0.0;    Bz2 = 0.0                                                    #
-#    p1 = 1.0;     p2 = 1/10                                                   #
+#    p1 = 1.0;     p2 = 0.1                                                    #
 #                                                                              #
 # and states 1 and 2 are separated at x=0.5                                    #
 #                                                                              #
@@ -36,7 +36,7 @@ deffunc: @initsol_Etot = if(x < 0.5, 3.28125, 1.03125) ; x,y,z,t
 NBCT
 2
 NEXPR
-3
+7
 IBCT
 1
 NCOMP

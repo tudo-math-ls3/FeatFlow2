@@ -26,7 +26,7 @@ application = mhd
 indatfile = data/mhd/1d/shocktube.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_strong_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -55,7 +55,7 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
 # 3 = Rusanov type
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -135,7 +135,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 1
+isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -187,13 +187,13 @@ iprelimiting = 0
 # 1 = GMV
 # 2 = AVS
 # 3 = Paraview (VTK)
-iformatUCD = 3
+iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.0025
+dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/shocktubeTest
+sucdsolution = out/shocktube_Brio_Wu
 
 # file for UCD output of error
 sucderror = out/shocktube_error

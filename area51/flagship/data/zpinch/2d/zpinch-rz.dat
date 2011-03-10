@@ -409,12 +409,6 @@ sexacttargetfuncname =
 #-------------------------------------------------------------------------------
 
 # type of finite element space(s)
-#  1 = P1 finite elements
-#  2 = P2 finite elements
-# 11 = Q1 finite elements
-# 12 = Q2 finite elements
-# -1 = mixed P1/Q1 finite elements
-# -2 = mixed P2/Q2 finite elements
 celement = %{Hydro.celement}
 
 # type of matrix format
