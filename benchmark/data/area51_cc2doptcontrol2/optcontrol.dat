@@ -9,7 +9,7 @@ ssectionBoundaryExpressions = BDEXPRESSIONS
 ssectionBoundaryConditions = BDCONDITIONS
 
 # Name of the section that defines the target flow.
-stargetFlow = OPTCTARGETFLOW
+stargetFunction = OPTCTARGETFUNCTION
 
 # Name of the section that defines the initial condition.
 sinitialCondition = INITIALCONDITION
@@ -28,8 +28,8 @@ dalphaC = 0.01 # 1.0
 dgammaC = 0.0  # 1.0
 
 # Formulation of the Space-time problem.
-# =0: usual formulation as specified in the DFG applicance
-# =1: Formulation for the generation of reference results from papers
+# =0: Formulation for the generation of reference results from papers
+# =1: usual formulation as specified in the DFG applicance
 # The two formulations differ in a "-"-sign in front of the dual velocity.
 ispaceTimeFormulation = 0
 

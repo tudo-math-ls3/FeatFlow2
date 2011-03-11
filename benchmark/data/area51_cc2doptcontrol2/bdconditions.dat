@@ -12,7 +12,10 @@
 #   'name' type value
 # with
 #   'name' : an arbitrary name; case insensitive
-#   type   : -2=name of a hardcoded expression realised by callback routines
+#   type   : -3=analytic reference solution. An integer value defines the 
+#               solution id of the function to be used on the boundary
+#               (see user_flows.f90)
+#            -2=name of a hardcoded expression realised by callback routines
 #               in the code
 #            -1=general text expression to be evaluated
 #             0=double precision constant, 

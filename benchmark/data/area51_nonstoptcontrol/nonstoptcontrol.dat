@@ -100,11 +100,17 @@ dtimemax = $PHYSICS_DTIMEMAX
 [POSTPROC]
 ##########
 
+# Whether or not to write UCD output
 iwriteUCD = $POSTPROC_IWRITEUCD
+
+# Whether or not to calculate the error to an analytical ref. fct.
 icalcerror = 1
 
 # Type of 1D cubature formula to use in time for error calc.
 scubTimeError = G2_1D
+
+# Name/path of the UCD output file
+sucdfilename = "./gmv/u.vtk"
 
 ##########################
 [SPACETIME-DISCRETISATION]
@@ -128,16 +134,38 @@ dtheta = $SPACETIMEDISCRETISATION_DTHETA
 # =0: Standard theta scheme for both, primal and dual.
 # =1: modified theta scheme, dual solutions located
 #     inbetween primal solutions in time.
-ithetaschemetype = 1
+ithetaschemetype = $SPACETIMEDISCRETISATION_ITHETASCHEMETYPE
 
 # Number of timesteps on the time coarse mesh
 ntimestepsCoarse = $SPACETIMEDISCRETISATION_NTIMESTEPSCOARSE
+
+######################
+[SPACETIME-REFINEMENT]
+######################
+
+# Whether space levels are coupled to time levels.
+# =0: Refinement only in time: Space level NLMAX is used on all time levels.
+# =1: Refinement in time and space: Space level NLMAX-i = Time level TIMENLMAX-i
+# =2: Refinement only in space: Time level TIMENLMAX-i has the same number of time 
+#     steps as time level TIMENLMAX, but uses space level NLMAX-i.
+
+ispacelevelcoupledtotimelevel = $SPACETIMEREF_ISPACELEVELCOUPLEDTOTIMELEVEL
+
+# If space and time levels are coupled:
+# Factor that specifies the number of refinement levels in time before refining
+# in space.
+# Standard: 1.0 = each refinement in time results in a refinement in space.
+# Other values e.g.:
+#   2.0 = two refinements in time per refinement in space
+#   0.5 = two refinements in space per refinement in time
+
+dspacetimeRefFactor = $SPACETIMEREF_DSPACETIMEREFFACTOR
 
 ########################
 [SPACETIME-LINEARSOLVER]
 ########################
 
-ioutputLevel = 2
+ioutputLevel = 3
 
 # Type of the solver.
 # =-1: automatic
@@ -190,7 +218,7 @@ icoarsegridsolver = $SPACETIMELINEARSOLVER_ICOARSEGRIDSOLVER
 itypeProjection = $SPACETIMELINEARSOLVER_ITYPEPROJECTION
 
 depsrel = $SPACETIMELINEARSOLVER_DEPSREL
-depsabs = 1E-17
+depsabs = 1E-15
 
 # ONLY MULTIGRID: Type of Cycle.
 # =0: F-cycle, =1: V-cycle, =2: W-cycle
@@ -223,17 +251,20 @@ ifullcouplingFBGS = 1
 ############################
 
 ioutputlevel = $SPACETIMECOARSEGRIDSOLVER_IOUTPUTLEVEL
-depsrel = 1E-10
-depsabs = 1E-17
+depsrel = $SPACETIMECOARSEGRIDSOLVER_DEPSREL
+depsabs = $SPACETIMECOARSEGRIDSOLVER_DEPSABS
 
 ddamping = $SPACETIMECOARSEGRIDSOLVER_DDAMPING
-drelax = 1.0
+drelax = $SPACETIMECOARSEGRIDSOLVER_DRELAX
 
 # Use full (forward+backward) coupling in FBGS.
 # =0: Use only one-way coupling to previous or next timestep
 # =1: Use two-way coupling to previous and next timestep
 
 ifullcouplingFBGS = $SPACETIMECOARSEGRIDSOLVER_IFULLCOUPLINGFBGS2
+
+# Maximum number of iterations
+nmaxiterations = $SPACETIMECOARSEGRIDSOLVER_NMAXITERATIONS
 
 ####################
 [SPACETIME-SMOOTHER]
@@ -242,7 +273,7 @@ ifullcouplingFBGS = $SPACETIMECOARSEGRIDSOLVER_IFULLCOUPLINGFBGS2
 ioutputlevel = $SPACETIMESMOOTHER_IOUTPUTLEVEL
 
 ddamping = $SPACETIMESMOOTHER_DDAMPING
-drelax = 1.0
+drelax = $SPACETIMESMOOTHER_DRELAX
 
 # Use full (forward+backward) coupling in FBGS.
 # =0: Use only one-way coupling to previous or next timestep
@@ -254,14 +285,49 @@ ifullcouplingFBGS = $SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2
 # =0: deactivate
 niteReinit = 0
 
+
 ####################
 [SPACE-LINEARSOLVER]
 ####################
+
 # Type of the solver in space.
 # =0: UMFPACK
 # =1: Multigrid
 csolverType = $SPACELINEARSOLVER_CSOLVERTYPE
 
-# Type of smoother/coarse grid solver.
+# Type of smoother.
 # =0: Defect correction + Jacobi/VANKA preconditioning
-cpreconditioner = $SPACELINEARSOLVER_CPRECONDITIONER
+# =1: BiCGStab(ILU-0). Only for the heat equation.
+# =2: BiCGStab(SSOR). Only for the heat equation.
+csmoother = $SPACELINEARSOLVER_CSMOOTHER
+
+# Type of coarse grid solver.
+# =0: Defect correction + Jacobi/VANKA preconditioning
+# =1: BiCGStab(ILU-0). Only for the heat equation.
+# =2: BiCGStab(SSOR). Only for the heat equation.
+ccoarsegridsolver = $SPACELINEARSOLVER_CCOARSEGRIDSOLVER
+
+# Damping parameter for smoother.
+# =1.0 for ILU, =0.7 for JAC
+domegaSmoother = $SPACELINEARSOLVER_DOMEGASMOOTHER
+
+# Relative stopping criterion
+depsrel = $SPACELINEARSOLVER_DEPSREL
+
+# Absolute stopping criterion
+depsabs = $SPACELINEARSOLVER_DEPSABS
+
+# Minimum difference in the solutions (fine+coarse grid)
+depsdiff = $SPACELINEARSOLVER_DEPSDIFF
+
+# Max. number of iterations
+nmaxiterations = $SPACELINEARSOLVER_NMAXITERATIONS
+
+# Output level
+ioutputLevel = 0
+
+# Output level coarse grid solver
+ioutputLevelCoarse = 0
+
+# Max. number of iterations on the coarse mesh
+nmaxiterationsCoarse = $SPACELINEARSOLVER_NMAXITERATIONSCOARSE
