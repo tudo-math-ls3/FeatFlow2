@@ -12,7 +12,7 @@ NLSOL: Iteration 10, !!RES!! = 5.842089769029161E-07
 NLSOL: Iteration 11, !!RES!! = 2.525112089422873E-07
 NLSOL: Iteration 12, !!RES!! = 1.088534850056066E-07
 NLSOL: Iteration 13, !!RES!! = 4.680902946390450E-08
-NLSOL: Iteration 14, !!RES!! = 2.007753310558108E-08
+NLSOL: Iteration 14, !!RES!! = 2.007753310558107E-08
 NLSOL: Iteration 15, !!RES!! = 8.588628588546413E-09
 NLSOL: Iteration 16, !!RES!! = 3.663442202229750E-09
 
@@ -28,12 +28,12 @@ NLSOL: Iteration 1, !!RES!! = 2.377663866938027E-04
 MG: Iterations/Rate of convergence: 2 /1.665134128044120E-01
 NLSOL: Iteration 2, !!RES!! = 1.513489633068862E-04
 MG: Iterations/Rate of convergence: 2 /2.028512509766442E-01
-NLSOL: Iteration 3, !!RES!! = 1.260116916294135E-04
+NLSOL: Iteration 3, !!RES!! = 1.260116916294134E-04
 MG: Iterations/Rate of convergence: 2 /1.168451907728635E-01
 NLSOL: Iteration 4, !!RES!! = 6.337610468285509E-05
 MG: Iterations/Rate of convergence: 2 /9.836831841378579E-02
 NLSOL: Iteration 5, !!RES!! = 3.509461897657522E-05
-MG: Iterations/Rate of convergence: 2 /6.172289947307307E-02
+MG: Iterations/Rate of convergence: 2 /6.172289947307306E-02
 NLSOL: Iteration 6, !!RES!! = 1.561166035663258E-05
 MG: Iterations/Rate of convergence: 2 /3.847168496355936E-02
 NLSOL: Iteration 7, !!RES!! = 7.072601845776748E-06

@@ -9,7 +9,7 @@ BiCGStab: Iteration 4,  !!RES!! = 5.793568212986534E-01
 BiCGStab: Iteration 5,  !!RES!! = 5.036208397813211E-01
 BiCGStab: Iteration 6,  !!RES!! = 4.263987008416757E-01
 BiCGStab: Iteration 7,  !!RES!! = 3.434259351163423E-01
-BiCGStab: Iteration 8,  !!RES!! = 2.663084871984277E-01
+BiCGStab: Iteration 8,  !!RES!! = 2.663084871984276E-01
 BiCGStab: Iteration 9,  !!RES!! = 2.076057093647723E-01
 BiCGStab: Iteration 10,  !!RES!! = 1.591266884534254E-01
 BiCGStab: Iteration 11,  !!RES!! = 1.151824632468013E-01
@@ -138,7 +138,7 @@ BiCGStab: Iteration 25,  !!RES!! = 2.278254744534597E-05
 BiCGStab: Iteration 26,  !!RES!! = 1.488104255251145E-05
 BiCGStab: Iteration 27,  !!RES!! = 9.753506389451945E-06
 BiCGStab: Iteration 28,  !!RES!! = 6.222639320528592E-06
-BiCGStab: Iteration 29,  !!RES!! = 4.021887081904467E-06
+BiCGStab: Iteration 29,  !!RES!! = 4.021887081904466E-06
 BiCGStab: Iteration 30,  !!RES!! = 2.620287505532628E-06
 BiCGStab: Iteration 31,  !!RES!! = 1.756160240541087E-06
 BiCGStab: Iteration 32,  !!RES!! = 1.184869152884140E-06
@@ -168,7 +168,7 @@ Multigrid statistics:
 Iterations              : 3
 !!INITIAL RES!!         : 2.676879331135164E-03
 !!RES!!                 : 1.675248794928846E-08
-!!RES!!/!!INITIAL RES!! : 6.258215585005229E-06
+!!RES!!/!!INITIAL RES!! : 6.258215585005228E-06
 
 Rate of convergence     : 1.842822501904721E-02
 L2-error: 1.2758160628E-04
@@ -184,7 +184,7 @@ H1-error: 1.9708230651E-01
 Calculating Poisson-2D-Problem with method 1 - Robin BC
 -------------------------------------------------------
 BiCGStab: Iteration 0,  !!RES!! = 1.557757976461175E-01
-BiCGStab: Iteration 1,  !!RES!! = 3.362909565705415E-02
+BiCGStab: Iteration 1,  !!RES!! = 3.362909565705414E-02
 BiCGStab: Iteration 2,  !!RES!! = 1.537276547803551E-02
 BiCGStab: Iteration 3,  !!RES!! = 9.554297588233883E-03
 BiCGStab: Iteration 4,  !!RES!! = 6.848348704391163E-03
@@ -193,7 +193,7 @@ BiCGStab: Iteration 6,  !!RES!! = 4.108852047503622E-03
 BiCGStab: Iteration 7,  !!RES!! = 3.352137335333508E-03
 BiCGStab: Iteration 8,  !!RES!! = 2.779663676020567E-03
 BiCGStab: Iteration 9,  !!RES!! = 2.342784111893630E-03
-BiCGStab: Iteration 10,  !!RES!! = 1.999344120789707E-03
+BiCGStab: Iteration 10,  !!RES!! = 1.999344120789706E-03
 BiCGStab: Iteration 11,  !!RES!! = 1.731405351829394E-03
 BiCGStab: Iteration 12,  !!RES!! = 1.525888494148493E-03
 BiCGStab: Iteration 13,  !!RES!! = 1.350864854058947E-03
@@ -202,9 +202,9 @@ BiCGStab: Iteration 15,  !!RES!! = 1.068741843482761E-03
 BiCGStab: Iteration 16,  !!RES!! = 9.419148068189980E-04
 BiCGStab: Iteration 17,  !!RES!! = 8.227436818488749E-04
 BiCGStab: Iteration 18,  !!RES!! = 7.311384819791613E-04
-BiCGStab: Iteration 19,  !!RES!! = 6.622223467388024E-04
+BiCGStab: Iteration 19,  !!RES!! = 6.622223467388023E-04
 BiCGStab: Iteration 20,  !!RES!! = 6.001701533317718E-04
-BiCGStab: Iteration 21,  !!RES!! = 5.472766527389559E-04
+BiCGStab: Iteration 21,  !!RES!! = 5.472766527389558E-04
 BiCGStab: Iteration 22,  !!RES!! = 4.980235312712903E-04
 BiCGStab: Iteration 23,  !!RES!! = 4.564638853123798E-04
 BiCGStab: Iteration 24,  !!RES!! = 4.166487661895547E-04
@@ -217,7 +217,7 @@ BiCGStab: Iteration 30,  !!RES!! = 2.046506298624202E-04
 BiCGStab: Iteration 31,  !!RES!! = 1.702815458807468E-04
 BiCGStab: Iteration 32,  !!RES!! = 1.374132320119275E-04
 BiCGStab: Iteration 33,  !!RES!! = 1.100418557933496E-04
-BiCGStab: Iteration 34,  !!RES!! = 8.871364551006491E-05
+BiCGStab: Iteration 34,  !!RES!! = 8.871364551006490E-05
 BiCGStab: Iteration 35,  !!RES!! = 7.307101485347573E-05
 BiCGStab: Iteration 36,  !!RES!! = 6.076765672738399E-05
 BiCGStab: Iteration 37,  !!RES!! = 5.088272145896881E-05
@@ -225,7 +225,7 @@ BiCGStab: Iteration 38,  !!RES!! = 4.274460756768217E-05
 BiCGStab: Iteration 39,  !!RES!! = 3.553137241448581E-05
 BiCGStab: Iteration 40,  !!RES!! = 2.992829335428452E-05
 BiCGStab: Iteration 41,  !!RES!! = 2.400754955129653E-05
-BiCGStab: Iteration 42,  !!RES!! = 2.229333057617920E-05
+BiCGStab: Iteration 42,  !!RES!! = 2.229333057617919E-05
 BiCGStab: Iteration 43,  !!RES!! = 2.437714328296775E-05
 BiCGStab: Iteration 44,  !!RES!! = 1.676141133635198E-05
 BiCGStab: Iteration 45,  !!RES!! = 1.493642370697562E-05
@@ -241,7 +241,7 @@ BiCGStab statistics:
 Iterations              : 50
 !!INITIAL RES!!         : 1.557757976461175E-01
 !!RES!!                 : 1.741408213596753E-06
-!!RES!!/!!INITIAL RES!! : 1.117893947526293E-05
+!!RES!!/!!INITIAL RES!! : 1.117893947526292E-05
 
 Rate of convergence     : 7.961007115631529E-01
 L2-error: 3.7799796071E-04
@@ -275,7 +275,7 @@ BiCGStab: Iteration 22,  !!RES!! = 2.475358952375220E-05
 BiCGStab: Iteration 23,  !!RES!! = 1.944502098468960E-05
 BiCGStab: Iteration 24,  !!RES!! = 1.608277122980803E-05
 BiCGStab: Iteration 25,  !!RES!! = 1.376600515025870E-05
-BiCGStab: Iteration 26,  !!RES!! = 1.191119529064714E-05
+BiCGStab: Iteration 26,  !!RES!! = 1.191119529064713E-05
 BiCGStab: Iteration 27,  !!RES!! = 1.049015993627428E-05
 BiCGStab: Iteration 28,  !!RES!! = 9.077922066186784E-06
 BiCGStab: Iteration 29,  !!RES!! = 7.730170092680724E-06
@@ -285,7 +285,7 @@ BiCGStab: Iteration 32,  !!RES!! = 4.497000996699073E-06
 BiCGStab: Iteration 33,  !!RES!! = 3.602674029342103E-06
 BiCGStab: Iteration 34,  !!RES!! = 2.788512883004058E-06
 BiCGStab: Iteration 35,  !!RES!! = 2.087282387547237E-06
-BiCGStab: Iteration 36,  !!RES!! = 1.506755279119735E-06
+BiCGStab: Iteration 36,  !!RES!! = 1.506755279119734E-06
 BiCGStab: Iteration 37,  !!RES!! = 1.102682313676122E-06
 BiCGStab: Iteration 38,  !!RES!! = 7.445380607881322E-07
 BiCGStab: Iteration 39,  !!RES!! = 5.062314528491922E-07
@@ -318,15 +318,15 @@ UMFPACK: !!solution!!    = 4.801422615914688E-01 Status = 0
 UMFPACK: !!Initial RES!! = 5.032753177455979E-02
 UMFPACK: !!solution!!    = 5.178358619296244E-01 Status = 0
 UMFPACK: !!Initial RES!! = 3.694232952830823E-02
-UMFPACK: !!solution!!    = 4.636731570627291E-01 Status = 0
+UMFPACK: !!solution!!    = 4.636731570627290E-01 Status = 0
 UMFPACK: !!Initial RES!! = 3.694232952830823E-02
-UMFPACK: !!solution!!    = 4.636731570627291E-01 Status = 0
+UMFPACK: !!solution!!    = 4.636731570627290E-01 Status = 0
 UMFPACK: !!Initial RES!! = 3.694232952830823E-02
-UMFPACK: !!solution!!    = 4.636731570627291E-01 Status = 0
+UMFPACK: !!solution!!    = 4.636731570627290E-01 Status = 0
 UMFPACK: !!Initial RES!! = 3.694232952830823E-02
-UMFPACK: !!solution!!    = 4.636731570627291E-01 Status = 0
+UMFPACK: !!solution!!    = 4.636731570627290E-01 Status = 0
 UMFPACK: !!Initial RES!! = 3.694232952830823E-02
-UMFPACK: !!solution!!    = 4.636731570627291E-01 Status = 0
+UMFPACK: !!solution!!    = 4.636731570627290E-01 Status = 0
 L2-error: 2.4290446677E-03
 H1-error: 1.5800847079E-01
 
@@ -363,15 +363,15 @@ L2prj: Iteration 8,  !!RES!! = 8.358738981476934E-08
 
 Calculating Poisson-2D-Problem with method 1 - Prol.-Matrix
 -----------------------------------------------------------
-Multigrid: Iteration 0,  !!RES!! = 2.676838518739047E-03
-Multigrid: Iteration 1,  !!RES!! = 5.577552768728229E-05
+Multigrid: Iteration 0,  !!RES!! = 2.676838518739046E-03
+Multigrid: Iteration 1,  !!RES!! = 5.577552768728228E-05
 Multigrid: Iteration 2,  !!RES!! = 7.138149142691232E-07
 Multigrid: Iteration 3,  !!RES!! = 1.689449866621050E-08
 
 Multigrid statistics:
 
 Iterations              : 3
-!!INITIAL RES!!         : 2.676838518739047E-03
+!!INITIAL RES!!         : 2.676838518739046E-03
 !!RES!!                 : 1.689449866621050E-08
 !!RES!!/!!INITIAL RES!! : 6.311362657082817E-06
 
@@ -451,7 +451,7 @@ BiCGStab: Iteration 2,  !!RES!! = 4.441391057095402E-03
 BiCGStab: Iteration 3,  !!RES!! = 3.491010721921936E-03
 BiCGStab: Iteration 4,  !!RES!! = 2.625321705569619E-03
 BiCGStab: Iteration 5,  !!RES!! = 1.850450554951635E-03
-BiCGStab: Iteration 6,  !!RES!! = 1.208717533757952E-03
+BiCGStab: Iteration 6,  !!RES!! = 1.208717533757951E-03
 BiCGStab: Iteration 7,  !!RES!! = 7.728796416951657E-04
 BiCGStab: Iteration 8,  !!RES!! = 4.447279923020960E-04
 BiCGStab: Iteration 9,  !!RES!! = 1.955620271698386E-04
@@ -586,7 +586,7 @@ BiCGStab statistics:
 Iterations              : 4
 !!INITIAL RES!!         : 1.858528455875082E-02
 !!RES!!                 : 7.843936835719238E-08
-!!RES!!/!!INITIAL RES!! : 4.220509409432716E-06
+!!RES!!/!!INITIAL RES!! : 4.220509409432715E-06
 
 Rate of convergence     : 4.532535540943779E-02
 L2-error: 7.6477990637E-03
