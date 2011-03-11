@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# Copies all result file from the benchmark directories into the current
+# directory. Overwrites old results.
+
+for dir in ../../benchmark_*
+do
+  cp -rf $dir/results/* .
+done
