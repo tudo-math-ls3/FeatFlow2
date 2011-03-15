@@ -15,6 +15,7 @@
 
 program convstudy
 
+  use basicgeometry
   use collection
   use derivatives
   use domainintegration
@@ -160,12 +161,28 @@ contains
     ! Read GMV file into UCD export structure
     call ucd_readGMV(sfilename, rexport, rdataSet%rtriangulation)
 
-    ! Create spatial discretisation
-    call spdiscr_initDiscr_simple(rdataSet%rdiscretisation, EL_E001_1D,&
-        SPDISC_CUB_AUTOMATIC, rdataSet%rtriangulation)
+    ! What spatial dimension are we?
+    select case(rdataSet%rtriangulation%ndim)
 
-!!$    call spdiscr_initDiscr_triquad(rdataSet%rdiscretisation, EL_E001, EL_E011,&
-!!$        SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, rdataSet%rtriangulation)
+    case (NDIM1D)
+      ! Create spatial discretisation in 1D
+      call spdiscr_initDiscr_simple(rdataSet%rdiscretisation, EL_E001_1D,&
+          SPDISC_CUB_AUTOMATIC, rdataSet%rtriangulation)
+
+    case (NDIM2D)
+      ! Create spatial discretisation in 2D
+      call spdiscr_initDiscr_triquad(rdataSet%rdiscretisation, EL_E001, EL_E011,&
+          SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, rdataSet%rtriangulation)
+
+    case (NDIM3D)
+!!$      ! Create spatial discretisation in 3D
+!!$      call spdiscr_initDiscr_simple(rdataSet%rdiscretisation, EL_E001_3D,&
+!!$          SPDISC_CUB_AUTOMATIC, rdataSet%rtriangulation)
+      
+      ! Create spatial discretisation in 3D
+      call spdiscr_initDiscr_simple(rdataSet%rdiscretisation, EL_E011_3D,&
+          SPDISC_CUB_AUTOMATIC, rdataSet%rtriangulation)
+    end select
 
     ! Allocate memory for scalar solution vectors
     allocate(rdataSet%Rvector(rexport%nvariables))
