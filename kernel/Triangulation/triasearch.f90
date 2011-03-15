@@ -127,45 +127,60 @@ contains
     logical :: binside
   
     select case (ubound(Dpoint,1))
+    case (NDIM1D)
+      
+      ! Loop through all elements. Check if the element contains the point.
+      ! If yes, quit.
+      do iel=1,ubound(IverticesAtElement,2)
+        
+        ! Check if the point is inside. If yes, quit.
+        if ((DvertexCoords(1,IverticesAtElement(1,iel)) .le. Dpoint(1)) .and.&
+            (DvertexCoords(1,IverticesAtElement(2,iel)) .ge. Dpoint(1))) then
+          binside = .true.
+          return
+        end if
+      end do
+      
     case (NDIM2D) 
       
       ! Loop through all elements. Check if the element contains the point.
       ! If yes, quit.
       do iel=1,ubound(IverticesAtElement,2)
-      
-      ! Check if pure triangle grid
+        
+        ! Check if pure triangle grid
         if (size(IverticesAtElement(:,1)) .eq. 3) then
-       
-            Dcorners2D(1:2,1:3) = DvertexCoords(1:2,IverticesAtElement(1:3,iel))
-
-            ! Check if the point is inside. If yes, quit.
-            call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),Dcorners2D,binside)
-            if (binside) return
-
-        else
-      
-        ! Triangular or quad element?
-        if (IverticesAtElement(4,iel) .ne. 0) then
-          ! Fetch the coordinates of the element
-          Dcorners2D(1:2,1:4) = DvertexCoords(1:2,IverticesAtElement(1:4,iel))
           
-          ! Check if the point is inside. If yes, quit.
-          call gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),Dcorners2D,binside)
-          if (binside) return
-        else
-          ! Fetch the coordinates of the element
           Dcorners2D(1:2,1:3) = DvertexCoords(1:2,IverticesAtElement(1:3,iel))
           
           ! Check if the point is inside. If yes, quit.
           call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),Dcorners2D,binside)
           if (binside) return
+          
+        else
+          
+          ! Triangular or quad element?
+          if (IverticesAtElement(4,iel) .ne. 0) then
+            ! Fetch the coordinates of the element
+            Dcorners2D(1:2,1:4) = DvertexCoords(1:2,IverticesAtElement(1:4,iel))
+            
+            ! Check if the point is inside. If yes, quit.
+            call gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),Dcorners2D,binside)
+            if (binside) return
+          else
+            ! Fetch the coordinates of the element
+            Dcorners2D(1:2,1:3) = DvertexCoords(1:2,IverticesAtElement(1:3,iel))
+            
+            ! Check if the point is inside. If yes, quit.
+            call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),Dcorners2D,binside)
+            if (binside) return
+          end if
+          
         end if
-      
-      end if
-      
+        
       end do
+
     case (NDIM3D)
-    
+      
       ! Loop through all elements. Check if the element contains the point.
       ! If yes, quit.
       do iel=1,ubound(IverticesAtElement,2)
@@ -178,17 +193,17 @@ contains
         Dcorners3D(1:3,6) = DvertexCoords(1:3,IverticesAtElement(6,iel))
         Dcorners3D(1:3,7) = DvertexCoords(1:3,IverticesAtElement(7,iel))
         Dcorners3D(1:3,8) = DvertexCoords(1:3,IverticesAtElement(8,iel))
-
+        
         call gaux_isInElement_hexa(Dpoint(1),Dpoint(2),Dpoint(3),Dcorners3D,binside)
         if (binside) return
-      
+        
       end do
       
     end select
-  
+    
     ! No element found
     iel = 0
-  
+    
   end subroutine
 
 !************************************************************************
