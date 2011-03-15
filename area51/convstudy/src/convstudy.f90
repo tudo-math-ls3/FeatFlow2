@@ -161,8 +161,11 @@ contains
     call ucd_readGMV(sfilename, rexport, rdataSet%rtriangulation)
 
     ! Create spatial discretisation
-    call spdiscr_initDiscr_triquad(rdataSet%rdiscretisation, EL_E001, EL_E011,&
-        SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, rdataSet%rtriangulation)
+    call spdiscr_initDiscr_simple(rdataSet%rdiscretisation, EL_E001_1D,&
+        SPDISC_CUB_AUTOMATIC, rdataSet%rtriangulation)
+
+!!$    call spdiscr_initDiscr_triquad(rdataSet%rdiscretisation, EL_E001, EL_E011,&
+!!$        SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, rdataSet%rtriangulation)
 
     ! Allocate memory for scalar solution vectors
     allocate(rdataSet%Rvector(rexport%nvariables))
@@ -343,9 +346,9 @@ contains
     real(DP), dimension(:,:), intent(out) :: Dvalues
 !</output>
 !</subroutine>
-    
-    call convst_evaluateFE(npointsPerElement*nelements, cderivative, Dvalues,&
-        rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints)
+
+    call convst_evaluateFE(rdiscretisation%ndimension, npointsPerElement*nelements,&
+        cderivative, Dvalues, rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints)
     
   end subroutine convst_refFunction
 
@@ -353,7 +356,7 @@ contains
 
 !<subroutine>
 
-  subroutine convst_evaluateFE(npoints, iderType, Dvalues, rvectorScalar,&
+  subroutine convst_evaluateFE(ndim,npoints, iderType, Dvalues, rvectorScalar,&
       Dpoints, Ielements, IelementsHint, cnonmeshPoints)
 
 !<description>
@@ -362,6 +365,9 @@ contains
 !</description>
 
 !<input>
+    ! Number of spatial dimension
+    integer, intent(in) :: ndim
+
     ! Number of points
     integer, intent(in) :: npoints
 
@@ -374,7 +380,7 @@ contains
     
     ! A list of points where to evaluate.
     ! DIMENSION(1..ndim,1..npoints)
-    real(DP), dimension(2,npoints), intent(in) :: Dpoints
+    real(DP), dimension(ndim,npoints), intent(in) :: Dpoints
 
     ! OPTIONAL: A list of elements containing the points Dpoints.
     ! If this is not specified, the element numbers containing the points
