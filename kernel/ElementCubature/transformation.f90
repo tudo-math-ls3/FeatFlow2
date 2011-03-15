@@ -3881,7 +3881,7 @@ contains
       case (TRAFO_ID_MLINCUBE)
       
         ! Simple linear transformation of x \in [a,b] -> x` \in [-1,1]
-        DparPoint(1) = -1.0_DP + 0.5_DP * (Dpoint(1) - Dcoord(1,1)) / (Dcoord(2,1)-Dcoord(1,1))
+        DparPoint(1) = -1.0_DP + 0.5_DP * (Dpoint(1) - Dcoord(1,1)) / (Dcoord(1,2)-Dcoord(1,1))
       
       end select
     
