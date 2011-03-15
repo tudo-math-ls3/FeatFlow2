@@ -436,7 +436,7 @@ contains
       
       ! Assemble symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale *&
-          0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))*F_ij
+          0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))*F_ij
       DfluxesAtEdge(:,2,idx) = DfluxesAtEdge(:,1,idx)
     end do
 
@@ -501,7 +501,7 @@ contains
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
-    real(DP) :: H_ij,X_ij,anorm,aux,cf_ij,d_ij,q_ij,u_ij
+    real(DP) :: H_ij,X_ij,anorm,aux,cf_ij,d_ij,q_ij,rho_ij,u_ij
     real(DP) :: aPow2_ij,astPow2_ij,bPow2_ij,bxPow2_ij
     integer :: idx
 
@@ -549,14 +549,14 @@ contains
       !
       !   u-cf, u-ca, u-cs, u, u+cs, u+ca, u+cf,
       !
-      ! where u us the x-velocity component and ca, cs and cf are the
-      ! velocities of th Alfveen waves, the slow and fast waves.
+      ! where u is the x-velocity component and ca, cs and cf are the
+      ! velocities of the Alfveen waves, the slow and fast waves.
       !
       ! The largest in magnitude eigenvalue is |u|+cf
       !-------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       ! Compute Roe mean values
@@ -570,16 +570,19 @@ contains
               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
              (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
               TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
-        
+              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+     
+      ! Compute the Roe-averaged density with left and right states interchanged!
+      rho_ij = ROE_MEAN_VALUE(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
+   
       ! Compute the square of the Roe-averaged speed of the Alfven waves.
       ! Note that left and right states are interchanged!
-      bxPow2_ij = (ROE_MEAN_VALUE(\
-                    X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                    X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux))**2/\
-                  ROE_MEAN_VALUE(\
-                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
-                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
+      bxPow2_ij = ((ROE_MEAN_VALUE(\
+                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
+                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),\
+                     aux))**2)/rho_ij
     
       ! Compute the density-averaged magnetic field
       X_ij = ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
@@ -588,8 +591,8 @@ contains
                Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
               (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
                Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/&
-              (2.0*(sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))+&
-                    sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))))
+              (2.0_DP*(sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))+&
+                       sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)))**2)
 
       ! Compute the square of the Roe-averaged magnetic field.
       ! Note that left and right states are interchanged!
@@ -601,35 +604,32 @@ contains
                    Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
                   ROE_MEAN_VALUE(\
                    Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/\
-                  ROE_MEAN_VALUE(\
-                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
-                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
+                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/rho_ij
 
       ! Compute the magnitude of the Roe-averaged velocity
-      q_ij = ROE_MEAN_VALUE(\
-              X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-              X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-             ROE_MEAN_VALUE(\
-              Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-              Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-             ROE_MEAN_VALUE(\
-              Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-              Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2
+      q_ij = (ROE_MEAN_VALUE(\
+               X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+              ROE_MEAN_VALUE(\
+               Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+              ROE_MEAN_VALUE(\
+               Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2)/2.0_DP
 
       ! Compute the Roe-averaged speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      aPow2_ij = (2.0-GAMMA)*X_ij + (GAMMA-1.0)*(H_ij-0.5*q_ij-bPow2_ij)
+      aPow2_ij = (2.0_DP-(GAMMA))*X_ij + (GAMMA-1.0_DP)*(H_ij-q_ij-bPow2_ij)
 #else
 #error "Speed of sound must be implemented!"
 #endif
       
       ! Compute auxiliary variables
       astPow2_ij = aPow2_ij+bPow2_ij
-      aux = sqrt(astPow2_ij**2-4.0*aPow2_ij*bxPow2_ij)
+      aux        = sqrt(astPow2_ij**2-4.0_DP*aPow2_ij*bxPow2_ij)
             
       ! Compute the Roe-averagred speed of the fast waves
-      cf_ij = sqrt(0.5*(astPow2_ij+aux))
+      cf_ij = sqrt(0.5_DP*(astPow2_ij+aux))
 
       ! Scalar dissipation
       d_ij = abs(u_ij*a(1)) + anorm*cf_ij
@@ -713,7 +713,7 @@ contains
     real(DP), dimension(7,7) :: Reig
     real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
     real(DP) :: caPow2_ij,ca_ij,cfPow2_ij,cf_ij,csPow2_ij,cs_ij
-    real(DP) :: S,aux,auxf,auxs,auxy,auxz
+    real(DP) :: S,aux,auxf,auxs,auxsqr,auxy,auxz
     real(DP) :: H_ij,X_ij,q_ij,rho_ij,u_ij,v_ij,w_ij
     real(DP) :: aPow2_ij,astPow2_ij,bPow2_ij,bxPow2_ij
     real(DP) :: l1,l2,l3,l4,l5,l6,l7,w1,w2,w3,w4,w5,w6,w7
@@ -764,12 +764,12 @@ contains
       !
       !   u-cf, u-ca, u-cs, u, u+cs, u+ca, u+cf,
       !
-      ! where u us the x-velocity component and ca, cs and cf are the
-      ! velocities of th Alfveen waves, the slow and fast waves.
+      ! where u is the x-velocity component and ca, cs and cf are the
+      ! velocities of the Alfveen waves, the slow and fast waves.
       !-------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       if (anorm .gt. SYS_EPSREAL) then
@@ -782,12 +782,10 @@ contains
         v_ij = ROE_MEAN_VALUE(vi,vj,aux)
         w_ij = ROE_MEAN_VALUE(wi,wj,aux)
         H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-                TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+pi)/\
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-                TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+pj)/\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
 
         ! Compute the Roe-averaged density with left and right states interchanged!
         rho_ij = ROE_MEAN_VALUE(\
@@ -796,9 +794,10 @@ contains
         
         ! Compute the square of the Roe-averaged speed of the Alfven waves.
         ! Note that left and right states are interchanged!
-        bxPow2_ij = (ROE_MEAN_VALUE(\
-                      X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                      X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux))**2/rho_ij
+        bxPow2_ij = ((ROE_MEAN_VALUE(\
+                       X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
+                       X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),\
+                       aux))**2)/rho_ij
         ca_ij = sqrt(bxPow2_ij)
     
         ! Compute the density-averaged magnetic field
@@ -808,8 +807,8 @@ contains
                  Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
                 (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
                  Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/&
-                (2.0*(sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))+&
-                      sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))))
+                (2.0_DP*(sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))+&
+                         sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)))**2)
 
         ! Compute the square of the Roe-averaged magnetic field.
         ! Note that left and right states are interchanged!
@@ -824,30 +823,30 @@ contains
                      Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/rho_ij
 
         ! Compute the magnitude of the Roe-averaged velocity
-        q_ij = ROE_MEAN_VALUE(\
-                X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-               ROE_MEAN_VALUE(\
-                Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-               ROE_MEAN_VALUE(\
-                Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2
+        q_ij = (ROE_MEAN_VALUE(\
+                 X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+                 X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+                ROE_MEAN_VALUE(\
+                 Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+                 Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+                ROE_MEAN_VALUE(\
+                 Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+                 Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2)/2.0_DP
 
         ! Compute the Roe-averaged speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        aPow2_ij = (2.0-GAMMA)*X_ij+(GAMMA-1.0)*(H_ij-0.5*q_ij-bPow2_ij)
+        aPow2_ij = (2.0_DP-(GAMMA))*X_ij+(GAMMA-1.0_DP)*(H_ij-q_ij-bPow2_ij)
 #else
 #error "Speed of sound must be implemented!"
 #endif
 
         ! Compute auxiliary quantities
         astPow2_ij = aPow2_ij+bPow2_ij
-        aux = sqrt(astPow2_ij**2-4.0*aPow2_ij*bxPow2_ij)
+        auxsqr     = sqrt(astPow2_ij**2-4.0_DP*aPow2_ij*bxPow2_ij)
 
         ! Compute the Roe-averagred speed of the slow and fast waves
-        cfPow2_ij = 0.5*(astPow2_ij+aux); cf_ij=sqrt(cfPow2_ij)
-        csPow2_ij = 0.5*(astPow2_ij-aux); cs_ij=sqrt(csPow2_ij)
+        cfPow2_ij = 0.5_DP*(astPow2_ij+auxsqr); cf_ij=sqrt(cfPow2_ij)
+        csPow2_ij = 0.5_DP*(astPow2_ij-auxsqr); cs_ij=sqrt(csPow2_ij)
 
         ! Compute eigenvalues
         l1 = abs(u_ij-cf_ij)
@@ -884,70 +883,69 @@ contains
         ! Compute the sign if the magnetic field
         S = sign(1.0_DP, X_MAGNETICFIELD_CONSTANT_1D)
 
+        ! Compute auxiliary square root
+        auxsqr = sqrt(rho_ij*aPow2_ij)
+
         ! Compute matrix of right eigenvectors       
-        Reig(1,1) = auxf/aPow2_ij
-        Reig(1,2) = 0.0
-        Reig(1,3) = auxs/aPow2_ij
-        Reig(1,4) = 1.0/aPow2_ij
-        Reig(1,5) = auxs/aPow2_ij
-        Reig(1,6) = 0.0
-        Reig(1,7) = auxf/aPow2_ij
+        Reig(1,1) =   auxf/aPow2_ij
+        Reig(1,2) = 0.0_DP
+        Reig(1,3) =   auxs/aPow2_ij
+        Reig(1,4) = 1.0_DP/aPow2_ij
+        Reig(1,5) = Reig(1,3)
+        Reig(1,6) = 0.0_DP
+        Reig(1,7) = Reig(1,1)
 
         Reig(2,1) = auxf*(u_ij-cf_ij)/aPow2_ij
-        Reig(2,2) = 0.0
+        Reig(2,2) = 0.0_DP
         Reig(2,3) = auxs*(u_ij-cs_ij)/aPow2_ij
-        Reig(2,4) = u_ij/aPow2_ij
+        Reig(2,4) =              u_ij/aPow2_ij
         Reig(2,5) = auxs*(u_ij+cs_ij)/aPow2_ij
-        Reig(2,6) = 0.0
+        Reig(2,6) = 0.0_DP
         Reig(2,7) = auxf*(u_ij+cf_ij)/aPow2_ij
 
         Reig(3,1) = (auxf*v_ij+auxs*cs_ij*auxy*S)/aPow2_ij
         Reig(3,2) = -rho_ij*auxz
         Reig(3,3) = (auxs*v_ij-auxf*cf_ij*auxy*S)/aPow2_ij
-        Reig(3,4) = v_ij/aPow2_ij
+        Reig(3,4) =                          v_ij/aPow2_ij
         Reig(3,5) = (auxs*v_ij+auxf*cf_ij*auxy*S)/aPow2_ij
-        Reig(3,6) = rho_ij*auxz
+        Reig(3,6) =  rho_ij*auxz
         Reig(3,7) = (auxf*v_ij-auxs*cs_ij*auxy*S)/aPow2_ij
 
         Reig(4,1) = (auxf*w_ij+auxs*cs_ij*auxz*S)/aPow2_ij
-        Reig(4,2) = rho_ij*auxy
+        Reig(4,2) =  rho_ij*auxy
         Reig(4,3) = (auxs*w_ij-auxf*cf_ij*auxz*S)/aPow2_ij
-        Reig(4,4) = w_ij/aPow2_ij
+        Reig(4,4) =                          w_ij/aPow2_ij
         Reig(4,5) = (auxs*w_ij+auxf*cf_ij*auxz*S)/aPow2_ij
         Reig(4,6) = -rho_ij*auxy
         Reig(4,7) = (auxf*w_ij-auxs*cs_ij*auxz*S)/aPow2_ij
 
-        Reig(5,1) =  auxs*auxy/sqrt(rho_ij*aPow2_ij)
+        Reig(5,1) =  auxs*auxy/auxsqr
         Reig(5,2) = -S*sqrt(rho_ij)*auxz
-        Reig(5,3) = -auxf*auxy/sqrt(rho_ij*aPow2_ij)
-        Reig(5,4) =  0.0
-        Reig(5,5) = -auxf*auxy/sqrt(rho_ij*aPow2_ij)
-        Reig(5,6) = -S*sqrt(rho_ij)*auxz
-        Reig(5,7) =  auxs*auxy/sqrt(rho_ij*aPow2_ij)
+        Reig(5,3) = -auxf*auxy/auxsqr
+        Reig(5,4) =  0.0_DP
+        Reig(5,5) =  Reig(5,3)
+        Reig(5,6) =  Reig(5,2)
+        Reig(5,7) =  Reig(5,1)
 
-        Reig(6,1) = auxs*auxz/sqrt(rho_ij*aPow2_ij)
-        Reig(6,2) = S*sqrt(rho_ij)*auxy
-        Reig(6,3) = -auxf*auxz/sqrt(rho_ij*aPow2_ij)
-        Reig(6,4) = 0.0
-        Reig(6,5) = -auxf*auxz/sqrt(rho_ij*aPow2_ij)
-        Reig(6,6) = S*sqrt(rho_ij)*auxy
-        Reig(6,7) = auxs*auxz/sqrt(rho_ij*aPow2_ij)
+        Reig(6,1) =  auxs*auxz/auxsqr
+        Reig(6,2) =  S*sqrt(rho_ij)*auxy
+        Reig(6,3) = -auxf*auxz/auxsqr
+        Reig(6,4) =  0.0_DP
+        Reig(6,5) =  Reig(6,3)
+        Reig(6,6) =  Reig(6,2)
+        Reig(6,7) =  Reig(6,1)
 
         Reig(7,1) = (auxf*(H_ij-bPow2_ij-u_ij*cf_ij)+&
-                     auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-&
-                    auxs*aux/sqrt(rho_ij*aPow2_ij)
+                           auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxs*aux/auxsqr
         Reig(7,2) = -rho_ij*(v_ij*auxz-w_ij*auxy)
         Reig(7,3) = (auxs*(H_ij-bPow2_ij-u_ij*cs_ij)-&
-                     auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-&
-                    auxf*aux/sqrt(rho_ij*aPow2_ij)
-        Reig(7,4) = (0.5*q_ij+(GAMMA-2.0)/(GAMMA-1.0)*X_ij)/aPow2_ij
+                           auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxf*aux/auxsqr
+        Reig(7,4) =  (q_ij+(GAMMA-2.0_DP)/(GAMMA-1.0_DP)*X_ij)/aPow2_ij
         Reig(7,5) = (auxs*(H_ij-bPow2_ij+u_ij*cs_ij)+&
-                     auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-&
-                    auxf*aux/sqrt(rho_ij*aPow2_ij)
-        Reig(7,6) = rho_ij*(v_ij*auxz-w_ij*auxy)
+                           auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxf*aux/auxsqr
+        Reig(7,6) = -Reig(7,2)
         Reig(7,7) = (auxf*(H_ij-bPow2_ij+u_ij*cf_ij)-&
-                     auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-&
-                    auxs*aux/sqrt(rho_ij*aPow2_ij)
+                           auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxs*aux/auxsqr
 
         ! Compute characteristic variables by "solving" R_ij * dW = dU
         call dgesv(7, 1, Reig, 7, Ipiv, Diff, 7, info)
@@ -990,7 +988,7 @@ contains
                             ((auxs*(H_ij-bPow2_ij-u_ij*cs_ij)-auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w3 +&
                              (auxs*(H_ij-bPow2_ij+u_ij*cs_ij)+auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w5)/aPow2_ij -&
                              auxf*aux*(w3+w5)/sqrt(rho_ij*aPow2_ij) +&
-                             (0.5*q_ij+(GAMMA-2.0)/(GAMMA-1.0)*X_ij)*w4/aPow2_ij )
+                             (q_ij+(GAMMA-2.0_DP)/(GAMMA-1.0_DP)*X_ij)*w4/aPow2_ij )
 
         !-----------------------------------------------------------------------
         ! Build both contributions into the fluxes
@@ -1124,8 +1122,8 @@ contains
       !
       !   u-cf, u-ca, u-cs, u, u+cs, u+ca, u+cf,
       !
-      ! where u us the x-velocity component and ca, cs and cf are the
-      ! velocities of th Alfveen waves, the slow and fast waves. Since
+      ! where u is the x-velocity component and ca, cs and cf are the
+      ! velocities of the Alfveen waves, the slow and fast waves. Since
       !
       !   cf >= ca >= cs >= 0
       !
@@ -1157,8 +1155,8 @@ contains
                  DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + aPow2j
 
       ! Compute the speed of the fast waves
-      cfi = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*cai**2)))
-      cfj = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*caj**2)))
+      cfi = sqrt(0.5_DP*(astPow2i + sqrt(astPow2i**2 - 4.0_DP*aPow2i*cai**2)))
+      cfj = sqrt(0.5_DP*(astPow2j + sqrt(astPow2j**2 - 4.0_DP*aPow2j*caj**2)))
             
       ! Scalar dissipation for the Rusanov flux
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
@@ -1279,7 +1277,17 @@ contains
   real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtNode
 !</output>
 !</subroutine>
+  
+  
+    ! local variable
+    integer :: inode
 
+
+    do inode = 1, nnodes
+      
+      ! Set coefficient to zero
+      DcoefficientsAtNode(:,:,inode) = 0.0
+    end do
   
   end subroutine mhd_calcMatDiag1d_sim
 
@@ -1325,6 +1333,16 @@ contains
 !</subroutine>
 
 
+    ! local variable
+    integer :: idx
+
+
+    do idx = 1, nedges
+      
+      ! Set coefficient to zero
+      DcoefficientsAtEdge(:,:,idx) = 0.0
+    end do  
+
   end subroutine mhd_calcMatGalMatD1d_sim
 
   !*****************************************************************************
@@ -1368,6 +1386,16 @@ contains
 !</output>
 !</subroutine>
 
+
+    ! local variable
+    integer :: idx
+
+
+    do idx = 1, nedges
+      
+      ! Set coefficient to zero
+      DcoefficientsAtEdge(:,:,idx) = 0.0
+    end do
    
   end subroutine mhd_calcMatGal1d_sim
 
@@ -1415,6 +1443,16 @@ contains
 !</subroutine>
 
 
+    ! local variable
+    integer :: idx
+
+
+    do idx = 1, nedges
+      
+      ! Set coefficient to zero
+      DcoefficientsAtEdge(:,:,idx) = 0.0
+    end do
+
   end subroutine mhd_calcMatScDissMatD1d_sim
 
 !*****************************************************************************
@@ -1460,6 +1498,16 @@ contains
 !</output>
 !</subroutine>
 
+
+    ! local variable
+    integer :: idx
+
+
+    do idx = 1, nedges
+      
+      ! Set coefficient to zero
+      DcoefficientsAtEdge(:,:,idx) = 0.0
+    end do
    
   end subroutine mhd_calcMatScDiss1d_sim
 
@@ -1506,6 +1554,16 @@ contains
 !</subroutine>
 
 
+    ! local variable
+    integer :: idx
+
+
+    do idx = 1, nedges
+      
+      ! Set coefficient to zero
+      DcoefficientsAtEdge(:,:,idx) = 0.0
+    end do
+
   end subroutine mhd_calcMatRoeDissMatD1d_sim
 
   !*****************************************************************************
@@ -1550,6 +1608,16 @@ contains
 !</output>
 !</subroutine>
 
+
+    ! local variable
+    integer :: idx
+
+
+    do idx = 1, nedges
+      
+      ! Set coefficient to zero
+      DcoefficientsAtEdge(:,:,idx) = 0.0
+    end do
   
   end subroutine mhd_calcMatRoeDiss1d_sim
 
@@ -1595,6 +1663,16 @@ contains
 !</output>
 !</subroutine>
 
+
+    ! local variable
+    integer :: idx
+
+
+    do idx = 1, nedges
+      
+      ! Set coefficient to zero
+      DcoefficientsAtEdge(:,:,idx) = 0.0
+    end do
     
   end subroutine mhd_calcMatRusDissMatD1d_sim
 
@@ -1640,6 +1718,16 @@ contains
 !</output>
 !</subroutine>
 
+
+    ! local variable
+    integer :: idx
+
+
+    do idx = 1, nedges
+      
+      ! Set coefficient to zero
+      DcoefficientsAtEdge(:,:,idx) = 0.0
+    end do
   
   end subroutine mhd_calcMatRusDiss1d_sim
 
@@ -1753,7 +1841,7 @@ contains
     ! local variables
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: ui,uj,vi,vj,wi,wj
-    real(DP) :: H_ij,X_ij,aux,cf_ij,d_ij,q_ij,u_ij
+    real(DP) :: H_ij,X_ij,aux,cf_ij,d_ij,q_ij,rho_ij,u_ij
     real(DP) :: aPow2_ij,anorm,astPow2_ij,bPow2_ij,bxPow2_ij
     integer :: idx
 
@@ -1769,7 +1857,7 @@ contains
       wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       ! Compute Roe mean values
@@ -1783,16 +1871,19 @@ contains
               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
              (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
               TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
     
+      ! Compute the Roe-averaged density with left and right states interchanged!
+      rho_ij = ROE_MEAN_VALUE(\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
+
       ! Compute the square of the Roe-averaged speed of the Alfven waves.
       ! Note that left and right states are interchanged!
-      bxPow2_ij = (ROE_MEAN_VALUE(\
-                    X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                    X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux))**2/\
-                  ROE_MEAN_VALUE(\
-                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
-                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
+      bxPow2_ij = ((ROE_MEAN_VALUE(\
+                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
+                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),\
+                     aux))**2)/rho_ij
     
       ! Compute the density-averaged magnetic field
       X_ij = ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
@@ -1801,8 +1892,8 @@ contains
                Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
               (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
                Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/&
-              (2.0*(sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))+&
-                    sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))))
+              (2.0_DP*(sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))+&
+                       sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)))**2)
 
       ! Compute the square of the Roe-averaged magnetic field.
       ! Note that left and right states are interchanged!
@@ -1814,36 +1905,33 @@ contains
                    Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
                   ROE_MEAN_VALUE(\
                    Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/\
-                  ROE_MEAN_VALUE(\
-                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
-                   DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
+                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/rho_ij
 
       ! Compute the magnitude of the Roe-averaged velocity
-      q_ij = ROE_MEAN_VALUE(\
-              X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-              X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-             ROE_MEAN_VALUE(\
-              Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-              Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-             ROE_MEAN_VALUE(\
-              Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-              Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2
+      q_ij = (ROE_MEAN_VALUE(\
+               X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+              ROE_MEAN_VALUE(\
+               Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+              ROE_MEAN_VALUE(\
+               Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+               Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2)/2.0_DP
 
 
       ! Compute the Roe-averaged speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      aPow2_ij = (2.0-GAMMA)*X_ij + (GAMMA-1.0)*(H_ij-0.5*q_ij-bPow2_ij)
+      aPow2_ij = (2.0_DP-(GAMMA))*X_ij + (GAMMA-1.0_DP)*(H_ij-q_ij-bPow2_ij)
 #else
 #error "Speed of sound must be implemented!"
 #endif
       
       ! Compute auxiliary variables
       astPow2_ij = aPow2_ij+bPow2_ij
-      aux = sqrt(astPow2_ij**2-4.0*aPow2_ij*bxPow2_ij)
+      aux        = sqrt(astPow2_ij**2-4.0_DP*aPow2_ij*bxPow2_ij)
             
       ! Compute the Roe-averagred speed of the fast waves
-      cf_ij = sqrt(0.5*(astPow2_ij+aux))
+      cf_ij = sqrt(0.5_DP*(astPow2_ij+aux))
 
       ! Scalar dissipation
       d_ij = abs(u_ij*a(1)) + anorm*cf_ij
@@ -1909,7 +1997,7 @@ contains
     real(DP), dimension(7,7) :: Reig
     real(DP) :: ui,uj,vi,vj,wi,wj
     real(DP) :: caPow2_ij,ca_ij,cfPow2_ij,cf_ij,csPow2_ij,cs_ij
-    real(DP) :: S,aux,auxf,auxs,auxy,auxz
+    real(DP) :: S,aux,auxf,auxs,auxsqr,auxy,auxz
     real(DP) :: H_ij,X_ij,q_ij,rho_ij,u_ij,v_ij,w_ij
     real(DP) :: aPow2_ij,astPow2_ij,bPow2_ij,bxPow2_ij
     real(DP) :: l1,l2,l3,l4,l5,l6,l7,w1,w2,w3,w4,w5,w6,w7
@@ -1928,8 +2016,19 @@ contains
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
       wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
+      !-------------------------------------------------------------------------
+      ! Evaluate the dissipation tensor of Roe-type
+      !
+      ! There are seven eigenvalues
+      !
+      !   u-cf, u-ca, u-cs, u, u+cs, u+ca, u+cf,
+      !
+      ! where u is the x-velocity component and ca, cs and cf are the
+      ! velocities of the Alfveen waves, the slow and fast waves.
+      !-------------------------------------------------------------------------
+
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       if (anorm .gt. SYS_EPSREAL) then
@@ -1947,7 +2046,7 @@ contains
                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
                 TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx), aux)
+                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
 
         ! Compute the Roe-averaged density with left and right states interchanged!
         rho_ij = ROE_MEAN_VALUE(\
@@ -1956,9 +2055,10 @@ contains
         
         ! Compute the square of the Roe-averaged speed of the Alfven waves.
         ! Note that left and right states are interchanged!
-        bxPow2_ij = (ROE_MEAN_VALUE(\
+        bxPow2_ij = ((ROE_MEAN_VALUE(\
                       X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                      X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux))**2/rho_ij
+                      X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),\
+                      aux))**2)/rho_ij
         ca_ij = sqrt(bxPow2_ij)
     
         ! Compute the density-averaged magnetic field
@@ -1968,8 +2068,8 @@ contains
                  Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
                 (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
                  Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/&
-                (2.0*(sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))+&
-                      sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))))
+                (2.0_DP*(sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))+&
+                         sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)))**2)
 
         ! Compute the square of the Roe-averaged magnetic field.
         ! Note that left and right states are interchanged!
@@ -1984,30 +2084,30 @@ contains
                      Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/rho_ij
 
         ! Compute the magnitude of the Roe-averaged velocity
-        q_ij = ROE_MEAN_VALUE(\
-                X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-               ROE_MEAN_VALUE(\
-                Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-               ROE_MEAN_VALUE(\
-                Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2
+        q_ij = (ROE_MEAN_VALUE(\
+                 X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+                 X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+                ROE_MEAN_VALUE(\
+                 Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+                 Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
+                ROE_MEAN_VALUE(\
+                 Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
+                 Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2)/2.0_DP
 
         ! Compute the Roe-averaged speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        aPow2_ij = (2.0-GAMMA)*X_ij+(GAMMA-1.0)*(H_ij-0.5*q_ij-bPow2_ij)
+        aPow2_ij = (2.0_DP-(GAMMA))*X_ij+(GAMMA-1.0_DP)*(H_ij-q_ij-bPow2_ij)
 #else
 #error "Speed of sound must be implemented!"
 #endif
 
         ! Compute auxiliary quantities
         astPow2_ij = aPow2_ij+bPow2_ij
-        aux = sqrt(astPow2_ij**2-4.0*aPow2_ij*bxPow2_ij)
+        auxsqr     = sqrt(astPow2_ij**2-4.0_DP*aPow2_ij*bxPow2_ij)
 
         ! Compute the Roe-averagred speed of the slow and fast waves
-        cfPow2_ij = 0.5*(astPow2_ij+aux); cf_ij=sqrt(cfPow2_ij)
-        csPow2_ij = 0.5*(astPow2_ij-aux); cs_ij=sqrt(csPow2_ij)
+        cfPow2_ij = 0.5_DP*(astPow2_ij+auxsqr); cf_ij=sqrt(cfPow2_ij)
+        csPow2_ij = 0.5_DP*(astPow2_ij-auxsqr); cs_ij=sqrt(csPow2_ij)
 
         ! Compute eigenvalues
         l1 = abs(u_ij-cf_ij)
@@ -2044,70 +2144,69 @@ contains
         ! Compute the sign if the magnetic field
         S = sign(1.0_DP, X_MAGNETICFIELD_CONSTANT_1D)
 
+        ! Compute auxiliary square root
+        auxsqr = sqrt(rho_ij*aPow2_ij)
+
         ! Compute matrix of right eigenvectors       
-        Reig(1,1) = auxf/aPow2_ij
-        Reig(1,2) = 0.0
-        Reig(1,3) = auxs/aPow2_ij
-        Reig(1,4) = 1.0/aPow2_ij
-        Reig(1,5) = auxs/aPow2_ij
-        Reig(1,6) = 0.0
-        Reig(1,7) = auxf/aPow2_ij
+        Reig(1,1) =   auxf/aPow2_ij
+        Reig(1,2) = 0.0_DP
+        Reig(1,3) =   auxs/aPow2_ij
+        Reig(1,4) = 1.0_DP/aPow2_ij
+        Reig(1,5) = Reig(1,3)
+        Reig(1,6) = 0.0_DP
+        Reig(1,7) = Reig(1,1)
 
         Reig(2,1) = auxf*(u_ij-cf_ij)/aPow2_ij
-        Reig(2,2) = 0.0
+        Reig(2,2) = 0.0_DP
         Reig(2,3) = auxs*(u_ij-cs_ij)/aPow2_ij
-        Reig(2,4) = u_ij/aPow2_ij
+        Reig(2,4) =              u_ij/aPow2_ij
         Reig(2,5) = auxs*(u_ij+cs_ij)/aPow2_ij
-        Reig(2,6) = 0.0
+        Reig(2,6) = 0.0_DP
         Reig(2,7) = auxf*(u_ij+cf_ij)/aPow2_ij
 
         Reig(3,1) = (auxf*v_ij+auxs*cs_ij*auxy*S)/aPow2_ij
         Reig(3,2) = -rho_ij*auxz
         Reig(3,3) = (auxs*v_ij-auxf*cf_ij*auxy*S)/aPow2_ij
-        Reig(3,4) = v_ij/aPow2_ij
+        Reig(3,4) =                          v_ij/aPow2_ij
         Reig(3,5) = (auxs*v_ij+auxf*cf_ij*auxy*S)/aPow2_ij
-        Reig(3,6) = rho_ij*auxz
+        Reig(3,6) =  rho_ij*auxz
         Reig(3,7) = (auxf*v_ij-auxs*cs_ij*auxy*S)/aPow2_ij
 
         Reig(4,1) = (auxf*w_ij+auxs*cs_ij*auxz*S)/aPow2_ij
-        Reig(4,2) = rho_ij*auxy
+        Reig(4,2) =  rho_ij*auxy
         Reig(4,3) = (auxs*w_ij-auxf*cf_ij*auxz*S)/aPow2_ij
-        Reig(4,4) = w_ij/aPow2_ij
+        Reig(4,4) =                          w_ij/aPow2_ij
         Reig(4,5) = (auxs*w_ij+auxf*cf_ij*auxz*S)/aPow2_ij
         Reig(4,6) = -rho_ij*auxy
         Reig(4,7) = (auxf*w_ij-auxs*cs_ij*auxz*S)/aPow2_ij
 
-        Reig(5,1) =  auxs*auxy/sqrt(rho_ij*aPow2_ij)
+        Reig(5,1) =  auxs*auxy/auxsqr
         Reig(5,2) = -S*sqrt(rho_ij)*auxz
-        Reig(5,3) = -auxf*auxy/sqrt(rho_ij*aPow2_ij)
-        Reig(5,4) =  0.0
-        Reig(5,5) = -auxf*auxy/sqrt(rho_ij*aPow2_ij)
-        Reig(5,6) = -S*sqrt(rho_ij)*auxz
-        Reig(5,7) =  auxs*auxy/sqrt(rho_ij*aPow2_ij)
+        Reig(5,3) = -auxf*auxy/auxsqr
+        Reig(5,4) =  0.0_DP
+        Reig(5,5) =  Reig(5,3)
+        Reig(5,6) =  Reig(5,2)
+        Reig(5,7) =  Reig(5,1)
 
-        Reig(6,1) = auxs*auxz/sqrt(rho_ij*aPow2_ij)
-        Reig(6,2) = S*sqrt(rho_ij)*auxy
-        Reig(6,3) = -auxf*auxz/sqrt(rho_ij*aPow2_ij)
-        Reig(6,4) = 0.0
-        Reig(6,5) = -auxf*auxz/sqrt(rho_ij*aPow2_ij)
-        Reig(6,6) = S*sqrt(rho_ij)*auxy
-        Reig(6,7) = auxs*auxz/sqrt(rho_ij*aPow2_ij)
+        Reig(6,1) =  auxs*auxz/auxsqr
+        Reig(6,2) =  S*sqrt(rho_ij)*auxy
+        Reig(6,3) = -auxf*auxz/auxsqr
+        Reig(6,4) =  0.0_DP
+        Reig(6,5) =  Reig(6,3)
+        Reig(6,6) =  Reig(6,2)
+        Reig(6,7) =  Reig(6,1)
 
         Reig(7,1) = (auxf*(H_ij-bPow2_ij-u_ij*cf_ij)+&
-                     auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-&
-                    auxs*aux/sqrt(rho_ij*aPow2_ij)
+                           auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxs*aux/auxsqr
         Reig(7,2) = -rho_ij*(v_ij*auxz-w_ij*auxy)
         Reig(7,3) = (auxs*(H_ij-bPow2_ij-u_ij*cs_ij)-&
-                     auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-&
-                    auxf*aux/sqrt(rho_ij*aPow2_ij)
-        Reig(7,4) = (0.5*q_ij+(GAMMA-2.0)/(GAMMA-1.0)*X_ij)/aPow2_ij
+                           auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxf*aux/auxsqr
+        Reig(7,4) =  (q_ij+(GAMMA-2.0_DP)/(GAMMA-1.0_DP)*X_ij)/aPow2_ij
         Reig(7,5) = (auxs*(H_ij-bPow2_ij+u_ij*cs_ij)+&
-                     auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-&
-                    auxf*aux/sqrt(rho_ij*aPow2_ij)
-        Reig(7,6) = rho_ij*(v_ij*auxz-w_ij*auxy)
+                           auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxf*aux/auxsqr
+        Reig(7,6) = -Reig(7,2)
         Reig(7,7) = (auxf*(H_ij-bPow2_ij+u_ij*cf_ij)-&
-                     auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-&
-                    auxs*aux/sqrt(rho_ij*aPow2_ij)
+                           auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxs*aux/auxsqr
 
         ! Compute characteristic variables by "solving" R_ij * dW = dU
         call dgesv(7, 1, Reig, 7, Ipiv, Diff, 7, info)
@@ -2150,7 +2249,7 @@ contains
                             ((auxs*(H_ij-bPow2_ij-u_ij*cs_ij)-auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w3 +&
                              (auxs*(H_ij-bPow2_ij+u_ij*cs_ij)+auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w5)/aPow2_ij -&
                              auxf*aux*(w3+w5)/sqrt(rho_ij*aPow2_ij) +&
-                             (0.5*q_ij+(GAMMA-2.0)/(GAMMA-1.0)*X_ij)*w4/aPow2_ij )
+                             (q_ij+(GAMMA-2.0_DP)/(GAMMA-1.0_DP)*X_ij)*w4/aPow2_ij )
 
         ! Compute antidiffusive flux
         DfluxesAtEdge(:,idx) = dscale*Diff
@@ -2228,6 +2327,25 @@ contains
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
       wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
 
+      !-------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation of Rusanov-type
+      !
+      ! There are seven eigenvalues
+      !
+      !   u-cf, u-ca, u-cs, u, u+cs, u+ca, u+cf,
+      !
+      ! where u is the x-velocity component and ca, cs and cf are the
+      ! velocities of the Alfveen waves, the slow and fast waves. Since
+      !
+      !   cf >= ca >= cs >= 0
+      !
+      ! it suffices to consider only the two eigenvalues
+      !
+      !   u-cf and u+cf
+      !
+      ! to construct the Rusanov fluxes
+      ! -------------------------------------------------------------------------
+
       ! Compute the speed of the Alfven waves
       cai = abs(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))
       caj = abs(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
@@ -2249,8 +2367,8 @@ contains
                  DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + aPow2j
 
       ! Compute the speed of the fast waves
-      cfi = sqrt(0.5*(astPow2i + sqrt(astPow2i**2 - 4.0*aPow2i*cai**2)))
-      cfj = sqrt(0.5*(astPow2j + sqrt(astPow2j**2 - 4.0*aPow2j*caj**2)))
+      cfi = sqrt(0.5_DP*(astPow2i + sqrt(astPow2i**2 - 4.0_DP*aPow2i*cai**2)))
+      cfj = sqrt(0.5_DP*(astPow2j + sqrt(astPow2j**2 - 4.0_DP*aPow2j*caj**2)))
             
       ! Scalar dissipation for the Rusanov flux
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
@@ -2530,8 +2648,8 @@ contains
       
       ! Transformed pressure fluxes
 #ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(1,1,idx) = (GAMMA-1.0)*&
-          (0.5*(ui*ui+vi*vi+wi*wi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
+      DtransformedFluxesAtEdge(1,1,idx) = (GAMMA-1.0_DP)*&
+          (0.5_DP*(ui*ui+vi*vi+wi*wi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           wi*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
@@ -2542,8 +2660,8 @@ contains
           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
           Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
           TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-      DtransformedFluxesAtEdge(1,2,idx) =-(GAMMA-1.0)*&
-          (0.5*(uj*uj+vj*vj+wj*wj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
+      DtransformedFluxesAtEdge(1,2,idx) =-(GAMMA-1.0_DP)*&
+          (0.5_DP*(uj*uj+vj*vj+wj*wj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           wj*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
@@ -3062,8 +3180,8 @@ contains
 
       ! Transformed pressure fluxes
 #ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(2,1,idx) = (GAMMA-1.0)*&
-          (0.5*(ui*ui+vi*vi+wi*wi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
+      DtransformedFluxesAtEdge(2,1,idx) = (GAMMA-1.0_DP)*&
+          (0.5_DP*(ui*ui+vi*vi+wi*wi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           wi*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
@@ -3074,8 +3192,8 @@ contains
           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
           Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
           TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-      DtransformedFluxesAtEdge(2,2,idx) =-(GAMMA-1.0)*&
-          (0.5*(uj*uj+vj*vj+wj*wj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
+      DtransformedFluxesAtEdge(2,2,idx) =-(GAMMA-1.0_DP)*&
+          (0.5_DP*(uj*uj+vj*vj+wj*wj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           wj*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
@@ -3241,8 +3359,8 @@ contains
 
       ! Transformed pressure fluxes
 #ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(5,1,idx) = (GAMMA-1.0)*&
-          (0.5*(ui*ui+vi*vi+wi*wi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
+      DtransformedFluxesAtEdge(5,1,idx) = (GAMMA-1.0_DP)*&
+          (0.5_DP*(ui*ui+vi*vi+wi*wi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           wi*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
@@ -3253,8 +3371,8 @@ contains
           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
           Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
           TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-      DtransformedFluxesAtEdge(5,2,idx) =-(GAMMA-1.0)*&
-          (0.5*(uj*uj+vj*vj+wj*wj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
+      DtransformedFluxesAtEdge(5,2,idx) =-(GAMMA-1.0_DP)*&
+          (0.5_DP*(uj*uj+vj*vj+wj*wj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
           wj*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
@@ -3652,7 +3770,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -3710,7 +3828,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
         
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -3891,7 +4009,7 @@ contains
       end if
       do ivar = 1, NVAR1D
         p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR1D+ivar) = &
-            0.5*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR1D+ivar)+&
+            0.5_DP*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR1D+ivar)+&
                     p_Dsolution((rcollection%IquickAccess(3)-1)*NVAR1D+ivar))
       end do
 
@@ -4007,7 +4125,7 @@ contains
       neq = rsolution%NEQ/NVAR1D
       do ivar = 1, NVAR1D
         p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-            0.5*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
+            0.5_DP*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
                     p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(3)) )
       end do
 

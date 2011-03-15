@@ -61,7 +61,7 @@
 #define X_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2) (U(i1,i2,2))
 
 #if 0
-! Compute y-momentum from conservative variables in 2D, and 3D
+! Compute y-momentum from conservative variables in 1D, 2D, and 3D
 #endif
 #define Y_MOMENTUM_FROM_CONSVAR(U,nvar) (U(3))
 #define Y_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1) (U(3,i1))
@@ -70,7 +70,7 @@
 #define Y_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2) (U(i1,i2,3))
 
 #if 0
-! Compute z-momentum from conservative variables in 3D
+! Compute z-momentum from conservative variables in 1D, 2D, and 3D
 #endif
 #define Z_MOMENTUM_FROM_CONSVAR(U,nvar) (U(4))
 #define Z_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1) (U(4,i1))
