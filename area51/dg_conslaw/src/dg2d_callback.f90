@@ -5001,7 +5001,7 @@ integer :: iel
       DfluxValues(1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
       DfluxValues(1,ipoint,iedge) = dx*normal(1,iedge) + dy*normal(2,iedge)
       
-      if (DfluxValues(1,ipoint,iedge)>0.0_dp) then
+      if (DfluxValues(1,ipoint,iedge).ge.0.0_dp) then
         Dside(1,iedge) = 1.0_dp
         Dside(2,iedge) = 0.0_dp
       else

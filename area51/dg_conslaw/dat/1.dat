@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 6
+nlmax = 5
 
 
 # Name of the parametrisation file
@@ -98,7 +98,7 @@ gravconst = 1.0
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 3
+extrapoints = 0
 
 # Name of output file
 ofile = ./gmv/u2d

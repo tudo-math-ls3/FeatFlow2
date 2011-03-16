@@ -9683,7 +9683,7 @@ end do
       
     ! Transpose the coordinate array such that we get coordinates we
     ! can work with in the mapping between 1D and 2D.
-    do k = 1, ubound(p_DcubPtsRef,1)
+    do k = 1, ubound(rlocalmatrixAssembly(1)%p_DcubPtsRef,1)
       do icubp = 1,ncubp
         Dxi1D_1(icubp,k) = rlocalmatrixAssembly(1)%p_DcubPtsRef(k,icubp)
         Dxi1D_2(icubp,k) = rlocalmatrixAssembly(2)%p_DcubPtsRef(k,icubp)
@@ -9783,9 +9783,9 @@ end do
       ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
 !      call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTest, &
 !          IelementList(IELset:IELmax), p_IdofsTest)
-      call dof_locGlobMapping_mult( rmatrix%p_rspatialDiscrTrial, &
+      call dof_locGlobMapping_mult( rmatrix%p_rspatialDiscrTest, &
           IelementList(1,IELset:IELmax), rlocalMatrixAssembly(1)%p_IdofsTest)
-      call dof_locGlobMapping_mult( rmatrix%p_rspatialDiscrTrial, &
+      call dof_locGlobMapping_mult( rmatrix%p_rspatialDiscrTest, &
           IelementList(3,IELset:IELmax), rlocalMatrixAssembly(2)%p_IdofsTest)
           
                                    
@@ -9822,22 +9822,41 @@ end do
       ! in the global matrix.
 !      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTest,p_IdofsTrial,p_Kentry,&
 !          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)  
+!      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
+!            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryii,&
+!            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
+!            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+!      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
+!            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryia,&
+!            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
+!            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)    
+!      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
+!            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryai,&
+!            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
+!            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+!      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
+!            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryaa,&
+!            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
+!            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)
+            
+            
+            
       call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
-            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryii,&
+            rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryii,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
       call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
-            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryia,&
+            rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryai,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)    
       call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
-            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryai,&
+            rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryia,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
       call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
-            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryaa,&
+            rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryaa,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)   
       
       ! -------------------- ELEMENT EVALUATION PHASE ----------------------
       
@@ -10002,8 +10021,13 @@ end do
       ! Clear the local matrices
       p_Dentryii(:,:,1:IELmax-IELset+1) = 0.0_DP
       p_Dentryai(:,:,1:IELmax-IELset+1) = 0.0_DP
-      p_Dentryai(:,:,1:IELmax-IELset+1) = 0.0_DP
+      p_Dentryia(:,:,1:IELmax-IELset+1) = 0.0_DP
       p_Dentryaa(:,:,1:IELmax-IELset+1) = 0.0_DP
+      
+!      p_Dentryii = 0.0_DP
+!      p_Dentryai = 0.0_DP
+!      p_Dentryia = 0.0_DP
+!      p_Dentryaa = 0.0_DP
       
       ! We have two different versions for the integration - one
       ! with constant coefficients and one with nonconstant coefficients.
@@ -10173,18 +10197,59 @@ end do
 !                  p_Dentry(jdofe,idofe,iel) = &
 !                      p_Dentry(jdofe,idofe,iel)+db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
                       
+!                  ! Testfunction on the 'first' (i) side
+!                  p_Dentryii(jdofe,idofe,iel) = &
+!                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,iel)   
+!                  p_Dentryai(jdofe,idofe,iel) = &
+!                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,iel)   
+!                  
+!                  ! Testfunction on the 'second' (a) side
+!                  p_Dentryia(jdofe,idofe,iel) = &
+!                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
+!                  p_Dentryaa(jdofe,idofe,iel) = &
+!                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(2,iel)
+!                
+
+
                   ! Testfunction on the 'first' (i) side
                   p_Dentryii(jdofe,idofe,iel) = &
-                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,iel)   
+                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(1,iel)   
                   p_Dentryai(jdofe,idofe,iel) = &
-                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,iel)   
+                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(2,iel)   
                   
                   ! Testfunction on the 'second' (a) side
                   p_Dentryia(jdofe,idofe,iel) = &
-                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
+                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
+                      
+                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
+                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)      
+                write(*,*) 'ia',ia
+                write(*,*) 'daux1',daux1
+                write(*,*) 'daux2',daux2
+                write(*,*) 'db1',db1
+                write(*,*) 'db2',db2
+                write(*,*) 'dside1',p_Dside(1,iel)
+                write(*,*) 'dside2',p_Dside(2,iel)
+                write(*,*) 'test1',rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)
+                write(*,*) 'test2',rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
+                        pause
+                      end if
+                      
                   p_Dentryaa(jdofe,idofe,iel) = &
-                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(2,iel)
+                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(2,iel)
                 
+!                write(*,*) 'ia',ia
+!                write(*,*) 'daux1',daux1
+!                write(*,*) 'daux2',daux2
+!                write(*,*) 'db1',db1
+!                write(*,*) 'db2',db2
+!                write(*,*) 'dside1',p_Dside(1,iel)
+!                write(*,*) 'dside2',p_Dside(2,iel)
+!                write(*,*) 'test1',rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)
+!                write(*,*) 'test2',rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
+!                pause
+
+
                 end do
               
               end do ! jdofe
