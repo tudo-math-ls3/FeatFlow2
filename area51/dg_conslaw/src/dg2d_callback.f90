@@ -4916,15 +4916,15 @@ integer :: iel
         ! Get coordinates
         dx = Dpoints(1,ipoint,iel)
         dy = Dpoints(2,ipoint,iel)
-        
-        dx = 1.0_dp
-        dy = 1.0_dp
+!        
+!        dx = 1.0_dp
+!        dy = 1.0_dp
         
         ! Set coefficients (the velocity vector)
         Dcoefficients(1,ipoint,iel) = -dy
         Dcoefficients(2,ipoint,iel) =  dx
-        Dcoefficients(1,ipoint,iel) = dx
-        Dcoefficients(2,ipoint,iel) = dy
+!        Dcoefficients(1,ipoint,iel) = dx
+!        Dcoefficients(2,ipoint,iel) = dy
       
       end do
     end do
@@ -4976,7 +4976,7 @@ integer :: iel
   type(t_collection), intent(inout), target, optional :: rcollection
   type(t_vectorScalar), intent(in) :: rvectorSol
   integer, dimension(:), intent(in) :: IelementList
-  real(DP), dimension(:,:), intent(out) :: Dside
+  real(DP), dimension(:,:,:), intent(out) :: Dside
     
   !</input>
   
@@ -4995,18 +4995,21 @@ integer :: iel
     
       dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
       dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
-      dx = 1.0_dp
-      dy = 1.0_dp
+!      dx = 1.0_dp
+!      dy = 1.0_dp
       
       DfluxValues(1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
-      DfluxValues(1,ipoint,iedge) = dx*normal(1,iedge) + dy*normal(2,iedge)
+!      DfluxValues(1,ipoint,iedge) = dx*normal(1,iedge) + dy*normal(2,iedge)
       
       if (DfluxValues(1,ipoint,iedge).ge.0.0_dp) then
-        Dside(1,iedge) = 1.0_dp
-        Dside(2,iedge) = 0.0_dp
+        Dside(1,ipoint,iedge) = 1.0_dp
+        Dside(2,ipoint,iedge) = 0.0_dp
+      elseif (DfluxValues(1,ipoint,iedge).eq.0.0_dp) then
+        Dside(1,ipoint,iedge) = 0.5_dp
+        Dside(2,ipoint,iedge) = 0.5_dp
       else
-        Dside(1,iedge) = 0.0_dp
-        Dside(2,iedge) = 1.0_dp
+        Dside(1,ipoint,iedge) = 0.0_dp
+        Dside(2,ipoint,iedge) = 1.0_dp
       end if
       
     end do
@@ -5016,7 +5019,108 @@ integer :: iel
   end subroutine
   
   
-  
+!  !<subroutine>
+!
+!    subroutine flux_dg_implicitBurgers_sim (&
+!!              Dcoefficients,&
+!!              DsolVals,&
+!			  DfluxValues,&
+!			  rvectorSol,&
+!			  IelementList,&
+!			  Dside,&
+!              normal,&
+!!              DpointsReal,&
+!              rintSubSet,&
+!              rcollection )
+!    
+!    use fsystem
+!    use basicgeometry
+!    use triangulation
+!    use scalarpde
+!    use domainintegration
+!    use spatialdiscretisation
+!    use collection
+!    
+!  !<description>
+!    ! This subroutine is called during the vector assembly. It has to compute
+!    ! the coefficients in front of the terms of the linear form.
+!    !
+!    ! The routine accepts a set of elements and a set of points on these
+!    ! elements (cubature points) in in real coordinates.
+!    ! According to the terms in the linear form, the routine has to compute
+!    ! simultaneously for all these points and all the terms in the linear form
+!    ! the corresponding coefficients in front of the terms.
+!  !</description>
+!    
+!  !<input>
+!!  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+!  real(DP), dimension(:,:,:), intent(out) :: DfluxValues
+!  real(DP), dimension(:,:), intent(in) :: normal
+!!  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+!  type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+!  type(t_collection), intent(inout), target, optional :: rcollection
+!  type(t_vectorScalar), intent(in) :: rvectorSol
+!  integer, dimension(:), intent(in) :: IelementList
+!  real(DP), dimension(:,:,:), intent(out) :: Dside
+!    
+!  !</input>
+!  
+!  !<output>
+!!  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+!  !</output>
+!    
+!  !</subroutine>
+!  
+!  integer :: iedge, ipoint
+!  real(dp) :: dx, dy
+!  
+!  
+!  
+!  
+!  ! Evaluate the derivatives of the solution
+!    ! Get x-deriv on the one side of the edge
+!    call fevl_evaluate_sim4 (rvectorSol, &
+!                             rIntSubset(1), DER_DERIV_X, DsolutionDerivx(:,:,:), 1)
+!    ! Get x-deriv on the other side of the edge                               
+!    call fevl_evaluate_sim4 (rvectorSol, &
+!                             rIntSubset(2), DER_DERIV_X, DsolutionDerivx(:,:,:), 2)
+!    
+!    ! Get y-deriv on the one side of the edge
+!    call fevl_evaluate_sim4 (rvectorSol, &
+!                             rIntSubset(1), DER_DERIV_X, DsolutionDerivx(:,:,:), 1)
+!    ! Get y-deriv on the other side of the edge                               
+!    call fevl_evaluate_sim4 (rvectorSol, &
+!                             rIntSubset(2), DER_DERIV_X, DsolutionDerivx(:,:,:), 2)
+!    
+!  
+!  
+!  
+!  do iedge = 1, size(DfluxValues,3)
+!    do ipoint = 1, size(DfluxValues,2)
+!    
+!      dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
+!      dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
+!
+!      
+!      DfluxValues(1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
+!!      DfluxValues(1,ipoint,iedge) = dx*normal(1,iedge) + dy*normal(2,iedge)
+!      
+!      if (DfluxValues(1,ipoint,iedge).ge.0.0_dp) then
+!        Dside(1,ipoint,iedge) = 1.0_dp
+!        Dside(2,ipoint,iedge) = 0.0_dp
+!      elseif (DfluxValues(1,ipoint,iedge).eq.0.0_dp) then
+!        Dside(1,ipoint,iedge) = 0.5_dp
+!        Dside(2,ipoint,iedge) = 0.5_dp
+!      else
+!        Dside(1,ipoint,iedge) = 0.0_dp
+!        Dside(2,ipoint,iedge) = 1.0_dp
+!      end if
+!      
+!    end do
+!  end do
+!  
+!  
+!  end subroutine
   
   
   

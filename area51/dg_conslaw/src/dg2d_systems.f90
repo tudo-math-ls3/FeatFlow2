@@ -1522,7 +1522,7 @@ if (iwithoutlimiting==2) ilimiter = 0
    
    call lsyssc_scaleMatrix (rmatrixMC,-1.0_DP)
       
-   call matio_writeMatrixHR(rmatrixMC,'./gmv/feat_routine.txt',.true.,0,'./gmv/feat_routine.txt','(E20.10)')
+   !call matio_writeMatrixHR(rmatrixMC,'./gmv/feat_routine.txt',.true.,0,'./gmv/feat_routine.txt','(E20.10)')
    
    
    
@@ -1550,7 +1550,7 @@ if (iwithoutlimiting==2) ilimiter = 0
                                              flux_dg_implicitConvection_sim)!,&
                                              !rcollection, cconstrType)
 
-    call matio_writeMatrixHR(rmatrixMC,'./gmv/dg_routine.txt',.true.,0,'./gmv/dg_routine.txt','(E20.10)')
+    !call matio_writeMatrixHR(rmatrixMC,'./gmv/dg_routine.txt',.true.,0,'./gmv/dg_routine.txt','(E20.10)')
                                              
                                              
     ! Release solver data and structure
@@ -1595,10 +1595,10 @@ if (iwithoutlimiting==2) ilimiter = 0
                                        getBoundaryValues_2D_zeros)
                              
     ! Now to the edge 2 of boundary component 1 the domain.
-!    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D)
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D_ones)
                              
     ! Edge 3 of boundary component 1.
 !    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
@@ -1606,11 +1606,11 @@ if (iwithoutlimiting==2) ilimiter = 0
 !                                       rboundaryRegion,rdiscreteBC,&
 !                                       getBoundaryValues_2D)
     
-    ! Edge 4 of boundary component 1. That is it.
-    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D_ones)
+!    ! Edge 4 of boundary component 1. That is it.
+!    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+!                                       rboundaryRegion,rdiscreteBC,&
+!                                       getBoundaryValues_2D_ones)
                              
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
@@ -1651,7 +1651,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     call vecfil_discreteBCsol (rsolBlock)
     call matfil_discreteBC (rmatrixBlock)
     
-    call matio_writeMatrixHR(rmatrixMC,'./gmv/bd_cond.txt',.true.,0,'./gmv/bd_cond.txt','(E20.10)')
+    !call matio_writeMatrixHR(rmatrixMC,'./gmv/bd_cond.txt',.true.,0,'./gmv/bd_cond.txt','(E20.10)')
     
 !    call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
 !    pause

@@ -9537,7 +9537,7 @@ end do
     real(DP), dimension(:,:,:), pointer :: p_Dentryii, p_Dentryia, p_Dentryai, p_Dentryaa
     real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:), pointer :: p_Domega
-    real(DP), dimension(:,:), pointer :: p_Dside
+    real(DP), dimension(:,:,:), pointer :: p_Dside
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial
     real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
@@ -9616,7 +9616,7 @@ end do
         rmatrixAssembly(2)%indofTest,rmatrixAssembly(1)%nelementsPerBlock))
     
     ! Allocate space for the coefficient of the solutions DOFs on each side of the edge
-    allocate(p_Dside(2,rmatrixAssembly(1)%nelementsPerBlock))
+    allocate(p_Dside(2,ncubp,rmatrixAssembly(1)%nelementsPerBlock))
         
     ! Allocate space for the entries in the local matrices
     allocate(p_Dentryii(rmatrixAssembly(1)%indofTrial,&
@@ -10199,44 +10199,44 @@ end do
                       
 !                  ! Testfunction on the 'first' (i) side
 !                  p_Dentryii(jdofe,idofe,iel) = &
-!                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,iel)   
+!                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)   
 !                  p_Dentryai(jdofe,idofe,iel) = &
-!                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,iel)   
+!                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)   
 !                  
 !                  ! Testfunction on the 'second' (a) side
 !                  p_Dentryia(jdofe,idofe,iel) = &
-!                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
+!                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(1,icubp,iel)
 !                  p_Dentryaa(jdofe,idofe,iel) = &
-!                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(2,iel)
+!                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(2,icubp,iel)
 !                
 
 
                   ! Testfunction on the 'first' (i) side
                   p_Dentryii(jdofe,idofe,iel) = &
-                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(1,iel)   
+                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)   
                   p_Dentryai(jdofe,idofe,iel) = &
-                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(2,iel)   
+                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)   
                   
                   ! Testfunction on the 'second' (a) side
                   p_Dentryia(jdofe,idofe,iel) = &
-                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
+                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,icubp,iel)
                       
-                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
-                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)      
-                write(*,*) 'ia',ia
-                write(*,*) 'daux1',daux1
-                write(*,*) 'daux2',daux2
-                write(*,*) 'db1',db1
-                write(*,*) 'db2',db2
-                write(*,*) 'dside1',p_Dside(1,iel)
-                write(*,*) 'dside2',p_Dside(2,iel)
-                write(*,*) 'test1',rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)
-                write(*,*) 'test2',rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
-                        pause
-                      end if
+!                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
+!                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)      
+!                write(*,*) 'ia',ia
+!                write(*,*) 'daux1',daux1
+!                write(*,*) 'daux2',daux2
+!                write(*,*) 'db1',db1
+!                write(*,*) 'db2',db2
+!                write(*,*) 'dside1',p_Dside(1,iel)
+!                write(*,*) 'dside2',p_Dside(2,iel)
+!                write(*,*) 'test1',rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)
+!                write(*,*) 'test2',rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
+!                        pause
+!                      end if
                       
                   p_Dentryaa(jdofe,idofe,iel) = &
-                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(2,iel)
+                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(2,icubp,iel)
                 
 !                write(*,*) 'ia',ia
 !                write(*,*) 'daux1',daux1
