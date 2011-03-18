@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 8
+nlmax = 2
 
 
 # Name of the parametrisation file

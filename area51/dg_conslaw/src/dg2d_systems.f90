@@ -205,6 +205,8 @@ contains
     integer :: ilimitEveryStep = 1
     
     real(dp) , dimension(:), pointer :: p_DiMCdata, p_DMCdata
+    
+    integer :: i
      
     ! Start time measurement
     call cpu_time(dtime1)
@@ -1517,7 +1519,9 @@ if (iwithoutlimiting==2) ilimiter = 0
     ! the framework will call the callback routine to get analytical
     ! data.
     !call lsyssc_clearMatrix (rmatrixMC)
-    call bilf_buildMatrixScalar (rform,.true.,rmatrixMC,coeff_implicitDGconvection)
+    ! We need to give the solution vector to the routine (by the collection)
+    rcollection%p_rvectorQuickAccess1 => rsolBlock
+    call bilf_buildMatrixScalar (rform,.true.,rmatrixMC,coeff_implicitDGBurgers,rcollection)
    
    
    call lsyssc_scaleMatrix (rmatrixMC,-1.0_DP)
@@ -1545,9 +1549,10 @@ if (iwithoutlimiting==2) ilimiter = 0
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
     ! the framework will call the callback routine to get analytical
     ! data.
+    rcollection%p_rvectorQuickAccess1 => rsolBlock
     call bilf_dg_buildMatrixScEdge2D (rform, CUB_G5_1D, .false., rmatrixMC,&
-                                             rsol, raddTriaData,&
-                                             flux_dg_implicitConvection_sim)!,&
+                                             rsolBlock%Rvectorblock(1), raddTriaData,&
+                                             flux_dg_implicitBurgers_sim)!,&
                                              !rcollection, cconstrType)
 
     !call matio_writeMatrixHR(rmatrixMC,'./gmv/dg_routine.txt',.true.,0,'./gmv/dg_routine.txt','(E20.10)')
@@ -1601,16 +1606,16 @@ if (iwithoutlimiting==2) ilimiter = 0
                                        getBoundaryValues_2D_ones)
                              
     ! Edge 3 of boundary component 1.
-!    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D)
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D_zeros)
     
-!    ! Edge 4 of boundary component 1. That is it.
-!    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D_ones)
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D_ones)
                              
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
@@ -1707,7 +1712,84 @@ if (iwithoutlimiting==2) ilimiter = 0
    
    
    
-   call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   ! Loop until solution converged
+   do i = 1,3
+      call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
+      
+      
+    
+
+    rform%itermCount = 2
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_DERIV_X
+    rform%Idescriptors(1,2) = DER_FUNC
+    rform%Idescriptors(2,2) = DER_DERIV_Y
+    
+    ! In the standard case, we have constant coefficients:
+    rform%ballCoeffConstant = .false.
+    rform%BconstantCoeff = .false.
+    
+    ! Now we can build the matrix entries.
+    ! We specify the callback function coeff_Laplace for the coefficients.
+    ! As long as we use constant coefficients, this routine is not used.
+    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+    ! the framework will call the callback routine to get analytical
+    ! data.
+    !call lsyssc_clearMatrix (rmatrixMC)
+    ! We need to give the solution vector to the routine (by the collection)
+    rcollection%p_rvectorQuickAccess1 => rsolBlock
+    call bilf_buildMatrixScalar (rform,.true.,rmatrixMC,coeff_implicitDGBurgers,rcollection)
+   
+   
+   call lsyssc_scaleMatrix (rmatrixMC,-1.0_DP)
+      
+   !call matio_writeMatrixHR(rmatrixMC,'./gmv/feat_routine.txt',.true.,0,'./gmv/feat_routine.txt','(E20.10)')
+   
+   
+   
+   ! And now to the entries of the matrix. For assembling of the entries,
+    ! we need a bilinear form, which first has to be set up manually.
+    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+    ! scalar system matrix in 2D.
+
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    
+    ! In the standard case, we have constant coefficients:
+    rform%ballCoeffConstant = .false.
+    rform%BconstantCoeff = .false.
+    
+    ! Now we can build the matrix entries.
+    ! We specify the callback function coeff_Laplace for the coefficients.
+    ! As long as we use constant coefficients, this routine is not used.
+    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+    ! the framework will call the callback routine to get analytical
+    ! data.
+    rcollection%p_rvectorQuickAccess1 => rsolBlock
+    call bilf_dg_buildMatrixScEdge2D (rform, CUB_G5_1D, .false., rmatrixMC,&
+                                             rsolBlock%Rvectorblock(1), raddTriaData,&
+                                             flux_dg_implicitBurgers_sim)!,&
+                                             !rcollection, cconstrType)
+                                             
+    call lsysbl_clearVector (rrhsBlock)
+    
+    call vecfil_discreteBCrhs (rrhsBlock)
+    call vecfil_discreteBCsol (rsolBlock)
+    call matfil_discreteBC (rmatrixBlock)
+   
+   end do
    
    end select
    
