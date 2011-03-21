@@ -1820,7 +1820,7 @@ contains
       ! All DOF values are collected later.
       select case (elem_getPrimaryElement(celement))
       
-      case (EL_P0,EL_Q0)
+      case (EL_P0,EL_Q0,EL_DG_T0_2D)
         ! Nice element, only one DOF :-)
         ! Either the edge or an adjacent vertex is on the boundary.
         
@@ -2025,7 +2025,7 @@ contains
           ! be on the boundary.
         end if
 
-      case (EL_QP1)
+      case (EL_QP1,EL_DG_T1_2D)
         ! Three DOF`s: Function value in the element midpoint 
         ! and derivatives.
         ! Either the edge or an adjacent vertex is on the boundary.
