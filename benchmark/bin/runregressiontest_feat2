@@ -394,6 +394,15 @@ fb_customise() {
 		    COMPILERNAME="GCC 4.4.5"
 		    ;;
 
+		# GNU compiler suite 4.6.0
+		pc64-penryn-linux-gcc-*4.6)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules gcc/4.6.0"
+		    LIDOJOBNAMEPREFIX=fb-gcc
+		    COMPILERNAME="GCC 4.6.0"
+		    ;;
+
 		# GNU compiler suite 4.5.2 and default GNU compiler
 		pc64-penryn-linux-gcc-*4.5|pc64-penryn-linux-gcc-*)
 		    modules=""
