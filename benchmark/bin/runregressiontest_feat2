@@ -19,6 +19,22 @@
 #
 # For help and all other options see 'runregressiontest -h'
 #
+#
+# Crontab entries illustrating the current use of this script
+# lidong2:      45 2 * * *      /home/featflow/bin/runregressiontest_feat2 --master --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=10.1
+# lidong2:      15 3 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=11.0
+# lidong2:      45 3 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=11.1
+# lidong2:      15 4 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-intel-mkl --compiler-version=12.0
+# lidong2:      45 4 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-psc-goto
+# lidong2:      15 5 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.1
+# lidong2:      45 5 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-sunstudio-goto --compiler-version=12.2
+# lidong2:      15 6 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.3
+# lidong2:      45 6 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.4
+# lidong2:      15 7 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.5
+# lidong2:      45 7 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.6
+# lidong2:      15 8 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-pgi-acml
+#
+#
 # Written by sven.buijssen@math.tu-dortmund.de
 
 
