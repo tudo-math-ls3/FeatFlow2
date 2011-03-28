@@ -973,7 +973,7 @@ contains
           end if
           
           ! Compute scaling parameter
-          daux = dcurrentDrive * DmassMatrix(ieq)*DdataTransport(ieq) /&
+          daux = dcurrentDrive * DmassMatrix(ieq)*max(0.0_DP, DdataTransport(ieq)) /&
               max(drad, deffectiveRadius)
           
           ! Compute Lorentz force term
@@ -1008,7 +1008,7 @@ contains
           end if
           
           ! Compute scaling parameter
-          daux = dcurrentDrive * DmassMatrix(ieq)*DdataTransport(ieq) /&
+          daux = dcurrentDrive * DmassMatrix(ieq)*max(0.0_DP, DdataTransport(ieq)) /&
               max(drad, deffectiveRadius)
           
           ! Compute Lorentz force term
@@ -1079,7 +1079,7 @@ contains
             end if
             
             ! Compute scaling parameter
-            daux = dcurrentDrive * DmassMatrix(jeq)*DdataTransport(jeq) /&
+            daux = dcurrentDrive * DmassMatrix(jeq)*max(0.0_DP, DdataTransport(jeq)) /&
                 max(drad, deffectiveRadius)
             
             ! Update Lorentz force term
@@ -1126,7 +1126,7 @@ contains
             end if
             
             ! Compute scaling parameter
-            daux = dcurrentDrive * DmassMatrix(jeq)*DdataTransport(jeq) /&
+            daux = dcurrentDrive * DmassMatrix(jeq)*max(0.0_DP, DdataTransport(jeq)) /&
                 max(drad, deffectiveRadius)
             
             ! Update Lorentz force term
@@ -1187,7 +1187,7 @@ contains
           end if
           
           ! Compute scaling parameter
-          daux = dcurrentDrive * DmassMatrix(ieq)*DdataTransport(ieq) /&
+          daux = dcurrentDrive * DmassMatrix(ieq)*max(0.0_DP, DdataTransport(ieq)) /&
               max(drad, deffectiveRadius)
           
           ! Compute Lorentz source term        
@@ -1217,7 +1217,7 @@ contains
           end if
           
           ! Compute scaling parameter
-          daux = dcurrentDrive * DmassMatrix(ieq)*DdataTransport(ieq) /&
+          daux = dcurrentDrive * DmassMatrix(ieq)*max(0.0_DP, DdataTransport(ieq)) /&
               max(drad, deffectiveRadius)
           
           ! Compute Lorentz source term
@@ -1283,7 +1283,7 @@ contains
             end if
             
             ! Compute scaling parameter
-            daux = dcurrentDrive * DmassMatrix(jeq)*DdataTransport(jeq) /&
+            daux = dcurrentDrive * DmassMatrix(jeq)*max(0.0_DP, DdataTransport(jeq)) /&
                 max(drad, deffectiveRadius)
             
             ! Update Lorentz source term        
@@ -1324,7 +1324,7 @@ contains
             end if
             
             ! Compute scaling parameter
-            daux = dcurrentDrive * DmassMatrix(jeq)*DdataTransport(jeq) /&
+            daux = dcurrentDrive * DmassMatrix(jeq)*max(0.0_DP, DdataTransport(jeq)) /&
                 max(drad, deffectiveRadius)
           
             ! Update Lorentz source term
@@ -1387,7 +1387,7 @@ contains
           end if
           
           ! Compute scaling parameter
-          daux = dcurrentDrive * DmassMatrix(ieq)*DdataTransport(ieq) /&
+          daux = dcurrentDrive * DmassMatrix(ieq)*max(0.0_DP, DdataTransport(ieq)) /&
               max(drad, deffectiveRadius)
           
           ! Compute Lorentz source term
@@ -1422,7 +1422,7 @@ contains
           end if
           
           ! Compute scaling parameter
-          daux = dcurrentDrive * DmassMatrix(ieq)*DdataTransport(ieq) /&
+          daux = dcurrentDrive * DmassMatrix(ieq)*max(0.0_DP, DdataTransport(ieq)) /&
               max(drad, deffectiveRadius)
           
           ! Compute Lorentz source term
@@ -1494,7 +1494,7 @@ contains
             end if
             
             ! Compute scaling parameter
-            daux = dcurrentDrive * DmassMatrix(jeq)*DdataTransport(jeq) /&
+            daux = dcurrentDrive * DmassMatrix(jeq)*max(0.0_DP, DdataTransport(jeq)) /&
                 max(drad, deffectiveRadius)
             
             ! Update Lorentz source term
@@ -1541,7 +1541,7 @@ contains
             end if
             
             ! Compute scaling parameter
-            daux = dcurrentDrive * DmassMatrix(jeq)*DdataTransport(jeq) /&
+            daux = dcurrentDrive * DmassMatrix(jeq)*max(0.0_DP, DdataTransport(jeq)) /&
                 max(drad, deffectiveRadius)
             
             ! Update Lorentz source term
@@ -1602,7 +1602,7 @@ contains
           end if
           
           ! Compute scaling parameter
-          daux = dcurrentDrive * DmassMatrix(ieq)*DdataTransport(ieq) /&
+          daux = dcurrentDrive * DmassMatrix(ieq)*max(0.0_DP, DdataTransport(ieq)) /&
               max(drad, deffectiveRadius)
           
           ! Compute Lorentz source term
@@ -1632,7 +1632,7 @@ contains
           end if
           
           ! Compute scaling parameter
-          daux = dcurrentDrive * DmassMatrix(ieq)*DdataTransport(ieq) /&
+          daux = dcurrentDrive * DmassMatrix(ieq)*max(0.0_DP, DdataTransport(ieq)) /&
               max(drad, deffectiveRadius)
           
           ! Compute Lorentz source term
@@ -1698,7 +1698,7 @@ contains
             end if
             
             ! Compute scaling parameter
-            daux = dcurrentDrive * DmassMatrix(jeq)*DdataTransport(jeq) /&
+            daux = dcurrentDrive * DmassMatrix(jeq)*max(0.0_DP, DdataTransport(jeq)) /&
                 max(drad, deffectiveRadius)
             
             ! Update Lorentz source term
@@ -1739,7 +1739,7 @@ contains
             end if
             
             ! Compute scaling parameter
-            daux = dcurrentDrive * DmassMatrix(jeq)*DdataTransport(jeq) /&
+            daux = dcurrentDrive * DmassMatrix(jeq)*max(0.0_DP, DdataTransport(jeq)) /&
                 max(drad, deffectiveRadius)
             
             ! Update Lorentz source term
@@ -2009,19 +2009,20 @@ contains
       
       if (nfailsafe .gt. 0) then
         
-        ! Compute linearised FEM-FCT correction
+        ! Compute linearised FEM-FCT correction for the hydrodynamic model
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
             ssectionNameHydro, rcollection)
         
-        ! Apply failsafe flux correction
+        ! Apply failsafe flux correction for the hydrodynamic model
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
             hydro_getVariable, Rsolution(1), p_rpredictorHydro)
 
-        ! Apply linearised FEM-FCT correction
+        ! Compute and apply linearised FEM-FCT correction for the
+        ! transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
@@ -2039,12 +2040,15 @@ contains
         
       else
         
-        ! Compute linearised FEM-FCT correction
+        ! Compute and apply linearised FEM-FCT correction for the
+        ! hydrodynamic model
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
             ssectionNameHydro, rcollection)
         
+        ! Compute and apply linearised FEM-FCT correction for the
+        ! transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
@@ -2055,30 +2059,32 @@ contains
 
     case (1)   ! minimum synchronisation
       
-      ! Compute linearised FEM-FCT correction
+      ! Compute linearised FEM-FCT correction for the hydrodynamic model
       call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
           ssectionNameHydro, rcollection)
       
+      ! Compute linearised FEM-FCT correction for the transport model
       call gfsc_buildConvectionVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
-      ! Compute minimum correction factor
+      ! Set pointers
       call lsyssc_getbase_double(&
           rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorAlpha, p_DalphaHydro)
       call lsyssc_getbase_double(&
           rproblemLevel%Rafcstab(convectionAFC)%p_rvectorAlpha, p_DalphaTransport)
-      
+
+      ! Compute minimum correction factor from both models
       p_DalphaHydro = min(p_DalphaHydro, p_DalphaTransport)
       call lalg_copyVector(p_DalphaHydro, p_DalphaTransport)
       
       if (nfailsafe .gt. 0) then
 
-        ! Apply failsafe flux correction
+        ! Apply failsafe flux correction for both models
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
@@ -2091,12 +2097,13 @@ contains
         
       else
         
-        ! Apply linearised FEM-FCT correction
+        ! Apply linearised FEM-FCT correction for the hydrodynamic model
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
             ssectionNameHydro, rcollection)
         
+        ! Apply linearised FEM-FCT correction for the transportmodel
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
@@ -2105,20 +2112,21 @@ contains
       end if
 
 
-    case (2)   ! Hydrodynamic first, transport second
+    case (2)   ! Hydrodynamic model first, transport model second
       
-      ! Compute linearised FEM-FCT correction
+      ! Compute linearised FEM-FCT correction for the hydrodynamic model
       call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
           ssectionNameHydro, rcollection)
       
-      ! Copy correction factor for hydrodynamic system to transport model
+      ! Copy correction factor for hydrodynamic model to transport model
       call afcstab_copyStabilisation(&
           rproblemLevel%Rafcstab(inviscidAFC),&
           rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
       
-      ! Compute linearised FEM-FCT correction (without initialisation)
+      ! Compute linearised FEM-FCT correction for the transport model
+      ! (without initialisation)
       call gfsc_buildConvectionVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
@@ -2132,7 +2140,7 @@ contains
       
       if (nfailsafe .gt. 0) then
 
-        ! Apply failsafe flux correction
+        ! Apply failsafe flux correction for both models
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
@@ -2145,12 +2153,13 @@ contains
 
       else
         
-        ! Apply linearised FEM-FCT correction
+        ! Apply linearised FEM-FCT correction for the hydrodynamic model
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
             ssectionNameHydro, rcollection)
         
+        ! Apply linearised FEM-FCT correction for the transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
@@ -2159,21 +2168,22 @@ contains
       end if
 
 
-    case (3)   ! Transport first, hydrodynamic second
+    case (3)   ! Transport model first, hydrodynamic second second
       
-      ! Compute linearised FEM-FCT correction      
+      ! Compute linearised FEM-FCT correction for the transport model
       call gfsc_buildConvectionVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
-      ! Copy correction factor for transport model to hydrodynamic system
+      ! Copy correction factor for transport model to hydrodynamic model
       call afcstab_copyStabilisation(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
       
-      ! Compute linearised FEM-FCT correction (without initialisation)
+      ! Compute linearised FEM-FCT correction for the hydrodynamic model
+      ! (without initialisation)
       call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT,&
@@ -2186,7 +2196,7 @@ contains
 
       if (nfailsafe .gt. 0) then
 
-        ! Apply failsafe flux correction
+        ! Apply failsafe flux correction for both models
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
@@ -2199,12 +2209,13 @@ contains
 
       else
       
-        ! Apply linearised FEM-FCT correction
+        ! Apply linearised FEM-FCT correction for the hydrodynamic model
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
             ssectionNameHydro, rcollection)
         
+        ! Apply linearised FEM-FCT correction for the transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
@@ -2217,18 +2228,19 @@ contains
       
       if (nfailsafe .gt. 0) then
 
-        ! Compute linearised FEM-FCT correction
+        ! Compute and apply linearised FEM-FCT correction for
+        ! hydrodynamic model
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
             ssectionNameHydro, rcollection)
 
-        ! Copy correction factor for hydrodynamic system to transport model
+        ! Copy correction factor for hydrodynamic model to transport model
         call afcstab_copyStabilisation(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
 
-        ! Apply failsafe flux correction
+        ! Apply failsafe flux correction for both models
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
@@ -2241,18 +2253,19 @@ contains
         
       else
         
-        ! Apply linearised FEM-FCT correction      
+        ! Compute and apply linearised FEM-FCT correction for
+        ! hydrodynamic model
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
             ssectionNameHydro, rcollection)
         
-        ! Copy correction factor for hydrodynamic system to transport model
+        ! Copy correction factor for hydrodynamic model to transport model
         call afcstab_copyStabilisation(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
         
-        ! Apply linearised FEM-FCT correction
+        ! Apply linearised FEM-FCT correction for transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
@@ -2265,19 +2278,20 @@ contains
       
       if (nfailsafe .gt. 0) then
 
-        ! Compute linearised FEM-FCT correction
+        ! Compute and apply linearised FEM-FCT correction for
+        ! transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
 
-        ! Copy correction factor for transport model to hydrodynamic system
+        ! Copy correction factor for transport model to hydrodynamic model
         call afcstab_copyStabilisation(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
 
-        ! Apply failsafe flux correction
+        ! Apply failsafe flux correction for both models
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
@@ -2290,7 +2304,8 @@ contains
         
       else
         
-        ! Apply linearised FEM-FCT correction
+        ! Compute and apply linearised FEM-FCT correction for
+        ! hydrodynamic model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
@@ -2302,7 +2317,7 @@ contains
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
         
-        ! Apply linearised FEM-FCT correction
+        ! Apply linearised FEM-FCT correction  for transport model
         call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
