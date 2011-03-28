@@ -208,7 +208,7 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/shocktube_mhd_FCT_CN_NLEV
+sucdsolution = out/shocktube_Brio_Wu
 
 # file for UCD output of error
 sucderror = out/shocktube_error
@@ -259,7 +259,7 @@ dinitialTime = 0.0
 dfinalTime = 0.1
 
 # initial time step size
-dinitialStep = 6.25e-6
+dinitialStep = 1e-4
 
 # lower bound for the admissible time step
 dminStep = 1e-4
@@ -306,10 +306,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 5
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce

@@ -76,10 +76,10 @@ ilimitersynchronisation = 3
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/zpinch_60x60_quarter.prm
+prmfile = grids/2d/zpinch_60x240.prm
 
 # file which contains the triangulation
-trifile = grids/2d/zpinch_60x60_quarter.tri
+trifile = grids/2d/zpinch_60x240.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -265,7 +265,7 @@ icoordsystem = %{Zpinch.icoordsystem}
 # 0 = evaluate linear form by numerical integration
 # 1 = group formulation with consistent mass matrix
 # 2 = group formulation with lumped mass matrix
-igeometricsourcetype = 0
+igeometricsourcetype = 2
 
 
 ################################################################################
@@ -490,7 +490,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-sucdsolution = out/zpinch_BE_FCT_60x60_quarter
+sucdsolution = out/zpinch
 
 # file for UCD import of solution
 sucdimport =
@@ -533,7 +533,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 0
@@ -542,16 +542,16 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1e-4
+dfinalTime = 1.1
 
 # initial time step size
-dinitialStep = 1e-4
+dinitialStep = 1e-5
 
 # lower bound for the admissible time step
-dminStep = 1e-4
+dminStep = 1e-5
 
 # upper bound for the admissible time step
-dmaxStep = 1e-4
+dmaxStep = 1e-5
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
