@@ -4380,6 +4380,7 @@ contains
     rexport%p_Hvariables => p_Hvariables
 
     allocate(p_SvariableNames(nsize+16))
+    p_SvariableNames = ''
     if (associated(rexport%p_SvariableNames)) then
       p_SvariableNames(1:nsize) = rexport%p_SvariableNames
       deallocate(rexport%p_SvariableNames)
@@ -4422,6 +4423,7 @@ contains
     rexport%p_Ivectors => p_Ivectors
       
     allocate(p_SvarVecNames(nsize+16))
+    p_SvarVecNames = ''
     if (associated(rexport%p_SvarVecNames)) then
       p_SvarVecNames(1:nsize) = rexport%p_SvarVecNames
       deallocate(rexport%p_SvarVecNames)
@@ -5638,15 +5640,13 @@ contains
       call sys_tolower (sline)
       read(sline,*) skey
       
-      skey = trim(adjustl(skey))
-
-      if (skey .eq. "probtime") then
+      if (trim(adjustl(skey)) .eq. "probtime") then
         
         !----------------------------------------------------
         ! Read the simulation time
         read(sline,*) sdummy,rexport%dsimulationTime
         
-      else if (skey .eq. "comments") then
+      elseif (trim(adjustl(skey)) .eq. "comments") then
       
         !----------------------------------------------------
         ! Read comments
@@ -5662,7 +5662,7 @@ contains
           end if
         end do
         
-      else if (skey .eq. "nodes") then
+      elseif (trim(adjustl(skey)) .eq. "nodes") then
         
         !----------------------------------------------------
         ! Read triangulation (or ignore it if already given in rtriangulation)
@@ -5673,37 +5673,37 @@ contains
         rexport%nvertices = rexport%p_rtriangulation%NVT
         rexport%ncells = rexport%p_rtriangulation%NEL
         
-      else if (skey .eq. "material") then
+      elseif (trim(adjustl(skey)) .eq. "material") then
       
         !----------------------------------------------------
         ! Read materials
         call read_materials (mfile,sline,rexport)
         
-      else if (skey .eq. "velocity") then
+      elseif (trim(adjustl(skey)) .eq. "velocity") then
 
         !----------------------------------------------------
         ! Read velocity data
         call read_velocity (mfile,sline,rexport)
         
-      else if (skey .eq. "variable") then
+      elseif (trim(adjustl(skey)) .eq. "variable") then
       
         !----------------------------------------------------
         ! Read general variable data
         call read_variables (mfile,sline,rexport)
         
-      else if (skey .eq. "polygons") then
+      elseif (trim(adjustl(skey)) .eq. "polygons") then
       
         !----------------------------------------------------
         ! Read polygon data
         call read_polygondata (mfile,sline,rexport)
         
-      else if (skey .eq. "tracers") then
+      elseif (trim(adjustl(skey)) .eq. "tracers") then
       
         !----------------------------------------------------
         ! Read tracer data
         call read_tracerdata (mfile,sline,rexport)
         
-      else if (skey .eq. "endgmv") then
+      elseif (trim(adjustl(skey)) .eq. "endgmv") then
         
         ! GMV finish
         ios = 1
@@ -5761,7 +5761,7 @@ contains
       call io_readlinefromfile (mfile, sline, ilinelen, ios)
       call sys_tolower (sline)
       read(sline,*) skey
-      if (skey .ne. 'endtrace') then
+      if (trim(adjustl(skey)) .ne. 'endtrace') then
         call output_line ('Error reading GMV data!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'read_tracerdata')
         call sys_halt() 
@@ -5801,7 +5801,7 @@ contains
       call sys_tolower (sline)
       
       read(sline,*) skey
-      bfinish = (skey .ne. 'endtrace') 
+      bfinish = (trim(adjustl(skey)) .ne. 'endtrace') 
       do while ((ios .eq. 0) .and. (.not. bfinish))
         
         ! Read material, #points
@@ -5835,7 +5835,7 @@ contains
         call sys_tolower (sline)
         
         read(sline,*) skey
-        bfinish = (skey .ne. 'endtrace') 
+        bfinish = (trim(adjustl(skey)) .ne. 'endtrace') 
       end do
       
       if (ios .ne. 0) then
@@ -5878,7 +5878,7 @@ contains
       call sys_tolower (sline)
       
       read(sline,*) skey
-      bfinish = (skey .eq. 'endvars') 
+      bfinish = (trim(adjustl(skey)) .eq. 'endvars') 
       do while ((ios .eq. 0) .and. (.not. bfinish))
         
         ! Read variable name, type
@@ -5913,7 +5913,7 @@ contains
         call sys_tolower (sline)
         
         read(sline,*) skey
-        bfinish = (skey .eq. 'endvars') 
+        bfinish = (trim(adjustl(skey)) .eq. 'endvars') 
         
       end do
       
@@ -6018,81 +6018,64 @@ contains
       logical :: bfinish
       character(LEN=SYS_STRLEN) :: sline,sname
       real(DP), dimension(:,:), allocatable :: Ddata
-      real(DP), dimension(:), allocatable :: Dtemp
 
       ! Type of velocity data? Vertex or element based?
       read(scommand,*) sname,itype
-      
+
       select case (itype)
       case (0) 
             
-        ! Node based velocity data. Allocate memory.
+        ! Element based velocity data. Allocate memory.
         allocate(Ddata(rexport%p_rtriangulation%NEL,rexport%p_rtriangulation%ndim))
-        allocate(Dtemp(rexport%p_rtriangulation%NEL))
+        
+        ! Read the X-, Y- and Z-velocity
+        read(mfile,*) Ddata(:,1)
+        read(mfile,*) Ddata(:,2)
+        read(mfile,*) Ddata(:,3)
         
         select case(rexport%p_rtriangulation%ndim)
         case (NDIM1D)
-          ! Read the X-velocity
-          read(mfile,*) Ddata(:,1)
-
           ! Put the data to the rexport structure
           call ucd_addVarElemBasedVec (rexport, sname, Ddata(:,1))
         
         case (NDIM2D)
-          ! Read the X- and Y-velocity
-          read(mfile,*) Ddata(:,1)
-          read(mfile,*) Ddata(:,2)
-
           ! Put the data to the rexport structure
           call ucd_addVarElemBasedVec (rexport, sname, Ddata(:,1), Ddata(:,2))
 
         case (NDIM3D)
-          ! Read the X-, Y- and Z-velocity
-          read(mfile,*) Ddata(:,1)
-          read(mfile,*) Ddata(:,2)
-          read(mfile,*) Ddata(:,3)
-          
           ! Put the data to the rexport structure
           call ucd_addVarElemBasedVec (rexport, sname, Ddata(:,1), Ddata(:,2), Ddata(:,3))
         end select
         
         ! Deallocate memory
-        deallocate(Dtemp,Ddata)
+        deallocate(Ddata)
             
       case (1)
         
         ! Node based velocity data. Allocate memory.
         allocate(Ddata(rexport%p_rtriangulation%NVT,rexport%p_rtriangulation%ndim))
-        allocate(Dtemp(rexport%p_rtriangulation%NVT))
+        
+        ! Read the X-, Y- and Z-velocity
+        read(mfile,*) Ddata(:,1)
+        read(mfile,*) Ddata(:,2)
+        read(mfile,*) Ddata(:,3)
         
         select case(rexport%p_rtriangulation%ndim)
         case (NDIM1D)
-          ! Read the X-velocity
-          read(mfile,*) Ddata(:,1)
-
           ! Put the data to the rexport structure
           call ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1))
         
         case (NDIM2D)
-          ! Read the X- and Y-velocity
-          read(mfile,*) Ddata(:,1)
-          read(mfile,*) Ddata(:,2)
-
           ! Put the data to the rexport structure
           call ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1), Ddata(:,2))
 
         case (NDIM3D)
-          ! Read the X-, Y- and Z-velocity
-          read(mfile,*) Ddata(:,1)
-          read(mfile,*) Ddata(:,2)
-          read(mfile,*) Ddata(:,3)
-          
           ! Put the data to the rexport structure
           call ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1), Ddata(:,2), Ddata(:,3))
         end select
         
         ! Deallocate memory
-        deallocate(Dtemp,Ddata)
+        deallocate(Ddata)
         
       case DEFAULT
         call output_line ('Error reading GMV data! Unknown variable type!', &
@@ -6100,7 +6083,7 @@ contains
         call sys_halt()
 
       end select
-      
+
     end subroutine
 
     ! ---------------------------------------------------------------
