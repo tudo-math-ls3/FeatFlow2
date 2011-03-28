@@ -76,10 +76,10 @@ ilimitersynchronisation = 3
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/zpinch_3x120_rz.prm
+prmfile = grids/2d/zpinch_6x7680_rz.prm
 
 # file which contains the triangulation
-trifile = grids/2d/zpinch_3x120_rz.tri
+trifile = grids/2d/zpinch_6x7680_rz.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -482,7 +482,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-sucdsolution = out/zpinch
+sucdsolution = out/zpinch_BE_FCT_6x7680
 
 # file for UCD import of solution
 sucdimport =
@@ -525,7 +525,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 0.5
+theta = 1.0
 
 # number of steps for multisteps scheme
 multisteps = 0
@@ -537,13 +537,13 @@ dinitialTime = 0.0
 dfinalTime = 1.1
 
 # initial time step size
-dinitialStep = 1e-5
+dinitialStep = 1.5625e-6
 
 # lower bound for the admissible time step
-dminStep = 1e-5
+dminStep = 1.5625e-6
 
 # upper bound for the admissible time step
-dmaxStep = 1e-5
+dmaxStep = 1.5625e-6
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
