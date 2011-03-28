@@ -304,7 +304,7 @@ module hydro_basic
   ! (1D approximation of a 3D flow)
   integer, parameter, public :: COORDS_SPHERICALSYMMETRY   = 3
 
-!</constants>
+!</constantblock>
 
 !</constants>
 

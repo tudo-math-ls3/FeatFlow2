@@ -83,7 +83,7 @@ program flagship
   call output_lbrk()
   call output_separator(OU_SEP_STAR)
   call output_line('  FlAGSHiP: Flux-corrected Aerodynamics by Galerkin')
-  call output_line('            Schemes with High Performance (2004-2010)')
+  call output_line('            Schemes with High Performance (2004-2011)')
   call output_lbrk()
   call output_line('  Authors:  Dmitri Kuzmin, Matthias Moeller')
   call output_line('            Institute of Applied Mathematics')

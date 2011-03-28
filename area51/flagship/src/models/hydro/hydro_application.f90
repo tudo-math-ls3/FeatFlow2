@@ -277,7 +277,7 @@ contains
     ! Initialize global collection structure
     call collct_init(rcollection)
 
-    ! Create a separate section for the scalar transport model
+    ! Create a separate section for the hydrodynamic model
     call collct_addsection(rcollection, ssectionName)
     
     ! Define section name of this application
