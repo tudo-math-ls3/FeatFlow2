@@ -10213,9 +10213,9 @@ end do
 
                   ! Testfunction on the 'first' (i) side
                   p_Dentryii(jdofe,idofe,iel) = &
-                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)   
+                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)
                   p_Dentryai(jdofe,idofe,iel) = &
-                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)   
+                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)
                   
                   ! Testfunction on the 'second' (a) side
                   p_Dentryia(jdofe,idofe,iel) = &

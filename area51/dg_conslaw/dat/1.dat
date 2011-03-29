@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 2
+nlmax = 5
 
 
 # Name of the parametrisation file
@@ -49,7 +49,7 @@ FEkind = 1
 dt = 0.001
 
 # Final time
-ttfinal = 0.231
+ttfinal = 0.4
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -70,8 +70,9 @@ limiter = 0
 # 2: dGP(2) 3rd/4th order
 # 3: Theta scheme
 # 4: Classical RK of 4th order
-# 5: Implicit
-timestepping = 5
+# 5: Implicit linear convection
+# 6: Implicit Burgers equation
+timestepping = 6
 
 # What type to build the RHS
 rhstype = 1

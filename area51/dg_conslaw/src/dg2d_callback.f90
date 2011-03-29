@@ -2271,16 +2271,26 @@ integer :: iel
 !            Dcoefficients (1,ipoint,iel) = 1.0_dp
 !          end if
           
-          ! Shock tube
-          if (dx<0.5_dp) then
-            Dcoefficients (1,ipoint,iel) = 1.0_dp
-          else
-            Dcoefficients (1,ipoint,iel) = 0.125_dp
-          end if 
+!          ! Shock tube
+!          if (dx<0.5_dp) then
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp
+!          else
+!            Dcoefficients (1,ipoint,iel) = 0.125_dp
+!          end if 
           
           
-          ! For scalar problem
-          Dcoefficients (1,ipoint,iel) = 0.5_dp
+!          ! For scalar problem
+!          Dcoefficients (1,ipoint,iel) = 0.5_dp
+
+          ! For scalar burgers - discontinuous
+          if ( (abs(dx-0.5_dp)<0.15_dp).and.(abs(dy-0.5_dp)<0.15_dp) ) then
+            Dcoefficients (1,ipoint,iel) = 0.5_dp
+          end if
+          
+          ! For scalar burgers - scontinuous
+          
+            Dcoefficients (1,ipoint,iel) = 0.3_dp*exp(-50.0_dp*((dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp))
+          
 
 
 !        ! Isentropicvortex
@@ -5073,35 +5083,42 @@ integer :: iel
   
   integer :: iedge, ipoint
   real(dp) :: dx, dy
-  real(dp), dimension(:,:,:), allocatable :: DsolutionDerivx, DsolutionDerivy
+  real(dp), dimension(:,:,:), allocatable :: DsolutionDerivx, DsolutionDerivy, DsolutionValues
   real(dp), dimension(2) :: DgradQ
-  real(dp) :: dvn
+  real(dp) :: dvn, dq
   
     
     ! Allocate space for the solution values ! (2 sides, ncubp, NEL, nvar2d)
-    allocate(DsolutionDerivx(2,size(DfluxValues,2),size(DfluxValues,3)))
-    allocate(DsolutionDerivy(2,size(DfluxValues,2),size(DfluxValues,3)))
+!    allocate(DsolutionDerivx(2,size(DfluxValues,2),size(DfluxValues,3)))
+!    allocate(DsolutionDerivy(2,size(DfluxValues,2),size(DfluxValues,3)))
+    allocate(DsolutionValues(2,size(DfluxValues,2),size(DfluxValues,3)))
   
   
-  
+  ! Evaluate the values of the solution
+    ! Get x-deriv on the one side of the edge
+    call fevl_evaluate_sim4 (rvectorSol, &
+                             rIntSubset(1), DER_FUNC, DsolutionValues, 1)
+    ! Get x-deriv on the other side of the edge                               
+    call fevl_evaluate_sim4 (rvectorSol, &
+                             rIntSubset(2), DER_FUNC, DsolutionValues, 2)
 
   
   
   
-  ! Evaluate the derivatives of the solution
-    ! Get x-deriv on the one side of the edge
-    call fevl_evaluate_sim4 (rvectorSol, &
-                             rIntSubset(1), DER_DERIV_X, DsolutionDerivx, 1)
-    ! Get x-deriv on the other side of the edge                               
-    call fevl_evaluate_sim4 (rvectorSol, &
-                             rIntSubset(2), DER_DERIV_X, DsolutionDerivx, 2)
-    
-    ! Get y-deriv on the one side of the edge
-    call fevl_evaluate_sim4 (rvectorSol, &
-                             rIntSubset(1), DER_DERIV_Y, DsolutionDerivy(:,:,:), 1)
-    ! Get y-deriv on the other side of the edge                               
-    call fevl_evaluate_sim4 (rvectorSol, &
-                             rIntSubset(2), DER_DERIV_Y, DsolutionDerivy(:,:,:), 2)
+!  ! Evaluate the derivatives of the solution
+!    ! Get x-deriv on the one side of the edge
+!    call fevl_evaluate_sim4 (rvectorSol, &
+!                             rIntSubset(1), DER_DERIV_X, DsolutionDerivx, 1)
+!    ! Get x-deriv on the other side of the edge                               
+!    call fevl_evaluate_sim4 (rvectorSol, &
+!                             rIntSubset(2), DER_DERIV_X, DsolutionDerivx, 2)
+!    
+!    ! Get y-deriv on the one side of the edge
+!    call fevl_evaluate_sim4 (rvectorSol, &
+!                             rIntSubset(1), DER_DERIV_Y, DsolutionDerivy(:,:,:), 1)
+!    ! Get y-deriv on the other side of the edge                               
+!    call fevl_evaluate_sim4 (rvectorSol, &
+!                             rIntSubset(2), DER_DERIV_Y, DsolutionDerivy(:,:,:), 2)
     
   
   
@@ -5113,35 +5130,43 @@ integer :: iel
       dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
       dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
       
-      ! Calculate gradient of the solution as average gradient of the solution on both sides of the edge
-      DgradQ(1) = 0.5_dp*(DsolutionDerivx(1,ipoint,iedge)+DsolutionDerivx(2,ipoint,iedge))
-      DgradQ(2) = 0.5_dp*(DsolutionDerivy(1,ipoint,iedge)+DsolutionDerivy(2,ipoint,iedge))
+!      ! Calculate gradient of the solution as average gradient of the solution on both sides of the edge
+!      DgradQ(1) = 0.5_dp*(DsolutionDerivx(1,ipoint,iedge)+DsolutionDerivx(2,ipoint,iedge))
+!      DgradQ(2) = 0.5_dp*(DsolutionDerivy(1,ipoint,iedge)+DsolutionDerivy(2,ipoint,iedge))
       
-      ! Calculate projection of gradient on the normal direction
-      dvn =  DgradQ(1)*normal(1,iedge) + DgradQ(2)*normal(2,iedge)
+      dq = 0.5_dp*(DsolutionValues(1,ipoint,iedge)+DsolutionValues(2,ipoint,iedge))
       
-      DfluxValues(1,ipoint,iedge) = dvn
+!      ! Calculate projection of gradient on the normal direction
+!      dvn =  DgradQ(1)*normal(1,iedge) + DgradQ(2)*normal(2,iedge)
       
-      if (abs(dvn)<1.0e-12) then
+      DfluxValues(1,ipoint,iedge) = 0.5_dp*dq*(normal(1,iedge)+normal(2,iedge))
+      
+      if (abs(DfluxValues(1,ipoint,iedge))<1.0e-12) then
+        
         Dside(1,ipoint,iedge) = 0.5_dp
         Dside(2,ipoint,iedge) = 0.5_dp
       
-      elseif (dvn>0.0_dp) then
+      elseif (DfluxValues(1,ipoint,iedge)>0.0_dp) then
+        DfluxValues(1,ipoint,iedge) = 0.5_dp*DsolutionValues(1,ipoint,iedge)*(normal(1,iedge)+normal(2,iedge))
         Dside(1,ipoint,iedge) = 1.0_dp
         Dside(2,ipoint,iedge) = 0.0_dp
       
       else
+        DfluxValues(1,ipoint,iedge) = 0.5_dp*DsolutionValues(2,ipoint,iedge)*(normal(1,iedge)+normal(2,iedge))
         Dside(1,ipoint,iedge) = 0.0_dp
         Dside(2,ipoint,iedge) = 1.0_dp
       end if
+      
+!      Dside(1,ipoint,iedge) = 0.5_dp
+!      Dside(2,ipoint,iedge) = 0.5_dp
       
     end do
   end do
   
   
   ! Deallocate all memory
-  deallocate(DsolutionDerivx,DsolutionDerivy)
-  
+!  deallocate(DsolutionDerivx,DsolutionDerivy)
+  deallocate(DsolutionValues)
   
   end subroutine
   
@@ -5251,8 +5276,8 @@ integer :: iel
         dy = Dpoints(2,ipoint,iel)
         
         ! Set coefficients (the velocity vector)
-        Dcoefficients(1,ipoint,iel) = DsolutionValues(1,ipoint,iel)
-        Dcoefficients(2,ipoint,iel) = DsolutionValues(1,ipoint,iel)
+        Dcoefficients(1,ipoint,iel) = 0.5_dp*DsolutionValues(1,ipoint,iel)
+        Dcoefficients(2,ipoint,iel) = 0.5_dp*DsolutionValues(1,ipoint,iel)
       
       end do
     end do
