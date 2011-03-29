@@ -119,8 +119,8 @@ contains
 !<subroutine>
 
   subroutine nlsol_solveCoupledScalar(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolutionInitial, fcb_nlsolvercallback,&
-      rcollection, rsource)
+      rsolver, Rsolution, RsolutionInitial, fcb_nlsolvercallback,&
+      rcollection, Rsource)
 
 !<description>
     ! This subroutine solves the coupled nonlinear system
@@ -131,10 +131,10 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorScalar), dimension(:), intent(in) :: rsolutionInitial
+    type(t_vectorScalar), dimension(:), intent(in) :: RsolutionInitial
 
     ! OPTIONAL: source vector
-    type(t_vectorScalar), dimension(:), intent(in), optional :: rsource
+    type(t_vectorScalar), dimension(:), intent(in), optional :: Rsource
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -151,7 +151,7 @@ contains
     type(t_solver), intent(inout) :: rsolver
 
     ! solution vector
-    type(t_vectorScalar), dimension(:), intent(inout) :: rsolution
+    type(t_vectorScalar), dimension(:), intent(inout) :: Rsolution
 
     ! collection
     type(t_collection), intent(inout) :: rcollection
@@ -159,80 +159,85 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), dimension(:), pointer :: rsourceBlock
-    type(t_vectorBlock), dimension(:), pointer :: rsolutionBlock
-    type(t_vectorBlock), dimension(:), pointer :: rsolutionInitialBlock
-    integer :: i
+    type(t_vectorBlock), dimension(:), pointer :: RsourceBlock
+    type(t_vectorBlock), dimension(:), pointer :: RsolutionBlock
+    type(t_vectorBlock), dimension(:), pointer :: RsolutionInitialBlock
+    integer :: icomponent
 
-    if (present(rsource)) then
+    if (present(Rsource)) then
 
       ! Allocate arrays
-      allocate(rsourceBlock(size(rsource)))
-      allocate(rsolutionBlock(size(rsolution)))
-      allocate(rsolutionInitialBlock(size(rsolutionInitial)))
+      allocate(RsourceBlock(size(Rsource)))
+      allocate(RsolutionBlock(size(Rsolution)))
+      allocate(RsolutionInitialBlock(size(RsolutionInitial)))
 
       ! Convert scalar vectors into block vectors
-      do i = 1, size(rsource)
-        call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
+      do icomponent = 1, size(Rsource)
+        call lsysbl_createVecFromScalar(Rsource(icomponent),&
+            RsourceBlock(icomponent))
       end do
-      do i = 1, size(rsolution)
-        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_createVecFromScalar(Rsolution(icomponent),&
+            RsolutionBlock(icomponent))
       end do
-      do i = 1, size(rsolutionInitial)
-        call lsysbl_createVecFromScalar(rsolutionInitial(i), rsolutionInitialBlock(i))
+      do icomponent = 1, size(RsolutionInitial)
+        call lsysbl_createVecFromScalar(RsolutionInitial(icomponent),&
+            RsolutionInitialBlock(icomponent))
       end do
 
       ! Apply block-version of coupled solver with source vector
       call nlsol_solveCoupledBlock(rproblemLevel, rtimestep, rsolver,&
-          rsolutionBlock, rsolutionInitialBlock, fcb_nlsolverCallback,&
-          rcollection, rsourceBlock)
+          RsolutionBlock, RsolutionInitialBlock, fcb_nlsolverCallback,&
+          rcollection, RsourceBlock)
 
       ! Release temporal block vectors
-      do i = 1, size(rsourceBlock)
-        call lsysbl_releaseVector(rsourceBlock(i))
+      do icomponent = 1, size(RsourceBlock)
+        call lsysbl_releaseVector(RsourceBlock(icomponent))
       end do
-      do i = 1, size(rsolutionBlock)
-        call lsysbl_releaseVector(rsolutionBlock(i))
+      do icomponent = 1, size(RsolutionBlock)
+        call lsysbl_releaseVector(RsolutionBlock(icomponent))
       end do
-      do i = 1, size(rsolutionInitialBlock)
-        call lsysbl_releaseVector(rsolutionInitialBlock(i))
+      do icomponent = 1, size(RsolutionInitialBlock)
+        call lsysbl_releaseVector(RsolutionInitialBlock(icomponent))
       end do
 
       ! Release arrays
-      deallocate(rsourceBlock)
-      deallocate(rsolutionBlock)
-      deallocate(rsolutionInitialBlock)
+      deallocate(RsourceBlock)
+      deallocate(RsolutionBlock)
+      deallocate(RsolutionInitialBlock)
 
     else
 
       ! Allocate arrays
-      allocate(rsolutionBlock(size(rsolution)))
-      allocate(rsolutionInitialBlock(size(rsolutionInitial)))
+      allocate(RsolutionBlock(size(Rsolution)))
+      allocate(RsolutionInitialBlock(size(RsolutionInitial)))
 
       ! Convert scalar vectors into block vectors
-      do i = 1, size(rsolution)
-        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_createVecFromScalar(Rsolution(icomponent),&
+            RsolutionBlock(icomponent))
       end do
-      do i = 1, size(rsolutionInitial)
-        call lsysbl_createVecFromScalar(rsolutionInitial(i), rsolutionInitialBlock(i))
+      do icomponent = 1, size(RsolutionInitial)
+        call lsysbl_createVecFromScalar(RsolutionInitial(icomponent),&
+            RsolutionInitialBlock(icomponent))
       end do
 
       ! Apply block-version of coupled solver without source vector
       call nlsol_solveCoupledBlock(rproblemLevel, rtimestep, rsolver,&
-          rsolutionBlock, rsolutionInitialBlock, fcb_nlsolverCallback,&
+          RsolutionBlock, RsolutionInitialBlock, fcb_nlsolverCallback,&
           rcollection)
 
       ! Release temporal block vectors
-      do i = 1, size(rsolutionBlock)
-        call lsysbl_releaseVector(rsolutionBlock(i))
+      do icomponent = 1, size(RsolutionBlock)
+        call lsysbl_releaseVector(RsolutionBlock(icomponent))
       end do
-      do i = 1, size(rsolutionInitialBlock)
-        call lsysbl_releaseVector(rsolutionInitialBlock(i))
+      do icomponent = 1, size(RsolutionInitialBlock)
+        call lsysbl_releaseVector(RsolutionInitialBlock(icomponent))
       end do
 
       ! Release arrays
-      deallocate(rsolutionBlock)
-      deallocate(rsolutionInitialBlock)
+      deallocate(RsolutionBlock)
+      deallocate(RsolutionInitialBlock)
 
     end if
 
@@ -243,7 +248,7 @@ contains
 !<subroutine>
 
   subroutine nlsol_solveCoupledBlock(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolutionInitial, fcb_nlsolverCallback,&
+      rsolver, Rsolution, RsolutionInitial, fcb_nlsolverCallback,&
       rcollection, rsource)
 
 !<description>
@@ -254,10 +259,10 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorBlock), dimension(:), intent(in) :: rsolutionInitial
+    type(t_vectorBlock), dimension(:), intent(in) :: RsolutionInitial
 
     ! OPTIONAL: source vector
-    type(t_vectorBlock), dimension(:), intent(in), optional :: rsource
+    type(t_vectorBlock), dimension(:), intent(in), optional :: Rsource
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -274,7 +279,7 @@ contains
     type(t_solver), intent(inout) :: rsolver
 
     ! solution vector
-    type(t_vectorBlock), dimension(:), intent(inout) :: rsolution
+    type(t_vectorBlock), dimension(:), intent(inout) :: Rsolution
 
     ! collection
     type(t_collection), intent(inout) :: rcollection
@@ -301,16 +306,16 @@ contains
     end if
 
     ! Check compatibility of arrays
-    ncomponent = size(rsolution)
-    if (size(rsolutionInitial) .ne. ncomponent .or.&
+    ncomponent = size(Rsolution)
+    if (size(RsolutionInitial) .ne. ncomponent .or.&
         size(rsolver%p_solverSubnode) .ne. ncomponent) then
       call output_line('Vectors/solver are not compatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveCoupledBlock')
       call sys_halt()
     end if
 
-    if (present(rsource)) then
-      if (size(rsource) .ne. ncomponent) then
+    if (present(Rsource)) then
+      if (size(Rsource) .ne. ncomponent) then
         call output_line('Vectors/solver are not compatible!',&
             OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveCoupledBlock')
         call sys_halt()
@@ -351,15 +356,15 @@ contains
             (/SV_NONLINEARMG, SV_NONLINEAR/), icomponent)
 
         ! Solve the nonlinear algebraic system for single component
-        if (present(rsource)) then
+        if (present(Rsource)) then
           call nlsol_solveMultigrid(rproblemLevel, rtimestep,&
-              p_rsolver, rsolution(icomponent),&
-              rsolutionInitial(icomponent), fcb_nlsolverCallback,&
-              rcollection, rsource(icomponent))
+              p_rsolver, Rsolution(icomponent),&
+              RsolutionInitial(icomponent), fcb_nlsolverCallback,&
+              rcollection, Rsource(icomponent))
         else
           call nlsol_solveMultigrid(rproblemLevel, rtimestep,&
-              p_rsolver, rsolution(icomponent),&
-              rsolutionInitial(icomponent), fcb_nlsolverCallback,&
+              p_rsolver, Rsolution(icomponent),&
+              RsolutionInitial(icomponent), fcb_nlsolverCallback,&
               rcollection)
         end if
 
