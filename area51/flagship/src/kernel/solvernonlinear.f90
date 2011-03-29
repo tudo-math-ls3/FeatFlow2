@@ -289,7 +289,6 @@ contains
     ! local variables
     type(t_solver), pointer :: p_rsolver
     integer :: iiterations, icomponent, ncomponent
-    real(DP) :: dinitialDefect, dinitialRHS
 
     ! What kind of solver are we?
     if (rsolver%csolverType .ne. SV_COUPLED) then
@@ -343,6 +342,7 @@ contains
       ! Inner solution loop
       inner: do icomponent = 1, ncomponent
 
+        ! Verbose output
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
           call output_lbrk()
           call output_separator(OU_SEP_MINUS)
@@ -368,54 +368,75 @@ contains
               rcollection)
         end if
 
-        if (iiterations .eq. 1) then
-          ! Store initial defect/right-hand side
-          dinitialDefect = p_rsolver%dinitialDefect
-          dinitialRHS    = p_rsolver%dinitialRHS
-        else
-          ! Restore initial defect from first iteration
-          p_rsolver%dinitialDefect = dinitialDefect
-          p_rsolver%dinitialRHS    = dinitialRHS
-        end if
-
-        ! Update coupled solver
+        ! Update coupled solver by the contribution of the sub-solver
         select case(rsolver%iresNorm)
-        case (LINALG_NORMEUCLID, LINALG_NORML1, LINALG_NORML2)
-          rsolver%dfinalDefect = rsolver%dfinalDefect +&
-                                 p_rsolver%dfinalDefect
+        case (LINALG_NORML1)
+          ! Use the sum of defects of all sub-solvers
+          rsolver%dfinalDefect = rsolver%dfinalDefect + p_rsolver%dfinalDefect
           if (iiterations .eq. 1) then
-            rsolver%dinitialDefect = rsolver%dinitialDefect +&
-                                     dinitialDefect
-            rsolver%dinitialRHS    = rsolver%dinitialRHS +&
-                                     dinitialRHS
+            rsolver%dinitialDefect = rsolver%dinitialDefect + p_rsolver%dinitialDefect
+            rsolver%dinitialRHS    = rsolver%dinitialRHS    + p_rsolver%dinitialRHS
           end if
-        case (LINALG_NORMMAX)
-          rsolver%dfinalDefect = max(rsolver%dfinalDefect,&
-                                     p_rsolver%dfinalDefect)
+
+        case (LINALG_NORMEUCLID, LINALG_NORML2)
+          ! Use the squared sum of defects of all sub-solvers
+          rsolver%dfinalDefect = rsolver%dfinalDefect + p_rsolver%dfinalDefect**2
           if (iiterations .eq. 1) then
-            rsolver%dinitialDefect = max(rsolver%dinitialDefect,&
-                                         dinitialDefect)
-            rsolver%dinitialRHS    = max(rsolver%dinitialRHS,&
-                                         dinitialRHS)
+            rsolver%dinitialDefect = rsolver%dinitialDefect + p_rsolver%dinitialDefect**2
+            rsolver%dinitialRHS    = rsolver%dinitialRHS    + p_rsolver%dinitialRHS**2
+          end if
+          
+        case (LINALG_NORMMAX)
+          ! Use the maximum of the defects of all sub-solvers
+          rsolver%dfinalDefect = max(rsolver%dfinalDefect, p_rsolver%dfinalDefect)
+          if (iiterations .eq. 1) then
+            rsolver%dinitialDefect = max(rsolver%dinitialDefect, p_rsolver%dinitialDefect)
+            rsolver%dinitialRHS    = max(rsolver%dinitialRHS,    p_rsolver%dinitialRHS)
           end if
         end select
 
       end do inner
 
-      ! Check convergence criteria
+      ! Scale the norm by the number of sub-solvers and/or take the
+      ! square root depending on the user-defined type of norm
+      select case(rsolver%iresNorm)
+      case (LINALG_NORMEUCLID, LINALG_NORML2)
+        ! Use the square root of the values
+        rsolver%dfinalDefect = sqrt(rsolver%dfinalDefect)
+        if (iiterations .eq. 1) then
+          rsolver%dinitialDefect = sqrt(rsolver%dinitialDefect)
+          rsolver%dinitialRHS    = sqrt(rsolver%dinitialRHS)
+        end if
+      end select
+
+      ! Verbose output
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+        call output_lbrk()
+        call output_separator(OU_SEP_TILDE)
+        call output_line('Outer iteration step:    '//trim(sys_siL(iiterations,5)))
+        call output_line('Norm of residual:        '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+        call output_line('Improvement of residual: '//trim(sys_sdEL(&
+                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+        call output_separator(OU_SEP_TILDE)
+        call output_lbrk()
+      end if
+
+      ! Check divergence criteria
+      if (solver_testDivergence(rsolver)) then
+        rsolver%istatus = SV_INCR_DEF
+        exit outer
+      end if
+      
+      ! Check convergence criteria (if required)
       if (iiterations .ge. rsolver%nminIterations) then
         if (solver_testConvergence(rsolver)) then
           rsolver%istatus = SV_CONVERGED
           exit outer
         end if
-        if (solver_testDivergence(rsolver)) then
-          rsolver%istatus = SV_INCR_DEF
-          exit outer
-        end if
       end if
 
     end do outer
-
+    
     ! Compute convergence rates
     call solver_statistics(rsolver, iiterations)
 
@@ -650,6 +671,7 @@ contains
               rsolution, rsolutionInitial, fcb_nlsolverCallback,&
               rcollection, rsource)
 
+          ! Verbose output
           if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
             call output_lbrk()
             call output_separator(OU_SEP_TILDE)
@@ -1130,6 +1152,7 @@ contains
         ! Compute norm of new defect
         p_rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, p_rsolver%iresNorm)
 
+        ! Verbose output
         if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
           call output_lbrk()
           call output_separator(OU_SEP_TILDE)
@@ -1185,6 +1208,7 @@ contains
         ! Compute norm of new defect
         p_rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, p_rsolver%iresNorm)
 
+        ! Verbose output
         if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
           call output_lbrk()
           call output_separator(OU_SEP_TILDE)
@@ -1296,6 +1320,7 @@ contains
 
         end if
 
+        ! Verbose output
         if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
           call output_lbrk()
           call output_separator(OU_SEP_TILDE)
