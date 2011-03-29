@@ -279,7 +279,7 @@ contains
       allocate(rtimestep%p_rautoController)
 
       ! Allocate array of temporal vectors
-      allocate(rtimestep%p_rautoController%RtempVectors(2))
+      allocate(rtimestep%p_rautoController%RtempVectors(2*npc))
 
       call parlst_getvalue_double(rparlist, ssectionName,&
           "dDecreaseFactor", rtimestep%p_rautoController%dDecreaseFactor)
@@ -1177,7 +1177,7 @@ contains
     ! Check size of multi-component source vector (if any)
     if (present(rsource)) then
       if (size(rsource) .ne. ncomponent) then
-        call output_line('Dimensione of coupled problem mismatch!',&
+        call output_line('Dimension of coupled problem mismatch!',&
             OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlCpl')
         call sys_halt()
       end if
