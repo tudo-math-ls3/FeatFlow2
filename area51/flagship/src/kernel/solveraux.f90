@@ -293,7 +293,7 @@ module solveraux
   ! If depsRel>0: use relative stopping criterion.
   ! If depsAbs>0: use abs stopping criterion.
   ! If both are > 0: use one of them, i.e. the iteration stops when the
-  !    either the relative OR the absolute stopping criterium holds
+  !    either the relative OR the absolute stopping criterion holds
   integer, parameter, public :: SV_STOP_ANY = 1
 
 !</constantblock>
