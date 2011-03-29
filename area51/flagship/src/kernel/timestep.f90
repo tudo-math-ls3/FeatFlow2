@@ -982,7 +982,7 @@ contains
 !<subroutine>
 
   subroutine tstep_performThetaStepScCpl(rproblemLevel, rtimestep,&
-      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
+      rsolver, Rsolution, fcb_nlsolverCallback, rcollection, Rsource)
 
 !<description>
     ! This subroutine performs one step by means of the two-level
@@ -1016,7 +1016,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), dimension(:), intent(in), optional :: rsource
+    type(t_vectorScalar), dimension(:), intent(in), optional :: Rsource
 !</input>
 
 !<inputoutput>
@@ -1030,7 +1030,7 @@ contains
     type(t_solver), intent(inout) :: rsolver
 
     ! solution vector
-    type(t_vectorScalar), dimension(:), intent(inout) :: rsolution
+    type(t_vectorScalar), dimension(:), intent(inout) :: Rsolution
 
 
 
@@ -1040,63 +1040,66 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), dimension(:), allocatable :: rsolutionBlock
-    type(t_vectorBlock), dimension(:), allocatable :: rsourceBlock
-    integer :: i
+    type(t_vectorBlock), dimension(:), allocatable :: RsolutionBlock
+    type(t_vectorBlock), dimension(:), allocatable :: RsourceBlock
+    integer :: icomponent
 
 
-    if (present(rsource)) then
+    if (present(Rsource)) then
 
       ! Allocate temporal memory
-      allocate(rsolutionBlock(size(rsolution)))
-      allocate(rsourceBlock(size(rsource)))
+      allocate(RsolutionBlock(size(Rsolution)))
+      allocate(RsourceBlock(size(Rsource)))
 
       ! Convert scalar vectors to 1-block vectors
-      do i = 1, size(rsolution)
-        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_createVecFromScalar(Rsolution(icomponent),&
+            RsolutionBlock(icomponent))
       end do
 
       ! Convert scalar vectors to 1-block vectors
-      do i = 1, size(rsource)
-            call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
+      do icomponent = 1, size(Rsource)
+            call lsysbl_createVecFromScalar(Rsource(icomponent),&
+                RsourceBlock(icomponent))
       end do
 
       ! Call block version of this subroutine
       call tstep_performThetaStepBlCpl(rproblemLevel, rtimestep,&
-          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
-          rsourceBlock)
+          rsolver, RsolutionBlock, fcb_nlsolverCallback, rcollection,&
+          RsourceBlock)
 
       ! Deallocate temporal 1-block vectors
-      do i = 1, size(rsolution)
-        call lsysbl_releaseVector(rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_releaseVector(RsolutionBlock(icomponent))
       end do
 
       ! Deallocate temporal 1-block vectors
-      do i = 1, size(rsource)
-        call lsysbl_releaseVector(rsourceBlock(i))
+      do icomponent = 1, size(Rsource)
+        call lsysbl_releaseVector(RsourceBlock(icomponent))
       end do
 
       ! Release temporal memory
-      deallocate(rsolutionBlock)
-      deallocate(rsourceBlock)
+      deallocate(RsolutionBlock)
+      deallocate(RsourceBlock)
 
     else
 
       ! Allocate temporal memory
-      allocate(rsolutionBlock(size(rsolution)))
+      allocate(RsolutionBlock(size(Rsolution)))
 
       ! Convert scalar vectors to 1-block vectors
-      do i = 1, size(rsolution)
-        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_createVecFromScalar(Rsolution(icomponent),&
+            RsolutionBlock(icomponent))
       end do
 
       ! Call block version of this subroutine
       call tstep_performThetaStepBlCpl(rproblemLevel, rtimestep,&
-          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
+          rsolver, RsolutionBlock, fcb_nlsolverCallback, rcollection)
 
       ! Deallocate temporal 1-block vectors
-      do i = 1, size(rsolution)
-        call lsysbl_releaseVector(rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_releaseVector(RsolutionBlock(icomponent))
       end do
 
       ! Release temporal memory
@@ -1111,7 +1114,7 @@ contains
 !<subroutine>
 
   subroutine tstep_performThetaStepBlCpl(rproblemLevel, rtimestep,&
-      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
+      rsolver, Rsolution, fcb_nlsolverCallback, rcollection, Rsource)
 
 !<description>
     ! This subroutine performs one step by means of the two-level
@@ -1142,7 +1145,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), dimension(:), intent(in), optional :: rsource
+    type(t_vectorBlock), dimension(:), intent(in), optional :: Rsource
 !</input>
 
 !<inputoutput>
@@ -1156,7 +1159,7 @@ contains
     type(t_solver), intent(inout), target :: rsolver
 
     ! solution vector
-    type(t_vectorBlock), dimension(:), intent(inout) :: rsolution
+    type(t_vectorBlock), dimension(:), intent(inout) :: Rsolution
 
     ! collection
     type(t_collection), intent(inout) :: rcollection
@@ -1165,18 +1168,18 @@ contains
 
     ! local variables
     type(t_solver), pointer :: p_rsolver
-    type(t_vectorBlock), dimension(:), pointer :: p_rsolutionRef
-    type(t_vectorBlock), dimension(:), pointer :: p_rsolutionAux
-    type(t_vectorBlock), dimension(:), pointer :: p_rsolutionOld
+    type(t_vectorBlock), dimension(:), pointer :: p_RsolutionRef
+    type(t_vectorBlock), dimension(:), pointer :: p_RsolutionAux
+    type(t_vectorBlock), dimension(:), pointer :: p_RsolutionOld
     logical :: bcompatible, breject
     integer :: icomponent,ncomponent
 
     ! Get number of components
-    ncomponent = size(rsolution)
+    ncomponent = size(Rsolution)
 
     ! Check size of multi-component source vector (if any)
-    if (present(rsource)) then
-      if (size(rsource) .ne. ncomponent) then
+    if (present(Rsource)) then
+      if (size(Rsource) .ne. ncomponent) then
         call output_line('Dimension of coupled problem mismatch!',&
             OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlCpl')
         call sys_halt()
@@ -1193,46 +1196,46 @@ contains
     end if
 
     ! Set pointer to temporal vectors
-    p_rsolutionOld => rtimestep%RtempVectors(1:ncomponent)
+    p_RsolutionOld => rtimestep%RtempVectors(1:ncomponent)
 
     ! ... and check if vectors are compatible
     do icomponent = 1, ncomponent
-      call lsysbl_isVectorCompatible(rsolution(icomponent),&
-          p_rsolutionOld(icomponent), bcompatible)
+      call lsysbl_isVectorCompatible(Rsolution(icomponent),&
+          p_RsolutionOld(icomponent), bcompatible)
       if (.not.bcompatible) then
-        call lsysbl_resizeVectorBlock(p_rsolutionOld(icomponent),&
-            rsolution(icomponent), .false.)
+        call lsysbl_resizeVectorBlock(p_RsolutionOld(icomponent),&
+            Rsolution(icomponent), .false.)
       end if
 
       ! Save the given solution vector to the temporal vector. If the
       ! computed time step is not accepted, then the backup of the
       ! given solution vector is used to recalculate the time step
-      call lsysbl_copyVector(rsolution(icomponent),&
-          p_rsolutionOld(icomponent))
+      call lsysbl_copyVector(Rsolution(icomponent),&
+          p_RsolutionOld(icomponent))
     end do
 
     ! Set pointers to temporal vectors for the computation of an
     ! auxiliary solution by means of local substepping
     if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
-      p_rsolutionRef => rtimestep%p_rautoController&
-          %RtempVectors(1:ncomponent)
-      p_rsolutionAux => rtimestep%p_rautoController&
-          %RtempVectors(ncomponent+1:2*ncomponent)
+      p_RsolutionRef =>&
+          rtimestep%p_rautoController%RtempVectors(1:ncomponent)
+      p_RsolutionAux =>&
+          rtimestep%p_rautoController%RtempVectors(ncomponent+1:2*ncomponent)
 
       ! ... and check if vectors are compatible
       do icomponent = 1, ncomponent
-        call lsysbl_isVectorCompatible(rsolution(icomponent),&
-            p_rsolutionRef(icomponent), bcompatible)
+        call lsysbl_isVectorCompatible(Rsolution(icomponent),&
+            p_RsolutionRef(icomponent), bcompatible)
         if (.not.bcompatible) then
-          call lsysbl_resizeVectorBlock(p_rsolutionRef(icomponent),&
-              rsolution(icomponent), .false.)
-          call lsysbl_resizeVectorBlock(p_rsolutionAux(icomponent),&
-              rsolution(icomponent), .false.)
+          call lsysbl_resizeVectorBlock(p_RsolutionRef(icomponent),&
+              Rsolution(icomponent), .false.)
+          call lsysbl_resizeVectorBlock(p_RsolutionAux(icomponent),&
+              Rsolution(icomponent), .false.)
         end if
 
         ! Make a backup copy of the solution vector
-        call lsysbl_copyVector(rsolution(icomponent),&
-            p_rsolutionRef(icomponent))
+        call lsysbl_copyVector(Rsolution(icomponent),&
+            p_RsolutionRef(icomponent))
       end do
     end if
 
@@ -1260,8 +1263,8 @@ contains
 
       ! Solve the coupled system in the time interval (t^n, t^{n+1})
       call nlsol_solveCoupled(rproblemLevel, rtimestep, p_rsolver,&
-          rsolution, p_rsolutionOld, fcb_nlsolverCallback,&
-          rcollection, rsource)
+          Rsolution, p_RsolutionOld, fcb_nlsolverCallback,&
+          rcollection, Rsource)
 
       ! Adjust status information of top-most solver
       call solver_copySolver(p_rsolver, rsolver, .false., .true.)
@@ -1282,14 +1285,14 @@ contains
 
 
         ! Solve the nonlinear algebraic system for time step t^n -> t^{n+1/2}
-        call nlsol_solveCoupled(rproblemLevel, rtimestep, p_rsolver,&
-            p_rsolutionRef, p_rsolutionOld, fcb_nlsolverCallback,&
-            rcollection, rsource)
+        call nlsol_solveCoupled(rproblemLevel, rtimestep, p_Rsolver,&
+            p_RsolutionRef, p_RsolutionOld, fcb_nlsolverCallback,&
+            rcollection, Rsource)
 
         ! Save intermediate solution
         do icomponent = 1, ncomponent
-          call lsysbl_copyVector(p_rsolutionRef(icomponent),&
-              p_rsolutionAux(icomponent))
+          call lsysbl_copyVector(p_RsolutionRef(icomponent),&
+              p_RsolutionAux(icomponent))
         end do
 
         if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
@@ -1302,13 +1305,13 @@ contains
 
         ! Solve the nonlinear algebraic system for time step t^{n+1/2} -> t^{n+1}
         call nlsol_solveCoupled(rproblemLevel, rtimestep, p_rsolver,&
-            p_rsolutionRef, p_rsolutionAux, fcb_nlsolverCallback,&
-            rcollection, rsource)
+            p_RsolutionRef, p_RsolutionAux, fcb_nlsolverCallback,&
+            rcollection, Rsource)
 
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
         breject = tstep_checkTimestep(rtimestep, p_rsolver,&
-            p_rsolutionRef, p_rsolutionOld)
+            p_RsolutionRef, p_RsolutionOld)
 
         ! Prepare time step size for next "large" time step
         rtimestep%dStep = rtimestep%dStep*2.0_DP
@@ -1318,7 +1321,7 @@ contains
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
         breject = tstep_checkTimestep(rtimestep, p_rsolver,&
-            rsolution, p_rsolutionOld)
+            Rsolution, p_RsolutionOld)
 
       end if
 
@@ -1338,8 +1341,8 @@ contains
         ! Yes, so restore the old solution and
         ! repeat the adaptive time-stepping loop
         do icomponent = 1, ncomponent
-          call lsysbl_copyVector(p_rsolutionOld(icomponent),&
-              rsolution(icomponent))
+          call lsysbl_copyVector(p_RsolutionOld(icomponent),&
+              Rsolution(icomponent))
         end do
       else
         ! No, accept current solution and
@@ -1723,7 +1726,7 @@ contains
 !<subroutine>
 
   subroutine tstep_performRKStepScCpl(rproblemLevel, rtimestep,&
-      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
+      rsolver, Rsolution, fcb_nlsolverCallback, rcollection, Rsource)
 
 !<description>
     ! This subroutine performs one step by means of an explicit
@@ -1741,7 +1744,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), dimension(:), intent(in), optional :: rsource
+    type(t_vectorScalar), dimension(:), intent(in), optional :: Rsource
 !</input>
 
 !<inputoutput>
@@ -1755,7 +1758,7 @@ contains
     type(t_solver), intent(inout) :: rsolver
 
     ! solution vector
-    type(t_vectorScalar), dimension(:), intent(inout) :: rsolution
+    type(t_vectorScalar), dimension(:), intent(inout) :: Rsolution
 
     ! collection
     type(t_collection), intent(inout) :: rcollection
@@ -1763,66 +1766,69 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), dimension(:), allocatable :: rsolutionBlock
-    type(t_vectorBlock), dimension(:), allocatable :: rsourceBlock
-    integer :: i
+    type(t_vectorBlock), dimension(:), allocatable :: RsolutionBlock
+    type(t_vectorBlock), dimension(:), allocatable :: RsourceBlock
+    integer :: icomponent
 
-    if (present(rsource)) then
+    if (present(Rsource)) then
 
       ! Allocate temporal memory
-      allocate(rsolutionBlock(size(rsolution)))
-      allocate(rsourceBlock(size(rsource)))
+      allocate(RsolutionBlock(size(Rsolution)))
+      allocate(RsourceBlock(size(Rsource)))
 
       ! Convert scalar vectors to 1-block vectors
-      do i = 1, size(rsolution)
-        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_createVecFromScalar(Rsolution(icomponent),&
+            RsolutionBlock(icomponent))
       end do
 
       ! Convert scalar vectors to 1-block vectors
-      do i = 1, size(rsource)
-        call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
+      do icomponent = 1, size(Rsource)
+        call lsysbl_createVecFromScalar(Rsource(icomponent),&
+            RsourceBlock(icomponent))
       end do
 
       ! Call block version of this subroutine
       call tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
-          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
-          rsourceBlock)
+          rsolver, RsolutionBlock, fcb_nlsolverCallback, rcollection,&
+          RsourceBlock)
 
       ! Deallocate temporal 1-block vectors
-      do i = 1, size(rsolution)
-        call lsysbl_releaseVector(rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_releaseVector(RsolutionBlock(icomponent))
       end do
 
       ! Deallocate temporal 1-block vectors
-      do i = 1, size(rsource)
-        call lsysbl_releaseVector(rsourceBlock(i))
+      do icomponent = 1, size(Rsource)
+        call lsysbl_releaseVector(RsourceBlock(icomponent))
       end do
 
       ! Release temporal memory
-      deallocate(rsolutionBlock)
-      deallocate(rsourceBlock)
+      deallocate(RsolutionBlock)
+      deallocate(RsourceBlock)
 
     else
 
       ! Allocate temporal memory
-      allocate(rsolutionBlock(size(rsolution)))
+      allocate(RsolutionBlock(size(Rsolution)))
 
       ! Convert scalar vectors to 1-block vectors
-      do i = 1, size(rsolution)
-        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_createVecFromScalar(Rsolution(icomponent),&
+            RsolutionBlock(icomponent))
       end do
 
       ! Call block version of this subroutine
       call tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
-          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
+          rsolver, RsolutionBlock, fcb_nlsolverCallback, rcollection)
 
       ! Deallocate temporal 1-block vectors
-      do i = 1, size(rsolution)
-        call lsysbl_releaseVector(rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_releaseVector(RsolutionBlock(icomponent))
       end do
 
       ! Release temporal memory
-      deallocate(rsolutionBlock)
+      deallocate(RsolutionBlock)
 
     end if
     
@@ -1833,7 +1839,7 @@ contains
 !<subroutine>
 
   subroutine tstep_performRKStepBlCpl(rproblemLevel, rtimestep,&
-      rsolver, rsolution,  fcb_nlsolverCallback, rcollection, rsource)
+      rsolver, Rsolution,  fcb_nlsolverCallback, rcollection, Rsource)
 
 !<description>
     ! This subroutine performs one step by means of an explicit
@@ -1852,7 +1858,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), dimension(:), intent(in), optional :: rsource
+    type(t_vectorBlock), dimension(:), intent(in), optional :: Rsource
 !</input>
 
 !<inputoutput>
@@ -1866,7 +1872,7 @@ contains
     type(t_solver), intent(inout), target :: rsolver
 
     ! solution vector
-    type(t_vectorBlock), dimension(:), intent(inout) :: rsolution
+    type(t_vectorBlock), dimension(:), intent(inout) :: Rsolution
 
     ! collection
     type(t_collection), intent(inout) :: rcollection
@@ -2323,8 +2329,8 @@ contains
 
 !<function>
 
-  function tstep_checkTimestepCpl(rtimestep, rsolver, rsolution1,&
-      rsolution2) result(breject)
+  function tstep_checkTimestepCpl(rtimestep, rsolver, Rsolution1,&
+      Rsolution2) result(breject)
 
 !<description>
     ! This functions checks the result of the current time step and
@@ -2344,10 +2350,10 @@ contains
     type(t_solver), intent(in):: rsolver
 
     ! first solution vector
-    type(t_vectorBlock), dimension(:), intent(in) :: rsolution1
+    type(t_vectorBlock), dimension(:), intent(in) :: Rsolution1
 
     ! second soluion vector
-    type(t_vectorBlock), dimension(:), intent(in) :: rsolution2
+    type(t_vectorBlock), dimension(:), intent(in) :: Rsolution2
 !</input>
 
 !<inputoutput>
@@ -2379,7 +2385,7 @@ contains
       ! Check if time step can be accepted
       breject = breject .or. tstep_checkTimestep(&
           rtimestep1, rsolver%p_solverSubnode(icomponent),&
-          rsolution1(icomponent), rsolution2(icomponent))
+          Rsolution1(icomponent), Rsolution2(icomponent))
 
       ! Update original time step
       rtimestep%nrejectedSteps = rtimestep1%nrejectedSteps
