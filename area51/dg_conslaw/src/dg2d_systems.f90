@@ -1838,6 +1838,9 @@ if (iwithoutlimiting==2) ilimiter = 0
     
     Burgerstimestepping: do
     
+      ! Print the time level
+      write(*,*) 'Time: ', ttime
+      
       ! Calculate the right-hand-side vector b
       call lsyssc_scalarMatVec(rMatrixMC,rsolBlock%RvectorBlock(1),rrhsBlock%RvectorBlock(1),1.0_dp,0.0_dp)
       
@@ -1929,8 +1932,36 @@ if (iwithoutlimiting==2) ilimiter = 0
         call lsyssc_scalarMatVec(rmatrixBlock%Rmatrixblock(1,1),rsolBlock%RvectorBlock(1),&
                                  rdefBlock%RvectorBlock(1),-1.0_dp,1.0_dp)
                                  
-        
-        
+!       ! * If different Preconditioners should be used *        
+!       ! Use MC as preconditioner                                     
+!        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,0.0_dp,&
+!                                       .true.,.true.,.true.,.false.,&
+!                                       rmatrixBlock%Rmatrixblock(1,1)) 
+
+!       ! Use MC+edge as preconditioner
+!        call bilf_dg_buildMatrixScEdge2D (rform, CUB_G5_1D, .true., rmatrixA,&
+!                                                 rsolBlock%Rvectorblock(1), raddTriaData,&
+!                                                 flux_dg_implicitBurgers_sim)!,&
+!                                                 !rcollection, cconstrType)                                     
+!        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,0.0_dp,&
+!                                       .true.,.true.,.true.,.false.,&
+!                                       rmatrixBlock%Rmatrixblock(1,1))
+
+!       ! Use MC+cell as preconditioner
+!        rform%itermCount = 2
+!        rform%Idescriptors(1,1) = DER_FUNC
+!        rform%Idescriptors(2,1) = DER_DERIV_X
+!        rform%Idescriptors(1,2) = DER_FUNC
+!        rform%Idescriptors(2,2) = DER_DERIV_Y
+!        rform%ballCoeffConstant = .false.
+!        rform%BconstantCoeff = .false.
+!        rcollection%p_rvectorQuickAccess1 => rsolBlock
+!        call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)                                    
+!        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,0.0_dp,&
+!                                       .true.,.true.,.true.,.false.,&
+!                                       rmatrixBlock%Rmatrixblock(1,1))
+
+
         
         
         ! During the linear solver, the boundary conditions are also
@@ -1954,7 +1985,7 @@ if (iwithoutlimiting==2) ilimiter = 0
 !    call linsol_initJacobi (p_rsolverNode)
     
     ! Set the output level of the solver to 2 for some output
-    p_rsolverNode%ioutputLevel = 2
+    p_rsolverNode%ioutputLevel = 0
     
     ! The linear solver stops, when this relative or absolut norm of
     ! the residual is reached.
@@ -1999,6 +2030,8 @@ if (iwithoutlimiting==2) ilimiter = 0
         ! Update the solution
         call lsyssc_vectorLinearComb (rDefBlock%Rvectorblock(1),rSolBlock%Rvectorblock(1),1.0_dp,1.0_dp)
         call vecfil_discreteBCsol (rsolBlock)
+        
+        write(*,*) '  Defect:',lsyssc_vectorNorm(rDefBlock%Rvectorblock(1),LINALG_NORML2)
         
         if (lsyssc_vectorNorm(rDefBlock%Rvectorblock(1),LINALG_NORML2) < 1.0e-12) exit Burgers_defcorr
         

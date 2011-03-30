@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 5
+nlmax = 6
 
 
 # Name of the parametrisation file
@@ -46,10 +46,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.001
+dt = 0.01
 
 # Final time
-ttfinal = 0.4
+ttfinal = 1.0
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
