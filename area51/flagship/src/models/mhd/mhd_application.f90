@@ -2020,7 +2020,7 @@ contains
                 'velocity_y', p_Dsolution, p_Ddata2)
             call mhd_getVarInterleaveFormat(rvector3%NEQ, nvar,&
                 'velocity_z', p_Dsolution, p_Ddata3)
-            call ucd_addVarVertBasedVec(rexport, 'velocity',&
+            call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                 p_Ddata1, p_Ddata2, p_Ddata3)
 
           elseif (trim(cvariable) .eq. 'momentum') then
@@ -2032,20 +2032,8 @@ contains
                 'momentum_y', p_Dsolution, p_Ddata2)
             call mhd_getVarInterleaveFormat(rvector3%NEQ, nvar,&
                 'momentum_z', p_Dsolution, p_Ddata3)
-            
-            ! GMV can only handle one vectorfield per file
-            if ((iformatUCD .eq. UCD_FORMAT_GMV) .or.&
-                (iformatUCD .eq. UCD_FORMAT_BGMV)) then
-              call ucd_addVariableVertexBased (rexport, 'momentum_x',&
-                  UCD_VAR_STANDARD, p_Ddata1)
-              call ucd_addVariableVertexBased (rexport, 'momentum_y',&
-                  UCD_VAR_STANDARD, p_Ddata2)
-              call ucd_addVariableVertexBased (rexport, 'momentum_z',&
-                  UCD_VAR_STANDARD, p_Ddata3)
-            else
-              call ucd_addVarVertBasedVec(rexport, 'momentum',&
-                  p_Ddata1, p_Ddata2, p_Ddata3)
-            end if
+            call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                p_Ddata1, p_Ddata2, p_Ddata3)
 
           elseif (trim(cvariable) .eq. 'magneticfield') then
 
@@ -2056,25 +2044,13 @@ contains
                 'magneticfield_y', p_Dsolution, p_Ddata2)
             call mhd_getVarInterleaveFormat(rvector3%NEQ, nvar,&
                 'magneticfield_z', p_Dsolution, p_Ddata3)
-
-            ! GMV can only handle one vectorfield per file
-            if ((iformatUCD .eq. UCD_FORMAT_GMV) .or.&
-                (iformatUCD .eq. UCD_FORMAT_BGMV)) then
-              call ucd_addVariableVertexBased (rexport, 'magneticfield_x',&
-                  UCD_VAR_STANDARD, p_Ddata1)
-              call ucd_addVariableVertexBased (rexport, 'magneticfield_y',&
-                  UCD_VAR_STANDARD, p_Ddata2)
-              call ucd_addVariableVertexBased (rexport, 'magneticfield_z',&
-                  UCD_VAR_STANDARD, p_Ddata3)
-            else
-              call ucd_addVarVertBasedVec(rexport, 'magneticfield',&
-                  p_Ddata1, p_Ddata2, p_Ddata3)
-            end if
+            call ucd_addVarVertBasedVec(rexport, 'magneticfield',&
+                p_Ddata1, p_Ddata2, p_Ddata3)
 
           else
 
             ! Standard treatment for scalar quantity
-            call mhd_getVarInterleaveFormat(rvector1%NEQ,  nvar,&
+            call mhd_getVarInterleaveFormat(rvector1%NEQ, nvar,&
                 cvariable, p_Dsolution, p_Ddata1)
             call ucd_addVariableVertexBased (rexport, cvariable,&
                 UCD_VAR_STANDARD, p_Ddata1)
@@ -2100,7 +2076,7 @@ contains
                 'velocity_y', p_Dsolution, p_Ddata2)
             call mhd_getVarBlockFormat(rvector3%NEQ, nvar,&
                 'velocity_z', p_Dsolution, p_Ddata3)
-            call ucd_addVarVertBasedVec(rexport, 'velocity',&
+            call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                 p_Ddata1, p_Ddata2, p_Ddata3)
             
           elseif (trim(cvariable) .eq. 'momentum') then
@@ -2112,20 +2088,8 @@ contains
                 'momentum_y', p_Dsolution, p_Ddata2)
             call mhd_getVarBlockFormat(rvector3%NEQ, nvar,&
                 'momentum_z', p_Dsolution, p_Ddata3)
-
-            ! GMV can only handle one vectorfield per file
-            if ((iformatUCD .eq. UCD_FORMAT_GMV) .or.&
-                (iformatUCD .eq. UCD_FORMAT_BGMV)) then
-              call ucd_addVariableVertexBased (rexport, 'momentum_x',&
-                  UCD_VAR_STANDARD, p_Ddata1)
-              call ucd_addVariableVertexBased (rexport, 'momentum_y',&
-                  UCD_VAR_STANDARD, p_Ddata2)
-              call ucd_addVariableVertexBased (rexport, 'momentum_z',&
-                  UCD_VAR_STANDARD, p_Ddata3)
-            else
-              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+            call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
-            end if
 
           elseif (trim(cvariable) .eq. 'magneticfield') then
 
@@ -2136,20 +2100,8 @@ contains
                 'magneticfield_y', p_Dsolution, p_Ddata2)
             call mhd_getVarBlockFormat(rvector3%NEQ, nvar,&
                 'magneticfield_z', p_Dsolution, p_Ddata3)
-
-            ! GMV can only handle one vectorfield per file
-            if ((iformatUCD .eq. UCD_FORMAT_GMV) .or.&
-                (iformatUCD .eq. UCD_FORMAT_BGMV)) then
-              call ucd_addVariableVertexBased (rexport, 'magneticfield_x',&
-                  UCD_VAR_STANDARD, p_Ddata1)
-              call ucd_addVariableVertexBased (rexport, 'magneticfield_y',&
-                  UCD_VAR_STANDARD, p_Ddata2)
-              call ucd_addVariableVertexBased (rexport, 'magneticfield_z',&
-                  UCD_VAR_STANDARD, p_Ddata3)
-            else
-              call ucd_addVarVertBasedVec(rexport, 'magneticfield',&
+            call ucd_addVarVertBasedVec(rexport, 'magneticfield',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
-            end if
 
           else
             

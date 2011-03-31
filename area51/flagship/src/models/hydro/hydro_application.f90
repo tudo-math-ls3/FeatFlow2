@@ -2132,14 +2132,15 @@ contains
             case (NDIM1D)
               call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
-
+              call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
+                  p_Ddata1)
+              
             case (NDIM2D)
               call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
-              call ucd_addVarVertBasedVec(rexport, 'velocity',&
+              call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
@@ -2149,7 +2150,7 @@ contains
                   'velocity_y', p_Dsolution, p_Ddata2)
               call hydro_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
                   'velocity_z', p_Dsolution, p_Ddata3)
-              call ucd_addVarVertBasedVec(rexport, 'velocity',&
+              call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
 
@@ -2160,33 +2161,15 @@ contains
             case (NDIM1D)
               call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
-
-              ! GMV can only handle one vectorfield per file
-              if ((iformatUCD .eq. UCD_FORMAT_GMV) .or.&
-                  (iformatUCD .eq. UCD_FORMAT_BGMV)) then
-                call ucd_addVariableVertexBased (rexport, 'momentum_x',&
-                    UCD_VAR_STANDARD, p_Ddata1)
-              else
-                call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
-              end if
-
+              call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
+              
             case (NDIM2D)
               call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
               call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
                   'momentum_y', p_Dsolution, p_Ddata2)
-              
-              ! GMV can only handle one vectorfield per file
-              if ((iformatUCD .eq. UCD_FORMAT_GMV) .or.&
-                  (iformatUCD .eq. UCD_FORMAT_BGMV)) then
-                call ucd_addVariableVertexBased (rexport, 'momentum_x',&
-                    UCD_VAR_STANDARD, p_Ddata1)
-                call ucd_addVariableVertexBased (rexport, 'momentum_y',&
-                    UCD_VAR_STANDARD, p_Ddata2)
-              else
-                call ucd_addVarVertBasedVec(rexport, 'momentum',&
-                    p_Ddata1, p_Ddata2)
-              end if
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
               call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
@@ -2195,22 +2178,10 @@ contains
                   'momentum_y', p_Dsolution, p_Ddata2)
               call hydro_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
                   'momentum_z', p_Dsolution, p_Ddata3)
-
-              ! GMV can only handle one vectorfield per file
-              if ((iformatUCD .eq. UCD_FORMAT_GMV) .or.&
-                  (iformatUCD .eq. UCD_FORMAT_BGMV)) then
-                call ucd_addVariableVertexBased (rexport, 'momentum_x',&
-                    UCD_VAR_STANDARD, p_Ddata1)
-                call ucd_addVariableVertexBased (rexport, 'momentum_y',&
-                    UCD_VAR_STANDARD, p_Ddata2)
-                call ucd_addVariableVertexBased (rexport, 'momentum_z',&
-                    UCD_VAR_STANDARD, p_Ddata3)
-              else
-                call ucd_addVarVertBasedVec(rexport, 'momentum',&
-                    p_Ddata1, p_Ddata2, p_Ddata3)
-              end if
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
             end select
-
+            
           else
 
             ! Standard treatment for scalar quantity
@@ -2238,14 +2209,15 @@ contains
             case (NDIM1D)
               call hydro_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
-
+              call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
+                  p_Ddata1)
+              
             case (NDIM2D)
               call hydro_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call hydro_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
-              call ucd_addVarVertBasedVec(rexport, 'velocity',&
+              call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
@@ -2255,7 +2227,7 @@ contains
                   'velocity_y', p_Dsolution, p_Ddata2)
               call hydro_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
                   'velocity_z', p_Dsolution, p_Ddata3)
-              call ucd_addVarVertBasedVec(rexport, 'velocity',&
+              call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
             
@@ -2266,33 +2238,15 @@ contains
             case (NDIM1D)
               call hydro_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
-
-              ! GMV can only handle one vectorfield per file
-              if ((iformatUCD .eq. UCD_FORMAT_GMV) .or.&
-                  (iformatUCD .eq. UCD_FORMAT_BGMV)) then
-                call ucd_addVariableVertexBased (rexport, 'momentum_x',&
-                    UCD_VAR_STANDARD, p_Ddata1)
-              else
-                call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
-              end if
+              call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
 
             case (NDIM2D)
               call hydro_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
               call hydro_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
                   'momentum_y', p_Dsolution, p_Ddata2)
-
-              ! GMV can only handle one vectorfield per file
-              if ((iformatUCD .eq. UCD_FORMAT_GMV) .or.&
-                  (iformatUCD .eq. UCD_FORMAT_BGMV)) then
-                call ucd_addVariableVertexBased (rexport, 'momentum_x',&
-                    UCD_VAR_STANDARD, p_Ddata1)
-                call ucd_addVariableVertexBased (rexport, 'momentum_y',&
-                    UCD_VAR_STANDARD, p_Ddata2)
-              else
-                call ucd_addVarVertBasedVec(rexport, 'momentum',&
-                    p_Ddata1, p_Ddata2)
-              end if
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
               call hydro_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
@@ -2301,20 +2255,8 @@ contains
                   'momentum_y', p_Dsolution, p_Ddata2)
               call hydro_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
                   'momentum_z', p_Dsolution, p_Ddata3)
-
-              ! GMV can only handle one vectorfield per file
-              if ((iformatUCD .eq. UCD_FORMAT_GMV) .or.&
-                  (iformatUCD .eq. UCD_FORMAT_BGMV)) then
-                call ucd_addVariableVertexBased (rexport, 'momentum_x',&
-                    UCD_VAR_STANDARD, p_Ddata1)
-                call ucd_addVariableVertexBased (rexport, 'momentum_y',&
-                    UCD_VAR_STANDARD, p_Ddata2)
-                call ucd_addVariableVertexBased (rexport, 'momentum_z',&
-                    UCD_VAR_STANDARD, p_Ddata3)
-              else
-                call ucd_addVarVertBasedVec(rexport, 'momentum',&
-                    p_Ddata1, p_Ddata2, p_Ddata3)
-              end if
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
             end select
 
           else
