@@ -112,6 +112,7 @@
 !#
 !# e) ucd_release       - Release the export structure
 !#
+
 !# ucd_startXXXX creates an export structure that identifies the output
 !# file. This is the only point, where the caller must specify the type
 !# of output. Afterwards, the ucd_setXXXX and ucd_addXXXX routines
@@ -173,6 +174,13 @@ module ucd
   
 !</constantblock>
 
+!<constantblock description="Parameter constants for the GMV exporter">
+
+  ! Export vector components as scalars
+  integer, parameter, public :: UCD_PARAM_GMV_VECTOR_TO_SCALAR = 2**0
+
+!</constantblock>
+
 !<constantblock description="Parameter constants for the VTK exporter">
 
   ! Export vector components as scalars
@@ -214,20 +222,36 @@ module ucd
   ! Standard 'scalar' variable.
   integer(I32), parameter, public :: UCD_VAR_STANDARD             = 0
 
+  ! The variable specifies a velocity component. For some output formats
+  ! the velocity field may require some special treatment.
+  integer(I32), parameter, public :: UCD_VAR_VELOCITY             = 2**0
+
+  ! The variable specifies the X-component of a vector field.
+  ! Cannot be used together with UCD_VAR_YVECTORCOMP or UCD_VAR_ZVECTORCOMP
+  integer(I32), parameter, public :: UCD_VAR_XVECTORCOMP          = 2**1
+  
+  ! The variable specifies the Y-component of a vector field.
+  ! Cannot be used together with UCD_VAR_XVECTORCOMP or UCD_VAR_ZVECTORCOMP
+  integer(I32), parameter, public :: UCD_VAR_YVECTORCOMP          = 2**2
+  
+  ! The variable specifies the Z-component of a vector field.
+  ! Cannot be used together with UCD_VAR_XVECTORCOMP or UCD_VAR_YVECTORCOMP
+  integer(I32), parameter, public :: UCD_VAR_ZVECTORCOMP          = 2**3
+
   ! The variable specifies the X velocity of a velocity field.
-  ! Implies UCD_VAR_VERTEXBASED.
   ! Cannot be used together with UCD_VAR_YVELOCITY or UCD_VAR_ZVELOCITY.
-  integer(I32), parameter, public :: UCD_VAR_XVELOCITY            = 2**0
+  integer(I32), parameter, public :: UCD_VAR_XVELOCITY            = UCD_VAR_XVECTORCOMP&
+                                                                  + UCD_VAR_VELOCITY
 
   ! The variable specifies the Y velocity of a velocity field.
-  ! Implies UCD_VAR_VERTEXBASED.
   ! Cannot be used together with UCD_VAR_XVELOCITY or UCD_VAR_ZVELOCITY.
-  integer(I32), parameter, public :: UCD_VAR_YVELOCITY            = 2**1
+  integer(I32), parameter, public :: UCD_VAR_YVELOCITY            = UCD_VAR_YVECTORCOMP&
+                                                                  + UCD_VAR_VELOCITY
 
   ! The variable specifies the Z velocity of a velocity field.
-  ! Implies UCD_VAR_VERTEXBASED.
   ! Cannot be used together with UCD_VAR_XVELOCITY or UCD_VAR_YVELOCITY.
-  integer(I32), parameter, public :: UCD_VAR_ZVELOCITY            = 2**2
+  integer(I32), parameter, public :: UCD_VAR_ZVELOCITY            = UCD_VAR_ZVECTORCOMP&
+                                                                  + UCD_VAR_VELOCITY
   
 !</constantblock>
 
@@ -540,6 +564,26 @@ module ucd
   public :: ucd_infoVariables
   public :: ucd_getSimulationTime
   public :: ucd_addSurfTri
+
+  interface ucd_addVariableVertexBased
+    module procedure ucd_addVariableVertexBased1
+    module procedure ucd_addVariableVertexBased2
+  end interface
+
+  interface ucd_addVariableElementBased
+    module procedure ucd_addVariableElementBased1
+    module procedure ucd_addVariableElementBased2
+  end interface
+
+  interface ucd_addVarVertBasedVec
+    module procedure ucd_addVarVertBasedVec1
+    module procedure ucd_addVarVertBasedVec2
+  end interface
+
+  interface ucd_addVarElemBasedVec
+    module procedure ucd_addVarElemBasedVec1
+    module procedure ucd_addVarElemBasedVec2
+  end interface
 
 contains
 
@@ -1543,7 +1587,7 @@ contains
     type(t_ucdExport), intent(inout) :: rexport
     
     ! local variables
-    integer :: mfile,i,j,k,icoor
+    integer :: mfile,i,j,k,icoor,ncomp
     integer :: ivt,ivt1,ivt2,nnodes
     integer :: imt
     integer :: iel
@@ -1554,6 +1598,7 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP) :: dx
+    logical :: bVec2Sc,bhasVelocity
     
       mfile = rexport%iunit
 
@@ -1562,6 +1607,9 @@ contains
       call storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtElement,&
           p_IverticesAtElement)
       
+      ! Should we write vector components as scalars?
+      bVec2Sc = (iand(rexport%cparam, UCD_PARAM_GMV_VECTOR_TO_SCALAR) .ne. 0)
+
       !----------------------------------------------------
       ! Write the GMV header
       write(mfile,'(A)') 'gmvinput ascii'
@@ -1702,7 +1750,7 @@ contains
       
         ! Write the connectivity to the mesh - i.e. the cells.
 
-        write(MFILE,'(A,1X,I10)') 'cells',rexport%ncells
+        write(mfile,'(A,1X,I10)') 'cells',rexport%ncells
         
         if (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .eq. 0) then
         
@@ -2098,163 +2146,201 @@ contains
       end if
       
       if (rexport%nvariables .gt. 0) then
+        
         !----------------------------------------------------
-        ! Write a velocity field -- if there is one
-        !
-        ! To write the velocity field, we have to look it up in the
-        ! set of variables.
-        ! Search for the X-velocity and write it out.
-        ! If there is no X-velocity, there is no velocity at all.
-        ! There may be a velocity field given in vertices or in cells,
-        ! so we have to search twice!
-        !
-        ! Look for cell based velocity.
-        do i=1,rexport%nvariables
-          if ((iand(rexport%p_IvariableSpec(i),UCD_VAR_XVELOCITY) .ne. 0) .and. &
-              (rexport%p_IvariableBase(i) .eq. UCD_BASE_ELEMENT)) then
+        ! Write all variables which are not components of a vector field
+        do j=1,rexport%nvariables
+
+          ! Is the value scalar?
+          if ((rexport%p_IvariableSpec(j) .ne. UCD_VAR_STANDARD) .and. &
+              (.not. bVec2Sc)) cycle
+          
+          write (mfile,'(A)') 'variable'
+          
+          if (rexport%p_IvariableBase(j) .eq. UCD_BASE_ELEMENT) then
+            ! Cell based variable
+            write (mfile,'(A,1X,I5)') trim(rexport%p_SvariableNames(j)),0
+            call storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
+            ivt1 = rexport%ncells
+          else
+            ! Vertex based variable
+            write (mfile,'(A,1X,I5)') trim(rexport%p_SvariableNames(j)),1
+            call storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
+            ivt1 = rexport%nvertices
+          end if
+          
+          do ivt=1,ivt1
+            write (mfile,rexport%sdataFormat) p_Ddata(ivt)
+          end do
+          
+          write (mfile,'(A)') 'endvars'      
+          
+        end do ! j
+
+        ! Should we write vectors?
+        if (.not. bVec2Sc) then
+        
+          ! Check if we have an explicit velocity vector. Otherwise,
+          ! the first vector is used as velocity vector.
+          bhasVelocity = .false.
+          do j=1, rexport%nvectors
+            if (iand(rexport%p_IvariableSpec(rexport%p_Ivectors(2,j)),&
+                UCD_VAR_VELOCITY) .ne. 0) bhasVelocity=.true.
+          end do
+          
+          ! Loop through all vectors
+          do j=1, rexport%nvectors
+
+            ! Is this a vertex-based vector?
+            if(rexport%p_Ivectors(1,j) .ne. 1) cycle
             
-            ! Found it. Write it out.
-            write (mfile,'(A)') 'velocity 0'
-            
+            ! Go for the X coordinate
+            i = rexport%p_Ivectors(2,j); ncomp = 1
             call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
             
+            ! Make sure we have at least the X-coordinate
+            if (.not. associated(p_Ddata)) then
+              call output_line ('Error: Variable vector '//&
+                  trim(sys_siL(j,10))//' does not have X-coordinates!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeGMV')
+              
+              ! Try next vector
+              cycle
+            end if
+
+            ! Go for the Y and Z coordinate
+            if (rexport%p_Ivectors(3,j) .ne. 0) ncomp = ncomp+1
+            if (rexport%p_Ivectors(4,j) .ne. 0) ncomp = ncomp+1
+
+            ! Is this vector the velocity field? Or do we have no
+            ! explicit velocity vector, then use the first vectors.
+            if ((.not. bhasVelocity .and. j.eq.1) .or.&
+                iand(rexport%p_IvariableSpec(i),UCD_VAR_VELOCITY) .ne. 0) then
+              write (mfile,'(A)') 'velocity 1'
+            else
+              write (mfile,'(A)') 'vectors'
+              write (mfile,'(A,1X,I5,1X,I5,1X,I5)')&
+                  sys_charreplace(trim(rexport%p_SvarVecNames(j)), ' ', '_'), &
+                  1, ncomp, 1
+              do k = 2,4
+                i = rexport%p_Ivectors(k,j)
+                if (i .ne. 0) write(mfile,'(A,1X)', ADVANCE='NO')&
+                    trim(rexport%p_SvariableNames(i))
+              end do
+              write(mfile, '(A)') ""
+            end if
+
+            ! Write X coordinate
+            do ivt=1,rexport%nvertices
+              write (mfile,rexport%sdataFormat) p_Ddata(ivt)
+            end do
+
+            ! Write Y coordinate (if available)
+            i = rexport%p_Ivectors(3,j)
+            if (i .ne. 0) then
+              call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+              do ivt=1,rexport%nvertices
+                write (mfile,rexport%sdataFormat) p_Ddata(ivt)
+              end do
+            end if
+            
+            ! Write Z coordinate (if available)
+            i = rexport%p_Ivectors(4,j)
+            if (i .ne. 0) then
+              call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+              do ivt=1,rexport%nvertices
+                write (mfile,rexport%sdataFormat) p_Ddata(ivt)
+              end do
+            end if
+            
+            ! Write 'endvect' tag for vectors
+            i = rexport%p_Ivectors(2,j)
+            if ((bhasVelocity .or. j.ne.1) .and.&
+                iand(rexport%p_IvariableSpec(i), UCD_VAR_VELOCITY) .eq. 0)&
+                write (mfile,'(A)') 'endvect'
+            
+          end do ! j
+
+          ! Loop through all vectors
+          do j=1, rexport%nvectors
+
+            ! Is this an element-based vector?
+            if(rexport%p_Ivectors(1,j) .ne. 0) cycle
+            
+            ! Go for the X coordinate
+            i = rexport%p_Ivectors(2,j); ncomp = 1
+            call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+            
+            ! Make sure we have at least the X-coordinate
+            if (.not. associated(p_Ddata)) then
+              call output_line ('Error: Variable vector '//&
+                  trim(sys_siL(j,10))//' does not have X-coordinates!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeGMV')
+              
+              ! Try next vector
+              cycle
+            end if
+
+            ! Go for the Y and Z coordinate
+            if (rexport%p_Ivectors(3,j) .ne. 0) ncomp = ncomp+1
+            if (rexport%p_Ivectors(4,j) .ne. 0) ncomp = ncomp+1
+
+            ! Is this vector the velocity field? Or do we have no
+            ! explicit velocity vector, then use the first vectors.
+            if ((.not. bhasVelocity .and. j.eq.1) .or.&
+                iand(rexport%p_IvariableSpec(i),UCD_VAR_VELOCITY) .ne. 0) then
+              write (mfile,'(A)') 'velocity 0'
+            else
+              write (mfile,'(A)') 'vectors'
+              write (mfile,'(A,1X,I5,1X,I5,1X,I5)')&
+                  sys_charreplace(trim(rexport%p_SvarVecNames(j)), ' ', '_'), &
+                  0, ncomp, 1
+              do k = 2,4
+                i = rexport%p_Ivectors(k,j)
+                if (i .ne. 0) write(mfile,'(A,1X)', ADVANCE='NO')&
+                    trim(rexport%p_SvariableNames(i))
+              end do
+              write(mfile, '(A)') ""
+            end if
+
+            ! Write X coordinate
             ! Do not be confused! ivt=number of cell, as we are in the 
             ! 'cell-oriented' case here!!!
             do ivt=1,rexport%ncells
-              write (MFILE,rexport%sdataFormat) p_Ddata(ivt)
+              write (mfile,rexport%sdataFormat) p_Ddata(ivt)
             end do
-            
-            ! Find the Y-velocity
-            do j=1,rexport%nvariables
-              if ((iand(rexport%p_IvariableSpec(j),UCD_VAR_YVELOCITY) .ne. 0) .and. &
-                  (rexport%p_IvariableBase(j) .eq. UCD_BASE_ELEMENT)) then
-                
-                ! Found it. Write it out.
-                call storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
-                do ivt=1,rexport%ncells
-                  write (MFILE,rexport%sdataFormat) p_Ddata(ivt)
-                end do
-                
-                exit
-              end if
-            end do
-              if (j .gt. rexport%nvariables) then
-                ! Not found. Write out 0`s instead.
-                do ivt=1,rexport%ncells
-                  write (MFILE,rexport%sdataFormat) 0.0_DP
-                end do
-              end if
-              
-              ! Find the Z-velocity
-              do j=1,rexport%nvariables
-                if ((iand(rexport%p_IvariableSpec(j),UCD_VAR_ZVELOCITY) .ne. 0) .and. &
-                    (rexport%p_IvariableBase(j) .eq. UCD_BASE_ELEMENT)) then
-                  
-                  ! Found it. Write it out.
-                  call storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
-                  do ivt=1,rexport%ncells
-                    write (MFILE,rexport%sdataFormat) p_Ddata(ivt)
-                  end do
-                  
-                  exit
-                end if
-              end do
-              if (j .gt. rexport%nvariables) then
-                ! Not found. Write out 0`s instead.
-                do ivt=1,rexport%ncells
-                  write (MFILE,rexport%sdataFormat) 0.0_DP
-                end do
-              end if
-              
-            end if
-          end do
-          
-          ! Look for vertex based velocity.
-          do i=1,rexport%nvariables
-            if ((iand(rexport%p_IvariableSpec(i),UCD_VAR_XVELOCITY) .ne. 0) .and. &
-                (rexport%p_IvariableBase(i) .eq. UCD_BASE_VERTEX)) then
-              
-              ! Found it. Write it out.
-              write (mfile,'(A)') 'velocity 1'
-              
-              call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
-              do ivt=1,rexport%nvertices
-                write (MFILE,rexport%sdataFormat) p_Ddata(ivt)
-              end do
-              
-              ! Find the Y-velocity
-            do j=1,rexport%nvariables
-              if ((iand(rexport%p_IvariableSpec(j),UCD_VAR_YVELOCITY) .ne. 0) .and. &
-                  (rexport%p_IvariableBase(j) .eq. UCD_BASE_VERTEX)) then
-                  
-                ! Found it. Write it out.
-                call storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
-                do ivt=1,rexport%nvertices
-                  write (MFILE,rexport%sdataFormat) p_Ddata(ivt)
-                end do
-                
-                exit
-              end if
-            end do
-            if (j .gt. rexport%nvariables) then
-              ! Not found. Write out 0`s instead.
-              do ivt=1,rexport%nvertices
-                write (MFILE,rexport%sdataFormat) 0.0_DP
-              end do
-            end if
-            
-            ! Find the Z-velocity
-            do j=1,rexport%nvariables
-              if ((iand(rexport%p_IvariableSpec(j),UCD_VAR_ZVELOCITY) .ne. 0) .and. &
-                  (rexport%p_IvariableBase(j) .eq. UCD_BASE_VERTEX)) then
-                  
-                ! Found it. Write it out.
-                call storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
-                do ivt=1,rexport%nvertices
-                  write (MFILE,rexport%sdataFormat) p_Ddata(ivt)
-                end do
-                
-                exit
-              end if
-            end do
-            if (j .gt. rexport%nvariables) then
-              ! Not found. Write out 0`s instead.
-              do ivt=1,rexport%nvertices
-                write (MFILE,rexport%sdataFormat) 0.0_DP
-              end do
-            end if
-            
-          end if
-        end do
-        
-        !----------------------------------------------------
-        ! Write all variables which are not velocities
-        do i=1,rexport%nvariables
-          if (iand(rexport%p_IvariableSpec(i), &
-              UCD_VAR_XVELOCITY+UCD_VAR_YVELOCITY+UCD_VAR_ZVELOCITY) .eq. 0) then
-          
-            write (MFILE,'(A)') 'variable'  
-            
-            if (rexport%p_IvariableBase(i) .eq. UCD_BASE_ELEMENT) then
-              ! Cell based variable
-              write (MFILE,'(A,1X,I5)') trim(rexport%p_SvariableNames(i)),0
-              call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
-              ivt1 = rexport%ncells
-            else
-              ! Vertex based variable
-              write (MFILE,'(A,1X,I5)') trim(rexport%p_SvariableNames(i)),1
-              call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
-              ivt1 = rexport%nvertices
-            end if
 
-            do ivt=1,ivt1
-              write (MFILE,rexport%sdataFormat) p_Ddata(ivt)
-            end do
+            ! Write Y coordinate (if available)
+            i = rexport%p_Ivectors(3,j)
+            if (i .ne. 0) then
+              call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+              ! Do not be confused! ivt=number of cell, as we are in the 
+              ! 'cell-oriented' case here!!!
+              do ivt=1,rexport%ncells
+                write (mfile,rexport%sdataFormat) p_Ddata(ivt)
+              end do
+            end if
             
-            write (MFILE,'(A)') 'endvars'      
-          end if
-          
-        end do ! i
+            ! Write Z coordinate (if available)
+            i = rexport%p_Ivectors(4,j)
+            if (i .ne. 0) then
+              call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+              ! Do not be confused! ivt=number of cell, as we are in the 
+              ! 'cell-oriented' case here!!!
+              do ivt=1,rexport%ncells
+                write (mfile,rexport%sdataFormat) p_Ddata(ivt)
+              end do
+            end if
+            
+            ! Write 'endvect' tag for vectors
+            i = rexport%p_Ivectors(2,j)
+            if ((bhasVelocity .or. j.ne.1) .and.&
+                iand(rexport%p_IvariableSpec(i), UCD_VAR_VELOCITY) .eq. 0)&
+                write (mfile,'(A)') 'endvect'
+
+          end do ! j
+
+        end if
 
       end if
 
@@ -2273,7 +2359,7 @@ contains
         if (associated(rexport%p_Hpolygons)) then
           
           ! At least one polygon
-          write (MFILE,'(A)') 'polygons'
+          write (mfile,'(A)') 'polygons'
           
           ! Materials
           call storage_getbase_int (rexport%hpolygonMaterial,p_Idata)
@@ -2285,7 +2371,7 @@ contains
             call storage_getbase_double2D (rexport%p_Hpolygons(i),p_Ddata2D)
             
             ! Write material, #points
-            write (MFILE,'(2I10)') p_Idata(i),ubound(p_Ddata2D,2)
+            write (mfile,'(2I10)') p_Idata(i),ubound(p_Ddata2D,2)
             
             ! Either we have 2D or 3D coordinates. 
             ! Write coordinates of the points forming the line segments 
@@ -2294,11 +2380,11 @@ contains
             do k=1,NDIM3D
               if (ubound(p_Ddata2D,1) .ge. k) then
                 do j=1,ubound(p_Ddata2D,2)
-                  write (MFILE,'(E15.7)') p_Ddata2D(k,j)
+                  write (mfile,'(E15.7)') p_Ddata2D(k,j)
                 end do
               else
                 do j=1,ubound(p_Ddata2D,2)
-                  write (MFILE,'(E15.7)') 0.0_DP
+                  write (mfile,'(E15.7)') 0.0_DP
                 end do
               end if
             end do
@@ -3292,8 +3378,7 @@ contains
       !----------------------------------------------------
       ! Write all variables which are not velocities
       do i=1,rexport%nvariables
-        if (iand(rexport%p_IvariableSpec(i), &
-            UCD_VAR_XVELOCITY+UCD_VAR_YVELOCITY+UCD_VAR_ZVELOCITY) .eq. 0) then
+        if (iand(rexport%p_IvariableSpec(i), UCD_VAR_VELOCITY) .eq. 0) then
           
           call fgmvwrite_variable_header()
           
@@ -4200,7 +4285,7 @@ contains
         
           ! Is it vertex- or element-based?
           if (rexport%p_IvariableBase(j) .ne. UCD_BASE_VERTEX) cycle
-            
+
           ! Is the value scalar?
           if ((rexport%p_IvariableSpec(j) .ne. UCD_VAR_STANDARD) .and. &
               (.not. bVec2Sc)) cycle
@@ -4247,7 +4332,6 @@ contains
             end if
             
             ! Make sure we have at least the X-coordinate
-
             if (.not. associated(p_Dx)) then
               call output_line ('Error: Variable vector '//&
                   trim(sys_siL(j,10))//' does not have X-coordinates!',&
@@ -4326,7 +4410,7 @@ contains
       end if
       
       ! That is it
-
+stop
     end subroutine
     
   end subroutine
@@ -4521,7 +4605,57 @@ contains
   
 !<subroutine>
 
-  subroutine ucd_addVariableVertexBased (rexport,sname,cvarSpec, &
+  subroutine ucd_addVariableVertexBased1 (rexport, sname, &
+      DdataVert, DdataMid, DdataElem, cvarSpec)
+
+!<description>
+  ! Adds variable data to the ouput file identified by rexport, based
+  ! on vertices.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  type(t_ucdExport), intent(inout) :: rexport
+!</inputoutput>
+
+!<input>
+  ! Name of the variable.
+  character(LEN=*), intent(in) :: sname
+  
+  ! DdataVert(I) is the value of the variable in vertex I of the triangulation.
+  real(DP), dimension(:), intent(in) :: DdataVert
+
+  ! OPTIONAL: DdataMid(I) is the value of the variable in edge midpoint I of 
+  ! the triangulation. Must be specified if DdataElem is specified!
+  real(DP), dimension(:), intent(in), optional :: DdataMid
+
+  ! OPTIONAL: DdataElem(I) is the value of the variable in element midpoint I of 
+  ! the triangulation.
+  real(DP), dimension(:), intent(in), optional :: DdataElem
+
+  ! OPTIONAL: Specification bitfield for the variable. A combination of the 
+  ! UCD_VAR_xxxx flags for special-type variables (like x-/y-velocity).
+  ! If not specified, UCD_VAR_STANDARD is used.
+  integer(I32), intent(in), optional :: cvarSpec
+!</input>
+
+!</subroutine>
+
+    if (present(cvarSpec)) then
+      call ucd_addVariableVertexBased (rexport, sname, cvarSpec, &
+          DdataVert, DdataMid, DdataElem)
+    else
+      call ucd_addVariableVertexBased (rexport, sname, UCD_VAR_STANDARD, &
+          DdataVert, DdataMid, DdataElem)
+    end if
+
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>
+
+  subroutine ucd_addVariableVertexBased2 (rexport, sname, cvarSpec, &
       DdataVert, DdataMid, DdataElem)
 
 !<description>
@@ -4562,13 +4696,13 @@ contains
 
     if (present(DdataElem) .and. .not. present(DdataMid)) then
       call output_line ('Error in the parameters!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased')
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased2')
       call sys_halt()
     end if
     
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
       call output_line ('Export structure not initialised!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased')
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased2')
       call sys_halt()
     end if
     
@@ -4590,7 +4724,7 @@ contains
     rexport%p_SvariableNames(rexport%nvariables) = sname
     
     ! Allocate a new vector for the data
-    call storage_new ('ucd_addVariableVertexBased','hvariable',&
+    call storage_new ('ucd_addVariableVertexBased2','hvariable',&
         rexport%nvertices,ST_DOUBLE,&
         rexport%p_Hvariables(rexport%nvariables),&
         ST_NEWBLOCK_ZERO)
@@ -4611,7 +4745,7 @@ contains
                                                    rexport%p_rtriangulation%NMT))
       else if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
         call output_line ('Warning. No edge midpoint data available!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased')
+            OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
       end if
     end if
     
@@ -4626,20 +4760,20 @@ contains
                     rexport%p_rtriangulation%NEL))
       else if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
         call output_line ('Warning. No element midpoint data available!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased')
+            OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
       end if
     end if    
 
   end subroutine
-  
+
   !************************************************************************
   
 !<subroutine>
 
-  subroutine ucd_addVarVertBasedVec (rexport, sname, DdataVert_X, &
+  subroutine ucd_addVarVertBasedVec1 (rexport, sname, DdataVert_X, &
       DdataVert_Y, DdataVert_Z, DdataMid_X, DdataMid_Y, DdataMid_Z, &
-      DdataElem_X, DdataElem_Y, DdataElem_Z)
-
+      DdataElem_X, DdataElem_Y, DdataElem_Z, cvarSpec)
+  
 !<description>
   ! Adds variable vector data to the ouput file identified by rexport, based
   ! on vertices.
@@ -4675,9 +4809,82 @@ contains
   real(DP), dimension(:), intent(in), optional :: DdataElem_X
   real(DP), dimension(:), intent(in), optional :: DdataElem_Y
   real(DP), dimension(:), intent(in), optional :: DdataElem_Z
+
+  ! OPTIONAL: Specification bitfield for the variable. A combination
+  ! of the UCD_VAR_xxxx flags.
+  ! If not specified, UCD_VAR_STANDARD is used.
+  integer(I32), intent(in), optional :: cvarSpec
 !</input>
 
 !</subroutine>
+
+    if (present(cvarSpec)) then
+      call ucd_addVarVertBasedVec2(rexport, sname, cvarSpec,&
+          DdataVert_X, DdataVert_Y, DdataVert_Z,&
+          DdataMid_X, DdataMid_Y, DdataMid_Z, &
+          DdataElem_X, DdataElem_Y, DdataElem_Z)
+    else
+      call ucd_addVarVertBasedVec2(rexport, sname, UCD_VAR_STANDARD,&
+          DdataVert_X, DdataVert_Y, DdataVert_Z,&
+          DdataMid_X, DdataMid_Y, DdataMid_Z, &
+          DdataElem_X, DdataElem_Y, DdataElem_Z)
+    end if
+
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>
+
+  subroutine ucd_addVarVertBasedVec2 (rexport, sname, cvarSpec,&
+      DdataVert_X, DdataVert_Y, DdataVert_Z, DdataMid_X,&
+      DdataMid_Y, DdataMid_Z, DdataElem_X, DdataElem_Y, DdataElem_Z)
+
+!<description>
+  ! Adds variable vector data to the ouput file identified by rexport, based
+  ! on vertices.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  type(t_ucdExport), intent(inout) :: rexport
+!</inputoutput>
+
+!<input>
+  ! Name of the vector.
+  character(LEN=*), intent(in) :: sname
+  
+  ! Specification bitfield for the variable.
+  ! Standard value=UCD_VAR_STANDARD.
+  integer(I32), intent(in) :: cvarSpec
+
+  ! The variable for the X-component of the velocities.
+  real(DP), dimension(:), intent(in) :: DdataVert_X
+  
+  ! OPTIONAL: The data array for the Y-component of the velocities.
+  real(DP), dimension(:), intent(in), optional :: DdataVert_Y
+
+  ! OPTIONAL: The data array for the Z-component of the velocities.
+  real(DP), dimension(:), intent(in), optional :: DdataVert_Z
+
+  ! OPTIONAL: DdataMid_X/Y/Z(I) is the X/Y/Z-coordinate of the variable in
+  ! edge midpoint I of the triangulation. Must be specified if DdataElem
+  ! is specified!
+  real(DP), dimension(:), intent(in), optional :: DdataMid_X
+  real(DP), dimension(:), intent(in), optional :: DdataMid_Y
+  real(DP), dimension(:), intent(in), optional :: DdataMid_Z
+
+  ! OPTIONAL: DdataElem_X/Y/Z(I) is the X/Y/Z-coordinate of the variable in
+  ! element midpoint I of the triangulation.
+  real(DP), dimension(:), intent(in), optional :: DdataElem_X
+  real(DP), dimension(:), intent(in), optional :: DdataElem_Y
+  real(DP), dimension(:), intent(in), optional :: DdataElem_Z
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    integer(i32) :: ivarSpec
 
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
       call output_line ('Export structure not initialised!',&
@@ -4702,16 +4909,18 @@ contains
     rexport%p_Ivectors(1,rexport%nvectors) = 1
     
     ! There must be an X-component, so add it first
+    ivarSpec = ior(cvarSpec, UCD_VAR_XVECTORCOMP)
     call ucd_addVariableVertexBased(rexport, trim(sname)//'_X', &
-        UCD_VAR_XVELOCITY, DdataVert_X, DdataMid_X, dDataElem_X)
+        ivarSpec, DdataVert_X, DdataMid_X, dDataElem_X)
     
     rexport%p_Ivectors(2,rexport%nvectors) = rexport%nvariables
     
     ! Is there an Y-component?
     if (present(DdataVert_Y)) then
 
+      ivarSpec = ior(cvarSpec, UCD_VAR_YVECTORCOMP)
       call ucd_addVariableVertexBased(rexport, trim(sname)//'_Y', &
-          UCD_VAR_YVELOCITY, DdataVert_Y, DdataMid_Y, dDataElem_Y)
+          ivarSpec, DdataVert_Y, DdataMid_Y, dDataElem_Y)
       
       rexport%p_Ivectors(3,rexport%nvectors) = rexport%nvariables
    
@@ -4722,8 +4931,9 @@ contains
     ! Is there an Z-component?
     if (present(DdataVert_Z)) then
 
+      ivarSpec = ior(cvarSpec, UCD_VAR_ZVECTORCOMP)
       call ucd_addVariableVertexBased(rexport, trim(sname)//'_Z', &
-          UCD_VAR_ZVELOCITY, DdataVert_Z, DdataMid_Z, dDataElem_Z)
+          ivarSpec, DdataVert_Z, DdataMid_Z, dDataElem_Z)
       
       rexport%p_Ivectors(4,rexport%nvectors) = rexport%nvariables
    
@@ -4739,7 +4949,8 @@ contains
   
 !<subroutine>
 
-  subroutine ucd_addVarElemBasedVec (rexport, sname, Ddata_X, Ddata_Y, Ddata_Z)
+  subroutine ucd_addVarElemBasedVec1 (rexport, sname,&
+      Ddata_X, Ddata_Y, Ddata_Z, cvarSpec)
 
 !<description>
   ! Adds variable vector data to the ouput file identified by rexport, based
@@ -4764,13 +4975,67 @@ contains
   ! OPTIONAL: The data array for the Z-component of the velocities.
   real(DP), dimension(:), intent(in), optional :: Ddata_Z
 
+  ! OPTIONAL: Specification bitfield for the variable. A combination
+  ! of the UCD_VAR_xxxx flags.
+  ! If not specified, UCD_VAR_STANDARD is used.
+  integer(I32), intent(in), optional :: cvarSpec
 !</input>
 
 !</subroutine>
 
+    if (present(cvarSpec)) then
+      call ucd_addVarElemBasedVec2 (rexport, sname, cvarSpec,&
+          Ddata_X, Ddata_Y, Ddata_Z)
+    else
+      call ucd_addVarElemBasedVec2 (rexport, sname, UCD_VAR_STANDARD,&
+          Ddata_X, Ddata_Y, Ddata_Z)
+    end if
+
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>
+
+  subroutine ucd_addVarElemBasedVec2 (rexport, sname, cvarSpec,&
+      Ddata_X, Ddata_Y, Ddata_Z)
+
+!<description>
+  ! Adds variable vector data to the ouput file identified by rexport, based
+  ! on elements.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  type(t_ucdExport), intent(inout) :: rexport
+!</inputoutput>
+
+!<input>
+  ! Name of the vector.
+  character(LEN=*), intent(in) :: sname
+  
+  ! The variable for the X-component of the velocities.
+  real(DP), dimension(:), intent(in) :: Ddata_X
+  
+  ! OPTIONAL: The data array for the Y-component of the velocities.
+  real(DP), dimension(:), intent(in), optional :: Ddata_Y
+
+  ! OPTIONAL: The data array for the Z-component of the velocities.
+  real(DP), dimension(:), intent(in), optional :: Ddata_Z
+
+  ! Specification bitfield for the variable.
+  ! Standard value=UCD_VAR_STANDARD.
+  integer(I32), intent(in) :: cvarSpec
+!</input>
+
+!</subroutine>
+
+    ! local variable
+    integer(i32) :: ivarSpec
+
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
       call output_line ('Export structure not initialised!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVarElemBasedVec')
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVarElemBasedVec2')
       call sys_halt()
     end if
     
@@ -4791,16 +5056,18 @@ contains
     rexport%p_Ivectors(1,rexport%nvectors) = 1
     
     ! There must be an X-component, so add it first
+    ivarSpec = ior(cvarSpec, UCD_VAR_XVECTORCOMP)
     call ucd_addVariableElementBased(rexport, trim(sname)//'_X', &
-        UCD_VAR_XVELOCITY, Ddata_X)
+        ivarSpec, Ddata_X)
     
     rexport%p_Ivectors(2,rexport%nvectors) = rexport%nvariables
     
     ! Is there an Y-component?
     if (present(Ddata_Y)) then
 
+      ivarSpec = ior(cvarSpec, UCD_VAR_YVECTORCOMP)
       call ucd_addVariableElementBased(rexport, trim(sname)//'_Y', &
-          UCD_VAR_YVELOCITY, Ddata_Y)
+          ivarSpec, Ddata_Y)
       
       rexport%p_Ivectors(3,rexport%nvectors) = rexport%nvariables
    
@@ -4811,8 +5078,9 @@ contains
     ! Is there an Z-component?
     if (present(Ddata_Z)) then
 
+      ivarSpec = ior(cvarSpec, UCD_VAR_ZVECTORCOMP)
       call ucd_addVariableElementBased(rexport, trim(sname)//'_Z', &
-          UCD_VAR_ZVELOCITY, Ddata_Z)
+          ivarSpec, Ddata_Z)
       
       rexport%p_Ivectors(4,rexport%nvectors) = rexport%nvariables
    
@@ -4828,8 +5096,45 @@ contains
   
 !<subroutine>
 
-  subroutine ucd_addVariableElementBased (rexport,sname,cvarSpec, &
-      Ddata)
+  subroutine ucd_addVariableElementBased1 (rexport, sname, Ddata, cvarSpec)
+
+!<description>
+  ! Adds variable data to the ouput file identified by rexport, based on elements.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  type(t_ucdExport), intent(inout) :: rexport
+!</inputoutput>
+
+!<input>
+  ! Name of the variable.
+  character(LEN=*), intent(in) :: sname
+  
+  ! DdataVert(I) os the value of the variable in element I of the triangulation.
+  real(DP), dimension(:), intent(in) :: Ddata
+
+  ! OPTIONAL: Specification bitfield for the variable. A combination
+  ! of the UCD_VAR_xxxx flags.
+  ! If not specified, UCD_VAR_STANDARD is used.
+  integer(I32), intent(in), optional :: cvarSpec
+!</input>
+
+!</subroutine>
+
+    if (present(cvarSpec)) then
+      call ucd_addVariableElementBased2 (rexport, sname, cvarSpec, Ddata)
+    else
+      call ucd_addVariableElementBased2 (rexport, sname, UCD_VAR_STANDARD, Ddata)
+    end if
+
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>
+
+  subroutine ucd_addVariableElementBased2 (rexport, sname, cvarSpec, Ddata)
 
 !<description>
   ! Adds variable data to the ouput file identified by rexport, based on elements.
@@ -4861,7 +5166,7 @@ contains
 
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
       call output_line ('Export structure not initialised!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableElementBased')
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableElementBased2')
       call sys_halt()
     end if
     
@@ -4880,7 +5185,7 @@ contains
     rexport%p_SvariableNames(rexport%nvariables) = sname
     
     ! Allocate a new vector for the data
-    call storage_new ('ucd_addVariableVertexBased','hvariable',&
+    call storage_new ('ucd_addVariableVertexBased2','hvariable',&
         rexport%ncells,ST_DOUBLE,&
         rexport%p_Hvariables(rexport%nvariables),&
         ST_NEWBLOCK_ZERO)
