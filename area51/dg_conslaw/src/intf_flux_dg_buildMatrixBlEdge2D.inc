@@ -41,7 +41,7 @@
   !<input>
 !  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
   ! nvar,albet,ncubp,nelem
-  real(DP), dimension(:,:,:,:), intent(out) :: DfluxValues
+  real(DP), dimension(:,:,:,:,:), intent(out) :: DfluxValues
   real(DP), dimension(:,:), intent(in) :: normal
 !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
@@ -49,7 +49,7 @@
   type(t_vectorBlock), intent(in) :: rvectorSol
   integer, dimension(:), intent(in) :: IelementList
   ! nvar, 2 sides, ncubp, nelem
-  real(DP), dimension(:,:,:,:), intent(out) :: Dside
+  real(DP), dimension(:,:,:,:,:), intent(out) :: Dside
     
   !</input>
   
