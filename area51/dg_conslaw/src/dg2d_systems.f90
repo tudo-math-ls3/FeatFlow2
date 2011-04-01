@@ -2048,6 +2048,349 @@ if (iwithoutlimiting==2) ilimiter = 0
    
    
    
+   
+   
+   
+   
+   
+   ! Fully implicit Euler equation
+   case (7)
+   
+   ! Now as the discretisation is set up, we can start to generate
+    ! the structure of the system matrix which is to solve.
+    ! We create a scalar matrix, based on the discretisation structure
+    ! for our one and only solution component.
+    do i = 1, nvar2d
+    do j = 1, nvar2d
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+                                     LSYSSC_MATRIX9,rmatrixBlock%Rmatrixblock(i,j),&
+                                     rdiscretisation%RspatialDiscr(1),&
+                                     BILF_MATC_EDGEBASED)
+     end do
+     end do
+   
+   
+   ! Now as the discretisation is set up, we can start to generate
+    ! the structure of the system matrix which is to solve.
+    ! We create a scalar matrix, based on the discretisation structure
+    ! for our one and only solution component.
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+                                     LSYSSC_MATRIX9,rmatrixMC,&
+                                     rdiscretisation%RspatialDiscr(1),&
+                                     BILF_MATC_EDGEBASED)
+   
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    
+    ! In the standard case, we have constant coefficients:
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
+    
+    
+    ! Now we can build the matrix entries.
+    ! We specify the callback function coeff_Laplace for the coefficients.
+    ! As long as we use constant coefficients, this routine is not used.
+    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+    ! the framework will call the callback routine to get analytical
+    ! data.
+    !call lsyssc_clearMatrix (rmatrixMC)
+    ! We need to give the solution vector to the routine (by the collection)
+    call bilf_buildMatrixScalar (rform,.true.,rmatrixMC)
+    
+    ! Now as the discretisation is set up, we can start to generate
+    ! the structure of the system matrix which is to solve.
+    ! We create a scalar matrix, based on the discretisation structure
+    ! for our one and only solution component.
+    do i = 1, nvar2d
+    do j = 1, nvar2d
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+                                     LSYSSC_MATRIX9,rmatrixABlock%RmatrixBlock(i,j),&
+                                     rdiscretisation%RspatialDiscr(1),&
+                                     BILF_MATC_EDGEBASED)
+    end do
+    end do
+    
+    ! Now we have the raw problem. What is missing is the definition of the boundary
+    ! conditions.
+    ! For implementing boundary conditions, we use a `filter technique with
+    ! discretised boundary conditions`. This means, we first have to calculate
+    ! a discrete version of the analytic BC, which we can implement into the
+    ! solution/RHS vectors using the corresponding filter.
+    !
+    ! Create a t_discreteBC structure where we store all discretised boundary
+    ! conditions.
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    !
+    ! We 'know' already (from the problem definition) that we have four boundary
+    ! segments in the domain. Each of these, we want to use for enforcing
+    ! some kind of boundary condition.
+    !
+    ! We ask the bondary routines to create a 'boundary region' - which is
+    ! simply a part of the boundary corresponding to a boundary segment.
+    ! A boundary region roughly contains the type, the min/max parameter value
+    ! and whether the endpoints are inside the region or not.
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    
+    ! We use this boundary region and specify that we want to have Dirichlet
+    ! boundary there. The following call does the following:
+    ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
+    !   We specify icomponent='1' to indicate that we set up the
+    !   Dirichlet BC`s for the first (here: one and only) component in the 
+    !   solution vector.
+    ! - Discretise the boundary condition so that the BC`s can be applied
+    !   to matrices and vectors
+    ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D_zeros)
+                             
+    ! Now to the edge 2 of boundary component 1 the domain.
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D_zeros)
+                             
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D_zeros)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D_zeros)
+                             
+    ! Hang the pointer into the vector and matrix. That way, these
+    ! boundary conditions are always connected to that matrix and that
+    ! vector.
+    rmatrixBlock%p_rdiscreteBC => rdiscreteBC
+    rrhsBlock%p_rdiscreteBC => rdiscreteBC
+    rsolBlock%p_rdiscreteBC => rdiscreteBC
+    rtempBlock%p_rdiscreteBC => rdiscreteBC
+    
+    ttime = 0.0_dp
+    
+    Eulertimestepping: do
+    
+      ! Print the time level
+      write(*,*) 'Time: ', ttime
+      
+      ! Calculate the right-hand-side vector b
+      do i = 1, nvar2d
+      call lsyssc_scalarMatVec(rMatrixMC,rsolBlock%RvectorBlock(i),rrhsBlock%RvectorBlock(i),1.0_dp,0.0_dp)
+      end do
+      
+      
+      
+      Burgers_defcorr: do
+      
+       ! Release solver data and structure
+        call linsol_doneData (p_rsolverNode)
+        call linsol_doneStructure (p_rsolverNode)
+    
+        ! Release the solver node and all subnodes attached to it (if at all):
+        call linsol_releaseSolver (p_rsolverNode)
+      
+      ! Calculate the defect vector
+      
+      ! And now to the entries of the matrix. For assembling of the entries,
+        ! we need a bilinear form, which first has to be set up manually.
+        ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+        ! scalar system matrix in 2D.
+
+        rform%itermCount = 2
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_DERIV_X
+        rform%Idescriptors(1,2) = DER_FUNC
+        rform%Idescriptors(2,2) = DER_DERIV_Y
+        
+        ! In the standard case, we have constant coefficients:
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff = .false.
+        
+        ! Now we can build the matrix entries.
+        ! We specify the callback function coeff_Laplace for the coefficients.
+        ! As long as we use constant coefficients, this routine is not used.
+        ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+        ! the framework will call the callback routine to get analytical
+        ! data.
+        !call lsyssc_clearMatrix (rmatrixMC)
+        ! We need to give the solution vector to the routine (by the collection)
+        rcollection%p_rvectorQuickAccess1 => rsolBlock
+        call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)
+       
+       
+       call lsyssc_scaleMatrix (rmatrixA,-1.0_DP)
+          
+       !call matio_writeMatrixHR(rmatrixMC,'./gmv/feat_routine.txt',.true.,0,'./gmv/feat_routine.txt','(E20.10)')
+       
+       
+       
+       ! And now to the entries of the matrix. For assembling of the entries,
+        ! we need a bilinear form, which first has to be set up manually.
+        ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+        ! scalar system matrix in 2D.
+
+        rform%itermCount = 1
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_FUNC
+        
+        ! In the standard case, we have constant coefficients:
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff = .false.
+        
+        ! Now we can build the matrix entries.
+        ! We specify the callback function coeff_Laplace for the coefficients.
+        ! As long as we use constant coefficients, this routine is not used.
+        ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+        ! the framework will call the callback routine to get analytical
+        ! data.
+        rcollection%p_rvectorQuickAccess1 => rsolBlock
+        call bilf_dg_buildMatrixScEdge2D (rform, CUB_G5_1D, .false., rmatrixA,&
+                                                 rsolBlock%Rvectorblock(1), raddTriaData,&
+                                                 flux_dg_implicitBurgers_sim)!,&
+                                                 !rcollection, cconstrType)
+
+        
+!        call lsyssc_clearMatrix (rmatrixA)
+        
+        ! Calculate the preconditioner matrix                                         
+        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,dt,&
+                                       .true.,.true.,.true.,.false.,&
+                                       rmatrixBlock%Rmatrixblock(1,1))
+        
+!        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
+!        call matio_writeMatrixHR(rmatrixA,'./gmv/A.txt',.true.,0,'./gmv/A.txt','(E20.10)')
+!        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
+!        pause
+        
+        ! Calculate the defect vector
+        call lsyssc_copyVector (rrhsBlock%RvectorBlock(1),rdefBlock%RvectorBlock(1))
+        call lsyssc_scalarMatVec(rmatrixBlock%Rmatrixblock(1,1),rsolBlock%RvectorBlock(1),&
+                                 rdefBlock%RvectorBlock(1),-1.0_dp,1.0_dp)
+                                 
+!       ! * If different Preconditioners should be used *        
+!       ! Use MC as preconditioner                                     
+!        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,0.0_dp,&
+!                                       .true.,.true.,.true.,.false.,&
+!                                       rmatrixBlock%Rmatrixblock(1,1)) 
+
+!       ! Use MC+edge as preconditioner
+!        call bilf_dg_buildMatrixScEdge2D (rform, CUB_G5_1D, .true., rmatrixA,&
+!                                                 rsolBlock%Rvectorblock(1), raddTriaData,&
+!                                                 flux_dg_implicitBurgers_sim)!,&
+!                                                 !rcollection, cconstrType)                                     
+!        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,0.0_dp,&
+!                                       .true.,.true.,.true.,.false.,&
+!                                       rmatrixBlock%Rmatrixblock(1,1))
+
+!       ! Use MC+cell as preconditioner
+!        rform%itermCount = 2
+!        rform%Idescriptors(1,1) = DER_FUNC
+!        rform%Idescriptors(2,1) = DER_DERIV_X
+!        rform%Idescriptors(1,2) = DER_FUNC
+!        rform%Idescriptors(2,2) = DER_DERIV_Y
+!        rform%ballCoeffConstant = .false.
+!        rform%BconstantCoeff = .false.
+!        rcollection%p_rvectorQuickAccess1 => rsolBlock
+!        call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)                                    
+!        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,0.0_dp,&
+!                                       .true.,.true.,.true.,.false.,&
+!                                       rmatrixBlock%Rmatrixblock(1,1))
+
+
+        
+        
+        ! During the linear solver, the boundary conditions are also
+    ! frequently imposed to the vectors. But as the linear solver
+    ! does not work with the actual solution vectors but with
+    ! defect vectors instead.
+    ! So, set up a filter chain that filters the defect vector
+    ! during the solution process to implement discrete boundary conditions.
+    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    
+    
+    ! Fill in the boundary conditions
+        call vecfil_discreteBCrhs (rrhsBlock)
+        call vecfil_discreteBCsol (rsolBlock)
+        call matfil_discreteBC (rmatrixBlock)
+    
+    ! Create a BiCGStab-solver.
+    nullify(p_rpreconditioner)
+!    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    call linsol_initUMFPACK4 (p_rsolverNode)
+!    call linsol_initJacobi (p_rsolverNode)
+    
+    ! Set the output level of the solver to 2 for some output
+    p_rsolverNode%ioutputLevel = 0
+    
+    ! The linear solver stops, when this relative or absolut norm of
+    ! the residual is reached.
+    p_rsolverNode%depsRel = 1.0e-4
+    p_rsolverNode%depsAbs = 1.0e-4
+    
+    ! Attach the system matrix to the solver.
+    ! First create an array with the matrix data (on all levels, but we
+    ! only have one level here), then call the initialisation 
+    ! routine to attach all these matrices.
+    ! Remark: Do not make a call like
+    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
+    ! This does not work on all compilers, since the compiler would have
+    ! to create a temp array on the stack - which does not always work!
+    Rmatrices = (/rmatrixBlock/)
+    call linsol_setMatrices(p_RsolverNode,Rmatrices)
+    
+    ! Initialise structure/data of the solver. This allows the
+    ! solver to allocate memory / perform some precalculation
+    ! to the problem.
+    call linsol_initStructure (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      write(*,*) 'linsol_initStructure',ierror
+      pause
+      stop
+    end if
+    call linsol_initData (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      write(*,*) 'linsol_initData', ierror
+      pause
+      stop
+    end if
+        
+        
+        
+        
+        ! Solve for solution updade
+        ! Afterwards the defect vector contains the solution update
+        call linsol_precondDefect (p_RsolverNode,rdefBlock)
+        
+        
+        ! Update the solution
+        call lsyssc_vectorLinearComb (rDefBlock%Rvectorblock(1),rSolBlock%Rvectorblock(1),1.0_dp,1.0_dp)
+        call vecfil_discreteBCsol (rsolBlock)
+        
+        write(*,*) '  Defect:',lsyssc_vectorNorm(rDefBlock%Rvectorblock(1),LINALG_NORML2)
+        
+        if (lsyssc_vectorNorm(rDefBlock%Rvectorblock(1),LINALG_NORML2) < 1.0e-12) exit Burgers_defcorr
+        
+!        write(*,*) lsyssc_vectorNorm(rDefBlock%Rvectorblock(1),LINALG_NORML2)
+!        call dg2vtk(rDefBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+!        pause
+        
+      
+      end do Burgers_defcorr
+    
+      ttime = ttime + dt
+      if (ttime.ge.(ttfinal-1.0e-12)) exit Burgerstimestepping
+    end do Burgerstimestepping
+   
+   
+   
+   
+   
+   
    end select
    
    

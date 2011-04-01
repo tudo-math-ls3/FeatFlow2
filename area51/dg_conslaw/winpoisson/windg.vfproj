@@ -57,6 +57,7 @@
 		<File RelativePath="..\src\dg2d_problem.f90"/>
 		<File RelativePath="..\src\dg2d_routines.f90"/>
 		<File RelativePath="..\src\dg2d_systems.f90"/>
+		<File RelativePath="..\src\intf_coefficientMatrixBl.inc"/>
 		<File RelativePath="..\src\intf_flux_dg_buildMatrixBlEdge2D.inc"/>
 		<File RelativePath="..\src\intf_flux_dg_buildMatrixScEdge2D.inc"/>
 		<File RelativePath="..\src\intf_flux_dg_buildVectorBlEdge2D.inc"/>

@@ -11656,6 +11656,184 @@ end do
     !$omp end parallel
 
   end subroutine
+  
+  
+  
+!****************************************************************************
+
+!<subroutine>
+
+  subroutine bilf_buildMatrixBlock2 (rform, bclear, rmatrix,&
+      fcoeff_buildMatrixBl_sim,rcollection,rscalarAssemblyInfo)
+  use extstdassemblyinfo
+!<description>
+  ! This routine calculates the entries of a finite element matrix.
+  ! The matrix structure must be prepared with bilf_createMatrixStructure
+  ! in advance.
+  ! In case the array for the matrix entries does not exist, the routine
+  ! allocates memory in size of the matrix of the heap for the matrix entries.
+  !
+  ! For setting up the entries, the discretisation structure attached to
+  ! the matrix is used (rmatrix%p_rdiscretisation). This is
+  ! normally attached to the matrix by bilf_createMatrixStructure.
+  !
+  ! The matrix must be unsorted when this routine is called, 
+  ! otherwise an error is thrown.
+  !
+  ! IMPLEMENTATIONAL REMARK:
+  ! This is a new implementation of the matrix assembly using element subsets.
+  ! In contrast to bilf_buildMatrixScalar, this routine loops itself about
+  ! the element subsets and calls bilf_initAssembly/
+  ! bilf_assembleSubmeshMatrix9/bilf_doneAssembly to assemble matrix
+  ! contributions of a submesh.
+  ! The bilf_assembleSubmeshMatrix9 interface allows to assemble parts of a
+  ! matrix based on an arbitrary element list which is not bound to an
+  ! element distribution.
+!</description>
+
+!<input>
+  ! The bilinear form specifying the underlying PDE of the discretisation.
+  type(t_bilinearForm), intent(in) :: rform
+  
+  ! Whether to clear the matrix before calculating the entries.
+  ! If .FALSE., the new matrix entries are added to the existing entries.
+  logical, intent(in) :: bclear
+  
+  ! OPTIONAL: A collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information. 
+  type(t_collection), intent(inout), target, optional :: rcollection
+  
+  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
+  ! Must be present if the matrix has nonconstant coefficients!
+  include 'intf_coefficientMatrixBl.inc'
+  optional :: fcoeff_buildMatrixBl_sim
+
+  ! OPTIONAL: A scalar assembly structure that gives additional information
+  ! about how to set up the matrix (e.g. cubature formula). If not specified,
+  ! default settings are used.
+  type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
+!</input>
+
+!<inputoutput>
+  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  type(t_bilfMatrixAssembly) :: rmatrixAssembly
+  integer :: ielementDistr,iinfoBlock
+  integer, dimension(:), pointer :: p_IelementList
+  type(t_extScalarAssemblyInfo), target :: rlocalScalarAssemblyInfo
+  type(t_extScalarAssemblyInfo), pointer :: p_rscalarAssemblyInfo
+  
+  ! The matrix must be unsorted, otherwise we can not set up the matrix.
+  ! Note that we cannot switch off the sorting as easy as in the case
+  ! of a vector, since there is a structure behind the matrix! So the caller
+  ! has to make sure, the matrix is unsorted when this routine is called.
+  if (rmatrix%isortStrategy .gt. 0) then
+    call output_line ('Matrix-structure must be unsorted!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+    call sys_halt()
+  end if
+
+  if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
+      (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
+    call output_line ('No discretisation associated!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+    call sys_halt()
+  end if
+  
+  ! If we do not have it, create a scalar assembly info structure that
+  ! defines how to do the assembly.
+  if (.not. present(rscalarAssemblyInfo)) then
+    call easminfo_createDefInfoStructure(rmatrix%p_rspatialDiscrTrial,&
+        rlocalScalarAssemblyInfo,0)
+    p_rscalarAssemblyInfo => rlocalScalarAssemblyInfo
+  else
+    p_rscalarAssemblyInfo => rscalarAssemblyInfo
+  end if
+
+  ! Do we have a uniform triangulation? Would simplify a lot...
+  select case (rmatrix%p_rspatialDiscrTest%ccomplexity)
+  case (SPDISC_UNIFORM,SPDISC_CONFORMAL) 
+    ! Uniform and conformal discretisations
+    select case (rmatrix%cdataType)
+    case (ST_DOUBLE) 
+      ! Which matrix structure do we have?
+      select case (rmatrix%cmatrixFormat) 
+      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
+      
+        ! Probably allocate/clear the matrix
+        if (rmatrix%h_DA .eq. ST_NOHANDLE) then
+          call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
+        else
+          if (bclear) call lsyssc_clearMatrix (rmatrix)
+        end if
+      
+        ! Loop over the element blocks to discretise
+        do iinfoBlock = 1,p_rscalarAssemblyInfo%ninfoBlockCount
+        
+          ! Get the elemetn distribution of that block.
+          ielementDistr = p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ielementDistr
+
+          ! Check if element distribution is empty
+          if (p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL .le. 0 ) cycle
+
+          ! Get list of elements present in the element distribution.
+          ! If the handle of the info block structure is not associated,
+          ! take all elements of the corresponding element distribution.
+          if (p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%h_IelementList .ne. ST_NOHANDLE) then
+            call storage_getbase_int(&
+                p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%h_IelementList,&
+                p_IelementList)
+          else
+            call storage_getbase_int(&
+                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%h_IelementList,&
+                p_IelementList)
+          end if
+
+          ! Initialise a matrix assembly structure for that element distribution
+          call bilf_initAssembly(rmatrixAssembly,rform,&
+              rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
+              rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+              p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ccubature,&
+              min(BILF_NELEMSIM,p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL))
+              
+          ! Assemble the data for all elements in this element distribution
+          call bilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,&
+              p_IelementList,fcoeff_buildMatrixBl_sim,rcollection)
+          
+          ! Release the assembly structure.
+          call bilf_doneAssembly(rmatrixAssembly)
+        end do
+                                       
+      case default
+        call output_line ('Not supported matrix structure!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+        call sys_halt()
+      end select
+      
+    case default
+      call output_line ('Single precision matrices currently not supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+      call sys_halt()
+    end select
+    
+  case default
+    call output_line ('General discretisation not implemented!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+    call sys_halt()
+  end select
+  
+  ! Release the assembly structure if necessary.
+  if (.not. present(rscalarAssemblyInfo)) then
+    call easminfo_releaseInfoStructure(rlocalScalarAssemblyInfo)
+  end if
+
+  end subroutine
  
   
 end module
