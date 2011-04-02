@@ -1598,7 +1598,7 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP) :: dx
-    logical :: bVec2Sc,bhasVelocity
+    logical :: bVec2Sc,bhasVelocity,bisVelocity
     
       mfile = rexport%iunit
 
@@ -2217,6 +2217,7 @@ contains
             if ((.not. bhasVelocity .and. j.eq.1) .or.&
                 iand(rexport%p_IvariableSpec(i),UCD_VAR_VELOCITY) .ne. 0) then
               write (mfile,'(A)') 'velocity 1'
+              bisVelocity=.true.
             else
               write (mfile,'(A)') 'vectors'
               write (mfile,'(A,1X,I5,1X,I5,1X,I5)')&
@@ -2228,6 +2229,7 @@ contains
                     trim(rexport%p_SvariableNames(i))
               end do
               write(mfile, '(A)') ""
+              bisVelocity=.false.
             end if
 
             ! Write X coordinate
@@ -2242,6 +2244,10 @@ contains
               do ivt=1,rexport%nvertices
                 write (mfile,rexport%sdataFormat) p_Ddata(ivt)
               end do
+            elseif (bisVelocity) then
+              do ivt=1,rexport%nvertices
+                write (mfile,rexport%sdataFormat) 0.0_DP
+              end do
             end if
             
             ! Write Z coordinate (if available)
@@ -2251,13 +2257,14 @@ contains
               do ivt=1,rexport%nvertices
                 write (mfile,rexport%sdataFormat) p_Ddata(ivt)
               end do
+            elseif (bisVelocity) then
+              do ivt=1,rexport%nvertices
+                write (mfile,rexport%sdataFormat) 0.0_DP
+              end do
             end if
             
             ! Write 'endvect' tag for vectors
-            i = rexport%p_Ivectors(2,j)
-            if ((bhasVelocity .or. j.ne.1) .and.&
-                iand(rexport%p_IvariableSpec(i), UCD_VAR_VELOCITY) .eq. 0)&
-                write (mfile,'(A)') 'endvect'
+            if (.not.bisVelocity) write (mfile,'(A)') 'endvect'
             
           end do ! j
 
@@ -2290,6 +2297,7 @@ contains
             if ((.not. bhasVelocity .and. j.eq.1) .or.&
                 iand(rexport%p_IvariableSpec(i),UCD_VAR_VELOCITY) .ne. 0) then
               write (mfile,'(A)') 'velocity 0'
+              bisVelocity=.true.
             else
               write (mfile,'(A)') 'vectors'
               write (mfile,'(A,1X,I5,1X,I5,1X,I5)')&
@@ -2301,6 +2309,7 @@ contains
                     trim(rexport%p_SvariableNames(i))
               end do
               write(mfile, '(A)') ""
+              bisVelocity=.false.
             end if
 
             ! Write X coordinate
@@ -2319,6 +2328,10 @@ contains
               do ivt=1,rexport%ncells
                 write (mfile,rexport%sdataFormat) p_Ddata(ivt)
               end do
+            elseif (bisVelocity) then
+              do ivt=1,rexport%ncells
+                write (mfile,rexport%sdataFormat) 0.0_DP
+              end do
             end if
             
             ! Write Z coordinate (if available)
@@ -2330,13 +2343,14 @@ contains
               do ivt=1,rexport%ncells
                 write (mfile,rexport%sdataFormat) p_Ddata(ivt)
               end do
+            elseif (bisVelocity) then
+              do ivt=1,rexport%ncells
+                write (mfile,rexport%sdataFormat) 0.0_DP
+              end do
             end if
             
             ! Write 'endvect' tag for vectors
-            i = rexport%p_Ivectors(2,j)
-            if ((bhasVelocity .or. j.ne.1) .and.&
-                iand(rexport%p_IvariableSpec(i), UCD_VAR_VELOCITY) .eq. 0)&
-                write (mfile,'(A)') 'endvect'
+            if (.not.bisVelocity) write (mfile,'(A)') 'endvect'
 
           end do ! j
 
@@ -5989,7 +6003,14 @@ stop
         !----------------------------------------------------
         ! Read velocity data
         call read_velocity (mfile,sline,rexport)
-        
+
+      elseif (trim(adjustl(skey)) .eq. "vectors") then
+
+        !----------------------------------------------------
+        ! Read vector data
+        call read_vectors (mfile,sline,rexport)
+                
+
       elseif (trim(adjustl(skey)) .eq. "variable") then
       
         !----------------------------------------------------
@@ -6048,6 +6069,7 @@ stop
       ! Allocate memory for X/Y or X/Y/Z coordinates
       allocate (DtracerCoordinates(rexport%p_rtriangulation%ndim,ntracers))
       allocate (DtracerTemp(ntracers))
+
       
       ! Read all X-coordinates
       read(mfile,*) DtracerCoordinates(1,:)
@@ -6167,8 +6189,7 @@ stop
     type(t_ucdExport), intent(inout) :: rexport
     
       ! Local variables
-      integer :: iel,ivt
-      integer :: ilinelen,ios,itype,imaterial
+      integer :: ilinelen,ios,itype
       logical :: bfinish
       character(LEN=SYS_STRLEN) :: skey,sline,sname
       real(DP), dimension(:), allocatable :: Dcell
@@ -6192,18 +6213,12 @@ stop
         select case (itype)
         case (0) 
           ! Cell based data. Read and remember
-          do iel = 1, rexport%p_rtriangulation%NEL
-            read(mfile,FMT=rexport%sdataFormat) Dcell(iel)
-          end do
-          
+          read(mfile,*) Dcell(:)
           call ucd_addVariableElementBased (rexport,sname,UCD_VAR_STANDARD,Dcell)
               
         case (1)
           ! Node/Vertex based data.
-          do ivt = 1, rexport%p_rtriangulation%NVT
-            read(mfile,FMT=rexport%sdataFormat) Dnode(ivt)
-          end do
-          
+          read(mfile,*) Dnode(:)
           call ucd_addVariableVertexBased (rexport,sname,UCD_VAR_STANDARD,Dnode)
           
         case DEFAULT
@@ -6331,7 +6346,7 @@ stop
       case (0) 
             
         ! Element based velocity data. Allocate memory.
-        allocate(Ddata(rexport%p_rtriangulation%NEL,rexport%p_rtriangulation%ndim))
+        allocate(Ddata(rexport%p_rtriangulation%NEL,NDIM3D))
         
         ! Read the X-, Y- and Z-velocity
         read(mfile,*) Ddata(:,1)
@@ -6358,7 +6373,7 @@ stop
       case (1)
         
         ! Node based velocity data. Allocate memory.
-        allocate(Ddata(rexport%p_rtriangulation%NVT,rexport%p_rtriangulation%ndim))
+        allocate(Ddata(rexport%p_rtriangulation%NVT,NDIM3D))
         
         ! Read the X-, Y- and Z-velocity
         read(mfile,*) Ddata(:,1)
@@ -6368,26 +6383,153 @@ stop
         select case(rexport%p_rtriangulation%ndim)
         case (NDIM1D)
           ! Put the data to the rexport structure
-          call ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1))
+          call ucd_addVarVertBasedVec (rexport, sname, UCD_VAR_VELOCITY,&
+              Ddata(:,1))
         
         case (NDIM2D)
           ! Put the data to the rexport structure
-          call ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1), Ddata(:,2))
+          call ucd_addVarVertBasedVec (rexport, sname, UCD_VAR_VELOCITY,&
+              Ddata(:,1), Ddata(:,2))
 
         case (NDIM3D)
           ! Put the data to the rexport structure
-          call ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1), Ddata(:,2), Ddata(:,3))
+          call ucd_addVarVertBasedVec (rexport, sname, UCD_VAR_VELOCITY,&
+              Ddata(:,1), Ddata(:,2), Ddata(:,3))
         end select
-        
+
         ! Deallocate memory
         deallocate(Ddata)
-        
+
       case DEFAULT
         call output_line ('Error reading GMV data! Unknown variable type!', &
                 OU_CLASS_ERROR,OU_MODE_STD,'read_velocity')
         call sys_halt()
 
       end select
+
+    end subroutine
+
+    ! ---------------------------------------------------------------
+    
+    subroutine read_vectors (mfile,scommand,rexport)
+
+    ! Reads data about variables from the GMV file mfile.
+      
+    ! Handle to the GMV file
+    integer, intent(in) :: mfile
+      
+    ! Last command line in the GMV file 
+    character(LEN=*), intent(in) :: scommand
+    
+    ! UCD structure where data is saved to.
+    type(t_ucdExport), intent(inout) :: rexport
+
+      ! Local variables
+      integer :: iel,ivt,i
+      integer :: ilinelen,ios,itype,ncomps,cnameflag
+      logical :: bfinish
+      character(LEN=SYS_STRLEN) :: skey,sline,sname
+      real(DP), dimension(:,:), allocatable :: Ddata
+      
+      ! Read the next line specifying basic data about the variable
+      call io_readlinefromfile (mfile, sline, ilinelen, ios)
+      call sys_tolower (sline)
+
+      read(sline,*) skey
+      bfinish = (trim(adjustl(skey)) .eq. 'endvect') 
+      do while ((ios .eq. 0) .and. (.not. bfinish))
+        
+        ! Read variable name, type, ncomps, cnameflag
+        read (sline,*) sname,itype,ncomps,cnameflag
+
+        ! Skip line if cnameflag=1
+        if (cnameflag .eq. 1)&
+            call io_readlinefromfile (mfile, sline, ilinelen, ios)
+
+        select case (itype)
+        case (0)
+
+          ! Element based vector data. Allocate memory.
+          allocate(Ddata(rexport%p_rtriangulation%NEL,rexport%p_rtriangulation%ndim))
+
+          ! Read the X-,Y-, and Z-component (if available)
+          do i = 1, rexport%p_rtriangulation%ndim
+            if (ncomps .ge. i) then
+              read(mfile,*) Ddata(:,i)
+            else
+              Ddata(:,i) = 0.0_DP
+            end if
+          end do
+          
+          select case(rexport%p_rtriangulation%ndim)
+          case (NDIM1D)
+            ! Put the data to the rexport structure
+            call ucd_addVarElemBasedVec (rexport, sname, Ddata(:,1))
+            
+          case (NDIM2D)
+            ! Put the data to the rexport structure
+            call ucd_addVarElemBasedVec (rexport, sname, Ddata(:,1), Ddata(:,2))
+            
+          case (NDIM3D)
+            ! Put the data to the rexport structure
+            call ucd_addVarElemBasedVec (rexport, sname, Ddata(:,1), Ddata(:,2), Ddata(:,3))
+          end select
+          
+          ! Deallocate memory
+          deallocate(Ddata)
+
+        case (1)
+          
+          ! Node based velocity data. Allocate memory.
+          allocate(Ddata(rexport%p_rtriangulation%NVT,rexport%p_rtriangulation%ndim))
+
+          ! Read the X-,Y-, and Z-component (if available)
+          do i = 1, rexport%p_rtriangulation%ndim
+            if (ncomps .ge. i) then
+              read(mfile,*) Ddata(:,i)
+            else
+              Ddata(:,i) = 0.0_DP
+            end if
+          end do
+          
+          select case(rexport%p_rtriangulation%ndim)
+          case (NDIM1D)
+            ! Put the data to the rexport structure
+            call ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1))
+            
+          case (NDIM2D)
+            ! Put the data to the rexport structure
+            call ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1), Ddata(:,2))
+            
+          case (NDIM3D)
+            ! Put the data to the rexport structure
+            call ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1), Ddata(:,2), Ddata(:,3))
+          end select
+          
+          ! Deallocate memory
+          deallocate(Ddata)
+          
+        case DEFAULT
+          call output_line ('Error reading GMV data! Unknown variable type!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'read_vectors')
+          call sys_halt()
+
+        end select
+
+        ! Read the next line specifying basic data about the next variable
+        call io_readlinefromfile (mfile, sline, ilinelen, ios)
+        call sys_tolower (sline)
+        
+        read(sline,*) skey
+        bfinish = (trim(adjustl(skey)) .eq. 'endvect') 
+        
+      end do
+
+      if (ios .ne. 0) then
+        call output_line ('Error reading GMV data!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'read_vectors')
+        call sys_halt()
+      end if
 
     end subroutine
 
