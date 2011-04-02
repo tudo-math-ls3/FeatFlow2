@@ -4620,7 +4620,7 @@ stop
 !<subroutine>
 
   subroutine ucd_addVariableVertexBased1 (rexport, sname, &
-      DdataVert, DdataMid, DdataElem, cvarSpec)
+      DdataVert, DdataMid, DdataElem, cvarSpecOpt)
 
 !<description>
   ! Adds variable data to the ouput file identified by rexport, based
@@ -4650,13 +4650,13 @@ stop
   ! OPTIONAL: Specification bitfield for the variable. A combination of the 
   ! UCD_VAR_xxxx flags for special-type variables (like x-/y-velocity).
   ! If not specified, UCD_VAR_STANDARD is used.
-  integer(I32), intent(in), optional :: cvarSpec
+  integer(I32), intent(in), optional :: cvarSpecOpt
 !</input>
 
 !</subroutine>
 
-    if (present(cvarSpec)) then
-      call ucd_addVariableVertexBased (rexport, sname, cvarSpec, &
+    if (present(cvarSpecOpt)) then
+      call ucd_addVariableVertexBased (rexport, sname, cvarSpecOpt, &
           DdataVert, DdataMid, DdataElem)
     else
       call ucd_addVariableVertexBased (rexport, sname, UCD_VAR_STANDARD, &
@@ -4786,7 +4786,7 @@ stop
 
   subroutine ucd_addVarVertBasedVec1 (rexport, sname, DdataVert_X, &
       DdataVert_Y, DdataVert_Z, DdataMid_X, DdataMid_Y, DdataMid_Z, &
-      DdataElem_X, DdataElem_Y, DdataElem_Z, cvarSpec)
+      DdataElem_X, DdataElem_Y, DdataElem_Z, cvarSpecOpt)
   
 !<description>
   ! Adds variable vector data to the ouput file identified by rexport, based
@@ -4827,13 +4827,13 @@ stop
   ! OPTIONAL: Specification bitfield for the variable. A combination
   ! of the UCD_VAR_xxxx flags.
   ! If not specified, UCD_VAR_STANDARD is used.
-  integer(I32), intent(in), optional :: cvarSpec
+  integer(I32), intent(in), optional :: cvarSpecOpt
 !</input>
 
 !</subroutine>
 
-    if (present(cvarSpec)) then
-      call ucd_addVarVertBasedVec2(rexport, sname, cvarSpec,&
+    if (present(cvarSpecOpt)) then
+      call ucd_addVarVertBasedVec2(rexport, sname, cvarSpecOpt,&
           DdataVert_X, DdataVert_Y, DdataVert_Z,&
           DdataMid_X, DdataMid_Y, DdataMid_Z, &
           DdataElem_X, DdataElem_Y, DdataElem_Z)
@@ -4964,7 +4964,7 @@ stop
 !<subroutine>
 
   subroutine ucd_addVarElemBasedVec1 (rexport, sname,&
-      Ddata_X, Ddata_Y, Ddata_Z, cvarSpec)
+      Ddata_X, Ddata_Y, Ddata_Z, cvarSpecOpt)
 
 !<description>
   ! Adds variable vector data to the ouput file identified by rexport, based
@@ -4992,13 +4992,13 @@ stop
   ! OPTIONAL: Specification bitfield for the variable. A combination
   ! of the UCD_VAR_xxxx flags.
   ! If not specified, UCD_VAR_STANDARD is used.
-  integer(I32), intent(in), optional :: cvarSpec
+  integer(I32), intent(in), optional :: cvarSpecOpt
 !</input>
 
 !</subroutine>
 
-    if (present(cvarSpec)) then
-      call ucd_addVarElemBasedVec2 (rexport, sname, cvarSpec,&
+    if (present(cvarSpecOpt)) then
+      call ucd_addVarElemBasedVec2 (rexport, sname, cvarSpecOpt,&
           Ddata_X, Ddata_Y, Ddata_Z)
     else
       call ucd_addVarElemBasedVec2 (rexport, sname, UCD_VAR_STANDARD,&
@@ -5110,7 +5110,7 @@ stop
   
 !<subroutine>
 
-  subroutine ucd_addVariableElementBased1 (rexport, sname, Ddata, cvarSpec)
+  subroutine ucd_addVariableElementBased1 (rexport, sname, Ddata, cvarSpecOpt)
 
 !<description>
   ! Adds variable data to the ouput file identified by rexport, based on elements.
@@ -5131,13 +5131,13 @@ stop
   ! OPTIONAL: Specification bitfield for the variable. A combination
   ! of the UCD_VAR_xxxx flags.
   ! If not specified, UCD_VAR_STANDARD is used.
-  integer(I32), intent(in), optional :: cvarSpec
+  integer(I32), intent(in), optional :: cvarSpecOpt
 !</input>
 
 !</subroutine>
 
-    if (present(cvarSpec)) then
-      call ucd_addVariableElementBased2 (rexport, sname, cvarSpec, Ddata)
+    if (present(cvarSpecOpt)) then
+      call ucd_addVariableElementBased2 (rexport, sname, cvarSpecOpt, Ddata)
     else
       call ucd_addVariableElementBased2 (rexport, sname, UCD_VAR_STANDARD, Ddata)
     end if
