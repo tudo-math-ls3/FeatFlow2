@@ -3010,23 +3010,25 @@ contains
 
       elseif (trim(slimitingvariable) .eq. 'none') then
         
-        ! Apply raw antidiffusive fluxes without correction
-        iopSpec = ioperationSpec
-        iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_ADINCREMENTS))
-        iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_BOUNDS))
-        iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITNODAL))
-        iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
-        
-        ! Enforce existence of edgewise correction factors
-        p_rafcstab%istabilisationSpec =&
-            ior(p_rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
-
-        call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
-            rsolution, dscale, bclear, iopSpec, rresidual)
-        
-        ! Nothing more needs to be done
-        return
+        if (nvariable .eq. 1) then
+          ! Apply raw antidiffusive fluxes without correction
+          iopSpec = ioperationSpec
+          iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_ADINCREMENTS))
+          iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_BOUNDS))
+          iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITNODAL))
+          iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
+          
+          ! Enforce existence of edgewise correction factors
+          p_rafcstab%istabilisationSpec =&
+              ior(p_rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
+          
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual)
+          
+          ! Nothing more needs to be done
+          return
+        end if
 
       else
         call output_line('Invalid type of flux transformation!',&
