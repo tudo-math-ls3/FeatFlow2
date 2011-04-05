@@ -82,7 +82,7 @@
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the bilinear form.
-    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+    real(DP), dimension(:,:,:,:,:), intent(out) :: Dcoefficients
   !</output>
     
   !</subroutine>

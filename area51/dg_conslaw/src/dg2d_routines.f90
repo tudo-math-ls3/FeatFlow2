@@ -11659,6 +11659,55 @@ end do
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 !****************************************************************************
 
 !<subroutine>
@@ -11717,7 +11766,7 @@ end do
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(inout) :: rmatrix
+  type(t_matrixBlock), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -11729,27 +11778,28 @@ end do
   type(t_extScalarAssemblyInfo), target :: rlocalScalarAssemblyInfo
   type(t_extScalarAssemblyInfo), pointer :: p_rscalarAssemblyInfo
   
+  
   ! The matrix must be unsorted, otherwise we can not set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
   ! of a vector, since there is a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
-  if (rmatrix%isortStrategy .gt. 0) then
-    call output_line ('Matrix-structure must be unsorted!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
-    call sys_halt()
-  end if
+!  if (rmatrix%isortStrategy .gt. 0) then
+!    call output_line ('Matrix-structure must be unsorted!', &
+!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+!    call sys_halt()
+!  end if
 
-  if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
-      (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
-    call output_line ('No discretisation associated!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
-    call sys_halt()
-  end if
+!  if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
+!      (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
+!    call output_line ('No discretisation associated!', &
+!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+!    call sys_halt()
+!  end if
   
   ! If we do not have it, create a scalar assembly info structure that
   ! defines how to do the assembly.
   if (.not. present(rscalarAssemblyInfo)) then
-    call easminfo_createDefInfoStructure(rmatrix%p_rspatialDiscrTrial,&
+    call easminfo_createDefInfoStructure(rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
         rlocalScalarAssemblyInfo,0)
     p_rscalarAssemblyInfo => rlocalScalarAssemblyInfo
   else
@@ -11757,26 +11807,26 @@ end do
   end if
 
   ! Do we have a uniform triangulation? Would simplify a lot...
-  select case (rmatrix%p_rspatialDiscrTest%ccomplexity)
+  select case (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity)
   case (SPDISC_UNIFORM,SPDISC_CONFORMAL) 
     ! Uniform and conformal discretisations
-    select case (rmatrix%cdataType)
+    select case (rmatrix%RmatrixBlock(1,1)%cdataType)
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
-      select case (rmatrix%cmatrixFormat) 
+      select case (rmatrix%RmatrixBlock(1,1)%cmatrixFormat) 
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
       
-        ! Probably allocate/clear the matrix
-        if (rmatrix%h_DA .eq. ST_NOHANDLE) then
-          call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
-        else
-          if (bclear) call lsyssc_clearMatrix (rmatrix)
-        end if
+!        ! Probably allocate/clear the matrix
+!        if (rmatrix%h_DA .eq. ST_NOHANDLE) then
+!          call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
+!        else
+          if (bclear) call lsysbl_clearMatrix (rmatrix)
+!        end if
       
         ! Loop over the element blocks to discretise
         do iinfoBlock = 1,p_rscalarAssemblyInfo%ninfoBlockCount
         
-          ! Get the elemetn distribution of that block.
+          ! Get the element distribution of that block.
           ielementDistr = p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ielementDistr
 
           ! Check if element distribution is empty
@@ -11791,19 +11841,19 @@ end do
                 p_IelementList)
           else
             call storage_getbase_int(&
-                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%h_IelementList,&
+                rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%h_IelementList,&
                 p_IelementList)
           end if
 
           ! Initialise a matrix assembly structure for that element distribution
           call bilf_initAssembly(rmatrixAssembly,rform,&
-              rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
-              rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+              rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
+              rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
               p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ccubature,&
               min(BILF_NELEMSIM,p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL))
               
           ! Assemble the data for all elements in this element distribution
-          call bilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,&
+          call bilf_assembleSubmeshMatrix9Block (rmatrixAssembly,rmatrix,&
               p_IelementList,fcoeff_buildMatrixBl_sim,rcollection)
           
           ! Release the assembly structure.
@@ -11834,6 +11884,433 @@ end do
   end if
 
   end subroutine
+  
+  
+  !****************************************************************************
+  
+!<subroutine>  
+  
+  subroutine bilf_assembleSubmeshMatrix9Block (rmatrixAssembly, rmatrix, IelementList,&
+      fcoeff_buildMatrixBl_sim, rcollection)
+ 
+!<description>
+
+  ! Assembles the matrix entries for a submesh by integrating over the domain.
+
+!</description>
+ 
+!<input>
+  
+  ! List of elements where to assemble the bilinear form.
+  integer, dimension(:), intent(in), target :: IelementList
+  
+  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
+  ! Must be present if the matrix has nonconstant coefficients!
+  include 'intf_coefficientMatrixBl.inc'
+  optional :: fcoeff_buildMatrixBl_sim
+  
+!</input>
+
+!<inputoutput>
+  
+  ! A matrix assembly structure prepared with bilf_initAssembly.
+  type(t_bilfMatrixAssembly), intent(inout), target :: rmatrixAssembly
+  
+  ! A matrix where to assemble the contributions to.
+  type(t_matrixBlock), intent(inout) :: rmatrix
+  
+  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information. 
+  type(t_collection), intent(inout), target, optional :: rcollection
+  
+!</inputoutput>
+  
+!</subroutine>
+  
+    ! local variables, used by all processors
+    real(DP), dimension(:), pointer :: p_DA
+    integer :: indofTest,indofTrial,ncubp
+    
+    ! local data of every processor when using OpenMP
+    integer :: IELset,IELmax
+    integer :: iel,icubp,ialbet,ia,ib,idofe,jdofe
+    real(DP) :: domega,daux,db
+    integer(I32) :: cevaluationTag
+    type(t_bilfMatrixAssembly), target :: rlocalMatrixAssembly
+    type(t_domainIntSubset) :: rintSubset
+    integer, dimension(:,:,:), pointer :: p_Kentry
+    real(DP), dimension(:,:,:,:,:), pointer :: p_Dentry
+    real(DP), dimension(:,:), pointer :: p_Ddetj
+    real(DP), dimension(:), pointer :: p_Domega
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial
+    real(DP), dimension(:,:,:,:,:), pointer :: p_Dcoefficients
+    real(DP), dimension(:), pointer :: p_DcoefficientsBilf
+    integer, dimension(:,:), pointer :: p_IdofsTest
+    integer, dimension(:,:), pointer :: p_IdofsTrial
+    type(t_evalElementSet), pointer :: p_revalElementSet
+    integer, dimension(:,:),pointer :: p_Idescriptors
+    integer :: nblocksi, nblocksj
+    integer :: iblock, jblock
+    
+    type t_array
+     ! Pointer to the double-valued matrix or vector data
+     real(DP), dimension(:), pointer :: Da
+    end type t_array
+    
+    type(t_array), dimension(:,:), allocatable :: p_matrixBlockDataPointers
+    
+    
+  
+    ! Get some pointers for faster access
+!    call lsyssc_getbase_double (rmatrix,p_DA)
+    indofTest  = rmatrixAssembly%indofTest
+    indofTrial = rmatrixAssembly%indofTrial
+    ncubp      = rmatrixAssembly%ncubp
+    
+    ! Get number of blocks in the matrix and test if this equals the number of rows
+    nblocksi = rmatrix%nblocksPerRow
+    nblocksj = rmatrix%nblocksPerCol
+    
+    ! Allocate space for the local matrices and coeffi
+    allocate(p_Dentry(indofTrial,indofTest,nblocksi,nblocksj,iel))
+    allocate(p_Dcoefficients(nblocksi,nblocksj,rlocalMatrixAssembly%rform%itermcount,ncubp,iel))
+    
+    ! OpenMP-Extension: Copy the matrix assembly data to the local
+    ! matrix assembly data, where we can allocate memory.
+    !
+    ! For single processor machines, this is actually boring and nonsense.
+    ! But using OpenMP, here we get a local copy of the matrix
+    ! assembly structure to where we can add some local data which
+    ! is released upon return without changing the original matrix assembly
+    ! stucture or disturbing the data of the other processors.
+    !
+    !$omp parallel default(shared) &
+    !$omp private(IELmax,cevaluationTag,daux,db,domega,ia,ialbet,ib,icubp,&
+    !$omp         idofe,iel,jdofe,p_DbasTest,p_DbasTrial,p_Dcoefficients,&
+    !$omp         p_DcoefficientsBilf,p_Ddetj,p_Dentry,p_Domega,p_Idescriptors,&
+    !$omp         p_IdofsTest,p_IdofsTrial,p_Kentry,p_revalElementSet,&
+    !$omp         rintSubset,rlocalMatrixAssembly)
+    rlocalMatrixAssembly = rmatrixAssembly
+    call bilf_allocAssemblyData(rlocalMatrixAssembly)
+    
+    ! Get some more pointers to local data.
+    p_Kentry            => rlocalMatrixAssembly%p_Kentry
+!    p_Dentry            => rlocalMatrixAssembly%p_Dentry
+    p_Domega            => rlocalMatrixAssembly%p_Domega
+    p_DbasTest          => rlocalMatrixAssembly%p_DbasTest
+    p_DbasTrial         => rlocalMatrixAssembly%p_DbasTrial
+!    p_Dcoefficients     => rlocalMatrixAssembly%p_Dcoefficients
+    p_Idescriptors      => rlocalMatrixAssembly%rform%Idescriptors
+    p_IdofsTest         => rlocalMatrixAssembly%p_IdofsTest
+    p_IdofsTrial        => rlocalMatrixAssembly%p_IdofsTrial
+    p_revalElementSet   => rlocalMatrixAssembly%revalElementSet
+    p_DcoefficientsBilf => rlocalMatrixAssembly%rform%Dcoefficients
+        
+    ! Loop over the elements - blockwise.
+    !
+    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
+    ! so nelementsPerBlock local matrices are simultaneously calculated in the
+    ! inner loop(s).
+    ! The blocks have all the same size, so we can use static scheduling.
+    !
+    !$omp do schedule(static,1)
+    do IELset = 1, size(IelementList), rmatrixAssembly%nelementsPerBlock
+    
+      ! We always handle nelementsPerBlock elements simultaneously.
+      ! How many elements have we actually here?
+      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! elements simultaneously.
+      
+      IELmax = min(size(IelementList),IELset-1+rmatrixAssembly%nelementsPerBlock)
+    
+      ! --------------------- DOF SEARCH PHASE ------------------------
+    
+      ! The outstanding feature with finite elements is: A basis
+      ! function for a DOF on one element has common support only
+      ! with the DOF`s on the same element! E.g. for Q1:
+      !
+      !        #. . .#. . .#. . .#
+      !        .     .     .     .
+      !        .  *  .  *  .  *  .
+      !        #-----O-----O. . .#
+      !        |     |     |     .
+      !        |     | iel |  *  .
+      !        #-----X-----O. . .#
+      !        |     |     |     .
+      !        |     |     |  *  .
+      !        #-----#-----#. . .#
+      !
+      ! --> On element iel, the basis function at "X" only interacts
+      !     with the basis functions in "O". Elements in the 
+      !     neighbourhood ("*") have no support, therefore we only have
+      !     to collect all "O" DOF`s.
+      !
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
+      !
+      ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      call dof_locGlobMapping_mult(rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest, &
+          IelementList(IELset:IELmax), p_IdofsTest)
+                                   
+      ! If the DOF`s for the test functions are different, calculate them, too.
+      if (.not. rlocalMatrixAssembly%bIdenticalTrialAndTest) then
+        call dof_locGlobMapping_mult(rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial, &
+            IelementList(IELset:IELmax), p_IdofsTrial)
+      end if
+      
+      ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
+      
+      ! For the assembly of the global matrix, we use a "local"
+      ! approach. At first we build a "local" system matrix according
+      ! to the current element. This contains all additive
+      ! contributions of element iel, which are later added at the
+      ! right positions to the elements in the global system matrix.
+      !
+      ! We have indofTrial trial DOF`s per element and
+      ! indofTest test DOF`s per element. Therefore there are
+      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
+      ! "active" (i.e. have common support) on our current element, each 
+      ! giving an additive contribution to the system matrix.
+      !
+      ! We build a quadratic indofTrial*indofTest local matrix:
+      ! Kentry(1..indofTrial,1..indofTest) receives the position 
+      ! in the global system matrix, where the corresponding value 
+      ! has to be added to.
+      ! (The corresponding contributions can be saved separately, 
+      ! but we directly add them to the global matrix in this 
+      ! approach.)
+      !
+      ! We build local matrices for all our elements 
+      ! in the set simultaneously. Get the positions of the local matrices
+      ! in the global matrix.
+      call bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),p_IdofsTest,p_IdofsTrial,p_Kentry,&
+          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)
+      
+      ! -------------------- ELEMENT EVALUATION PHASE ----------------------
+      
+      ! Ok, we found the positions of the local matrix entries
+      ! that we have to change.
+      ! To calculate the matrix contributions, we have to evaluate
+      ! the elements to give us the values of the basis functions
+      ! in all the DOF`s in all the elements in our set.
+
+      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+      ! the elements later. All of them can be combined with OR, what will give
+      ! a combined evaluation tag. 
+      cevaluationTag = rlocalMatrixAssembly%cevaluationTag
+      
+      ! In the first loop, calculate the coordinates on the reference element.
+      ! In all later loops, use the precalculated information.
+      !
+      ! If the cubature points are already initialised, do not do it again.
+      ! We check this by taking a look to iinitialisedElements which
+      ! gives the current maximum of initialised elements.
+      if (IELmax .gt. rlocalMatrixAssembly%iinitialisedElements) then
+
+        ! (Re-)initialise!
+        cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
+
+        ! Remember the new number of initialised elements
+        rlocalMatrixAssembly%iinitialisedElements = IELmax
+
+      else
+        ! No need.
+        cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+      end if
+
+      ! Calculate all information that is necessary to evaluate the finite element
+      ! on all cells of our subset. This includes the coordinates of the points
+      ! on the cells.
+      call elprep_prepareSetForEvaluation (p_revalElementSet,&
+          cevaluationTag, rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%p_rtriangulation, &
+          IelementList(IELset:IELmax), rlocalMatrixAssembly%ctrafoType, &
+          rlocalMatrixAssembly%p_DcubPtsRef(:,1:ncubp))
+      p_Ddetj => p_revalElementSet%p_Ddetj
+      
+      ! If the matrix has nonconstant coefficients, calculate the coefficients now.
+
+      call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
+      rintSubset%ielementDistribution =  0
+      rintSubset%ielementStartIdx     =  IELset
+      rintSubset%p_Ielements          => IelementList(IELset:IELmax)
+      rintSubset%p_IdofsTrial         => p_IdofsTrial
+      rintSubset%celement             =  rlocalMatrixAssembly%celementTrial
+      call fcoeff_buildMatrixSc_sim (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest,&
+          rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+          rlocalMatrixAssembly%rform, IELmax-IELset+1, ncubp,&
+          p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+          p_IdofsTrial, p_IdofsTest, rintSubset, &
+          p_Dcoefficients(:,:,:,:,1:IELmax-IELset+1), rcollection)
+      call domint_doneIntegration (rintSubset)
+      
+      ! Calculate the values of the basis functions.
+      call elem_generic_sim2 (rlocalMatrixAssembly%celementTest, &
+          p_revalElementSet, rlocalMatrixAssembly%BderTest, &
+          rlocalMatrixAssembly%p_DbasTest)
+      
+      ! Omit the calculation of the trial function values if they
+      ! are identical to the test function values.
+      if (.not. rlocalMatrixAssembly%bidenticalTrialAndTest) then
+        call elem_generic_sim2 (rlocalMatrixAssembly%celementTrial, &
+            p_revalElementSet, rlocalMatrixAssembly%BderTrial, &
+            rlocalMatrixAssembly%p_DbasTrial)
+      end if
+      
+      ! --------------------- DOF COMBINATION PHASE ------------------------
+      
+      ! Values of all basis functions calculated. Now we can start 
+      ! to integrate!
+
+      ! Clear the local matrices
+      p_Dentry(:,:,:,:,1:IELmax-IELset+1) = 0.0_DP
+      
+
+      
+        ! Nonconstant coefficients. The coefficients are to be found in
+        ! the Dcoefficients variable as computed above.
+        !
+        ! Loop over the elements in the current set.
+
+        do iel = 1,IELmax-IELset+1
+          
+          ! Loop over all cubature points on the current element
+          do icubp = 1, ncubp
+
+            ! calculate the current weighting factor in the cubature formula
+            ! in that cubature point.
+            !
+            ! Take the absolut value of the determinant of the mapping.
+            ! In 2D, the determinant is always positive, whereas in 3D,
+            ! the determinant might be negative -- that is normal!
+
+            domega = p_Domega(icubp)*abs(p_Ddetj(icubp,iel))
+
+            ! Loop over the additive factors in the bilinear form.
+            do ialbet = 1,rlocalMatrixAssembly%rform%itermcount
+            
+              ! Get from Idescriptors the type of the derivatives for the 
+              ! test and trial functions. The summand we calculate
+              ! here will be added to the matrix entry:
+              !
+              ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
+              !
+              ! -> Ix=0: function value, 
+              !      =1: first derivative, ...
+              !    as defined in the module 'derivative'.
+              
+              ia = rlocalMatrixAssembly%rform%Idescriptors(1,ialbet)
+              ib = rlocalMatrixAssembly%rform%Idescriptors(2,ialbet)
+              
+              ! Multiply domega with the coefficient of the form.
+              ! This gives the actual value to multiply the
+              ! function value with before summing up to the integral.
+              ! Get the precalculated coefficient from the coefficient array.
+              !daux = domega * p_Dcoefficients(ialbet,icubp,iel)
+            
+              ! Now loop through all possible combinations of DOF`s
+              ! in the current cubature point. The outer loop
+              ! loops through the "O" in the above picture,
+              ! the test functions:
+              
+              do iblock = 1, nblocksi
+              do jblock = 1, nblocksj
+
+              do idofe = 1,indofTest
+                
+                ! Get the value of the (test) basis function 
+                ! phi_i (our "O") in the cubature point:
+                db = p_DbasTest(idofe,ib,icubp,iel)
+                
+                ! Perform an inner loop through the other DOF`s
+                ! (the "X"). 
+
+                do jdofe = 1,indofTrial
+              
+                  ! Get the value of the basis function 
+                  ! psi_j (our "X") in the cubature point. 
+                  ! Them multiply:
+                  !    db * dbas(..) * daux
+                  ! ~= phi_i * psi_j * coefficient * cub.weight
+                  ! Summing this up gives the integral, so the contribution
+                  ! to the global matrix. 
+                  !
+                  ! Simply summing up db * dbas(..) * daux would give
+                  ! the coefficient of the local matrix. We save this
+                  ! contribution in the local matrix of element iel.
+
+                  !JCOLB = Kentry(jdofe,idofe,iel)
+                  !p_DA(JCOLB) = p_DA(JCOLB) + db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
+                  p_Dentry(jdofe,idofe,iblock,jblock,iel) = &
+                      p_Dentry(jdofe,idofe,iblock,jblock,iel)+db*p_DbasTrial(jdofe,ia,icubp,iel)*domega*p_Dcoefficients(iblock,jblock,ialbet,icubp,iel)
+                
+                end do
+              
+              end do ! jdofe
+              end do
+              end do
+              
+            end do ! ialbet
+
+          end do ! icubp 
+          
+        end do ! iel
+
+      ! Incorporate the local matrices into the global one.
+      ! Kentry gives the position of the additive contributions in Dentry.
+      !
+      ! OpenMP-Extension: This is a critical section. Only one thread is
+      ! allowed to write to the matrix, otherwise the matrix may get
+      ! messed up.
+      ! The critical section is put around both loops as indofTest/indofTrial
+      ! are usually small and quickly to handle.
+      !
+      
+      ! Get pointers to the data entries of the block matrix
+      do iblock = 1, nblocksi
+        do jblock = 1, nblocksj
+          call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),p_matrixBlockDataPointers(iblock,jblock)%Da)
+        end do
+      end do
+      
+      !$omp critical
+      do iel = 1,IELmax-IELset+1
+        do iblock = 1, nblocksi
+        do jblock = 1, nblocksj
+        do idofe = 1,indofTest
+          do jdofe = 1,indofTrial
+!            p_DA(p_Kentry(jdofe,idofe,iel)) = &
+!                p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
+            p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentry(jdofe,idofe,iel)) = &
+                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iblock,jblock,iel)
+          end do
+          end do
+          end do
+        end do
+
+      end do ! iel
+      !$omp end critical
+
+    end do ! IELset
+    !$omp end do
+    
+    ! Release the local matrix assembly structure
+    call bilf_releaseAssemblyData(rlocalMatrixAssembly)
+    !$omp end parallel
+    
+    ! Deallocate local matrices and coefficients
+    deallocate(p_Dentry,p_Dcoefficients)
+
+  end subroutine
+  
+  
+  
+  
+  
+  
+  
+  
  
   
 end module
