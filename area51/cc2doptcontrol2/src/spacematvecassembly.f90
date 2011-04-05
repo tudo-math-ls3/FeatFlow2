@@ -3462,6 +3462,22 @@ contains
           ! Project that to the allowed range.
           select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints)
           
+          case (0)
+            ! No constraints.
+            !
+            ! Multiply with the mass matrix to include it to the defect.
+            ! Note that the multiplication factor is -(-cx) = cx because
+            ! it's put on the RHS of the system for creating the defect.
+            ! d = b - cx A x = b - ... + \nu Laplace(y) - y\grad(y) - grad(p) + P(-1/alpha lambda)
+            call lsyssc_scalarMatVec (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
+                rtempVectorX%RvectorBlock(1), &
+                rd%RvectorBlock(1), dcx, 1.0_DP)
+            call lsyssc_scalarMatVec (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
+                rtempVectorX%RvectorBlock(2), &
+                rd%RvectorBlock(2), dcx, 1.0_DP)
+          
           case (2)
             ! Use the dual solution as right hand side and assemble a temporary vector
             ! like a right hand side. The result can be added to the defect.
