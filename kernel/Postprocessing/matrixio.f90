@@ -664,7 +664,7 @@ contains
       if (bnoZero) then
         ! SYS_MAXREAL is written out as '.'
         do j=1, ncol
-          p_FrowVec(j) = real(SYS_MAXREAL, SP)
+          p_FrowVec(j) = huge(1.0_SP)
         end do
       else
         do j=1, ncol
@@ -681,7 +681,7 @@ contains
       do j=1, ncol-1
         fval = p_FrowVec(j)
         if (abs(fval) .lt. fthreshold) fval = 0.0_SP
-        if (bnoZero .and. (fval .eq. real(SYS_MAXREAL,SP))) then
+        if (bnoZero .and. (fval .eq. huge(1.0_SP))) then
           write (cf,sformatChar, ADVANCE='NO') '.'
         else
           write (cf,sformat,ADVANCE='NO') fval
@@ -690,7 +690,7 @@ contains
       
       fval = p_FrowVec(ncol)
       if (abs(fval) .lt. fthreshold) fval = 0.0_SP
-      if (bnoZero .and. (fval .eq. SYS_MAXREAL)) then
+      if (bnoZero .and. (fval .eq. huge(1.0_SP))) then
         write (cf,sformatChar, ADVANCE='YES') '.'
       else
         write (cf,sformat,ADVANCE='YES') fval
