@@ -775,6 +775,8 @@ contains
     ! c=1/alpha if a < -1/alpha lambda_i < b and c=0 otherwise. This is the derivative
     ! of the projection operator "-P[a,b](-1/alpha lambda_i)" on the left hand
     ! side of the equation.
+    !
+    ! Collects the elements of the active set for later re-assembly.
   !</description>
     
   !<input>
@@ -3450,76 +3452,127 @@ contains
       if (rnonlinearSpatialMatrix%cmatrixType .eq. 0) then
 
         ! No, this is a standard matrix. That means, we just have to project
-        ! the control u and multiply it with the mass matrix.
+        ! the control u. 
+        if (rnonlinearSpatialMatrix%Dalpha(1,2) .ne. 0.0_DP) then
 
-        ! Copy our solution vector \lambda. Scale it by -1/alpha.
-        call lsysbl_deriveSubvector(rx,rtempVectorX,4,5,.false.)
-        call lsysbl_scaleVector(rtempVectorX,-rnonlinearSpatialMatrix%Dalpha(1,2))
+          ! Copy our solution vector \lambda. Scale it by -1/alpha.
+          call lsysbl_deriveSubvector(rx,rtempVectorX,4,5,.false.)
+          call lsysbl_scaleVector(rtempVectorX,-rnonlinearSpatialMatrix%Dalpha(1,2))
+          
+          ! Project that to the allowed range.
+          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints)
+          
+          case (2)
+            ! Use the dual solution as right hand side and assemble a temporary vector
+            ! like a right hand side. The result can be added to the defect.
+            
+            ! Temp vector.
+            call lsysbl_deriveSubvector(rx,rtempVectorB,1,2,.false.)
+            
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            case (0)
+              call smva_asmProjControlTstepConst (rtempVectorX%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1,&
+                  rtempVectorB%RvectorBlock(1))
+              call smva_asmProjControlTstepConst (rtempVectorX%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2,&
+                  rtempVectorB%RvectorBlock(2))
+            case (1)
+              call smva_asmProjControlTstepVec (rtempVectorX%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1),&
+                  rtempVectorB%RvectorBlock(1))
+              call smva_asmProjControlTstepVec (rtempVectorX%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2),&
+                  rtempVectorB%RvectorBlock(2))
+            case default
+              ! Not implemented.
+              call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+              call sys_halt()
+            end select
+            
+            ! Add/Subtract the assembled auxiliary vector to the defect.
+            call lsyssc_vectorLinearComb (rtempVectorB%RvectorBlock(1),rd%RvectorBlock(1),dcx,1.0_DP)
+            call lsyssc_vectorLinearComb (rtempVectorB%RvectorBlock(2),rd%RvectorBlock(2),dcx,1.0_DP)
+            
+            call lsysbl_releaseVector (rtempVectorB)
         
-        ! Project that to the allowed range.
-        if (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints .ne. 0) then
-
-          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
-          case (0)
-            call smva_projectControlTstepConst (rtempVectorX%RvectorBlock(1),&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
-            call smva_projectControlTstepConst (rtempVectorX%RvectorBlock(2),&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
-          case (1)
-            call smva_projectControlTstepVec (rtempVectorX%RvectorBlock(1),&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
-            call smva_projectControlTstepVec (rtempVectorX%RvectorBlock(2),&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
-          case default
+          case (4)
             ! Not implemented.
             call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
             call sys_halt()
-          end select
+        
+          case default
           
+            ! Project just the DOF's.
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            case (0)
+              call smva_projectControlTstepConst (rtempVectorX%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+              call smva_projectControlTstepConst (rtempVectorX%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+            case (1)
+              call smva_projectControlTstepVec (rtempVectorX%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+              call smva_projectControlTstepVec (rtempVectorX%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+            case default
+              ! Not implemented.
+              call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+              call sys_halt()
+            end select
+            
+            ! Now multiply with the mass matrix to include it to the defect.
+            ! Note that the multiplication factor is -(-cx) = cx because
+            ! it's put on the RHS of the system for creating the defect.
+            ! d = b - cx A x = b - ... + \nu Laplace(y) - y\grad(y) - grad(p) + P(-1/alpha lambda)
+            call lsyssc_scalarMatVec (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
+                rtempVectorX%RvectorBlock(1), &
+                rd%RvectorBlock(1), dcx, 1.0_DP)
+            call lsyssc_scalarMatVec (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
+                rtempVectorX%RvectorBlock(2), &
+                rd%RvectorBlock(2), dcx, 1.0_DP)
+
+          end select
+               
+          call lsysbl_releaseVector (rtempVectorX)
+        
         end if
-
-        ! Now carry out MV and include it to the defect.
-        ! Note that the multiplication factor is -(-cx) = cx because
-        ! it's put on the RHS of the system for creating the defect.
-        ! d = b - cx A x = b - ... + \nu Laplace(y) - y\grad(y) - grad(p) + P(-1/alpha lambda)
-        call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
-            rtempVectorX%RvectorBlock(1), &
-            rd%RvectorBlock(1), dcx, 1.0_DP)
-        call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
-            rtempVectorX%RvectorBlock(2), &
-            rd%RvectorBlock(2), dcx, 1.0_DP)
-
-        call lsysbl_releaseVector (rtempVectorX)
 
       else
 
-        ! Yes, that's a Newton matrix. That means, we have to multiply the
-        ! vector with the derivative of the projection operator:
-        ! b-(-P[a,b]'(-1/alpha lambda)).
-        ! For that purpose, we have to assemble special mass matrices:
-        select case (rnonlinearSpatialMatrix%idualSol)
-        case (1)
-          call assemblePrimalUConstrMassDefect (&
-              rnonlinearSpatialMatrix,rx,&
-              rd,dcx*rnonlinearSpatialMatrix%Dalpha(1,2),&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1)
-        case (2)
-          call assemblePrimalUConstrMassDefect (&
-              rnonlinearSpatialMatrix,rx,&
-              rd,dcx*rnonlinearSpatialMatrix%Dalpha(1,2),&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2)
-        case (3)
-          call assemblePrimalUConstrMassDefect (&
-              rnonlinearSpatialMatrix,rx,&
-              rd,dcx*rnonlinearSpatialMatrix%Dalpha(1,2),&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3)
-        end select
+        if (rnonlinearSpatialMatrix%Dalpha(1,2) .ne. 0.0_DP) then
+          ! Yes, that's a Newton matrix. That means, we have to multiply the
+          ! vector with the derivative of the projection operator:
+          ! b-(-P[a,b]'(-1/alpha lambda)).
+          ! For that purpose, we have to assemble special mass matrices:
+          select case (rnonlinearSpatialMatrix%idualSol)
+          case (1)
+            call assemblePrimalUConstrMassDefect (&
+                rnonlinearSpatialMatrix,rx,&
+                rd,dcx*rnonlinearSpatialMatrix%Dalpha(1,2),&
+                rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1)
+          case (2)
+            call assemblePrimalUConstrMassDefect (&
+                rnonlinearSpatialMatrix,rx,&
+                rd,dcx*rnonlinearSpatialMatrix%Dalpha(1,2),&
+                rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2)
+          case (3)
+            call assemblePrimalUConstrMassDefect (&
+                rnonlinearSpatialMatrix,rx,&
+                rd,dcx*rnonlinearSpatialMatrix%Dalpha(1,2),&
+                rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3)
+          end select
+        end if
         
       end if
       
@@ -4582,6 +4635,372 @@ contains
 
   end subroutine   
  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_prjControl (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+      ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    real(dp), dimension(:,:), allocatable :: Dfunc
+    integer(I32) :: celement
+    real(DP) :: da, db
+    integer :: ipt, iel
+    
+    ! Get the bounds
+    da = rcollection%DquickAccess(1)
+    db = rcollection%DquickAccess(2)
+    
+    ! Get a pointer to the FE solution from the collection.
+    ! The routine below wrote a pointer to the vector to the
+    ! first quick-access vector pointer in the collection.
+    p_rvector => rcollection%p_rvectorQuickAccess1
+
+    ! Allocate memory for the function values in the cubature points:
+    allocate(Dfunc(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+    
+    ! Calculate the function value of the solution vector in all
+    ! our cubature points:
+    !
+    ! Figure out the element type, then call the 
+    ! evaluation routine for a prepared element set.
+    ! This works only if the trial space of the matrix coincides
+    ! with the FE space of the vector T we evaluate!
+    
+    celement = rdiscretisation%RelementDistr(&
+        max(1,rdomainIntSubset%ielementDistribution))%celement
+    
+    call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
+        rdomainIntSubset%p_revalElementSet, &
+        celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc)
+    
+    ! Now check the function values lambda.
+    ! Return the projected control in every cubature point.
+    do iel = 1,ubound(Dcoefficients,3)
+      do ipt = 1,ubound(Dcoefficients,2)
+        Dcoefficients(1,ipt,iel) = min(max(Dfunc(ipt,iel),da),db)
+      end do
+    end do
+    
+    ! Release memory
+    deallocate(Dfunc)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_prjControlVec (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+      ! local variables
+    type(t_vectorBlock), pointer :: p_rvector,p_rvectorUmin,p_rvectorUmax
+    real(dp), dimension(:,:), allocatable :: Dfunc
+    real(dp), dimension(:), allocatable :: Dumin,Dumax
+    integer, dimension(:), allocatable :: Ielements
+    integer(I32) :: celement
+    real(DP) :: da, db
+    integer :: ipt, iel
+    
+    ! Get a pointer to the FE solution from the collection.
+    ! The routine below wrote a pointer to the vector to the
+    ! first quick-access vector pointer in the collection.
+    p_rvector => rcollection%p_rvectorQuickAccess1
+    p_rvectorUmin => rcollection%p_rvectorQuickAccess2
+    p_rvectorUmax => rcollection%p_rvectorQuickAccess3
+
+    ! Allocate memory for the function values in the cubature points.
+    ! Function value, minimum and maximum.
+    allocate(Dfunc(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+    
+    ! Allocate temp memory for element hints and min/max values for u.
+    allocate(Dumin(ubound(Dcoefficients,3)))
+    allocate(Dumax(ubound(Dcoefficients,3)))
+    allocate(Ielements(ubound(Dcoefficients,2)))
+    
+    ! Calculate the function value of the solution vector in all
+    ! our cubature points:
+    !
+    ! Figure out the element type, then call the 
+    ! evaluation routine for a prepared element set.
+    ! This works only if the trial space of the matrix coincides
+    ! with the FE space of the vector we evaluate!
+    
+    celement = rdiscretisation%RelementDistr(&
+        max(1,rdomainIntSubset%ielementDistribution))%celement
+    
+    call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
+        rdomainIntSubset%p_revalElementSet, &
+        celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc(:,:))
+    
+    ! Now check the function values lambda.
+    ! Return the projected control in every cubature point.
+    do iel = 1,ubound(Dcoefficients,3)
+    
+      ! Evaluate min and max value of the control in the cubature points
+      ! on the current element.
+      Ielements(:) = rdomainIntSubset%p_Ielements(iel)
+
+      call fevl_evaluate (DER_FUNC, Dumin, p_rvectorUmin%RvectorBlock(1), &
+          Dpoints(:,:,iel), IelementsHint=Ielements)
+
+      call fevl_evaluate (DER_FUNC, Dumax, p_rvectorUmin%RvectorBlock(2), &
+          Dpoints(:,:,iel), IelementsHint=Ielements)
+
+      ! Calculate the projection in the cubature points
+      do ipt = 1,ubound(Dcoefficients,2)
+        Dcoefficients(1,ipt,iel) = min(max(Dfunc(ipt,iel),Dumin(ipt)),Dumax(ipt))
+      end do
+    end do
+    
+    ! Release memory
+    deallocate(Dumin)
+    deallocate(Dumax)
+    deallocate(Ielements)
+    
+    deallocate(Dfunc)
+
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine smva_asmProjControlTstepConst (rcontrolUnrest,dumin,dumax,rprjControl)
+
+!<description>
+  ! Assembles the projected control in the dual space:
+  !   g_h = P(-1/alpha lambda) = sum g_i phi_i
+  ! with
+  !   g_i = ( -1/alpha lambda, phi_i )
+  ! This is a kind of assembly of a right hand side vector.
+  ! Uses the linearformassembly for this task.
+!</description>
+
+!<input>
+  ! Minimum value for u
+  real(DP), intent(in) :: dumin
+
+  ! Maximum value for u
+  real(DP), intent(in) :: dumax
+!</input>
+
+!<inputoutput>
+  ! The unrestricted control
+  type(t_vectorScalar), intent(inout) :: rcontrolUnrest
+
+  ! Assembled, restricted control.
+  type(t_vectorScalar), intent(inout) :: rprjControl
+!</inputoutput>
+
+!</subroutine>
+
+    type (t_linearForm) :: rlinform
+    type (t_collection) :: rcollection
+    type (t_vectorBlock), target :: rvectorTemp
+
+    ! Prepare a linearform-assembly.
+    rlinform%itermCount = 1
+    rlinform%Dcoefficients(1) = 1.0_DP
+    rlinform%Idescriptors(1) = DER_FUNC
+    
+    ! Create a temporary vector holding the solution
+    call lsysbl_createVecFromScalar (rcontrolUnrest,rvectorTemp)
+    
+    ! Prepare the collection
+    rcollection%p_rvectorQuickAccess1 => rvectorTemp
+    rcollection%DquickAccess(1) = dumin
+    rcollection%DquickAccess(2) = dumax
+    
+    ! Assemble the vector
+    call linf_buildVectorScalar2(rlinform,.true.,rprjControl,coeff_prjControl,rcollection)
+    
+    ! Release memory
+    call lsysbl_releaseVector (rvectorTemp)
+ 
+  end subroutine   
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine smva_asmProjControlTstepVec (rcontrolUnrest,rvectorumin,rvectorumax,rprjControl)
+
+!<description>
+  ! Assembles the projected control in the dual space:
+  !   g_h = P(-1/alpha lambda) = sum g_i phi_i
+  ! with
+  !   g_i = ( -1/alpha lambda, phi_i )
+  ! This is a kind of assembly of a right hand side vector.
+  ! Uses the linearformassembly for this task.
+  !
+  ! Min/Max is specified via an FE function.
+!</description>
+
+!<input>
+  ! Vector specifying the minimum value for u in each DOF
+  type(t_vectorScalar), intent(in) :: rvectorumin
+
+  ! Vector specifying the maximum value for u in each DOF
+  type(t_vectorScalar), intent(in) :: rvectorumax
+!</input>
+
+!<inputoutput>
+  ! The unrestricted control
+  type(t_vectorScalar), intent(inout) :: rcontrolUnrest
+
+  ! Assembled, restricted control.
+  type(t_vectorScalar), intent(inout) :: rprjControl
+!</inputoutput>
+
+!</subroutine>
+
+    type (t_linearForm) :: rlinform
+    type (t_collection) :: rcollection
+    type (t_vectorBlock), target :: rvectorTemp,rvectorTempUmin,rvectorTempUmax
+
+    ! Prepare a linearform-assembly.
+    rlinform%itermCount = 1
+    rlinform%Dcoefficients(1) = 1.0_DP
+    rlinform%Idescriptors(1) = DER_FUNC
+    
+    ! Create a temporary vector holding the solution
+    call lsysbl_createVecFromScalar (rcontrolUnrest,rvectorTemp)
+    call lsysbl_createVecFromScalar (rvectorumin,rvectorTempUmin)
+    call lsysbl_createVecFromScalar (rvectorumax,rvectorTempUmax)
+    
+    ! Prepare the collection
+    rcollection%p_rvectorQuickAccess1 => rvectorTemp
+    rcollection%p_rvectorQuickAccess2 => rvectorTempUmin
+    rcollection%p_rvectorQuickAccess3 => rvectorTempUmax
+    
+    ! Assemble the vector
+    call linf_buildVectorScalar2(rlinform,.true.,rprjControl,coeff_prjControlVec,rcollection)
+    
+    ! Release memory
+    call lsysbl_releaseVector (rvectorTemp)
+    call lsysbl_releaseVector (rvectorTempUmin)
+    call lsysbl_releaseVector (rvectorTempUmax)
+ 
+  end subroutine   
+
   ! ***************************************************************************
   
 !<subroutine>
