@@ -32,12 +32,21 @@
 !#
 !# 8.) vecio_writeBlockVectorMaple
 !#     -> Writes a block vector into a text file in Maple syntax
+!#
+!# 9.) vecio_spyVector
+!#     -> Writes a scalar vector into a file which can be 
+!#        visualised by means of the MATLAB command SPY
+!#
+!# 10.) vecio_spyBlockVector
+!#      -> Writes a scalar vector into a file which can be 
+!#         visualised by means of the MATLAB command SPY
 !# </purpose>
 !#########################################################################
 
 module vectorio
 
   use fsystem
+  use genoutput
   use storage
   use io
   use linearsystemscalar
@@ -55,6 +64,8 @@ module vectorio
   public :: vecio_readVectorHR
   public :: vecio_writeVectorMaple
   public :: vecio_writeBlockVectorMaple  
+  public :: vecio_spyVector
+  public :: vecio_spyBlockVector
 
 contains
 
@@ -102,8 +113,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE, bformatted=present(sformat))
       if (cf .eq. -1) then
-        print *, 'vecio_writeArray_Dble: Could not open file '// &
-                 trim(sfile)
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeArray_Dble')
         call sys_halt()
       end if
     else
@@ -136,6 +147,93 @@ contains
         do i=1, size(Ddata)
           dval = Ddata(i)
           write (cf) dval
+        end do
+      end if
+    end if
+    
+    ! Close the file if necessary
+    if (ifile .eq. 0) close(cf)
+  
+  end subroutine
+
+    ! ***************************************************************************
+
+!<subroutine>
+  subroutine vecio_writeArray_Sngl (Fdata, ifile, sfile, sformat, Ipermutation)
+  
+  !<description>
+    ! Write single precision vector into a text file.
+    ! The array is written out 'as it is', i.e. as specified by sformat
+    ! without any additional header or footer.
+  !</description>
+    
+  !<input>
+    ! vector: array [:] of single
+    real(SP), dimension(:), intent(in) :: Fdata
+    
+    ! output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
+    !       'sfile' is ignored.
+    integer, intent(in) :: ifile
+    
+    ! name of the file where to write to. Only relevant for ifile=0!
+    character(len=*), intent(in) :: sfile
+    
+    ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
+    ! If not specified, data is written to the file unformatted 
+    ! (i.e. in a computer dependent, not human readable form).
+    character(len=*), intent(in), optional :: sformat
+
+    ! OPTIONAL: Permutation for unsorting.
+    ! If specified, this permutation tells how to unsort a vector before
+    ! writing it to the file.
+    integer, dimension(:), optional :: Ipermutation
+  !</input>
+    
+!</subroutine>
+    
+    !local variables
+    integer :: i, cf
+    real(SP) :: fval
+    
+    if (ifile .eq. 0) then
+      call io_openFileForWriting(sfile, cf, SYS_REPLACE, bformatted=present(sformat))
+      if (cf .eq. -1) then
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeArray_Sngl')
+        call sys_halt()
+      end if
+    else
+      cf = ifile
+    end if
+    
+    if (size(Fdata) .le. 0) return
+
+    ! Write the vector.
+    ! Unsort the vector on the fly if necessary.
+    if (present(sformat)) then
+      if (present(Ipermutation)) then
+        do i=1, size(Fdata)
+          fval = Fdata(Ipermutation(i))
+          write (cf,sformat) fval
+        end do
+      else
+        do i=1, size(Fdata)
+          fval = Fdata(i)
+          write (cf,sformat) fval
+        end do
+      end if
+    else
+      if (present(Ipermutation)) then
+        do i=1, size(Fdata)
+          fval = Fdata(Ipermutation(i))
+          write (cf) fval
+        end do
+      else
+        do i=1, size(Fdata)
+          fval = Fdata(i)
+          write (cf) fval
         end do
       end if
     end if
@@ -194,8 +292,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForReading(sfile, cf, bformatted=present(sformat))
       if (cf .eq. -1) then
-        print *, 'vecio_readArray_Dble: Could not open file '// &
-                 trim(sfile)
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_readArray_Dble')
         call sys_halt()
       end if
     else
@@ -226,6 +324,96 @@ contains
         do i=1, size(Ddata)
           read (cf) dval
           Ddata(i) = dval
+        end do
+      end if
+    end if
+    
+    ! Close the file if necessary
+    if (ifile .eq. 0) close(cf)
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine vecio_readArray_Sngl (Fdata, ifile, sfile, sformat, Ipermutation)
+  
+  !<description>
+    ! Reads a single precision vector from a file.
+    ! The array is read in 'as it is', i.e. as specified by sformat
+    ! without any additional header or footer.
+  !</description>
+    
+  !<input>
+    ! output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
+    !       'sfile' is ignored.
+    integer, intent(in) :: ifile
+    
+    ! name of the file where to write to. Only relevant for ifile=0!
+    character(len=*), intent(in) :: sfile
+    
+    ! OPTIONAL: Format string to use for the input; e.g. '(E20.10)'.
+    ! If not specified, data is read from the file unformatted 
+    ! (i.e. in a computer dependent, not human readable form).
+    ! When reading an array written out by vecio_writeArray_Dble,
+    ! the format string shall match the setting of the 
+    ! format string used there.
+    character(len=*), intent(in), optional :: sformat
+    
+    ! OPTIONAL: Permutation for sorting.
+    ! If specified, this permutation tells how to unsort a vector before
+    ! writing it to the file.
+    integer, dimension(:), optional :: Ipermutation
+  !</input>
+  
+  !<output>
+    ! Array where to write the data to.
+    real(SP), dimension(:), intent(out) :: Fdata
+  !</output>
+    
+!</subroutine>
+    
+    ! local variables
+    integer :: i, cf
+    real(SP) :: fval
+    
+    if (ifile .eq. 0) then
+      call io_openFileForReading(sfile, cf, bformatted=present(sformat))
+      if (cf .eq. -1) then
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_readArray_Sngl')
+        call sys_halt()
+      end if
+    else
+      cf = ifile
+    end if
+    
+    ! Read the array.
+    if (present(sformat)) then
+      ! Unsort the vector on the fly if necessary.
+      if (present(Ipermutation)) then
+        do i=1, size(Fdata)
+          read (cf,sformat) fval
+          Fdata(Ipermutation(i)) = fval
+        end do
+      else
+        do i=1, size(Fdata)
+          read (cf,sformat) fval
+          Fdata(i) = fval
+        end do
+      end if
+    else
+      ! Unsort the vector on the fly if necessary.
+      if (present(Ipermutation)) then
+        do i=1, size(Fdata)
+          Fdata(Ipermutation(i)) = fval
+        end do
+      else
+        do i=1, size(Fdata)
+          read (cf) fval
+          Fdata(i) = fval
         end do
       end if
     end if
@@ -293,8 +481,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=present(sformat))
       if (cf .eq. -1) then
-        print *, 'vecio_writeVectorHR: Could not open file '// &
-                 trim(sfile)
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeVectorHR')
         call sys_halt()
       end if
     else
@@ -350,7 +538,8 @@ contains
         end if
       end if
     case DEFAULT
-      print *,'vecio_writeVectorHR: Unsupported vector precision.'
+      call output_line ('Unsupported vector precision!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeVectorHR')
       call sys_halt()
     end select
     
@@ -428,8 +617,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForReading(sfile, cf, bformatted=bformatted)
       if (cf .eq. -1) then
-        print *, 'vecio_writeVectorHR: Could not open file '// &
-                 trim(sfile)
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeVectorHR')
         call sys_halt()
       end if
     else
@@ -463,7 +652,8 @@ contains
     end if
     
     if (rvector%NEQ .ne. NEQ) then
-      print *,'vecio_readVectorHR: Vector has wrong size!'
+      call output_line ('Vector has wrong size', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeVectorHR')
       call sys_halt()
     end if
     
@@ -494,14 +684,15 @@ contains
         end if
       end if
     case DEFAULT
-      print *,'vecio_readVectorHR: Unsupported vector precision.'
+      call output_line ('Unsupported vector precision!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vecio_readVectorHR')
       call sys_halt()
     end select
     
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
     
-  end subroutine 
+  end subroutine vecio_readVectorHR
 
   ! ***************************************************************************
 
@@ -563,8 +754,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=present(sformat))
       if (cf .eq. -1) then
-        print *, 'vecio_writeBlockVectorHR: Could not open file '// &
-                 trim(sfile)
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeBlockVectorHR')
         call sys_halt()
       end if
     else
@@ -633,14 +824,15 @@ contains
         end if
       end do
     case DEFAULT
-      print *,'vecio_writeBlockVectorHR: Unsupported vector precision.'
+      call output_line ('Unsupported vector precision!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeBlockVectorHR')
       call sys_halt()
     end select
     
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
     
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -719,8 +911,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForReading(sfile, cf, bformatted=bformatted)
       if (cf .eq. -1) then
-        print *, 'vecio_writeVectorHR: Could not open file '// &
-                 trim(sfile)
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_readBlockVectorHR')
         call sys_halt()
       end if
     else
@@ -782,7 +974,8 @@ contains
     ! Size of vector must match! Size of subvectors not -- it is not a bug,
     ! it is a feature ;-)
     if (rvector%NEQ .ne. NEQ) then
-      print *,'vecio_readBlockVectorHR: Vector has wrong size!'
+      call output_line ('Vector has wrong size!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vecio_readBlockVectorHR')
       call sys_halt()
     end if
 
@@ -819,14 +1012,15 @@ contains
         end if
       end do
     case DEFAULT
-      print *,'vecio_readBlockVectorHR: Unsupported vector precision.'
+      call output_line ('Unsupported vector precision!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vecio_readBlockVectorHR')
       call sys_halt()
     end select
     
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
     
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -881,8 +1075,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=.true.)
       if (cf .eq. -1) then
-        print *, 'vecio_writeVectorHR: Could not open file '// &
-                 trim(sfile)
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeVectorMaple')
         call sys_halt()
       end if
     else
@@ -923,14 +1117,15 @@ contains
       write (cf,'(A)') '):';
       
     case DEFAULT
-      print *,'vecio_writeVectorHR: Unsupported vector precision.'
+      call output_line ('Unsupported vector precision!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeVectorMaple')
       call sys_halt()
     end select
     
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
 
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -985,8 +1180,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE,bformatted=.true.)
       if (cf .eq. -1) then
-        print *, 'vecio_writeBlockVectorMaple: Could not open file '// &
-                 trim(sfile)
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeBlockVectorMaple')
         call sys_halt()
       end if
     else
@@ -1036,14 +1231,15 @@ contains
       write (cf,'(A)') '):';
       
     case DEFAULT
-      print *,'vecio_writeBlockVectorMaple: Unsupported vector precision.'
+      call output_line ('Unsupported vector precision!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeBlockVectorMaple')
       call sys_halt()
     end select
     
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
 
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -1109,5 +1305,349 @@ contains
     end if
 
   end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine vecio_spyVector(sfilename, svectorName, rvector,&
+      bunsort, cstatus, dthreshold)
+
+!<description>
+
+    ! Writes a scalar vector to a file so that it can be visualized in
+    ! MATLAB by means of the SPY command.
+    !
+    ! To load a vector written out by this routine, one has simply to
+    ! type the name of the ".m"-file that is written out. MATLAB will
+    ! read the file and create a sparse vector with the name
+    ! svectorName in memory.
+!</description>
+
+!<input>
+    ! File name of the MATLAB file without fileextension. A ".m" is appended.
+    character(LEN=*), intent(in) :: sfileName
+    
+    ! Name of the vector in MATLAB file. This will be the name of the
+    ! variable containing the vector data when reading the file into matlab.
+    character(LEN=*), intent(in) :: svectorName
+
+    ! Source vector
+    type(t_vectorScalar), intent(in) :: rvector
+    
+    ! Write unsorted vector.
+    ! =TRUE:  If the vector is sorted, it is unsorted on the fly.
+    ! =FALSE: Write vector as it is.
+    logical, intent(in) :: bunsort
+
+    ! OPTIONAL: status of file
+    integer, intent(in), optional :: cstatus
+
+    ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for better visualisation.
+    ! If not present, a default of 1E-12 is assumed.
+    real(DP), intent(in), optional :: dthreshold
+!</input>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Da
+    real(SP), dimension(:), pointer :: p_Fa
+     integer, dimension(:), pointer :: p_Ipermutation
+    integer :: iunit,ieq
+    real(DP) :: dthres
+    character(LEN=10) :: cstat,cpos
+
+    if (rvector%NEQ .eq. 0) return ! nothing to do
+
+    ! Replace small values by zero
+    dthres = 1E-12_DP
+    if (present(dthreshold)) dthres = dthreshold
+
+    ! Set file status if required
+    if (present(cstatus)) then
+      select case(cstatus)
+      case (IO_NEW)
+        cstat="NEW"; cpos="ASIS"
+      case (IO_REPLACE)
+        cstat="REPLACE"; cpos="ASIS"
+      case (IO_OLD)
+        cstat="OLD"; cpos="APPEND"
+      case DEFAULT
+        cstat="UNKNOWN"; cpos ="ASIS"
+      end select
+    else
+      cstat="UNKNOWN"; cpos="ASIS"
+    end if
+
+    ! Open output file
+    iunit=sys_getFreeUnit()
+    open (UNIT=iunit,STATUS=trim(cstat),POSITION=trim(cpos),FILE=trim(adjustl(sfilename))//'.m')
+
+    ! Which vector type are we?
+    select case(rvector%cdataType)
+    case (ST_DOUBLE)
+      write(UNIT=iunit,FMT=10)
+
+      ! Permuted?
+      nullify(p_Ipermutation)
+      if (bunsort .and. (lsyssc_isVectorSorted (rvector))) then
+        call storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
+        ! We must use the inverse permutation
+        p_Ipermutation => p_Ipermutation(rvector%NEQ+1:)
+      end if
+
+      call lsyssc_getbase_double(rvector,p_Da)
+
+      if (.not. associated(p_Ipermutation)) then
+
+        do ieq=1,rvector%NEQ
+          if (abs(p_Da(ieq)) .ge. dthres) then
+            write(UNIT=iunit,FMT=20) 1,ieq,p_Da(ieq)
+          end if
+        end do
+        
+      else
+        
+        do ieq=1,rvector%NEQ
+          if (abs(p_Da(ieq)) .ge. dthres) then
+            write(UNIT=iunit,FMT=20) 1,p_Ipermutation(ieq),p_Da(p_Ipermutation(ieq))
+          end if
+        end do
+        
+      end if
+      
+      write(UNIT=iunit,FMT=30)
+
+    case (ST_SINGLE)
+      write(UNIT=iunit,FMT=10)
+
+      ! Permuted?
+      nullify(p_Ipermutation)
+      if (bunsort .and. (lsyssc_isVectorSorted (rvector))) then
+        call storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
+        ! We must use the inverse permutation
+        p_Ipermutation => p_Ipermutation(rvector%NEQ+1:)
+      end if
+
+      call lsyssc_getbase_single(rvector,p_Fa)
+
+      if (.not. associated(p_Ipermutation)) then
+
+        do ieq=1,rvector%NEQ
+          if (abs(p_Fa(ieq)) .ge. real(dthres,SP)) then
+            write(UNIT=iunit,FMT=20) 1,ieq,p_Fa(ieq)
+          end if
+        end do
+        
+      else
+        
+        do ieq=1,rvector%NEQ
+          if (abs(p_Fa(ieq)) .ge. real(dthres,SP)) then
+            write(UNIT=iunit,FMT=20) 1,p_Ipermutation(ieq),p_Fa(p_Ipermutation(ieq))
+          end if
+        end do
+        
+      end if
+      
+      write(UNIT=iunit,FMT=30)
+
+    case DEFAULT
+      call output_line ('Unsupported vector precision!', &
+                         OU_CLASS_ERROR,OU_MODE_STD,'vecio_spyVector')
+      call sys_halt()
+    end select
+
+    ! Close file
+    write(UNIT=iunit,FMT=40) svectorName, 1, rvector%NEQ
+    close(UNIT=iunit)
+    
+10  format("data=[...")
+20  format(I10,1X,I10,1X,E15.8,";")
+30  format("];")
+40  format(A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"); clear data;")
+    
+  end subroutine vecio_spyVector
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine vecio_spyBlockVector(sfilename, svectorName, rvector,&
+      bunsort, cstatus, dthreshold)
+
+!<description>
+
+    ! Writes a block vector to a file so that it can be visualized in
+    ! MATLAB by means of the SPY command.
+    !
+    ! To load a vector written out by this routine, one has simply to
+    ! type the name of the ".m"-file that is written out. MATLAB will
+    ! read the file and create a sparse vector with the name
+    ! svectorName in memory.
+!</description>
+
+!<input>
+    ! File name of the MATLAB file without fileextension. A ".m" is appended.
+    character(LEN=*), intent(in) :: sfileName
+    
+    ! Name of the vector in MATLAB file. This will be the name of the
+    ! variable containing the vector data when reading the file into matlab.
+    character(LEN=*), intent(in) :: svectorName
+
+    ! Source vector
+    type(t_vectorBlock), intent(in) :: rvector
+    
+    ! Write unsorted vector.
+    ! =TRUE:  If the vector is sorted, it is unsorted on the fly.
+    ! =FALSE: Write vector as it is.
+    logical, intent(in) :: bunsort
+
+    ! OPTIONAL: status of file
+    integer, intent(in), optional :: cstatus
+
+    ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for better visualisation.
+    ! If not present, a default of 1E-12 is assumed.
+    real(DP), intent(in), optional :: dthreshold
+!</input>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Da
+    real(SP), dimension(:), pointer :: p_Fa
+    integer, dimension(:), pointer :: p_Ipermutation
+    integer :: iunit,i,ieq,neq
+    real(DP) :: dthres
+    character(LEN=10) :: cstat,cpos
+
+    ! Replace small values by zero
+    dthres = 1E-12_DP
+    if (present(dthreshold)) dthres = dthreshold
+
+    ! Set file status if required
+    if (present(cstatus)) then
+      select case(cstatus)
+      case (IO_NEW)
+        cstat="NEW"; cpos="ASIS"
+      case (IO_REPLACE)
+        cstat="REPLACE"; cpos="ASIS"
+      case (IO_OLD)
+        cstat="OLD"; cpos="APPEND"
+      case DEFAULT
+        cstat="UNKNOWN"; cpos ="ASIS"
+      end select
+    else
+      cstat="UNKNOWN"; cpos="ASIS"
+    end if
+
+    ! Open output file
+    iunit=sys_getFreeUnit()
+    open (UNIT=iunit,STATUS=trim(cstat),POSITION=trim(cpos),FILE=trim(adjustl(sfilename))//'.m')
+
+    ! Which vector type are we?
+    select case(rvector%cdataType)
+    case (ST_DOUBLE)
+      write(UNIT=iunit,FMT=10)
+
+      ! Initialise number of equations
+      neq = 0
+
+      do i=1,rvector%nblocks
+        
+        ! Permuted?
+        nullify(p_Ipermutation)
+        if (bunsort .and. (lsyssc_isVectorSorted (rvector%RvectorBlock(i)))) then
+          call storage_getbase_int (rvector%RvectorBlock(i)%h_IsortPermutation,p_Ipermutation)
+          ! We must use the inverse permutation
+          p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(i)%NEQ+1:)
+        end if
+        
+        call lsyssc_getbase_double(rvector%RvectorBlock(i),p_Da)
+        
+        if (.not. associated(p_Ipermutation)) then
+          
+          do ieq=1,rvector%RvectorBlock(i)%NEQ
+            if (abs(p_Da(ieq)) .ge. dthres) then
+              write(UNIT=iunit,FMT=20) 1,neq+ieq,p_Da(ieq)
+            end if
+          end do
+          
+        else
+          
+          do ieq=1,rvector%RvectorBlock(i)%NEQ
+            if (abs(p_Da(ieq)) .ge. dthres) then
+              write(UNIT=iunit,FMT=20) 1,neq+p_Ipermutation(ieq),p_Da(p_Ipermutation(ieq))
+            end if
+          end do
+          
+        end if
+
+        ! Update number of equations
+        neq = neq+rvector%RvectorBlock(i)%NEQ
+
+      end do
+      
+      write(UNIT=iunit,FMT=30)
+
+    case (ST_SINGLE)
+      write(UNIT=iunit,FMT=10)
+
+      ! Initialise number of equations
+      neq = 0
+
+      do i=1,rvector%nblocks
+        
+        ! Permuted?
+        nullify(p_Ipermutation)
+        if (bunsort .and. (lsyssc_isVectorSorted (rvector%RvectorBlock(i)))) then
+          call storage_getbase_int (rvector%RvectorBlock(i)%h_IsortPermutation,p_Ipermutation)
+          ! We must use the inverse permutation
+          p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(i)%NEQ+1:)
+        end if
+        
+        call lsyssc_getbase_single(rvector%RvectorBlock(i),p_Fa)
+        
+        if (.not. associated(p_Ipermutation)) then
+          
+          do ieq=1,rvector%RvectorBlock(i)%NEQ
+            if (abs(p_Fa(ieq)) .ge. real(dthres,SP)) then
+              write(UNIT=iunit,FMT=20) 1,neq+ieq,p_Fa(ieq)
+            end if
+          end do
+          
+        else
+          
+          do ieq=1,rvector%RvectorBlock(i)%NEQ
+            if (abs(p_Fa(ieq)) .ge. real(dthres,SP)) then
+              write(UNIT=iunit,FMT=20) 1,neq+p_Ipermutation(ieq),p_Fa(p_Ipermutation(ieq))
+            end if
+          end do
+          
+        end if
+
+        ! Update number of equations
+        neq = neq+rvector%RvectorBlock(i)%NEQ
+
+      end do
+      
+      write(UNIT=iunit,FMT=30)
+
+    case DEFAULT
+      call output_line ('Unsupported vector precision!', &
+                         OU_CLASS_ERROR,OU_MODE_STD,'vecio_spyBlockVector')
+      call sys_halt()
+    end select
+
+    ! Close file
+    write(UNIT=iunit,FMT=40) svectorName, 1, rvector%NEQ
+    close(UNIT=iunit)
+    
+10  format("data=[...")
+20  format(I10,1X,I10,1X,E15.8,";")
+30  format("];")
+40  format(A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"); clear data;")
+    
+  end subroutine vecio_spyBlockVector
 
 end module

@@ -17,11 +17,11 @@
 !#
 !# 3.) matio_spyMatrix
 !#     -> Writes a scalar matrix in CSR format into a file which can be 
-!#        visualized by means of the MATLAB command SPY
+!#        visualised by means of the MATLAB command SPY
 !#
 !# 4.) matio_spyBlockMatrix
 !#     -> Writes a block matrix in CSR format into a file which can be 
-!#        visualized by means of the MATLAB command SPY
+!#        visualised by means of the MATLAB command SPY
 !#
 !# 5.) matio_writeMatrixMaple
 !#     -> Writes a matrix into a text file using the MAPLE syntax
@@ -36,6 +36,13 @@
 !#
 !# 2.) matio_writeMatrix79_Dble
 !#     -> writes a sparse double precision matrix (format 7/9)
+!#        into a text file
+!#
+!# 3.) matio_writeMatrix1_Sngl
+!#     -> writes a full single precision matrix into a text file
+!#
+!# 4.) matio_writeMatrix79_Sngl
+!#     -> writes a sparse single precision matrix (format 7/9)
 !#        into a text file
 !#
 !# </purpose>
@@ -63,6 +70,8 @@ module matrixio
   public :: matio_writeBlockMatrixMaple
   public :: matio_writeMatrix1_Dble
   public :: matio_writeMatrix79_Dble
+  public :: matio_writeMatrix1_Sngl
+  public :: matio_writeMatrix79_Sngl
   
 contains
 
@@ -266,7 +275,7 @@ contains
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
         call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix1_Dble')
         call sys_halt()
       end if
     else
@@ -379,7 +388,7 @@ contains
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
         call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix79_Dble')
         call sys_halt()
       end if
     else
@@ -402,7 +411,7 @@ contains
     if (ncol .le. 0) return
     
     ! Write the matrix
-    call storage_new('matio_writeSparseMatrix','DrowVec',ncol, &
+    call storage_new('matio_writeMatrix79_Dble','DrowVec',ncol, &
                      ST_DOUBLE, h_DrowVec, ST_NEWBLOCK_NOINIT)
     call storage_getbase_double(h_DrowVec, p_DrowVec)
     do i=1, nrow
@@ -445,6 +454,250 @@ contains
     end do
     
     call storage_free(h_DrowVec)
+    
+    ! Close the file if necessary
+    if (ifile .eq. 0) close(cf)
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine matio_writeMatrix1_Sngl (Fa, nrow, ncol, sarray, &
+                                      bnoZero, ifile, sfile, sformat, fthreshold)
+  
+  !<description>
+    ! Write full single precision matrix into a text file.
+    !
+    ! This writes an array Da with nrow rows and ncol columns as a matrix
+    ! into a text file.
+  !</description>
+    
+  !<input>
+    ! number of rows
+    integer, intent(in) :: nrow
+    
+    ! number of columns
+    integer, intent(in) :: ncol
+    
+    ! matrix: array [1..nrow,1..ncol] of single
+    real(SP), dimension(nrow,ncol), intent(in) :: Fa
+    
+    ! name of the matrix
+    character(len=*), intent(in) :: sarray
+    
+    ! suppress zeroes in output: yes/no
+    logical, intent(in) :: bnoZero
+    
+    ! output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
+    !       'sfile' is ignored.
+    integer, intent(in) :: ifile
+    
+    ! name of the file where to write to. Only relevant for ifile=0!
+    character(len=*), intent(in) :: sfile
+    
+    ! format string to use for the output; e.g. '(F20.10)'
+    character(len=*), intent(in) :: sformat
+    
+    ! Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for better visualisation.
+    real(SP), intent(in) :: fthreshold
+
+  !</input>
+    
+!</subroutine>
+    
+    !local variables
+    integer :: i, j, cf, nchar
+    real(SP) :: fval
+    character(len=128) :: S
+    character(len=6) :: sformatChar
+    
+    if (ifile .eq. 0) then
+      call io_openFileForWriting(sfile, cf, SYS_REPLACE)
+      if (cf .eq. -1) then
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix1_Sngl')
+        call sys_halt()
+      end if
+    else
+      cf = ifile
+    end if
+    
+    ! Get length of output strings
+    S(:) = ' '
+    write (S,sformat) 0.0_SP
+    nchar = len(trim(S))
+    
+    ! Build array format string
+    sformatChar = '(A'//sys_i3(nchar)//')'
+    
+    ! Write all format strings into the file
+    write (cf,'(3A15,L2,3I15)') sarray, sformat, sformatChar, &
+                                bnoZero, nchar, nrow, ncol
+    
+    if (nrow .le. 0) return
+    if (ncol .le. 0) return
+
+    ! Write the matrix
+    do i=1, nrow
+      do j=1, ncol-1
+        fval = Fa(i,j)
+        if ((.not. bnoZero) .or. (abs(fval) .gt. fthreshold)) then
+          write (cf,sformat,ADVANCE='NO') fval
+        else
+          write (cf,sformatChar, ADVANCE='NO') '.'
+        end if
+      end do
+      fval = Fa(i,j)
+      if ((.not. bnoZero) .or. (fval .ne. 0.0_SP)) then
+        write (cf,sformat) fval
+      else
+        write (cf,sformatChar) '.'
+      end if
+    end do
+    
+    ! Close the file if necessary
+    if (ifile .eq. 0) close(cf)
+  
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  subroutine matio_writeMatrix79_Sngl (Fa, Icol, Irow, &
+                                       nrow, ncol, sarray, &
+                                       bnoZero, ifile, sfile, sformat, fthreshold)
+  
+  !<description>
+    ! Write sparse single precision matrix in matrix format 9 or
+    ! matrix format 9 into a text file.
+    !
+    ! Double-precision version
+  !</description>
+    
+  !<input>
+    ! number of rows
+    integer, intent(in) :: nrow
+    
+    ! number of columns; must be =nrow for structure-7 matrices
+    integer, intent(in) :: ncol
+    
+    ! matrix: array [1..na] of double
+    real(SP), dimension(:), intent(in) :: Fa
+    
+    ! Column structure of the matrix
+    integer, dimension(:), intent(in) :: Icol
+    
+    ! Row structure of the matrix
+    integer, dimension(nrow+1), intent(in) :: Irow
+    
+    ! name of the matrix
+    character(len=*), intent(in) :: sarray
+    
+    ! suppress zeroes in output: yes/no
+    logical, intent(in) :: bnoZero
+    
+    ! output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
+    !       'sfile' is ignored.
+    integer, intent(in) :: ifile
+    
+    ! name of the file where to write to. Only relevant for ifile=0!
+    character(len=*), intent(in) :: sfile
+    
+    ! format string to use for the output; e.g. '(D20.10)'
+    character(len=*), intent(in) :: sformat
+    
+    ! Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for better visualisation.
+    real(SP), intent(in) :: fthreshold
+
+  !</input>
+    
+!</subroutine>
+    
+    !local variables
+    integer :: i, j, k, cf, nchar
+    real(SP) :: fval
+    character(len=128) :: S
+    character(len=6) :: sformatChar
+    integer :: h_FrowVec
+    real(SP), dimension(:), pointer :: p_FrowVec
+    
+    if (ifile .eq. 0) then
+      call io_openFileForWriting(sfile, cf, SYS_REPLACE)
+      if (cf .eq. -1) then
+        call output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix79_Sngl')
+        call sys_halt()
+      end if
+    else
+      cf = ifile
+    end if
+    
+    ! Get length of output strings
+    S(:) = ' '
+    write (S,sformat) 0.0_SP
+    nchar = len(trim(S))
+    
+    ! Build array format string
+    sformatChar = '(A'//sys_i3(nchar)//')'
+    
+    ! Write all format strings into the file
+    write (cf,'(3A15,L2,3I15)') sarray, sformat, sformatChar, &
+                                bnoZero, nchar, nrow, ncol
+
+    if (nrow .le. 0) return
+    if (ncol .le. 0) return
+    
+    ! Write the matrix
+    call storage_new('matio_writeMatrix79_Sngl','FrowVec',ncol, &
+                     ST_SINGLE, h_FrowVec, ST_NEWBLOCK_NOINIT)
+    call storage_getbase_single(h_FrowVec, p_FrowVec)
+    do i=1, nrow
+      
+      ! Extract row i
+      if (bnoZero) then
+        ! SYS_MAXREAL is written out as '.'
+        do j=1, ncol
+          p_FrowVec(j) = real(SYS_MAXREAL, SP)
+        end do
+      else
+        do j=1, ncol
+          p_FrowVec(j) = 0.0_SP
+        end do
+      end if
+      
+      do j=0, Irow(i+1)-Irow(i)-1
+        k = Irow(i)+j
+        p_FrowVec(Icol(k)) = Fa(k)
+      end do
+
+      ! Write row i
+      do j=1, ncol-1
+        fval = p_FrowVec(j)
+        if (abs(fval) .lt. fthreshold) fval = 0.0_SP
+        if (bnoZero .and. (fval .eq. real(SYS_MAXREAL,SP))) then
+          write (cf,sformatChar, ADVANCE='NO') '.'
+        else
+          write (cf,sformat,ADVANCE='NO') fval
+        end if
+      end do
+      
+      fval = p_FrowVec(ncol)
+      if (abs(fval) .lt. fthreshold) fval = 0.0_SP
+      if (bnoZero .and. (fval .eq. SYS_MAXREAL)) then
+        write (cf,sformatChar, ADVANCE='YES') '.'
+      else
+        write (cf,sformat,ADVANCE='YES') fval
+      end if
+    end do
+    
+    call storage_free(h_FrowVec)
     
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
@@ -777,16 +1030,16 @@ contains
     integer, intent(in), optional :: cstatus
 
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
-    ! value is below this threshold are replaced by 0.0 for beter visualisation.
+    ! value is below this threshold are replaced by 0.0 for better visualisation.
     ! If not present, a default of 1E-12 is assumed.
     real(DP), intent(in), optional :: dthreshold
 !</input>
 !</subroutine>
     
     ! local variables
-    real(DP), dimension(:), pointer :: Da
-    real(SP), dimension(:), pointer :: Fa
-    integer, dimension(:), pointer :: Kld,Kcol
+    real(DP), dimension(:), pointer :: p_Da
+    real(SP), dimension(:), pointer :: p_Fa
+    integer, dimension(:), pointer :: p_Kld,p_Kcol
     integer :: iunit,ieq
     real(DP) :: dthres
     character(LEN=10) :: cstat,cpos
@@ -820,49 +1073,49 @@ contains
       
     case (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
       
-      call lsyssc_getbase_Kld(rmatrix,Kld)
-      call lsyssc_getbase_Kcol(rmatrix,Kcol)
+      call lsyssc_getbase_Kld(rmatrix,p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix,p_Kcol)
       
       if (bdata) then
         ! Which matrix type are we?
         select case(rmatrix%cdataType)
         case (ST_DOUBLE)
           write(UNIT=iunit,FMT=10)
-          call lsyssc_getbase_double(rmatrix,Da)
+          call lsyssc_getbase_double(rmatrix,p_Da)
           select case(rmatrix%cinterleavematrixFormat)
           case (LSYSSC_MATRIXD)
             call do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
-                Kld,Kcol,Da,dthres)
+                p_Kld,p_Kcol,p_Da,dthres)
           case (LSYSSC_MATRIX1)
             call do_spy_mat79mat1_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
-                rmatrix%NVAR,Kld,Kcol,Da,dthres)
+                rmatrix%NVAR,p_Kld,p_Kcol,p_Da,dthres)
           case DEFAULT
             call output_line ('Unsupported interleave matrix type!', &
-                              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
+                              OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
             call sys_halt()
           end select
           write(UNIT=iunit,FMT=30)
           
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
-          call lsyssc_getbase_single(rmatrix,Fa)
+          call lsyssc_getbase_single(rmatrix,p_Fa)
           select case(rmatrix%cinterleavematrixFormat)
           case (LSYSSC_MATRIXD)
             call do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
-                Kld,Kcol,Fa,dthres)
+                p_Kld,p_Kcol,p_Fa,dthres)
           case (LSYSSC_MATRIX1)
             call do_spy_mat79mat1_single(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
-                rmatrix%NVAR,Kld,Kcol,Fa,dthres)
+                rmatrix%NVAR,p_Kld,p_Kcol,p_Fa,dthres)
           case DEFAULT
             call output_line ('Unsupported interleave matrix type!', &
-                              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
+                              OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
             call sys_halt()
           end select
           write(UNIT=iunit,FMT=30)
 
         case DEFAULT
           call output_line ('Unsupported matrix type!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
+                            OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
         end select
         
@@ -873,13 +1126,13 @@ contains
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIXD)
           call do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
-              Kld,Kcol)
+              p_Kld,p_Kcol)
         case (LSYSSC_MATRIX1)
           call do_spy_mat79mat1_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
-              rmatrix%NVAR,Kld,Kcol)
+              rmatrix%NVAR,p_Kld,p_Kcol)
         case DEFAULT
           call output_line ('Unsupported interleave matrix type!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
+                            OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
         end select
         write(UNIT=iunit,FMT=30)
@@ -887,27 +1140,27 @@ contains
 
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
       
-      call lsyssc_getbase_Kld(rmatrix,Kld)
-      call lsyssc_getbase_Kcol(rmatrix,Kcol)
+      call lsyssc_getbase_Kld(rmatrix,p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix,p_Kcol)
       
       if (bdata) then
         ! Which matrix type are we?
         select case(rmatrix%cdataType)
         case (ST_DOUBLE)
           write(UNIT=iunit,FMT=10)
-          call lsyssc_getbase_double(rmatrix,Da)
-          call do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,1,Kld,Kcol,Da,dthres)
+          call lsyssc_getbase_double(rmatrix,p_Da)
+          call do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,1,p_Kld,p_Kcol,p_Da,dthres)
           write(UNIT=iunit,FMT=30)
 
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
-          call lsyssc_getbase_single(rmatrix,Fa)
-          call do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,1,Kld,Kcol,Fa,dthres)
+          call lsyssc_getbase_single(rmatrix,p_Fa)
+          call do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,1,p_Kld,p_Kcol,p_Fa,dthres)
           write(UNIT=iunit,FMT=30)
           
         case DEFAULT
           call output_line ('Unsupported matrix type!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
+                            OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
         end select
 
@@ -915,7 +1168,7 @@ contains
         
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
-        call do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,1,Kld,Kcol)
+        call do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,1,p_Kld,p_Kcol)
         write(UNIT=iunit,FMT=30)
       end if
       
@@ -926,27 +1179,27 @@ contains
         select case(rmatrix%cdataType)
         case (ST_DOUBLE)
           write(UNIT=iunit,FMT=10)
-          call lsyssc_getbase_double(rmatrix,Da)
+          call lsyssc_getbase_double(rmatrix,p_Da)
           do ieq=1,rmatrix%NEQ
-            if (abs(Da(ieq)) .ge. dthres) then
-              write(UNIT=iunit,FMT=20) ieq,ieq,Da(ieq)
+            if (abs(p_Da(ieq)) .ge. dthres) then
+              write(UNIT=iunit,FMT=20) ieq,ieq,p_Da(ieq)
             end if
           end do
           write(UNIT=iunit,FMT=30)
 
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
-          call lsyssc_getbase_single(rmatrix,Fa)
+          call lsyssc_getbase_single(rmatrix,p_Fa)
           do ieq=1,rmatrix%NEQ
-            if (abs(Fa(ieq)) .ge. dthres) then
-              write(UNIT=iunit,FMT=20) ieq,ieq,Fa(ieq)
+            if (abs(p_Fa(ieq)) .ge. dthres) then
+              write(UNIT=iunit,FMT=20) ieq,ieq,p_Fa(ieq)
             end if
           end do
           write(UNIT=iunit,FMT=30)
 
         case DEFAULT
           call output_line ('Unsupported matrix type!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
+                            OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
         end select
         
@@ -968,19 +1221,19 @@ contains
         select case(rmatrix%cdataType)
         case (ST_DOUBLE)
           write(UNIT=iunit,FMT=10)
-          call lsyssc_getbase_double(rmatrix,Da)
-          call do_spy_mat1_double(rmatrix%NEQ,rmatrix%NCOLS,Da,dthres)
+          call lsyssc_getbase_double(rmatrix,p_Da)
+          call do_spy_mat1_double(rmatrix%NEQ,rmatrix%NCOLS,p_Da,dthres)
           write(UNIT=iunit,FMT=30)
 
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
-          call lsyssc_getbase_single(rmatrix,Fa)
-          call do_spy_mat1_single(rmatrix%NEQ,rmatrix%NCOLS,Fa,dthres)
+          call lsyssc_getbase_single(rmatrix,p_Fa)
+          call do_spy_mat1_single(rmatrix%NEQ,rmatrix%NCOLS,p_Fa,dthres)
           write(UNIT=iunit,FMT=30)
 
         case DEFAULT
           call output_line ('Unsupported matrix type!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
+                            OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
         end select
         
@@ -995,19 +1248,19 @@ contains
       
     case DEFAULT
       call output_line ('Unsupported matrix format!', &
-                         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
+                         OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
       call sys_halt()
       
     end select
     
     ! Close file
-    write(UNIT=iunit,FMT=40) smatrixName
+    write(UNIT=iunit,FMT=40) smatrixName, rmatrix%NEQ, rmatrix%NCOLS
     close(UNIT=iunit)
 
 10  format("data=[...")
 20  format(I10,1X,I10,1X,E15.8,";")
 30  format("];")
-40  format(A,"=sparse(data(:,1),data(:,2),data(:,3));")
+40  format(A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"); clear data;")
 
   contains
 
@@ -1223,7 +1476,7 @@ contains
         do ieq=1,neq
           do icol=1,ncols
             write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
-                ieq,icol,Da(ncols*(ieq-1)+icol)
+                ieq,icol,Fa(ncols*(ieq-1)+icol)
           end do
         end do
       end if
