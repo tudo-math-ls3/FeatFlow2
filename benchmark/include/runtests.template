@@ -40,9 +40,9 @@ COMPILERVERSION=<SET_VIA_MAKEFILE>
 #  * 0
 #        normal execution
 #  * DDT
-#        execute within debugger DDT
-#  * VALGRIND
-#        execute in valgrind
+#        execute within Allinea's debugger DDT
+#  * DBX, DDD, GDB, IDB, PATHDB, PGI, RUN_DBX, TOTALVIEW, VALGRIND
+#        execute using the given debugger
 #  * <SET_VIA_MAKEFILE>
 #        the value is set when invoking 'make *test'. The default value (0)
 #        may be overwritten by adding "DEBUGGER=<value>" on the command line,
@@ -969,7 +969,7 @@ fb_runAndEvalBenchmarkTest() {
 				    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
 				    echo
 				fi
-				ddt -np ${ntasks} ${PWD}/${appname}
+				ddt -np ${ntasks} ${PWD}/${appname} ${DATFILE}
 
 			        # DDT via PBS settings
 #			        mpirun -np NUM_PROCS_TAG ${addEnvVarsWorkingCopy} ddt-debugger PROGRAM_ARGUMENTS_TAG
@@ -977,8 +977,8 @@ fb_runAndEvalBenchmarkTest() {
 
 			    RUN_DBX)
 			        # run_dbx settings
-#			        eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${DATFILE} ${outputredirect}
-				eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${outputredirect}
+#			        echo ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${DATFILE} ${outputredirect}
+				eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${DATFILE} ${outputredirect}
 				;;
 
 			    TOTALVIEW)
@@ -989,7 +989,7 @@ fb_runAndEvalBenchmarkTest() {
 			    VALGRIND)
 			        # use valgrind
 #			        eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-				eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${outputredirect}
+				eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${DATFILE} ${outputredirect}
 				;;
 
 			esac
@@ -1064,13 +1064,13 @@ fb_runAndEvalBenchmarkTest() {
 				    echo
 				fi
 
-				ddt ${PWD}/${appname}
+				ddt ${PWD}/${appname} ${DATFILE}
 				;;
 
 			    VALGRIND)
 				# use valgrind
 				printf "Running "${currentmglevel}".... "
-				eval valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${outputredirect}
+				eval valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${DATFILE} ${outputredirect}
 				;;
 
 			    GDB)
@@ -1089,33 +1089,33 @@ fb_runAndEvalBenchmarkTest() {
 				echo "Note: To start debugging, issue 'run ${DATFILE}' at the gdb command prompt"
 				echo
 				echo
-				eval gdb  ${PWD}/${appname} ${outputredirect}
+				eval gdb ${PWD}/${appname} ${DATFILE} ${outputredirect}
 				;;
 
 			    DBX)
 				printf "Running "${currentmglevel}".... "
-				eval dbx -r  ${PWD}/${appname} ${outputredirect}
+				eval dbx -r  ${PWD}/${appname} ${DATFILE} ${outputredirect}
 				;;
 
 			    RUN_DBX)
 				printf "Running "${currentmglevel}".... "
 				# run_dbx settings
-				eval run_dbx ${PWD}/${appname} ${outputredirect}
+				eval run_dbx ${PWD}/${appname} ${DATFILE} ${outputredirect}
 				;;
 
 			    DDD)
 				printf "Running "${currentmglevel}".... "
-				ddd ${PWD}/${appname}
+				ddd ${PWD}/${appname} ${DATFILE}
 				;;
 
 			    PATHDB)
 				printf "Running "${currentmglevel}".... "
-				pathdb ${PWD}/${appname}
+				pathdb ${PWD}/${appname} ${DATFILE}
 				;;
 
 			    PGI)
 				printf "Running "${currentmglevel}".... "
-				pgdbg ${PWD}/${appname}
+				pgdbg ${PWD}/${appname} ${DATFILE}
 				;;
 
 			esac
