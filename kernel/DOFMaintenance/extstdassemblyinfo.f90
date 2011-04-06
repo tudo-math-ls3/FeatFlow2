@@ -85,6 +85,12 @@ module extstdassemblyinfo
     ! ielementDistr!
     integer :: h_IelementList = ST_NOHANDLE
     
+    ! Ownership flag. This flag is set to .true. by the routines in this module
+    ! if h_IelementList is internally created. Assures that 
+    ! easminfo_releaseInfoStructure does not accidentally release memory
+    ! that was not allocated here.
+    logical :: blocalElementList = .false.
+    
   end type
   
 !</typeblock>
@@ -215,8 +221,9 @@ contains
 
     ! Loop through the element sets and release memory
     do i = 1,rassemblyInfo%ninfoBlockCount
-      ! Release memory if necessary
-      if (rassemblyInfo%p_RinfoBlocks(i)%h_IelementList .ne. ST_NOHANDLE) then
+      ! Release memory if necessary -- and if the memory belongs to us
+      if ((rassemblyInfo%p_RinfoBlocks(i)%h_IelementList .ne. ST_NOHANDLE) .and.&
+          rassemblyInfo%p_RinfoBlocks(i)%blocalElementList) then
         call storage_free(rassemblyInfo%p_RinfoBlocks(i)%h_IelementList)
       end if
     end do
