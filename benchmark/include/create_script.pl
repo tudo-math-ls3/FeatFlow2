@@ -513,7 +513,7 @@ ID: foreach my $testid (@idsToCode) {
     # Write to screen or append to file?
     if ($cl{'append-to-files'}) {
         # save old stdout
-        open(SAVEOUT, ">&STDOUT");
+        open(SAVEOUT, ">&", STDOUT);
 
         my $filename = $cl{'append-to-files'} . $testid;
         open(STDOUT, '>>', $filename)
@@ -672,7 +672,7 @@ ID: foreach my $testid (@idsToCode) {
 
     if ($cl{'append-to-files'}) {
         close(STDOUT);
-        open(STDOUT, ">&SAVEOUT");
+        open(STDOUT, ">&", SAVEOUT);
 
         # Print the test id's which have successfully been created to screen.
         # print "@testidsok";
@@ -691,6 +691,14 @@ if ($testidsFound == 0) {
 
 
 ### Internals functions ###
+
+
+# Shut up misguided -w warnings about "SAVEOUT used only once".
+# So, use it again in a never-used function.
+sub sillyness {
+    open SAVEOUT, ">/dev/null";
+}
+
 
 # Formatted print of an environment variable and its value
 # WARNING:
