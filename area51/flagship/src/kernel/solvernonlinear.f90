@@ -416,7 +416,7 @@ contains
         call output_line('Outer iteration step:    '//trim(sys_siL(iiterations,5)))
         call output_line('Norm of residual:        '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
         call output_line('Improvement of residual: '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
@@ -448,7 +448,7 @@ contains
       call output_line('Norm of final residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:       '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:        '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:               '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_HASH)
       call output_lbrk()
@@ -678,7 +678,7 @@ contains
             call output_line('Nonlinear multigrid step: '//trim(sys_siL(imgstep,5)))
             call output_line('Norm of residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
             call output_line('Improvement of residual:  '//trim(sys_sdEL(rsolver%dfinalDefect/&
-                                                          max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                                                          max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
             call output_separator(OU_SEP_TILDE)
             call output_lbrk()
           end if
@@ -687,7 +687,7 @@ contains
           if (solver_testDivergence(rsolver)) then
             if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
               call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                  rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5))//' !!!')
+                  rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5))//' !!!')
             end if
 
             ! Adjust solver status
@@ -718,7 +718,7 @@ contains
           call output_line('Norm of final residual:      '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
           call output_line('Norm of initial residual:    '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
           call output_line('Residual improvement:        '//trim(sys_sdEL(rsolver%dfinalDefect/&
-                                                            max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                                                            max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
           call output_line('Convergence rate:            '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
           call output_separator(OU_SEP_TILDE)
           call output_lbrk()
@@ -1160,9 +1160,9 @@ contains
           call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
           call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
           call output_line('Variation of residual:       '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
           call output_line('Improvement of residual:     '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)))
           call output_separator(OU_SEP_TILDE)
           call output_lbrk()
         end if
@@ -1216,9 +1216,9 @@ contains
           call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
           call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
           call output_line('Variation of residual:       '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
           call output_line('Improvement of residual:     '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)))
           call output_separator(OU_SEP_TILDE)
           call output_lbrk()
         end if
@@ -1328,9 +1328,9 @@ contains
           call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
           call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
           call output_line('Variation of residual:       '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
           call output_line('Improvement of residual:     '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)))
           call output_separator(OU_SEP_TILDE)
           call output_lbrk()
         end if
@@ -1354,7 +1354,7 @@ contains
       if (solver_testDivergence(p_rsolver)) then
         if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-              p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5))//' !!!')
+              p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5))//' !!!')
         end if
 
         ! Adjust solver status
@@ -1391,7 +1391,7 @@ contains
       call output_line('Norm of final residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:       '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:        '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:               '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_HASH)
       call output_lbrk()
@@ -1539,7 +1539,7 @@ contains
       ! Otherwise, compute a new step-length theta
       theta = rsolver%dfinalDefect*rsolver%dfinalDefect -&
               doldDefect*doldDefect - 2*drtjs*redfac
-      if (abs(theta) > SYS_EPSREAL) then
+      if (abs(theta) > SYS_EPSREAL_DP) then
         theta = -drtjs*redfac/theta
         theta = max(theta_min, min(theta, theta_max))
       else
@@ -1744,7 +1744,7 @@ contains
     case default
       ! Constant forcing term specified in the input file which
       ! results in local q-linear convergence
-      etamin = SYS_EPSREAL
+      etamin = SYS_EPSREAL_DP
       eta    = dforcingStrategy
     end select
 
@@ -1871,7 +1871,7 @@ contains
 
       ! Check if information about the stationary residual
       ! from the previous time step is available
-      if (p_rserController%dsteadyDefect1 < SYS_EPSREAL) then
+      if (p_rserController%dsteadyDefect1 < SYS_EPSREAL_DP) then
 
         ! Then adopt time step from previous iteration
         dStepOpt = rtimestep%dStep

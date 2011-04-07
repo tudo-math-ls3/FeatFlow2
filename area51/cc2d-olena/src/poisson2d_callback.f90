@@ -649,7 +649,7 @@ CONTAINS
   ! If multiple values are needed, they are collected here (e.g. for 
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
-  ! The function may return SYS_INFINITY as a value. This indicates the
+  ! The function may return SYS_INFINITY_DP as a value. This indicates the
   ! framework to ignore the node and treat it as 'natural boundary condition'
   ! node.
   REAL(DP), DIMENSION(:), INTENT(OUT)                         :: Dvalues

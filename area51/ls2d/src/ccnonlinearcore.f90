@@ -1645,8 +1645,8 @@ contains
           bconvergence = .false.
         end if
 
-        if ((ddelU .lt. SYS_EPSREAL*1E2_DP) .and. &
-            (ddelP .lt. SYS_EPSREAL*1E2_DP)) then
+        if ((ddelU .lt. SYS_EPSREAL_DP*1E2_DP) .and. &
+            (ddelP .lt. SYS_EPSREAL_DP*1E2_DP)) then
           ! We are hard on machine exactness, so stop the iteraton
           bconvergence =.true.
         end if

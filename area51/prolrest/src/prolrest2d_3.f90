@@ -227,7 +227,7 @@ contains
     ! Set matrices for L2-projection
     call mlprj_initL2Projection (rL2proj%RscalarProjection(1,1), &
                                  rmatrix2Lvl, rmatrixF%RmatrixBlock(1,1))
-    !rL2proj%RscalarProjection(1,1)%depsAbsL2 = SYS_EPSREAL
+    !rL2proj%RscalarProjection(1,1)%depsAbsL2 = SYS_EPSREAL_DP
     !rL2proj%RscalarProjection(1,1)%imaxL2Iterations = 100
     
     ! Create a dummy scalar vector

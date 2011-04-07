@@ -186,7 +186,7 @@ contains
   ! OPTIONAL: Factor that specifies the number of refinement levels in 
   ! time before refining in space.
   ! Values e.g.:
-  !   SYS_INFINITY = refinement only in time, always use maximum space level.
+  !   SYS_INFINITY_DP = refinement only in time, always use maximum space level.
   !   2.0 = two refinements in time per refinement in space
   !   1.0 = each refinement in time results in a refinement in space. (Default)
   !   0.5 = two refinements in space per refinement in time
@@ -217,7 +217,7 @@ contains
     if (present(dspacetimeRefFactor)) drefFactor = dspacetimeRefFactor
 
     ! Which type of refinement do we have?
-    if (drefFactor .eq. SYS_INFINITY) then
+    if (drefFactor .eq. SYS_INFINITY_DP) then
       ! Refinement only in time.
       rhierarchy%nlevels = ntime2-ntime1+1
       allocate(rhierarchy%p_IlevelDef(2,rhierarchy%nlevels))

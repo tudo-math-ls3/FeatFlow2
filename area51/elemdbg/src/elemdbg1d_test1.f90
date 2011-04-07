@@ -546,9 +546,9 @@ contains
         ! avoid division by zero here
         daux1 = 0.0_DP
         daux2 = 0.0_DP
-        if(abs(Derror(1,ilvl)) .gt. SYS_EPSREAL) &
+        if(abs(Derror(1,ilvl)) .gt. SYS_EPSREAL_DP) &
           daux1 = Derror(1,ilvl-1)/Derror(1,ilvl)
-        if(abs(Derror(2,ilvl)) .gt. SYS_EPSREAL) &
+        if(abs(Derror(2,ilvl)) .gt. SYS_EPSREAL_DP) &
           daux2 = Derror(2,ilvl-1)/Derror(2,ilvl)
         
         ! print out the factors

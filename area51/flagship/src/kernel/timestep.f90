@@ -2111,7 +2111,7 @@ contains
 
       ! If the time step is already equal to the smallest
       ! admissible time step, then the simulation is terminated.
-      if (rtimestep%dStep .le. rtimestep%dminStep + SYS_EPSREAL) then
+      if (rtimestep%dStep .le. rtimestep%dminStep + SYS_EPSREAL_DP) then
         call output_line('Time step reached smallest admissible value!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'tstep_checkTimestep')
         call sys_halt()
@@ -2183,7 +2183,7 @@ contains
         rtimestep%dStep  = max(rtimestep%dminStep, min(rtimestep%dmaxStep, dStepOpt))
 
         ! Calculate the relative changes for statistical information
-        rtimestep%drelChange = dChange/max(SYS_EPSREAL,&
+        rtimestep%drelChange = dChange/max(SYS_EPSREAL_DP,&
                                            lalg_normDble(p_Ddata1, rtimestep%isolNorm))
 
       end if
@@ -2228,7 +2228,7 @@ contains
 
       ! If the solver failed due to a non-critical error, we may accept
       ! the time step in case it cannot be further reduces
-      if (breject .and. (rtimestep%dStep .gt. rtimestep%dminStep + SYS_EPSREAL)) then
+      if (breject .and. (rtimestep%dStep .gt. rtimestep%dminStep + SYS_EPSREAL_DP)) then
 
         ! Adjust time step accordingly
         rtimestep%nrejectedSteps = rtimestep%nrejectedSteps+1
@@ -2247,7 +2247,7 @@ contains
         breject = .false.
 
         ! Adopt previous time step if solution did not change
-        if (dChange .le. SYS_EPSREAL) return
+        if (dChange .le. SYS_EPSREAL_DP) return
 
         if (rtimestep%dTime .gt. rtimestep%dadaptTime) then
 
@@ -2306,7 +2306,7 @@ contains
       call lsysbl_getbase_double(rsolution1, p_Ddata1)
       call lsysbl_getbase_double(rsolution2, p_Ddata2)
       dChange = lalg_errorNormDble(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
-      rtimestep%drelChange = dChange/max(SYS_EPSREAL,&
+      rtimestep%drelChange = dChange/max(SYS_EPSREAL_DP,&
                                      lalg_normDble(p_Ddata1, rtimestep%isolNorm))
 
 
@@ -2318,7 +2318,7 @@ contains
       call lsysbl_getbase_double(rsolution1, p_Ddata1)
       call lsysbl_getbase_double(rsolution2, p_Ddata2)
       dChange = lalg_errorNormDble(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
-      rtimestep%drelChange = dChange/max(SYS_EPSREAL,&
+      rtimestep%drelChange = dChange/max(SYS_EPSREAL_DP,&
                                          lalg_normDble(p_Ddata1, rtimestep%isolNorm))
 
     end select

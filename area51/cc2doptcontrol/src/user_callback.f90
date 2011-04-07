@@ -1422,9 +1422,9 @@ contains
   ! The routine has to return a value which is used as the result of an
   ! expression, e.g. as Diichlet value on the boundary.
   !
-  ! The routine is allowed to return SYS_INFINITY. The behaviour of this
+  ! The routine is allowed to return SYS_INFINITY_DP. The behaviour of this
   ! value depends on the type of boundary conditions. For Dirichlet
-  ! boundary segments, all points where SYS_INFINITY is returned are
+  ! boundary segments, all points where SYS_INFINITY_DP is returned are
   ! treated as Neumann points.
 !</description>
   
@@ -1455,7 +1455,7 @@ contains
 !</input>
 
 !<output>
-  ! Return value of the expression. May be SYS_INFINITY.
+  ! Return value of the expression. May be SYS_INFINITY_DP.
   real(DP), intent(OUT) :: dvalue
 !</output>
   

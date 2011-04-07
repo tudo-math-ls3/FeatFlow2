@@ -369,7 +369,7 @@ contains
     !---------------------------------------------------------------------------
     ! Check if fully explicit time-stepping is used
     !---------------------------------------------------------------------------
-    if (rtimestep%theta .le. SYS_EPSREAL) then
+    if (rtimestep%theta .le. SYS_EPSREAL_DP) then
 
       call parlst_getvalue_int(p_rparlist, ssectionName,&
           'isystemformat', isystemFormat)
@@ -3217,7 +3217,7 @@ contains
                           Dx(2:NVARtransformed+1,j)/Dx(1,j))
             
             ! Compute correction factor
-            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL_DP)
             
             ! Compute multiplicative correction factor
             Dalpha(iedge) = Dalpha(iedge) *alpha_ij
@@ -3291,7 +3291,7 @@ contains
                           Dx(j,2:NVARtransformed+1)/Dx(j,1))
             
             ! Compute correction factor
-            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL_DP)
             
             ! Compute multiplicative correction factor
             Dalpha(iedge) = Dalpha(iedge) *alpha_ij
@@ -3453,7 +3453,7 @@ contains
                           Dx(2:NVARtransformed+1,j))
             
             ! Compute correction factor
-            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL_DP)
             
             ! Compute multiplicative correction factor
             Dalpha(iedge) = Dalpha(iedge) *alpha_ij
@@ -3527,7 +3527,7 @@ contains
                           Dx(j,2:NVARtransformed+1))
             
             ! Compute correction factor
-            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL_DP)
             
             ! Compute multiplicative correction factor
             Dalpha(iedge) = Dalpha(iedge) *alpha_ij

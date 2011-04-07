@@ -574,7 +574,7 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
+      c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -728,7 +728,7 @@ contains
 
 ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
+      c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -865,7 +865,7 @@ contains
       a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
@@ -888,7 +888,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
+        c2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1074,7 +1074,7 @@ contains
       a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
 
         ! Compute the absolute value
         a = abs(a)
@@ -1096,7 +1096,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
+        c2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1320,8 +1320,8 @@ contains
       
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1485,8 +1485,8 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1923,7 +1923,7 @@ contains
       a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(\
@@ -1945,7 +1945,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2055,7 +2055,7 @@ contains
       a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(\
@@ -2078,7 +2078,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2184,7 +2184,7 @@ contains
       a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
 
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
@@ -2209,7 +2209,7 @@ contains
         
         ! Compute speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
+        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2381,7 +2381,7 @@ contains
       a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
@@ -2406,7 +2406,7 @@ contains
 
         ! Compute speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
+        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2567,8 +2567,8 @@ contains
       
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2669,8 +2669,8 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2760,7 +2760,7 @@ contains
     anorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
 
     ! Check if weighting coefficient is zero
-    if (anorm .le. SYS_EPSREAL) then
+    if (anorm .le. SYS_EPSREAL_DP) then
       if (present(DcharVariablesAtEdge))     DcharVariablesAtEdge     = 0.0_DP
       if (present(DeigenvaluesAtEdge))       DeigenvaluesAtEdge       = 0.0_DP
       if (present(DrightEigenvectorsAtEdge)) DrightEigenvectorsAtEdge = 0.0_DP
@@ -2803,7 +2803,7 @@ contains
 
         ! Compute speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
+        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2863,7 +2863,7 @@ contains
         ! Compute auxiliary variables
         q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 #ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2905,7 +2905,7 @@ contains
         ! Compute auxiliary variables
         q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 #ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2962,7 +2962,7 @@ contains
         ! Compute auxiliary variables
         q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 #ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
+        cPow2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -3086,7 +3086,7 @@ contains
 
 ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL))
+      c_ij = sqrt(max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -3174,7 +3174,7 @@ contains
       a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
@@ -3199,7 +3199,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL)
+        c2_ij = max((GAMMA-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -3324,8 +3324,8 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -4449,7 +4449,7 @@ contains
       v2  = Du(3)/rho
       E   = Du(4)/rho
       p   = (GAMMA-1.0_DP)*rho*(E-0.5_DP*(v1*v1+v2*v2))
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
 
       ! Precompute auxiliary data
       dnxy = DbdrNormal(1)*DbdrNormal(2)
@@ -4641,7 +4641,7 @@ contains
       ! The free stream primitive variables are Deval=[rho,v1,v2,p]
       rho = DbdrValue(1)
       p   = DbdrValue(4)
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
       vn  = DbdrNormal(1)*DbdrValue(2)+DbdrNormal(2)*DbdrValue(3)
       vt  = DbdrNormal(2)*DbdrValue(2)-DbdrNormal(1)*DbdrValue(3)
 
@@ -4671,7 +4671,7 @@ contains
       ! The free stream primitive variables are Deval=[rho,v1,v2,p]
       rho = DbdrValue(1)
       p   = DbdrValue(4)
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
       vn  = DbdrNormal(1)*DbdrValue(2)+DbdrNormal(2)*DbdrValue(3)
       vt  = DbdrNormal(2)*DbdrValue(2)-DbdrNormal(1)*DbdrValue(3)
 
@@ -4688,7 +4688,7 @@ contains
       E   = Du(4)/rho
       p   = (GAMMA-1.0_DP)*rho*(E-0.5_DP*(v1*v1+v2*v2))
 
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
       vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
       vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
 
@@ -4701,8 +4701,8 @@ contains
       ! Adopt free stream/computed values depending on the sign of the eigenvalue
       W(1) = merge(Winf(1), Wu(1), vn <  c)
       W(2) = merge(Winf(2), Wu(2), vn < -c)
-      W(3) = merge(Winf(3), Wu(3), vn <  SYS_EPSREAL)
-      W(4) = merge(Winf(4), Wu(4), vn <  SYS_EPSREAL)
+      W(3) = merge(Winf(3), Wu(3), vn <  SYS_EPSREAL_DP)
+      W(4) = merge(Winf(4), Wu(4), vn <  SYS_EPSREAL_DP)
 
       ! Transform back into conservative variables
       vn   = 0.5_DP*(W(1)+W(2))
@@ -4728,7 +4728,7 @@ contains
       E   = Du(4)/rho
       p   = (GAMMA-1.0_DP)*rho*(E-0.5_DP*(v1*v1+v2*v2))
 
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
       vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
       vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
 
@@ -4776,13 +4776,13 @@ contains
 
       vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
       vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
 
       ! Compute Riemann invariants based on the solution values and prescribed exit pressure
       W(2) = 2*c/(GAMMA-1.0_DP)-vn
       W(3) = p/(rho**GAMMA)
       W(4) = vt
-      W(1) = 4/(GAMMA-1.0_DP)*sqrt(max(GAMMA*ps/rho*(p/ps)**(1.0_DP/GAMMA), SYS_EPSREAL))-W(2)
+      W(1) = 4/(GAMMA-1.0_DP)*sqrt(max(GAMMA*ps/rho*(p/ps)**(1.0_DP/GAMMA), SYS_EPSREAL_DP))-W(2)
 
       ! Transform back into conservative variables
       vn  = 0.5_DP*(W(1)-W(2))
@@ -5172,7 +5172,7 @@ contains
           ! Compute auxiliary quantities based on internal state vector
           pI = PRESSURE_2T_FROM_CONSVAR_2D(DstateI,NVAR2D,ipoint,iel)
           cI = sqrt(max(GAMMA*pI/&
-               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel), SYS_EPSREAL))
+               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel), SYS_EPSREAL_DP))
           
           ! Compute the normal and tangential velocities based
           ! on internal state vector
@@ -5407,7 +5407,7 @@ contains
           ! Compute auxiliary quantities based on internal state vector
           pI = PRESSURE_2T_FROM_CONSVAR_2D(DstateI,NVAR2D,ipoint,iel)
           cI = sqrt(max(GAMMA*pI/&
-               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel), SYS_EPSREAL))
+               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel), SYS_EPSREAL_DP))
           
           ! Compute the normal velocity based on the internal state vector
           dvnI = ( Dnx(ipoint,iel)*&
@@ -5463,7 +5463,7 @@ contains
           ! Compute auxiliary quantities based on internal state vector
           pI = PRESSURE_2T_FROM_CONSVAR_2D(DstateI,NVAR2D,ipoint,iel)
           cI = sqrt(max(GAMMA*pI/&
-               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel), SYS_EPSREAL))
+               DENSITY_2T_FROM_CONSVAR(DstateI,NVAR2D,ipoint,iel), SYS_EPSREAL_DP))
           
           ! Compute the normal and tangential velocities based
           ! on internal state vector
@@ -5553,7 +5553,7 @@ contains
 !!$                              0.5_DP*(Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
 !!$                                   Daux1((ipoint-1)*NVAR2D+3,iel)**2)/&
 !!$                                   Daux1((ipoint-1)*NVAR2D+1,iel))
-!!$            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
+!!$            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL_DP))
 !!$
 !!$            ! Compute the normal and tangential velocities based on
 !!$            ! the internal state vector evaluated on the boundary
@@ -5570,7 +5570,7 @@ contains
 !!$                              0.5_DP*(Daux3((ipoint-1)*NVAR2D+2,iel)**2+&
 !!$                                   Daux3((ipoint-1)*NVAR2D+3,iel)**2)/&
 !!$                                   Daux3((ipoint-1)*NVAR2D+1,iel))
-!!$            cM = sqrt(max(GAMMA*pM/Daux3((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
+!!$            cM = sqrt(max(GAMMA*pM/Daux3((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL_DP))
 !!$
 !!$            ! Compute the normal and tangential velocities based on
 !!$            ! state vector evaluated on the mirrored boundary
@@ -5589,7 +5589,7 @@ contains
 !!$              DstateM(1) = dvnI-2.0_DP*cI/(GAMMA-1.0_DP)
 !!$            end if
 !!$
-!!$            if (dvnI .lt. SYS_EPSREAL) then
+!!$            if (dvnI .lt. SYS_EPSREAL_DP) then
 !!$              DstateM(2) = pM/(Daux3((ipoint-1)*NVAR2D+1,iel)**GAMMA)
 !!$              DstateM(3) = dvtM
 !!$            else
@@ -5711,7 +5711,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c2_IM = max((GAMMA-1.0_DP)*(H_IM-q_IM), SYS_EPSREAL)
+        c2_IM = max((GAMMA-1.0_DP)*(H_IM-q_IM), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif

@@ -270,7 +270,7 @@ contains
       
       ! Solve using SOR
       niter = 1000
-      dtol = SYS_EPSREAL
+      dtol = SYS_EPSREAL_DP
       call qsol_solveSOR(rmatMass, rvecF, Dwork, cinfo, niter, dtol, 1.2_DP)
       
       ! Store result
@@ -498,7 +498,7 @@ contains
       
       ! Solve using SOR
       niter = 1000
-      dtol = SYS_EPSREAL
+      dtol = SYS_EPSREAL_DP
       call qsol_solveSOR(rmatMass, rvecF, Dwork, cinfo, niter, dtol, 1.2_DP)
 
       ! ...
@@ -732,7 +732,7 @@ contains
       
       ! Solve using SOR
       niter = 1000
-      dtol = SYS_EPSREAL
+      dtol = SYS_EPSREAL_DP
       call qsol_solveSOR(rmatMass, rvecC, Dwork, cinfo, niter, dtol, 1.2_DP)
       
       ! Store result

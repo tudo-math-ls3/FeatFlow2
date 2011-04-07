@@ -1019,7 +1019,7 @@ contains
       select case (ispacelevelcoupledtotimelevel)
       case (0)
         ! Only in time, space level stays at max.
-        dspacetimeRefFactor = SYS_INFINITY
+        dspacetimeRefFactor = SYS_INFINITY_DP
             
       case (1)
         ! Simultaneous refinement in space+time.

@@ -1274,13 +1274,13 @@ contains
       ! M. Pernice, H.F. Walker, NITSOL: a Newton iterative solver
       ! for nonlinear systems, SIAM J. Sci. Comput. 19 (1998) 302-318.
       hstep = ( (1+lsysbl_vectorNorm(rsolution,&
-                   LINALG_NORMEUCLID))*SYS_EPSREAL )**(1.0_DP/3._DP)
+                   LINALG_NORMEUCLID))*SYS_EPSREAL_DP )**(1.0_DP/3._DP)
 
     case (PERTURB_SQRTEPS)
-      hstep= sqrt(SYS_EPSREAL)
+      hstep= sqrt(SYS_EPSREAL_DP)
 
     case default
-      hstep = max(SYS_EPSREAL,&
+      hstep = max(SYS_EPSREAL_DP,&
                   rsolver%p_solverNewton%dperturbationStrategy)
     end select
 

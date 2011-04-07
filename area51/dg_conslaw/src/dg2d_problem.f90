@@ -508,7 +508,7 @@ contains
     ! Temp array
     real(dp), dimension(3) :: T
     
-    if (abs(a)<10*SYS_EPSREAL) then
+    if (abs(a)<10*SYS_EPSREAL_DP) then
     
       R = buildTrafo(Q,2)
       
@@ -1123,7 +1123,7 @@ contains
 !    vl = Ql(3)/Ql(1)
 !    vr = Qr(3)/Qr(1)
 !    Qroe(1) = sqrt(rhol*rhor)
-!    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL))
+!    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
 !    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
 !    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
 !    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
@@ -1608,9 +1608,9 @@ contains
 !    if (SL.ge.0.0_dp) then
 !      FX = Euler_buildFlux(Qi,1)
 !    elseif ((SL<0.0_dp).and.(SS.ge.0.0_dp)) then
-!      FX = Euler_buildFlux(Qi,1) + SL*( rhoi*(SL-ui)/min((SL-SS),-SYS_EPSREAL)*(/ 1.0_dp, SS, vi, Ei/rhoi+(SS-ui)*(SS+pi/(rhoi*(SL-ui))) /) -Qi)
+!      FX = Euler_buildFlux(Qi,1) + SL*( rhoi*(SL-ui)/min((SL-SS),-SYS_EPSREAL_DP)*(/ 1.0_dp, SS, vi, Ei/rhoi+(SS-ui)*(SS+pi/(rhoi*(SL-ui))) /) -Qi)
 !    elseif ((SS<0.0_dp).and.(SR>0.0_dp)) then
-!      FX = Euler_buildFlux(Qa,1) + SR*( rhoa*(SR-ua)/max((SR-SS),SYS_EPSREAL)*(/ 1.0_dp, SS, va, Ea/rhoa+(SS-ua)*(SS+pa/(rhoa*(SR-ua))) /) -Qa)
+!      FX = Euler_buildFlux(Qa,1) + SR*( rhoa*(SR-ua)/max((SR-SS),SYS_EPSREAL_DP)*(/ 1.0_dp, SS, va, Ea/rhoa+(SS-ua)*(SS+pa/(rhoa*(SR-ua))) /) -Qa)
 !    elseif (SR.le.0.0_dp) then
 !      FX = Euler_buildFlux(Qa,1)
 !    end if
@@ -1654,9 +1654,9 @@ contains
 !    if (SL.ge.0.0_dp) then
 !      FX = Euler_buildFlux(Qi,1)
 !    elseif ((SL<0.0_dp).and.(SS.ge.0.0_dp)) then
-!      FX = Euler_buildFlux(Qi,1) + SL*( rhoi*(SL-ui)/min((SL-SS),-SYS_EPSREAL)*(/ 1.0_dp, SS, vi, Ei/rhoi+(SS-ui)*(SS+pi/(rhoi*(SL-ui))) /) -Qi)
+!      FX = Euler_buildFlux(Qi,1) + SL*( rhoi*(SL-ui)/min((SL-SS),-SYS_EPSREAL_DP)*(/ 1.0_dp, SS, vi, Ei/rhoi+(SS-ui)*(SS+pi/(rhoi*(SL-ui))) /) -Qi)
 !    elseif ((SS<0.0_dp).and.(SR>0.0_dp)) then
-!      FX = Euler_buildFlux(Qa,1) + SR*( rhoa*(SR-ua)/max((SR-SS),SYS_EPSREAL)*(/ 1.0_dp, SS, va, Ea/rhoa+(SS-ua)*(SS+pa/(rhoa*(SR-ua))) /) -Qa)
+!      FX = Euler_buildFlux(Qa,1) + SR*( rhoa*(SR-ua)/max((SR-SS),SYS_EPSREAL_DP)*(/ 1.0_dp, SS, va, Ea/rhoa+(SS-ua)*(SS+pa/(rhoa*(SR-ua))) /) -Qa)
 !    elseif (SR.le.0.0_dp) then
 !      FX = Euler_buildFlux(Qa,1)
 !    else

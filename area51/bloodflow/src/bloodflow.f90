@@ -457,7 +457,7 @@ contains
       ! Initialize index
       p_IobjectCoordsIdx = (/1, npoints+1/)
       
-      if (abs(w) .le. SYS_EPSREAL) then
+      if (abs(w) .le. SYS_EPSREAL_DP) then
         
         ! Create a thin (quasi 1D) object
         do ipoint = 0, npoints-1
@@ -636,7 +636,7 @@ contains
       
       ! Convert it to standard h-adaptation indicator
       call bloodflow_convertRefMarker(rbloodflow, rindicator,&
-          rbloodflow%rhadapt%drefinementTolerance+SYS_EPSREAL)
+          rbloodflow%rhadapt%drefinementTolerance+SYS_EPSREAL_DP)
       
       ! Adapt the computational mesh
       call hadapt_performAdaptation(rbloodflow%rhadapt, rindicator)
@@ -1573,7 +1573,7 @@ contains
          * (DlineCoords(1,1)-DlineCoords(1,2))
 
     ! Intersection test for the second edge BC
-    if (abs(detu) .gt. SYS_EPSREAL) then
+    if (abs(detu) .gt. SYS_EPSREAL_DP) then
       
       ! Compute auxiliary determinant with third column replaced by
       ! the right-hand side (B.x-C.x)*(P.y-C.y)-(B.y-C.y)*(P.x-C.x)
@@ -1627,7 +1627,7 @@ contains
             sqrt( (DlineCoords(2,1)-DlineCoords(2,2))**2+&
                   (DlineCoords(1,2)-DlineCoords(1,1))**2 )
       
-      if (dist .le. SYS_EPSREAL) then
+      if (dist .le. SYS_EPSREAL_DP) then
         ! Compute parameter value for third and second vertex of the
         ! triangle expressed in terms of the line parameter form
         if (abs(DlineCoords(1,2)-DlineCoords(1,1)) .gt.&
@@ -1681,7 +1681,7 @@ contains
          *  (DlineCoords(1,1)-DlineCoords(1,2))
 
     ! Intersection test for the third edge CA
-    if (abs(detv) .gt. SYS_EPSREAL) then
+    if (abs(detv) .gt. SYS_EPSREAL_DP) then
       
       ! Compute auxiliary determinant twith third column replaced by
       ! the right-hand side -(A.x-C.x)*(P.y-C.y)+(A.y-C.y)*(P.x-C.x)
@@ -1735,7 +1735,7 @@ contains
             sqrt( (DlineCoords(2,1)-DlineCoords(2,2))**2+&
                   (DlineCoords(1,2)-DlineCoords(1,1))**2 )
       
-      if (dist .le. SYS_EPSREAL) then
+      if (dist .le. SYS_EPSREAL_DP) then
         ! Compute parameter values for first and third vertex of the
         ! triangle expressed in terms of the line parameter form
         if (abs(DlineCoords(1,2)-DlineCoords(1,1)) .gt.&
@@ -1789,7 +1789,7 @@ contains
     detuv = detu + detv
     
     ! Intersection test for the first edge AB. 
-    if (abs(detuv) .gt. SYS_EPSREAL) then
+    if (abs(detuv) .gt. SYS_EPSREAL_DP) then
       
       ! Compute auxiliary determinant with third column
       ! replaced by the right-hand side
@@ -1857,7 +1857,7 @@ contains
             sqrt( (DlineCoords(2,1)-DlineCoords(2,2))**2+&
                   (DlineCoords(1,2)-DlineCoords(1,1))**2 )
 
-      if (dist .le. SYS_EPSREAL) then
+      if (dist .le. SYS_EPSREAL_DP) then
         ! Compute parameter value for first and second vertex of the
         ! triangle expressed in terms of the line parameter form
         if (abs(DlineCoords(1,2)-DlineCoords(1,1)) .gt.&

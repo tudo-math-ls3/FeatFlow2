@@ -1879,7 +1879,7 @@ contains
       call linsol_initJacobi (p_rpreconditioner, 0.8_DP)
       call linsol_initDefCorr (p_rsolverNode, p_rpreconditioner)
       
-      p_rsolverNode%depsRel = SYS_EPSREAL * 100.0_DP
+      p_rsolverNode%depsRel = SYS_EPSREAL_DP * 100.0_DP
       p_rsolverNode%nmaxiterations = 1000
       p_rsolverNode%ioutputLevel = 1
 

@@ -964,7 +964,7 @@ contains
           
           ! Compute unit vector starting at the origin
           drad = sqrt(x1*x1 + x2*x2)
-          if (drad .gt. SYS_EPSREAL) then
+          if (drad .gt. SYS_EPSREAL_DP) then
             x1 = x1/drad
             x2 = x2/drad
           else
@@ -999,7 +999,7 @@ contains
           
           ! Compute unit vector starting at the origin
           drad = sqrt(x1*x1 + x2*x2)
-          if (drad .gt. SYS_EPSREAL) then
+          if (drad .gt. SYS_EPSREAL_DP) then
             x1 = x1/drad
             x2 = x2/drad
           else
@@ -1070,7 +1070,7 @@ contains
             
             ! Compute unit vector starting at the origin
             drad = sqrt(x1*x1 + x2*x2)
-            if (drad .gt. SYS_EPSREAL) then
+            if (drad .gt. SYS_EPSREAL_DP) then
               x1 = x1/drad
               x2 = x2/drad
             else
@@ -1117,7 +1117,7 @@ contains
             
             ! Compute unit vector starting at the origin
             drad = sqrt(x1*x1 + x2*x2)
-            if (drad .gt. SYS_EPSREAL) then
+            if (drad .gt. SYS_EPSREAL_DP) then
               x1 = x1/drad
               x2 = x2/drad
             else
@@ -1180,7 +1180,7 @@ contains
           x1 = DvertexCoords(1,ieq); drad = abs(x1)
           
           ! Compute unit vector starting at the origin
-          if (drad .gt. SYS_EPSREAL) then
+          if (drad .gt. SYS_EPSREAL_DP) then
             x1 = sign(1.0_DP, x1)
           else
             x1 = 0.0_DP
@@ -1210,7 +1210,7 @@ contains
           x1 = DvertexCoords(1,ieq); drad = abs(x1)
           
           ! Compute unit vector starting at the origin
-          if (drad .gt. SYS_EPSREAL) then
+          if (drad .gt. SYS_EPSREAL_DP) then
             x1 = sign(1.0_DP, x1)
           else
             x1 = 0.0_DP
@@ -1276,7 +1276,7 @@ contains
             x1 = DvertexCoords(1,jeq); drad = abs(x1)
             
             ! Compute unit vector starting at the origin
-            if (drad .gt. SYS_EPSREAL) then
+            if (drad .gt. SYS_EPSREAL_DP) then
               x1 = sign(1.0_DP, x1)
             else
               x1 = 0.0_DP
@@ -1317,7 +1317,7 @@ contains
             x1 = DvertexCoords(1,jeq); drad = abs(x1)
             
             ! Compute unit vector starting at the origin
-            if (drad .gt. SYS_EPSREAL) then
+            if (drad .gt. SYS_EPSREAL_DP) then
               x1 = sign(1.0_DP, x1)
             else
               x1 = 0.0_DP
@@ -1378,7 +1378,7 @@ contains
           
           ! Compute unit vector starting at the origin
           drad = sqrt(x1*x1 + x2*x2)
-          if (drad .gt. SYS_EPSREAL) then
+          if (drad .gt. SYS_EPSREAL_DP) then
             x1 = x1/drad
             x2 = x2/drad
           else
@@ -1413,7 +1413,7 @@ contains
           
           ! Compute unit vector starting at the origin
           drad = sqrt(x1*x1 + x2*x2)
-          if (drad .gt. SYS_EPSREAL) then
+          if (drad .gt. SYS_EPSREAL_DP) then
             x1 = x1/drad
             x2 = x2/drad
           else
@@ -1485,7 +1485,7 @@ contains
             
             ! Compute unit vector starting at the origin
             drad = sqrt(x1*x1 + x2*x2)
-            if (drad .gt. SYS_EPSREAL) then
+            if (drad .gt. SYS_EPSREAL_DP) then
               x1 = x1/drad
               x2 = x2/drad
             else
@@ -1532,7 +1532,7 @@ contains
             
             ! Compute unit vector starting at the origin
             drad = sqrt(x1*x1 + x2*x2)
-            if (drad .gt. SYS_EPSREAL) then
+            if (drad .gt. SYS_EPSREAL_DP) then
               x1 = x1/drad
               x2 = x2/drad
             else
@@ -1595,7 +1595,7 @@ contains
           x1 = DvertexCoords(1,ieq); drad = abs(x1)
           
           ! Compute unit vector starting at the origin
-          if (drad .gt. SYS_EPSREAL) then
+          if (drad .gt. SYS_EPSREAL_DP) then
             x1 = sign(1.0_DP,x1)
           else
             x1 = 0.0_DP
@@ -1625,7 +1625,7 @@ contains
           x1 = DvertexCoords(1,ieq); drad = abs(x1)
           
           ! Compute unit vector starting at the origin
-          if (drad .gt. SYS_EPSREAL) then
+          if (drad .gt. SYS_EPSREAL_DP) then
             x1 = sign(1.0_DP,x1)
           else
             x1 = 0.0_DP
@@ -1691,7 +1691,7 @@ contains
             x1 = DvertexCoords(1,jeq); drad = abs(x1)
             
             ! Compute unit vector starting at the origin
-            if (drad .gt. SYS_EPSREAL) then
+            if (drad .gt. SYS_EPSREAL_DP) then
               x1 = sign(1.0_DP,x1)
             else
               x1 = 0.0_DP
@@ -1732,7 +1732,7 @@ contains
             x1 = DvertexCoords(1,jeq); drad = abs(x1)
             
             ! Compute unit vector starting at the origin
-            if (drad .gt. SYS_EPSREAL) then
+            if (drad .gt. SYS_EPSREAL_DP) then
               x1 = sign(1.0_DP,x1)
             else
               x1 = 0.0_DP

@@ -930,7 +930,7 @@ contains
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
@@ -1103,7 +1103,7 @@ contains
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Normalize the skew-symmetric coefficient
         a = a/anorm

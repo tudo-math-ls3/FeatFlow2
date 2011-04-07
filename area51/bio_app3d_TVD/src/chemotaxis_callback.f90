@@ -1371,7 +1371,7 @@ END IF
     ! Obviously, this represents just an approximation for the desired mass
     ! (Since we calculate in a FE-space)
     ! However if dm_0 /= 0 we can use it directly as nodal-mass
-    if (abs(dm_0) <= SYS_EPSREAL) then
+    if (abs(dm_0) <= SYS_EPSREAL_DP) then
         dm = 3.0_DP/4.0_DP * (dmass / ( SYS_PI * dradius**3))
     else
         dm = dm_0
@@ -7072,7 +7072,7 @@ END IF
   ! If multiple values are needed, they are collected here (e.g. for 
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
-  ! The function may return SYS_INFINITY as a value. This indicates the
+  ! The function may return SYS_INFINITY_DP as a value. This indicates the
   ! framework to ignore the node and treat it as 'natural boundary condition'
   ! node.
   real(DP), dimension(:), intent(out)            :: Dvalues
@@ -7175,7 +7175,7 @@ END IF
   ! If multiple values are needed, they are collected here (e.g. for 
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
-  ! The function may return SYS_INFINITY as a value. This indicates the
+  ! The function may return SYS_INFINITY_DP as a value. This indicates the
   ! framework to ignore the node and treat it as 'natural boundary condition'
   ! node.
   real(DP), dimension(:), intent(out)            :: Dvalues

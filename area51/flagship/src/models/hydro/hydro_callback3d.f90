@@ -588,7 +588,7 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -756,7 +756,7 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -907,7 +907,7 @@ contains
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
@@ -931,7 +931,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        c2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1207,7 +1207,7 @@ contains
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Normalize the skew-symmetric coefficient
         a = abs(a)
@@ -1230,7 +1230,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        c2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1515,8 +1515,8 @@ contains
       
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1705,8 +1705,8 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2186,7 +2186,7 @@ contains
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
       
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
 
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(\
@@ -2209,7 +2209,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2324,7 +2324,7 @@ contains
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
       
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(\
@@ -2347,7 +2347,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2455,7 +2455,7 @@ contains
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
 
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
@@ -2481,7 +2481,7 @@ contains
         
         ! Compute speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -2823,7 +2823,7 @@ contains
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
       
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
 
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(\
@@ -2846,7 +2846,7 @@ contains
         
         ! Compute speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -3168,8 +3168,8 @@ contains
       
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -3283,8 +3283,8 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -3467,7 +3467,7 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL))
+      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -3555,7 +3555,7 @@ contains
       a = 0.5*(DmatrixCoeffsAtEdge(:,1,idx)-DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2)+a(3)*a(3))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
         
         ! Normalize the skew-symmetric coefficient
         a = a/anorm
@@ -3581,7 +3581,7 @@ contains
 
         ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-        c2_ij  = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL)
+        c2_ij  = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -3781,8 +3781,8 @@ contains
 
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*(ui*ui+vi*vi+wi*wi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*(uj*uj+vj*vj+wj*wj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif

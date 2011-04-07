@@ -1471,8 +1471,8 @@ end subroutine
 !    Dvel(1)=yc
 !    Dvel(2)=1.0_DP-xc
 !    
-!    Dvel(1) = Dvel(1)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL))
-!    Dvel(2) = Dvel(2)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL))
+!    Dvel(1) = Dvel(1)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL_DP))
+!    Dvel(2) = Dvel(2)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL_DP))
 !                          
 !    dnodeValues(ibaseN+1:ibaseN+nnodesOnRef) = dnodeValues1(ibaseN+1:ibaseN+nnodesOnRef)*Dvel(1) + dnodeValues2(ibaseN+1:ibaseN+nnodesOnRef)*Dvel(2)
 !    
@@ -1647,8 +1647,8 @@ end subroutine
   
   allocate(duimax(NVT),duimin(NVT))
   
-  duimax= -SYS_MAXREAL
-  duimin=  SYS_MAXREAL
+  duimax= -SYS_MAXREAL_DP
+  duimin=  SYS_MAXREAL_DP
   
   do iel = 1, NEL
     
@@ -2171,8 +2171,8 @@ end subroutine
   
   !!! First calculate the bounds
   
-  duimax= -SYS_MAXREAL
-  duimin=  SYS_MAXREAL
+  duimax= -SYS_MAXREAL_DP
+  duimin=  SYS_MAXREAL_DP
   
   do iel = 1, NEL
     
@@ -2473,14 +2473,14 @@ end subroutine
         dalphatemp = min(1.0_dp, (duimax(nvert)-duc)/ddu)
         
 !        ! Extremumfix
-!        if (duimax(nvert)-duc<SYS_EPSREAL) dalphatemp = 1.0_dp
+!        if (duimax(nvert)-duc<SYS_EPSREAL_DP) dalphatemp = 1.0_dp
 !        if ((ilim>0).and.(duimax(nvert)-duc<abs(0.0001_dp*duc))) dalphatemp = 1.0_dp
 
       elseif (ddu < 0.0_dp) then
         dalphatemp = min(1.0_dp, (duimin(nvert)-duc)/ddu)
         
 !        ! Extremumfix
-!        if (duimin(nvert)-duc>-SYS_EPSREAL) dalphatemp = 1.0_dp
+!        if (duimin(nvert)-duc>-SYS_EPSREAL_DP) dalphatemp = 1.0_dp
 !        if ((ilim>0).and.(duimin(nvert)-duc>-abs(0.0001_dp*duc))) dalphatemp = 1.0_dp
         
       else ! (dui==duc)
@@ -3808,8 +3808,8 @@ end subroutine
   
   allocate(duimax(NVT),duimin(NVT))
   
-  duimax= -SYS_MAXREAL
-  duimin=  SYS_MAXREAL
+  duimax= -SYS_MAXREAL_DP
+  duimin=  SYS_MAXREAL_DP
   
   do iel = 1, NEL
     
@@ -4099,8 +4099,8 @@ end subroutine
     end select
   
   
-  duimax= -SYS_MAXREAL
-  duimin=  SYS_MAXREAL
+  duimax= -SYS_MAXREAL_DP
+  duimin=  SYS_MAXREAL_DP
   
   do iel = 1, NEL
     
@@ -4484,7 +4484,7 @@ end subroutine
         ! Calculate the correction factor
         ! for this element, for this edge, for this dimension (take min of all dimensions)
         do ivar = 1, nvar
-          if (abs(DIi(ivar))<SYS_EPSREAL) then
+          if (abs(DIi(ivar))<SYS_EPSREAL_DP) then
             !Dalphaei(ivar,ivt) = 1.0_dp
           else
             ! This is the one following the principles
@@ -4706,8 +4706,8 @@ end subroutine
     end select
   
   
-!  duimax= -SYS_MAXREAL
-!  duimin=  SYS_MAXREAL
+!  duimax= -SYS_MAXREAL_DP
+!  duimin=  SYS_MAXREAL_DP
 !  
 !  do iel = 1, NEL
 !    
@@ -5189,7 +5189,7 @@ end subroutine
         ! Calculate the correction factor
         ! for this element, for this edge, for this dimension (take min of all dimensions)
         do ivar = 1, nvar
-          if (abs(DIi(ivar))<SYS_EPSREAL) then
+          if (abs(DIi(ivar))<SYS_EPSREAL_DP) then
             !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), 1.0_dp)
             ! That's the same as: Do nothing
           else
@@ -5308,7 +5308,7 @@ end subroutine
     write(*,*) 'Full time:' , dalltime
     
     do i = 1, rprofiler%ntimer
-      write(*,*) i,  (rprofiler%Dtimers(i)/(dalltime+SYS_EPSREAL)*100),'%'
+      write(*,*) i,  (rprofiler%Dtimers(i)/(dalltime+SYS_EPSREAL_DP)*100),'%'
     end do
     write(*,*) '*********************************************************************'
     write(*,*) ''
@@ -5414,7 +5414,7 @@ end subroutine
   
   call lsysbl_getbase_double (rvectorBlock, p_Ddata)
   
-  dt = SYS_MAXREAL
+  dt = SYS_MAXREAL_DP
   
   do iel = 1, NEL
     
@@ -5636,7 +5636,7 @@ end subroutine
         da = DVec(2)/DVec(1)
         db = DVec(3)/DVec(1)
         dquo = da*da+db*db
-        if (dquo<SYS_EPSREAL) then
+        if (dquo<SYS_EPSREAL_DP) then
           DL = buildInvTrafo(DVec,idim-2)
           DR = buildTrafo(DVec,idim-2)
         else
@@ -5650,7 +5650,7 @@ end subroutine
         da = DVec(2)/DVec(1)
         db = DVec(3)/DVec(1)
         dquo = da*da+db*db
-        if (dquo<SYS_EPSREAL) then
+        if (dquo<SYS_EPSREAL_DP) then
           DL = buildInvTrafo(DVec,idim-2)
           DR = buildTrafo(DVec,idim-2)
         else
@@ -5691,7 +5691,7 @@ end subroutine
         ! Calculate the correction factor
         ! for this element, for this edge, for this dimension (take min of all dimensions)
         do ivar = 1, nvar
-          if (abs(DIi(ivar))<SYS_EPSREAL) then
+          if (abs(DIi(ivar))<SYS_EPSREAL_DP) then
             !Dalphaei(ivar,ivt) = 1.0_dp
           else
             ! This is the one following the principles
@@ -6109,7 +6109,7 @@ real(dp), dimension(:) :: Dvalues
         da = DQchar(2)/DQchar(1)
         db = DQchar(3)/DQchar(1)
         dquo = da*da+db*db
-        if (dquo<SYS_EPSREAL) then
+        if (dquo<SYS_EPSREAL_DP) then
           DL = buildInvTrafo(DQchar,idim-2)
           DR = buildTrafo(DQchar,idim-2)
         else
@@ -6123,7 +6123,7 @@ real(dp), dimension(:) :: Dvalues
         da = DQchar(2)/DQchar(1)
         db = DQchar(3)/DQchar(1)
         dquo = da*da+db*db
-        if (dquo<SYS_EPSREAL) then
+        if (dquo<SYS_EPSREAL_DP) then
           DL = buildInvTrafo(DQchar,idim-2)
           DR = buildTrafo(DQchar,idim-2)
         else
@@ -6161,7 +6161,7 @@ real(dp), dimension(:) :: Dvalues
         ! Calculate the correction factor
         ! for this element, for this edge, for this dimension (take min of all dimensions)
         do ivar = 1, nvar
-          if (abs(DIi(ivar))<SYS_EPSREAL) then
+          if (abs(DIi(ivar))<SYS_EPSREAL_DP) then
             !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), 1.0_dp)
             ! That's the same as: Do nothing
           else
@@ -6514,7 +6514,7 @@ real(dp), dimension(:) :: Dvalues
 !        da = DQchar(2)/DQchar(1)
 !        db = DQchar(3)/DQchar(1)
 !        dquo = da*da+db*db
-!        if (dquo<SYS_EPSREAL) then
+!        if (dquo<SYS_EPSREAL_DP) then
 !          DL = buildInvTrafo(DQchar,idim-2)
 !          DR = buildTrafo(DQchar,idim-2)
 !        else
@@ -6528,7 +6528,7 @@ real(dp), dimension(:) :: Dvalues
 !        da = DQchar(2)/DQchar(1)
 !        db = DQchar(3)/DQchar(1)
 !        dquo = da*da+db*db
-!        if (dquo<SYS_EPSREAL) then
+!        if (dquo<SYS_EPSREAL_DP) then
 !          DL = buildInvTrafo(DQchar,idim-2)
 !          DR = buildTrafo(DQchar,idim-2)
 !        else
@@ -6651,7 +6651,7 @@ real(dp), dimension(:) :: Dvalues
         da = DQchar(2)/DQchar(1)
         db = DQchar(3)/DQchar(1)
         dquo = da*da+db*db
-        if (dquo<SYS_EPSREAL) then
+        if (dquo<SYS_EPSREAL_DP) then
           DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
           DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
         else
@@ -6665,7 +6665,7 @@ real(dp), dimension(:) :: Dvalues
         da = DQchar(2)/DQchar(1)
         db = DQchar(3)/DQchar(1)
         dquo = da*da+db*db
-        if (dquo<SYS_EPSREAL) then
+        if (dquo<SYS_EPSREAL_DP) then
           DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
           DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
         else
@@ -6707,7 +6707,7 @@ real(dp), dimension(:) :: Dvalues
         ! Calculate the correction factor
         ! for this element, for this edge, for this dimension (take min of all dimensions)
         do ivar = 1, nvar
-          if (abs(DIi(ivar))<10.0_dp*SYS_EPSREAL) then
+          if (abs(DIi(ivar))<10.0_dp*SYS_EPSREAL_DP) then
             Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), 1.0_dp)
           else
 !            !This is the one following the principles (than even adjust initialisation of Dalphaei!!!)
@@ -7673,7 +7673,7 @@ end subroutine
         da = DQchar(2)
         db = DQchar(3)
         dquo = sqrt(da*da+db*db)
-        if (dquo<SYS_EPSREAL) then
+        if (dquo<SYS_EPSREAL_DP) then
           DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
           DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
         else
@@ -7687,7 +7687,7 @@ end subroutine
         da = DQchar(2)
         db = DQchar(3)
         dquo = sqrt(da*da+db*db)
-        if (dquo<SYS_EPSREAL) then
+        if (dquo<SYS_EPSREAL_DP) then
           DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
           DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
         else
@@ -7758,7 +7758,7 @@ end subroutine
         dquo = sqrt(da*da+db*db)
         DQcharext = Euler_transformVector(DQchar)
         
-        if (dquo<SYS_EPSREAL) then
+        if (dquo<SYS_EPSREAL_DP) then
           DL = Euler_buildMixedLcfromRoe(DQcharext,1.0_dp,0.0_dp)
           DR = Euler_buildMixedLcfromRoe(DQcharext,1.0_dp,0.0_dp)
         else
@@ -7796,20 +7796,20 @@ end subroutine
           if (DtIi(ivar) > 0.0_dp) then
             dWstar = maxval(DtLin(ivar,1:iidx))
             !Dalphaei(ivar,ivt) = min(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
-            Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar)+SYS_EPSREAL)))
+            Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar)+SYS_EPSREAL_DP)))
               
 !            ! Extremumfix
-!            if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL) Dalphaei(ivar,ivt) = 1.0_dp
+!            if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL_DP) Dalphaei(ivar,ivt) = 1.0_dp
 !            if ((ilim==3).and.(abs(dwstar-DWc(ivar))<abs(0.001*DWc(ivar)))) Dalphaei(ivar,ivt) = 1.0_dp
             
             
 !            ! Smoothed limiter 1
-!            dlf = (dwstar-DWc(ivar))/(DtIi(ivar)+SYS_EPSREAL)
+!            dlf = (dwstar-DWc(ivar))/(DtIi(ivar)+SYS_EPSREAL_DP)
 !            dlf = dlf*(dlf+2.0_dp)/(dlf*(dlf+1.0_dp)+2.0_dp)
 !            Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) , dlf )
             
 !            ! Smoothed limiter 2
-!            dlf = (dwstar-DWc(ivar))/(DtIi(ivar)+SYS_EPSREAL)
+!            dlf = (dwstar-DWc(ivar))/(DtIi(ivar)+SYS_EPSREAL_DP)
 !            dlf = min(1.0_dp,dlf*dlf)
 !            Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) , dlf )
             
@@ -7817,19 +7817,19 @@ end subroutine
           elseif (DtIi(ivar) < 0.0_dp) then
             dWstar = minval(DtLin(ivar,1:iidx))
             !Dalphaei(ivar,ivt) = min(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
-            Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar)-SYS_EPSREAL)))
+            Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar)-SYS_EPSREAL_DP)))
             
 !            ! Extremeumfix
-!            if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL) Dalphaei(ivar,ivt) = 1.0_dp
+!            if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL_DP) Dalphaei(ivar,ivt) = 1.0_dp
 !            if ((ilim==3).and.(abs(dwstar-DWc(ivar))<abs(0.001*DWc(ivar)))) Dalphaei(ivar,ivt) = 1.0_dp
             
 !            ! Smoothed limiter 1
-!            dlf = (dwstar-DWc(ivar))/(DtIi(ivar)-SYS_EPSREAL)
+!            dlf = (dwstar-DWc(ivar))/(DtIi(ivar)-SYS_EPSREAL_DP)
 !            dlf = dlf*(dlf+2.0_dp)/(dlf*(dlf+1.0_dp)+2.0_dp)
 !            Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) , dlf )
             
 !            ! Smoothed limiter 2
-!            dlf = (dwstar-DWc(ivar))/(DtIi(ivar)-SYS_EPSREAL)
+!            dlf = (dwstar-DWc(ivar))/(DtIi(ivar)-SYS_EPSREAL_DP)
 !            dlf = min(1.0_dp,dlf*dlf)
 !            Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) , dlf )
             
@@ -7873,7 +7873,7 @@ end subroutine
       
         Dalpha(ivar, iel) = min(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
         
-        DmAlpha(ivar,ivar) = Dalpha(ivar, iel) !* (1.0_dp-SYS_EPSREAL)
+        DmAlpha(ivar,ivar) = Dalpha(ivar, iel) !* (1.0_dp-SYS_EPSREAL_DP)
         
         Dquadraticgradient(ivar,1:3) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1)
 
@@ -7941,7 +7941,7 @@ end subroutine
       do ivar = 1, nvar
         Dalpha(ivar, iel) = max(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
         
-        DmAlpha(ivar,ivar) = Dalpha(ivar, iel) !* (1.0_dp-SYS_EPSREAL)
+        DmAlpha(ivar,ivar) = Dalpha(ivar, iel) !* (1.0_dp-SYS_EPSREAL_DP)
         
         DlinearGradient(ivar,1:2) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1)
         
@@ -8243,8 +8243,8 @@ end subroutine
     
   
   
-  duimax= -SYS_MAXREAL
-  duimin=  SYS_MAXREAL
+  duimax= -SYS_MAXREAL_DP
+  duimin=  SYS_MAXREAL_DP
   
   do iel = 1, NEL
     
@@ -8269,8 +8269,8 @@ end subroutine
     Dvel(1)=yc
     Dvel(2)=1.0_DP-xc
     
-    Dvel(1) = Dvel(1)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL))
-    Dvel(2) = Dvel(2)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL))
+    Dvel(1) = Dvel(1)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL_DP))
+    Dvel(2) = Dvel(2)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL_DP))
                           
     duc = Dallvalues(1,iel,2)*Dvel(1) + Dallvalues(1,iel,3)*Dvel(2)
     
@@ -8318,8 +8318,8 @@ end subroutine
     Dvel(1)=yc
     Dvel(2)=1.0_DP-xc
     
-    Dvel(1) = Dvel(1)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL))
-    Dvel(2) = Dvel(2)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL))
+    Dvel(1) = Dvel(1)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL_DP))
+    Dvel(2) = Dvel(2)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL_DP))
                           
     duc = Dallvalues(1,iel,2)*Dvel(1) + Dallvalues(1,iel,3)*Dvel(2)
     
@@ -8346,17 +8346,17 @@ end subroutine
             
       ! Find the maximum/minimum value of the solution in the centroids
       ! of all elements containing this vertex
-      if (ddu > 10.0_dp*SYS_EPSREAL) then
+      if (ddu > 10.0_dp*SYS_EPSREAL_DP) then
         dalphatemp = min(1.0_dp, (duimax(nvert)-duc)/ddu)
         
 !        ! Extremumfix
-!        if (duimax(nvert)-duc<SYS_EPSREAL) dalphatemp = 1.0_dp
+!        if (duimax(nvert)-duc<SYS_EPSREAL_DP) dalphatemp = 1.0_dp
         
-      elseif (ddu < -10.0_dp*SYS_EPSREAL) then
+      elseif (ddu < -10.0_dp*SYS_EPSREAL_DP) then
         dalphatemp = min(1.0_dp, (duimin(nvert)-duc)/ddu)
         
 !        ! Extremumfix
-!        if (duimin(nvert)-duc>-SYS_EPSREAL) dalphatemp = 1.0_dp
+!        if (duimin(nvert)-duc>-SYS_EPSREAL_DP) dalphatemp = 1.0_dp
         
       else ! (dui==duc)
         dalphatemp = 1.0_dp
@@ -8586,8 +8586,8 @@ end subroutine
   
   !!! First calculate the bounds
   
-  duimax= -SYS_MAXREAL
-  duimin=  SYS_MAXREAL
+  duimax= -SYS_MAXREAL_DP
+  duimin=  SYS_MAXREAL_DP
   
   do iel = 1, NEL
     
@@ -8846,14 +8846,14 @@ end do
         dalphatemp = min(1.0_dp, (duimax(nvert)-duc)/ddu)
         
 !        ! Extremumfix
-!        if (duimax(nvert)-duc<SYS_EPSREAL) dalphatemp = 1.0_dp
+!        if (duimax(nvert)-duc<SYS_EPSREAL_DP) dalphatemp = 1.0_dp
         if ((ilim>0).and.(duimax(nvert)-duc<abs(0.0001_dp*duc))) dalphatemp = 1.0_dp
 
       elseif (ddu < 0.0_dp) then
         dalphatemp = min(1.0_dp, (duimin(nvert)-duc)/ddu)
         
 !        ! Extremumfix
-!        if (duimin(nvert)-duc>-SYS_EPSREAL) dalphatemp = 1.0_dp
+!        if (duimin(nvert)-duc>-SYS_EPSREAL_DP) dalphatemp = 1.0_dp
         if ((ilim>0).and.(duimin(nvert)-duc>-abs(0.0001_dp*duc))) dalphatemp = 1.0_dp
         
       else ! (dui==duc)

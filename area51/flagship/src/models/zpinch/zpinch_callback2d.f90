@@ -637,8 +637,8 @@ contains
       
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -864,8 +864,8 @@ contains
       
       ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1094,8 +1094,8 @@ contains
             
 ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif
@@ -1324,8 +1324,8 @@ contains
       
 ! Compute the speed of sound
 #ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 #else
 #error "Speed of sound must be implemented!"
 #endif

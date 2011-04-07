@@ -2143,7 +2143,7 @@ contains
       call sys_halt()
     end if
     
-    if (rconfig%dnu .eq. SYS_INFINITY) then
+    if (rconfig%dnu .eq. SYS_INFINITY_DP) then
       print *,'SD: Viscosity parameter nu not initialised!'
       call sys_halt()
     end if

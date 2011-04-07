@@ -686,8 +686,8 @@ contains
             rcollection%DquickAccess(1) = dmin1
             rcollection%DquickAccess(2) = dmax1
           else
-            rcollection%DquickAccess(1) = -SYS_MAXREAL
-            rcollection%DquickAccess(2) = SYS_MAXREAL
+            rcollection%DquickAccess(1) = -SYS_MAXREAL_DP
+            rcollection%DquickAccess(2) = SYS_MAXREAL_DP
           end if
           call bilf_buildMatrixScalar (rbilinearForm,.true.,rmatrixBlock%RmatrixBlock(1,4),&
                                       coeff_ProjMass,rcollection)
@@ -697,8 +697,8 @@ contains
             rcollection%DquickAccess(1) = dmin2
             rcollection%DquickAccess(2) = dmax2
           else
-            rcollection%DquickAccess(1) = -SYS_MAXREAL
-            rcollection%DquickAccess(2) = SYS_MAXREAL
+            rcollection%DquickAccess(1) = -SYS_MAXREAL_DP
+            rcollection%DquickAccess(2) = SYS_MAXREAL_DP
           end if
           call bilf_buildMatrixScalar (rbilinearForm,.true.,rmatrixBlock%RmatrixBlock(2,5),&
                                       coeff_ProjMass,rcollection)

@@ -3221,7 +3221,7 @@ contains
       call lsyssc_getbase_double(rerror, p_Ddata)
 
       ! Determine largest error value
-      dvalue = -SYS_MAXREAL
+      dvalue = -SYS_MAXREAL_DP
       do i = 1, size(p_Ddata)
         dvalue = max(dvalue, p_Ddata(i))
       end do

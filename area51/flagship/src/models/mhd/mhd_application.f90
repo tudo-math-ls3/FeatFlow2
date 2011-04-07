@@ -2381,7 +2381,7 @@ contains
       ! Compute the root-mean square value
       call lsyssc_getbase_double(rvectorTmp, p_Ddata)
       dvalue = sqrt(sum(p_Ddata**2)/real(rvectorTmp%NEQ, DP))
-      if (abs(dvalue) .gt. SYS_EPSREAL) then
+      if (abs(dvalue) .gt. SYS_EPSREAL_DP) then
         dvalue = 1.0_DP/dvalue
         call lsyssc_scaleVector(rvectorTmp, dvalue)
       end if

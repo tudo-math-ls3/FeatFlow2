@@ -430,7 +430,7 @@ contains
 !             abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,g))))+ &
 !             abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,g)))))
 !        
-!        scalardissipation = max(scalardissipation,SYS_EPSREAL)
+!        scalardissipation = max(scalardissipation,SYS_EPSREAL_DP)
 ! 
 !        Dij = scalarDissipation*Eye
        
@@ -2567,10 +2567,10 @@ end if !dry or wet bed
           
           
                   p_fld1(5+6*(ivar-1),i) = min(1.0_DP,p_MLdata(i)/dt*&
-                  p_fld1(3+6*(ivar-1),i)/(p_fld1(1+6*(ivar-1),i)+SYS_EPSREAL))! Ri+
+                  p_fld1(3+6*(ivar-1),i)/(p_fld1(1+6*(ivar-1),i)+SYS_EPSREAL_DP))! Ri+
                   
                   p_fld1(6+6*(ivar-1),i) = min(1.0_DP, p_MLdata(i)/dt*&
-                  p_fld1(4+6*(ivar-1),i)/(p_fld1(2+6*(ivar-1),i)-SYS_EPSREAL))! Ri-
+                  p_fld1(4+6*(ivar-1),i)/(p_fld1(2+6*(ivar-1),i)-SYS_EPSREAL_DP))! Ri-
           
           
 
@@ -2965,8 +2965,8 @@ end if !dry or wet bed
      ! Compute the Ri+/-
      do i = 1, NEQ
      do ivar = 1, 3
-       lRp(ivar,i) = min(1.0_DP,p_MLdata(i)/dt*lQp(ivar,i)/(lPp(ivar,i)+SYS_EPSREAL))! Ri+
-       lRm(ivar,i) = min(1.0_DP,p_MLdata(i)/dt*lQm(ivar,i)/(lPm(ivar,i)-SYS_EPSREAL))! Ri-
+       lRp(ivar,i) = min(1.0_DP,p_MLdata(i)/dt*lQp(ivar,i)/(lPp(ivar,i)+SYS_EPSREAL_DP))! Ri+
+       lRm(ivar,i) = min(1.0_DP,p_MLdata(i)/dt*lQm(ivar,i)/(lPm(ivar,i)-SYS_EPSREAL_DP))! Ri-
 
      end do
      end do ! i

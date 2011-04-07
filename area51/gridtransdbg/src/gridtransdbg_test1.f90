@@ -52,7 +52,7 @@ contains
   real(DP) :: dtol
   integer :: i,j,m,n
   
-    dtol = SYS_EPSREAL * 100.0_DP
+    dtol = SYS_EPSREAL_DP * 100.0_DP
       
     ! Fetch minimum and maximum levels
     call parlst_getvalue_int(rparam, sConfigSection, 'ILEVEL', ILEVEL, 1)

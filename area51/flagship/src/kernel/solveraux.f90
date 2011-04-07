@@ -523,15 +523,15 @@ module solveraux
     ! Relative divergence criterion. Treat iteration as
     ! diverged if
     !   !!defect!! >= DIVREL * !!initial defect!!
-    ! A value of SYS_INFINITY disables the relative divergence check.
-    real(DP) :: ddivRel = SYS_INFINITY
+    ! A value of SYS_INFINITY_DP disables the relative divergence check.
+    real(DP) :: ddivRel = SYS_INFINITY_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Absolute divergence criterion. Treat iteration as
     ! diverged if
     !   !!defect!! >= DIVREL
-    ! A value of SYS_INFINITY disables the absolute divergence check.
-    real(DP) :: ddivAbs = SYS_INFINITY
+    ! A value of SYS_INFINITY_DP disables the absolute divergence check.
+    real(DP) :: ddivAbs = SYS_INFINITY_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! RHS-vector is treated as zero if max(rhs) < drhsZero
@@ -1435,8 +1435,8 @@ contains
         rsolver%depsAbs          = 0.0_DP
         rsolver%depsRel          = 0.0_DP
         rsolver%depsStag         = 0.0_DP
-        rsolver%ddivRel          = SYS_INFINITY
-        rsolver%ddivAbs          = SYS_INFINITY
+        rsolver%ddivRel          = SYS_INFINITY_DP
+        rsolver%ddivAbs          = SYS_INFINITY_DP
 
       case default
         call output_line('Unsupported preconditioner type!',&
@@ -5836,7 +5836,7 @@ contains
     bdiverged = .false.
 
     ! Absolute divergence criterion? Check the norm directly.
-    if (rsolver%ddivAbs .ne. SYS_INFINITY) then
+    if (rsolver%ddivAbs .ne. SYS_INFINITY_DP) then
 
       ! use NOT here - gives a better handling of special cases like NaN!
       if ( .not. (rsolver%dfinalDefect .le. rsolver%ddivAbs)) then
@@ -5848,7 +5848,7 @@ contains
 
     ! Relative divergence criterion? Multiply with initial residuum
     ! and check the norm.
-    if (rsolver%depsRel .ne. SYS_INFINITY) then
+    if (rsolver%depsRel .ne. SYS_INFINITY_DP) then
 
       if ( .not. (rsolver%dfinalDefect .le. rsolver%dinitialDefect*rsolver%ddivRel) ) then
         bdiverged = .true.

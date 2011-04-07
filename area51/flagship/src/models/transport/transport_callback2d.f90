@@ -4817,7 +4817,7 @@ contains
 #endif
 
       ! Calculate the characteristic speed
-      if (abs(ui-uj) .gt. SYS_EPSREAL) then
+      if (abs(ui-uj) .gt. SYS_EPSREAL_DP) then
         vij = (uj*uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))&
               -ui*ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui)))/(uj-ui)
       else

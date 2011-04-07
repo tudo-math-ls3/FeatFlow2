@@ -520,7 +520,7 @@
       rows: do i = 1, neq
 
         if (DvertexCoords(2,i) .ge. 1.5_DP .or. DvertexCoords(2,i) .le. -1.5_DP .or.&
-            DvertexCoords(1,i) .ge. 2_DP-SYS_EPSREAL .or. DvertexCoords(1,i) .le.  SYS_EPSREAL) then
+            DvertexCoords(1,i) .ge. 2_DP-SYS_EPSREAL_DP .or. DvertexCoords(1,i) .le.  SYS_EPSREAL_DP) then
 
           ! Nullify forces
           Dforces(:,i) = 0.0_DP

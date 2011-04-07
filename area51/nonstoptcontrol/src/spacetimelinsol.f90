@@ -1375,7 +1375,7 @@ contains
     ! routine filters "everything out"!
     ! In that case we can directly stop our computation.
 
-    if ( dresInit .lt. SYS_EPSREAL ) then
+    if ( dresInit .lt. SYS_EPSREAL_DP ) then
      
       ! final defect is 0, as initialised in the output variable above
 
@@ -1716,7 +1716,7 @@ contains
       ! (final defect/initial defect) ** 1/nit :
 
       drho = 0.0_DP
-      if ((dresFinal .gt. SYS_EPSREAL) .and. (ite .gt. 0)) then
+      if ((dresFinal .gt. SYS_EPSREAL_DP) .and. (ite .gt. 0)) then
         drho = (dresFinal / dresInit) ** &
                (1.0_DP/real(ite,DP))
       end if
@@ -1731,7 +1731,7 @@ contains
              trim(sys_sdEL(dresInit,15)) )
         call output_line ('!!RES!!                 : '//&
              trim(sys_sdEL(dresFinal,15)) )
-        if (dresInit .gt. SYS_EPSREAL) then     
+        if (dresInit .gt. SYS_EPSREAL_DP) then     
           call output_line ('!!RES!!/!!INITIAL RES!! : '//&
             trim(sys_sdEL(dresFinal / dresInit,15)) )
         else

@@ -47,7 +47,7 @@ contains
 !<input>
   ! OPTIONAL: A threshold parameter. All vector entries whose absolute value
   ! drops below the threshold will be set to zero. If not specified,
-  ! 100*SYS_EPSREAL is used.
+  ! 100*SYS_EPSREAL_DP is used.
   real(DP), optional, intent(IN) :: deps
 !</input>
 
@@ -66,7 +66,7 @@ contains
     if (present(deps)) then
       dthreshold = deps
     else
-      dthreshold = 100.0_DP * SYS_EPSREAL
+      dthreshold = 100.0_DP * SYS_EPSREAL_DP
     end if
     
     ! Do through the vector
@@ -164,7 +164,7 @@ contains
 !<input>
   ! OPTIONAL: A threshold parameter. All matrix entries whose absolute value
   ! drops below the threshold will be set to zero. If not specified,
-  ! 100*SYS_EPSREAL is used.
+  ! 100*SYS_EPSREAL_DP is used.
   real(DP), optional, intent(IN) :: deps
 !</input>
 
@@ -183,7 +183,7 @@ contains
     if (present(deps)) then
       dthreshold = deps
     else
-      dthreshold = 100.0_DP * SYS_EPSREAL
+      dthreshold = 100.0_DP * SYS_EPSREAL_DP
     end if
     
     ! Do through the vector

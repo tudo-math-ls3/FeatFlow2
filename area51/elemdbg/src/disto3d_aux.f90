@@ -496,8 +496,8 @@ contains
             
       ! Jump out if the linear factors are zero
       if(daux2 .eq. 0.0_DP) then
-        dmaxDev = SYS_INFINITY
-        dmeanDev = SYS_INFINITY
+        dmaxDev = SYS_INFINITY_DP
+        dmeanDev = SYS_INFINITY_DP
         return
       end if
       

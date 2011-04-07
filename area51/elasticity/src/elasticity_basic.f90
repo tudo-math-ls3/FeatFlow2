@@ -399,7 +399,7 @@ contains
                            OU_CLASS_ERROR, OU_MODE_STD, 'elast_readParameterFile')
           call sys_halt()
         endif
-        rprob%dlambda = SYS_INFINITY
+        rprob%dlambda = SYS_INFINITY_DP
         call output_line('lambda: infinity')
       else ! dnu .lt. 0.5
         if (rprob%cformulation .eq. FORMULATION_STOKES) then

@@ -772,7 +772,7 @@ contains
       a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
 
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(\
@@ -2031,7 +2031,7 @@ contains
       a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
-      if (anorm .gt. SYS_EPSREAL) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
 
         ! Compute Roe mean values
         aux  = ROE_MEAN_RATIO(\

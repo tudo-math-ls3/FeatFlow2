@@ -367,9 +367,9 @@ contains
             call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
             call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
             call output_line('Variation of residual:     '//trim(sys_sdEL(&
-                             rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                             rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
             call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                             rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                             rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
             call output_separator(OU_SEP_TILDE)
             call output_lbrk()
           end if
@@ -378,7 +378,7 @@ contains
           if (solver_testDivergence(rsolver)) then
             if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
               call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                  rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                  rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
             end if
 
             ! Clear solution vector and adjust solver status
@@ -417,7 +417,7 @@ contains
           call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
           call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
           call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                           rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
           call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
           call output_separator(OU_SEP_PERC)
           call output_lbrk()
@@ -883,9 +883,9 @@ contains
         call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
         call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
         call output_line('Variation of residual:     '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
         call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
@@ -894,7 +894,7 @@ contains
       if (solver_testDivergence(rsolver)) then
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                           rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         end if
 
         ! Clear solution vector and adjust solver status
@@ -933,7 +933,7 @@ contains
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
@@ -1064,9 +1064,9 @@ contains
         call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
         call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
         call output_line('Variation of residual:     '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
         call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
@@ -1075,7 +1075,7 @@ contains
       if (solver_testDivergence(rsolver)) then
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                           rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         end if
 
         ! Clear solution vector and adjust solver status
@@ -1114,7 +1114,7 @@ contains
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
@@ -1340,9 +1340,9 @@ contains
         call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
         call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
         call output_line('Variation of residual:     '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
         call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
@@ -1351,7 +1351,7 @@ contains
       if (solver_testDivergence(rsolver)) then
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                           rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         end if
 
         ! Clear solution vector and adjust solver status
@@ -1390,7 +1390,7 @@ contains
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
@@ -1563,7 +1563,7 @@ contains
         end do
         p_Dh(i+1,i) = lsysbl_vectorNorm(p_rv(i+1), rsolver%iresNorm)
 
-        if (abs(p_Dh(i+1,i)) > SYS_EPSREAL) then
+        if (abs(p_Dh(i+1,i)) > SYS_EPSREAL_DP) then
           dtmp = 1.0_DP/p_Dh(i+1,i)
           call lsysbl_scaleVector(p_rv(i+1), dtmp)
         end if
@@ -1577,7 +1577,7 @@ contains
         end do
 
         ! Get next plane rotation
-        dtmp = max(sqrt(p_Dh(i,i)**2 + p_Dh(i+1,i)**2), SYS_EPSREAL)
+        dtmp = max(sqrt(p_Dh(i,i)**2 + p_Dh(i+1,i)**2), SYS_EPSREAL_DP)
         p_Dc(i) =  p_Dh(i,i)/dtmp
         p_Ds(i) = -p_Dh(i+1,i)/dtmp
 
@@ -1617,9 +1617,9 @@ contains
         call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
         call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
         call output_line('Variation of residual:     '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
         call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
@@ -1628,7 +1628,7 @@ contains
       if (solver_testDivergence(rsolver)) then
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                           rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         end if
 
         ! Clear solution vector and adjust solver status
@@ -1667,7 +1667,7 @@ contains
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
