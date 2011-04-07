@@ -754,7 +754,7 @@ contains
 
     ! Make sure the inital defect is not zero, as we need to divide
     ! by it later...
-    if (dnlresInit .le. SYS_EPSREAL) dnlresInit = 1.0_DP
+    if (dnlresInit .le. SYS_EPSREAL_DP) dnlresInit = 1.0_DP
 
     ! Start the non-linear defect-correction loop
     do nl = 1, niterMaxNL
