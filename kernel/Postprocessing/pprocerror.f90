@@ -154,7 +154,7 @@ module pprocerror
     ! OUT, OPTIONAL: If given, recieves the calculated H1-errors for each
     ! component of p_RvecCoeff. If given, but the spatial discretisation does
     ! not offer first derivatives, then all components of p_DerrorH1 are set
-    ! to SYS_INFINITY to indicate that the H1-error cannot be calculated.
+    ! to SYS_INFINITY_DP to indicate that the H1-error cannot be calculated.
     real(DP), dimension(:), pointer :: p_DerrorH1 => null()
     
     ! OUT, OPTIONAL: If given, recieves the calculated L1-errors for each
@@ -451,7 +451,7 @@ contains
         ! If p_DerrorH1 is given, set its entries to SYS_INFTY to indicate that
         ! the H1-errors are not available
         if(associated(rerror%p_DerrorH1)) &
-          rerror%p_DerrorH1 = SYS_INFINITY
+          rerror%p_DerrorH1 = SYS_INFINITY_DP
         
       end if
       

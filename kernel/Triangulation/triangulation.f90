@@ -5920,7 +5920,7 @@ p_InodalPropertyDest = -4711
     ! First of all, let us make sure the drawing box is not empty.
     if(present(Dbox)) then
     
-      if((Dbox(1) .le. SYS_EPSREAL) .or. (Dbox(2) .le. SYS_EPSREAL)) then
+      if((Dbox(1) .le. SYS_EPSREAL_DP) .or. (Dbox(2) .le. SYS_EPSREAL_DP)) then
         call output_line('Drawing box is invalid!', OU_CLASS_ERROR,&
                          OU_MODE_STD, 'tria_exportPostScript')
         call sys_halt()
@@ -5937,7 +5937,7 @@ p_InodalPropertyDest = -4711
       ! Calculate determinant of trafo matrix
       ddet = Dtrafo(1,1)*Dtrafo(2,2) - Dtrafo(1,2)*Dtrafo(2,1)
       
-      if(abs(ddet) .le. SYS_EPSREAL) then
+      if(abs(ddet) .le. SYS_EPSREAL_DP) then
         call output_line('Transformation matrix is singular!', OU_CLASS_ERROR,&
                          OU_MODE_STD, 'tria_exportPostScript')
         call sys_halt()
@@ -5950,7 +5950,7 @@ p_InodalPropertyDest = -4711
     ! And make sure the line width is positive.
     if(present(dlineWidth)) then
     
-      if(dlineWidth .le. SYS_EPSREAL) then
+      if(dlineWidth .le. SYS_EPSREAL_DP) then
         call output_line('Line width must be positive!', OU_CLASS_ERROR,&
                          OU_MODE_STD, 'tria_exportPostScript')
         call sys_halt()
@@ -6003,7 +6003,7 @@ p_InodalPropertyDest = -4711
     dbboxHeight = dbboxMaxY - dbboxMinY
     
     ! Make sure the bounding box is fully-dimensional
-    if((dbboxWidth .le. SYS_EPSREAL) .or. (dbboxHeight .le. SYS_EPSREAL)) then
+    if((dbboxWidth .le. SYS_EPSREAL_DP) .or. (dbboxHeight .le. SYS_EPSREAL_DP)) then
       call output_line('Triangulation is not a 2D domain!', OU_CLASS_ERROR,&
                        OU_MODE_STD, 'tria_exportPostScript')
       call sys_halt()

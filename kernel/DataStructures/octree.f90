@@ -954,7 +954,7 @@ contains
           ! Get vertex number
           ivt = roctree%p_Knode(ipos, inode)
           
-          if (maxval(abs(roctree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL) then
+          if (maxval(abs(roctree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL_DP) then
           
             ! Physically remove the item IVT from node INODE
             jpos = roctree%p_Knode(OTREE_STATUS, inode)
@@ -1139,7 +1139,7 @@ contains
           ! Get vertex number
           ivt = roctree%p_Knode(ipos, inode)
           
-          if (maxval(abs(roctree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL) then
+          if (maxval(abs(roctree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL_DP) then
             
             ! We have found the item IVT in node INODE
             iresult = OTREE_FOUND

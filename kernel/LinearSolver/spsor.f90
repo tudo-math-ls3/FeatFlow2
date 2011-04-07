@@ -912,7 +912,7 @@ contains
           
           ! Make sure the matrix exists
           if((.not. lsyssc_hasMatrixStructure(rmatrix%RmatrixBlock(i,j))) .or. &
-             (abs(rmatrix%RmatrixBlock(i,j)%dscaleFactor) .le. SYS_EPSREAL)) then
+             (abs(rmatrix%RmatrixBlock(i,j)%dscaleFactor) .le. SYS_EPSREAL_DP)) then
             if(present(bvalid)) then
               return
             else
@@ -945,13 +945,13 @@ contains
             
             ! Block A12 - does it exist?
             bHaveA12 = lsyssc_hasMatrixStructure(rmatrix%RmatrixBlock(i,j)) .and. &
-                      (abs(rmatrix%RmatrixBlock(i,j)%dscaleFactor) .gt. SYS_EPSREAL)
+                      (abs(rmatrix%RmatrixBlock(i,j)%dscaleFactor) .gt. SYS_EPSREAL_DP)
             
           else
 
             ! Off-diagonal block other than A12 - does it exist?
             bHaveAij = lsyssc_hasMatrixStructure(rmatrix%RmatrixBlock(i,j)) .and. &
-                      (abs(rmatrix%RmatrixBlock(i,j)%dscaleFactor) .gt. SYS_EPSREAL)
+                      (abs(rmatrix%RmatrixBlock(i,j)%dscaleFactor) .gt. SYS_EPSREAL_DP)
 
             !if(bHaveAij .xor. bHaveA12) then
             if((bHaveAij .and. (.not. bHaveA12)) .or. ((.not. bHaveAij) .and. bHaveA12)) then
@@ -974,7 +974,7 @@ contains
     
       ! Make sure the matrix exists
       if((.not. lsyssc_hasMatrixStructure(rmatrix%RmatrixBlock(i,3))) .or. &
-         (abs(rmatrix%RmatrixBlock(i,3)%dscaleFactor) .le. SYS_EPSREAL)) then
+         (abs(rmatrix%RmatrixBlock(i,3)%dscaleFactor) .le. SYS_EPSREAL_DP)) then
         if(present(bvalid)) then
           return
         else
@@ -1004,7 +1004,7 @@ contains
     
       ! Make sure the matrix exists
       if((.not. lsyssc_hasMatrixStructure(rmatrix%RmatrixBlock(3,j))) .or. &
-         (abs(rmatrix%RmatrixBlock(3,j)%dscaleFactor) .le. SYS_EPSREAL)) then
+         (abs(rmatrix%RmatrixBlock(3,j)%dscaleFactor) .le. SYS_EPSREAL_DP)) then
         if(present(bvalid)) then
           return
         else
@@ -1234,7 +1234,7 @@ contains
       
       ! Now if the Schur-complement matrix is regular, we will store the inverse
       ! in the corresponding entry in p_DS.
-      if(abs(dc) .gt. SYS_EPSREAL) p_DS(idofp) = 1.0_DP / dc
+      if(abs(dc) .gt. SYS_EPSREAL_DP) p_DS(idofp) = 1.0_DP / dc
       
     end do ! idofp
     
@@ -1402,7 +1402,7 @@ contains
         
         ! Now if the Schur-complement matrix is regular, we will store the inverse
         ! in the corresponding entry in p_DS.
-        if(abs(dc) .gt. SYS_EPSREAL) p_DS(idofp) = 1.0_DP / dc
+        if(abs(dc) .gt. SYS_EPSREAL_DP) p_DS(idofp) = 1.0_DP / dc
         
       end if
       
@@ -1621,7 +1621,7 @@ contains
       
       ! Now if the Schur-complement matrix is regular, we will store the inverse
       ! in the corresponding entry in p_DS.
-      if(abs(dc) .gt. SYS_EPSREAL) p_DS(idofp) = 1.0_DP / dc
+      if(abs(dc) .gt. SYS_EPSREAL_DP) p_DS(idofp) = 1.0_DP / dc
       
     end do ! idofp
     

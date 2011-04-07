@@ -135,7 +135,7 @@ module convection
     ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant.
     ! We set this to infinity, what quickly leads to a program crash if the
     ! application does not initialise that properly!
-    real(DP) :: dnu = SYS_INFINITY
+    real(DP) :: dnu = SYS_INFINITY_DP
 
     ! Weighting factor of the convective operator: <tex>$ \theta * u*grad(u) $</tex>.
     ! For time-dependent problems, this can be set to the step size
@@ -573,7 +573,7 @@ contains
       call sys_halt()
     end if
 
-    if (rconfig%dnu .eq. SYS_INFINITY) then
+    if (rconfig%dnu .eq. SYS_INFINITY_DP) then
       call output_line ("Viscosity parameter nu not initialised!", &
           OU_CLASS_ERROR,OU_MODE_STD,"conv_upwind2d")
       call sys_halt()
@@ -1488,7 +1488,7 @@ contains
       call sys_halt()
     end if
 
-    if (rconfig%dnu .eq. SYS_INFINITY) then
+    if (rconfig%dnu .eq. SYS_INFINITY_DP) then
       call output_line ("Viscosity parameter nu not initialised!", &
           OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion2d")
       call sys_halt()
@@ -3767,7 +3767,7 @@ contains
       call sys_halt()
     end if
 
-    if (rconfig%dnu .eq. SYS_INFINITY) then
+    if (rconfig%dnu .eq. SYS_INFINITY_DP) then
       call output_line ("Viscosity parameter nu not initialised!", &
           OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
       call sys_halt()
@@ -6334,7 +6334,7 @@ contains
       call sys_halt()
     end if
 
-    if (rconfig%dnu .eq. SYS_INFINITY) then
+    if (rconfig%dnu .eq. SYS_INFINITY_DP) then
       call output_line ("Viscosity parameter nu not initialised!", &
           OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusion3d")
       call sys_halt()
@@ -7698,7 +7698,7 @@ contains
       call sys_halt()
     end if
 
-    if (rconfig%dnu .eq. SYS_INFINITY) then
+    if (rconfig%dnu .eq. SYS_INFINITY_DP) then
       call output_line ("Viscosity parameter nu not initialised!", &
           OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk3d")
       call sys_halt()
@@ -9872,7 +9872,7 @@ contains
       ! skip this face.
       ! Note: As we need to divide by dt later, we will check it against
       !       machine exactness instead of 0.
-      if (dt .le. SYS_EPSREAL) cycle
+      if (dt .le. SYS_EPSREAL_DP) cycle
 
       ! Now calculate the scalar product of the face normal and the vector
       ! between the face midpoint and the "source face" midpoint:
@@ -10059,7 +10059,7 @@ contains
       call sys_halt()
     end if
 
-    if (rconfig%dnu .eq. SYS_INFINITY) then
+    if (rconfig%dnu .eq. SYS_INFINITY_DP) then
       call output_line ('Viscosity parameter nu not initialised', &
           OU_CLASS_ERROR,OU_MODE_STD,'conv_JumpStabilisation1d')
       call sys_halt()
@@ -10232,7 +10232,7 @@ contains
       call sys_halt()
     end if
 
-    if (rconfig%dnu .eq. SYS_INFINITY) then
+    if (rconfig%dnu .eq. SYS_INFINITY_DP) then
       call output_line ("Viscosity parameter nu not initialised!", &
           OU_CLASS_ERROR,OU_MODE_STD,"conv_JumpStabilisation2d")
       call sys_halt()
@@ -10403,7 +10403,7 @@ contains
       call sys_halt()
     end if
 
-    if (rconfig%dnu .eq. SYS_INFINITY) then
+    if (rconfig%dnu .eq. SYS_INFINITY_DP) then
       call output_line ('Viscosity parameter nu not initialised', &
           OU_CLASS_ERROR,OU_MODE_STD,'conv_JumpStabilisation3d')
       call sys_halt()

@@ -1177,7 +1177,7 @@ module linearsolver
     ! Relative divergence criterion.  Treat iteration as
     ! diverged if
     !   !!defect!! >= DIVREL * !!initial defect!!
-    ! A value of SYS_INFINITY disables the relative divergence check.
+    ! A value of SYS_INFINITY_DP disables the relative divergence check.
     ! standard = 1E3
     real(DP)                        :: ddivRel = 1E6_DP
 
@@ -1185,9 +1185,9 @@ module linearsolver
     ! Absolute divergence criterion.  Treat iteration as
     ! diverged if
     !   !!defect!! >= DIVREL
-    ! A value of SYS_INFINITY disables the absolute divergence check.
-    ! standard = SYS_INFINITY
-    real(DP)                        :: ddivAbs = SYS_INFINITY
+    ! A value of SYS_INFINITY_DP disables the absolute divergence check.
+    ! standard = SYS_INFINITY_DP
+    real(DP)                        :: ddivAbs = SYS_INFINITY_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! RHS-vector is treated as zero if max(defect) < drhsZero
@@ -3083,7 +3083,7 @@ contains
     loutput = .false.
     
     ! Absolute divergence criterion? Check the norm directly.
-    if (rsolverNode%ddivAbs .ne. SYS_INFINITY) then
+    if (rsolverNode%ddivAbs .ne. SYS_INFINITY_DP) then
      
       ! use NOT here - gives a better handling of special cases like NaN!
       if ( .not. (dvecNorm .le. rsolverNode%ddivAbs)) then
@@ -3094,7 +3094,7 @@ contains
     
     ! Relative divergence criterion? Multiply with initial residuum
     ! and check the norm. 
-    if (rsolverNode%depsRel .ne. SYS_INFINITY) then
+    if (rsolverNode%depsRel .ne. SYS_INFINITY_DP) then
       if ( .not. (dvecNorm .le. rsolverNode%dinitialDefect*rsolverNode%ddivRel) ) then
         loutput = .true.
       end if
@@ -7340,7 +7340,7 @@ contains
       
       ! Invert main diagonal entry (if possible)
       j = p_Kdiag(k)
-      if(abs(p_DLU(j)) .lt. SYS_EPSREAL) then
+      if(abs(p_DLU(j)) .lt. SYS_EPSREAL_DP) then
         
         ! Oops... zero pivot
         ierror = LINSOL_ERR_SINGULAR
@@ -10555,7 +10555,7 @@ contains
           
           ! Step I.5:
           ! Scale v(i+1) by the inverse of its euclid norm
-          if (dalpha > SYS_EPSREAL) then
+          if (dalpha > SYS_EPSREAL_DP) then
             call lsysbl_scaleVector (p_rv(i+1), 1.0_DP / dalpha)
           else
             ! Well, let us just print a warning here...
@@ -10580,8 +10580,8 @@ contains
           ! Calculate Beta
           ! Beta = (h(i,i)^2 + alpha^2) ^ (1/2)
           dbeta = sqrt(p_Dh(i,i)**2 + dalpha**2)
-          if (dbeta < SYS_EPSREAL) then
-            dbeta = SYS_EPSREAL
+          if (dbeta < SYS_EPSREAL_DP) then
+            dbeta = SYS_EPSREAL_DP
             if(rsolverNode%ioutputLevel .ge. 2) then
               call output_line ('GMRES('// trim(sys_siL(idim,10))//&
                 '): Warning: beta < EPS !')
@@ -10630,14 +10630,14 @@ contains
           
           ! Is |q(i+1)| smaller than our machine`s exactness?
           ! If yes, then exit the inner GMRES loop.
-          if (dpseudores .le. SYS_EPSREAL) then
+          if (dpseudores .le. SYS_EPSREAL_DP) then
             exit
           
           ! Check if (|q(i+1)| * dprnsf) is greater than the machine`s
           ! exactness (this can only happen if dprnsf is positive).
           ! If yes, call linsol_testConvergence to test against the
           ! stopping criterions.
-          else if (dtmp > SYS_EPSREAL) then
+          else if (dtmp > SYS_EPSREAL_DP) then
             
             ! If (|q(i+1)| * dprnsf) fulfills the stopping criterion
             ! then exit the inner GMRES loop
@@ -10740,7 +10740,7 @@ contains
         ! residual is maybe < EPS - if this is true,
         ! then starting another GMRES iteration would
         ! result in NaNs / Infs!!!
-        if (dres .le. SYS_EPSREAL) exit
+        if (dres .le. SYS_EPSREAL_DP) exit
 
         ! print out the current residuum
 

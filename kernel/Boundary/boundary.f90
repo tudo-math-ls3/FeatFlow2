@@ -3163,7 +3163,7 @@ contains
         det1 = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
         
         ! Check if system has unique solution
-        if (abs(det1) .gt. SYS_EPSREAL) then
+        if (abs(det1) .gt. SYS_EPSREAL_DP) then
           ! Linear system has a unique solution. Thus, the
           ! tangential vector is given by the slope of the line
           det2 = Db(1)*Da(2,2)-Db(2)*Da(2,1)
@@ -3326,7 +3326,7 @@ contains
         det1 = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
         
         ! Check if system has unique solution
-        if (abs(det1) .gt. SYS_EPSREAL) then
+        if (abs(det1) .gt. SYS_EPSREAL_DP) then
           ! Linear system has a unique solution. Thus, the
           ! tangential vector is given by the slope of the line
           det2 = Db(1)*Da(2,2)-Db(2)*Da(2,1)
@@ -3503,7 +3503,7 @@ contains
           det1 = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
           
           ! Check if system has unique solution
-          if (abs(det1) .gt. SYS_EPSREAL) then
+          if (abs(det1) .gt. SYS_EPSREAL_DP) then
             ! Linear system has a unique solution. Thus, the
             ! tangential vector is given by the slope of the line
             det2 = Db(1)*Da(2,2)-Db(2)*Da(2,1)

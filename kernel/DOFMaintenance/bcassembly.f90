@@ -1842,9 +1842,9 @@ contains
           
         end if
         
-        ! A value of SYS_INFINITY indicates a do-nothing node inside of
+        ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
         ! Dirichlet boundary.
-        if (Dvalues(1) .ne. SYS_INFINITY) then
+        if (Dvalues(1) .ne. SYS_INFINITY_DP) then
           ! Set the DOF number < 0 to indicate that it is Dirichlet
           Idofs(1,ielidx) = -abs(Idofs(1,ielidx))
         end if
@@ -1868,9 +1868,9 @@ contains
             DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
           end if
           
-          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
-          if (Dvalues(1) .ne. SYS_INFINITY) then
+          if (Dvalues(1) .ne. SYS_INFINITY_DP) then
             ! Set the DOF number < 0 to indicate that it is Dirichlet.
             ! ilocalEdge is the number of the local edge - and at the same
             ! time the number of the local DOF of Q1, as an edge always
@@ -1906,9 +1906,9 @@ contains
             DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
           end if
           
-          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
-          if (Dvalues(1) .ne. SYS_INFINITY) then
+          if (Dvalues(1) .ne. SYS_INFINITY_DP) then
             ! Set the DOF number < 0 to indicate that it is Dirichlet.
             ! ilocalEdge is the number of the local edge - and at the same
             ! time the number of the local DOF of Q1, as an edge always
@@ -1942,9 +1942,9 @@ contains
             DdofValue(mod(ilocalEdge,3)+1,ielidx) = Dvalues(1) 
           end if
           
-          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
-          if (Dvalues(1) .ne. SYS_INFINITY) then
+          if (Dvalues(1) .ne. SYS_INFINITY_DP) then
             ! Set the DOF number < 0 to indicate that it is Dirichlet.
             ! ilocalEdge is the number of the local edge - and at the same
             ! time the number of the local DOF of Q1, as an edge always
@@ -1973,9 +1973,9 @@ contains
             DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
           end if
           
-          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
-          if (Dvalues(1) .ne. SYS_INFINITY) then
+          if (Dvalues(1) .ne. SYS_INFINITY_DP) then
             ! Set the DOF number < 0 to indicate that it is Dirichlet.
             ! ilocalEdge is the number of the local edge - and at the same
             ! time the number of the local DOF of Q1, as an edge always
@@ -2011,9 +2011,9 @@ contains
             DdofValue(ilocalEdge+nve,ielidx) = Dvalues(1) 
           end if
           
-          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
-          if (Dvalues(1) .ne. SYS_INFINITY) then
+          if (Dvalues(1) .ne. SYS_INFINITY_DP) then
             ! Set the DOF number < 0 to indicate that it is Dirichlet
             ! ilocalEdge is the number of the local edge, corresponding
             ! to the local DOF ilocalEdge+4, as the first four elements
@@ -2052,9 +2052,9 @@ contains
           
         end if
         
-        ! A value of SYS_INFINITY indicates a do-nothing node inside of
+        ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
         ! Dirichlet boundary.
-        if (Dvalues(1) .ne. SYS_INFINITY) then
+        if (Dvalues(1) .ne. SYS_INFINITY_DP) then
           ! Set the DOF numbers < 0 to indicate that it is Dirichlet
           Idofs(1:3,ielidx) = -abs(Idofs(1:3,ielidx))
         end if
@@ -2079,9 +2079,9 @@ contains
             DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
           end if
           
-          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
-          if (Dvalues(1) .ne. SYS_INFINITY) then
+          if (Dvalues(1) .ne. SYS_INFINITY_DP) then
             ! Set the DOF number < 0 to indicate that it is Dirichlet
             Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
           end if
@@ -2116,9 +2116,9 @@ contains
                 DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
               end if
               
-              ! A value of SYS_INFINITY indicates a do-nothing node inside of
+              ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
               ! Dirichlet boundary.
-              if (Dvalues(1) .ne. SYS_INFINITY) then
+              if (Dvalues(1) .ne. SYS_INFINITY_DP) then
                 ! Set the DOF number < 0 to indicate that it is Dirichlet
                 Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
               end if
@@ -2189,9 +2189,9 @@ contains
               
               ! Calculate the integral.
               !
-              ! A value of SYS_INFINITY indicates a do-nothing node inside of
+              ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
               ! Dirichlet boundary.
-              if ((dval1 .ne. SYS_INFINITY) .and. (dval2 .ne. SYS_INFINITY)) then
+              if ((dval1 .ne. SYS_INFINITY_DP) .and. (dval2 .ne. SYS_INFINITY_DP)) then
               
                 ! Compute the integral mean value of the 0th moment -- that
                 ! is:  1/|E| int_E v dx ~ 1/2 * (v(g1)+v(g2))
@@ -2204,9 +2204,9 @@ contains
                   DdofValue(ilocalEdge,ielidx) = dval
                 end if
                 
-                ! A value of SYS_INFINITY indicates a do-nothing node inside of
+                ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
                 ! Dirichlet boundary.
-                if (Dvalues(1) .ne. SYS_INFINITY) then
+                if (Dvalues(1) .ne. SYS_INFINITY_DP) then
                   ! Set the DOF number < 0 to indicate that it is Dirichlet
                   Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
                 end if
@@ -2236,9 +2236,9 @@ contains
               DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
             end if
             
-            ! A value of SYS_INFINITY indicates a do-nothing node inside of
+            ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
             ! Dirichlet boundary.
-            if (Dvalues(1) .ne. SYS_INFINITY) then
+            if (Dvalues(1) .ne. SYS_INFINITY_DP) then
               ! Set the DOF number < 0 to indicate that it is Dirichlet
               Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
             end if
@@ -2313,9 +2313,9 @@ contains
                                   iedge,dpar, Dvalues,rcollection)
           dval2 = Dvalues(1)
           
-          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
-          if ((dval1 .ne. SYS_INFINITY) .and. (dval2 .ne. SYS_INFINITY)) then
+          if ((dval1 .ne. SYS_INFINITY_DP) .and. (dval2 .ne. SYS_INFINITY_DP)) then
             
             if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
 

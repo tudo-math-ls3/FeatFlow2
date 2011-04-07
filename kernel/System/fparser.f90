@@ -205,7 +205,7 @@
 !# _PI       : Gives the number $pi$.
 !# _EXP      : Gives the number $e$
 !# _INFTY    : Gives the maximum possible number in double precision, defined
-!#             in fsystem by SYS_INFINITY.
+!#             in fsystem by SYS_INFINITY_DP.
 !# </verb>
 !#
 !# In addition, the use can define his own global constant which are available
@@ -585,7 +585,7 @@ module fparser
   real(DP), dimension(3), parameter :: PredefinedConstvals = (/&
       3.141592653589793115997963468544185161590576171875_DP, &
       2.718281828459045090795598298427648842334747314453125_DP, &
-      SYS_INFINITY/)
+      SYS_INFINITY_DP/)
 
 !</constantblock>
 

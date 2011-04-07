@@ -819,7 +819,7 @@ contains
 !========================================================================
 
       !SMALL = sqrt(dlamch('E'))
-      SMALL = SYS_EPSREAL
+      SMALL = SYS_EPSREAL_DP
 
 !     ------------------------------------------------------------
 !     colptrs is used to hold the indices of entries in LU of

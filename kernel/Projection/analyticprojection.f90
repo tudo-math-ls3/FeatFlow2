@@ -100,10 +100,10 @@ module analyticprojection
     integer :: cpreconditioner = 0
     
     ! Damping parameter for the iteration. 
-    ! If SYS_MAXREAL is specified, the standard damping parameters are used,
+    ! If SYS_MAXREAL_DP is specified, the standard damping parameters are used,
     ! which are: = 1.0, if the lumped mass matrix is used for preconditioning,
     !            = 0.7, if the Jacobi preconditioner is used for preconditioning.
-    real(DP) :: domega = SYS_MAXREAL
+    real(DP) :: domega = SYS_MAXREAL_DP
     
     ! Output: Returns the initial residuum.
     ! This value is only set if depsRel > 0; otherwise, the relative error is
@@ -251,7 +251,7 @@ contains
               
     ! Get some parameters.
     domega = rconfig%domega
-    if (domega .eq. SYS_MAXREAL) then
+    if (domega .eq. SYS_MAXREAL_DP) then
       if (present(rmatrixMassLumped)) then
         domega = 1.0_DP
       else

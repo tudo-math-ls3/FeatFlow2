@@ -418,9 +418,9 @@ contains
       
       ! Extract row i
       if (bnoZero) then
-        ! SYS_MAXREAL is written out as '.'
+        ! SYS_MAXREAL_DP is written out as '.'
         do j=1, ncol
-          p_DrowVec(j) = SYS_MAXREAL
+          p_DrowVec(j) = SYS_MAXREAL_DP
         end do
       else
         do j=1, ncol
@@ -437,7 +437,7 @@ contains
       do j=1, ncol-1
         dval = p_DrowVec(j)
         if (abs(dval) .lt. dthreshold) dval = 0.0_DP
-        if (bnoZero .and. (dval .eq. SYS_MAXREAL)) then
+        if (bnoZero .and. (dval .eq. SYS_MAXREAL_DP)) then
           write (cf,sformatChar, ADVANCE='NO') '.'
         else
           write (cf,sformat,ADVANCE='NO') dval
@@ -446,7 +446,7 @@ contains
       
       dval = p_DrowVec(ncol)
       if (abs(dval) .lt. dthreshold) dval = 0.0_DP
-      if (bnoZero .and. (dval .eq. SYS_MAXREAL)) then
+      if (bnoZero .and. (dval .eq. SYS_MAXREAL_DP)) then
         write (cf,sformatChar, ADVANCE='YES') '.'
       else
         write (cf,sformat,ADVANCE='YES') dval
@@ -662,9 +662,9 @@ contains
       
       ! Extract row i
       if (bnoZero) then
-        ! SYS_MAXREAL is written out as '.'
+        ! SYS_MAXREAL_SP is written out as '.'
         do j=1, ncol
-          p_FrowVec(j) = huge(1.0_SP)
+          p_FrowVec(j) = SYS_MAXREAL_SP
         end do
       else
         do j=1, ncol
@@ -681,7 +681,7 @@ contains
       do j=1, ncol-1
         fval = p_FrowVec(j)
         if (abs(fval) .lt. fthreshold) fval = 0.0_SP
-        if (bnoZero .and. (fval .eq. huge(1.0_SP))) then
+        if (bnoZero .and. (fval .eq. SYS_MAXREAL_SP)) then
           write (cf,sformatChar, ADVANCE='NO') '.'
         else
           write (cf,sformat,ADVANCE='NO') fval
@@ -690,7 +690,7 @@ contains
       
       fval = p_FrowVec(ncol)
       if (abs(fval) .lt. fthreshold) fval = 0.0_SP
-      if (bnoZero .and. (fval .eq. huge(1.0_SP))) then
+      if (bnoZero .and. (fval .eq. SYS_MAXREAL_SP)) then
         write (cf,sformatChar, ADVANCE='YES') '.'
       else
         write (cf,sformat,ADVANCE='YES') fval

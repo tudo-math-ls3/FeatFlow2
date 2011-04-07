@@ -7789,9 +7789,9 @@ contains
         ! Combine explicit and implicit fluxes
         if (binit) then
           call lalg_copyVector(p_Dflux, p_Dflux0)
-        elseif (1.0_DP-theta .gt. SYS_EPSREAL) then
+        elseif (1.0_DP-theta .gt. SYS_EPSREAL_DP) then
           call lalg_vectorLinearComb(p_Dflux0, p_Dflux, 1.0_DP-theta, theta)
-        elseif (theta .gt. SYS_EPSREAL) then
+        elseif (theta .gt. SYS_EPSREAL_DP) then
           call lalg_scaleVector(p_Dflux, theta)
         else
           call lalg_clearVector(p_Dflux)
@@ -8228,10 +8228,10 @@ contains
         ! Combine explicit and implicit fluxes
         if (binit) then
           call lalg_copyVector(p_Dflux, p_Dflux0)
-        elseif (1.0_DP-theta .gt. SYS_EPSREAL) then
+        elseif (1.0_DP-theta .gt. SYS_EPSREAL_DP) then
           call lalg_vectorLinearComb(&
               p_Dflux0, p_Dflux, 1.0_DP-theta, theta)
-        elseif (theta .gt. SYS_EPSREAL) then
+        elseif (theta .gt. SYS_EPSREAL_DP) then
           call lalg_scaleVector(p_Dflux, theta)
         else
           call lalg_clearVector(p_Dflux)

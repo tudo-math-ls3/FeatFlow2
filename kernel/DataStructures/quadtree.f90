@@ -913,7 +913,7 @@ contains
           ! Get vertex number
           ivt = rquadtree%p_Knode(ipos, inode)
 
-          if (maxval(abs(rquadtree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL) then
+          if (maxval(abs(rquadtree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL_DP) then
            
             ! Physically remove the item IVT from node INODE
             jpos = rquadtree%p_Knode(QTREE_STATUS, inode)
@@ -1097,7 +1097,7 @@ contains
           ! Get vertex number
           ivt = rquadtree%p_Knode(ipos, inode)
           
-          if (maxval(abs(rquadtree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL) then
+          if (maxval(abs(rquadtree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL_DP) then
 
             ! We have found the item IVT in node INODE
             iresult = QTREE_FOUND
@@ -1913,7 +1913,7 @@ contains
           ! Get vertex number
           ivt = rquadtree%p_Knode(ipos, inode)
 
-          if (maxval(abs(rquadtree%p_Ddata(:, ivt)-DdataOld)) .le. SYS_EPSREAL) then
+          if (maxval(abs(rquadtree%p_Ddata(:, ivt)-DdataOld)) .le. SYS_EPSREAL_DP) then
            
             ! Check if the new coordinates can be stored in the same node
             if ((rquadtree%p_Dbbox(QTREE_XMIN,inode) .le. DdataNew(1)) .and.&

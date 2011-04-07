@@ -662,7 +662,7 @@ contains
       ! Actually we have to check against <=0, but it is more advisable
       ! to check against something that is 'near' 0 in terms
       ! of machine exactness...
-      binside = binside .and. (dsproduct .le. SYS_EPSREAL*100.0_DP)
+      binside = binside .and. (dsproduct .le. SYS_EPSREAL_DP*100.0_DP)
 
     end do
     

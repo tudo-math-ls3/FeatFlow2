@@ -382,8 +382,8 @@ module ucd
     ! Number of currently attached variable vectors
     integer :: nvectors = 0
 
-    ! The simulation time. =SYS_INFINITY if no simulation time is specified
-    real(DP) :: dsimulationTime  = SYS_INFINITY
+    ! The simulation time. =SYS_INFINITY_DP if no simulation time is specified
+    real(DP) :: dsimulationTime  = SYS_INFINITY_DP
     
     ! Format of the simulation time. Fortran format string.
     character(LEN=SYS_STRLEN) :: ssimTimeFormat = "(ES18.8E3)"
@@ -2448,7 +2448,7 @@ contains
 
       !----------------------------------------------------
       ! Simulation time
-      if (rexport%dsimulationTime .ne. SYS_INFINITY) then
+      if (rexport%dsimulationTime .ne. SYS_INFINITY_DP) then
         write(mfile,'(A)',ADVANCE='NO')     'probtime '
         write(mfile,rexport%ssimTimeFormat) rexport%dsimulationTime
       end if
@@ -2532,7 +2532,7 @@ contains
     
     !----------------------------------------------------
     ! Simulation time
-    if (rexport%dsimulationTime .ne. SYS_INFINITY) then
+    if (rexport%dsimulationTime .ne. SYS_INFINITY_DP) then
       call fgmvwrite_probtime(rexport%dsimulationTime)
     end if
 

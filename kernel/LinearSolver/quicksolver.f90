@@ -1396,7 +1396,7 @@ contains
 
     select case(ndimC)
     case (1)
-      if (Ds(1,1) .le. SYS_EPSREAL) return
+      if (Ds(1,1) .le. SYS_EPSREAL_DP) return
       Du(ndimA+1) = Dftemp2(1) / Ds(1,1)
       
     case (2)

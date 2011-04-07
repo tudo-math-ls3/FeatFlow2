@@ -268,7 +268,7 @@ module nonlinearsolver
     ! residuals passed to the nonlinear solver.
     ! Treat iteration as diverged if anywhere
     !   !!defect!! >= DIVREL * !!initial defect!!
-    ! A value of SYS_INFINITY disables the relative divergence check.
+    ! A value of SYS_INFINITY_DP disables the relative divergence check.
     ! standard = 1E3
     real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DdivRel = 1E3_DP
 
@@ -278,9 +278,9 @@ module nonlinearsolver
     ! residuals passed to the nonlinear solver.
     ! Treat iteration as diverged if anywhere
     !   !!defect!! >= DIVABS
-    ! A value of SYS_INFINITY disables the absolute divergence check.
-    ! standard = SYS_INFINITY
-    real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DdivAbs = SYS_INFINITY
+    ! A value of SYS_INFINITY_DP disables the absolute divergence check.
+    ! standard = SYS_INFINITY_DP
+    real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DdivAbs = SYS_INFINITY_DP
 
     ! INPUT PARAMETER: 
     ! Type of stopping criterion to use for standard convergence test. One of the
@@ -462,7 +462,7 @@ contains
       !  where we have only convection in the X-direction, not in the Y-direction
       !  and a still fluid.)
       if ((rsolverNode%DepsRel(i) .ne. 0.0_DP) .and. &
-          (rsolverNode%dinitialDefect(i) .gt. SYS_EPSREAL)) then
+          (rsolverNode%dinitialDefect(i) .gt. SYS_EPSREAL_DP)) then
         bok = .false.
         do i=1,nblocks
           bok = bok .or. (.not. (DvecNorm(i) .gt. &
@@ -496,7 +496,7 @@ contains
         !  where we have only convection in the X-direction, not in the Y-direction
         !  and a still fluid.)
         if ((rsolverNode%DepsRel(i) .ne. 0.0_DP) .and. &
-            (rsolverNode%dinitialDefect(i) .gt. SYS_EPSREAL)) then
+            (rsolverNode%dinitialDefect(i) .gt. SYS_EPSREAL_DP)) then
           if (DvecNorm(i) .gt. &
               rsolverNode%depsRel(i) * rsolverNode%dinitialDefect(i)) then
             loutput = .false.
@@ -516,7 +516,7 @@ contains
 
     ! Relative convergence of the total vector.
     if ((rsolverNode%depsRelTotal .ne. 0.0_DP) .and. &
-        (rsolverNode%dinitialDefectTotal .gt. SYS_EPSREAL)) then
+        (rsolverNode%dinitialDefectTotal .gt. SYS_EPSREAL_DP)) then
       if (.not. (dvecNormTotal .gt. &
             rsolverNode%depsRelTotal * rsolverNode%dinitialDefectTotal)) then 
         loutput = .true.
@@ -601,7 +601,7 @@ contains
   do i=1,nblocks
   
     ! Absolute divergence criterion? Check the norm directly.
-    if (rsolverNode%DdivAbs(i) .ne. SYS_INFINITY) then
+    if (rsolverNode%DdivAbs(i) .ne. SYS_INFINITY_DP) then
      
       ! use NOT here - gives a better handling of special cases like NaN!
       if ( .not. (DvecNorm(i) .le. rsolverNode%DdivAbs(i))) then
@@ -618,7 +618,7 @@ contains
     !  where we have only convection in the X-direction, not in the Y-direction
     !  and a still fluid.)
     if ((rsolverNode%DinitialDefect(i) .ne. 0.0_DP) .and. &
-        (rsolverNode%DepsRel(i) .ne. SYS_INFINITY)) then
+        (rsolverNode%DepsRel(i) .ne. SYS_INFINITY_DP)) then
       if ( .not. (DvecNorm(i) .le. &
           rsolverNode%DinitialDefect(i) * rsolverNode%DdivRel(i)) ) then
         loutput = .true.

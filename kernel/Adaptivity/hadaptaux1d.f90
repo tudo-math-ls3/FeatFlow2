@@ -672,7 +672,7 @@ contains
     
     ! Search for vertex coordinate: Stupid linear search.
     do ivt = 1, rhadapt%NVT
-      if (abs(x12 - rhadapt%p_DvertexCoords1D(1,ivt)) .lt. SYS_EPSREAL) return
+      if (abs(x12 - rhadapt%p_DvertexCoords1D(1,ivt)) .lt. SYS_EPSREAL_DP) return
     end do
 
     ! Otherwise, update number of vertices

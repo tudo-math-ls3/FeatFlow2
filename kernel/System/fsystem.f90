@@ -177,22 +177,34 @@ module fsystem
   integer, parameter :: SYS_NAMELEN = 32
 
   ! minimal difference to unity for real values
-  real(DP), parameter :: SYS_EPSREAL = epsilon(1.0_DP)
+  real(SP), parameter :: SYS_EPSREAL_SP = epsilon(1.0_SP)
+  real(DP), parameter :: SYS_EPSREAL_DP = epsilon(1.0_DP)
+  real(QP), parameter :: SYS_EPSREAL_QP = epsilon(1.0_QP)
 
   ! minimal positive values for real variables
-  real(DP), parameter :: SYS_MINREAL = tiny(1.0_DP)
+  real(SP), parameter :: SYS_MINREAL_SP = tiny(1.0_SP)
+  real(DP), parameter :: SYS_MINREAL_DP = tiny(1.0_DP)
+  real(QP), parameter :: SYS_MINREAL_QP = tiny(1.0_QP)
 
   ! maximal values for real variables
-  real(DP), parameter :: SYS_MAXREAL = huge(1.0_DP)
+  real(SP), parameter :: SYS_MAXREAL_SP = huge(1.0_SP)
+  real(DP), parameter :: SYS_MAXREAL_DP = huge(1.0_DP)
+  real(QP), parameter :: SYS_MAXREAL_QP = huge(1.0_QP)
 
   ! maximal values for integer variables
-  integer, parameter :: SYS_MAXINT = huge(1)
+  integer,      parameter :: SYS_MAXINT = huge(1)
+  integer(I8),  parameter :: SYS_MAXI8  = huge(1_I8)
+  integer(I16), parameter :: SYS_MAXI16 = huge(1_I16)
+  integer(I32), parameter :: SYS_MAXI32 = huge(1_I32)
+  integer(I64), parameter :: SYS_MAXI64 = huge(1_I64)
 
   ! mathematical constant Pi
   real(DP)           :: SYS_PI
   
   ! internal constant for infinity
-  real(DP), parameter :: SYS_INFINITY = huge(1.0_DP)
+  real(SP), parameter :: SYS_INFINITY_SP = huge(1.0_SP)
+  real(DP), parameter :: SYS_INFINITY_DP = huge(1.0_DP)
+  real(QP), parameter :: SYS_INFINITY_QP = huge(1.0_QP)
 
   ! increment value = 1
   integer, parameter :: INCX = 1

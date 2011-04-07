@@ -2661,7 +2661,7 @@ contains
       ! Check first item separately
       if (rarraylist%p_DData(ihead) .eq. da) then
         f=ARRAYLIST_FOUND; return
-      elseif(abs(itable-da) .le. SYS_EPSREAL) then
+      elseif(abs(itable-da) .le. SYS_EPSREAL_DP) then
         return
       end if
       ipred=-ipred
@@ -2803,7 +2803,7 @@ contains
       ! Check first item separately
       if (rarraylist%p_FData(ihead) .eq. sa) then
         f=ARRAYLIST_FOUND; return
-      elseif(abs(itable-sa) .le. SYS_EPSREAL) then
+      elseif(abs(itable-sa) .le. SYS_EPSREAL_DP) then
         return
       end if
       ipred=-ipred

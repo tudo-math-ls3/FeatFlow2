@@ -871,11 +871,11 @@ contains
       ! up with the following IF-statement when compiling in Release-Mode under
       ! Windows:
       !
-      !   if(dabs(dc) .gt. SYS_EPSREAL) p_DS(idofP) = 1.0_DP / dc
+      !   if(dabs(dc) .gt. SYS_EPSREAL_DP) p_DS(idofP) = 1.0_DP / dc
       !
       ! The problem has been 'solved' by using the following equivalent
       ! alternative:
-      if((dc .gt. SYS_EPSREAL) .or. (dc .lt. -SYS_EPSREAL)) then
+      if((dc .gt. SYS_EPSREAL_DP) .or. (dc .lt. -SYS_EPSREAL_DP)) then
         p_DS(idofP) = 1.0_DP / dc
       end if
       
