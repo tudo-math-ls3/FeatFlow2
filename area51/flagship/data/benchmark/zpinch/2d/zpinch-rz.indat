@@ -35,7 +35,7 @@ deffunc: @initsol_Etot = 2.5 ; x,y,z,t
 deffunc: @forceterm = if (t <= _timp, -12*(1-t^4)*t^2, 0) ; t
 
 
-# Specify the boundary conditions for the Euler model
+# Specify the boundary conditions for the Euler model (dimensionless)
 [bdrcond_hydro_primal]
 NBCT
 1
@@ -51,6 +51,22 @@ PARAMETERS
 3.0  F  'FREESLIP_WEAK'
 4.0  T  'SUBINLET_WEAK'  0.5  1.0  0.0
 
+# Specify the boundary conditions for the Euler model (physical dimensions)
+[bdrcond_hydro_primal_DISABLE]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+1.0  F  'FREESLIP_WEAK'
+2.0  T  'SUBINLET_WEAK'  5e-7  1e-6  0.0
+3.0  F  'FREESLIP_WEAK'
+4.0  T  'SUBINLET_WEAK'  5e-7  1e-6  0.0
+
 
 ################################################################################
 #                                                                              #
@@ -58,9 +74,11 @@ PARAMETERS
 #                                                                              #
 ################################################################################
 
-# Specify the initial solution for the scalar transport model
+# Specify the initial solution for the scalar transport model (dimensionless)
 deffunc: @initsol_tracer = if(@sqr < @rad | @sqr > @rad + _width, 0.0, 1e6) ; x,y,z,t
 
+# Specify the initial solution for the scalar transport model (physical dimensions)
+#deffunc: @initsol_tracer = if(@sqr < @rad | @sqr > @rad + _width, 0.0, 1.0) ; x,y,z,t
 
 # Specify the boundary conditions for the scalar transport model
 [bdrcond_transport_primal]
