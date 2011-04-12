@@ -39,7 +39,7 @@ triname = ./pre/QUAD.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 0
+FEkind = 1
 
 
 

@@ -5577,10 +5577,9 @@ integer :: iel
   
   do ielement = 1, size(Dcoefficients,5)
     do ipoint = 1, size(Dcoefficients,4)
-      do iterm = 1, size(Dcoefficients,3)
-        !Dcoefficients(:,:,iterm,ipoint,ielement) = reshape( (/ 1.0_dp, 0.0_dp, 0.0_dp, 1.0_dp /), (/ 2, 2 /) )
-        Dcoefficients(1,1,iterm,ipoint,ielement) = 1.0_dp
-      end do
+      Dcoefficients(:,:,1,ipoint,ielement) = reshape( (/ 1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp /), (/ 2, 2 /) )
+      Dcoefficients(:,:,2,ipoint,ielement) = reshape( (/ 0.0_dp, 0.0_dp, 0.0_dp, 1.0_dp /), (/ 2, 2 /) )
+      !Dcoefficients(1,1,iterm,ipoint,ielement) = 1.0_dp
     end do
   end do  
   
