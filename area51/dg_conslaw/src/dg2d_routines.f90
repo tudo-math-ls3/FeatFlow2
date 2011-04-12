@@ -10852,12 +10852,12 @@ end do
     
     integer :: iblock,jblock
     
-    type t_array
-     ! Pointer to the double-valued matrix or vector data
-     real(DP), dimension(:), pointer :: Da
-    end type t_array
+!    type t_array
+!     ! Pointer to the double-valued matrix or vector data
+!     real(DP), dimension(:), pointer :: Da
+!    end type t_array
     
-    type(t_array), dimension(:,:), allocatable :: p_matrixBlockDataPointers
+!    type(t_array), dimension(:,:), allocatable :: p_matrixBlockDataPointers
 
 !    ! Boundary component?
 !    ibdc = rboundaryRegion%iboundCompIdx
@@ -10918,7 +10918,7 @@ end do
         
         
         
-    ! Allocate space for the flux variables DIM(nvar,ialbet,ncubp,elementsperblock)
+    ! Allocate space for the flux variables DIM(nvar,nvar,ialbet,ncubp,elementsperblock)
     allocate(DfluxValues(nvar,nvar,1,ncubp,rlocalMatrixAssembly(1)%nelementsPerBlock))
     
 !    ! Get some more pointers to local data.
@@ -11586,12 +11586,12 @@ end do
 
 !      call lsysbl_getbase_double(rmatrix,p_Da)
       
-      ! Get pointers to the data entries of the block matrix
-      do iblock = 1, nvar
-        do jblock = 1,nvar
-          call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),p_matrixBlockDataPointers(iblock,jblock)%Da)
-        end do
-      end do
+!      ! Get pointers to the data entries of the block matrix
+!      do iblock = 1, nvar
+!        do jblock = 1,nvar
+!          call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),p_matrixBlockDataPointers(iblock,jblock)%Da)
+!        end do
+!      end do
 
 !p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) = &            
 !              p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) + &
@@ -11605,6 +11605,7 @@ end do
         !$omp critical
         do iblock = 1, nvar
         do jblock = 1, nvar
+        call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),p_Da)
         do iel = 1,IELmax-IELset+1
           
           do idofe = 1,indofTest
@@ -11612,20 +11613,31 @@ end do
 !              p_DA(p_Kentry(jdofe,idofe,iel)) = &
 !                  p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
 
-                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryii(jdofe,idofe,iel)) = &
-                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
-                
-                
+!                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryii(jdofe,idofe,iel)) = &
+!                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
+!                
+!                if (IelementList(2,IELset+iel-1).ne.0) then
+!                
+!                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryia(jdofe,idofe,iel)) = &
+!                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryia(jdofe,idofe,iel)) + p_Dentryia(iblock,jblock,jdofe,idofe,iel)
+!                
+!                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryai(jdofe,idofe,iel)) = &
+!                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryai(jdofe,idofe,iel)) + p_Dentryai(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
+!                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryaa(jdofe,idofe,iel)) = &
+!                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryaa(jdofe,idofe,iel)) + p_Dentryaa(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
+!                end if  
+                p_Da(p_Kentryii(jdofe,idofe,iel)) = &
+                  p_Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
                 
                 if (IelementList(2,IELset+iel-1).ne.0) then
                 
-                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryia(jdofe,idofe,iel)) = &
-                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryia(jdofe,idofe,iel)) + p_Dentryia(iblock,jblock,jdofe,idofe,iel)
+                p_Da(p_Kentryia(jdofe,idofe,iel)) = &
+                  p_Da(p_Kentryia(jdofe,idofe,iel)) + p_Dentryia(iblock,jblock,jdofe,idofe,iel)
                 
-                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryai(jdofe,idofe,iel)) = &
-                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryai(jdofe,idofe,iel)) + p_Dentryai(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
-                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryaa(jdofe,idofe,iel)) = &
-                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryaa(jdofe,idofe,iel)) + p_Dentryaa(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
+                p_Da(p_Kentryai(jdofe,idofe,iel)) = &
+                  p_Da(p_Kentryai(jdofe,idofe,iel)) + p_Dentryai(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
+                p_Da(p_Kentryaa(jdofe,idofe,iel)) = &
+                  p_Da(p_Kentryaa(jdofe,idofe,iel)) + p_Dentryaa(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
                 end if  
                 
             end do
@@ -11954,14 +11966,13 @@ end do
     integer :: nblocksi, nblocksj
     integer :: iblock, jblock
     
-    type t_array
-     ! Pointer to the double-valued matrix or vector data
-     real(DP), dimension(:), pointer :: Da
-    end type t_array
-    
-    type(t_array), dimension(:,:), allocatable :: p_matrixBlockDataPointers
-    
-    
+!    type t_array
+!     ! Pointer to the double-valued matrix or vector data
+!     real(DP), dimension(:), pointer :: Da
+!    end type t_array
+!    
+!    type(t_array), dimension(:,:), allocatable:: p_matrixBlockDataPointers
+
   
     ! Get some pointers for faster access
 !    call lsyssc_getbase_double (rmatrix,p_DA)
@@ -11972,11 +11983,7 @@ end do
     ! Get number of blocks in the matrix and test if this equals the number of rows
     nblocksi = rmatrix%nblocksPerRow
     nblocksj = rmatrix%nblocksPerCol
-    
-    ! Allocate space for the local matrices and coeffi
-    allocate(p_Dentry(indofTrial,indofTest,nblocksi,nblocksj,iel))
-    allocate(p_Dcoefficients(nblocksi,nblocksj,rlocalMatrixAssembly%rform%itermcount,ncubp,iel))
-    
+      
     ! OpenMP-Extension: Copy the matrix assembly data to the local
     ! matrix assembly data, where we can allocate memory.
     !
@@ -11994,6 +12001,11 @@ end do
     !$omp         rintSubset,rlocalMatrixAssembly)
     rlocalMatrixAssembly = rmatrixAssembly
     call bilf_allocAssemblyData(rlocalMatrixAssembly)
+    
+    ! Allocate space for the local matrices, coefficients and pointers
+    allocate(p_Dentry(indofTrial,indofTest,nblocksi,nblocksj,rmatrixAssembly%nelementsPerBlock))
+    allocate(p_Dcoefficients(nblocksi,nblocksj,rlocalMatrixAssembly%rform%itermcount,ncubp,rmatrixAssembly%nelementsPerBlock))
+!    allocate(p_matrixBlockDataPointers(nblocksi,nblocksj))
     
     ! Get some more pointers to local data.
     p_Kentry            => rlocalMatrixAssembly%p_Kentry
@@ -12137,7 +12149,7 @@ end do
       rintSubset%p_Ielements          => IelementList(IELset:IELmax)
       rintSubset%p_IdofsTrial         => p_IdofsTrial
       rintSubset%celement             =  rlocalMatrixAssembly%celementTrial
-      call fcoeff_buildMatrixSc_sim (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest,&
+      call fcoeff_buildMatrixBl_sim (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest,&
           rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
           rlocalMatrixAssembly%rform, IELmax-IELset+1, ncubp,&
           p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
@@ -12267,23 +12279,28 @@ end do
       ! are usually small and quickly to handle.
       !
       
-      ! Get pointers to the data entries of the block matrix
-      do iblock = 1, nblocksi
-        do jblock = 1, nblocksj
-          call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),p_matrixBlockDataPointers(iblock,jblock)%Da)
-        end do
-      end do
+      
+      
+!      ! Get pointers to the data entries of the block matrix
+!      do iblock = 1, nblocksi
+!        do jblock = 1, nblocksj
+!          call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),p_matrixBlockDataPointers(iblock,jblock)%Da)
+!        end do
+!      end do
       
       !$omp critical
       do iel = 1,IELmax-IELset+1
         do iblock = 1, nblocksi
         do jblock = 1, nblocksj
+        call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),p_Da)
         do idofe = 1,indofTest
           do jdofe = 1,indofTrial
 !            p_DA(p_Kentry(jdofe,idofe,iel)) = &
 !                p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
-            p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentry(jdofe,idofe,iel)) = &
-                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iblock,jblock,iel)
+!            p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentry(jdofe,idofe,iel)) = &
+!                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iblock,jblock,iel)
+            p_Da(p_Kentry(jdofe,idofe,iel)) = &
+                  p_Da(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iblock,jblock,iel)
           end do
           end do
           end do
@@ -12299,8 +12316,8 @@ end do
     call bilf_releaseAssemblyData(rlocalMatrixAssembly)
     !$omp end parallel
     
-    ! Deallocate local matrices and coefficients
-    deallocate(p_Dentry,p_Dcoefficients)
+    ! Deallocate local matrices, coefficients and pointers
+    deallocate(p_Dentry,p_Dcoefficients)!,p_matrixBlockDataPointers)
 
   end subroutine
   

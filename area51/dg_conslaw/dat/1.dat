@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 6
+nlmax = 5
 
 
 # Name of the parametrisation file
@@ -39,17 +39,17 @@ triname = ./pre/QUAD.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 1
+FEkind = 0
 
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.01
+dt = 0.001
 
 # Final time
-ttfinal = 1.0
+ttfinal = 0.1
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -68,11 +68,12 @@ limiter = 0
 # What kind of time stepping to use
 # 1: RK SSP 3rd order
 # 2: dGP(2) 3rd/4th order
-# 3: Theta scheme
+# 3: Theta scheme (using MC as preconditioner)
 # 4: Classical RK of 4th order
 # 5: Implicit linear convection
 # 6: Implicit Burgers equation
-timestepping = 6
+# 7: Implicit System
+timestepping = 7
 
 # What type to build the RHS
 rhstype = 1

@@ -1360,7 +1360,7 @@ contains
     
     ! Calculate the speed of sound for the Roe-values
     !Qout(5) = sqrt( (gamma-1.0_dp)*(H - 0.5_dp*(Qout(2)*Qout(2)+Qout(3)*Qout(3)) ) )
-    Qout(5) = sqrt( max(sys_EPSREAL*sys_EPSREAL , gamma*p/rho) )
+    Qout(5) = sqrt( max(sys_EPSREAL_DP*sys_EPSREAL_DP , gamma*p/rho) )
 
   end function Euler_transformVector
     

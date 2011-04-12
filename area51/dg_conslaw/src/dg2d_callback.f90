@@ -2282,15 +2282,16 @@ integer :: iel
 !          ! For scalar problem
 !          Dcoefficients (1,ipoint,iel) = 0.5_dp
 
-          ! For scalar burgers - discontinuous
-          if ( (abs(dx-0.5_dp)<0.15_dp).and.(abs(dy-0.5_dp)<0.15_dp) ) then
-            Dcoefficients (1,ipoint,iel) = 0.5_dp
-          end if
+!          ! For scalar burgers - discontinuous
+!          if ( (abs(dx-0.5_dp)<0.15_dp).and.(abs(dy-0.5_dp)<0.15_dp) ) then
+!            Dcoefficients (1,ipoint,iel) = 0.5_dp
+!          end if
           
-          ! For scalar burgers - scontinuous
-          
-            Dcoefficients (1,ipoint,iel) = 0.3_dp*exp(-50.0_dp*((dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp))
-          
+!          ! For scalar burgers - continuous
+!          Dcoefficients (1,ipoint,iel) = 0.3_dp*exp(-50.0_dp*((dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp))
+
+        ! For linear system
+        Dcoefficients (1,ipoint,iel) = 0.3_dp*exp(-50.0_dp*((dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp))
 
 
 !        ! Isentropicvortex
@@ -2333,6 +2334,9 @@ integer :: iel
 !        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
 !        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
 !        Dcoefficients (1,ipoint,iel) = drho*(1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi))
+
+        ! For linear system
+        Dcoefficients (1,ipoint,iel) = 0.3_dp*exp(-50.0_dp*((dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp))
 
       
           end do
@@ -5475,6 +5479,227 @@ integer :: iel
   end subroutine
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  ! ***************************************************************************
+  
+  subroutine fcoeff_buildMatrixBl_sim_iSystem (rdiscretisationTrial,&
+                  rdiscretisationTest, rform, nelements, npointsPerElement,&
+                  Dpoints, IdofsTrial, IdofsTest, rdomainIntSubset,&
+                  Dcoefficients, rcollection)
+    
+    use basicgeometry
+    use collection
+    use domainintegration
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    use fsystem
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
 
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(nblocksi,nblocksj,itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    ! So the coefficient-matrix is put to
+    ! Dcoefficients(:,:,iterm,ipoint,ielement)
+    real(DP), dimension(:,:,:,:,:), intent(out) :: Dcoefficients
+  !</output>
+    
+  integer :: iterm, ipoint, ielement
+  
+  do ielement = 1, size(Dcoefficients,5)
+    do ipoint = 1, size(Dcoefficients,4)
+      do iterm = 1, size(Dcoefficients,3)
+        !Dcoefficients(:,:,iterm,ipoint,ielement) = reshape( (/ 1.0_dp, 0.0_dp, 0.0_dp, 1.0_dp /), (/ 2, 2 /) )
+        Dcoefficients(1,1,iterm,ipoint,ielement) = 1.0_dp
+      end do
+    end do
+  end do  
+  
+  end subroutine
+  
+  
+  
+  ! ***************************************************************************
+  
+  !<subroutine>
+
+    subroutine flux_dg_buildMatrixBlEdge2D_sim_iSystem (&
+!              Dcoefficients,&
+!              DsolVals,&
+			  DfluxValues,&
+			  rvectorSol,&
+			  IelementList,&
+			  Dside,&
+              normal,&
+!              DpointsReal,&
+              rintSubSet,&
+              rcollection )
+    
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+!  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+  
+  real(DP), dimension(:,:), intent(in) :: normal
+!  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+  type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+  type(t_collection), intent(inout), target, optional :: rcollection
+  type(t_vectorBlock), intent(in) :: rvectorSol
+  integer, dimension(:), intent(in) :: IelementList
+  
+    
+  !</input>
+  
+  !<output>
+  ! The coefficient matrices * normal vector
+  ! nrows,ncolumns,nterms,ncubp,nelements
+  ! Write the matrix to
+  ! DfluxValues(:,:,iterm, icubp, ielement)
+  real(DP), dimension(:,:,:,:,:), intent(out) :: DfluxValues
+  ! The coefficients for the DOFs from each side of the edge
+  !  1  ,  0  : from the first element (up-/downwind)
+  !  0  ,  1  : from the outer element (up-/downwind)
+  ! 1/2 , 1/2 : fifty fifty            (Galerkin)
+  ! nrows,ncolumns,2 sides,ncubp,nelements
+  real(DP), dimension(:,:,:,:,:), intent(out) :: Dside
+  !</output>
+    
+  !</subroutine>
+  
+  integer :: iterm, ipoint, ielement, i, j
+  
+  do ielement = 1, size(DfluxValues,5)
+    do ipoint = 1, size(DfluxValues,4)
+      do iterm = 1, size(DfluxValues,3)
+        DfluxValues(:,:,iterm,ipoint,ielement) = reshape( (/ normal(1,ielement), 0.0_dp, 0.0_dp, normal(2,ielement) /), (/ 2, 2 /) )
+!        DfluxValues(1,1,iterm,ipoint,ielement) = 1.0_dp * normal(1,ielement)
+        Dside(:,:,1,ipoint,ielement) = reshape( (/ 0.5_dp, 0.5_dp, 0.5_dp, 0.5_dp /), (/ 2, 2 /) )
+        Dside(:,:,2,ipoint,ielement) = reshape( (/ 0.5_dp, 0.5_dp, 0.5_dp, 0.5_dp /), (/ 2, 2 /) )
+        
+!        if ( normal(1,ielement)*1.0_dp > 0) then
+!          Dside(1,:,1,ipoint,ielement) = (/ 1.0_dp, 1.0_dp /)
+!          Dside(1,:,2,ipoint,ielement) = (/ 0.0_dp, 0.0_dp /)
+!        !elseif (normal(1,ielement)*1.0_dp .eq. 0) then
+!        else
+!          Dside(1,:,1,ipoint,ielement) = (/ 0.0_dp, 0.0_dp /)
+!          Dside(1,:,2,ipoint,ielement) = (/ 1.0_dp, 1.0_dp /)    
+!        end if
+!        
+!        if ( normal(2,ielement)*1.0_dp > 0) then
+!          Dside(2,:,1,ipoint,ielement) = (/ 1.0_dp, 1.0_dp /)
+!          Dside(2,:,2,ipoint,ielement) = (/ 0.0_dp, 0.0_dp /)
+!        else
+!          Dside(2,:,1,ipoint,ielement) = (/ 0.0_dp, 0.0_dp /)
+!          Dside(2,:,2,ipoint,ielement) = (/ 1.0_dp, 1.0_dp /)        
+!        end if
+
+        do i = 1, size(Dside,1)
+          do j = 1, size(Dside,1)
+            if ( DfluxValues(i,j,iterm,ipoint,ielement) > 0) then
+              Dside(i,j,1,ipoint,ielement) = 1.0_dp
+              Dside(i,j,2,ipoint,ielement) = 0.0_dp
+            elseif ( DfluxValues(i,j,iterm,ipoint,ielement) .eq. 0) then
+              Dside(i,j,1,ipoint,ielement) = 0.5_dp
+              Dside(i,j,2,ipoint,ielement) = 0.5_dp
+            else
+              Dside(i,j,1,ipoint,ielement) = 0.0_dp
+              Dside(i,j,2,ipoint,ielement) = 1.0_dp
+            end if
+          end do
+        end do
+        
+        
+      end do
+    end do
+  end do  
+  
+  end subroutine
+  
 
 end module

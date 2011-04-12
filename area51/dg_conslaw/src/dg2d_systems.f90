@@ -78,7 +78,7 @@ contains
     ! Shallow water : 3 (h, hu, hv)
     ! (h=Waterheights, u/v=speed in x/y-direction)
     ! Euler: 4 (rho, rho u, rho v, rho E)
-    integer, parameter :: nvar2d = 1
+    integer, parameter :: nvar2d = 2
     
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
@@ -206,7 +206,7 @@ contains
     
     real(dp) , dimension(:), pointer :: p_DiMCdata, p_DMCdata
     
-    integer :: i
+    integer :: i, j
      
     ! Start time measurement
     call cpu_time(dtime1)
@@ -2056,20 +2056,9 @@ if (iwithoutlimiting==2) ilimiter = 0
    ! Fully implicit Euler equation
    case (7)
    
-    ! Set up the structure of the system matrix
-    !!! call lsysbl_createMatBlockByDiscr (rblockDiscretisationTrial,rmatrixBlock)
-    call lsysbl_createEmptyMatrix (rmatrixBlock,nvar2d,nvar2d)
-    do i = 1, nvar2d
-    do j = 1, nvar2d
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-                                     LSYSSC_MATRIX9,rmatrixBlock%Rmatrixblock(i,j),&
-                                     rdiscretisation%RspatialDiscr(1),&
-                                     BILF_MATC_EDGEBASED)
-     end do
-     end do
-     call lsysbl_updateMatStrucInfo (rmatrixBlock)
-   
-   
+!    call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+!    pause
+    
     ! Calculate matrix MC
     call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                      LSYSSC_MATRIX9,rmatrixMC,&
@@ -2084,15 +2073,31 @@ if (iwithoutlimiting==2) ilimiter = 0
     !call lsyssc_clearMatrix (rmatrixMC)
     call bilf_buildMatrixScalar (rform,.true.,rmatrixMC)
     
+      
+    ! Set up the structure of the system matrix
+    !!! call lsysbl_createMatBlockByDiscr (rblockDiscretisationTrial,rmatrixBlock)
+    call lsysbl_createEmptyMatrix (rmatrixBlock,nvar2d,nvar2d)
+    do i = 1, nvar2d
+    do j = 1, nvar2d
+!    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+!                                     LSYSSC_MATRIX9,rmatrixBlock%Rmatrixblock(i,j),&
+!                                     rdiscretisation%RspatialDiscr(1),&
+!                                     BILF_MATC_EDGEBASED)
+      call lsyssc_copyMatrix (rmatrixMC,rmatrixBlock%RmatrixBlock(i,j))
+     end do
+     end do
+     call lsysbl_updateMatStrucInfo (rmatrixBlock)
+    
     
     ! Set up the structure of the matrix A
     call lsysbl_createEmptyMatrix (rmatrixABlock,nvar2d,nvar2d)
     do i = 1, nvar2d
     do j = 1, nvar2d
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-                                     LSYSSC_MATRIX9,rmatrixABlock%RmatrixBlock(i,j),&
-                                     rdiscretisation%RspatialDiscr(1),&
-                                     BILF_MATC_EDGEBASED)
+!    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+!                                     LSYSSC_MATRIX9,rmatrixABlock%RmatrixBlock(i,j),&
+!                                     rdiscretisation%RspatialDiscr(1),&
+!                                     BILF_MATC_EDGEBASED)
+      call lsyssc_copyMatrix (rmatrixMC,rmatrixABlock%RmatrixBlock(i,j))
     end do
     end do
     call lsysbl_updateMatStrucInfo (rmatrixABlock)
@@ -2191,10 +2196,15 @@ if (iwithoutlimiting==2) ilimiter = 0
         rform%ballCoeffConstant = .false.
         rform%BconstantCoeff = .false.
         rcollection%p_rvectorQuickAccess1 => rsolBlock
-        call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)
-        call bilf_buildMatrixBlock2 (rform, .true., rmatrixABlock,&
-                                     fcoeff_buildMatrixBl_sim,rcollection)!,rscalarAssemblyInfo)
-       call lsysbl_scaleMatrix (rmatrixBlockA,-1.0_DP)
+        !call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)
+        if (ielementtype.ne.EL_DG_T0_2D) then
+          call bilf_buildMatrixBlock2 (rform, .true., rmatrixABlock,&
+                                     fcoeff_buildMatrixBl_sim_iSystem,rcollection)!,rscalarAssemblyInfo)
+        else
+          call lsysbl_clearMatrix(rmatrixABlock)
+        end if                                     
+                                           
+       call lsysbl_scaleMatrix (rmatrixABlock,-1.0_DP)
        !call matio_writeMatrixHR(rmatrixMC,'./gmv/feat_routine.txt',.true.,0,'./gmv/feat_routine.txt','(E20.10)')
        
        
@@ -2208,32 +2218,40 @@ if (iwithoutlimiting==2) ilimiter = 0
         rcollection%p_rvectorQuickAccess1 => rsolBlock   
         call bilf_dg_buildMatrixBlEdge2D (rform, CUB_G5_1D, .false., rmatrixABlock,&
                                              rsolBlock, raddTriaData,&
-                                             flux_dg_buildMatrixBlEdge2D_sim)!,&
+                                             flux_dg_buildMatrixBlEdge2D_sim_iSystem)!,&
                                              !rcollection, cconstrType)
         
 !        call lsyssc_clearMatrix (rmatrixA)
         
-        ! Calculate the preconditioner matrix A
-        do ivar = 1, nvar2d
-        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixABlock%RvectorBlock(ivar,ivar),1.0_dp,dt)!,&
-                                       !.true.,.true.,.true.,.false.,&
-                                       !rmatrixBlock%Rmatrixblock(1,1))
-        
+        ! Calculate the preconditioner matrix
+        call lsysbl_clearMatrix(rmatrixBlock)
+        do i = 1, nvar2d
+        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixABlock%RmatrixBlock(i,i),1.0_dp,dt,&
+                                       .true.,.true.,.true.,.false.,&
+                                       rmatrixBlock%Rmatrixblock(i,i))
+!        call lsyssc_matrixLinearComb2 (rmatrixMC,1.0_dp,rmatrixABlock%RmatrixBlock(i,j),dt,rmatrixABlock%RmatrixBlock(i,j),&
+!                                       .false.,.false.,.true.)
+        end do
         
 !        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
 !        call matio_writeMatrixHR(rmatrixA,'./gmv/A.txt',.true.,0,'./gmv/A.txt','(E20.10)')
 !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
 !        pause
         
+        
         ! Calculate the defect vector
         call lsysbl_copyVector (rrhsBlock,rdefBlock)
-        call lsysbl_blockMatVec(rmatrixABlock,rsolBlock,&
+        call lsysbl_blockMatVec(rmatrixBlock,rsolBlock,&
                                  rdefBlock,-1.0_dp,1.0_dp)
                                  
+                                 
+!        do i = 1, nvar2d
+!        do j = 1, nvar2d
+!          call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(i,j),'./gmv/Pblock.txt',.true.,0,'./gmv/Pblock.txt','(E20.10)')                       
+!          pause
+!        end do 
+!        end do
 
-
-
-        
         
 !        ! During the linear solver, the boundary conditions are also
 !    ! frequently imposed to the vectors. But as the linear solver
@@ -2247,7 +2265,7 @@ if (iwithoutlimiting==2) ilimiter = 0
 !    ! Fill in the boundary conditions
 !        call vecfil_discreteBCrhs (rrhsBlock)
 !        call vecfil_discreteBCsol (rsolBlock)
-!        call matfil_discreteBC (rmatrixBlock)
+!        call matfil_discreteBC (rmatrixABlock)
     
     ! Create a BiCGStab-solver.
     nullify(p_rpreconditioner)
@@ -2310,7 +2328,10 @@ if (iwithoutlimiting==2) ilimiter = 0
 !        call dg2vtk(rDefBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
 !        pause
         
-      
+        
+!        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+!        pause
+          
       end do iEuler_defcorr
     
       ttime = ttime + dt
@@ -2385,11 +2406,11 @@ if (iwithoutlimiting==2) ilimiter = 0
 
 
 
-!        ! Output solution to vtk file
-!        sofile = './gmv/u2d_rho'
-!        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-!        sofile = './gmv/u2d_rhou'
-!        call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
+        ! Output solution to vtk file
+        sofile = './gmv/u2d_rho'
+        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+        sofile = './gmv/u2d_rhou'
+        call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
 !        sofile = './gmv/u2d_rhov'
 !        call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
 !        sofile = './gmv/u2d_rhoE'

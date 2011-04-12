@@ -80,8 +80,10 @@
   !<output>
     ! A list of all coefficients in front of all terms in the bilinear form -
     ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    !   DIMENSION(nrows,ncolumns,itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the bilinear form.
+    ! So the coefficient-matrix is put to
+    ! Dcoefficients(:,:,iterm,ipoint,ielement)
     real(DP), dimension(:,:,:,:,:), intent(out) :: Dcoefficients
   !</output>
     
