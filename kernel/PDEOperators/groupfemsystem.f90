@@ -2088,13 +2088,13 @@ contains
       ! in parallel without the need to synchronize memory access
       do igroup = 1, size(IverticesAtEdgeIdx)-1
 
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IverticesAtEdgeIdx(igroup),&
                       IverticesAtEdgeIdx(igroup+1)-1, GFSYS_NEDGESIM
-
-          ! Do nothing for empty groups
-          if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
 
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
