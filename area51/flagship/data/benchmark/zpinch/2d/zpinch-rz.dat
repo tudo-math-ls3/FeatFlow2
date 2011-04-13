@@ -148,7 +148,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 3
+isystemPrecond = $isystemprecond
 
 #-------------------------------------------------------------------------------
 

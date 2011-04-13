@@ -6,6 +6,9 @@ export OMP_NUM_THREADS=4
 # Use Rusanov-type dissipation
 export idissipationtype=3
 
+# Use Rusanov-type dissipation in preconditioner
+export isystemprecond=3
+
 # Use low-order method
 export istabilisation=1
 
