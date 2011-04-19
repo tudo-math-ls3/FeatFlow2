@@ -353,7 +353,7 @@ module afcstabilisation
 
   ! Relative tolerance for stabilisation
 #ifndef AFCSTAB_EPSREL
-  real(DP), parameter, public :: AFCSTAB_EPSREL = 1e-6
+  real(DP), parameter, public :: AFCSTAB_EPSREL = 1e-4
 #endif
 
 !</constantblock>
