@@ -87,75 +87,107 @@
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density
 !#
-!# 22.) hydro_trafoFluxEnergy1d_sim
+!# 22. hydro_trafoNodalDensity1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal density values
+!#
+!# 23.) hydro_trafoFluxEnergy1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the energy
 !#
-!# 23.) hydro_trafoDiffEnergy1d_sim
+!# 24.) hydro_trafoDiffEnergy1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the energy
 !#
-!# 24.) hydro_trafoFluxPressure1d_sim
+!# 25. hydro_trafoNodalEnergy1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal energy values
+!#
+!# 26.) hydro_trafoFluxPressure1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the pressure
 !#
-!# 25.) hydro_trafoDiffPressure1d_sim
+!# 27.) hydro_trafoDiffPressure1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the pressure
 !#
-!# 26.) hydro_trafoFluxVelocity1d_sim
+!# 28.) hydro_trafoNodalPressure1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal pressure values
+!#
+!# 29.) hydro_trafoFluxVelocity1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the velocity
 !#
-!# 27.) hydro_trafoDiffVelocity1d_sim
+!# 30.) hydro_trafoDiffVelocity1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the velocity
 !#
-!# 28.) hydro_trafoFluxMomentum1d_sim
+!# 31.) hydro_trafoNodalVelocity1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal velocity values
+!#
+!# 32.) hydro_trafoFluxMomentum1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the momentum
 !#
-!# 29.) hydro_trafoDiffMomentum1d_sim
+!# 33.) hydro_trafoDiffMomentum1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the momentum
 !#
-!# 30.) hydro_trafoFluxDenEng1d_sim
+!# 34.) hydro_trafoNodalMomentum1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal momentum values
+!#
+!# 35.) hydro_trafoFluxDenEng1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
-!# 31.) hydro_trafoDiffDenEng1d_sim
+!# 36.) hydro_trafoDiffDenEng1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density and energy
 !#
-!# 32.) hydro_trafoFluxDenPre1d_sim
+!# 37.) hydro_trafoNodalDenEng1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal density and energy values
+!#
+!# 38.) hydro_trafoFluxDenPre1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
-!# 33.) hydro_trafoDiffDenPre1d_sim
+!# 39.) hydro_trafoDiffDenPre1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density and the pessure
 !#
-!# 34.) hydro_trafoFluxDenPreVel1d_sim
+!# 40.) hydro_trafoNodalDenPre1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal density and pressure values
+!#
+!# 41.) hydro_trafoFluxDenPreVel1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
-!# 35.) hydro_trafoDiffDenPreVel1d_sim
+!# 42.) hydro_trafoDiffDenPreVel1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density, the pressure 
 !#         and the velocity
 !#
-!# 36.) hydro_calcBoundaryvalues1d
+!# 43.) hydro_trafoNodalDenPreVel1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal density, pressure and velocity values
+!#
+!# 44.) hydro_calcBoundaryvalues1d
 !#      -> Computes the boundary values for a given node
 !#
-!# 37.) hydro_hadaptCallbackScalar1d
+!# 45.) hydro_hadaptCallbackScalar1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in interleave format
 !#
-!# 38.) hydro_hadaptCallbackBlock1d
+!# 46.) hydro_hadaptCallbackBlock1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in block format
 !#
-!# 39.) hydro_coeffVectorBdr1d_sim
+!# 47.) hydro_coeffVectorBdr1d_sim
 !#      -> Calculates the coefficients for the linear form in 1D
 !#
 !# </purpose>
@@ -224,6 +256,14 @@ module hydro_callback1d
   public :: hydro_trafoDiffDenEng1d_sim
   public :: hydro_trafoDiffDenPre1d_sim
   public :: hydro_trafoDiffDenPreVel1d_sim
+  public :: hydro_trafoNodalDensity1d_sim
+  public :: hydro_trafoNodalEnergy1d_sim
+  public :: hydro_trafoNodalPressure1d_sim
+  public :: hydro_trafoNodalVelocity1d_sim
+  public :: hydro_trafoNodalMomentum1d_sim
+  public :: hydro_trafoNodalDenEng1d_sim
+  public :: hydro_trafoNodalDenPre1d_sim
+  public :: hydro_trafoNodalDenPreVel1d_sim
   public :: hydro_calcBoundaryvalues1d
   public :: hydro_coeffVectorBdr1d_sim
   public :: hydro_hadaptCallbackScalar1d
@@ -2627,6 +2667,54 @@ contains
 
 !<subroutine>
 
+  pure subroutine hydro_trafoNodalDensity1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the density in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed density values
+      DtransformedDataAtNode(1,idx) =&
+          DENSITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+    end do
+
+  end subroutine hydro_trafoNodalDensity1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
   pure subroutine hydro_trafoFluxEnergy1d_sim(DdataAtEdge,&
       DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
@@ -2726,6 +2814,54 @@ contains
     end do
 
   end subroutine hydro_trafoDiffEnergy1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine hydro_trafoNodalEnergy1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the energy in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed energy values
+      DtransformedDataAtNode(1,idx) =&
+          TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+    end do
+
+  end subroutine hydro_trafoNodalEnergy1d_sim
 
   !*****************************************************************************
 
@@ -2848,6 +2984,54 @@ contains
 
 !<subroutine>
 
+  pure subroutine hydro_trafoNodalPressure1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the pressure in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed pressure values
+      DtransformedDataAtNode(1,idx) =&
+          PRESSURE_1T_FROM_CONSVAR_1D(DdataAtNode,NVAR1D,idx)
+    end do
+
+  end subroutine hydro_trafoNodalPressure1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
   pure subroutine hydro_trafoFluxVelocity1d_sim(DdataAtEdge,&
       DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
@@ -2961,6 +3145,54 @@ contains
 
 !<subroutine>
 
+  pure subroutine hydro_trafoNodalVelocity1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the velocity in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed x-velocity values
+      DtransformedDataAtNode(1,idx) =&
+          X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+    end do
+
+  end subroutine hydro_trafoNodalVelocity1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
   pure subroutine hydro_trafoFluxMomentum1d_sim(DdataAtEdge,&
       DfluxesAtEdge, nedges, DtransformedFluxesAtEdge, rcollection)
 
@@ -3060,6 +3292,54 @@ contains
     end do
     
   end subroutine hydro_trafoDiffMomentum1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine hydro_trafoNodalMomentum1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the momentum in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed x-momentum values
+      DtransformedDataAtNode(1,idx) =&
+          X_MOMENTUM_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+    end do
+
+  end subroutine hydro_trafoNodalMomentum1d_sim
 
   !*****************************************************************************
 
@@ -3175,6 +3455,59 @@ contains
     end do
 
   end subroutine hydro_trafoDiffDenEng1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine hydro_trafoNodalDenEng1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the density and
+    ! energy in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed density values
+      DtransformedDataAtNode(1,idx) =&
+          DENSITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+
+      ! Transformed energy values
+      DtransformedDataAtNode(2,idx) =&
+          TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+    end do
+
+  end subroutine hydro_trafoNodalDenEng1d_sim
 
   !*****************************************************************************
 
@@ -3303,6 +3636,59 @@ contains
     end do
 
   end subroutine hydro_trafoDiffDenPre1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine hydro_trafoNodalDenPre1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the density and
+    ! pressure in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed density values
+      DtransformedDataAtNode(1,idx) =&
+          DENSITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+
+      ! Transformed pressure values
+      DtransformedDataAtNode(2,idx) =&
+          PRESSURE_1T_FROM_CONSVAR_1D(DdataAtNode,NVAR1D,idx)
+    end do
+
+  end subroutine hydro_trafoNodalDenPre1d_sim
   
   !*****************************************************************************
 
@@ -3446,6 +3832,63 @@ contains
     end do
 
   end subroutine hydro_trafoDiffDenPreVel1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine hydro_trafoNodalDenPreVel1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the density,
+    ! pressure and velocity in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed density values
+      DtransformedDataAtNode(1,idx) =&
+          DENSITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+
+      ! Transformed x-velocity values
+      DtransformedDataAtNode(2,idx) =&
+          X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+
+      ! Transformed pressure values
+      DtransformedDataAtNode(3,idx) =&
+          PRESSURE_1T_FROM_CONSVAR_1D(DdataAtNode,NVAR1D,idx)
+    end do
+
+  end subroutine hydro_trafoNodalDenPreVel1d_sim
 
   !*****************************************************************************
 
