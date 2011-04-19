@@ -121,7 +121,7 @@ module groupfemsystem
   use spatialdiscretisation
   use storage
   use triangulation
-
+  
   implicit none
 
   private
@@ -132,6 +132,7 @@ module groupfemsystem
   public :: gfsys_buildDivVectorTVD
   public :: gfsys_buildDivVectorFCT
   public :: gfsys_buildFluxFCT
+
 
 !<constants>
 
@@ -4534,8 +4535,8 @@ contains
   subroutine gfsys_buildDivVecFCTBlock(rlumpedMassMatrix,&
       rafcstab, rx, dscale, bclear, ioperationSpec, ry, NVARtransformed,&
       fcb_calcFluxTransformation_sim, fcb_calcDiffTransformation_sim,&
-      fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
-      fcb_limitEdgewise, fcb_calcCorrection, rcollection)
+      fcb_calcNodalTransformation_sim, fcb_calcADIncrements, fcb_calcBounds,&
+      fcb_limitNodal, fcb_limitEdgewise, fcb_calcCorrection, rcollection)
 
 !<description>
     ! This subroutine assembles the divergence vector for nonlinear
@@ -4574,6 +4575,7 @@ contains
     include 'intf_gfsyscallback.inc'
     optional :: fcb_calcFluxTransformation_sim
     optional :: fcb_calcDiffTransformation_sim
+    optional :: fcb_calcNodalTransformation_sim
 
     ! OPTIONAL: callback functions to overwrite the standard operations
     include 'intf_groupfemcallback.inc'
@@ -4610,8 +4612,8 @@ contains
           rafcstab, rx%RvectorBlock(1), dscale, bclear,&
           ioperationSpec, ry%RvectorBlock(1), NVARtransformed,&
           fcb_calcFluxTransformation_sim, fcb_calcDiffTransformation_sim,&
-          fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
-          fcb_limitEdgewise, fcb_calcCorrection, rcollection)
+          fcb_calcNodalTransformation_sim, fcb_calcADIncrements, fcb_calcBounds,&
+          fcb_limitNodal, fcb_limitEdgewise, fcb_calcCorrection, rcollection)
       return
     end if
 
@@ -4806,6 +4808,7 @@ contains
       end if
 
       ! Set pointers
+      call lsysbl_getbase_double(rx, p_Dx)
       call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
       call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
       call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
@@ -4825,8 +4828,8 @@ contains
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
         ! Standard routine with constraints
-        call doLimitNodalConstrained(rafcstab%NEQ, nvariable, dscale,&
-            p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+        call doLimitNodalConstrained(rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+            dscale, p_ML, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       end if
 
       ! Set specifier
@@ -4871,10 +4874,10 @@ contains
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
-          call fcb_limitEdgewise(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, nvariable, rafcstab%NEQ, rafcstab%NVAR, p_Dx,&
-              p_Dflux, p_Drp, p_Drm, p_Dalpha, fcb_calcFluxTransformation_sim,&
-              p_Dflux0, rcollection)
+          call fcb_limitEdgewise(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dflux, p_Drp, p_Drm,&
+              p_Dalpha, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseConstrTransf(p_IverticesAtEdge,&
@@ -4882,23 +4885,24 @@ contains
               p_Dx, p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           ! Standard routine without flux transformation
-          call doLimitEdgewiseConstrained(p_IverticesAtEdge, rafcstab%NEDGE,&
-              rafcstab%NEQ, rafcstab%NVAR, p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+          call doLimitEdgewiseConstrained(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
 
       else
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
-          call fcb_limitEdgewise(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, nvariable, rafcstab%NEQ, rafcstab%NVAR, p_Dx,&
-              p_Dflux, p_Drp, p_Drm, p_Dalpha, fcb_calcFluxTransformation_sim,&
-              rcollection=rcollection)
+          call fcb_limitEdgewise(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dflux, p_Drp, p_Drm,&
+              p_Dalpha, fcb_calcFluxTransformation_sim, rcollection=rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
-          call doLimitEdgewiseTransformed(p_IverticesAtEdge, rafcstab%NEDGE,&
-              rafcstab%NEQ, rafcstab%NVAR, nvariable, p_Dx, p_Dflux, p_Drp,&
-              p_Drm, p_Dalpha)
+          call doLimitEdgewiseTransformed(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              p_Dx, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           ! Standard routine without flux transformation
           call doLimitEdgewise(p_IverticesAtEdge, rafcstab%NEDGE,&
@@ -5026,17 +5030,22 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
 
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Apply multiplicative correction factor
           F_ij = Dalpha(iedge) * Dflux(:,iedge)
 
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$          ! Cancel fluxes which are too small
+!!$          where (abs(F_ij) .le. AFCSTAB_EPSABS) F_ij = 0.0_DP
+!!$#endif
+
           ! Compute the sums of antidiffusive increments
-          Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
-          Dpp(:,j) = Dpp(:,j)+max(0.0_DP,-F_ij)
-          Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
-          Dpm(:,j) = Dpm(:,j)+min(0.0_DP,-F_ij)
+          Dpp(:,i) = Dpp(:,i) + max(0.0_DP, F_ij)
+          Dpp(:,j) = Dpp(:,j) + max(0.0_DP,-F_ij)
+          Dpm(:,i) = Dpm(:,i) + min(0.0_DP, F_ij)
+          Dpm(:,j) = Dpm(:,j) + min(0.0_DP,-F_ij)
         end do
         !$omp end do
 
@@ -5062,7 +5071,7 @@ contains
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
       ! input/output parameters
-      real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dpp,Dpm
+      real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dpp,Dpm
 
       ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DfluxesAtEdge
@@ -5116,6 +5125,12 @@ contains
             DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
             DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
             DfluxesAtEdge(:,idx) = Dalpha(iedge)*Dflux(:,iedge)
+
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$            ! Cancel fluxes which are too small
+!!$            where (abs(DfluxesAtEdge(:,idx)) .le. AFCSTAB_EPSABS)&
+!!$                DfluxesAtEdge(:,idx) = 0.0_DP
+!!$#endif
           end do
           
           ! Use callback function to compute transformed fluxes
@@ -5136,12 +5151,18 @@ contains
             ! Get position of nodes
             i = IverticesAtEdge(1,iedge)
             j = IverticesAtEdge(2,iedge)
-            
+
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$            ! Cancel fluxes which are too small
+!!$            where (abs(DtransformedFluxesAtEdge(:,:,idx)) .le. AFCSTAB_EPSABS)&
+!!$                DtransformedFluxesAtEdge(:,:,idx) = 0.0_DP
+!!$#endif
+
             ! Compute the sums of positive/negative antidiffusive increments
-            Dpp(:,i) = Dpp(:,i)+max(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
-            Dpp(:,j) = Dpp(:,j)+max(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
-            Dpm(:,i) = Dpm(:,i)+min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
-            Dpm(:,j) = Dpm(:,j)+min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+            Dpp(:,i) = Dpp(:,i) + max(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+            Dpp(:,j) = Dpp(:,j) + max(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+            Dpm(:,i) = Dpm(:,i) + min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+            Dpm(:,j) = Dpm(:,j) + min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
           end do
         end do
         !$omp end do
@@ -5198,8 +5219,8 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
 
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Apply multiplicative correction factor
           F_ij = Dalpha(iedge) * Dflux(:,iedge)
@@ -5212,12 +5233,17 @@ contains
           
           ! Update the raw antidiffusive flux
           F_ij = alpha_ij * F_ij
+
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$          ! Cancel fluxes which are too small
+!!$          where (abs(F_ij) .le. AFCSTAB_EPSABS) F_ij = 0.0_DP
+!!$#endif
           
           ! Compute the sums of antidiffusive increments
-          Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
-          Dpp(:,j) = Dpp(:,j)+max(0.0_DP,-F_ij)
-          Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
-          Dpm(:,j) = Dpm(:,j)+min(0.0_DP,-F_ij)
+          Dpp(:,i) = Dpp(:,i) + max(0.0_DP, F_ij)
+          Dpp(:,j) = Dpp(:,j) + max(0.0_DP,-F_ij)
+          Dpm(:,i) = Dpm(:,i) + min(0.0_DP, F_ij)
+          Dpm(:,j) = Dpm(:,j) + min(0.0_DP,-F_ij)
         end do
         !$omp end do
 
@@ -5303,6 +5329,12 @@ contains
             DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
             DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
             DfluxesAtEdge(:,idx) = Dalpha(iedge)*Dflux(:,iedge)
+
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$            ! Cancel fluxes which are too small
+!!$            where (abs(DfluxesAtEdge(:,idx)) .le. AFCSTAB_EPSABS)&
+!!$                DfluxesAtEdge(:,idx) = 0.0_DP
+!!$#endif
           end do
           
           ! Use callback function to compute transformed fluxes
@@ -5331,7 +5363,15 @@ contains
             ! Get position of nodes
             i = IverticesAtEdge(1,iedge)
             j = IverticesAtEdge(2,iedge)
-            
+      
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$            ! Cancel fluxes which are too small
+!!$            where (abs(DtransformedFluxesAtEdge(:,:,idx)) .le. AFCSTAB_EPSABS)&
+!!$                DtransformedFluxesAtEdge(:,:,idx) = 0.0_DP
+!!$            where (abs(DtransformedPrelFluxesAtEdge(:,:,idx)) .le. AFCSTAB_EPSABS)&
+!!$                DtransformedPrelFluxesAtEdge(:,:,idx) = 0.0_DP
+!!$#endif  
+      
             ! MinMod prelimiting
             alpha_ij = minval(mprim_minmod3(&
                               DtransformedFluxesAtEdge(:,1,idx),&
@@ -5347,11 +5387,17 @@ contains
             F_ij = alpha_ij * F_ij
             F_ji = alpha_ij * F_ji
             
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$            ! Cancel fluxes which are too small
+!!$            where (abs(F_ij) .le. AFCSTAB_EPSABS) F_ij = 0.0_DP
+!!$            where (abs(F_ji) .le. AFCSTAB_EPSABS) F_ji = 0.0_DP
+!!$#endif
+
             ! Compute the sums of positive/negative antidiffusive increments
-            Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
-            Dpp(:,j) = Dpp(:,j)+max(0.0_DP, F_ji)
-            Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
-            Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
+            Dpp(:,i) = Dpp(:,i) + max(0.0_DP, F_ij)
+            Dpp(:,j) = Dpp(:,j) + max(0.0_DP, F_ji)
+            Dpm(:,i) = Dpm(:,i) + min(0.0_DP, F_ij)
+            Dpm(:,j) = Dpm(:,j) + min(0.0_DP, F_ji)
           end do
         end do
         !$omp end do
@@ -5407,8 +5453,8 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
 
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Compute solution difference
           Diff = Dx(j,:)-Dx(i,:)
@@ -5571,22 +5617,121 @@ contains
     !**************************************************************
     ! Compute nodal correction factors with constraints
 
-    subroutine doLimitNodalConstrained(NEQ, NVAR, dscale,&
-        ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
+    subroutine doLimitNodalConstrained(NEQ, NVAR, NVARtransformed,&
+        dscale, ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
       ! input parameters
-      real(DP), dimension(NVAR,NEQ), intent(in) :: Dpp,Dpm,Dqp,Dqm
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), dimension(:), intent(in) :: ML
       real(DP), intent(in) :: dscale
-      integer, intent(in) :: NEQ,NVAR
+      integer, intent(in) :: NEQ,NVAR,NVARtransformed
 
       ! input/output parameters
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: Drp,Drm
+      real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Drp,Drm
+
+      ! auxiliary arrays
+      real(DP), dimension(:,:), pointer :: DdataAtNode, DdataAtNodeAux
 
       ! local variables
-      integer :: ieq
+      real(DP) :: dfactor
+      integer :: IEQmax,IEQset,idx,ieq
 
       
+#ifdef GFSYS_USE_SAFE_FPA
+
+      ! Allocate temporal memory
+      allocate(DdataAtNodeAux(NVAR,GFSYS_NEQSIM))
+
+      ! Allocate temporal memory (if required)
+      if (present(fcb_calcNodalTransformation_sim)) then
+        allocate(DdataAtNode(NVARtransformed,GFSYS_NEQSIM))
+      end if
+
+      ! Loop over all vertices
+      do IEQset = 1, NEQ, GFSYS_NEQSIM
+
+        ! We always handle GFSYS_NEQSIM nodes simultaneously.
+        ! How many nodes have we actually here?
+        ! Get the maximum node number, such that we handle
+        ! at mist GFSYS_NEQSIM nodes simultaneously.
+
+        IEQmax = min(NEQ, IEQset-1+GFSYS_NEQSIM)
+      
+        ! Reshape data layout
+        do idx = 1, IEQmax-IEQset+1
+          DdataAtNodeAux(:,idx) = Dx(idx+IEQset-1,:)
+        end do
+  
+        if (present(fcb_calcNodalTransformation_sim)) then
+          ! Use callback function to compute transformed nodal values
+          call fcb_calcNodalTransformation_sim(&
+              DdataAtNodeAux(:,1:IEQmax-IEQset+1), IEQmax-IEQset+1,&
+              DdataAtNode(:,1:IEQmax-IEQset+1), rcollection)
+        else
+          ! Set pointer to subarray of global array
+          DdataAtNode => DdataAtNodeAux(:,1:IEQmax-IEQset+1)
+        end if
+
+        ! Loop through all nodes in the current set
+        do idx = 1, IEQmax-IEQset+1
+
+          ! Get actual node number
+          ieq = idx+IEQset-1
+
+          ! Compute scaling parameter dfactor = ML/dscale
+          dfactor = ML(ieq)/dscale
+
+          where (Dqp(:,ieq)-Dqm(:,ieq) .gt.&
+              AFCSTAB_EPSREL*abs(DdataAtNode(:,idx)))
+
+            ! If the distance between the local maximum and minimum
+            ! solution value is sufficiently large relative to the nodal
+            ! solution value, then the raw antidiffusive contributions
+            ! Pp and Pm are constrained such that
+            !
+            ! Rp = min(1,ML*Qp/Pp/dscale) and Rm = min(1,ML*Qm/Pm/dscale)
+            
+            where (Dpp(:,ieq) .gt. dfactor*(Dqp(:,ieq)&
+                +AFCSTAB_EPSREL*abs(DdataAtNode(:,idx))))
+              Drp(:,ieq) = dfactor*Dqp(:,ieq)/Dpp(:,ieq)
+            elsewhere
+              Drp(:,ieq) = 1.0_DP
+            end where
+            
+            where (Dpm(:,ieq) .lt. dfactor*(Dqm(:,ieq)&
+                -AFCSTAB_EPSREL*abs(DdataAtNode(:,idx))))
+              Drm(:,ieq) = dfactor*Dqm(:,ieq)/Dpm(:,ieq)
+            elsewhere
+              Drm(:,ieq) = 1.0_DP
+            end where
+            
+          elsewhere
+
+            ! If the distance between the local maximum and minimum
+            ! solution value is small relative to the nodal solution
+            ! value, then the solution is nearly constant in the
+            ! vicinity of this vertex. Therefore, no constraints are
+            ! imposed at all.
+            
+            Drp(:,ieq) = 1.0_DP
+            Drm(:,ieq) = 1.0_DP
+            
+          end where
+        end do
+
+      end do
+      
+      ! Deallocate temporal memory
+      deallocate(DdataAtNodeAux)
+
+      ! Deallocate temporal memory (if required)
+      if (present(fcb_calcNodalTransformation_sim)) then
+        deallocate(DdataAtNode)
+      end if
+
+#else
+
       ! Loop over all vertices
       do ieq = 1, NEQ
         where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
@@ -5604,6 +5749,8 @@ contains
           Drm(:,ieq) = 1.0_DP
         end where
       end do
+
+#endif
 
     end subroutine doLimitNodalConstrained
 
@@ -5634,8 +5781,8 @@ contains
       do iedge = 1, NEDGE
 
         ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
 
         ! Get precomputed raw antidiffusive fluxes
         F_ij = Dflux(:,iedge)
@@ -5646,6 +5793,14 @@ contains
         elsewhere
           R_ij = min(Drp(:,j),Drm(:,i))
         end where
+
+!        where (F_ij .gt. AFCSTAB_EPSABS)
+!          R_ij = min(Drp(:,i),Drm(:,j))
+!        elsewhere (F_ij .lt. -AFCSTAB_EPSABS)
+!          R_ij = min(Drp(:,j),Drm(:,i))
+!        elsewhere
+!          R_ij = 1.0_DP
+!        end where
 
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
@@ -5731,11 +5886,29 @@ contains
           i = IverticesAtEdge(1,iedge)
           j = IverticesAtEdge(2,iedge)
 
-          ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i),&
-                       DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j),&
-                       DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+!          ! Compute nodal correction factors for fluxes into node i
+!          where (DtransformedFluxesAtEdge(:,1,idx) .gt. AFCSTAB_EPSABS)
+!            R_ij = Drp(:,i)
+!          elsewhere (DtransformedFluxesAtEdge(:,1,idx) .lt. -AFCSTAB_EPSABS)
+!            R_ij = Drm(:,i)
+!          elsewhere
+!            R_ij = 1.0_DP
+!          end where
+
+!          ! Compute nodal correction factors for fluxes into node j
+!          where (DtransformedFluxesAtEdge(:,2,idx) .gt. AFCSTAB_EPSABS)
+!            R_ji = Drp(:,j)
+!          elsewhere (DtransformedFluxesAtEdge(:,2,idx) .lt. -AFCSTAB_EPSABS)
+!            R_ji = Drm(:,j)
+!          elsewhere
+!            R_ji = 1.0_DP
+!          end where
+
+           ! Compute nodal correction factors
+           R_ij = merge(Drp(:,i), Drm(:,i),&
+                        DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+           R_ji = merge(Drp(:,j), Drm(:,j),&
+                        DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
 
           ! Compute multiplicative correction factor
           Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
@@ -5778,8 +5951,8 @@ contains
       do iedge = 1, NEDGE
 
         ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
 
         ! Get precomputed raw antidiffusive fluxes
         F1_ij = Dflux1(:,iedge)
@@ -5962,12 +6135,12 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Correct antidiffusive flux
-          F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
-          
+          F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge) 
+ 
           ! Apply limited antidiffusive fluxes
           Dy(i,:) = Dy(i,:) + F_ij
           Dy(j,:) = Dy(j,:) - F_ij
@@ -6017,12 +6190,12 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
 
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Correct antidiffusive flux
-          F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
-          
+          F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge) 
+
           ! Apply limited antidiffusive fluxes
           Dy(i,:) = Dy(i,:) + F_ij/ML(i)
           Dy(j,:) = Dy(j,:) - F_ij/ML(j)
@@ -6043,8 +6216,8 @@ contains
   subroutine gfsys_buildDivVecFCTScalar(rlumpedMassMatrix,&
       rafcstab, rx, dscale, bclear, ioperationSpec, ry, NVARtransformed,&
       fcb_calcFluxTransformation_sim, fcb_calcDiffTransformation_sim,&
-      fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
-      fcb_limitEdgewise, fcb_calcCorrection, rcollection)
+      fcb_calcNodalTransformation_sim, fcb_calcADIncrements, fcb_calcBounds,&
+      fcb_limitNodal, fcb_limitEdgewise, fcb_calcCorrection, rcollection)
 
 !<description>
     ! This subroutine assembles the divergence vector for nonlinear
@@ -6124,6 +6297,7 @@ contains
     include 'intf_gfsyscallback.inc'
     optional :: fcb_calcFluxTransformation_sim
     optional :: fcb_calcDiffTransformation_sim
+    optional :: fcb_calcNodalTransformation_sim
 
     ! OPTIONAL: callback functions to overwrite the standard operations
     include 'intf_groupfemcallback.inc'
@@ -6153,6 +6327,7 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
     integer :: nvariable
+
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -6282,7 +6457,7 @@ contains
               p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
         end if
       end if
-
+      
       ! Set specifiers
       rafcstab%istabilisationSpec =&
           ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
@@ -6325,7 +6500,7 @@ contains
         call doBounds(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dqp, p_Dqm)
       end if
-
+      
       ! Set specifiers
       rafcstab%istabilisationSpec =&
           ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)
@@ -6346,6 +6521,7 @@ contains
       end if
 
       ! Set pointers
+      call lsyssc_getbase_double(rx, p_Dx)
       call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
       call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
       call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
@@ -6365,8 +6541,8 @@ contains
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
         ! Standard routine with constraints
-        call doLimitNodalConstrained(rafcstab%NEQ, nvariable, dscale,&
-            p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+        call doLimitNodalConstrained(rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+            dscale, p_ML, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       end if
 
       ! Set specifier
@@ -6417,10 +6593,9 @@ contains
               p_Dalpha, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
-          call doLimitEdgewiseConstrTransf(&
-              p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, nvariable, p_Dx,&
-              p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+          call doLimitEdgewiseConstrTransf(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              p_Dx, p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           ! Standard routine without flux transformation
           call doLimitEdgewiseConstrained(p_IverticesAtEdge,&
@@ -6435,14 +6610,12 @@ contains
           call fcb_limitEdgewise(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Drp, p_Drm,&
-              p_Dalpha, fcb_calcFluxTransformation_sim,&
-              rcollection=rcollection)
+              p_Dalpha, fcb_calcFluxTransformation_sim, rcollection=rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
-          call doLimitEdgewiseTransformed(&
-              p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, nvariable, p_Dx,&
-              p_Dflux, p_Drp, p_Drm, p_Dalpha)
+          call doLimitEdgewiseTransformed(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              p_Dx, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           ! Standard routine without flux transformation
           call doLimitEdgewise(p_IverticesAtEdge,&
@@ -6571,17 +6744,22 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
 
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Apply multiplicative correction factor
           F_ij = Dalpha(iedge) * Dflux(:,iedge)
           
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$          ! Cancel fluxes which are too small
+!!$          where (abs(F_ij) .le. AFCSTAB_EPSABS) F_ij = 0.0_DP
+!!$#endif
+
           ! Compute the sums of antidiffusive increments
-          Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
-          Dpp(:,j) = Dpp(:,j)+max(0.0_DP,-F_ij)
-          Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
-          Dpm(:,j) = Dpm(:,j)+min(0.0_DP,-F_ij)
+          Dpp(:,i) = Dpp(:,i) + max(0.0_DP, F_ij)
+          Dpp(:,j) = Dpp(:,j) + max(0.0_DP,-F_ij)
+          Dpm(:,i) = Dpm(:,i) + min(0.0_DP, F_ij)
+          Dpm(:,j) = Dpm(:,j) + min(0.0_DP,-F_ij)
         end do
         !$omp end do
 
@@ -6661,6 +6839,12 @@ contains
             DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
             DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
             DfluxesAtEdge(:,idx) = Dalpha(iedge)*Dflux(:,iedge)
+	    
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$            ! Cancel fluxes which are too small
+!!$            where (abs(DfluxesAtEdge(:,idx)) .le. AFCSTAB_EPSABS)&
+!!$                DfluxesAtEdge(:,idx) = 0.0_DP
+!!$#endif
           end do
           
           ! Use callback function to compute transformed fluxes
@@ -6681,12 +6865,18 @@ contains
             ! Get position of nodes
             i = IverticesAtEdge(1,iedge)
             j = IverticesAtEdge(2,iedge)
-            
+
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$            ! Cancel fluxes which are too small
+!!$            where (abs(DtransformedFluxesAtEdge(:,:,idx)) .le. AFCSTAB_EPSABS)&
+!!$                DtransformedFluxesAtEdge(:,:,idx) = 0.0_DP
+!!$#endif
+
             ! Compute the sums of positive/negative antidiffusive increments
-            Dpp(:,i) = Dpp(:,i)+max(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
-            Dpp(:,j) = Dpp(:,j)+max(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
-            Dpm(:,i) = Dpm(:,i)+min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
-            Dpm(:,j) = Dpm(:,j)+min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+            Dpp(:,i) = Dpp(:,i) + max(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+            Dpp(:,j) = Dpp(:,j) + max(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+            Dpm(:,i) = Dpm(:,i) + min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+            Dpm(:,j) = Dpm(:,j) + min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
           end do
         end do
         !$omp end do
@@ -6743,8 +6933,8 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Apply multiplicative correction factor
           F_ij = Dalpha(iedge) * Dflux(:,iedge)
@@ -6758,6 +6948,11 @@ contains
           ! Update the raw antidiffusive flux
           F_ij = alpha_ij * F_ij
           
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$          ! Cancel fluxes which are too small
+!!$          where (abs(F_ij) .le. AFCSTAB_EPSABS) F_ij = 0.0_DP
+!!$#endif
+
           ! Compute the sums of antidiffusive increments
           Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
           Dpp(:,j) = Dpp(:,j)+max(0.0_DP,-F_ij)
@@ -6848,6 +7043,12 @@ contains
             DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
             DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
             DfluxesAtEdge(:,idx) = Dalpha(iedge)*Dflux(:,iedge)
+
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$            ! Cancel fluxes which are too small
+!!$            where (abs(DfluxesAtEdge(:,idx)) .le. AFCSTAB_EPSABS)&
+!!$                DfluxesAtEdge(:,idx) = 0.0_DP
+!!$#endif
           end do
           
           ! Use callback function to compute transformed fluxes
@@ -6876,7 +7077,15 @@ contains
             ! Get position of nodes
             i = IverticesAtEdge(1,iedge)
             j = IverticesAtEdge(2,iedge)
-            
+
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$            ! Cancel fluxes which are too small
+!!$            where (abs(DtransformedFluxesAtEdge(:,:,idx)) .le. AFCSTAB_EPSABS)&
+!!$                DtransformedFluxesAtEdge(:,:,idx) = 0.0_DP
+!!$            where (abs(DtransformedPrelFluxesAtEdge(:,:,idx)) .le. AFCSTAB_EPSABS)&
+!!$                DtransformedPrelFluxesAtEdge(:,:,idx) = 0.0_DP
+!!$#endif         
+
             ! MinMod prelimiting
             alpha_ij = minval(mprim_minmod3(&
                               DtransformedFluxesAtEdge(:,1,idx),&
@@ -6891,12 +7100,18 @@ contains
             ! Update the raw antidiffusive fluxes
             F_ij = alpha_ij * F_ij
             F_ji = alpha_ij * F_ji
-            
+
+!!$#ifdef GFSYS_USE_SAFE_FPA
+!!$            ! Cancel fluxes which are too small
+!!$            where (abs(F_ij) .le. AFCSTAB_EPSABS) F_ij = 0.0_DP
+!!$            where (abs(F_ji) .le. AFCSTAB_EPSABS) F_ji = 0.0_DP
+!!$#endif
+
             ! Compute the sums of positive/negative antidiffusive increments
-            Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
-            Dpp(:,j) = Dpp(:,j)+max(0.0_DP, F_ji)
-            Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
-            Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
+            Dpp(:,i) = Dpp(:,i) + max(0.0_DP, F_ij)
+            Dpp(:,j) = Dpp(:,j) + max(0.0_DP, F_ji)
+            Dpm(:,i) = Dpm(:,i) + min(0.0_DP, F_ij)
+            Dpm(:,j) = Dpm(:,j) + min(0.0_DP, F_ji)
           end do
         end do
         !$omp end do
@@ -6952,12 +7167,12 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Compute solution difference
           Diff = Dx(:,j)-Dx(:,i)
-          
+
           ! Compute the distance to a local extremum
           ! of the predicted solution
           Dqp(:,i) = max(Dqp(:,i), Diff)
@@ -7116,22 +7331,110 @@ contains
     !**************************************************************
     ! Compute nodal correction factors with constraints
 
-    subroutine doLimitNodalConstrained(NEQ, NVAR, dscale,&
-        ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
+    subroutine doLimitNodalConstrained(NEQ, NVAR, NVARtransformed,&
+        dscale, ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
       ! input parameters
-      real(DP), dimension(NVAR,NEQ), intent(in) :: Dpp,Dpm,Dqp,Dqm
+      real(DP), dimension(NVAR,NEQ), intent(in), target :: Dx
+      real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), dimension(:), intent(in) :: ML
       real(DP), intent(in) :: dscale
-      integer, intent(in) :: NEQ,NVAR
+      integer, intent(in) :: NEQ,NVAR,NVARtransformed
 
       ! input/output parameters
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: Drp,Drm
+      real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Drp,Drm
+
+      ! auxiliary arrays
+      real(DP), dimension(:,:), pointer :: DdataAtNode
 
       ! local variables
-      integer :: ieq
+      real(DP) :: dfactor
+      integer :: IEQmax,IEQset,idx,ieq
 
+
+#ifdef GFSYS_USE_SAFE_FPA
+
+      ! Allocate temporal memory (if required)
+      if (present(fcb_calcNodalTransformation_sim)) then
+        allocate(DdataAtNode(NVARtransformed,GFSYS_NEQSIM))
+      end if
+
+      ! Loop over all vertices
+      do IEQset = 1, NEQ, GFSYS_NEQSIM
+
+        ! We always handle GFSYS_NEQSIM nodes simultaneously.
+        ! How many nodes have we actually here?
+        ! Get the maximum node number, such that we handle
+        ! at mist GFSYS_NEQSIM nodes simultaneously.
+
+        IEQmax = min(NEQ, IEQset-1+GFSYS_NEQSIM)
+        
+        if (present(fcb_calcNodalTransformation_sim)) then
+          ! Use callback function to compute transformed nodal values
+          call fcb_calcNodalTransformation_sim(&
+              Dx(:,IEQset:IEQmax), IEQmax-IEQset+1,&
+              DdataAtNode(:,1:IEQmax-IEQset+1), rcollection)
+        else
+          ! Set pointer to subarray of global array
+          DdataAtNode => Dx(:,IEQset:IEQmax)
+        end if
+
+        ! Loop through all nodes in the current set
+        do idx = 1, IEQmax-IEQset+1
+
+          ! Get actual node number
+          ieq = idx+IEQset-1
+
+          ! Compute scaling parameter dfactor = ML/dscale
+          dfactor = ML(ieq)/dscale
+
+          where (Dqp(:,ieq)-Dqm(:,ieq) .gt.&
+              AFCSTAB_EPSREL*abs(DdataAtNode(:,idx)))
+
+            ! If the distance between the local maximum and minimum
+            ! solution value is sufficiently large relative to the nodal
+            ! solution value, then the raw antidiffusive contributions
+            ! Pp and Pm are constrained such that
+            !
+            ! Rp = min(1,ML*Qp/Pp/dscale) and Rm = min(1,ML*Qm/Pm/dscale)
+            
+            where (Dpp(:,ieq) .gt. dfactor*(Dqp(:,ieq)&
+                +AFCSTAB_EPSREL*abs(DdataAtNode(:,idx))))
+              Drp(:,ieq) = dfactor*Dqp(:,ieq)/Dpp(:,ieq)
+            elsewhere
+              Drp(:,ieq) = 1.0_DP
+            end where
+            
+            where (Dpm(:,ieq) .lt. dfactor*(Dqm(:,ieq)&
+                -AFCSTAB_EPSREL*abs(DdataAtNode(:,idx))))
+              Drm(:,ieq) = dfactor*Dqm(:,ieq)/Dpm(:,ieq)
+            elsewhere
+              Drm(:,ieq) = 1.0_DP
+            end where
+            
+          elsewhere
+
+            ! If the distance between the local maximum and minimum
+            ! solution value is small relative to the nodal solution
+            ! value, then the solution is nearly constant in the
+            ! vicinity of this vertex. Therefore, no constraints are
+            ! imposed at all.
+            
+            Drp(:,ieq) = 1.0_DP
+            Drm(:,ieq) = 1.0_DP
+            
+          end where
+        end do
+
+      end do
       
+      ! Deallocate temporal memory (if required)
+      if (present(fcb_calcNodalTransformation_sim)) then
+        deallocate(DdataAtNode)
+      end if
+
+#else
+
       ! Loop over all vertices
       do ieq = 1, NEQ
         where (dscale*Dpp(:,ieq) .gt. AFCSTAB_EPSABS)
@@ -7149,6 +7452,8 @@ contains
           Drm(:,ieq) = 1.0_DP
         end where
       end do
+
+#endif
 
     end subroutine doLimitNodalConstrained
 
@@ -7179,18 +7484,26 @@ contains
       do iedge = 1, NEDGE
 
         ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
 
         ! Get precomputed raw antidiffusive fluxes
         F_ij = Dflux(:,iedge)
 
         ! Compute nodal correction factors
-        where (F_ij .ge. 0.0_DP)
+	where (F_ij .ge. 0.0_DP)
           R_ij = min(Drp(:,i),Drm(:,j))
         elsewhere
           R_ij = min(Drp(:,j),Drm(:,i))
-        end where
+	end where
+	
+!        where (F_ij .gt. AFCSTAB_EPSABS)
+!          R_ij = min(Drp(:,i),Drm(:,j))
+!        elsewhere (F_ij .lt. -AFCSTAB_EPSABS)
+!          R_ij = min(Drp(:,j),Drm(:,i))
+!        elsewhere
+!          R_ij = 1.0_DP
+!        end where
 
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
@@ -7276,11 +7589,29 @@ contains
           i = IverticesAtEdge(1,iedge)
           j = IverticesAtEdge(2,iedge)
 
-          ! Compute nodal correction factors
+	  ! Compute nodal correction factors
           R_ij = merge(Drp(:,i), Drm(:,i),&
                        DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
           R_ji = merge(Drp(:,j), Drm(:,j),&
                        DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+
+!          ! Compute nodal correction factors for fluxes into node i
+!          where (DtransformedFluxesAtEdge(:,1,idx) .gt. AFCSTAB_EPSABS)
+!            R_ij = Drp(:,i)
+!          elsewhere (DtransformedFluxesAtEdge(:,1,idx) .lt. -AFCSTAB_EPSABS)
+!            R_ij = Drm(:,i)
+!          elsewhere
+!            R_ij = 1.0_DP
+!          end where
+
+!          ! Compute nodal correction factors for fluxes into node j
+!          where (DtransformedFluxesAtEdge(:,2,idx) .gt. AFCSTAB_EPSABS)
+!            R_ji = Drp(:,j)
+!          elsewhere (DtransformedFluxesAtEdge(:,2,idx) .lt. -AFCSTAB_EPSABS)
+!            R_ji = Drm(:,j)
+!          elsewhere
+!            R_ji = 1.0_DP
+!          end where
 
           ! Compute multiplicative correction factor
           Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
@@ -7323,8 +7654,8 @@ contains
       do iedge = 1, NEDGE
 
         ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
 
         ! Get precomputed raw antidiffusive fluxes
         F1_ij = Dflux1(:,iedge)
@@ -7507,8 +7838,8 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
 
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Correct antidiffusive flux
           F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
@@ -7562,8 +7893,8 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
 
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Correct antidiffusive flux
           F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
@@ -7576,7 +7907,6 @@ contains
 
       end do ! igroup
       !$omp end parallel
-
     end subroutine doCorrectScaleByMass
 
   end subroutine gfsys_buildDivVecFCTScalar
@@ -7999,9 +8329,9 @@ contains
       do iedge = 1, NEDGE
 
         ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        ij = IverticesAtEdge(3,iedge)
 
         ! Compute the raw antidiffusives fluxes
         Dflux(:,iedge) = Dflux(:,iedge) + dscale*DmatrixData(ij)*(Dx(i,:)-Dx(j,:))
@@ -8439,9 +8769,9 @@ contains
       do iedge = 1, NEDGE
 
         ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        ij = IverticesAtEdge(3,iedge)
 
         ! Compute the raw antidiffusives fluxes
         Dflux(:,iedge) = Dflux(:,iedge)&
