@@ -51,7 +51,7 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 2
+idissipationtype = 1
 
 # type of system coupling
 # 0 = segregated approach
@@ -85,7 +85,7 @@ slimitingvariable(2) =
   pressure
   
 # number of failsafe steps
-nfailsafe = 3
+nfailsafe = 0
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =
@@ -487,7 +487,7 @@ domega = 1.0
 depsAbs = 1e-10
 
 # relative tolerance for residual
-depsRel = 0.0
+depsRel = 1e-6
 
 # relative tolerance for stagnation
 depsStag = 0.0
