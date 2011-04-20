@@ -1,0 +1,58 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                    Supersonic flow over forward facing step                  #
+#                                                                              #
+# rho0 = 1.4                                                                   #
+# p0   = 1.0                                                                   #
+# u0   = 3.0                                                                   #
+# v0   = 0.0                                                                   #
+# p0   = 1.0                                                                   #
+#                                                                              #
+################################################################################
+
+# Specify the initial solution
+deffunc: @initsol_rho   = 1.4 ; x,y,z,t
+deffunc: @initsol_vel_x = 4.2 ; x,y,z,t
+deffunc: @initsol_vel_y = 0.0 ; x,y,z,t
+deffunc: @initsol_Etot  = 8.8 ; x,y,z,t
+
+# Specify the boundary conditions
+[bdrcond_strong_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+7
+PARAMETERS
+1.0  F  'FREESLIP_STRONG'
+2.0  F  'FREESLIP_STRONG'
+2.0  T  0
+3.0  T  'FREESLIP_STRONG'
+4.0  F  'SUPEROUTLET_STRONG'
+5.0  T  'FREESLIP_STRONG'
+6.0  F  'FREESTREAM_STRONG'   1.4   3.0   0.0   1.0
+
+# Specify the boundary conditions
+[bdrcond_weak_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+7
+PARAMETERS
+1.0  F  'FREESLIP_WEAK'
+2.0  F  'FREESLIP_WEAK'
+2.0  T  0
+3.0  T  'FREESLIP_WEAK'
+4.0  F  'SUPEROUTLET_WEAK'
+5.0  T  'FREESLIP_WEAK'
+6.0  F  'FREESTREAM_WEAK'   1.4   3.0   0.0   1.0

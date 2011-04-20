@@ -36,3 +36,41 @@
   end subroutine fcb_calcBoundaryvalues
 
   end interface
+
+  ! ***************************************************************************
+
+  interface
+
+!<subroutine>
+
+  subroutine fcb_parseBoundaryCondition(cbdrCondType, ndimension,&
+      ibdrCondType, nexpressions)
+
+!<description>
+    ! This subroutine parses the boundarry condition defined in the
+    ! parameter file. That is, the string cbdrCondType is tansformed
+    ! into an integer value ibdrCondType and the number of
+    ! mathematical expressions corresponding to the given boundary
+    ! type and the spatial dimension ndimension are returned.
+!</description>
+
+!<input>
+    ! character string: type of boundary conditions
+    character(len=*), intent(in) :: cbdrCondType
+
+    ! number of spatial dimensions
+    integer, intent(in) :: ndimension
+!</input>
+
+!<output>
+    ! type of boundary condition
+    integer, intent(out) :: ibdrCondType
+
+    ! number of mathematical expressions
+    integer, intent(out) :: nexpressions
+!</outpu>
+!</subroutine>
+
+  end subroutine fcb_parseBoundaryCondition
+
+  end interface

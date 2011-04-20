@@ -1,0 +1,75 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                     Input data for the FEM-AFC solver                        #
+#                                                                              #
+#                             Double Mach Reflection                           #
+#                                                                              #
+# From: P. Woodward, P. Colella, "The Numerical Simulation of Two-Dimensional  #
+#       Fluid Flow with Strong Shocks", Journal of Computational Physics       #
+#       Vol. 54, pages 115-173, 1984.                                          #
+#                                                                              #
+# Data from: http://www.astro.virginia.edu/VITA/ATHENA/dmr.html                #
+#            http://amroc.sourceforge.net/examples/hydro/2d/html/ramp_n.htm    #
+#                                                                              #
+# Ratio of specific heats:   gamma = 1.4 (air at sea-level)                    #
+#                                                                              #
+# Description: The shock is initially set up to be inclined at an angle of     #
+# 60 degree to the x-axis, and has a Mach number of 10.                        #
+#                                                                              #
+# Initial data                                                                 #
+#  rho0 =   8.0 for x < x0 + y/sqrt(31)   rho1 = 1.4 for x >= x0 + y/sqrt(31)  #
+#  p0   = 116.5                           p1   = 1.0                           #
+#  u0   =   8.25*cos(30 deg)              u1   = 0.0                           #
+#  v0   =  -8.25*cos(30 deg)              v1   = 0.0                           #
+#                                                                              #
+# Boundary conditions                                                          #
+#    left = inflow boundary                                                    #
+#   right = outflow boundary                                                   #
+#  bottom = solid-wall boundary                                                #
+#     top = transient inflow/outflow boundary                                  #
+#           x(t) = x0+(1+20*t)/sqrt(3), where x0 = 1/6                         #
+#                                                                              #
+################################################################################
+
+# global constants
+defconst: x0 = 0.166666666667
+
+# Specify the initial solution
+deffunc: @initsol_rho   = if(x >= _x0+y/SQRT(3.0), 1.4,  8.0) ; x,y,z,t
+deffunc: @initsol_vel_x = if(x >= _x0+y/SQRT(3.0), 0.0,  66.0*COS(_pi/6)) ; x,y,z,t
+deffunc: @initsol_vel_y = if(x >= _x0+y/SQRT(3.0), 0.0, -66.0*SIN(_pi/6)) ; x,y,z,t
+deffunc: @initsol_Etot  = if(x >= _x0+y/SQRT(3.0), 2.5, 563.5) ; x,y,z,t
+
+# Specify the boundary conditions
+[bdrcond_strong_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+5
+PARAMETERS
+0.0417  T  'SUPERINLET_STRONG'  '8.0'  '8.25*COS(_pi/6.0)'  '-8.25*SIN(_pi/6.0)'  '116.5'
+1.0     T  'FREESLIP_STRONG'
+2.0     T  'SUPEROUTLET_STRONG' '1.4'  '0.0'  '0.0'  '1.0'
+3.0     T  'SUPEROUTLET_STRONG' 'if(x >= _x0+(1+20*t)/SQRT(3.0), 1.4, 8.0)' 'if(x >= _x0+(1+20*t)/SQRT(3.0), 0.0, 8.25*COS(_pi/6.0))'  'if(x >= _x0+(1+20*t)/SQRT(3.0), 0.0, -8.25*SIN(_pi/6.0))'  'if(x >= _x0+(1+20*t)/SQRT(3.0), 1.0, 116.5)'
+4.0     F  'SUPEROUTLET_STRONG' 8.0  '8.25*COS(_pi/6.0)'  '-8.25*SIN(_pi/6.0)'  '116.5'
+
+[bdrcond_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+5
+PARAMETERS
+0.0417  T  'SUPERINLET_WEAK'  '8.0'  '8.25*COS(_pi/6.0)'  '-8.25*SIN(_pi/6.0)'  '116.5'
+1.0     T  'FREESLIP_WEAK'
+2.0     T  'SUPEROUTLET_WEAK'
+3.0     T  'SUPERINLET_WEAK'  'if(x >= _x0+(1+20*t)/SQRT(3.0), 1.4, 8.0)'  'if(x >= _x0+(1+20*t)/SQRT(3.0), 0.0, 8.25*COS(_pi/6.0))'  'if(x >= _x0+(1+20*t)/SQRT(3.0), 0.0, -8.25*SIN(_pi/6.0))'  'if(x >= _x0+(1+20*t)/SQRT(3.0), 1.0, 116.5)'
+4.0     F  'SUPERINLET_WEAK'  '8.0'  '8.25*COS(_pi/6.0)'  '-8.25*SIN(_pi/6.0)'  '116.5'

@@ -119,8 +119,8 @@ contains
 !<subroutine>
 
   subroutine nlsol_solveCoupledScalar(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolutionInitial, fcb_nlsolvercallback,&
-      rcollection, rsource)
+      rsolver, Rsolution, RsolutionInitial, fcb_nlsolvercallback,&
+      rcollection, Rsource)
 
 !<description>
     ! This subroutine solves the coupled nonlinear system
@@ -131,10 +131,10 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorScalar), dimension(:), intent(in) :: rsolutionInitial
+    type(t_vectorScalar), dimension(:), intent(in) :: RsolutionInitial
 
     ! OPTIONAL: source vector
-    type(t_vectorScalar), dimension(:), intent(in), optional :: rsource
+    type(t_vectorScalar), dimension(:), intent(in), optional :: Rsource
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -151,7 +151,7 @@ contains
     type(t_solver), intent(inout) :: rsolver
 
     ! solution vector
-    type(t_vectorScalar), dimension(:), intent(inout) :: rsolution
+    type(t_vectorScalar), dimension(:), intent(inout) :: Rsolution
 
     ! collection
     type(t_collection), intent(inout) :: rcollection
@@ -159,80 +159,85 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), dimension(:), pointer :: rsourceBlock
-    type(t_vectorBlock), dimension(:), pointer :: rsolutionBlock
-    type(t_vectorBlock), dimension(:), pointer :: rsolutionInitialBlock
-    integer :: i
+    type(t_vectorBlock), dimension(:), pointer :: RsourceBlock
+    type(t_vectorBlock), dimension(:), pointer :: RsolutionBlock
+    type(t_vectorBlock), dimension(:), pointer :: RsolutionInitialBlock
+    integer :: icomponent
 
-    if (present(rsource)) then
+    if (present(Rsource)) then
 
       ! Allocate arrays
-      allocate(rsourceBlock(size(rsource)))
-      allocate(rsolutionBlock(size(rsolution)))
-      allocate(rsolutionInitialBlock(size(rsolutionInitial)))
+      allocate(RsourceBlock(size(Rsource)))
+      allocate(RsolutionBlock(size(Rsolution)))
+      allocate(RsolutionInitialBlock(size(RsolutionInitial)))
 
       ! Convert scalar vectors into block vectors
-      do i = 1, size(rsource)
-        call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
+      do icomponent = 1, size(Rsource)
+        call lsysbl_createVecFromScalar(Rsource(icomponent),&
+            RsourceBlock(icomponent))
       end do
-      do i = 1, size(rsolution)
-        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_createVecFromScalar(Rsolution(icomponent),&
+            RsolutionBlock(icomponent))
       end do
-      do i = 1, size(rsolutionInitial)
-        call lsysbl_createVecFromScalar(rsolutionInitial(i), rsolutionInitialBlock(i))
+      do icomponent = 1, size(RsolutionInitial)
+        call lsysbl_createVecFromScalar(RsolutionInitial(icomponent),&
+            RsolutionInitialBlock(icomponent))
       end do
 
       ! Apply block-version of coupled solver with source vector
       call nlsol_solveCoupledBlock(rproblemLevel, rtimestep, rsolver,&
-          rsolutionBlock, rsolutionInitialBlock, fcb_nlsolverCallback,&
-          rcollection, rsourceBlock)
+          RsolutionBlock, RsolutionInitialBlock, fcb_nlsolverCallback,&
+          rcollection, RsourceBlock)
 
       ! Release temporal block vectors
-      do i = 1, size(rsourceBlock)
-        call lsysbl_releaseVector(rsourceBlock(i))
+      do icomponent = 1, size(RsourceBlock)
+        call lsysbl_releaseVector(RsourceBlock(icomponent))
       end do
-      do i = 1, size(rsolutionBlock)
-        call lsysbl_releaseVector(rsolutionBlock(i))
+      do icomponent = 1, size(RsolutionBlock)
+        call lsysbl_releaseVector(RsolutionBlock(icomponent))
       end do
-      do i = 1, size(rsolutionInitialBlock)
-        call lsysbl_releaseVector(rsolutionInitialBlock(i))
+      do icomponent = 1, size(RsolutionInitialBlock)
+        call lsysbl_releaseVector(RsolutionInitialBlock(icomponent))
       end do
 
       ! Release arrays
-      deallocate(rsourceBlock)
-      deallocate(rsolutionBlock)
-      deallocate(rsolutionInitialBlock)
+      deallocate(RsourceBlock)
+      deallocate(RsolutionBlock)
+      deallocate(RsolutionInitialBlock)
 
     else
 
       ! Allocate arrays
-      allocate(rsolutionBlock(size(rsolution)))
-      allocate(rsolutionInitialBlock(size(rsolutionInitial)))
+      allocate(RsolutionBlock(size(Rsolution)))
+      allocate(RsolutionInitialBlock(size(RsolutionInitial)))
 
       ! Convert scalar vectors into block vectors
-      do i = 1, size(rsolution)
-        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      do icomponent = 1, size(Rsolution)
+        call lsysbl_createVecFromScalar(Rsolution(icomponent),&
+            RsolutionBlock(icomponent))
       end do
-      do i = 1, size(rsolutionInitial)
-        call lsysbl_createVecFromScalar(rsolutionInitial(i), rsolutionInitialBlock(i))
+      do icomponent = 1, size(RsolutionInitial)
+        call lsysbl_createVecFromScalar(RsolutionInitial(icomponent),&
+            RsolutionInitialBlock(icomponent))
       end do
 
       ! Apply block-version of coupled solver without source vector
       call nlsol_solveCoupledBlock(rproblemLevel, rtimestep, rsolver,&
-          rsolutionBlock, rsolutionInitialBlock, fcb_nlsolverCallback,&
+          RsolutionBlock, RsolutionInitialBlock, fcb_nlsolverCallback,&
           rcollection)
 
       ! Release temporal block vectors
-      do i = 1, size(rsolutionBlock)
-        call lsysbl_releaseVector(rsolutionBlock(i))
+      do icomponent = 1, size(RsolutionBlock)
+        call lsysbl_releaseVector(RsolutionBlock(icomponent))
       end do
-      do i = 1, size(rsolutionInitialBlock)
-        call lsysbl_releaseVector(rsolutionInitialBlock(i))
+      do icomponent = 1, size(RsolutionInitialBlock)
+        call lsysbl_releaseVector(RsolutionInitialBlock(icomponent))
       end do
 
       ! Release arrays
-      deallocate(rsolutionBlock)
-      deallocate(rsolutionInitialBlock)
+      deallocate(RsolutionBlock)
+      deallocate(RsolutionInitialBlock)
 
     end if
 
@@ -243,7 +248,7 @@ contains
 !<subroutine>
 
   subroutine nlsol_solveCoupledBlock(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolutionInitial, fcb_nlsolverCallback,&
+      rsolver, Rsolution, RsolutionInitial, fcb_nlsolverCallback,&
       rcollection, rsource)
 
 !<description>
@@ -254,10 +259,10 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorBlock), dimension(:), intent(in) :: rsolutionInitial
+    type(t_vectorBlock), dimension(:), intent(in) :: RsolutionInitial
 
     ! OPTIONAL: source vector
-    type(t_vectorBlock), dimension(:), intent(in), optional :: rsource
+    type(t_vectorBlock), dimension(:), intent(in), optional :: Rsource
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -274,7 +279,7 @@ contains
     type(t_solver), intent(inout) :: rsolver
 
     ! solution vector
-    type(t_vectorBlock), dimension(:), intent(inout) :: rsolution
+    type(t_vectorBlock), dimension(:), intent(inout) :: Rsolution
 
     ! collection
     type(t_collection), intent(inout) :: rcollection
@@ -284,7 +289,6 @@ contains
     ! local variables
     type(t_solver), pointer :: p_rsolver
     integer :: iiterations, icomponent, ncomponent
-    real(DP) :: dinitialDefect, dinitialRHS
 
     ! What kind of solver are we?
     if (rsolver%csolverType .ne. SV_COUPLED) then
@@ -301,16 +305,16 @@ contains
     end if
 
     ! Check compatibility of arrays
-    ncomponent = size(rsolution)
-    if (size(rsolutionInitial) .ne. ncomponent .or.&
+    ncomponent = size(Rsolution)
+    if (size(RsolutionInitial) .ne. ncomponent .or.&
         size(rsolver%p_solverSubnode) .ne. ncomponent) then
       call output_line('Vectors/solver are not compatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveCoupledBlock')
       call sys_halt()
     end if
 
-    if (present(rsource)) then
-      if (size(rsource) .ne. ncomponent) then
+    if (present(Rsource)) then
+      if (size(Rsource) .ne. ncomponent) then
         call output_line('Vectors/solver are not compatible!',&
             OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveCoupledBlock')
         call sys_halt()
@@ -338,6 +342,7 @@ contains
       ! Inner solution loop
       inner: do icomponent = 1, ncomponent
 
+        ! Verbose output
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
           call output_lbrk()
           call output_separator(OU_SEP_MINUS)
@@ -351,66 +356,87 @@ contains
             (/SV_NONLINEARMG, SV_NONLINEAR/), icomponent)
 
         ! Solve the nonlinear algebraic system for single component
-        if (present(rsource)) then
+        if (present(Rsource)) then
           call nlsol_solveMultigrid(rproblemLevel, rtimestep,&
-              p_rsolver, rsolution(icomponent),&
-              rsolutionInitial(icomponent), fcb_nlsolverCallback,&
-              rcollection, rsource(icomponent))
+              p_rsolver, Rsolution(icomponent),&
+              RsolutionInitial(icomponent), fcb_nlsolverCallback,&
+              rcollection, Rsource(icomponent))
         else
           call nlsol_solveMultigrid(rproblemLevel, rtimestep,&
-              p_rsolver, rsolution(icomponent),&
-              rsolutionInitial(icomponent), fcb_nlsolverCallback,&
+              p_rsolver, Rsolution(icomponent),&
+              RsolutionInitial(icomponent), fcb_nlsolverCallback,&
               rcollection)
         end if
 
-        if (iiterations .eq. 1) then
-          ! Store initial defect/right-hand side
-          dinitialDefect = p_rsolver%dinitialDefect
-          dinitialRHS    = p_rsolver%dinitialRHS
-        else
-          ! Restore initial defect from first iteration
-          p_rsolver%dinitialDefect = dinitialDefect
-          p_rsolver%dinitialRHS    = dinitialRHS
-        end if
-
-        ! Update coupled solver
+        ! Update coupled solver by the contribution of the sub-solver
         select case(rsolver%iresNorm)
-        case (LINALG_NORMEUCLID, LINALG_NORML1, LINALG_NORML2)
-          rsolver%dfinalDefect = rsolver%dfinalDefect +&
-                                 p_rsolver%dfinalDefect
+        case (LINALG_NORML1)
+          ! Use the sum of defects of all sub-solvers
+          rsolver%dfinalDefect = rsolver%dfinalDefect + p_rsolver%dfinalDefect
           if (iiterations .eq. 1) then
-            rsolver%dinitialDefect = rsolver%dinitialDefect +&
-                                     dinitialDefect
-            rsolver%dinitialRHS    = rsolver%dinitialRHS +&
-                                     dinitialRHS
+            rsolver%dinitialDefect = rsolver%dinitialDefect + p_rsolver%dinitialDefect
+            rsolver%dinitialRHS    = rsolver%dinitialRHS    + p_rsolver%dinitialRHS
           end if
-        case (LINALG_NORMMAX)
-          rsolver%dfinalDefect = max(rsolver%dfinalDefect,&
-                                     p_rsolver%dfinalDefect)
+
+        case (LINALG_NORMEUCLID, LINALG_NORML2)
+          ! Use the squared sum of defects of all sub-solvers
+          rsolver%dfinalDefect = rsolver%dfinalDefect + p_rsolver%dfinalDefect**2
           if (iiterations .eq. 1) then
-            rsolver%dinitialDefect = max(rsolver%dinitialDefect,&
-                                         dinitialDefect)
-            rsolver%dinitialRHS    = max(rsolver%dinitialRHS,&
-                                         dinitialRHS)
+            rsolver%dinitialDefect = rsolver%dinitialDefect + p_rsolver%dinitialDefect**2
+            rsolver%dinitialRHS    = rsolver%dinitialRHS    + p_rsolver%dinitialRHS**2
+          end if
+          
+        case (LINALG_NORMMAX)
+          ! Use the maximum of the defects of all sub-solvers
+          rsolver%dfinalDefect = max(rsolver%dfinalDefect, p_rsolver%dfinalDefect)
+          if (iiterations .eq. 1) then
+            rsolver%dinitialDefect = max(rsolver%dinitialDefect, p_rsolver%dinitialDefect)
+            rsolver%dinitialRHS    = max(rsolver%dinitialRHS,    p_rsolver%dinitialRHS)
           end if
         end select
 
       end do inner
 
-      ! Check convergence criteria
+      ! Scale the norm by the number of sub-solvers and/or take the
+      ! square root depending on the user-defined type of norm
+      select case(rsolver%iresNorm)
+      case (LINALG_NORMEUCLID, LINALG_NORML2)
+        ! Use the square root of the values
+        rsolver%dfinalDefect = sqrt(rsolver%dfinalDefect)
+        if (iiterations .eq. 1) then
+          rsolver%dinitialDefect = sqrt(rsolver%dinitialDefect)
+          rsolver%dinitialRHS    = sqrt(rsolver%dinitialRHS)
+        end if
+      end select
+
+      ! Verbose output
+      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
+        call output_lbrk()
+        call output_separator(OU_SEP_TILDE)
+        call output_line('Outer iteration step:    '//trim(sys_siL(iiterations,5)))
+        call output_line('Norm of residual:        '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+        call output_line('Improvement of residual: '//trim(sys_sdEL(&
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
+        call output_separator(OU_SEP_TILDE)
+        call output_lbrk()
+      end if
+
+      ! Check divergence criteria
+      if (solver_testDivergence(rsolver)) then
+        rsolver%istatus = SV_INCR_DEF
+        exit outer
+      end if
+      
+      ! Check convergence criteria (if required)
       if (iiterations .ge. rsolver%nminIterations) then
         if (solver_testConvergence(rsolver)) then
           rsolver%istatus = SV_CONVERGED
           exit outer
         end if
-        if (solver_testDivergence(rsolver)) then
-          rsolver%istatus = SV_INCR_DEF
-          exit outer
-        end if
       end if
 
     end do outer
-
+    
     ! Compute convergence rates
     call solver_statistics(rsolver, iiterations)
 
@@ -422,7 +448,7 @@ contains
       call output_line('Norm of final residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:       '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:        '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:               '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_HASH)
       call output_lbrk()
@@ -579,7 +605,7 @@ contains
             rsolution, rsolutionInitial, fcb_nlsolverCallback,&
             rcollection, rsource)
 
-      case DEFAULT
+      case default
         call output_line('Invalid solver type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveMultigridBlock')
         call sys_halt()
@@ -623,7 +649,7 @@ contains
               p_solverNonlinear, rsolution, rsolutionInitial,&
               fcb_nlsolverCallback, rcollection, rsource)
 
-        case DEFAULT
+        case default
           call output_line('Invalid solver type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveMultigridBlock')
           call sys_halt()
@@ -645,13 +671,14 @@ contains
               rsolution, rsolutionInitial, fcb_nlsolverCallback,&
               rcollection, rsource)
 
+          ! Verbose output
           if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
             call output_lbrk()
             call output_separator(OU_SEP_TILDE)
             call output_line('Nonlinear multigrid step: '//trim(sys_siL(imgstep,5)))
             call output_line('Norm of residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
             call output_line('Improvement of residual:  '//trim(sys_sdEL(rsolver%dfinalDefect/&
-                                                          max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                                                          max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
             call output_separator(OU_SEP_TILDE)
             call output_lbrk()
           end if
@@ -660,7 +687,7 @@ contains
           if (solver_testDivergence(rsolver)) then
             if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
               call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                  rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5))//' !!!')
+                  rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5))//' !!!')
             end if
 
             ! Adjust solver status
@@ -691,7 +718,7 @@ contains
           call output_line('Norm of final residual:      '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
           call output_line('Norm of initial residual:    '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
           call output_line('Residual improvement:        '//trim(sys_sdEL(rsolver%dfinalDefect/&
-                                                            max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                                                            max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
           call output_line('Convergence rate:            '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
           call output_separator(OU_SEP_TILDE)
           call output_lbrk()
@@ -700,7 +727,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveMultigridBlock')
       call sys_halt()
@@ -905,7 +932,7 @@ contains
     type(t_solver) :: rsolverTemp
     real(DP) :: eta, drtlm, drtjs, redfac, doldDefect
     integer(I32) :: ioperationSpec
-    integer :: iiterations, iblock, ibacktrackingsteps, istatus
+    integer :: iiterations, iblock, istatus
     logical :: bstagnate, bcompatible
 
 
@@ -1016,7 +1043,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid nonlinear preconditioner!',&
           OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveFixedpointBlock')
       call sys_halt()
@@ -1125,6 +1152,7 @@ contains
         ! Compute norm of new defect
         p_rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, p_rsolver%iresNorm)
 
+        ! Verbose output
         if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
           call output_lbrk()
           call output_separator(OU_SEP_TILDE)
@@ -1132,9 +1160,9 @@ contains
           call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
           call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
           call output_line('Variation of residual:       '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
           call output_line('Improvement of residual:     '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)))
           call output_separator(OU_SEP_TILDE)
           call output_lbrk()
         end if
@@ -1180,6 +1208,7 @@ contains
         ! Compute norm of new defect
         p_rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, p_rsolver%iresNorm)
 
+        ! Verbose output
         if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
           call output_lbrk()
           call output_separator(OU_SEP_TILDE)
@@ -1187,9 +1216,9 @@ contains
           call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
           call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
           call output_line('Variation of residual:       '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
           call output_line('Improvement of residual:     '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)))
           call output_separator(OU_SEP_TILDE)
           call output_lbrk()
         end if
@@ -1291,6 +1320,7 @@ contains
 
         end if
 
+        ! Verbose output
         if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
           call output_lbrk()
           call output_separator(OU_SEP_TILDE)
@@ -1298,15 +1328,15 @@ contains
           call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
           call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
           call output_line('Variation of residual:       '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
           call output_line('Improvement of residual:     '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)))
           call output_separator(OU_SEP_TILDE)
           call output_lbrk()
         end if
 
 
-      case DEFAULT
+      case default
         call output_line('Invalid nonlinear preconditioner!',&
             OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveFixedpointBlock')
         call sys_halt()
@@ -1324,7 +1354,7 @@ contains
       if (solver_testDivergence(p_rsolver)) then
         if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-              p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5))//' !!!')
+              p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5))//' !!!')
         end if
 
         ! Adjust solver status
@@ -1361,7 +1391,7 @@ contains
       call output_line('Norm of final residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:       '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:        '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:               '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_HASH)
       call output_lbrk()
@@ -1509,7 +1539,7 @@ contains
       ! Otherwise, compute a new step-length theta
       theta = rsolver%dfinalDefect*rsolver%dfinalDefect -&
               doldDefect*doldDefect - 2*drtjs*redfac
-      if (abs(theta) > SYS_EPSREAL) then
+      if (abs(theta) > SYS_EPSREAL_DP) then
         theta = -drtjs*redfac/theta
         theta = max(theta_min, min(theta, theta_max))
       else
@@ -1655,7 +1685,7 @@ contains
       case (1, 2, 3, 4)
         eta = eta_0
 
-      case DEFAULT
+      case default
         eta = dforcingStrategy
       end select
       return
@@ -1711,10 +1741,10 @@ contains
       eta=min(1.0_DP/real(iiterations+2, DP), dDefect)
 
 
-    case DEFAULT
+    case default
       ! Constant forcing term specified in the input file which
       ! results in local q-linear convergence
-      etamin = SYS_EPSREAL
+      etamin = SYS_EPSREAL_DP
       eta    = dforcingStrategy
     end select
 
@@ -1777,7 +1807,7 @@ contains
       Ddef(2) = log10(rsolver%dfinalDefect)
 
 
-    case DEFAULT
+    case default
       Ddef(3) = log10(rsolver%dfinalDefect)
       Dy      = matmul(X3,Ddef)
       Ddef    = cshift(Ddef,1)
@@ -1841,7 +1871,7 @@ contains
 
       ! Check if information about the stationary residual
       ! from the previous time step is available
-      if (p_rserController%dsteadyDefect1 < SYS_EPSREAL) then
+      if (p_rserController%dsteadyDefect1 < SYS_EPSREAL_DP) then
 
         ! Then adopt time step from previous iteration
         dStepOpt = rtimestep%dStep

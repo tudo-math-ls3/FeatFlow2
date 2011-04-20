@@ -290,7 +290,7 @@ contains
             call output_lbrk()
           end if
 
-        case DEFAULT
+        case default
           call output_line('Unsupported single-grid solver!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveMultigridBlock')
           call sys_halt()
@@ -367,9 +367,9 @@ contains
             call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
             call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
             call output_line('Variation of residual:     '//trim(sys_sdEL(&
-                             rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                             rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
             call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                             rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                             rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
             call output_separator(OU_SEP_TILDE)
             call output_lbrk()
           end if
@@ -378,7 +378,7 @@ contains
           if (solver_testDivergence(rsolver)) then
             if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
               call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                  rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                  rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
             end if
 
             ! Clear solution vector and adjust solver status
@@ -417,7 +417,7 @@ contains
           call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
           call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
           call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                           rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
           call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
           call output_separator(OU_SEP_PERC)
           call output_lbrk()
@@ -426,7 +426,7 @@ contains
       end if
 
 
-    case DEFAULT
+    case default
       call output_line(' Invalid solver!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveMultigridBlock')
       call sys_halt()
@@ -641,7 +641,7 @@ contains
       call linsol_solveFgmres(rsolver, ru, rf)
 
 
-    case DEFAULT
+    case default
       call output_line('Invalid linear solver!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveSinglegrid')
       call sys_halt()
@@ -746,7 +746,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveUMFPACK')
       call sys_halt()
 
-    case DEFAULT
+    case default
       ! Unknown error
       call output_line('Internal error!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveUMFPACK')
@@ -883,9 +883,9 @@ contains
         call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
         call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
         call output_line('Variation of residual:     '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
         call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
@@ -894,7 +894,7 @@ contains
       if (solver_testDivergence(rsolver)) then
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                           rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         end if
 
         ! Clear solution vector and adjust solver status
@@ -933,7 +933,7 @@ contains
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
@@ -1064,9 +1064,9 @@ contains
         call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
         call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
         call output_line('Variation of residual:     '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
         call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
@@ -1075,7 +1075,7 @@ contains
       if (solver_testDivergence(rsolver)) then
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                           rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         end if
 
         ! Clear solution vector and adjust solver status
@@ -1114,7 +1114,7 @@ contains
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
@@ -1340,9 +1340,9 @@ contains
         call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
         call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
         call output_line('Variation of residual:     '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
         call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
@@ -1351,7 +1351,7 @@ contains
       if (solver_testDivergence(rsolver)) then
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                           rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         end if
 
         ! Clear solution vector and adjust solver status
@@ -1390,7 +1390,7 @@ contains
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
@@ -1563,7 +1563,7 @@ contains
         end do
         p_Dh(i+1,i) = lsysbl_vectorNorm(p_rv(i+1), rsolver%iresNorm)
 
-        if (abs(p_Dh(i+1,i)) > SYS_EPSREAL) then
+        if (abs(p_Dh(i+1,i)) > SYS_EPSREAL_DP) then
           dtmp = 1.0_DP/p_Dh(i+1,i)
           call lsysbl_scaleVector(p_rv(i+1), dtmp)
         end if
@@ -1577,7 +1577,7 @@ contains
         end do
 
         ! Get next plane rotation
-        dtmp = max(sqrt(p_Dh(i,i)**2 + p_Dh(i+1,i)**2), SYS_EPSREAL)
+        dtmp = max(sqrt(p_Dh(i,i)**2 + p_Dh(i+1,i)**2), SYS_EPSREAL_DP)
         p_Dc(i) =  p_Dh(i,i)/dtmp
         p_Ds(i) = -p_Dh(i+1,i)/dtmp
 
@@ -1617,9 +1617,9 @@ contains
         call output_line('Norm of residual:          '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
         call output_line('Norm of previous residual: '//trim(sys_sdEL(doldDefect,5)))
         call output_line('Variation of residual:     '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, doldDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
         call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
@@ -1628,7 +1628,7 @@ contains
       if (solver_testDivergence(rsolver)) then
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                           rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                           rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
         end if
 
         ! Clear solution vector and adjust solver status
@@ -1667,7 +1667,7 @@ contains
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
       call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
@@ -1724,7 +1724,7 @@ contains
       call linsol_precondILU(rsolver, ru)
 
 
-    case DEFAULT
+    case default
       call output_line('Unsupported preconditioner type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_precond')
       call sys_halt()
@@ -1816,7 +1816,7 @@ contains
           call jacobi_Mat79Intl1_double(p_Kdiagonal,&
               p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
 
-        case DEFAULT
+        case default
           call output_line('Unsupported interleave matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondJacobi')
           call sys_halt()
@@ -1838,13 +1838,13 @@ contains
           call jacobi_Mat79Intl1_double(p_Kdiagonal,&
               p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
 
-        case DEFAULT
+        case default
           call output_line('Unsupported interleave matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondJacobi')
           call sys_halt()
         end select
 
-      case DEFAULT
+      case default
         call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondJacobi')
         call sys_halt()
@@ -1868,11 +1868,11 @@ contains
 
       integer :: ieq
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ieq)
+      !$omp parallel do default(shared)
       do ieq = 1, neq
         Du(ieq) = domega*Du(ieq)/Da(ieq)
       end do
-!$OMP END PARALLEL DO
+      !$omp end parallel do
     end subroutine jacobi_MatD_double
 
     !*************************************************************
@@ -1889,11 +1889,11 @@ contains
 
       integer :: ieq
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ieq)
+      !$omp parallel do default(shared)
       do ieq = 1, neq
         Du(ieq) = domega*Du(ieq)/Da(Kdiagonal(ieq))
       end do
-!$OMP END PARALLEL DO
+      !$omp end parallel do
     end subroutine jacobi_Mat79_double
 
     !*************************************************************
@@ -1912,13 +1912,13 @@ contains
 
       integer :: ieq,ivar
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ieq,ivar)
+      !$omp parallel do default(shared) private(ivar)
       do ieq=1,neq
         do ivar=1,nvar
           Du(ivar,ieq)=domega*Du(ivar,ieq)/Da(ivar,Kdiagonal(ieq))
         end do
       end do
-!$OMP END PARALLEL DO
+      !$omp end parallel do
     end subroutine jacobi_Mat79IntlD_double
 
     !*************************************************************
@@ -1937,13 +1937,13 @@ contains
 
       integer :: ieq,ivar
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ieq,ivar)
+      !$omp parallel do default(shared) private(ivar)
       do ieq=1,neq
         do ivar=1,nvar
           Du(ivar,ieq)=domega*Du(ivar,ieq)/Da(ivar,ivar,Kdiagonal(ieq))
         end do
       end do
-!$OMP END PARALLEL DO
+      !$omp end parallel do
     end subroutine jacobi_Mat79Intl1_double
   end subroutine linsol_precondJacobi
 
@@ -2060,7 +2060,7 @@ contains
                 p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
           end if
 
-        case DEFAULT
+        case default
           call output_line('Unsupported interleave matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondSSOR')
           call sys_halt()
@@ -2094,13 +2094,13 @@ contains
                 p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
           end if
 
-        case DEFAULT
+        case default
           call output_line('Unsupported interleave matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondSSOR')
           call sys_halt()
         end select
 
-      case DEFAULT
+      case default
         call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondSSOR')
         call sys_halt()
@@ -2853,7 +2853,7 @@ contains
                                    p_rmatrix%NEQ, p_rmatrix%NVAR, p_Du)
 
 
-          case DEFAULT
+          case default
             call output_line('Unsupported interleave matrix format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
             call sys_halt()
@@ -2888,14 +2888,14 @@ contains
                                    p_Kdiagonal, p_rmatrix%NEQ, p_rmatrix%NVAR, p_Du)
 
 
-          case DEFAULT
+          case default
             call output_line('Unsupported interleave matrix format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
             call sys_halt()
           end select
 
 
-        case DEFAULT
+        case default
           call output_line('Unsupported matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
           call sys_halt()
@@ -3259,7 +3259,7 @@ contains
       rsolver%iiterations = nsmooth
       rsolver%niterations = rsolver%niterations + nsmooth
 
-    case DEFAULT
+    case default
       call output_line('Unsupported smoother type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_smooth')
       call sys_halt()

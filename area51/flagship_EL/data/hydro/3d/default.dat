@@ -1,0 +1,60 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                                                                              #
+#               Default parameters for hydrodynamic application in 3D    #
+#                                                                              #
+################################################################################
+
+
+################################################################################
+[Hydro]
+################################################################################
+
+# Position of the discretisation in the array of discretisations
+Discretisation = 1
+
+# Position of the stabilization for the inviscid term
+InviscidAFC = 1
+
+# Position of the template matrix in the scalar matrix structure
+TemplateMatrix = 3
+
+# Position of the system matrix in the scalar matrix structure
+SystemMatrix = 1
+
+# Position of the Jacobian matrix in the scalar matrix structure
+JacobianMatrix = 2
+
+# Position of the consistent mass matrix in the scalar matrix structure
+ConsistentMassMatrix = 4
+
+# Position of the lumped mass matrix in the scalar matrix structure
+LumpedMassMatrix = 5
+
+# Position of the constant coefficient matrix CX in the scalar matrix structure
+CoeffMatrix_CX = 6
+
+# Position of the constant coefficient matrix CY in the scalar matrix structure
+CoeffMatrix_CY = 7
+
+# Position of the constant coefficient matrix CZ in the scalar matrix structure
+CoeffMatrix_CZ = 8
+
+# Position of the constant coefficient matrix CXX in the scalar matrix structure
+CoeffMatrix_CXX = 0 #9
+
+# Position of the constant coefficient matrix CYY in the scalar matrix structure
+CoeffMatrix_CYY = 0 #10
+
+# Position of the constant coefficient matrix CZZ in the scalar matrix structure
+CoeffMatrix_CZZ = 0 #11
+
+# Position of the constant coefficient matrix CXY in the scalar matrix structure
+CoeffMatrix_CXY = 0 #12
+
+# Position of the constant coefficient matrix CXZ in the scalar matrix structure
+CoeffMatrix_CXZ = 0 #13
+
+# Position of the constant coefficient matrix CYZ in the scalar matrix structure
+CoeffMatrix_CYZ = 0 #14

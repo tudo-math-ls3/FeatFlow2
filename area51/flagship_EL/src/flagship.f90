@@ -14,24 +14,9 @@
 !#     To add a new application, you should create a new subdirectory in
 !#     src/models giving it the name of your application. Then you should
 !#     implement your application so that it can be evoked by a single
-!#     call to xxx_app(rparlist), where xxx stands for the application
-!#     name and user-defined parameters are supplied via parameter list.
-!#
-!# TODO
-!#
-!# 1.) Remove the old splib (ILU-k) from the solver module and replace it
-!#     by the routines from the iluk.f90 module.
-!#
-!# 2.) Prelimiting does not work for FEM-FCT algorithms except for the
-!#     linearised version. We still need to think about how to assemble
-!#     the fluxes for prelimiting.
-!#
-!# 3.) FEM-FCT algorithms for Euler model are not working except for the
-!#     linearised version.
-!#
-!# 4.) Jacobian matrix for the semi-implicit FEM-FCT algorithm has to be
-!#     fixed (it was based on the fluxes but now it has to be based on the
-!#     edgewise correciton factors).
+!#     call to xxx_app(rparlist,'appname'), where xxx stands for the
+!#     application name and user-defined parameters are supplied via
+!#     the parameter list rparlist.
 !#
 !# </purpose>
 !##############################################################################
@@ -45,22 +30,16 @@ program flagship
   use signals
   use storage
 
-  use euler_application
-  use transport_application
-  use zpinch_application
-  use eulerlagrange_application
-
+  use hydro_application
+  
   implicit none
 
   ! global parameter list
   type(t_parlist) :: rparlist
-
-  ! local constants
-  character(LEN=*), parameter  :: sversion = 'VERSION'
-  character(LEN=*), parameter  :: sbuild = 'BUILD'
-
+  
   ! local variables
   character(LEN=SYS_STRLEN) :: cbuffer, hostname, hosttype, username
+  character(LEN=SYS_STRLEN) :: slogdir, slogfile
   character(LEN=SYS_STRLEN) :: application, sparameterfileName
   character(LEN=10) :: stime
   character(LEN=8)  :: sdate
@@ -74,8 +53,18 @@ program flagship
   sys_haltmode = SYS_HALT_THROWFPE
 
   ! Initialize the output system
+  ! Use $LOGDIR/$LOGFILE if set, otherwise hardcoded setting based on current time
   call date_and_time(sdate, stime)
+  call getenv('LOGDIR',cbuffer); slogdir = adjustl(cbuffer)
+  call getenv('LOGFILE',cbuffer); slogfile = adjustl(cbuffer)
+  if (trim(slogdir) .eq. '') then
   call output_init('./log/flagship_'//sdate//'_'//stime(1:10)//'.log')
+  else
+    if (trim(slogfile) .eq. '') then
+      slogfile = 'flagship_' // sdate // '_' // stime(1:10) // '.log'
+    end if
+    call output_init(trim(slogdir) // '/' // trim(slogfile))
+  end if
 
   ! Initialize storage subsystem
   call storage_init(500, 100)
@@ -90,12 +79,8 @@ program flagship
   ! Print welcome screen
   call output_lbrk()
   call output_separator(OU_SEP_STAR)
-  call output_line('  FLAGSHIP: Version ' // sversion // ',   Build ' // sbuild)
-  call output_line('            Date '//sdate(7:8)//'.'//sdate(5:6)//'.'//sdate(1:4)//&
-                   ', Time '//stime(1:2)//':'//stime(3:4)//':'//stime(5:6))
-  call output_separator(OU_SEP_STAR)
   call output_line('  FlAGSHiP: Flux-corrected Aerodynamics by Galerkin')
-  call output_line('            Schemes with High Performance (2004-2009)')
+  call output_line('            Schemes with High Performance (2004-2011)')
   call output_lbrk()
   call output_line('  Authors:  Dmitri Kuzmin, Matthias Moeller')
   call output_line('            Institute of Applied Mathematics')
@@ -108,6 +93,8 @@ program flagship
   call output_line('  Hosttype:        '//trim(hosttype))
   call getenv('USER',cbuffer); username = adjustl(cbuffer)
   call output_line('  Username:        '//trim(username))
+  call output_line('  Date:            '//sdate(7:8)//'.'//sdate(5:6)//'.'//sdate(1:4))
+  call output_line('  Time:            '//stime(1:2)//':'//stime(3:4)//':'//stime(5:6))
 
   ! Get command line arguments
   if (command_argument_count() .eq. 0) then
@@ -135,17 +122,8 @@ program flagship
 
 
   ! Switch to application module
-  if (trim(application) .eq. 'transport') then
-    call transp_app(rparlist, 'transport')
-
-  elseif (trim(application) .eq. 'euler') then
-    call euler_app(rparlist, 'euler')
-
-  elseif (trim(application) .eq. 'zpinch') then
-    call zpinch_app(rparlist, 'zpinch')
-
-  elseif (trim(application) .eq. 'eulerlagrange') then
-    call eulerlagrange_app(rparlist, 'eulerlagrange')
+  if (trim(application) .eq. 'hydro') then
+    call hydro_app(rparlist, 'hydro')
 
   else
     call output_line('Invalid application name!',&

@@ -1,0 +1,71 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                          Transonic flow over Ni's bump                       #
+#                                                                              #
+# From: A. Kuz'min (private communication)                                     #
+#                                                                              #
+# Ratio of specific heats:   gamma = 1.4 (air at sea-level)                    #
+#                                                                              # 
+# Description: A subsonic flow at Mach 0.675 enters a 2D channel with a        #
+#              smooth hump of 10% height so that an isolated shock wave        #
+#              is generated near the lower wall.                               #
+#                                                                              #
+# Boundary conditions at the inlet:                                            #
+#           v = 0          [m/sec^2]                                           #
+# p/rho^gamma = 73340.042  [kg/m^3]                                            #
+#       H_tot = 278850.0   [m^2/sec^2]      H_tot = 3.5                        #
+#                                                                              #
+# Boundary conditions at the outlet:                                           #
+#       p_out = 72218.0    [N/m^2]          p_out =  0.73695204154329          #
+#          Ma = 0.675                                                          #
+#                                                                              #
+# Initial conditions:                                                          #
+#         rho = 0.80410679808681    rho = (v^2/(gamma*Ma^2))^(1/(Gamma-1))     #
+#           u = 0.76459338691461      u = sqrt(H_tot/(0.5+1/(Gamma-1)/Ma^2))   #
+#           v = 0.0                                                            #
+#           p = 0.73695204315437      p = rho^Gamma                            #
+#                                                                              #
+#       rho*u = 0.61481474019026                                               #
+#       rho*E = 2.07742175014947  rho*E = rho*H_tot-p                          #
+################################################################################
+
+# Specify the initial solution by logical expressions and solution values
+deffunc: @initsol_rho   =  0.80410679808681; x,y,z,t
+deffunc: @initsol_vel_x =  0.61481474019026; x,y,z,t
+deffunc: @initsol_vel_y =  0.0; x,y,z,t
+deffunc: @initsol_Etot  =  2.07742175014947; x,y,z,t
+
+# Specify the boundary conditions
+[bdrcond_weak1_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+3.0  F  'FREESLIP_WEAK'
+4.0  T  'SUBOUTLET_WEAK'   0.73695204154329  0.0              0.0  0.0 
+5.0  F  'FREESLIP_WEAK'
+6.0  T  'FREESTREAM_WEAK'  0.8041067980868  0.76459338691461  0.0  0.73695204315437
+
+# Specify the boundary conditions
+[bdrcond_weak2_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+3.0  F  'FREESLIP_WEAK'
+4.0  T  'FREESTREAM_WEAK' 0.8041067980868  0.76459338691461  0.0  0.73695204315437
+5.0  F  'FREESLIP_WEAK'
+6.0  T  'FREESTREAM_WEAK'  0.8041067980868  0.76459338691461  0.0  0.73695204315437
