@@ -85,6 +85,12 @@
 !#
 !# 24.) mprim_minmod3
 !#      -> Computes the minmod function for three parameters
+!#
+!# 25.) mprim_softmax
+!#      -> Computes the soft-maximum function for two parameter
+!#
+!# 26.) mprim_softmin
+!#      -> Computes the soft-minimum function for two parameter
 !# </purpose>
 !##############################################################################
 
@@ -139,6 +145,20 @@ module mprimitives
     module procedure mprim_minmod3Sngl
   end interface
 
+  interface mprim_softmax
+    module procedure mprim_softmax2Dble
+    module procedure mprim_softmax3Dble
+    module procedure mprim_softmax2Sngl
+    module procedure mprim_softmax3Sngl
+  end interface
+
+  interface mprim_softmin
+    module procedure mprim_softmin2Dble
+    module procedure mprim_softmin3Dble
+    module procedure mprim_softmin2Sngl
+    module procedure mprim_softmin3Sngl
+  end interface
+
   public :: mprim_getParabolicProfile
   public :: mprim_invertMatrix,mprim_invertMatrixDble
   public :: mprim_kronecker
@@ -162,6 +182,8 @@ module mprimitives
   public :: mprim_solve2x2BandDiag
   public :: mprim_minmod2
   public :: mprim_minmod3
+  public :: mprim_softmax
+  public :: mprim_softmin
 
 contains
 
@@ -3176,6 +3198,282 @@ contains
     else
       d = b/c
     end if
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_softmax2Dble(a,b) result (c)
+
+!<description>
+    ! The softmax function computes the maximum value of the given
+    ! data a and b but with smooth transition, that is, it does not
+    ! switch abruptly between values a and b. This implementation is
+    ! based on the idea of John D. Cook, c.f.
+    !   http://www.johndcook.com/blog/2010/01/13/soft-maximum/
+    ! This implementation is taken from
+    !   http://www.johndcook.com/blog/2010/01/20/how-to-compute-the-soft-maximum/
+!</description>
+
+!<input>
+    real(DP), intent(in) :: a,b
+!</input>
+
+!<result>
+    real(DP) :: c
+!</result>
+
+    ! local variables
+    real(DP) :: dminval,dmaxval
+
+    dminval = min(a,b)
+    dmaxval = max(a,b)
+
+    c = dmaxval + log(1.0_DP+exp(dminval-dmaxval))
+
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_softmax3Dble(a,b,c) result (d)
+
+!<description>
+    ! The softmax function computes the maximum value of the given
+    ! data a and b but with smooth transition, that is, it does not
+    ! switch abruptly between values a and b. This implementation is
+    ! based on the idea of John D. Cook, c.f.
+    !   http://www.johndcook.com/blog/2010/01/13/soft-maximum/
+    ! The third parameter c is used to control the sharpness of the
+    ! soft-maximum function. This implementation is taken from
+    !   http://www.johndcook.com/blog/2010/01/20/how-to-compute-the-soft-maximum/
+!</description>
+
+!<input>
+    real(DP), intent(in) :: a,b,c
+!</input>
+
+!<result>
+    real(DP) :: d
+!</result>
+
+    ! local variables
+    real(DP) :: dminval,dmaxval
+
+    dminval = min(a,b)
+    dmaxval = max(a,b)
+
+    d = dmaxval + log(1.0_DP+exp(c*(dminval-dmaxval)))/c
+
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_softmax2Sngl(a,b) result (c)
+
+!<description>
+    ! The softmax function computes the maximum value of the given
+    ! data a and b but with smooth transition, that is, it does not
+    ! switch abruptly between values a and b. This implementation is
+    ! based on the idea of John D. Cook, c.f.
+    !   http://www.johndcook.com/blog/2010/01/13/soft-maximum/
+    ! This implementation is taken from
+    !   http://www.johndcook.com/blog/2010/01/20/how-to-compute-the-soft-maximum/
+!</description>
+
+!<input>
+    real(SP), intent(in) :: a,b
+!</input>
+
+!<result>
+    real(SP) :: c
+!</result>
+
+    ! local variables
+    real(SP) :: fminval,fmaxval
+
+    fminval = min(a,b)
+    fmaxval = max(a,b)
+
+    c = fmaxval + log(1.0_SP+exp(fminval-fmaxval))
+
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_softmax3Sngl(a,b,c) result (d)
+
+!<description>
+    ! The softmax function computes the maximum value of the given
+    ! data a and b but with smooth transition, that is, it does not
+    ! switch abruptly between values a and b. This implementation is
+    ! based on the idea of John D. Cook, c.f.
+    !   http://www.johndcook.com/blog/2010/01/13/soft-maximum/
+    ! The third parameter c is used to control the sharpness of the
+    ! soft-maximum function. This implementation is taken from
+    !   http://www.johndcook.com/blog/2010/01/20/how-to-compute-the-soft-maximum/
+!</description>
+
+!<input>
+    real(SP), intent(in) :: a,b,c
+!</input>
+
+!<result>
+    real(SP) :: d
+!</result>
+
+    ! local variables
+    real(SP) :: fminval,fmaxval
+
+    fminval = min(a,b)
+    fmaxval = max(a,b)
+
+    d = fmaxval + log(1.0_SP+exp(c*(fminval-fmaxval)))/c
+
+  end function
+
+!*****************************************************************************
+
+!<function>
+
+  elemental function mprim_softmin2Dble(a,b) result (c)
+
+!<description>
+    ! The softmin function computes the minimum value of the given
+    ! data a and b but with smooth transition, that is, it does not
+    ! switch abruptly between values a and b. This implementation is
+    ! based on the idea of John D. Cook, c.f.
+    !   http://www.johndcook.com/blog/2010/01/13/soft-maximum/
+    ! This implementation is taken from
+    !   http://www.johndcook.com/blog/2010/01/20/how-to-compute-the-soft-maximum/
+!</description>
+
+!<input>
+    real(DP), intent(in) :: a,b
+!</input>
+
+!<result>
+    real(DP) :: c
+!</result>
+
+    ! local variables
+    real(DP) :: dminval,dmaxval
+
+    dminval = min(a,b)
+    dmaxval = max(a,b)
+
+    c = dminval - log(1.0_DP+exp(dminval-dmaxval))
+
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_softmin3Dble(a,b,c) result (d)
+
+!<description>
+    ! The softmin function computes the minimum value of the given
+    ! data a and b but with smooth transition, that is, it does not
+    ! switch abruptly between values a and b. This implementation is
+    ! based on the idea of John D. Cook, c.f.
+    !   http://www.johndcook.com/blog/2010/01/13/soft-maximum/
+    ! The third parameter c is used to control the sharpness of the
+    ! soft-maximum function. This implementation is taken from
+    !   http://www.johndcook.com/blog/2010/01/20/how-to-compute-the-soft-maximum/
+!</description>
+
+!<input>
+    real(DP), intent(in) :: a,b,c
+!</input>
+
+!<result>
+    real(DP) :: d
+!</result>
+
+    ! local variables
+    real(DP) :: dminval,dmaxval
+
+    dminval = min(a,b)
+    dmaxval = max(a,b)
+
+    d = dminval - log(1.0_DP+exp(c*(dminval-dmaxval)))/c
+
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_softmin2Sngl(a,b) result (c)
+
+!<description>
+    ! The softmin function computes the minimum value of the given
+    ! data a and b but with smooth transition, that is, it does not
+    ! switch abruptly between values a and b. This implementation is
+    ! based on the idea of John D. Cook, c.f.
+    !   http://www.johndcook.com/blog/2010/01/13/soft-maximum/
+    ! This implementation is taken from
+    !   http://www.johndcook.com/blog/2010/01/20/how-to-compute-the-soft-maximum/
+!</description>
+
+!<input>
+    real(SP), intent(in) :: a,b
+!</input>
+
+!<result>
+    real(SP) :: c
+!</result>
+
+    ! local variables
+    real(SP) :: fminval,fmaxval
+
+    fminval = min(a,b)
+    fmaxval = max(a,b)
+
+    c = fminval - log(1.0_SP+exp(fminval-fmaxval))
+
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_softmin3Sngl(a,b,c) result (d)
+
+!<description>
+    ! The softmin function computes the minimum value of the given
+    ! data a and b but with smooth transition, that is, it does not
+    ! switch abruptly between values a and b. This implementation is
+    ! based on the idea of John D. Cook, c.f.
+    !   http://www.johndcook.com/blog/2010/01/13/soft-maximum/
+    ! The third parameter c is used to control the sharpness of the
+    ! soft-maximum function. This implementation is taken from
+    !   http://www.johndcook.com/blog/2010/01/20/how-to-compute-the-soft-maximum/
+!</description>
+
+!<input>
+    real(SP), intent(in) :: a,b,c
+!</input>
+
+!<result>
+    real(SP) :: d
+!</result>
+
+    ! local variables
+    real(SP) :: fminval,fmaxval
+
+    fminval = min(a,b)
+    fmaxval = max(a,b)
+
+    d = fminval - log(1.0_SP+exp(c*(fminval-fmaxval)))/c
+
   end function
 
 end module mprimitives
