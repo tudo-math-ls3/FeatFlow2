@@ -2043,6 +2043,7 @@ contains
       end if
 
       ! Set pointers
+      call lsyssc_getbase_double(rx, p_Dx)
       call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
       call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
       call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
@@ -2054,10 +2055,10 @@ contains
       ! Compute nodal correction factors
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
         call doLimitNodal(rafcstab%NEQ, dscale,&
-            p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+            p_ML, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
         call doLimitNodalConstrained(rafcstab%NEQ, dscale,&
-            p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+            p_ML, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       end if
       
       ! Set specifier
@@ -2205,12 +2206,12 @@ contains
           
           ! Apply multiplicative correction factor
           f_ij = Dalpha(iedge)*Dflux(iedge)
-          
+
           ! Compute the sums of antidiffusive increments
-          Dpp(i) = Dpp(i)+max(0.0_DP, f_ij)
-          Dpp(j) = Dpp(j)+max(0.0_DP,-f_ij)
-          Dpm(i) = Dpm(i)+min(0.0_DP, f_ij)
-          Dpm(j) = Dpm(j)+min(0.0_DP,-f_ij)
+          Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
+          Dpp(j) = Dpp(j) + max(0.0_DP,-f_ij)
+          Dpm(i) = Dpm(i) + min(0.0_DP, f_ij)
+          Dpm(j) = Dpm(j) + min(0.0_DP,-f_ij)
         end do
         !$omp end do
 
@@ -2270,13 +2271,13 @@ contains
           Dalpha(iedge) = Dalpha(iedge) * alpha_ij
           
           ! Update the raw antidiffusive Dflux
-          F_ij = alpha_ij * F_ij
-          
+          f_ij = alpha_ij * f_ij
+
           ! Compute the sums of antidiffusive increments
-          Dpp(i) = Dpp(i)+max(0.0_DP, f_ij)
-          Dpp(j) = Dpp(j)+max(0.0_DP,-f_ij)
-          Dpm(i) = Dpm(i)+min(0.0_DP, f_ij)
-          Dpm(j) = Dpm(j)+min(0.0_DP,-f_ij)
+          Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
+          Dpp(j) = Dpp(j) + max(0.0_DP,-f_ij)
+          Dpm(i) = Dpm(i) + min(0.0_DP, f_ij)
+          Dpm(j) = Dpm(j) + min(0.0_DP,-f_ij)
         end do
         !$omp end do
 
@@ -2344,10 +2345,11 @@ contains
     ! Compute nodal correction factors without constraints
     
     subroutine doLimitNodal(NEQ, dscale,&
-        ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
-      
-      real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
+        ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
+
       real(DP), dimension(:), intent(in) :: ML
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ
       
@@ -2379,10 +2381,11 @@ contains
     ! Compute nodal correction factors with constraints
     
     subroutine doLimitNodalConstrained(NEQ, dscale,&
-        ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
+        ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
       
-      real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), dimension(:), intent(in) :: ML
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ
       
@@ -2390,6 +2393,81 @@ contains
       
       ! local variables
       integer :: ieq
+
+#ifdef GFSYS_USE_SAFE_FPA
+
+      ! Loop over all vertices
+      do ieq = 1, NEQ
+        
+        ! Check if distance to upper bound is sufficiently large
+        if (Dqp(ieq) .gt. AFCSTAB_EPSREL*abs(Dx(ieq))) then
+
+          if (dscale*Dpp(ieq) .gt. ML(ieq)*Dqp(ieq)) then
+            Drp(ieq) = ML(ieq)*Dqp(ieq)/dscale/Dpp(ieq)
+          else
+            Drp(ieq) = 1.0_DP
+          end if
+          
+!!$          ! Compute auxiliary quantities
+!!$          daux  = dscale*Dpp(ieq) + ML(ieq)*Dqp(ieq) + 1e-1
+!!$          daux1 = 1.0_DP - max(dscale*Dpp(ieq),ML(ieq)*Dqp(ieq))/daux
+!!$          daux2 = 1.0_DP - ML(ieq)*Dqp(ieq)/daux
+!!$          
+!!$          ! Compute correction factors for positive contributions
+!!$          if (daux2 .le. daux1) then
+!!$            Drp(ieq) = 1.0_DP
+!!$          else
+!!$            Drp(ieq) = daux1/daux2
+!!$          end if
+
+        else
+          
+          Drp(ieq) = 0.0_DP
+
+!!$          if (dscale*Dpp(ieq) .gt. ML(ieq)*Dqp(ieq)) then
+!!$            Drp(ieq) = 0.0_DP
+!!$          else
+!!$            Drp(ieq) = 1.0_DP
+!!$          end if
+
+        end if
+
+        ! Check if distance to lower bound is sufficiently large
+        if (Dqm(ieq) .lt. -AFCSTAB_EPSREL*abs(Dx(ieq))) then
+          
+          if (dscale*Dpm(ieq) .lt. ML(ieq)*Dqm(ieq)) then
+            Drm(ieq) = ML(ieq)*Dqm(ieq)/dscale/Dpm(ieq)
+          else
+            Drm(ieq) = 1.0_DP
+          end if
+
+!!$          ! Compute auxiliary quantities
+!!$          daux  = dscale*Dpm(ieq) + ML(ieq)*Dqm(ieq) - 1e-1
+!!$          daux1 = 1.0_DP - min(dscale*Dpm(ieq),ML(ieq)*Dqm(ieq))/daux
+!!$          daux2 = 1.0_DP - ML(ieq)*Dqm(ieq)/daux
+!!$          
+!!$          ! Compute correction factors for negative contributions
+!!$          if (daux2 .le. daux1) then
+!!$            Drm(ieq) = 1.0_DP
+!!$          else
+!!$            Drm(ieq) = daux1/daux2
+!!$          end if
+
+        else
+
+          Drm(ieq) = 0.0_DP
+
+!!$          if (dscale*Dpm(ieq) .lt. ML(ieq)*Dqm(ieq)) then
+!!$            Drm(ieq) = 0.0_DP
+!!$          else
+!!$            Drm(ieq) = 1.0_DP
+!!$          end if
+          
+        end if
+
+      end do  
+
+#else
 
       ! Loop over all vertices
       do ieq = 1, NEQ
@@ -2408,6 +2486,9 @@ contains
           Drm(ieq) = 1.0_DP
         end if
       end do
+
+#endif
+
     end subroutine doLimitNodalConstrained    
 
     !**************************************************************
