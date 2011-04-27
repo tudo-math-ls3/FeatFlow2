@@ -53,7 +53,7 @@ export gridfile=zpinch_6x960_rz
 # Grid 5
 # -------
 export ilev=1
-export dstep=6.25e-55
+export dstep=6.25e-5
 export gridfile=zpinch_6x1920_rz
 
 (cd .. && ./flagship-pc64-nehalem-linux-intel-goto2 data/benchmark/hydro/2d/shocktube.dat)
