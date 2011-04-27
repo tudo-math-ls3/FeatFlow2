@@ -3,12 +3,7 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                             Double Mach Reflection                           #
-# From:  K. Takayama and O. Inoue, "Shock wave diffraction over a 90 degree    #
-#        sharp corner - Posters presented at 18th ISSW", Shock Waves Vol. 1    #
-#        pages 301-312, 1991.                                                  #
-#                                                                              #
-#                                                                              #
+#                           Sod's shocktube problem                            #
 ################################################################################
 
 simportdatafiles(2) =
@@ -24,13 +19,13 @@ application = hydro
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/benchmark/hydro/2d/doublemach.indat
+indatfile = data/benchmark/hydro/2d/shocktube.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = 
+sdualbdrcondname =
 
 # number of spatial dimensions
 ndimension = 2
@@ -88,13 +83,12 @@ isystemPrecond = $isystemprecond
 slimitingvariable(2) = 
   density
   pressure
-
+  
 # number of failsafe steps
 nfailsafe = 0
 
 # variables for failsafe flux correction
-sfailsafevariable(4) =
-  density
+sfailsafevariable(3) =
   pressure
   velocity_x
   velocity_y
@@ -107,7 +101,7 @@ sfailsafevariable(4) =
 # 2 = PGM image
 # 3 = anayltical initial solution: consistent L2-projection
 # 4 = anayltical initial solution: lumped L2-projection
-isolutiontype = 3
+isolutiontype = 4
 
 # absolute tolerance for Richardson iteration
 depsAbsSolution = 1e-4
@@ -121,8 +115,8 @@ nmaxIterationsSolution = 100
 # section name of initial solution
 ssolutionname(4) = 
   @initsol_rho
-  @initsol_vel_x
-  @initsol_vel_y
+  @initsol_vel
+  @initsol_vel
   @initsol_Etot
 
 # type of exact solution profile
@@ -152,10 +146,10 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/rect_4x1.prm
+prmfile = grids/2d/$gridfile.prm
 
 # file which contains the triangulation
-trifile = grids/2d/rect_4x1.tri
+trifile = grids/2d/$gridfile.tri
 
 # type of finite element space(s)
 celement = EL_Q1_2D
@@ -231,13 +225,13 @@ iprelimiting = 0
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.05
+dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/benchmark/DMR-DISS$idissipationtype-STAB$istabilisation-NLEV$ilev
+sucdsolution = out/benchmark/SOD-DISS$idissipationtype-STAB$istabilisation-NLEV$ilev-GRID$gridfile
 
 # file for UCD output of error
-sucderror = 
+sucderror =
 
 # variables for ucd output
 sucdvariable(5) =
@@ -283,7 +277,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.2
+dfinalTime = 0.231
 
 # initial time step size
 dinitialStep = $dstep
@@ -301,19 +295,19 @@ iadaptTimestep = 0
 dadaptTime = 0.0
 
 # minimum factor by which time step may change
-ddecreaseFactor = 1.0
+ddecreaseFactor = 0.1
 
 # maximum factor by which time step may change
-dincreaseFactor = 1.0
+dincreaseFactor = 1.5
 
 # reduction factor by which time step is reduced if simulation fails
-dstepReductionFactor = 1.0
+dstepReductionFactor = 0.8
 
 # target tolerace for relative changes
 depsRel = 0.0
 
 # absolute tolerance for relative changes
-depsAbs = 0.0
+depsAbs = 1e-12
 
 # tolerance for steady state convergence
 depsSteady = 0.0
@@ -334,7 +328,6 @@ ioutputlevel = 0
 
 # minimum multigrid level number
 nlmin = $ilev
-
 # maximum multigrid level number
 nlmax = $ilev
 
@@ -465,7 +458,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 100
+nmaxIterations = 50
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -495,7 +488,7 @@ dforcingStrategy = 1
 # check sufficient decrease condition in globalization
 # 0 = apply Newton increment without globalization
 # 1 = check sufficient decrease condition and perform backtracking if required
-icheckSufficientDecrease = 1
+icheckSufficientDecrease = 0
 
 # maximum number of backtracking steps
 nmaxBacktrackingSteps = 5
@@ -510,7 +503,7 @@ domega = 1.0
 depsAbs = 1e-10
 
 # relative tolerance for residual
-depsRel = 1e-8
+depsRel = 1e-6
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -594,7 +587,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-4
+depsRel = 0.0
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -612,7 +605,7 @@ depsStag = 0.0
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 50 = ILU
-isolver = 4
+isolver = 2
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 15
@@ -663,7 +656,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 5
+isolver = 2
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -675,7 +668,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-2
+depsRel = 0.0
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -723,17 +716,17 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 0
+nsubdividemax = 3
 
 # adaptation strategy
 # 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 1.1
+drefinementTolerance = 0.15
 
 # coarsening tolerance
-dcoarseningTolerance = 0.3
+dcoarseningTolerance = 0.05
 
 
 ################################################################################
@@ -753,16 +746,28 @@ ierrorestimator = 6
 # 0 = as is
 # 1 = equidistribution
 # 2 = logarithmic equidistribution
-igridindicator = 4
+igridindicator = 0
 
 # noise filter
-dnoisefilter = 0.01
+dnoisefilter = 0.05
 
 # absolute filter
-dabsfilter = 0.001
+dabsfilter = 0.01
 
 # number of protection layers
 nprotectLayers = 2
 
 # tolerance for protection layers
 dprotectLayerTolerance = 0.0
+
+# type of error variables
+#   density
+#   velocity_x
+#   velocity_y
+#   velocity_z
+#   energy
+#   pressure
+#   machnumber
+serrorvariable(2) =
+  density
+  pressure

@@ -1,0 +1,48 @@
+# -*- mode: any-ini; -*-
+#
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                           Sod's shocktube problem                            #
+#                                                                              #
+# Initial conditions:                                                          #
+#  rho1 = 1.0;   p1 = 1.0                                                      #
+#  rho2 = 0.125; p2 = 0.1                                                      #
+# and states 1 and 2 are separated at x=0.5                                    #
+#                                                                              #
+################################################################################
+
+# global constants
+defconst: rho0 = 1.0e0
+
+# Specify the initial solution
+deffunc: @initsol_rho = if(abs(x) < 0.5, 1.0e0/_rho0, 1.25e-1/_rho0) ; x,y,z,t
+deffunc: @initsol_vel = 0.0 ; x,y,z,t
+deffunc: @initsol_Etot = if(abs(x) < 0.5, 2.5e0/_rho0, 2.5e-1/_rho0) ; x,y,z,t
+
+# Specify the boundary conditions
+[bdrcond_strong_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+1
+PARAMETERS
+4.0 T  'FREESLIP_STRONG'
+
+
+# Specify the boundary conditions
+[bdrcond_weak_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+1
+PARAMETERS
+4.0 T  'FREESLIP_WEAK'
