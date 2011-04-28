@@ -140,6 +140,7 @@
 		<File RelativePath="..\..\..\kernel\Mathematics\adjacency.f90"/>
 		<File RelativePath="..\..\..\kernel\Mathematics\mprimitives.f90"/></Filter>
 		<Filter Name="hierarchies">
+		<File RelativePath="..\..\..\kernel\Hierarchies\fespacehierarchybase.f90"/>
 		<File RelativePath="..\..\..\kernel\Hierarchies\fespacehierarchy.f90"/>
 		<File RelativePath="..\..\..\kernel\Hierarchies\meshhierarchy.f90"/>
 		<File RelativePath="..\..\..\kernel\Hierarchies\timescalehierarchy.f90"/></Filter>
