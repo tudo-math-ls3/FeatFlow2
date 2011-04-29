@@ -1459,7 +1459,7 @@ contains
       real(DP), dimension(neq,nvar), intent(out) :: DdataForce
 
       ! local variables
-      real(DP), dimension(NVAR1D) :: Ddata
+      real(DP), dimension(NVAR2D) :: Ddata
       real(DP) :: drad, daux, x1, x2
       integer :: ieq,ia,jeq
 
