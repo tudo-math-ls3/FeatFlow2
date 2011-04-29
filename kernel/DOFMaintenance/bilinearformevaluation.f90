@@ -648,7 +648,7 @@ contains
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
       select case (rmatrix%cmatrixFormat) 
-      case (LSYSSC_MATRIX9)
+      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrix,&  
               fcoeff_buildMatrixSc_sim,rcollection)
@@ -675,6 +675,7 @@ contains
         call lsyssc_duplicateMatrix (rmatrixBackup,rmatrix,&
             LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
             
+        ! Release backup of the original matrix
         call lsyssc_releaseMatrix (rmatrixBackup)
                                        
       case DEFAULT
@@ -695,7 +696,7 @@ contains
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
       select case (rmatrix%cmatrixFormat) 
-      case (LSYSSC_MATRIX9)
+      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrix,&  
               fcoeff_buildMatrixSc_sim,rcollection)
@@ -723,6 +724,7 @@ contains
         call lsyssc_duplicateMatrix (rmatrixBackup,rmatrix,&
             LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
             
+        ! Release backup of the original matrix
         call lsyssc_releaseMatrix (rmatrixBackup)
 
       case DEFAULT
@@ -6859,7 +6861,7 @@ contains
 
 !<subroutine>
 
-  subroutine bilf_buildMatrixScalar2 (rform, bclear, rmatrix,&
+  recursive subroutine bilf_buildMatrixScalar2 (rform, bclear, rmatrix,&
       fcoeff_buildMatrixSc_sim,rcollection,rscalarAssemblyInfo)
   
 !<description>
@@ -6919,6 +6921,7 @@ contains
 !</subroutine>
 
   ! local variables
+  type(t_matrixScalar) :: rmatrixBackup
   type(t_bilfMatrixAssembly) :: rmatrixAssembly
   integer :: ielementDistr,iinfoBlock
   integer, dimension(:), pointer :: p_IelementList
@@ -6931,14 +6934,14 @@ contains
   ! has to make sure, the matrix is unsorted when this routine is called.
   if (rmatrix%isortStrategy .gt. 0) then
     call output_line ('Matrix-structure must be unsorted!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar2')
     call sys_halt()
   end if
 
   if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
     call output_line ('No discretisation associated!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar2')
     call sys_halt()
   end if
   
@@ -7005,22 +7008,45 @@ contains
           ! Release the assembly structure.
           call bilf_doneAssembly(rmatrixAssembly)
         end do
-                                       
+                  
+      case (LSYSSC_MATRIX7)
+        ! Convert structure 7 to structure 9.For that purpose, make a backup of
+        ! the original matrix...
+        call lsyssc_duplicateMatrix (rmatrix,rmatrixBackup,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        
+        ! Convert the matrix 
+        call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
+
+        ! Create the matrix in structure 9
+        call bilf_buildMatrixScalar2 (rform, bclear, rmatrixBackup,&
+            fcoeff_buildMatrixSc_sim,rcollection,rscalarAssemblyInfo)
+
+        ! Convert back to structure 7
+        call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
+        
+        ! Copy the entries back to the original matrix and release memory.
+        call lsyssc_duplicateMatrix (rmatrixBackup,rmatrix,&
+            LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+            
+        ! Release backup of the original matrix
+        call lsyssc_releaseMatrix (rmatrixBackup)
+                     
       case default
         call output_line ('Not supported matrix structure!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar2')
         call sys_halt()
       end select
       
     case default
       call output_line ('Single precision matrices currently not supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar2')
       call sys_halt()
     end select
     
   case default
     call output_line ('General discretisation not implemented!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar2')
     call sys_halt()
   end select
   
@@ -7035,9 +7061,8 @@ contains
 
 !<subroutine>
 
-  subroutine bilf_buildMatrixScalarBdr1D (rform, bclear, rmatrix,&
-                                          fcoeff_buildMatrixScBdr1D_sim,&
-                                          iboundaryComp, rcollection, cconstrType)
+  recursive subroutine bilf_buildMatrixScalarBdr1D (rform, bclear, rmatrix,&
+      fcoeff_buildMatrixScBdr1D_sim, iboundaryComp, rcollection, cconstrType)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix in 1D.
@@ -7091,6 +7116,7 @@ contains
 !</subroutine>
   
   ! local variables
+  type(t_matrixScalar) :: rmatrixBackup
   type(t_bilfMatrixAssembly) :: rmatrixAssembly
   type(t_triangulation), pointer :: p_rtriangulation
   integer, dimension(:), pointer :: IelementList, IelementOrientation
@@ -7141,7 +7167,7 @@ contains
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
       select case (rmatrix%cmatrixFormat) 
-      case (LSYSSC_MATRIX9)
+      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         
         ! Probably allocate/clear the matrix
         if (rmatrix%h_DA .eq. ST_NOHANDLE) then
@@ -7241,6 +7267,29 @@ contains
           
         end if
 
+      case (LSYSSC_MATRIX7)
+        ! Convert structure 7 to structure 9.For that purpose, make a backup of
+        ! the original matrix...
+        call lsyssc_duplicateMatrix (rmatrix,rmatrixBackup,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        
+        ! Convert the matrix 
+        call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
+
+        ! Create the matrix in structure 9
+        call bilf_buildMatrixScalarBdr1D (rform, bclear, rmatrixBackup,&
+            fcoeff_buildMatrixScBdr1D_sim, iboundaryComp, rcollection, cconstrType)
+
+        ! Convert back to structure 7
+        call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
+        
+        ! Copy the entries back to the original matrix and release memory.
+        call lsyssc_duplicateMatrix (rmatrixBackup,rmatrix,&
+            LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+            
+        ! Release backup of the original matrix
+        call lsyssc_releaseMatrix (rmatrixBackup)
+
       case default
         call output_line ('Not supported matrix structure!', &
             OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
@@ -7265,9 +7314,8 @@ contains
 
 !<subroutine>
 
-  subroutine bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear, rmatrix,&
-                                          fcoeff_buildMatrixScBdr2D_sim,&
-                                          rboundaryRegion, rcollection, cconstrType)
+  recursive subroutine bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear, rmatrix,&
+      fcoeff_buildMatrixScBdr2D_sim, rboundaryRegion, rcollection, cconstrType)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix in 2D.
@@ -7324,6 +7372,7 @@ contains
 !</subroutine>
   
   ! local variables
+  type(t_matrixScalar) :: rmatrixBackup
   type(t_bilfMatrixAssembly) :: rmatrixAssembly
   type(t_boundary), pointer :: p_rboundary
   type(t_triangulation), pointer :: p_rtriangulation
@@ -7497,6 +7546,29 @@ contains
           end do ! ielementDistr
 
         end if
+
+      case (LSYSSC_MATRIX7)
+        ! Convert structure 7 to structure 9.For that purpose, make a backup of
+        ! the original matrix...
+        call lsyssc_duplicateMatrix (rmatrix,rmatrixBackup,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        
+        ! Convert the matrix 
+        call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
+
+        ! Create the matrix in structure 9
+        call bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear, rmatrixBackup,&
+            fcoeff_buildMatrixScBdr2D_sim, rboundaryRegion, rcollection, cconstrType)
+
+        ! Convert back to structure 7
+        call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
+        
+        ! Copy the entries back to the original matrix and release memory.
+        call lsyssc_duplicateMatrix (rmatrixBackup,rmatrix,&
+            LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+        
+        ! Release backup of the original matrix
+        call lsyssc_releaseMatrix (rmatrixBackup)
             
       case default
         call output_line ('Not supported matrix structure!', &

@@ -292,7 +292,7 @@ contains
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
       select case (rmatrixScalar%cmatrixFormat) 
-      case (LSYSSC_MATRIX9)
+      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&  
                                           fcoeff_buildTrilMatrixSc_sim,rcollection)
@@ -325,7 +325,7 @@ contains
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
       select case (rmatrixScalar%cmatrixFormat) 
-      case (LSYSSC_MATRIX9)
+      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&  
                                           fcoeff_buildTrilMatrixSc_sim,rcollection)
@@ -2064,7 +2064,7 @@ contains
 
 !<subroutine>
 
-  subroutine trilf_buildMatrixScalar2 (rform, bclear, rmatrix, rvector,&
+  recursive subroutine trilf_buildMatrixScalar2 (rform, bclear, rmatrix, rvector,&
       fcoeff_buildTrilMatrixSc_sim,rcollection,rscalarAssemblyInfo)
   
 !<description>
@@ -2143,6 +2143,7 @@ contains
 !</subroutine>
 
   ! local variables
+  type(t_matrixScalar) :: rmatrixBackup
   type(t_trilfMatrixAssembly) :: rmatrixAssembly
   integer :: ielementDistr,iinfoBlock
   integer, dimension(:), pointer :: p_IelementList
@@ -2200,7 +2201,7 @@ contains
     case (ST_DOUBLE) 
       ! Which matrix structure do we have?
       select case (rmatrix%cmatrixFormat) 
-      case (LSYSSC_MATRIX9)
+      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
       
         ! Probably allocate/clear the matrix
         if (rmatrix%h_DA .eq. ST_NOHANDLE) then
@@ -2252,6 +2253,29 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar2')
         call sys_halt()
       end select
+
+    case (LSYSSC_MATRIX7)
+      ! Convert structure 7 to structure 9.For that purpose, make a backup of
+      ! the original matrix...
+      call lsyssc_duplicateMatrix (rmatrix,rmatrixBackup,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      
+      ! Convert the matrix 
+      call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
+      
+      ! Create the matrix in structure 9
+      call trilf_buildMatrixScalar2 (rform, bclear, rmatrixBackup, rvector,&
+          fcoeff_buildTrilMatrixSc_sim,rcollection,rscalarAssemblyInfo)
+      
+      ! Convert back to structure 7
+      call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
+      
+      ! Copy the entries back to the original matrix and release memory.
+      call lsyssc_duplicateMatrix (rmatrixBackup,rmatrix,&
+          LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
+      
+      ! Release backup of the original matrix
+      call lsyssc_releaseMatrix (rmatrixBackup)
       
     case default
       call output_line ('Single precision matrices currently not supported!', &
