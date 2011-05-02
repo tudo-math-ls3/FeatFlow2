@@ -2148,9 +2148,12 @@ sub create_feastAppMakefile {
         "# Dependencies of header files to be copied or evaluated and stored in\n" .
         "# object directory\n\n";
     foreach $entry (split(/\s+/, $HEADER_FILES_TO_COPY)) {
+	my $file_PathUsingBasedir = $entry;
+	$file_PathUsingBasedir =~ s,^$FEAT2BASEDIR/$SRCDIR_KERNEL,\$(SRCDIR_KERNEL),;
+	$file_PathUsingBasedir =~ s,^$FEAT2BASEDIR/$SRCDIR_KERNEL,\$(FEAT2BASEDIR),;
         print MAKEFILE_HDL
             &make_dep_list(\%dependencyLists, $entry,
-                           "\$(SRCDIR_KERNEL)/" . &basename($entry), 0, "", "o",
+                           $file_PathUsingBasedir, 0, "", "o",
                            "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n" if ($entry);
     }
     foreach $entry (@{$cl{'HEADER_FILES_TO_COPY'}}) {
