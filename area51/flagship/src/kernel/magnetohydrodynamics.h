@@ -1,5 +1,5 @@
-#ifndef _MAGNETOHYDRODYNAMICS_H_
-#define _MAGNETOHYDRODYNAMICS_H_
+#ifndef _MAGNETOHYDRODYNAMICS_OLD_H_
+#define _MAGNETOHYDRODYNAMICS_OLD_H_
 
 #include "../flagship.h"
 

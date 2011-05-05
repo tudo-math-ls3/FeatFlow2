@@ -195,6 +195,7 @@
 
 module hydro_callback1d
 
+#define HYDRO_NDIM 1
 #include "hydro.h"
 
   use boundarycondaux
@@ -337,29 +338,40 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute pressures
-      pi = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
-
+      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      FLUX_HYDRO_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,pi)
-      FLUX_HYDRO_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,pj)
+      Fi(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+      Fi(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+      Fi(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+
+      Fj(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      Fj(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      Fj(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       
       ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*Fi )
-      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+      DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) = dscale *&
+          (DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*Fj-&
+           DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*Fi )
+      DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = -DfluxesAtEdge(:,1,idx)
 #else
       ! Compute flux difference for x-direction
-      FLUXDIFF_HYDRO_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,pi,pj)
+      F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)                
+      F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
                  
       ! Assemble fluxes
-      DfluxesAtEdge(:,1,idx) =  dscale * DmatrixCoeffsAtEdge(1,1,idx)*F_ij
-      DfluxesAtEdge(:,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)*F_ij      
+      DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) =  dscale * DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*F_ij
+      DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = -dscale * DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*F_ij      
 #endif
     end do
 
@@ -430,20 +442,26 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute pressures
-      pi = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
+      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute flux difference for x-direction
-      FLUXDIFF_HYDRO_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,pi,pj)
-
+      F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)                
+      F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      
       ! Assemble symmetric fluxes
-      DfluxesAtEdge(:,1,idx) = dscale *&
-          0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))*F_ij
-      DfluxesAtEdge(:,2,idx) = DfluxesAtEdge(:,1,idx)
+      DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) = dscale *&
+          0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                  DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))*F_ij
+      DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = DfluxesAtEdge(IDX3(:,1,idx,0,0,0))
     end do
 
   end subroutine hydro_calcFluxGalNoBdr1d_sim
@@ -506,7 +524,7 @@ contains
 #endif
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: pi,pj,ui,uj
+    real(DP) :: hi,hj,pi,pj,ri,rj,ui,uj
     real(DP) :: H_ij,aux,c_ij,d_ij,q_ij,u_ij
     integer :: idx
 
@@ -518,20 +536,30 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute pressures
-      pi = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
+      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      FLUX_HYDRO_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,pi)
-      FLUX_HYDRO_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,pj)
+      Fi(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+      Fi(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+      Fi(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+
+      Fj(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      Fj(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      Fj(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
 #else
       ! Compute flux difference for x-direction
-      FLUXDIFF_HYDRO_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,pi,pj)
+      F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)                
+      F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -540,46 +568,49 @@ contains
       ! -------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                  DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))
+
+      ! Compute densities
+      ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+      ! Compute enthalpies
+      hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+      hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
 
       ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+      aux  = ROE_MEAN_RATIO(ri,rj)
       u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      H_ij = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+pi)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+pj)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+      H_ij = ROE_MEAN_VALUE(hi,hj,aux)
       
       ! Compute auxiliary variable
-      q_ij   = 0.5*(u_ij*u_ij)
+      q_ij = 0.5_DP*(u_ij*u_ij)
 
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      c_ij = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
       
       ! Compute scalar dissipation
       d_ij = abs(a(1)*u_ij) + abs(a(1))*c_ij
       
       ! Multiply the solution difference by the scalar dissipation
-      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+      Diff = d_ij*(DdataAtEdge(IDX3(:,2,idx,0,0,0))-&
+                   DdataAtEdge(IDX3(:,1,idx,0,0,0)))
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
       
 #ifdef HYDRO_USE_IBP
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*Fi + Diff)
-      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+      DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) = dscale *&
+          (DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*Fj-&
+           DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*Fi + Diff)
+      DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = -DfluxesAtEdge(IDX3(:,1,idx,0,0,0))
 #else
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*F_ij + Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*F_ij + Diff)
+      DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) =  dscale *&
+          (DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*F_ij + Diff)
+      DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = -dscale *&
+          (DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*F_ij + Diff)
 #endif
     end do
 
@@ -642,7 +673,7 @@ contains
 #endif
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: pi,pj,ui,uj
+    real(DP) :: hi,hj,pi,pj,ri,rj,ui,uj
     real(DP) :: H_ij,anorm,aux,b1,b2,cPow2_ij,c_ij,q_ij,u_ij
     real(DP) :: l1,l2,l3,w1,w2,w3
     integer :: idx
@@ -655,20 +686,30 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute pressures
-      pi = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
+      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      FLUX_HYDRO_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,pi)
-      FLUX_HYDRO_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,pj)
+      Fi(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+      Fi(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+      Fi(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+
+      Fj(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      Fj(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      Fj(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
 #else
       ! Compute flux difference for x-direction
-      FLUXDIFF_HYDRO_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,pi,pj)
+      F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)                
+      F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -676,32 +717,31 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                  DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
         
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+pi)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+pj)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
         
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
+        ! Compute Roe mean values
+        aux  = ROE_MEAN_RATIO(ri,rj)
+        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
+                
         ! Compute auxiliary variable
-        q_ij = 0.5*(u_ij*u_ij)
+        q_ij = 0.5_DP*(u_ij*u_ij)
 
         ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
-#else
-#error "Speed of sound must be implemented!"
-#endif
-        c_ij = sqrt(cPow2_ij)
+        cPow2_ij = max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
+        c_ij     = sqrt(cPow2_ij)
         
         ! Compute eigenvalues
         l1 = abs(u_ij-c_ij)
@@ -709,22 +749,23 @@ contains
         l3 = abs(u_ij+c_ij)
         
         ! Compute solution difference U_j-U_i
-        Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
+        Diff = DdataAtEdge(IDX3(:,2,idx,0,0,0))-&
+               DdataAtEdge(IDX3(:,1,idx,0,0,0))
         
         ! Compute auxiliary quantities for characteristic variables
-        b2 = (GAMMA-1.0)/cPow2_ij; b1 = b2*q_ij
+        b2 = ((HYDRO_GAMMA)-1.0_DP)/cPow2_ij; b1 = b2*q_ij
         
         ! Compute characteristic variables multiplied by the
         ! corresponding eigenvalue
-        w1 = l1 * 0.5 * (    (b1+u_ij/c_ij)*Diff(1) -&
-                         (b2*u_ij+1.0/c_ij)*Diff(2) +&
-                                         b2*Diff(3) )
-        w2 = l2 * (                  (1-b1)*Diff(1) +&
-                                    b2*u_ij*Diff(2) -&
-                                         b2*Diff(3) )
-        w3 = l3 * 0.5 * (    (b1-u_ij/c_ij)*Diff(1) -&
-                         (b2*u_ij-1.0/c_ij)*Diff(2) +&
-                                         b2*Diff(3) )
+        w1 = l1 * 0.5_DP * (       (b1+u_ij/c_ij)*Diff(1) -&
+                            (b2*u_ij+1.0_DP/c_ij)*Diff(2) +&
+                                               b2*Diff(3) )
+        w2 = l2 * (                   (1.0_DP-b1)*Diff(1) +&
+                                          b2*u_ij*Diff(2) -&
+                                               b2*Diff(3) )
+        w3 = l3 * 0.5_DP * (       (b1-u_ij/c_ij)*Diff(1) -&
+                            (b2*u_ij-1.0_DP/c_ij)*Diff(2) +&
+                                               b2*Diff(3) )
         
         ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
         Diff(1) = anorm * ( w1 + w2 + w3 )
@@ -736,22 +777,28 @@ contains
         !-------------------------------------------------------------------------
 
 #ifdef HYDRO_USE_IBP
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
-                                           DmatrixCoeffsAtEdge(1,1,idx)*Fi + Diff)
-        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+        DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) = dscale *&
+            (DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*Fj-&
+             DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*Fi + Diff)
+        DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = -DfluxesAtEdge(IDX3(:,1,idx,0,0,0))
 #else        
-        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*F_ij + Diff)
-        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*F_ij + Diff)
+        DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) = dscale *&
+            (DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*F_ij + Diff)
+        DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = -dscale *&
+            (DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*F_ij + Diff)
 #endif
       else
 
 #ifdef HYDRO_USE_IBP
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
-                                           DmatrixCoeffsAtEdge(1,1,idx)*Fi )
-        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+        DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) = dscale *&
+            (DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*Fj-&
+             DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*Fi )
+        DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = -DfluxesAtEdge(IDX3(:,1,idx,0,0,0))
 #else
-        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*F_ij)
-        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*F_ij)
+        DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) = dscale *&
+            (DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*F_ij)
+        DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = -dscale *&
+            (DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*F_ij)
 #endif
       end if
     end do
@@ -826,71 +873,82 @@ contains
       ! Evaluate the Galerkin flux
       !-------------------------------------------------------------------------
 
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ! Compute velocities
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute pressures
-      pi = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
+      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
 #ifdef HYDRO_USE_IBP
       ! Compute fluxes for x-direction
-      FLUX_HYDRO_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,pi)
-      FLUX_HYDRO_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,pj)
+      Fi(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+      Fi(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+      Fi(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)
+
+      Fj(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      Fj(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      Fj(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
 #else
       ! Compute flux difference for x-direction
-      FLUXDIFF_HYDRO_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,pi,pj)
+      F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)                
+      F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
+      F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
+                INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
 #endif
 
       !-------------------------------------------------------------------------
       ! Evaluate the scalar dissipation of Rusanov-type
       !-------------------------------------------------------------------------
       
+      ! Compute specific total energies
+      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*ui*ui), SYS_EPSREAL_DP))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*uj*uj), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      ci = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ei-0.5_DP*ui*ui), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ej-0.5_DP*uj*uj), SYS_EPSREAL_DP))
 
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
-                              DmatrixCoeffsAtEdge(1,2,idx))*uj)+&
-                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,idx)-&
-                              DmatrixCoeffsAtEdge(1,2,idx))**2)*cj,&
-                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
-                              DmatrixCoeffsAtEdge(1,1,idx))*ui)+&
-                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,idx)-&
-                              DmatrixCoeffsAtEdge(1,1,idx))**2)*ci )
+      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                              DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))*uj)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                              DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))**2)*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))-&
+                              DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)))*ui)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))-&
+                              DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)))**2)*ci )
 #else   
       ! Compute scalar dissipation
-      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
-                  abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
-                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
-                  abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )
+      d_ij = max( abs(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*uj)+&
+                  abs(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)))*cj,&
+                  abs(DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*ui)+&
+                  abs(DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))*ci )
 #endif
 
       ! Multiply the solution difference by the scalar dissipation
-      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+      Diff = d_ij*(DdataAtEdge(IDX3(:,2,idx,0,0,0))-&
+                   DdataAtEdge(IDX3(:,1,idx,0,0,0)))
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
 #ifdef HYDRO_USE_IBP
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*Fi + Diff)
-      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+      DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) = dscale *&
+          (DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*Fj-&
+           DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*Fi + Diff)
+      DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = -DfluxesAtEdge(IDX3(:,1,idx,0,0,0))
 #else
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*F_ij + Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*F_ij + Diff)
+      DfluxesAtEdge(IDX3(:,1,idx,0,0,0)) =  dscale *&
+          (DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*F_ij + Diff)
+      DfluxesAtEdge(IDX3(:,2,idx,0,0,0)) = -dscale *&
+          (DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*F_ij + Diff)
 #endif
     end do
 
@@ -945,16 +1003,24 @@ contains
     do inode = 1, nnodes
       
       ! Compute velocity
-      ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
+      ui = XVELOCITY2(DdataAtNode,IDX2,inode,0,0)
       
 #ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ii = diag(A_i)*C_{ii}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtNode,1,inode,\
-        dscale,DmatrixCoeffsAtNode(1,inode),ui)
+      DcoefficientsAtNode(IDX3(1,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,_)
+      DcoefficientsAtNode(IDX3(2,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,_)
+      DcoefficientsAtNode(IDX3(3,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ii = -diag(A_i)*C_{ii}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtNode,1,inode,\
-        -dscale,DmatrixCoeffsAtNode(1,inode),ui)
+      DcoefficientsAtNode(IDX3(1,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,_)
+      DcoefficientsAtNode(IDX3(2,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,_)
+      DcoefficientsAtNode(IDX3(3,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,_)
 #endif
     end do
 
@@ -1010,17 +1076,49 @@ contains
     do inode = 1, nnodes
       
       ! Compute auxiliary variables
-      ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
-      Ei = SPECIFIC_TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
+      ui = XVELOCITY2(DdataAtNode,IDX2,inode,0,0)
+      Ei = SPECIFICTOTALENERGY2(DdataAtNode,IDX2,inode,0,0)
 
 #ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtNode,1,inode,\
-        dscale,DmatrixCoeffsAtNode(1,inode),ui,Ei)
+      DcoefficientsAtNode(IDX3(1,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(2,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX21(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(3,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX31(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(4,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX12(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(5,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(6,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX32(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(7,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX13(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(8,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX23(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(9,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ii = -A_i*C_{ii}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtNode,1,inode,\
-        -dscale,DmatrixCoeffsAtNode(1,inode),ui,Ei)
+      DcoefficientsAtNode(IDX3(1,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(2,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX21(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(3,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX31(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(4,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX12(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(5,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(6,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX32(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(7,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX13(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(8,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX23(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
+      DcoefficientsAtNode(IDX3(9,1,inode,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtNode(IDX2(1,inode,0,0)),ui,Ei)
 #endif
     end do
     
@@ -1075,29 +1173,45 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
-      ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
-
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj)
-
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
+      
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
 #endif
+
+      ! Nullify dissipation tensor
+      DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = 0.0_DP
     end do
 
   end subroutine hydro_calcMatGalMatD1d_sim
@@ -1151,32 +1265,104 @@ contains
     do idx = 1, nedges
       
       ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
       
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      
-      ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj,Ej)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      
+      DcoefficientsAtEdge(IDX3(4,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(5,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(6,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(7,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(8,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(9,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui,Ei)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(4,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(5,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(6,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(7,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(8,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(9,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj,Ej)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(4,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(5,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(6,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(7,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(8,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(9,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui,Ei)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(4,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(5,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(6,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(7,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(8,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(9,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
 #endif
+
+      ! Nullify dissipation tensor
+      DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = 0.0_DP
     end do
 
   end subroutine hydro_calcMatGal1d_sim
@@ -1226,7 +1412,7 @@ contains
 
     ! local variable
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: ui,uj
+    real(DP) :: hi,hj,pi,pj,ri,rj,ui,uj
     real(DP) :: H_ij,anorm,aux,c_ij,q_ij,u_ij,vel_ij
     integer :: idx
 
@@ -1234,28 +1420,41 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      
-      ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
-
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+     
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
 #endif
       
       !---------------------------------------------------------------------------
@@ -1264,42 +1463,43 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ji}-C_{ij})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                  DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))
       anorm = abs(a(1))
       
       if (anorm .gt. SYS_EPSREAL_DP) then
         
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute pressures
+        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+        aux  = ROE_MEAN_RATIO(ri,rj)
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
         
         ! Compute auxiliary values
         vel_ij = u_ij*a(1)
-        q_ij   = 0.5*(u_ij*u_ij)
+        q_ij   = 0.5_DP*(u_ij*u_ij)
         
         ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        c_ij = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
 
         ! Compute scalar dissipation
-        DcoefficientsAtEdge(:,1,idx) = dscale * (abs(vel_ij) + anorm*c_ij)
+        DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = dscale * (abs(vel_ij) + anorm*c_ij)
 
       else
         
         ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,idx) = 0.0
+        DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = 0.0_DP
         
       end if
     end do
@@ -1351,36 +1551,109 @@ contains
 
     ! local variable
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: Ei,Ej,ui,uj
+    real(DP) :: Ei,Ej,hi,hj,pi,pj,ri,rj,ui,uj
     real(DP) :: H_ij,anorm,aux,c_ij,q_ij,u_ij,vel_ij
     integer :: idx
 
 
     do idx = 1, nedges
     
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      ! Compute velocities
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ! Compute specific total energies
+      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj,Ej)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      
+      DcoefficientsAtEdge(IDX3(4,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(5,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(6,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(7,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(8,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(9,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui,Ei)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(4,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(5,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(6,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(7,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(8,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(9,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj,Ej)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(4,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(5,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(6,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(7,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(8,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(9,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui,Ei)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(4,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(5,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(6,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(7,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(8,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(9,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1389,44 +1662,49 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
-      anorm = abs(a(1))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                  DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))
+      anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
       
-      ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
-
       if (anorm .gt. SYS_EPSREAL_DP) then
         
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute pressures
+        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+        aux  = ROE_MEAN_RATIO(ri,rj)
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
         
         ! Compute auxiliary values
         vel_ij = u_ij*a(1)
-        q_ij   = 0.5*(u_ij*u_ij)
+        q_ij   = 0.5_DP*(u_ij*u_ij)
         
         ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        c_ij = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
         
         ! Compute scalar dissipation
         aux = dscale * (abs(vel_ij) + anorm*c_ij)
 
-        DcoefficientsAtEdge(1,1,idx) = aux
-        DcoefficientsAtEdge(5,1,idx) = aux
-        DcoefficientsAtEdge(9,1,idx) = aux
+        DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = 0.0_DP
+        DcoefficientsAtEdge(IDX3(1,1,idx,0,0,0)) = aux
+        DcoefficientsAtEdge(IDX3(5,1,idx,0,0,0)) = aux
+        DcoefficientsAtEdge(IDX3(9,1,idx,0,0,0)) = aux
+
+      else
+
+        ! Nullify dissipation tensor
+        DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = 0.0_DP
+
       end if
     end do
     
@@ -1477,7 +1755,7 @@ contains
     ! local variable
     real(DP), dimension(NVAR1D,NVAR1D) :: R_ij,L_ij
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: ui,uj
+    real(DP) :: hi,hj,pi,pj,ri,rj,ui,uj
     real(DP) :: H_ij,anorm,aux,b1,b2,cPow2_ij,c_ij,q_ij,u_ij
     real(DP) :: l1,l2,l3
     integer :: idx
@@ -1486,28 +1764,41 @@ contains
     do idx = 1, nedges
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
-      ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = 0.0
-
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1515,36 +1806,37 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                  DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))
       anorm = abs(a(1))
       
       if (anorm .gt. SYS_EPSREAL_DP) then
         
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute pressures
+        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+        aux  = ROE_MEAN_RATIO(ri,rj)
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
                 
         ! Compute auxiliary variable
-        q_ij = 0.5*(u_ij*u_ij)
+        q_ij = 0.5_DP*(u_ij*u_ij)
 
         ! Compute speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        cPow2_ij = max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij = sqrt(cPow2_ij)
         
-        b2   = (GAMMA-1.0)/cPow2_ij
+        b2   = ((HYDRO_GAMMA)-1.0_DP)/cPow2_ij
         b1   = b2*q_ij
 
         ! Diagonal matrix of eigenvalues
@@ -1566,35 +1858,36 @@ contains
         R_ij(3,3) =  l3*(H_ij+c_ij*u_ij)
         
         ! Matrix of left eigenvectors
-        L_ij(1,1) = 0.5*(b1+u_ij/c_ij)
-        L_ij(2,1) = 1.0-b1
-        L_ij(3,1) = 0.5*(b1-u_ij/c_ij)
+        L_ij(1,1) = 0.5_DP*(b1+u_ij/c_ij)
+        L_ij(2,1) = 1.0_DP-b1
+        L_ij(3,1) = 0.5_DP*(b1-u_ij/c_ij)
         
-        L_ij(1,2) = -0.5*(b2*u_ij+1/c_ij)
+        L_ij(1,2) = -0.5_DP*(b2*u_ij+1/c_ij)
         L_ij(2,2) =  b2*u_ij
-        L_ij(3,2) = -0.5*(b2*u_ij-1/c_ij)
+        L_ij(3,2) = -0.5_DP*(b2*u_ij-1/c_ij)
         
-        L_ij(1,3) = 0.5*b2
+        L_ij(1,3) = 0.5_DP*b2
         L_ij(2,3) = -b2
-        L_ij(3,3) = 0.5*b2
+        L_ij(3,3) = 0.5_DP*b2
 
         ! Include scaling parameter
         anorm = dscale*anorm
 
         ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
-        DcoefficientsAtEdge(1,1,idx) = anorm*( R_ij(1,1)*L_ij(1,1)+&
-                                               R_ij(1,2)*L_ij(2,1)+&
-                                               R_ij(1,3)*L_ij(3,1)  )
-        DcoefficientsAtEdge(2,1,idx) = anorm*( R_ij(2,1)*L_ij(1,2)+&
-                                               R_ij(2,2)*L_ij(2,2)+&
-                                               R_ij(2,3)*L_ij(3,2)  )
-        DcoefficientsAtEdge(3,1,idx) = anorm*( R_ij(3,1)*L_ij(1,3)+&
-                                               R_ij(3,2)*L_ij(2,3)+&
-                                               R_ij(3,3)*L_ij(3,3)  )
+        DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = 0.0_DP
+        DcoefficientsAtEdge(IDX3(1,1,idx,0,0,0)) = anorm*( R_ij(1,1)*L_ij(1,1)+&
+                                                           R_ij(1,2)*L_ij(2,1)+&
+                                                           R_ij(1,3)*L_ij(3,1)  )
+        DcoefficientsAtEdge(IDX3(2,1,idx,0,0,0)) = anorm*( R_ij(2,1)*L_ij(1,2)+&
+                                                           R_ij(2,2)*L_ij(2,2)+&
+                                                           R_ij(2,3)*L_ij(3,2)  )
+        DcoefficientsAtEdge(IDX3(3,1,idx,0,0,0)) = anorm*( R_ij(3,1)*L_ij(1,3)+&
+                                                           R_ij(3,2)*L_ij(2,3)+&
+                                                           R_ij(3,3)*L_ij(3,3)  )
       else
         
         ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,idx) = 0.0
+        DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = 0.0_DP
 
       end if
     end do
@@ -1646,7 +1939,7 @@ contains
     ! local variable
     real(DP), dimension(NVAR1D,NVAR1D) :: R_ij,L_ij
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: Ei,Ej,ui,uj
+    real(DP) :: Ei,Ej,hi,hj,pi,pj,ri,rj,ui,uj
     real(DP) :: H_ij,anorm,aux,b1,b2,cPow2_ij,c_ij,q_ij,u_ij
     real(DP) :: l1,l2,l3
     integer :: idx,i,j,k
@@ -1654,29 +1947,102 @@ contains
 
     do idx = 1, nedges
 
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      ! Compute velocities
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ! Compute specific total energies
+      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj,Ej)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      
+      DcoefficientsAtEdge(IDX3(4,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(5,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(6,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(7,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(8,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(9,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui,Ei)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(4,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(5,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(6,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(7,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(8,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(9,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj,Ej)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(4,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(5,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(6,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(7,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(8,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(9,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui,Ei)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(4,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(5,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(6,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(7,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(8,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(9,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1684,34 +2050,34 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
       anorm = abs(a(1))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
         
-        ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
-        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
         
+        ! Compute pressures
+        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
+        ! Compute Roe mean values
+        aux  = ROE_MEAN_RATIO(ri,rj)
+        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
+                
         ! Compute auxiliary values
-        q_ij = 0.5*u_ij*u_ij
-#ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        q_ij = 0.5_DP*u_ij*u_ij
+        cPow2_ij = max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij = sqrt(cPow2_ij)
 
-        b2   = (GAMMA-1.0)/cPow2_ij
+        b2   = ((HYDRO_GAMMA)-1.0_DP)/cPow2_ij
         b1   = b2*q_ij
         
         ! Diagonal matrix of eigenvalues
@@ -1733,17 +2099,17 @@ contains
         R_ij(3,3) =  l3*(H_ij+c_ij*u_ij)
         
         ! Matrix of left eigenvectors
-        L_ij(1,1) = 0.5*(b1+u_ij/c_ij)
-        L_ij(2,1) = 1.0-b1
-        L_ij(3,1) = 0.5*(b1-u_ij/c_ij)
+        L_ij(1,1) = 0.5_DP*(b1+u_ij/c_ij)
+        L_ij(2,1) = 1.0_DP-b1
+        L_ij(3,1) = 0.5_DP*(b1-u_ij/c_ij)
         
-        L_ij(1,2) = -0.5*(b2*u_ij+1/c_ij)
+        L_ij(1,2) = -0.5_DP*(b2*u_ij+1/c_ij)
         L_ij(2,2) =  b2*u_ij
-        L_ij(3,2) = -0.5*(b2*u_ij-1/c_ij)
+        L_ij(3,2) = -0.5_DP*(b2*u_ij-1/c_ij)
         
-        L_ij(1,3) = 0.5*b2
+        L_ij(1,3) = 0.5_DP*b2
         L_ij(2,3) = -b2
-        L_ij(3,3) = 0.5*b2
+        L_ij(3,3) = 0.5_DP*b2
         
         ! Include scaling parameter
         anorm = dscale*anorm
@@ -1751,18 +2117,18 @@ contains
         ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
         do i = 1, NVAR1D
           do j = 1, NVAR1D
-            aux = 0.0
+            aux = 0.0_DP
             do k = 1, NVAR1D
               aux = aux + R_ij(i,k)*L_ij(k,j)
             end do
-            DcoefficientsAtEdge(NVAR1D*(j-1)+i,1,idx) = anorm*aux
+            DcoefficientsAtEdge(IDX3(NVAR1D*(j-1)+i,1,idx,0,0,0)) = anorm*aux
           end do
         end do
         
       else
         
         ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,idx) = 0.0
+        DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = 0.0_DP
         
       end if
     end do
@@ -1818,29 +2184,46 @@ contains
 
     do idx = 1, nedges
       
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ! Compute velocities
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      
+      ! Compute specific total energies
+      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,_)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1848,19 +2231,15 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*ui*ui), SYS_EPSREAL_DP))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*uj*uj), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      ci = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ei-0.5_DP*ui*ui), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ej-0.5_DP*uj*uj), SYS_EPSREAL_DP))
       
       ! Compute dissipation tensor
-      DcoefficientsAtEdge(:,1,idx) = dscale *&
-          max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
-               abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
-               abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
-               abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )
+      DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = dscale *&
+          max( abs(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*uj)+&
+               abs(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)))*cj,&
+               abs(DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*ui)+&
+               abs(DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))*ci )
     end do
     
   end subroutine hydro_calcMatRusDissMatD1d_sim
@@ -1914,29 +2293,102 @@ contains
 
     do idx = 1, nedges
 
-      ! Compute auxiliary variables
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ! Compute velocities
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      
+      ! Compute specific total energies
+      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,2,idx),uj,Ej)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      
+      DcoefficientsAtEdge(IDX3(4,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(5,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(6,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(7,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(8,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(9,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        dscale,DmatrixCoeffsAtEdge(1,1,idx),ui,Ei)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(4,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(5,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(6,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(7,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(8,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(9,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,2,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,1,idx),uj,Ej)
+      DcoefficientsAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(4,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(5,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(6,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+
+      DcoefficientsAtEdge(IDX3(7,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(8,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
+      DcoefficientsAtEdge(IDX3(9,2,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-       MATRIX_HYDRO_2T_1D(DcoefficientsAtEdge,3,idx,\
-        -dscale,DmatrixCoeffsAtEdge(1,2,idx),ui,Ei)
+      DcoefficientsAtEdge(IDX3(1,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX11(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(2,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX21(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(3,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX31(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(4,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX12(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(5,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX22(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(6,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX32(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+
+      DcoefficientsAtEdge(IDX3(7,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX13(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(8,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX23(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
+      DcoefficientsAtEdge(IDX3(9,3,idx,0,0,0)) =&
+          FLUXJACOBIMATRIX33(-dscale,DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1944,23 +2396,19 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*ui*ui), SYS_EPSREAL_DP))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*uj*uj), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      ci = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ei-0.5_DP*ui*ui), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ej-0.5_DP*uj*uj), SYS_EPSREAL_DP))
 
       ! Compute dissipation tensor
-      aux = dscale * max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
-                          abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
-                          abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
-                          abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )
+      aux = dscale * max( abs(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*uj)+&
+                          abs(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)))*cj,&
+                          abs(DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*ui)+&
+                          abs(DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))*ci )
 
-      DcoefficientsAtEdge(:,1,idx) = 0.0
-      DcoefficientsAtEdge(1,1,idx) = aux
-      DcoefficientsAtEdge(5,1,idx) = aux
-      DcoefficientsAtEdge(9,1,idx) = aux
+      DcoefficientsAtEdge(IDX3(:,1,idx,0,0,0)) = 0.0_DP
+      DcoefficientsAtEdge(IDX3(1,1,idx,0,0,0)) = aux
+      DcoefficientsAtEdge(IDX3(5,1,idx,0,0,0)) = aux
+      DcoefficientsAtEdge(IDX3(9,1,idx,0,0,0)) = aux
     end do
     
   end subroutine hydro_calcMatRusDiss1d_sim
@@ -2021,7 +2469,7 @@ contains
 
     ! local variables
     real(DP), dimension(NVAR1D) :: Diff
-    real(DP) :: ui,uj
+    real(DP) :: hi,hj,pi,pj,ri,rj,ui,uj
     real(DP) :: H_ij,anorm,aux,b1_ij,b2_ij,cPow2_ij,c_ij,q_ij,u_ij
     integer :: idx
 
@@ -2031,10 +2479,10 @@ contains
 
     ! Check if weighting coefficient is zero
     if (anorm .le. SYS_EPSREAL_DP) then
-      if (present(DcharVariablesAtEdge))     DcharVariablesAtEdge     = 0.0
-      if (present(DeigenvaluesAtEdge))       DeigenvaluesAtEdge       = 0.0
-      if (present(DrightEigenvectorsAtEdge)) DrightEigenvectorsAtEdge = 0.0
-      if (present(DleftEigenvectorsAtEdge))  DleftEigenvectorsAtEdge  = 0.0
+      if (present(DcharVariablesAtEdge))     DcharVariablesAtEdge     = 0.0_DP
+      if (present(DeigenvaluesAtEdge))       DeigenvaluesAtEdge       = 0.0_DP
+      if (present(DrightEigenvectorsAtEdge)) DrightEigenvectorsAtEdge = 0.0_DP
+      if (present(DleftEigenvectorsAtEdge))  DleftEigenvectorsAtEdge  = 0.0_DP
 
       ! That's it
       return
@@ -2046,51 +2494,48 @@ contains
       do idx = 1, nedges
         
         ! Compute velocities
-        ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-        uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-
+        ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+        aux  = ROE_MEAN_RATIO(ri,rj)
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
-               
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
+
         ! Compute auxiliary variable
-        q_ij = 0.5*(u_ij*u_ij)
+        q_ij = 0.5_DP*(u_ij*u_ij)
 
         ! Compute speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        cPow2_ij = max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij = sqrt(cPow2_ij)
 
-        b2_ij = (GAMMA-1.0)/cPow2_ij
+        b2_ij = ((HYDRO_GAMMA)-1.0)/cPow2_ij
         b1_ij  = b2_ij*q_ij
         
         ! Compute solution difference U_j-U_i
-        Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
+        Diff = DdataAtEdge(IDX3(:,2,idx,0,0,0))-&
+               DdataAtEdge(IDX3(:,1,idx,0,0,0))
           
         ! Compute characteristic variables
-        DcharVariablesAtEdge(1,idx) = anorm * 0.5 *&
+        DcharVariablesAtEdge(IDX2(1,idx,0,0)) = anorm * 0.5_DP *&
             (       (b1_ij+u_ij/c_ij)*Diff(1)-&
-                (b2_ij*u_ij+1.0/c_ij)*Diff(2)+&
+             (b2_ij*u_ij+1.0_DP/c_ij)*Diff(2)+&
                                 b2_ij*Diff(3))
-        DcharVariablesAtEdge(2,idx) = anorm *&
-            (             (1.0-b1_ij)*Diff(1)+&
+        DcharVariablesAtEdge(IDX2(2,idx,0,0)) = anorm *&
+            (          (1.0_DP-b1_ij)*Diff(1)+&
                            b2_ij*u_ij*Diff(2)-&
                                 b2_ij*Diff(3) )
-        DcharVariablesAtEdge(3,idx) = anorm * 0.5 *&
+        DcharVariablesAtEdge(IDX2(3,idx,0,0)) = anorm * 0.5_DP *&
             (       (b1_ij-u_ij/c_ij)*Diff(1)-&
-                (b2_ij*u_ij-1.0/c_ij)*Diff(2)+&
+             (b2_ij*u_ij-1.0_DP/c_ij)*Diff(2)+&
                                 b2_ij*Diff(3) )
       end do
     end if
@@ -2101,33 +2546,29 @@ contains
       do idx = 1, nedges
         
         ! Compute velocities
-        ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-        uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+        ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+        aux  = ROE_MEAN_RATIO(ri,rj)
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
         
         ! Compute auxiliary variable
-#ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-0.5*(u_ij*u_ij)), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        c_ij = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-0.5_DP*(u_ij*u_ij)), SYS_EPSREAL_DP))
 
         ! Compute eigenvalues
-        DeigenvaluesAtEdge(1,idx) = u_ij-c_ij
-        DeigenvaluesAtEdge(2,idx) = u_ij
-        DeigenvaluesAtEdge(3,idx) = u_ij+c_ij
+        DeigenvaluesAtEdge(IDX2(1,idx,0,0)) = u_ij-c_ij
+        DeigenvaluesAtEdge(IDX2(2,idx,0,0)) = u_ij
+        DeigenvaluesAtEdge(IDX2(3,idx,0,0)) = u_ij+c_ij
       end do
     end if
 
@@ -2137,42 +2578,38 @@ contains
       do idx = 1, nedges
         
         ! Compute velocities
-        ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-        uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+        ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+        aux  = ROE_MEAN_RATIO(ri,rj)
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
-
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
+        
         ! Compute auxiliary variables
-        q_ij = 0.5*(u_ij*u_ij)
-#ifdef THERMALLY_IDEAL_GAS
-        c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        q_ij = 0.5_DP*(u_ij*u_ij)
+        c_ij = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
 
         ! Compute right eigenvectors
-        DrightEigenvectorsAtEdge(1,idx) =  1.0
-        DrightEigenvectorsAtEdge(2,idx) =  u_ij-c_ij
-        DrightEigenvectorsAtEdge(3,idx) =  H_ij-u_ij*c_ij
+        DrightEigenvectorsAtEdge(IDX2(1,idx,0,0)) =  1.0_DP
+        DrightEigenvectorsAtEdge(IDX2(2,idx,0,0)) =  u_ij-c_ij
+        DrightEigenvectorsAtEdge(IDX2(3,idx,0,0)) =  H_ij-u_ij*c_ij
 
-        DrightEigenvectorsAtEdge(4,idx) =  1.0
-        DrightEigenvectorsAtEdge(5,idx) =  u_ij
-        DrightEigenvectorsAtEdge(6,idx) =  q_ij
+        DrightEigenvectorsAtEdge(IDX2(4,idx,0,0)) =  1.0_DP
+        DrightEigenvectorsAtEdge(IDX2(5,idx,0,0)) =  u_ij
+        DrightEigenvectorsAtEdge(IDX2(6,idx,0,0)) =  q_ij
 
-        DrightEigenvectorsAtEdge(7,idx) =  1.0
-        DrightEigenvectorsAtEdge(8,idx) =  u_ij+c_ij
-        DrightEigenvectorsAtEdge(9,idx) =  H_ij+u_ij*c_ij
+        DrightEigenvectorsAtEdge(IDX2(7,idx,0,0)) =  1.0_DP
+        DrightEigenvectorsAtEdge(IDX2(8,idx,0,0)) =  u_ij+c_ij
+        DrightEigenvectorsAtEdge(IDX2(9,idx,0,0)) =  H_ij+u_ij*c_ij
       end do
     end if
 
@@ -2181,47 +2618,39 @@ contains
     if (present(DleftEigenvectorsAtEdge)) then
       do idx = 1, nedges
         
-        ! Compute velocities
-        ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-        uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+        aux  = ROE_MEAN_RATIO(ri,rj)
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-               PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
-
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
+        
         ! Compute auxiliary variables
-        q_ij = 0.5*(u_ij*u_ij)
-#ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        q_ij = 0.5_DP*(u_ij*u_ij)
+        cPow2_ij = max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij = sqrt(cPow2_ij)
 
-        b2_ij = (GAMMA-1.0)/cPow2_ij
+        b2_ij = ((HYDRO_GAMMA)-1.0_DP)/cPow2_ij
         b1_ij = b2_ij*q_ij
 
         ! Compute left eigenvectors
-        DleftEigenvectorsAtEdge(1,idx) = 0.5 * (b1_ij+u_ij/c_ij)
-        DleftEigenvectorsAtEdge(2,idx) =       (1.0-b1_ij)
-        DleftEigenvectorsAtEdge(3,idx) = 0.5 * (b1_ij-u_ij/c_ij)
+        DleftEigenvectorsAtEdge(IDX2(1,idx,0,0)) = 0.5_DP * (b1_ij+u_ij/c_ij)
+        DleftEigenvectorsAtEdge(IDX2(2,idx,0,0)) =          (1.0_DP-b1_ij)
+        DleftEigenvectorsAtEdge(IDX2(3,idx,0,0)) = 0.5_DP * (b1_ij-u_ij/c_ij)
 
-        DleftEigenvectorsAtEdge(4,idx) =-0.5 * (b2_ij*u_ij+1.0/c_ij)
-        DleftEigenvectorsAtEdge(5,idx) =       (b2_ij*u_ij)
-        DleftEigenvectorsAtEdge(6,idx) =-0.5 * (b2_ij*u_ij-1.0/c_ij)
+        DleftEigenvectorsAtEdge(IDX2(4,idx,0,0)) =-0.5_DP * (b2_ij*u_ij+1.0_DP/c_ij)
+        DleftEigenvectorsAtEdge(IDX2(5,idx,0,0)) =          (b2_ij*u_ij)
+        DleftEigenvectorsAtEdge(IDX2(6,idx,0,0)) =-0.5_DP * (b2_ij*u_ij-1.0_DP/c_ij)
 
-        DleftEigenvectorsAtEdge(7,idx) = 0.5*b2_ij
-        DleftEigenvectorsAtEdge(8,idx) =    -b2_ij
-        DleftEigenvectorsAtEdge(9,idx) = 0.5*b2_ij
+        DleftEigenvectorsAtEdge(IDX2(7,idx,0,0)) = 0.5_DP*b2_ij
+        DleftEigenvectorsAtEdge(IDX2(8,idx,0,0)) =       -b2_ij
+        DleftEigenvectorsAtEdge(IDX2(9,idx,0,0)) = 0.5_DP*b2_ij
       end do
     end if
     
@@ -2279,52 +2708,53 @@ contains
 
     ! local variables
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: pi,pj,ui,uj
+    real(DP) :: hi,hj,pi,pj,ri,rj,ui,uj
     real(DP) :: H_ij,anorm,aux,c_ij,d_ij,q_ij,u_ij,vel_ij
     integer :: idx
 
 
     do idx = 1, nedges
 
-      ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-
-      ! Compute pressures
-      pi = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
-
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                  DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
+      ! Compute velocities
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      
+      ! Compute pressures
+      pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+      ! Compute densities
+      ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+      ! Compute enthalpies
+      hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+      hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+
       ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+      aux  = ROE_MEAN_RATIO(ri,rj)
       u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      H_ij = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+pi)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+pj)/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+      H_ij = ROE_MEAN_VALUE(hi,hj,aux)
 
       ! Compute auxiliary variables
       vel_ij = u_ij*a(1)
-      q_ij   = 0.5*(u_ij*u_ij)
+      q_ij   = 0.5_DP*(u_ij*u_ij)
 
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      c_ij = sqrt(max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      c_ij = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP))
       
       ! Compute scalar dissipation
       d_ij = abs(vel_ij) + anorm*c_ij
 
       ! Compute conservative fluxes
-      DfluxesAtEdge(:,idx) = dscale*d_ij*(DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx))
+      DfluxesAtEdge(IDX2(:,idx,0,0)) = dscale*&
+          d_ij*(DdataAtEdge(IDX3(:,1,idx,0,0,0))-&
+                DdataAtEdge(IDX3(:,2,idx,0,0,0)))
     end do
 
   end subroutine hydro_calcFluxFCTScDiss1d_sim
@@ -2381,7 +2811,7 @@ contains
     ! local variables
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: ui,uj
+    real(DP) :: hi,hj,pi,pj,ri,rj,ui,uj
     real(DP) :: H_ij,anorm,aux,b1,b2,cPow2_ij,c_ij,q_ij,u_ij
     real(DP) :: l1,l2,l3,w1,w2,w3
     integer :: idx
@@ -2389,38 +2819,39 @@ contains
 
     do idx = 1, nedges
 
-      ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                  DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
-       if (anorm .gt. SYS_EPSREAL_DP) then
+      if (anorm .gt. SYS_EPSREAL_DP) then
+        
+        ! Compute velocities
+        ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+        ! Compute pressures
+        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
         
         ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
-      u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      H_ij = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-             PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-             PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-             DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+        aux  = ROE_MEAN_RATIO(ri,rj)
+        u_ij = ROE_MEAN_VALUE(ui,uj,aux)
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
          
         ! Compute auxiliary variables
-        q_ij = 0.5*(u_ij*u_ij)
+        q_ij = 0.5_DP*(u_ij*u_ij)
 
         ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        cPow2_ij = max((GAMMA-1.0)*(H_ij-q_ij), SYS_EPSREAL_DP)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        cPow2_ij = max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
         c_ij = sqrt(cPow2_ij)
         
         ! Compute eigenvalues
@@ -2429,22 +2860,23 @@ contains
         l3 = abs(u_ij+c_ij)
         
         ! Compute solution difference U_i-U_j
-        Diff = DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx)
+        Diff = DdataAtEdge(IDX3(:,1,idx,0,0,0))-&
+               DdataAtEdge(IDX3(:,2,idx,0,0,0))
         
         ! Compute auxiliary quantities for characteristic variables
-        b2 = (GAMMA-1.0)/cPow2_ij; b1 = b2*q_ij
+        b2 = ((HYDRO_GAMMA)-1.0_DP)/cPow2_ij; b1 = b2*q_ij
         
         ! Compute characteristic variables multiplied by the
         ! corresponding eigenvalue
-        w1 = l1 * 0.5 * (    (b1+u_ij/c_ij)*Diff(1) -&
-                         (b2*u_ij+1.0/c_ij)*Diff(2) +&
-                                         b2*Diff(3) )
-        w2 = l2 * (                  (1-b1)*Diff(1) +&
-                                    b2*u_ij*Diff(2) -&
-                                         b2*Diff(3) )
-        w3 = l3 * 0.5 * (    (b1-u_ij/c_ij)*Diff(1) -&
-                         (b2*u_ij-1.0/c_ij)*Diff(2) +&
-                                         b2*Diff(3) )
+        w1 = l1 * 0.5_DP * (       (b1+u_ij/c_ij)*Diff(1) -&
+                            (b2*u_ij+1.0_DP/c_ij)*Diff(2) +&
+                                               b2*Diff(3) )
+        w2 = l2 * (                   (1.0_DP-b1)*Diff(1) +&
+                                          b2*u_ij*Diff(2) -&
+                                               b2*Diff(3) )
+        w3 = l3 * 0.5_DP * (       (b1-u_ij/c_ij)*Diff(1) -&
+                            (b2*u_ij-1.0_DP/c_ij)*Diff(2) +&
+                                               b2*Diff(3) )
         
         ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
         Diff(1) = anorm * ( w1 + w2 + w3 )
@@ -2452,10 +2884,10 @@ contains
         Diff(3) = anorm * ( (H_ij-u_ij*c_ij)*w1 + q_ij*w2 + (H_ij+u_ij*c_ij)*w3 )
 
         ! Compute conservative fluxes
-        DfluxesAtEdge(:,idx) = dscale*Diff
+        DfluxesAtEdge(IDX2(:,idx,0,0)) = dscale*Diff
       else
         ! Ccalcel conservative fluxes
-        DfluxesAtEdge(:,idx) = 0
+        DfluxesAtEdge(IDX2(:,idx,0,0)) = 0
       end if
     end do
     
@@ -2518,42 +2950,40 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      
-      ! Compute specific energies
-      Ei = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+      ! Compute specific total energies
+      Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0)*GAMMA*(Ei-0.5*ui*ui), SYS_EPSREAL_DP))
-      cj = sqrt(max((GAMMA-1.0)*GAMMA*(Ej-0.5*uj*uj), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      ci = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ei-0.5_DP*ui*ui), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ej-0.5_DP*uj*uj), SYS_EPSREAL_DP))
      
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-&
-                              DmatrixCoeffsAtEdge(1,2,idx))*uj)+&
-                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,1,idx)-&
-                              DmatrixCoeffsAtEdge(1,2,idx))**2)*cj,&
-                  abs(0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
-                              DmatrixCoeffsAtEdge(1,1,idx))*ui)+&
-                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,idx)-&
-                              DmatrixCoeffsAtEdge(1,1,idx))**2)*ci )
+      d_ij = max( abs(0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                              DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))*uj)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))-&
+                              DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))**2)*cj,&
+                  abs(0.5_DP*(DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))-&
+                              DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)))*ui)+&
+                 0.5_DP*sqrt((DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))-&
+                              DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)))**2)*ci )
 #else  
       ! Compute scalar dissipation
-      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
-                  abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
-                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
-                  abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )
+      d_ij = max( abs(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0))*uj)+&
+                  abs(DmatrixCoeffsAtEdge(IDX3(1,1,idx,0,0,0)))*cj,&
+                  abs(DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0))*ui)+&
+                  abs(DmatrixCoeffsAtEdge(IDX3(1,2,idx,0,0,0)))*ci )
 #endif
       
       ! Compute conservative fluxes
-      DfluxesAtEdge(:,idx) = dscale*d_ij*(DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx))
+      DfluxesAtEdge(IDX2(:,idx,0,0)) = dscale*&
+          d_ij*(DdataAtEdge(IDX3(:,1,idx,0,0,0))-&
+                DdataAtEdge(IDX3(:,2,idx,0,0,0)))
 
     end do
 
@@ -2606,10 +3036,10 @@ contains
     do idx = 1, nedges
       
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      DtransformedFluxesAtEdge(IDX3(1,1,idx,0,0,0)) =&
+          DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
+      DtransformedFluxesAtEdge(IDX3(1,2,idx,0,0,0)) =&
+         -DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoFluxDensity1d_sim
@@ -2656,9 +3086,9 @@ contains
     do idx = 1, nedges
       
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) =&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(1,idx,0,0)) =&
+          DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine hydro_trafoDiffDensity1d_sim
@@ -2705,8 +3135,8 @@ contains
     do idx = 1, nnodes
       
       ! Transformed density values
-      DtransformedDataAtNode(1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(1,idx,0,0)) =&
+          DENSITY2(DdataAtNode,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoNodalDensity1d_sim
@@ -2758,10 +3188,10 @@ contains
     do idx = 1, nedges
       
       ! Transformed total energy fluxes
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      DtransformedFluxesAtEdge(IDX3(1,1,idx,0,0,0)) =&
+          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0)
+      DtransformedFluxesAtEdge(IDX3(1,2,idx,0,0,0)) =&
+         -TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoFluxEnergy1d_sim
@@ -2808,9 +3238,9 @@ contains
     do idx = 1, nedges
       
       ! Transformed total density difference
-      DtransformedDataAtEdge(1,idx) =&
-          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(1,idx,0,0)) =&
+          TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine hydro_trafoDiffEnergy1d_sim
@@ -2857,8 +3287,8 @@ contains
     do idx = 1, nnodes
       
       ! Transformed energy values
-      DtransformedDataAtNode(1,idx) =&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(1,idx,0,0)) =&
+          TOTALENERGY2(DdataAtNode,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoNodalEnergy1d_sim
@@ -2911,22 +3341,18 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Transformed pressure fluxes
-#ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(1,1,idx) = (GAMMA-1.0)*&
-          (0.5*ui*ui*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)+&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-      DtransformedFluxesAtEdge(1,2,idx) =-(GAMMA-1.0)*&
-          (0.5*uj*uj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)+&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-#else
-#error "Pressure for nonperfect gas must be implemented!"
-#endif
+      DtransformedFluxesAtEdge(IDX3(1,1,idx,0,0,0)) =&
+          ((HYDRO_GAMMA)-1.0_DP)*(0.5_DP*ui*ui*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                                  ui*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)+&
+                                   TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
+      DtransformedFluxesAtEdge(IDX3(1,2,idx,0,0,0)) =&
+          -((HYDRO_GAMMA)-1.0_DP)*(0.5_DP*uj*uj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                                   uj*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)+&
+                                    TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
     end do
     
   end subroutine hydro_trafoFluxPressure1d_sim
@@ -2973,9 +3399,9 @@ contains
     do idx = 1, nedges
       
       ! Transformed pressure difference
-      DtransformedDataAtEdge(1,idx) =&
-          PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)-&
-          PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(1,idx,0,0)) =&
+          PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine hydro_trafoDiffPressure1d_sim
@@ -3022,8 +3448,8 @@ contains
     do idx = 1, nnodes
       
       ! Transformed pressure values
-      DtransformedDataAtNode(1,idx) =&
-          PRESSURE_1T_FROM_CONSVAR_1D(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(1,idx,0,0)) =&
+          PRESSURE2(DdataAtNode,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoNodalPressure1d_sim
@@ -3076,18 +3502,18 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Transformed velocity fluxes in x-direction
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          (X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           ui*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -(X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           uj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      DtransformedFluxesAtEdge(IDX3(1,1,idx,0,0,0)) =&
+          (XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+           ui*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+           DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      DtransformedFluxesAtEdge(IDX3(1,2,idx,0,0,0)) =&
+         -(XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+           uj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+           DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
     end do
     
   end subroutine hydro_trafoFluxVelocity1d_sim
@@ -3134,9 +3560,9 @@ contains
     do idx = 1, nedges
 
       ! Transformed velocity difference in x-direction
-      DtransformedDataAtEdge(1,idx) =&
-          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(1,idx,0,0)) =&
+          XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine hydro_trafoDiffVelocity1d_sim
@@ -3183,8 +3609,8 @@ contains
     do idx = 1, nnodes
       
       ! Transformed x-velocity values
-      DtransformedDataAtNode(1,idx) =&
-          X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(1,idx,0,0)) =&
+          XVELOCITY2(DdataAtNode,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoNodalVelocity1d_sim
@@ -3236,10 +3662,10 @@ contains
     do idx = 1, nedges
       
       ! Transformed momentum fluxes in x-direction
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      DtransformedFluxesAtEdge(IDX3(1,1,idx,0,0,0)) =&
+          XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)
+      DtransformedFluxesAtEdge(IDX3(1,2,idx,0,0,0)) =&
+         -XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)
     end do
     
   end subroutine hydro_trafoFluxMomentum1d_sim
@@ -3286,9 +3712,9 @@ contains
     do idx = 1, nedges
       
       ! Transformed momentum difference in x-direction
-      DtransformedDataAtEdge(1,idx) =&
-          X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(1,idx,0,0)) =&
+          XMOMENTUM3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          XMOMENTUM3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
     
   end subroutine hydro_trafoDiffMomentum1d_sim
@@ -3335,8 +3761,8 @@ contains
     do idx = 1, nnodes
       
       ! Transformed x-momentum values
-      DtransformedDataAtNode(1,idx) =&
-          X_MOMENTUM_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(1,idx,0,0)) =&
+          XMOMENTUM2(DdataAtNode,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoNodalMomentum1d_sim
@@ -3388,16 +3814,16 @@ contains
     do idx = 1, nedges
       
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      DtransformedFluxesAtEdge(IDX3(1,1,idx,0,0,0)) =&
+          DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
+      DtransformedFluxesAtEdge(IDX3(1,2,idx,0,0,0)) =&
+         -DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
 
       ! Transformed total energy fluxes
-      DtransformedFluxesAtEdge(2,1,idx) =&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =&
-         -TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      DtransformedFluxesAtEdge(IDX3(2,1,idx,0,0,0)) =&
+          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0)
+      DtransformedFluxesAtEdge(IDX3(2,2,idx,0,0,0)) =&
+         -TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoFluxDenEng1d_sim
@@ -3444,14 +3870,14 @@ contains
     do idx = 1, nedges
 
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) =&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(1,idx,0,0)) =&
+          DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
 
       ! Transformed total energy difference
-      DtransformedDataAtEdge(2,idx) =&
-          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(2,idx,0,0)) =&
+          TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine hydro_trafoDiffDenEng1d_sim
@@ -3499,12 +3925,12 @@ contains
     do idx = 1, nnodes
       
       ! Transformed density values
-      DtransformedDataAtNode(1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(1,idx,0,0)) =&
+          DENSITY2(DdataAtNode,IDX2,idx,0,0)
 
       ! Transformed energy values
-      DtransformedDataAtNode(2,idx) =&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(2,idx,0,0)) =&
+          TOTALENERGY2(DdataAtNode,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoNodalDenEng1d_sim
@@ -3557,28 +3983,24 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
            
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      DtransformedFluxesAtEdge(IDX3(1,1,idx,0,0,0)) =&
+          DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
+      DtransformedFluxesAtEdge(IDX3(1,2,idx,0,0,0)) =&
+         -DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
 
       ! Transformed pressure fluxes
-#ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(2,1,idx) = (GAMMA-1.0)*&
-          (0.5*ui*ui*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)+&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-      DtransformedFluxesAtEdge(2,2,idx) =-(GAMMA-1.0)*&
-          (0.5*uj*uj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)+&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-#else
-#error "Pressure for nonperfect gas must be implemented!"
-#endif
+      DtransformedFluxesAtEdge(IDX3(2,1,idx,0,0,0)) =&
+          ((HYDRO_GAMMA)-1.0_DP)*(0.5_DP*ui*ui*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                                  ui*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)+&
+                                  TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
+      DtransformedFluxesAtEdge(IDX3(2,2,idx,0,0,0)) =&
+          -((HYDRO_GAMMA)-1.0_DP)*(0.5_DP*uj*uj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                                   uj*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)+&
+                                   TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
     end do
 
   end subroutine hydro_trafoFluxDenPre1d_sim
@@ -3625,14 +4047,14 @@ contains
     do idx = 1, nedges
       
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) = &
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(1,idx,0,0)) = &
+          DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
       
       ! Transformed pressure difference
-      DtransformedDataAtEdge(2,idx) =&
-          PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)-&
-          PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(2,idx,0,0)) =&
+          PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine hydro_trafoDiffDenPre1d_sim
@@ -3680,12 +4102,12 @@ contains
     do idx = 1, nnodes
       
       ! Transformed density values
-      DtransformedDataAtNode(1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(1,idx,0,0)) =&
+          DENSITY2(DdataAtNode,IDX2,idx,0,0)
 
       ! Transformed pressure values
-      DtransformedDataAtNode(2,idx) =&
-          PRESSURE_1T_FROM_CONSVAR_1D(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(2,idx,0,0)) =&
+          PRESSURE2(DdataAtNode,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoNodalDenPre1d_sim
@@ -3738,38 +4160,34 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      DtransformedFluxesAtEdge(IDX3(1,1,idx,0,0,0)) =&
+          DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
+      DtransformedFluxesAtEdge(IDX3(1,2,idx,0,0,0)) =&
+         -DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
 
       ! Transformed velocity fluxes in x-direction
-      DtransformedFluxesAtEdge(2,1,idx) =&
-          (X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           ui*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =&
-         -(X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           uj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      DtransformedFluxesAtEdge(IDX3(2,1,idx,0,0,0)) =&
+          (XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+           ui*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+           DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      DtransformedFluxesAtEdge(IDX3(2,2,idx,0,0,0)) =&
+         -(XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+           uj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+           DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Transformed pressure fluxes
-#ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(3,1,idx) = (GAMMA-1.0)*&
-          (0.5*ui*ui*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)+&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-      DtransformedFluxesAtEdge(3,2,idx) =-(GAMMA-1.0)*&
-          (0.5*uj*uj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)+&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-#else
-#error "Pressure for nonperfect gas must be implemented!"
-#endif
+      DtransformedFluxesAtEdge(IDX3(3,1,idx,0,0,0)) =&
+          ((HYDRO_GAMMA)-1.0_DP)*(0.5_DP*ui*ui*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                                  ui*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)+&
+                                  TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
+      DtransformedFluxesAtEdge(IDX3(3,2,idx,0,0,0)) =&
+          -((HYDRO_GAMMA)-1.0_DP)*(0.5_DP*uj*uj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                                   uj*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)+&
+                                   TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
     end do
       
   end subroutine hydro_trafoFluxDenPreVel1d_sim
@@ -3816,19 +4234,19 @@ contains
     do idx = 1, nedges
       
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) =&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(1,idx,0,0)) =&
+          DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
       
       ! Transformed velocity difference in x-direction
-      DtransformedDataAtEdge(2,idx) =&
-          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(2,idx,0,0)) =&
+          XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
       
       ! Transformed pressure difference
-      DtransformedDataAtEdge(3,idx) =&
-          PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)-&
-          PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
+      DtransformedDataAtEdge(IDX2(3,idx,0,0)) =&
+          PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine hydro_trafoDiffDenPreVel1d_sim
@@ -3876,16 +4294,16 @@ contains
     do idx = 1, nnodes
       
       ! Transformed density values
-      DtransformedDataAtNode(1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(1,idx,0,0)) =&
+          DENSITY2(DdataAtNode,IDX2,idx,0,0)
 
       ! Transformed x-velocity values
-      DtransformedDataAtNode(2,idx) =&
-          X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(2,idx,0,0)) =&
+          XVELOCITY2(DdataAtNode,IDX2,idx,0,0)
 
       ! Transformed pressure values
-      DtransformedDataAtNode(3,idx) =&
-          PRESSURE_1T_FROM_CONSVAR_1D(DdataAtNode,NVAR1D,idx)
+      DtransformedDataAtNode(IDX2(3,idx,0,0)) =&
+          PRESSURE2(DdataAtNode,IDX2,idx,0,0)
     end do
 
   end subroutine hydro_trafoNodalDenPreVel1d_sim
@@ -3953,8 +4371,8 @@ contains
       rho = Du(1)
       v1  = Du(2)/rho
       E   = Du(3)/rho
-      p   = (GAMMA-1.0)*rho*(E-0.5*v1*v1)
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
+      p   = ((HYDRO_GAMMA)-1.0_DP)*rho*(E-0.5_DP*v1*v1)
+      c   = sqrt(max((HYDRO_GAMMA)*p/rho, SYS_EPSREAL_DP))
 
       ! Compute normal velocities at the boundary and the ghost state
       ! w.r.t. the numerical/approximate  outward unit normal vector
@@ -3978,7 +4396,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check the pressure positivity condition
-      if (4.0/(GAMMA-1.0)*c .le. vn_b-vn) then
+      if (4.0/((HYDRO_GAMMA)-1.0_DP)*c .le. vn_b-vn) then
         if (present(istatus)) then
           istatus = -ibdrCondType
           return
@@ -3993,7 +4411,7 @@ contains
       ! by using the PVRS Riemann solver as suggested by Toro
 
       cup  = rho*c
-      ppv  = p+0.5*(vn-vn_b)*cup
+      ppv  = p+0.5_DP*(vn-vn_b)*cup
       ppv  = max(0.0_DP, ppv)
 
       if (ppv .eq. p) then
@@ -4004,21 +4422,21 @@ contains
         if (ppv .lt. p) then
 
           ! Guess pressure from the Two-Rarefaction Riemann solver
-          vm    = 0.5*(vn+vn_b)
-          ptl   = 1.0+(GAMMA-1.0)/2.0*(vn-vm)/c
-          ptr   = 1.0+(GAMMA-1.0)/2.0*(vm-vn_b)/c
-          pstar = 0.5*(p*ptl + p*ptr)**(2.0*GAMMA/(GAMMA-1.0))
+          vm    = 0.5_DP*(vn+vn_b)
+          ptl   = 1.0_DP+((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(vn-vm)/c
+          ptr   = 1.0_DP+((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(vm-vn_b)/c
+          pstar = 0.5_DP*(p*ptl + p*ptr)**(2.0_DP*(HYDRO_GAMMA)/((HYDRO_GAMMA)-1.0_DP))
         else
 
           ! Guess pressure from the Two-Shock Riemann solver
           ! with PVRS as estimated pressure value
-          ge    = sqrt((2.0/(GAMMA+1.0)/rho)/((GAMMA-1.0)/(GAMMA+1.0)*p+ppv))
-          pstar = p - 0.5*(vn_b-vn)/ge
+          ge    = sqrt((2.0_DP/((HYDRO_GAMMA)+1.0_DP)/rho)/(((HYDRO_GAMMA)-1.0_DP)/((HYDRO_GAMMA)+1.0_DP)*p+ppv))
+          pstar = p - 0.5_DP*(vn_b-vn)/ge
         end if
       end if
 
       ! Initialize solution difference and pressure
-      vdiff = (vn_b-vn)/2.0
+      vdiff = (vn_b-vn)/2.0_DP
       pold  = pstar
 
       newton: do ite = 1, 100
@@ -4029,26 +4447,26 @@ contains
           ! Rarefaction wave
           prat = pold/p
 
-          f  = 2.0/(GAMMA-1.0)*c*(prat**((GAMMA-1.0)/(2.0*GAMMA))-1.0)
-          fd = (1.0/(rho*c))*prat**(-(GAMMA+1.0)/(2.0*GAMMA))
+          f  = 2.0_DP/((HYDRO_GAMMA)-1.0_DP)*c*(prat**(((HYDRO_GAMMA)-1.0_DP)/(2.0_DP*(HYDRO_GAMMA)))-1.0_DP)
+          fd = (1.0_DP/(rho*c))*prat**(-((HYDRO_GAMMA)+1.0_DP)/(2.0_DP*(HYDRO_GAMMA)))
         else
 
           ! Shock wave
-          auxA = 2.0/(GAMMA+1.0)/rho
-          auxB = (GAMMA-1.0)/(GAMMA+1.0)*p
+          auxA = 2.0_DP/((HYDRO_GAMMA)+1.0_DP)/rho
+          auxB = ((HYDRO_GAMMA)-1.0_DP)/((HYDRO_GAMMA)+1.0_DP)*p
           qrt  = sqrt(auxA/(auxB + pold))
 
           f  = (pold-p)*qrt
-          fd = (1.0 - 0.5*(pold - p)/(auxB + pold))*qrt
+          fd = (1.0_DP - 0.5_DP*(pold - p)/(auxB + pold))*qrt
         end if
 
         pstar = pold - (f+vdiff)/fd
-        if (pstar .lt. 0.0) then
+        if (pstar .lt. 0.0_DP) then
           pold = 1.0E-6
           cycle newton
         end if
 
-        aux = 2.0*abs((pstar-pold)/(pstar+pold))
+        aux = 2.0_DP*abs((pstar-pold)/(pstar+pold))
         if (aux .le. 1.0E-6)  exit newton
 
         pold = pstar
@@ -4073,7 +4491,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Note that the contribution fR-fL vanishes due to constant states
-      vn = 0.5*(vn+vn_b)
+      vn = 0.5_DP*(vn+vn_b)
 
 
       !-------------------------------------------------------------------------
@@ -4083,18 +4501,18 @@ contains
       if (pstar .le. p) then
 
         ! Rarefaction wave
-        rho = rho*(pstar/p)**(1.0/GAMMA)
+        rho = rho*(pstar/p)**(1.0_DP/(HYDRO_GAMMA))
       else
 
         ! Shock wave
-        rho = rho*(pstar/p+(GAMMA-1.0)/(GAMMA+1.0))/&
-                  ((GAMMA-1.0)/(GAMMA+1.0)*(pstar/p)+1.0)
+        rho = rho*(pstar/p+((HYDRO_GAMMA)-1.0_DP)/((HYDRO_GAMMA)+1.0_DP))/&
+                  (((HYDRO_GAMMA)-1.0_DP)/((HYDRO_GAMMA)+1.0_DP)*(pstar/p)+1.0_DP)
       end if
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*DpointNormal(1)*vn
-      Du(3) = pstar/(GAMMA-1.0)+0.5*rho*(vn*vn)
+      Du(3) = pstar/((HYDRO_GAMMA)-1.0_DP)+0.5_DP*rho*(vn*vn)
 
     case(BDRC_VISCOUSWALL)
       !-------------------------------------------------------------------------
@@ -4103,11 +4521,11 @@ contains
       rho = Du(1)
       v1  = Du(2)/rho
       E   = Du(3)/rho
-      p   = (GAMMA-1.0)*rho*(E-0.5*v1*v1)
+      p   = ((HYDRO_GAMMA)-1.0_DP)*rho*(E-0.5_DP*v1*v1)
 
       ! Update the solution vector and let vn:=0
-      Du(2) = 0.0
-      Du(3) = p/(GAMMA-1.0)
+      Du(2) = 0.0_DP
+      Du(3) = p/((HYDRO_GAMMA)-1.0_DP)
 
     case(BDRC_SUPERINLET)
       !-------------------------------------------------------------------------
@@ -4115,24 +4533,24 @@ contains
       ! The free stream primitive variables are Deval=[rho,v1,p]
       rho = DbdrValue(1)
       p   = DbdrValue(3)
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
+      c   = sqrt(max((HYDRO_GAMMA)*p/rho, SYS_EPSREAL_DP))
       vn  = DbdrNormal(1)*DbdrValue(2)
 
       ! Compute Riemann invariants based on the free stream values
-      W(1) = vn-2*c/(GAMMA-1.0)
-      W(2) = vn+2*c/(GAMMA-1.0)
-      W(3) = p/(rho**GAMMA)
+      W(1) = vn-2*c/((HYDRO_GAMMA)-1.0_DP)
+      W(2) = vn+2*c/((HYDRO_GAMMA)-1.0_DP)
+      W(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Transform back into conservative variables
-      vn   = 0.5*(W(1)+W(2))
-      c    = 0.25*(GAMMA-1.0)*(W(2)-W(1))
-      rho  = (c*c/GAMMA/W(3))**(1.0/(GAMMA-1.0))
-      p    = rho*c*c/GAMMA
+      vn   = 0.5_DP*(W(1)+W(2))
+      c    = 0.25_DP*((HYDRO_GAMMA)-1.0_DP)*(W(2)-W(1))
+      rho  = (c*c/(HYDRO_GAMMA)/W(3))**(1.0_DP/((HYDRO_GAMMA)-1.0_DP))
+      p    = rho*c*c/(HYDRO_GAMMA)
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*DbdrNormal(1)*vn
-      Du(3) = p/(GAMMA-1.0)+0.5*rho*(vn*vn)
+      Du(3) = p/((HYDRO_GAMMA)-1.0_DP)+0.5_DP*rho*(vn*vn)
 
 
     case(BDRC_FREESTREAM)
@@ -4141,27 +4559,27 @@ contains
       ! The free stream primitive variables are Deval=[rho,v1,p]
       rho = DbdrValue(1)
       p   = DbdrValue(3)
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
+      c   = sqrt(max((HYDRO_GAMMA)*p/rho, SYS_EPSREAL_DP))
       vn  = DbdrNormal(1)*DbdrValue(2)
 
       ! Compute Riemann invariants based on the free stream values
-      Winf(1) = vn-2.0*c/(GAMMA-1.0)
-      Winf(2) = vn+2.0*c/(GAMMA-1.0)
-      Winf(3) = p/(rho**GAMMA)
+      Winf(1) = vn-2.0_DP*c/((HYDRO_GAMMA)-1.0_DP)
+      Winf(2) = vn+2.0_DP*c/((HYDRO_GAMMA)-1.0_DP)
+      Winf(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Compute primitive variables
       rho = Du(1)
       v1  = Du(2)/rho
       E   = Du(3)/rho
-      p   = (GAMMA-1.0)*rho*(E-0.5*v1*v1)
+      p   = ((HYDRO_GAMMA)-1.0_DP)*rho*(E-0.5_DP*v1*v1)
 
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
+      c   = sqrt(max((HYDRO_GAMMA)*p/rho, SYS_EPSREAL_DP))
       vn  = DbdrNormal(1)*v1
 
       ! Compute Riemann invariants based on the solution values
-      Wu(1) = vn-2.0*c/(GAMMA-1.0)
-      Wu(2) = vn+2.0*c/(GAMMA-1.0)
-      Wu(3) = p/(rho**GAMMA)
+      Wu(1) = vn-2.0_DP*c/((HYDRO_GAMMA)-1.0_DP)
+      Wu(2) = vn+2.0_DP*c/((HYDRO_GAMMA)-1.0_DP)
+      Wu(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Adopt free stream/computed values depending on the sign of the eigenvalue
       W(1) = merge(Winf(1), Wu(1), vn <  c)
@@ -4169,15 +4587,15 @@ contains
       W(3) = merge(Winf(3), Wu(3), vn <  SYS_EPSREAL_DP)
 
       ! Transform back into conservative variables
-      vn   = 0.5*(W(1)+W(2))
-      c    = 0.25*(GAMMA-1.0)*(W(2)-W(1))
-      rho  = (c*c/GAMMA/W(3))**(1.0/(GAMMA-1.0))
-      p    = rho*c*c/GAMMA
+      vn   = 0.5_DP*(W(1)+W(2))
+      c    = 0.25_DP*((HYDRO_GAMMA)-1.0_DP)*(W(2)-W(1))
+      rho  = (c*c/(HYDRO_GAMMA)/W(3))**(1.0_DP/((HYDRO_GAMMA)-1.0_DP))
+      p    = rho*c*c/(HYDRO_GAMMA)
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*DbdrNormal(1)*vn
-      Du(3) = p/(GAMMA-1.0)+0.5*rho*(vn*vn)
+      Du(3) = p/((HYDRO_GAMMA)-1.0_DP)+0.5_DP*rho*(vn*vn)
 
 
     case(BDRC_SUBINLET)
@@ -4187,9 +4605,9 @@ contains
       rho = Du(1)
       v1  = Du(2)/rho
       E   = Du(3)/rho
-      p   = (GAMMA-1.0)*rho*(E-0.5*v1*v1)
+      p   = ((HYDRO_GAMMA)-1.0_DP)*rho*(E-0.5_DP*v1*v1)
 
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
+      c   = sqrt(max((HYDRO_GAMMA)*p/rho, SYS_EPSREAL_DP))
       vn  = DbdrNormal(1)*v1
 
       ! The specified density and pressure is Deval=[rho,p]
@@ -4197,20 +4615,20 @@ contains
       p   = DbdrValue(2)
 
       ! Compute Riemann invariants
-      W(1) = vn-2.0*c/(GAMMA-1.0)
-      W(2) = vn+2.0*c/(GAMMA-1.0)
-      W(3) = p/(rho**GAMMA)
+      W(1) = vn-2.0_DP*c/((HYDRO_GAMMA)-1.0_DP)
+      W(2) = vn+2.0_DP*c/((HYDRO_GAMMA)-1.0_DP)
+      W(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Transform back into conservative variables
-      vn   = 0.5*(W(1)+W(2))
-      c    = 0.25*(GAMMA-1.0)*(W(2)-W(1))
-      rho  = (c*c/GAMMA/W(3))**(1.0/(GAMMA-1.0))
-      p    = rho*c*c/GAMMA
+      vn   = 0.5_DP*(W(1)+W(2))
+      c    = 0.25_DP*((HYDRO_GAMMA)-1.0_DP)*(W(2)-W(1))
+      rho  = (c*c/(HYDRO_GAMMA)/W(3))**(1.0_DP/((HYDRO_GAMMA)-1.0_DP))
+      p    = rho*c*c/(HYDRO_GAMMA)
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*DbdrNormal(1)*vn
-      Du(3) = p/(GAMMA-1.0)+0.5*rho*(vn*vn)
+      Du(3) = p/((HYDRO_GAMMA)-1.0_DP)+0.5_DP*rho*(vn*vn)
 
 
     case(BDRC_SUBOUTLET)
@@ -4228,26 +4646,26 @@ contains
       rho = Du(1)
       v1  = Du(2)/rho
       E   = Du(3)/rho
-      p   = (GAMMA-1.0)*rho*(E-0.5*v1*v1)
+      p   = ((HYDRO_GAMMA)-1.0_DP)*rho*(E-0.5_DP*v1*v1)
 
       vn  = DbdrNormal(1)*v1
-      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL_DP))
+      c   = sqrt(max((HYDRO_GAMMA)*p/rho, SYS_EPSREAL_DP))
 
       ! Compute Riemann invariants based on the solution values and prescribed exit pressure
-      W(2) = 2*c/(GAMMA-1.0)-vn
-      W(3) = p/(rho**GAMMA)
-      W(1) = 4/(GAMMA-1.0)*sqrt(max(GAMMA*ps/rho*(p/ps)**(1.0/GAMMA), SYS_EPSREAL_DP))-W(2)
+      W(2) = 2*c/((HYDRO_GAMMA)-1.0_DP)-vn
+      W(3) = p/(rho**(HYDRO_GAMMA))
+      W(1) = 4/((HYDRO_GAMMA)-1.0_DP)*sqrt(max((HYDRO_GAMMA)*ps/rho*(p/ps)**(1.0_DP/(HYDRO_GAMMA)), SYS_EPSREAL_DP))-W(2)
 
       ! Transform back into conservative variables
-      vn  = 0.5*(W(1)-W(2))
-      c   = 0.25*(GAMMA-1.0)*(W(1)+W(2))
-      rho = (c*c/GAMMA/W(3))**(1.0/(GAMMA-1.0))
-      p   = rho*c*c/GAMMA
+      vn  = 0.5_DP*(W(1)-W(2))
+      c   = 0.25_DP*((HYDRO_GAMMA)-1.0_DP)*(W(1)+W(2))
+      rho = (c*c/(HYDRO_GAMMA)/W(3))**(1.0_DP/((HYDRO_GAMMA)-1.0_DP))
+      p   = rho*c*c/(HYDRO_GAMMA)
 
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*DbdrNormal(1)*vn
-      Du(3) = p/(GAMMA-1.0)+0.5*rho*(vn*vn)
+      Du(3) = p/((HYDRO_GAMMA)-1.0_DP)+0.5_DP*rho*(vn*vn)
 
 
     case default
@@ -4413,7 +4831,7 @@ contains
         ! the sign of the corresponding eigenvalue.
         
         ! Initialize values for function parser
-        Dvalue = 0.0
+        Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
 
         ! Set number of spatial dimensions
@@ -4423,7 +4841,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -4438,13 +4856,13 @@ contains
             ! Compute auxiliary quantities based on free stream state vector
             rM = DstateM(1)
             pM = DstateM(3)
-            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL_DP))
+            cM = sqrt(max((HYDRO_GAMMA)*pM/rM, SYS_EPSREAL_DP))
             dvnM = dnx*DstateM(2)
             
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR1D+3,iel)-0.5*&
+            pI = ((HYDRO_GAMMA)-1.0_DP)*(Daux1((ipoint-1)*NVAR1D+3,iel)-0.5_DP*&
                 (Daux1((ipoint-1)*NVAR1D+2,iel)**2))/Daux1((ipoint-1)*NVAR1D+1,iel)
-            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL_DP))
+            cI = sqrt(max((HYDRO_GAMMA)*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL_DP))
 
             ! Compute the normal velocity based on internal state vector
             dvnI = dnx*Daux1((ipoint-1)*NVAR1D+2,iel)/Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -4452,33 +4870,33 @@ contains
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-(2.0/(GAMMA-1.0))*cM
+              DstateM(1) = dvnM-(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cM
             else
-              DstateM(1) = dvnI-(2.0/(GAMMA-1.0))*cI
+              DstateM(1) = dvnI-(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cI
             end if
 
             if (dvnI .lt. SYS_EPSREAL_DP) then
-              DstateM(2) = pM/(rM**GAMMA)
+              DstateM(2) = pM/(rM**(HYDRO_GAMMA))
             else
-              DstateM(2) = pI/(Daux1((ipoint-1)*NVAR1D+1,iel)**GAMMA)
+              DstateM(2) = pI/(Daux1((ipoint-1)*NVAR1D+1,iel)**(HYDRO_GAMMA))
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(3) = dvnM+(2.0/(GAMMA-1.0))*cM
+              DstateM(3) = dvnM+(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cM
             else
-              DstateM(3) = dvnI+(2.0/(GAMMA-1.0))*cI
+              DstateM(3) = dvnI+(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cI
             end if
             
             ! Convert Riemann invariants into conservative state variables
-            cM = 0.25*(GAMMA-1.0)*(DstateM(3)-DstateM(1))
-            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
-            pM = rM*cM*cM/GAMMA
-            dvnM = 0.5*(DstateM(1)+DstateM(3))
+            cM = 0.25_DP*((HYDRO_GAMMA)-1.0_DP)*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(1.0_DP/((HYDRO_GAMMA)-1.0_DP))
+            pM = rM*cM*cM/(HYDRO_GAMMA)
+            dvnM = 0.5_DP*(DstateM(1)+DstateM(3))
             
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
             DstateM(2) = rM*dnx*dvnM
-            DstateM(3) = pM/(GAMMA-1.0)+0.5*dvnM*dvnM
+            DstateM(3) = pM/((HYDRO_GAMMA)-1.0_DP)+0.5_DP*dvnM*dvnM
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -4489,7 +4907,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
 
@@ -4505,7 +4923,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -4524,7 +4942,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
 
@@ -4536,7 +4954,7 @@ contains
         ! Prescribe the state vector in conservative variables
         
         ! Initialize values for function parser
-        Dvalue = 0.0
+        Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         
         ! Set number of spatial dimensions
@@ -4546,7 +4964,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -4559,8 +4977,8 @@ contains
             end do
 
             ! Compute convervative variables
-            DstateM(3) = DstateM(3)*(1.0/(GAMMA-1.0))&
-                       + DstateM(1)*0.5*(DstateM(2)**2)
+            DstateM(3) = DstateM(3)*(1.0_DP/((HYDRO_GAMMA)-1.0_DP))&
+                       + DstateM(1)*0.5_DP*(DstateM(2)**2)
             DstateM(2) = DstateM(1)*DstateM(2)
 
             ! Setup the computed internal state vector
@@ -4572,7 +4990,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
 
@@ -4587,7 +5005,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
         
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -4610,7 +5028,7 @@ contains
         ! Prescribe the density, pressure and tangential velocity at the inlet
         
         ! Initialize values for function parser
-        Dvalue = 0.0
+        Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
 
         ! Set number of spatial dimensions
@@ -4620,7 +5038,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -4635,25 +5053,25 @@ contains
             ! Compute auxiliary quantities based on prescribed boundary values
             rM = DstateM(1)
             pM = DstateM(2)
-            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL_DP))
+            cM = sqrt(max((HYDRO_GAMMA)*pM/rM, SYS_EPSREAL_DP))
 
             ! Compute the normal velocity based on the internal state vector
             dvnI = dnx*Daux1((ipoint-1)*NVAR1D+2,iel)/Daux1((ipoint-1)*NVAR1D+1,iel)
 
             ! Compute the speed of sound based on the internal state vector
-            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL_DP))
+            cI = sqrt(max((HYDRO_GAMMA)*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL_DP))
 
             ! Compute fourth Riemann invariant based on the internal state vector
-            w3 = dvnI+(2.0/(GAMMA-1.0))*cI
+            w3 = dvnI+(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cI
 
             ! Compute the first Riemann invariant based on the third Riemann
             ! invariant and the prescribed boundary values
-            w1 = w3-2*(2.0/(GAMMA-1.0))*cM
+            w1 = w3-2*(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cM
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*dnx*0.5*(w1+w3)
-            DstateM(3) = (1.0/(GAMMA-1.0))*pM+0.5*rM*((dnx*0.5*(w1+w3))**2)
+            DstateM(2) = rM*dnx*0.5_DP*(w1+w3)
+            DstateM(3) = (1.0_DP/((HYDRO_GAMMA)-1.0_DP))*pM+0.5_DP*rM*((dnx*0.5_DP*(w1+w3))**2)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -4664,7 +5082,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
 
@@ -4675,7 +5093,7 @@ contains
         ! Prescribe the pressure at the outlet
 
         ! Initialize values for function parser
-        Dvalue = 0.0
+        Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         
         ! Set number of spatial dimensions
@@ -4685,7 +5103,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -4695,32 +5113,32 @@ contains
                 nmaxExpr*(isegment-1)+1, Dvalue, pM)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux1((ipoint-1)*NVAR1D+3,iel)-0.5*&
+            pI = ((HYDRO_GAMMA)-1.0_DP)*(Daux1((ipoint-1)*NVAR1D+3,iel)-0.5_DP*&
                 (Daux1((ipoint-1)*NVAR1D+2,iel)**2)/Daux1((ipoint-1)*NVAR1D+1,iel))
-            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL_DP))
+            cI = sqrt(max((HYDRO_GAMMA)*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL_DP))
 
             ! Compute the normal velocity based on internal state vector
             dvnI = dnx*Daux1((ipoint-1)*NVAR1D+2,iel)/Daux1((ipoint-1)*NVAR1D+1,iel)
             
             ! Compute three Riemann invariants based on internal state vector
-            DstateM(2) = pI/(Daux1((ipoint-1)*NVAR1D+1,iel)**GAMMA)
-            DstateM(3) = dvnI+(2.0/(GAMMA-1.0))*cI
+            DstateM(2) = pI/(Daux1((ipoint-1)*NVAR1D+1,iel)**(HYDRO_GAMMA))
+            DstateM(3) = dvnI+(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cI
             
             ! Compute first Riemann invariant based on third Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(3)-2*(2.0/(GAMMA-1.0))*sqrt(max(SYS_EPSREAL_DP,&
-                GAMMA*pM/Daux1((ipoint-1)*NVAR1D+1,iel)*(pI/pM)**(1.0/GAMMA)))
+            DstateM(1) = DstateM(3)-2*(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*sqrt(max(SYS_EPSREAL_DP,&
+                (HYDRO_GAMMA)*pM/Daux1((ipoint-1)*NVAR1D+1,iel)*(pI/pM)**(1.0_DP/(HYDRO_GAMMA))))
 
             ! Convert Riemann invariants into conservative state variables
-            cM = 0.25*(GAMMA-1.0)*(DstateM(3)-DstateM(1))
-            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
-            pM = rM*cM*cM/GAMMA
-            dvnM = 0.5*(DstateM(1)+DstateM(3))
+            cM = 0.25_DP*((HYDRO_GAMMA)-1.0_DP)*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(1.0_DP/((HYDRO_GAMMA)-1.0_DP))
+            pM = rM*cM*cM/(HYDRO_GAMMA)
+            dvnM = 0.5_DP*(DstateM(1)+DstateM(3))
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
             DstateM(2) = rM*dnx*dvnM
-            DstateM(3) = pM/(GAMMA-1.0)+0.5*dvnM*dvnM
+            DstateM(3) = pM/((HYDRO_GAMMA)-1.0_DP)+0.5_DP*dvnM*dvnM
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux1((ipoint-1)*NVAR1D+1,iel)
@@ -4731,7 +5149,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
                 
@@ -4774,7 +5192,7 @@ contains
         ! the sign of the corresponding eigenvalue.
         
         ! Initialize values for function parser
-        Dvalue = 0.0
+        Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
 
         ! Set number of spatial dimensions
@@ -4784,7 +5202,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -4799,13 +5217,13 @@ contains
             ! Compute auxiliary quantities based on free stream state vector
             rM = DstateM(1)
             pM = DstateM(3)
-            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL_DP))
+            cM = sqrt(max((HYDRO_GAMMA)*pM/rM, SYS_EPSREAL_DP))
             dvnM = dnx*DstateM(2)
             
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,3)-0.5*&
+            pI = ((HYDRO_GAMMA)-1.0_DP)*(Daux2(ipoint,iel,3)-0.5_DP*&
                 (Daux2(ipoint,iel,2)**2))/Daux2(ipoint,iel,1)
-            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL_DP))
+            cI = sqrt(max((HYDRO_GAMMA)*pI/Daux2(ipoint,iel,1), SYS_EPSREAL_DP))
 
             ! Compute the normal velocity based on internal state vector
             dvnI = dnx*Daux2(ipoint,iel,2)/Daux2(ipoint,iel,1)
@@ -4813,33 +5231,33 @@ contains
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-(2.0/(GAMMA-1.0))*cM
+              DstateM(1) = dvnM-(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cM
             else
-              DstateM(1) = dvnI-(2.0/(GAMMA-1.0))*cI
+              DstateM(1) = dvnI-(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cI
             end if
 
             if (dvnI .lt. SYS_EPSREAL_DP) then
-              DstateM(2) = pM/(rM**GAMMA)
+              DstateM(2) = pM/(rM**(HYDRO_GAMMA))
             else
-              DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
+              DstateM(2) = pI/(Daux2(ipoint,iel,1)**(HYDRO_GAMMA))
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(3) = dvnM+(2.0/(GAMMA-1.0))*cM
+              DstateM(3) = dvnM+(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cM
             else
-              DstateM(3) = dvnI+(2.0/(GAMMA-1.0))*cI
+              DstateM(3) = dvnI+(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cI
             end if
             
             ! Convert Riemann invariants into conservative state variables
-            cM = 0.25*(GAMMA-1.0)*(DstateM(3)-DstateM(1))
-            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
-            pM = rM*cM*cM/GAMMA
-            dvnM = 0.5*(DstateM(1)+DstateM(3))
+            cM = 0.25_DP*((HYDRO_GAMMA)-1.0_DP)*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(1.0_DP/((HYDRO_GAMMA)-1.0_DP))
+            pM = rM*cM*cM/(HYDRO_GAMMA)
+            dvnM = 0.5_DP*(DstateM(1)+DstateM(3))
             
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
             DstateM(2) = rM*dnx*dvnM
-            DstateM(3) = pM/(GAMMA-1.0)+0.5*dvnM*dvnM
+            DstateM(3) = pM/((HYDRO_GAMMA)-1.0_DP)+0.5_DP*dvnM*dvnM
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -4850,7 +5268,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
 
@@ -4866,7 +5284,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -4885,7 +5303,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
 
@@ -4897,7 +5315,7 @@ contains
         ! Prescribe the state vector in conservative variables
         
         ! Initialize values for function parser
-        Dvalue = 0.0
+        Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         
         ! Set number of spatial dimensions
@@ -4907,7 +5325,7 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -4920,8 +5338,8 @@ contains
             end do
 
             ! Compute convervative variables
-            DstateM(3) = DstateM(3)*(1.0/(GAMMA-1.0))&
-                       + DstateM(1)*0.5*(DstateM(2)**2)
+            DstateM(3) = DstateM(3)*(1.0_DP/((HYDRO_GAMMA)-1.0_DP))&
+                       + DstateM(1)*0.5_DP*(DstateM(2)**2)
             DstateM(2) = DstateM(1)*DstateM(2)
 
             ! Setup the computed internal state vector
@@ -4933,7 +5351,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
 
@@ -4948,7 +5366,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
         
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -4971,7 +5389,7 @@ contains
         ! Prescribe the density, pressure and tangential velocity at the inlet
         
         ! Initialize values for function parser
-        Dvalue = 0.0
+        Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
 
         ! Set number of spatial dimensions
@@ -4981,7 +5399,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -4996,25 +5414,25 @@ contains
             ! Compute auxiliary quantities based on prescribed boundary values
             rM = DstateM(1)
             pM = DstateM(2)
-            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL_DP))
+            cM = sqrt(max((HYDRO_GAMMA)*pM/rM, SYS_EPSREAL_DP))
 
             ! Compute the normal velocity based on the internal state vector
             dvnI = dnx*Daux2(ipoint,iel,2)/Daux2(ipoint,iel,1)
 
             ! Compute the speed of sound based on the internal state vector
-            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL_DP))
+            cI = sqrt(max((HYDRO_GAMMA)*pI/Daux2(ipoint,iel,1), SYS_EPSREAL_DP))
 
             ! Compute fourth Riemann invariant based on the internal state vector
-            w3 = dvnI+(2.0/(GAMMA-1.0))*cI
+            w3 = dvnI+(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cI
 
             ! Compute the first Riemann invariant based on the third Riemann
             ! invariant and the prescribed boundary values
-            w1 = w3-2*(2.0/(GAMMA-1.0))*cM
+            w1 = w3-2*(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cM
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
-            DstateM(2) = rM*dnx*0.5*(w1+w3)
-            DstateM(3) = (1.0/(GAMMA-1.0))*pM+0.5*rM*((dnx*0.5*(w1+w3))**2)
+            DstateM(2) = rM*dnx*0.5_DP*(w1+w3)
+            DstateM(3) = (1.0_DP/((HYDRO_GAMMA)-1.0_DP))*pM+0.5_DP*rM*((dnx*0.5_DP*(w1+w3))**2)
 
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5025,7 +5443,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
 
@@ -5036,7 +5454,7 @@ contains
         ! Prescribe the pressure at the outlet
 
         ! Initialize values for function parser
-        Dvalue = 0.0
+        Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         
         ! Set number of spatial dimensions
@@ -5046,7 +5464,7 @@ contains
           do ipoint = 1, npointsPerElement
 
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Set values for function parser
             Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
@@ -5056,32 +5474,32 @@ contains
                 nmaxExpr*(isegment-1)+1, Dvalue, pM)
 
             ! Compute auxiliary quantities based on internal state vector
-            pI = (GAMMA-1.0)*(Daux2(ipoint,iel,3)-0.5*&
+            pI = ((HYDRO_GAMMA)-1.0_DP)*(Daux2(ipoint,iel,3)-0.5_DP*&
                 (Daux2(ipoint,iel,2)**2)/Daux2(ipoint,iel,1))
-            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL_DP))
+            cI = sqrt(max((HYDRO_GAMMA)*pI/Daux2(ipoint,iel,1), SYS_EPSREAL_DP))
 
             ! Compute the normal velocity based on internal state vector
             dvnI = dnx*Daux2(ipoint,iel,2)/Daux2(ipoint,iel,11)
             
             ! Compute three Riemann invariants based on internal state vector
-            DstateM(2) = pI/(Daux2(ipoint,iel,1)**GAMMA)
-            DstateM(3) = dvnI+(2.0/(GAMMA-1.0))*cI
+            DstateM(2) = pI/(Daux2(ipoint,iel,1)**(HYDRO_GAMMA))
+            DstateM(3) = dvnI+(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*cI
             
             ! Compute first Riemann invariant based on third Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(3)-2*(2.0/(GAMMA-1.0))*sqrt(max(SYS_EPSREAL_DP,&
-                GAMMA*pM/Daux2(ipoint,iel,1)*(pI/pM)**(1.0/GAMMA)))
+            DstateM(1) = DstateM(3)-2*(2.0_DP/((HYDRO_GAMMA)-1.0_DP))*sqrt(max(SYS_EPSREAL_DP,&
+                (HYDRO_GAMMA)*pM/Daux2(ipoint,iel,1)*(pI/pM)**(1.0_DP/(HYDRO_GAMMA))))
 
             ! Convert Riemann invariants into conservative state variables
-            cM = 0.25*(GAMMA-1.0)*(DstateM(3)-DstateM(1))
-            rM = (cM*cM/(GAMMA*DstateM(2)))**(1.0/(GAMMA-1.0))
-            pM = rM*cM*cM/GAMMA
-            dvnM = 0.5*(DstateM(1)+DstateM(3))
+            cM = 0.25_DP*((HYDRO_GAMMA)-1.0_DP)*(DstateM(3)-DstateM(1))
+            rM = (cM*cM/((HYDRO_GAMMA)*DstateM(2)))**(1.0_DP/((HYDRO_GAMMA)-1.0_DP))
+            pM = rM*cM*cM/(HYDRO_GAMMA)
+            dvnM = 0.5_DP*(DstateM(1)+DstateM(3))
 
             ! Setup the state vector based on Riemann invariants
             DstateM(1) = rM
             DstateM(2) = rM*dnx*dvnM
-            DstateM(3) = pM/(GAMMA-1.0)+0.5*dvnM*dvnM
+            DstateM(3) = pM/((HYDRO_GAMMA)-1.0_DP)+0.5_DP*dvnM*dvnM
             
             ! Setup the computed internal state vector
             DstateI(1) = Daux2(ipoint,iel,1)
@@ -5092,7 +5510,7 @@ contains
             call doRiemannSolver(DstateI, DstateM, dnx, Dflux, Diff)
             
             ! Store flux in the cubature points
-            Dcoefficients(:,1,ipoint,iel) = dscale*0.5*(Dflux-Diff)
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
           end do
         end do
                 
@@ -5126,17 +5544,21 @@ contains
       real(DP), dimension(NVAR1D), intent(out) :: Dflux, Diff
 
       ! local variables
-      real(DP) :: uI,pI,uM,pM
+      real(DP) :: hI,hM,uI,pI,uM,pM,rI,rM
       real(DP) :: cPow2,c_IM,H_IM,q_IM,u_IM
       real(DP) :: l1,l2,l3,w1,w2,w3,aux,b1,b2,dveln
       
       ! Compute auxiliary quantities
-      uI = X_VELOCITY_FROM_CONSVAR(DstateI, NVAR1D)
-      pI = PRESSURE_FROM_CONSVAR_1D(DstateI, NVAR1D)
+      uI = XVELOCITY1(DstateI,IDX1)
+      pI = PRESSURE1(DstateI,IDX1)
+      rI = DENSITY1(DstateI,IDX1)
+      hI = (TOTALENERGY1(DstateI,IDX1)+pI)/rI
       
       ! Compute auxiliary quantities
-      uM = X_VELOCITY_FROM_CONSVAR(DstateM, NVAR1D)
-      pM = PRESSURE_FROM_CONSVAR_1D(DstateM, NVAR1D)
+      uM = XVELOCITY1(DstateM,IDX1)
+      pM = PRESSURE1(DstateM,IDX1)
+      rM = DENSITY1(DstateM,IDX1)
+      hM = (TOTALENERGY1(DstateM,IDX1)+pM)/rM
 
       ! Calculate $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
       Dflux(1) = dnx*(DstateI(2) + DstateM(2))
@@ -5145,25 +5567,15 @@ contains
 
       
       ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-             DENSITY_FROM_CONSVAR(DstateI,NVAR1D),\
-             DENSITY_FROM_CONSVAR(DstateM,NVAR1D))
+      aux  = ROE_MEAN_RATIO(rI,rM)
       u_IM = ROE_MEAN_VALUE(uI,uM,aux)
-      H_IM = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_FROM_CONSVAR(DstateI,NVAR1D)+pI)/\
-             DENSITY_FROM_CONSVAR(DstateI,NVAR1D),\
-             (TOTAL_ENERGY_FROM_CONSVAR(DstateM,NVAR1D)+pM)/\
-             DENSITY_FROM_CONSVAR(DstateM,NVAR1D),aux)
+      H_IM = ROE_MEAN_VALUE(hI,hM,aux)
       
       ! Compute auxiliary variable
-      q_IM  = 0.5*u_IM**2
+      q_IM  = 0.5_DP*u_IM**2
 
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      cPow2 = max((GAMMA-1.0)*(H_IM-q_IM), SYS_EPSREAL_DP)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      cPow2 = max(((HYDRO_GAMMA)-1.0_DP)*(H_IM-q_IM), SYS_EPSREAL_DP)
       c_IM  = sqrt(cPow2)
 
       ! Compute normal velocity
@@ -5178,19 +5590,19 @@ contains
       Diff = DstateM-DstateI
       
       ! Compute auxiliary quantities for characteristic variables
-      b2 = (GAMMA-1.0)/cPow2; b1 = b2*q_IM
+      b2 = ((HYDRO_GAMMA)-1.0_DP)/cPow2; b1 = b2*q_IM
       
       ! Compute characteristic variables multiplied by the
       ! corresponding eigenvalue
-      w1 = l1 * 0.5 * (   (b1+dveln/c_IM)*Diff(1) -&
-                       (b2*u_IM+dnx/c_IM)*Diff(2) +&
-                                       b2*Diff(3) )
-      w2 = l2 * (                  (1-b1)*Diff(1) +&
-                                  b2*u_IM*Diff(2) -&
-                                       b2*Diff(3) )
-      w3 = l3 * 0.5 * (   (b1-dveln/c_IM)*Diff(1) -&
-                       (b2*u_IM-dnx/c_IM)*Diff(2) +&
-                                       b2*Diff(3) )
+      w1 = l1 * 0.5_DP * (   (b1+dveln/c_IM)*Diff(1) -&
+                          (b2*u_IM+dnx/c_IM)*Diff(2) +&
+                                          b2*Diff(3) )
+      w2 = l2 * (                (1.0_DP-b1)*Diff(1) +&
+                                     b2*u_IM*Diff(2) -&
+                                          b2*Diff(3) )
+      w3 = l3 * 0.5_DP * (   (b1-dveln/c_IM)*Diff(1) -&
+                          (b2*u_IM-dnx/c_IM)*Diff(2) +&
+                                          b2*Diff(3) )
             
       ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
       Diff(1) = w1 + w2 + w3 
@@ -5219,8 +5631,8 @@ contains
       
       
       ! Compute auxiliary quantities
-      u = X_VELOCITY_FROM_CONSVAR(Dstate, NVAR1D)
-      p = PRESSURE_FROM_CONSVAR_1D(Dstate, NVAR1D)
+      u = XVELOCITY1(Dstate,IDX1)
+      p = PRESSURE1(Dstate,IDX1)
       
       ! Calculate ${\bf n}\cdot{\bf F}(U)$
       Dflux(1) = dnx*Dstate(2)
@@ -5313,7 +5725,7 @@ contains
       end if
       do ivar = 1, NVAR1D
         p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR1D+ivar) = &
-            0.5*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR1D+ivar)+&
+            0.5_DP*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR1D+ivar)+&
                     p_Dsolution((rcollection%IquickAccess(3)-1)*NVAR1D+ivar))
       end do
 
@@ -5330,7 +5742,7 @@ contains
         end do
       else
         do ivar = 1, NVAR1D
-          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR1D+ivar) = 0.0
+          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR1D+ivar) = 0.0_DP
         end do
       end if
 
@@ -5429,7 +5841,7 @@ contains
       neq = rsolution%NEQ/NVAR1D
       do ivar = 1, NVAR1D
         p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-            0.5*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
+            0.5_DP*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
                     p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(3)) )
       end do
 
@@ -5448,7 +5860,7 @@ contains
       else
         neq = rsolution%NEQ/NVAR1D
         do ivar = 1, NVAR1D
-          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = 0.0
+          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = 0.0_DP
         end do
       end if
 

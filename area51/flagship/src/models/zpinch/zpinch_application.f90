@@ -65,6 +65,8 @@
 
 module zpinch_application
 
+#include "hydro.h"
+
   use afcstabilisation
   use boundarycondaux
   use boundaryfilter

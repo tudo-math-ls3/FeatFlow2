@@ -104,6 +104,7 @@
 module hydro_callback
 
 #include "hydro.h"
+#define _HYDRO_TOTALENERGY_ nvar
 
   use afcstabilisation
   use basicgeometry
@@ -4763,16 +4764,16 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
-          dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR1D, ieq)
+          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
+          dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
 
           ! Overwrite the geometric source term
           DdataSource(1,ieq) = daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
           DdataSource(2,ieq) = daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,ieq,0,0) * dvel
           DdataSource(3,ieq) = daux * DdataMassMatrix(ieq) *&
-                               (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4792,16 +4793,16 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
-          dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR1D, ieq)
+          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
+          dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
 
           ! Update the geometric source term
           DdataSource(1,ieq) = DdataSource(1,ieq) + daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
           DdataSource(2,ieq) = DdataSource(2,ieq) + daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,ieq,0,0) * dvel
           DdataSource(3,ieq) = DdataSource(3,ieq) + daux * DdataMassMatrix(ieq) *&
-                               (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4870,16 +4871,16 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
-          dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR1D, ieq)
+          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
+          dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
 
           ! Overwrite the geometric source term
           DdataSource(ieq,1) = daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
           DdataSource(ieq,2) = daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,ieq,0,0) * dvel
           DdataSource(ieq,3) = daux * DdataMassMatrix(ieq) *&
-                               (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4899,16 +4900,16 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
-          dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR1D, ieq)
+          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
+          dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
 
           ! Update the geometric source term
           DdataSource(ieq,1) = DdataSource(ieq,1) + daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
           DdataSource(ieq,2) = DdataSource(ieq,2) + daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,ieq,0,0) * dvel
           DdataSource(ieq,3) = DdataSource(ieq,3) + daux * DdataMassMatrix(ieq) *&
-                               (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, ieq)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4990,16 +4991,16 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
             
             ! Compute the radial velocity and pressure
-            dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
-            dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR1D, jeq)
+            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
+            dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,jeq,0,0) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)+dpre)*dvel
           end do
           
           ! Overwrite the geometric source term
@@ -5032,16 +5033,16 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
            
             ! Compute the radial velocity and pressure
-            dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
-            dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR1D, jeq)
+            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
+            dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
  
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,jeq,0,0) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)+dpre)*dvel
           end do
           
           ! Update the geometric source term
@@ -5127,16 +5128,16 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
             
             ! Compute the radial velocity and pressure
-            dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
-            dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR1D, jeq)
+            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
+            dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,jeq,0,0) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)+dpre)*dvel
           end do
           
           ! Overwrite the geometric source term
@@ -5169,16 +5170,16 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
            
             ! Compute the radial velocity and pressure
-            dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
-            dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR1D, jeq)
+            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
+            dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
  
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,jeq,0,0) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR1D, jeq)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)+dpre)*dvel
           end do
           
           ! Update the geometric source term
@@ -5250,18 +5251,18 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
-          dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR2D, ieq)
+          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
+          dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
 
           ! Overwrite the geometric source term
           DdataSource(1,ieq) = daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
           DdataSource(2,ieq) = daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,ieq,0,0) * dvel
           DdataSource(3,ieq) = daux * DdataMassMatrix(ieq) *&
-                               Y_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+                               YMOMENTUM2(DdataSolution,IDX2_FORWARD_F,ieq,0,0) * dvel
           DdataSource(4,ieq) = daux * DdataMassMatrix(ieq) *&
-                               (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -5281,18 +5282,18 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
-          dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR2D, ieq)
+          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
+          dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
 
           ! Update the geometric source term
           DdataSource(1,ieq) = DdataSource(1,ieq) + daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)
           DdataSource(2,ieq) = DdataSource(2,ieq) + daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,ieq,0,0) * dvel
           DdataSource(3,ieq) = DdataSource(3,ieq) + daux * DdataMassMatrix(ieq) *&
-                               Y_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+                               YMOMENTUM2(DdataSolution,IDX2_FORWARD_F,ieq,0,0) * dvel
           DdataSource(4,ieq) = DdataSource(4,ieq) + daux * DdataMassMatrix(ieq) *&
-                               (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD_F,ieq,0,0)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -5360,18 +5361,18 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
-          dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR2D, ieq)
+          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
+          dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
 
           ! Overwrite the geometric source term
           DdataSource(ieq,1) = daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
           DdataSource(ieq,2) = daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,ieq,0,0) * dvel
           DdataSource(ieq,3) = daux * DdataMassMatrix(ieq) *&
-                               Y_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+                               YMOMENTUM2(DdataSolution,IDX2_REVERSE_F,ieq,0,0) * dvel
           DdataSource(ieq,4) = daux * DdataMassMatrix(ieq) *&
-                               (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -5391,18 +5392,18 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
-          dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR2D, ieq)
+          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
+          dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
 
           ! Update the geometric source term
           DdataSource(ieq,1) = DdataSource(ieq,1) + daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)
           DdataSource(ieq,2) = DdataSource(ieq,2) + daux * DdataMassMatrix(ieq) *&
-                               X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,ieq,0,0) * dvel
           DdataSource(ieq,3) = DdataSource(ieq,3) + daux * DdataMassMatrix(ieq) *&
-                               Y_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq) * dvel
+                               YMOMENTUM2(DdataSolution,IDX2_REVERSE_F,ieq,0,0) * dvel
           DdataSource(ieq,4) = DdataSource(ieq,4) + daux * DdataMassMatrix(ieq) *&
-                               (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, ieq)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE_F,ieq,0,0)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -5483,18 +5484,18 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
             
             ! Compute the radial velocity and pressure
-            dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
-            dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR2D, jeq)
+            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
+            dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,jeq,0,0) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       Y_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+                       YMOMENTUM2(DdataSolution,IDX2_FORWARD_F,jeq,0,0) * dvel
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
-                       (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)+dpre)*dvel
           end do
           
           ! Overwrite the geometric source term
@@ -5527,18 +5528,18 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
            
             ! Compute the radial velocity and pressure
-            dvel = X_VELOCITY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
-            dpre = PRESSURE_1T_FROM_CONSVAR_1D(DdataSolution, NVAR2D, jeq)
+            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
+            dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
  
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD_F,jeq,0,0) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       Y_MOMENTUM_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+                       YMOMENTUM2(DdataSolution,IDX2_FORWARD_F,jeq,0,0) * dvel
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
-                       (TOTAL_ENERGY_1T_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD_F,jeq,0,0)+dpre)*dvel
           end do
           
           ! Update the geometric source term
@@ -5623,18 +5624,18 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
             
             ! Compute the radial velocity and pressure
-            dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
-            dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR2D, jeq)
+            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
+            dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,jeq,0,0) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       Y_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+                       YMOMENTUM2(DdataSolution,IDX2_REVERSE_F,jeq,0,0) * dvel
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
-                       (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)+dpre)*dvel
           end do
           
           ! Overwrite the geometric source term
@@ -5667,18 +5668,18 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
            
             ! Compute the radial velocity and pressure
-            dvel = X_VELOCITY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
-            dpre = PRESSURE_1L_FROM_CONSVAR_1D(DdataSolution, NVAR2D, jeq)
+            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
+            dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
  
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       X_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE_F,jeq,0,0) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       Y_MOMENTUM_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq) * dvel
+                       YMOMENTUM2(DdataSolution,IDX2_REVERSE_F,jeq,0,0) * dvel
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
-                       (TOTAL_ENERGY_1L_FROM_CONSVAR(DdataSolution, NVAR2D, jeq)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE_F,jeq,0,0)+dpre)*dvel
           end do
           
           ! Update the geometric source term

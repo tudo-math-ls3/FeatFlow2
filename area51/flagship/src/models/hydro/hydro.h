@@ -1,21 +1,72 @@
 #ifndef _HYDRO_H_
 #define _HYDRO_H_
 
+#if 0
+!-*- mode: f90; -*-
+!##############################################################################
+!# ****************************************************************************
+!# <name> hydro </name>
+!# ****************************************************************************
+!#
+!# <purpose>
+!# This is the hydrodynamic header file
+!#
+!# </purpose>
+!##############################################################################
+#endif
+
+
 #include "../../flagship.h"
+#include "../../../../../kernel/System/idxmanager.h"
+
 
 #if 0
-! Equation of state for perfect gas
+!##############################################################################
+! Number of variables
+!##############################################################################
 #endif
-#define PERFECT_GAS
+
+#define NVAR1D 3
+#define NVAR2D 4
+#define NVAR3D 5
+
 
 #if 0
-! Ratio of specific heats for air at sea-level
+!##############################################################################
+! Position of variables in vector of conservative variables
+!##############################################################################
 #endif
-#ifdef HYDRO_GAMMA
-#define GAMMA HYDRO_GAMMA
+
+#if HYDRO_NDIM == 1
+
+#define _HYDRO_DENSITY_     1
+#define _HYDRO_XMOMENTUM_   2
+#undef _HYDRO_YMOMENTUM_
+#undef _HYDRO_ZMOMENTUM_
+#define _HYDRO_TOTALENERGY_ 3
+
+#elif HYDRO_NDIM == 2
+
+#define _HYDRO_DENSITY_     1
+#define _HYDRO_XMOMENTUM_   2
+#define _HYDRO_YMOMENTUM_   3
+#undef _HYDRO_ZMOMENTUM_
+#define _HYDRO_TOTALENERGY_ 4
+
+#elif HYDRO_NDIM == 3 || !defined(HYDRO_NDIM)
+
+#define _HYDRO_DENSITY_     1
+#define _HYDRO_XMOMENTUM_   2
+#define _HYDRO_YMOMENTUM_   3
+#define _HYDRO_ZMOMENTUM_   4
+#define _HYDRO_TOTALENERGY_ 5
+
 #else
-#define GAMMA 1.4_DP
+
+#error "Invalid spatial dimension specified!"
+
 #endif
+
 
 #if 0
 !##############################################################################
@@ -23,50 +74,54 @@
 !##############################################################################
 #endif
 
-#if 0
-! Compute density from conservative variables in 1D, 2D, and 3D
-#endif
-#define DENSITY_FROM_CONSVAR(U,nvar) (U(1))
-#define DENSITY_1T_FROM_CONSVAR(U,nvar,i1) (U(1,i1))
-#define DENSITY_1L_FROM_CONSVAR(U,nvar,i1) (U(i1,1))
-#define DENSITY_2T_FROM_CONSVAR(U,nvar,i1,i2) (U(1,i1,i2))
-#define DENSITY_2L_FROM_CONSVAR(U,nvar,i1,i2) (U(i1,i2,1))
+#if LANGUAGE == LANGUAGE_F
 
-#if 0
-! Compute x-momentum from conservative variables in 1D, 2D, and 3D
-#endif
-#define X_MOMENTUM_FROM_CONSVAR(U,nvar) (U(2))
-#define X_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1) (U(2,i1))
-#define X_MOMENTUM_1L_FROM_CONSVAR(U,nvar,i1) (U(i1,2))
-#define X_MOMENTUM_2T_FROM_CONSVAR(U,nvar,i1,i2) (U(2,i1,i2))
-#define X_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2) (U(i1,i2,2))
+#define DENSITY1(U,IDX)              U(IDX(_HYDRO_DENSITY_))
+#define DENSITY2(U,IDX,i,n1,n2)      U(IDX(_HYDRO_DENSITY_,i,n1,n2))
+#define DENSITY3(U,IDX,i,j,n1,n2,n3) U(IDX(_HYDRO_DENSITY_,i,j,n1,n2,n3))
 
-#if 0
-! Compute y-momentum from conservative variables in 2D, and 3D
-#endif
-#define Y_MOMENTUM_FROM_CONSVAR(U,nvar) (U(3))
-#define Y_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1) (U(3,i1))
-#define Y_MOMENTUM_1L_FROM_CONSVAR(U,nvar,i1) (U(i1,3))
-#define Y_MOMENTUM_2T_FROM_CONSVAR(U,nvar,i1,i2) (U(3,i1,i2))
-#define Y_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2) (U(i1,i2,3))
+#define XMOMENTUM1(U,IDX)              U(IDX(_HYDRO_XMOMENTUM_))
+#define XMOMENTUM2(U,IDX,i,n1,n2)      U(IDX(_HYDRO_XMOMENTUM_,i,n1,n2))
+#define XMOMENTUM3(U,IDX,i,j,n1,n2,n3) U(IDX(_HYDRO_XMOMENTUM_,i,j,n1,n2,n3))
 
-#if 0
-! Compute z-momentum from conservative variables in 3D
-#endif
-#define Z_MOMENTUM_FROM_CONSVAR(U,nvar) (U(4))
-#define Z_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1) (U(4,i1))
-#define Z_MOMENTUM_1L_FROM_CONSVAR(U,nvar,i1) (U(i1,4))
-#define Z_MOMENTUM_2T_FROM_CONSVAR(U,nvar,i1,i2) (U(4,i1,i2))
-#define Z_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2) (U(i1,i2,4))
+#define YMOMENTUM1(U,IDX)              U(IDX(_HYDRO_YMOMENTUM_))
+#define YMOMENTUM2(U,IDX,i,n1,n2)      U(IDX(_HYDRO_YMOMENTUM_,i,n1,n2))
+#define YMOMENTUM3(U,IDX,i,j,n1,n2,n3) U(IDX(_HYDRO_YMOMENTUM_,i,j,n1,n2,n3))
 
-#if 0
-! Compute total energy from conservative variables in 1D, 2d, and 3D
+#define ZMOMENTUM1(U,IDX)              U(IDX(_HYDRO_ZMOMENTUM_))
+#define ZMOMENTUM2(U,IDX,i,n1,n2)      U(IDX(_HYDRO_ZMOMENTUM_,i,n1,n2))
+#define ZMOMENTUM3(U,IDX,i,j,n1,n2,n3) U(IDX(_HYDRO_ZMOMENTUM_,i,j,n1,n2,n3))
+
+#define TOTALENERGY1(U,IDX)              U(IDX(_HYDRO_TOTALENERGY_))
+#define TOTALENERGY2(U,IDX,i,n1,n2)      U(IDX(_HYDRO_TOTALENERGY_,i,n1,n2))
+#define TOTALENERGY3(U,IDX,i,j,n1,n2,n3) U(IDX(_HYDRO_TOTALENERGY_,i,j,n1,n2,n3))
+
+#elif LANGUAGE == LANGUAGE_C
+
+#define DENSITY1(U,IDX)              U[IDX(_HYDRO_DENSITY_)]
+#define DENSITY2(U,IDX,i,n1,n2)      U[IDX(_HYDRO_DENSITY_,i,n1,n2)]
+#define DENSITY3(U,IDX,i,j,n1,n2,n3) U[IDX(_HYDRO_DENSITY_,i,j,n1,n2,n3)]
+
+#define XMOMENTUM1(U,IDX)              U[IDX(_HYDRO_XMOMENTUM_)]
+#define XMOMENTUM2(U,IDX,i,n1,n2)      U[IDX(_HYDRO_XMOMENTUM_,i,n1,n2)]
+#define XMOMENTUM3(U,IDX,i,j,n1,n2,n3) U[IDX(_HYDRO_XMOMENTUM_,i,j,n1,n2,n3)]
+
+#define YMOMENTUM1(U,IDX)              U[IDX(_HYDRO_YMOMENTUM_)]
+#define YMOMENTUM2(U,IDX,i,n1,n2)      U[IDX(_HYDRO_YMOMENTUM_,i,n1,n2)]
+#define YMOMENTUM3(U,IDX,i,j,n1,n2,n3) U[IDX(_HYDRO_YMOMENTUM_,i,j,n1,n2,n3)]
+
+#define ZMOMENTUM1(U,IDX)              U[IDX(_HYDRO_ZMOMENTUM_)]
+#define ZMOMENTUM2(U,IDX,i,n1,n2)      U[IDX(_HYDRO_ZMOMENTUM_,i,n1,n2)]
+#define ZMOMENTUM3(U,IDX,i,j,n1,n2,n3) U[IDX(_HYDRO_ZMOMENTUM_,i,j,n1,n2,n3)]
+
+#define TOTALENERGY1(U,IDX)              U[IDX(_HYDRO_TOTALENERGY_)]
+#define TOTALENERGY2(U,IDX,i,n1,n2)      U[IDX(_HYDRO_TOTALENERGY_,i,n1,n2)]
+#define TOTALENERGY3(U,IDX,i,j,n1,n2,n3) U[IDX(_HYDRO_TOTALENERGY_,i,j,n1,n2,n3)]
+
+#else
+#error "Unsupported programming language"
 #endif
-#define TOTAL_ENERGY_FROM_CONSVAR(U,nvar) (U(nvar))
-#define TOTAL_ENERGY_1T_FROM_CONSVAR(U,nvar,i1) (U(nvar,i1))
-#define TOTAL_ENERGY_1L_FROM_CONSVAR(U,nvar,i1) (U(i1,nvar))
-#define TOTAL_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2) (U(nvar,i1,i2))
-#define TOTAL_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2) (U(i1,i2,nvar))
+
 
 #if 0
 !##############################################################################
@@ -74,8 +129,9 @@
 !##############################################################################
 #endif
 
-#define ROE_MEAN_RATIO(ul,ur) (sqrt(ul/ur))
-#define ROE_MEAN_VALUE(ul,ur,ratio) ((ratio*ul+MYNEWLINE ur)/MYNEWLINE (ratio+1))
+#define ROE_MEAN_RATIO(ul,ur)       (sqrt(ul/ur))
+#define ROE_MEAN_VALUE(ul,ur,ratio) ((ratio*ul+ur)/(ratio+1.0_DP))
+
 
 #if 0
 !##############################################################################
@@ -83,7 +139,22 @@
 !##############################################################################
 #endif
 
+#if 0
+! Specify spatial dimension
+#endif
+#ifdef HYDRO_NDIM
+#define THERMODYN_NDIM HYDRO_NDIM
+#endif
+
+#if 0
+! Specify ratio of specific heats
+#endif
+#ifdef HYDRO_GAMMA
+#define THERMODYN_GAMMA HYDRO_GAMMA
+#endif
+
 #include "../../kernel/thermodynamics.h"
+
 
 #if 0
 !##############################################################################
@@ -94,95 +165,46 @@
 #if 0
 ! Flux in x-direction for inviscid hydrodynamics in 1D
 #endif
-#define FLUX_HYDRO_XDIR_1D(F,Ui,ui,pi)\
-  F(1) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR1D);MYNEWLINE\
-  F(2) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR1D)*ui+pi;MYNEWLINE\
-  F(3) = TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR1D)*ui+pi*ui
 
-#define FLUX_HYDRO_1T_XDIR_1D(F,U,i,ui,pi)\
-  F(1) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR1D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR1D,i)*ui+pi;MYNEWLINE\
-  F(3) = TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR1D,i)*ui+pi*ui
+#define INVISCIDFLUX1_XDIR1_1D(U,IDX,u,p)  XMOMENTUM1(U,IDX)
+#define INVISCIDFLUX2_XDIR1_1D(U,IDX,u,p) (XMOMENTUM1(U,IDX)*u+p)
+#define INVISCIDFLUX3_XDIR1_1D(U,IDX,u,p) (TOTALENERGY1(U,IDX)*u+p*u)
 
-#define FLUX_HYDRO_1L_XDIR_1D(F,U,i,ui,pi)\
-  F(1) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR1D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR1D,i)*ui+pi;MYNEWLINE\
-  F(3) = TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR1D,i)*ui+pi*ui
+#define INVISCIDFLUX1_XDIR2_1D(U,IDX,i,n1,n2,u,p)  XMOMENTUM2(U,IDX,i,n1,n2)
+#define INVISCIDFLUX2_XDIR2_1D(U,IDX,i,n1,n2,u,p) (XMOMENTUM2(U,IDX,i,n1,n2)*u+p)
+#define INVISCIDFLUX3_XDIR2_1D(U,IDX,i,n1,n2,u,p) (TOTALENERGY2(U,IDX,i,n1,n2)*u+p*u)
 
-#define FLUX_HYDRO_2T_XDIR_1D(F,U,i,idx,ui,pi)\
-  F(1) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR1D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR1D,i,idx)*ui+pi;MYNEWLINE\
-  F(3) = TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR1D,i,idx)*ui+pi*ui
-
-#define FLUX_HYDRO_2L_XDIR_1D(F,U,i,idx,ui,pi)\
-  F(1) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR1D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR1D,i,idx)*ui+pi;MYNEWLINE\
-  F(3) = TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR1D,i,idx)*ui+pi*ui
+#define INVISCIDFLUX1_XDIR3_1D(U,IDX,i,j,n1,n2,n3,u,p)  XMOMENTUM3(U,IDX,i,j,n1,n2,n3)
+#define INVISCIDFLUX2_XDIR3_1D(U,IDX,i,j,n1,n2,n3,u,p) (XMOMENTUM3(U,IDX,i,j,n1,n2,n3)*u+p)
+#define INVISCIDFLUX3_XDIR3_1D(U,IDX,i,j,n1,n2,n3,u,p) (TOTALENERGY3(U,IDX,i,j,n1,n2,n3)*u+p*u)
 
 #if 0
-! Flux difference in x-direction for inviscid hydrodynamics in 1D
+! Flux Jacobian matrix for inviscid hydrodynamics in 1D
 #endif
-#define FLUXDIFF_HYDRO_XDIR_1D(F,Ui,Uj,ui,uj,pi,pj)	\
-  F(1) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR1D)-MYNEWLINE\
-         X_MOMENTUM_FROM_CONSVAR(Uj,NVAR1D);MYNEWLINE\
-  F(2) = (X_MOMENTUM_FROM_CONSVAR(Ui,NVAR1D)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_FROM_CONSVAR(Uj,NVAR1D)*uj+pj);MYNEWLINE\
-  F(3) = (TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR1D)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_FROM_CONSVAR(Uj,NVAR1D)*uj+pj*uj)
 
-#define FLUXDIFF_HYDRO_1T_XDIR_1D(F,U,i,j,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR1D,i)-MYNEWLINE\
-         X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR1D,j);MYNEWLINE\
-  F(2) = (X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR1D,i)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR1D,j)*uj+pj);MYNEWLINE\
-  F(3) = (TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR1D,i)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR1D,j)*uj+pj*uj)
-
-#define FLUXDIFF_HYDRO_1L_XDIR_1D(F,U,i,j,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR1D,i)-MYNEWLINE\
-         X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR1D,j);MYNEWLINE\
-  F(2) = (X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR1D,i)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR1D,j)*uj+pj);MYNEWLINE\
-  F(3) = (TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR1D,i)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR1D,j)*uj+pj*uj)
-
-#define FLUXDIFF_HYDRO_2T_XDIR_1D(F,U,i,j,idx,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR1D,i,idx)-MYNEWLINE\
-         X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR1D,j,idx);MYNEWLINE\
-  F(2) = (X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR1D,i,idx)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR1D,j,idx)*uj+pj);MYNEWLINE\
-  F(3) = (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR1D,i,idx)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR1D,j,idx)*uj+pj*uj)
-
-#define FLUXDIFF_HYDRO_2L_XDIR_1D(F,U,i,j,idx,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR1D,i,idx)-MYNEWLINE\
-         X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR1D,j,idx);MYNEWLINE\
-  F(2) = (X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR1D,i,idx)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR1D,j,idx)*uj+pj);MYNEWLINE\
-  F(3) = (TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR1D,i,idx)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR1D,j,idx)*uj+pj*uj)
+#define FLUXJACOBIMATRIX11_1D(dscale,CX,u,E)  0.0_DP
+#define FLUXJACOBIMATRIX12_1D(dscale,CX,u,E) dscale*CX
+#define FLUXJACOBIMATRIX13_1D(dscale,CX,u,E)  0.0_DP
+#define FLUXJACOBIMATRIX21_1D(dscale,CX,u,E) dscale*((HYDRO_GAMMA)-3.0_DP)/2.0_DP*u*u*CX
+#define FLUXJACOBIMATRIX22_1D(dscale,CX,u,E) dscale*(3.0_DP-(HYDRO_GAMMA))*u*CX
+#define FLUXJACOBIMATRIX23_1D(dscale,CX,u,E) dscale*((HYDRO_GAMMA)-1.0_DP)*CX
+#define FLUXJACOBIMATRIX31_1D(dscale,CX,u,E) dscale*(((HYDRO_GAMMA)-1.0_DP)*u*u-(HYDRO_GAMMA)*E)*u*CX
+#define FLUXJACOBIMATRIX32_1D(dscale,CX,u,E) dscale*((HYDRO_GAMMA)*E-3.0_DP*((HYDRO_GAMMA)-1.0_DP)/2.0_DP*u*u)*CX
+#define FLUXJACOBIMATRIX33_1D(dscale,CX,u,E) dscale*(HYDRO_GAMMA)*u*CX
 
 #if 0
-! Diagonal matrix for inviscid hydrodynamics in 1D
+! Flux Jacobian matrix in x-direction for inviscid hydrodynamics in 1D
 #endif
-#define MATRIXDIAG_HYDRO_2T_1D(K,i,idx,dscale,CX,ui)\
-  K(1,i,idx) = 0.0_DP;MYNEWLINE\
-  K(2,i,idx) = dscale*(3.0_DP-(GAMMA))*ui*CX;MYNEWLINE\
-  K(3,i,idx) = dscale*(GAMMA)*ui*CX
 
-#if 0
-! Full matrix for inviscid hydrodynamics in 1D
-#endif
-#define MATRIX_HYDRO_2T_1D(K,i,idx,dscale,CX,ui,Ei)\
-  K(1,i,idx) = 0.0_DP;MYNEWLINE\
-  K(2,i,idx) = dscale*((GAMMA)-3.0_DP)/2.0_DP*ui*ui*CX;MYNEWLINE\
-  K(3,i,idx) = dscale*(((GAMMA)-1.0_DP)*ui*ui-(GAMMA)*Ei)*ui*CX;MYNEWLINE\
-  K(4,i,idx) = dscale*CX;MYNEWLINE\
-  K(5,i,idx) = dscale*(3.0_DP-(GAMMA))*ui*CX;MYNEWLINE\
-  K(6,i,idx) = dscale*((GAMMA)*Ei-3.0_DP*((GAMMA)-1.0_DP)/2.0_DP*ui*ui)*CX;MYNEWLINE\
-  K(7,i,idx) = 0.0_DP;MYNEWLINE\
-  K(8,i,idx) = dscale*((GAMMA)-1.0_DP)*CX;MYNEWLINE\
-  K(9,i,idx) = dscale*(GAMMA)*ui*CX
+#define FLUXJACOBIMATRIX11_XDIR_1D(dscale,u,E) FLUXJACOBIMATRIX11_1D(dscale,1.0_DP,u,E)
+#define FLUXJACOBIMATRIX12_XDIR_1D(dscale,u,E) FLUXJACOBIMATRIX12_1D(dscale,1.0_DP,u,E)
+#define FLUXJACOBIMATRIX13_XDIR_1D(dscale,u,E) FLUXJACOBIMATRIX13_1D(dscale,1.0_DP,u,E)
+#define FLUXJACOBIMATRIX21_XDIR_1D(dscale,u,E) FLUXJACOBIMATRIX21_1D(dscale,1.0_DP,u,E)
+#define FLUXJACOBIMATRIX22_XDIR_1D(dscale,u,E) FLUXJACOBIMATRIX22_1D(dscale,1.0_DP,u,E)
+#define FLUXJACOBIMATRIX23_XDIR_1D(dscale,u,E) FLUXJACOBIMATRIX23_1D(dscale,1.0_DP,u,E)
+#define FLUXJACOBIMATRIX31_XDIR_1D(dscale,u,E) FLUXJACOBIMATRIX31_1D(dscale,1.0_DP,u,E)
+#define FLUXJACOBIMATRIX32_XDIR_1D(dscale,u,E) FLUXJACOBIMATRIX32_1D(dscale,1.0_DP,u,E)
+#define FLUXJACOBIMATRIX33_XDIR_1D(dscale,u,E) FLUXJACOBIMATRIX33_1D(dscale,1.0_DP,u,E)
 
 
 #if 0
@@ -194,164 +216,104 @@
 #if 0
 ! Flux in x-direction for inviscid hydrodynamics in 2D
 #endif
-#define FLUX_HYDRO_XDIR_2D(F,Ui,ui,pi)\
-  F(1) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR2D);MYNEWLINE\
-  F(2) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR2D)*ui+pi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR2D)*ui;MYNEWLINE\
-  F(4) = TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR2D)*ui+pi*ui
 
-#define FLUX_HYDRO_1T_XDIR_2D(F,U,i,ui,pi)\
-  F(1) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,i)*ui+pi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,i)*ui;MYNEWLINE\
-  F(4) = TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR2D,i)*ui+pi*ui
+#define INVISCIDFLUX1_XDIR1_2D(U,IDX,u,p)  XMOMENTUM1(U,IDX)
+#define INVISCIDFLUX2_XDIR1_2D(U,IDX,u,p) (XMOMENTUM1(U,IDX)*u+p)
+#define INVISCIDFLUX3_XDIR1_2D(U,IDX,u,p) (YMOMENTUM1(U,IDX)*u)
+#define INVISCIDFLUX4_XDIR1_2D(U,IDX,u,p) (TOTALENERGY1(U,IDX)*u+p*u)
 
-#define FLUX_HYDRO_1L_XDIR_2D(F,U,i,ui,pi)\
-  F(1) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,i)*ui+pi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,i)*ui;MYNEWLINE\
-  F(4) = TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR2D,i)*ui+pi*ui
+#define INVISCIDFLUX1_XDIR2_2D(U,IDX,i,n1,n2,u,p)  XMOMENTUM2(U,IDX,i,n1,n2)
+#define INVISCIDFLUX2_XDIR2_2D(U,IDX,i,n1,n2,u,p) (XMOMENTUM2(U,IDX,i,n1,n2)*u+p)
+#define INVISCIDFLUX3_XDIR2_2D(U,IDX,i,n1,n2,u,p) (YMOMENTUM2(U,IDX,i,n1,n2)*u)
+#define INVISCIDFLUX4_XDIR2_2D(U,IDX,i,n1,n2,u,p) (TOTALENERGY2(U,IDX,i,n1,n2)*u+p*u)
 
-#define FLUX_HYDRO_2T_XDIR_2D(F,U,i,idx,ui,pi)\
-  F(1) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*ui+pi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*ui;MYNEWLINE\
-  F(4) = TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*ui+pi*ui
+#define INVISCIDFLUX1_XDIR3_2D(U,IDX,i,j,n1,n2,n3,u,p)  XMOMENTUM3(U,IDX,i,j,n1,n2,n3)
+#define INVISCIDFLUX2_XDIR3_2D(U,IDX,i,j,n1,n2,n3,u,p) (XMOMENTUM3(U,IDX,i,j,n1,n2,n3)*u+p)
+#define INVISCIDFLUX3_XDIR3_2D(U,IDX,i,j,n1,n2,n3,u,p) (YMOMENTUM3(U,IDX,i,j,n1,n2,n3)*u)
+#define INVISCIDFLUX4_XDIR3_2D(U,IDX,i,j,n1,n2,n3,u,p) (TOTALENERGY3(U,IDX,i,j,n1,n2,n3)*u+p*u)
 
-#define FLUX_HYDRO_2L_XDIR_2D(F,U,i,idx,ui,pi)\
-  F(1) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,i,idx)*ui+pi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,i,idx)*ui;MYNEWLINE\
-  F(4) = TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR2D,i,idx)*ui+pi*ui
-  
 #if 0
 ! Flux in y-direction for inviscid hydrodynamics in 2D
 #endif
-#define FLUX_HYDRO_YDIR_2D(F,Ui,vi,pi)\
-  F(1) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR2D);MYNEWLINE\
-  F(2) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR2D)*vi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR2D)*vi+pi;MYNEWLINE\
-  F(4) = TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR2D)*vi+pi*vi
 
-#define FLUX_HYDRO_1T_YDIR_2D(F,U,i,vi,pi)\
-  F(1) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,i)*vi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,i)*vi+pi;MYNEWLINE\
-  F(4) = TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR2D,i)*vi+pi*vi
+#define INVISCIDFLUX1_YDIR1_2D(U,IDX,v,p)  YMOMENTUM1(U,IDX)
+#define INVISCIDFLUX2_YDIR1_2D(U,IDX,v,p) (XMOMENTUM1(U,IDX)*v)
+#define INVISCIDFLUX3_YDIR1_2D(U,IDX,v,p) (YMOMENTUM1(U,IDX)*v+p)
+#define INVISCIDFLUX4_YDIR1_2D(U,IDX,v,p) (TOTALENERGY1(U,IDX)*v+p*v)
 
-#define FLUX_HYDRO_1L_YDIR_2D(F,U,i,vi,pi)\
-  F(1) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,i)*vi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,i)*vi+pi;MYNEWLINE\
-  F(4) = TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR2D,i)*vi+pi*vi
+#define INVISCIDFLUX1_YDIR2_2D(U,IDX,i,n1,n2,v,p)  YMOMENTUM2(U,IDX,i,n1,n2)
+#define INVISCIDFLUX2_YDIR2_2D(U,IDX,i,n1,n2,v,p) (XMOMENTUM2(U,IDX,i,n1,n2)*v)
+#define INVISCIDFLUX3_YDIR2_2D(U,IDX,i,n1,n2,v,p) (YMOMENTUM2(U,IDX,i,n1,n2)*v+p)
+#define INVISCIDFLUX4_YDIR2_2D(U,IDX,i,n1,n2,v,p) (TOTALENERGY2(U,IDX,i,n1,n2)*v+p*v)
 
-#define FLUX_HYDRO_2T_YDIR_2D(F,U,i,idx,vi,pi)\
-  F(1) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*vi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*vi+pi;MYNEWLINE\
-  F(4) = TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*vi+pi*vi
-
-#define FLUX_HYDRO_2L_YDIR_2D(F,U,i,idx,vi,pi)\
-  F(1) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,i,idx)*vi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,i,idx)*vi+pi;MYNEWLINE\
-  F(4) = TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR2D,i,idx)*vi+pi*vi
+#define INVISCIDFLUX1_YDIR3_2D(U,IDX,i,j,n1,n2,n3,v,p)  YMOMENTUM3(U,IDX,i,j,n1,n2,n3)
+#define INVISCIDFLUX2_YDIR3_2D(U,IDX,i,j,n1,n2,n3,v,p) (XMOMENTUM3(U,IDX,i,j,n1,n2,n3)*v)
+#define INVISCIDFLUX3_YDIR3_2D(U,IDX,i,j,n1,n2,n3,v,p) (YMOMENTUM3(U,IDX,i,j,n1,n2,n3)*v+p)
+#define INVISCIDFLUX4_YDIR3_2D(U,IDX,i,j,n1,n2,n3,v,p) (TOTALENERGY3(U,IDX,i,j,n1,n2,n3)*v+p*v)
 
 #if 0
-! Flux difference in x-direction for inviscid hydrodynamics in 2D
+! Flux Jacobian matrix for inviscid hydrodynamics in 2D
 #endif
-#define FLUXDIFF_HYDRO_XDIR_2D(F,Ui,Uj,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR2D)-MYNEWLINE\
-         X_MOMENTUM_FROM_CONSVAR(Uj,NVAR2D);MYNEWLINE\
-  F(2) = (X_MOMENTUM_FROM_CONSVAR(Ui,NVAR2D)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_FROM_CONSVAR(Uj,NVAR2D)*uj+pj);MYNEWLINE\
-  F(3) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR2D)*ui-MYNEWLINE\
-	 Y_MOMENTUM_FROM_CONSVAR(Uj,NVAR2D)*uj;MYNEWLINE\
-  F(4) = (TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR2D)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_FROM_CONSVAR(Uj,NVAR2D)*uj+pj*uj)
 
-#define FLUXDIFF_HYDRO_1T_XDIR_2D(F,U,i,j,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,i)-MYNEWLINE\
-         X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,j);MYNEWLINE\
-  F(2) = (X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,i)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,j)*uj+pj);MYNEWLINE\
-  F(3) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,i)*ui-MYNEWLINE\
-	 Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR2D,j)*uj;MYNEWLINE\
-  F(4) = (TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR2D,i)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR2D,j)*uj+pj*uj)
-
-#define FLUXDIFF_HYDRO_1L_XDIR_2D(F,U,i,j,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,i)-MYNEWLINE\
-         X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,j);MYNEWLINE\
-  F(2) = (X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,i)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,j)*uj+pj);MYNEWLINE\
-  F(3) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,i)*ui-MYNEWLINE\
-	 Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR2D,j)*uj;MYNEWLINE\
-  F(4) = (TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR2D,i)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR2D,j)*uj+pj*uj)
-
-#define FLUXDIFF_HYDRO_2T_XDIR_2D(F,U,i,j,idx,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx)-MYNEWLINE\
-         X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,j,idx);MYNEWLINE\
-  F(2) = (X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,j,idx)*uj+pj);MYNEWLINE\
-  F(3) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*ui-MYNEWLINE\
-	 Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,j,idx)*uj;MYNEWLINE\
-  F(4) = (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR2D,j,idx)*uj+pj*uj)
-
-#define FLUXDIFF_HYDRO_2L_XDIR_2D(F,U,i,j,idx,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,i,idx)-MYNEWLINE\
-         X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,j,idx);MYNEWLINE\
-  F(2) = (X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,i,idx)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,j,idx)*uj+pj);MYNEWLINE\
-  F(3) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,i,idx)*ui-MYNEWLINE\
-	 Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR2D,j,idx)*uj;MYNEWLINE\
-  F(4) = (TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR2D,i,idx)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR2D,j,idx)*uj+pj*uj)
+#define FLUXJACOBIMATRIX11_2D(dscale,CX,CY,u,v,E) 0.0_DP
+#define FLUXJACOBIMATRIX12_2D(dscale,CX,CY,u,v,E) dscale*CX
+#define FLUXJACOBIMATRIX13_2D(dscale,CX,CY,u,v,E) dscale*CY
+#define FLUXJACOBIMATRIX14_2D(dscale,CX,CY,u,v,E) 0.0_DP
+#define FLUXJACOBIMATRIX21_2D(dscale,CX,CY,u,v,E) dscale*((((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(u*u+v*v)-MYNEWLINE u*u)*CX-u*v*CY)
+#define FLUXJACOBIMATRIX22_2D(dscale,CX,CY,u,v,E) dscale*((3.0_DP-(HYDRO_GAMMA))*u*CX+v*CY)
+#define FLUXJACOBIMATRIX23_2D(dscale,CX,CY,u,v,E) dscale*(u*CY-((HYDRO_GAMMA)-1.0_DP)*v*CX)
+#define FLUXJACOBIMATRIX24_2D(dscale,CX,CY,u,v,E) dscale*((HYDRO_GAMMA)-1.0_DP)*CX
+#define FLUXJACOBIMATRIX31_2D(dscale,CX,CY,u,v,E) dscale*((((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(u*u+v*v)-v*v)*CY-MYNEWLINE u*v*CX)
+#define FLUXJACOBIMATRIX32_2D(dscale,CX,CY,u,v,E) dscale*(v*CX-((HYDRO_GAMMA)-1.0_DP)*u*CY)
+#define FLUXJACOBIMATRIX33_2D(dscale,CX,CY,u,v,E) dscale*(u*CX+(3.0_DP-(HYDRO_GAMMA))*v*CY)
+#define FLUXJACOBIMATRIX34_2D(dscale,CX,CY,u,v,E) dscale*((HYDRO_GAMMA)-1.0_DP)*CY
+#define FLUXJACOBIMATRIX41_2D(dscale,CX,CY,u,v,E) dscale*(((HYDRO_GAMMA)-1.0_DP)*(u*u+v*v)-(HYDRO_GAMMA)*E)*(u*CX+v*CY)
+#define FLUXJACOBIMATRIX42_2D(dscale,CX,CY,u,v,E) dscale*(((HYDRO_GAMMA)*E-((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(u*u+v*v))*CX-MYNEWLINE ((HYDRO_GAMMA)-1.0_DP)*u*(u*CX+v*CY))
+#define FLUXJACOBIMATRIX43_2D(dscale,CX,CY,u,v,E) dscale*(((HYDRO_GAMMA)*E-((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(u*u+v*v))*CY-MYNEWLINE ((HYDRO_GAMMA)-1.0_DP)*v*(u*CX+v*CY))
+#define FLUXJACOBIMATRIX44_2D(dscale,CX,CY,u,v,E) dscale*((HYDRO_GAMMA)*(u*CX+v*CY))
 
 #if 0
-! Flux difference in y-direction for inviscid hydrodynamics in 2D
+! Flux Jacobian matrix in x-direction for inviscid hydrodynamics in 2D
 #endif
-#define FLUXDIFF_HYDRO_2T_YDIR_2D(F,U,i,j,idx,vi,vj,pi,pj)\
-  F(1) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx)-MYNEWLINE\
-         Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,j,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*vi-MYNEWLINE\
-         X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,j,idx)*vj;MYNEWLINE\
-  F(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*vi+pi)-MYNEWLINE\
-	 (Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR2D,j,idx)*vj+pj);MYNEWLINE\
-  F(4) = (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR2D,i,idx)*vi+pi*vi)-MYNEWLINE\
-         (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR2D,j,idx)*vj+pj*vj)
+
+#define FLUXJACOBIMATRIX11_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX11_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX12_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX12_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX13_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX13_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX14_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX14_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX21_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX21_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX22_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX22_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX23_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX23_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX24_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX24_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX31_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX31_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX32_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX32_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX33_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX33_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX34_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX34_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX41_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX41_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX42_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX42_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX43_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX43_2D(dscale,1.0_DP,0.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX44_XDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX44_2D(dscale,1.0_DP,0.0_DP,u,v,E)
 
 #if 0
-! Diagonal matrix for inviscid hydrodynamics in 2D
+! Flux Jacobian matrix in y-direction for inviscid hydrodynamics in 2D
 #endif
-#define MATRIXDIAG_HYDRO_2T_2D(K,i,idx,dscale,CX,CY,ui,vi)\
-  K(1,i,idx) = 0.0_DP;MYNEWLINE\
-  K(2,i,idx) = dscale*((3.0_DP-(GAMMA))*ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
-  K(3,i,idx) = dscale*(ui*CX+MYNEWLINE (3.0_DP-(GAMMA))*vi*CY);MYNEWLINE\
-  K(4,i,idx) = dscale*((GAMMA)*(ui*CX+MYNEWLINE vi*CY))
 
-#if 0
-! Full matrix for inviscid hydrodynamics in 2D
-#endif
-#define MATRIX_HYDRO_2T_2D(K,i,idx,dscale,CX,CY,ui,vi,Ei)\
-  K( 1,i,idx) = 0.0_DP;MYNEWLINE\
-  K( 2,i,idx) = dscale*((((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi)-ui*ui)*CX-MYNEWLINE ui*vi*CY);MYNEWLINE\
-  K( 3,i,idx) = dscale*((((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi)-vi*vi)*CY-MYNEWLINE ui*vi*CX);MYNEWLINE\
-  K( 4,i,idx) = dscale*(((GAMMA)-1.0_DP)*(ui*ui+vi*vi)-(GAMMA)*Ei)*(ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
-  K( 5,i,idx) = dscale*CX;MYNEWLINE\
-  K( 6,i,idx) = dscale*((3.0_DP-(GAMMA))*ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
-  K( 7,i,idx) = dscale*(vi*CX-MYNEWLINE ((GAMMA)-1.0_DP)*ui*CY);MYNEWLINE\
-  K( 8,i,idx) = dscale*(((GAMMA)*Ei-((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi))*CX-MYNEWLINE ((GAMMA)-1.0_DP)*ui*(ui*CX+MYNEWLINE vi*CY));MYNEWLINE\
-  K( 9,i,idx) = dscale*CY;MYNEWLINE\
-  K(10,i,idx) = dscale*(ui*CY-MYNEWLINE ((GAMMA)-1.0_DP)*vi*CX);MYNEWLINE\
-  K(11,i,idx) = dscale*(ui*CX+MYNEWLINE (3.0_DP-(GAMMA))*vi*CY);MYNEWLINE\
-  K(12,i,idx) = dscale*(((GAMMA)*Ei-((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi))*CY-MYNEWLINE ((GAMMA)-1.0_DP)*vi*(ui*CX+MYNEWLINE vi*CY));MYNEWLINE\
-  K(13,i,idx) = 0.0_DP;MYNEWLINE\
-  K(14,i,idx) = dscale*((GAMMA)-1.0_DP)*CX;MYNEWLINE\
-  K(15,i,idx) = dscale*((GAMMA)-1.0_DP)*CY;MYNEWLINE\
-  K(16,i,idx) = dscale*((GAMMA)*(ui*CX+MYNEWLINE vi*CY))
+#define FLUXJACOBIMATRIX11_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX11_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX12_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX12_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX13_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX13_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX14_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX14_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX21_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX21_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX22_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX22_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX23_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX23_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX24_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX24_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX31_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX31_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX32_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX32_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX33_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX33_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX34_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX34_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX41_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX41_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX42_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX42_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX43_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX43_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+#define FLUXJACOBIMATRIX44_YDIR_2D(dscale,u,v,E) FLUXJACOBIMATRIX44_2D(dscale,0.0_DP,1.0_DP,u,v,E)
+
 
 #if 0
 !##############################################################################
@@ -362,343 +324,471 @@
 #if 0
 ! Flux in x-direction for inviscid hydrodynamics in 3D
 #endif
-#define FLUX_HYDRO_XDIR_3D(F,Ui,ui,pi)\
-  F(1) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D);MYNEWLINE\
-  F(2) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*ui+pi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*ui;MYNEWLINE\
-  F(4) = Z_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*ui;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR3D)*ui+pi*ui
 
-#define FLUX_HYDRO_1T_XDIR_3D(F,U,i,ui,pi)\
-  F(1) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*ui+pi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*ui;MYNEWLINE\
-  F(4) = Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*ui;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR3D,i)*ui+pi*ui
+#define INVISCIDFLUX1_XDIR1_3D(U,IDX,u,p)  XMOMENTUM1(U,IDX)
+#define INVISCIDFLUX2_XDIR1_3D(U,IDX,u,p) (XMOMENTUM1(U,IDX)*u+p)
+#define INVISCIDFLUX3_XDIR1_3D(U,IDX,u,p) (YMOMENTUM1(U,IDX)*u)
+#define INVISCIDFLUX4_XDIR1_3D(U,IDX,u,p) (ZMOMENTUM1(U,IDX)*u)
+#define INVISCIDFLUX5_XDIR1_3D(U,IDX,u,p) (TOTALENERGY1(U,IDX)*u+p*u)
 
-#define FLUX_HYDRO_1L_XDIR_3D(F,U,i,ui,pi)\
-  F(1) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*ui+pi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*ui;MYNEWLINE\
-  F(4) = Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*ui;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR3D,i)*ui+pi*ui
+#define INVISCIDFLUX1_XDIR2_3D(U,IDX,i,n1,n2,u,p)  XMOMENTUM2(U,IDX,i,n1,n2)
+#define INVISCIDFLUX2_XDIR2_3D(U,IDX,i,n1,n2,u,p) (XMOMENTUM2(U,IDX,i,n1,n2)*u+p)
+#define INVISCIDFLUX3_XDIR2_3D(U,IDX,i,n1,n2,u,p) (YMOMENTUM2(U,IDX,i,n1,n2)*u)
+#define INVISCIDFLUX4_XDIR2_3D(U,IDX,i,n1,n2,u,p) (ZMOMENTUM2(U,IDX,i,n1,n2)*u)
+#define INVISCIDFLUX5_XDIR2_3D(U,IDX,i,n1,n2,u,p) (TOTALENERGY2(U,IDX,i,n1,n2)*u+p*u)
 
-#define FLUX_HYDRO_2T_XDIR_3D(F,U,i,idx,ui,pi)\
-  F(1) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*ui+pi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*ui;MYNEWLINE\
-  F(4) = Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*ui;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*ui+pi*ui
-
-#define FLUX_HYDRO_2L_XDIR_3D(F,U,i,idx,ui,pi)\
-  F(1) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*ui+pi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*ui;MYNEWLINE\
-  F(4) = Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*ui;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*ui+pi*ui
+#define INVISCIDFLUX1_XDIR3_3D(U,IDX,i,j,n1,n2,n3,u,p)  XMOMENTUM3(U,IDX,i,j,n1,n2,n3)
+#define INVISCIDFLUX2_XDIR3_3D(U,IDX,i,j,n1,n2,n3,u,p) (XMOMENTUM3(U,IDX,i,j,n1,n2,n3)*u+p)
+#define INVISCIDFLUX3_XDIR3_3D(U,IDX,i,j,n1,n2,n3,u,p) (YMOMENTUM3(U,IDX,i,j,n1,n2,n3)*u)
+#define INVISCIDFLUX4_XDIR3_3D(U,IDX,i,j,n1,n2,n3,u,p) (ZMOMENTUM3(U,IDX,i,j,n1,n2,n3)*u)
+#define INVISCIDFLUX5_XDIR3_3D(U,IDX,i,j,n1,n2,n3,u,p) (TOTALENERGY3(U,IDX,i,j,n1,n2,n3)*u+p*u)
 
 #if 0
 ! Flux in y-direction for inviscid hydrodynamics in 3D
 #endif
-#define FLUX_HYDRO_YDIR_3D(F,Ui,vi,pi)\
-  F(1) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D);MYNEWLINE\
-  F(2) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*vi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*vi+pi;MYNEWLINE\
-  F(4) = Z_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*vi;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR3D)*vi+pi*vi
 
-#define FLUX_HYDRO_1T_YDIR_3D(F,U,i,vi,pi)\
-  F(1) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*vi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*vi+pi;MYNEWLINE\
-  F(4) = Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*vi;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR3D,i)*vi+pi*vi
+#define INVISCIDFLUX1_YDIR1_3D(U,IDX,v,p)  YMOMENTUM1(U,IDX)
+#define INVISCIDFLUX2_YDIR1_3D(U,IDX,v,p) (XMOMENTUM1(U,IDX)*v)
+#define INVISCIDFLUX3_YDIR1_3D(U,IDX,v,p) (YMOMENTUM1(U,IDX)*v+p)
+#define INVISCIDFLUX4_YDIR1_3D(U,IDX,v,p) (ZMOMENTUM1(U,IDX)*v)
+#define INVISCIDFLUX5_YDIR1_3D(U,IDX,v,p) (TOTALENERGY1(U,IDX)*v+p*v)
 
-#define FLUX_HYDRO_1L_YDIR_3D(F,U,i,vi,pi)\
-  F(1) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*vi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*vi+pi;MYNEWLINE\
-  F(4) = Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*vi;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR3D,i)*vi+pi*vi
+#define INVISCIDFLUX1_YDIR2_3D(U,IDX,i,n1,n2,v,p)  YMOMENTUM2(U,IDX,i,n1,n2)
+#define INVISCIDFLUX2_YDIR2_3D(U,IDX,i,n1,n2,v,p) (XMOMENTUM2(U,IDX,i,n1,n2)*v)
+#define INVISCIDFLUX3_YDIR2_3D(U,IDX,i,n1,n2,v,p) (YMOMENTUM2(U,IDX,i,n1,n2)*v+p)
+#define INVISCIDFLUX4_YDIR2_3D(U,IDX,i,n1,n2,v,p) (ZMOMENTUM2(U,IDX,i,n1,n2)*v)
+#define INVISCIDFLUX5_YDIR2_3D(U,IDX,i,n1,n2,v,p) (TOTALENERGY2(U,IDX,i,n1,n2)*v+p*v)
 
-#define FLUX_HYDRO_2T_YDIR_3D(F,U,i,idx,vi,pi)\
-  F(1) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*vi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*vi+pi;MYNEWLINE\
-  F(4) = Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*vi;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*vi+pi*vi
-
-#define FLUX_HYDRO_2L_YDIR_3D(F,U,i,idx,vi,pi)\
-  F(1) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*vi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*vi+pi;MYNEWLINE\
-  F(4) = Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*vi;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*vi+pi*vi
+#define INVISCIDFLUX1_YDIR3_3D(U,IDX,i,j,n1,n2,n3,v,p)  YMOMENTUM3(U,IDX,i,j,n1,n2,n3)
+#define INVISCIDFLUX2_YDIR3_3D(U,IDX,i,j,n1,n2,n3,v,p) (XMOMENTUM3(U,IDX,i,j,n1,n2,n3)*v)
+#define INVISCIDFLUX3_YDIR3_3D(U,IDX,i,j,n1,n2,n3,v,p) (YMOMENTUM3(U,IDX,i,j,n1,n2,n3)*v+p)
+#define INVISCIDFLUX4_YDIR3_3D(U,IDX,i,j,n1,n2,n3,v,p) (ZMOMENTUM3(U,IDX,i,j,n1,n2,n3)*v)
+#define INVISCIDFLUX5_YDIR3_3D(U,IDX,i,j,n1,n2,n3,v,p) (TOTALENERGY3(U,IDX,i,j,n1,n2,n3)*v+p*v)
 
 #if 0
 ! Flux in z-direction for inviscid hydrodynamics in 3D
 #endif
-#define FLUX_HYDRO_ZDIR_3D(F,Ui,wi,pi)\
-  F(1) = Z_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D);MYNEWLINE\
-  F(2) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*wi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*wi;MYNEWLINE\
-  F(4) = Z_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*wi+pi;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR3D)*wi+pi*wi
 
-#define FLUX_HYDRO_1T_ZDIR_3D(F,U,i,wi,pi)\
-  F(1) = Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*wi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*wi;MYNEWLINE\
-  F(4) = Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*wi+pi;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR3D,i)*wi+pi*wi
+#define INVISCIDFLUX1_ZDIR1_3D(U,IDX,w,p)  ZMOMENTUM1(U,IDX)
+#define INVISCIDFLUX2_ZDIR1_3D(U,IDX,w,p) (XMOMENTUM1(U,IDX)*w)
+#define INVISCIDFLUX3_ZDIR1_3D(U,IDX,w,p) (YMOMENTUM1(U,IDX)*w)
+#define INVISCIDFLUX4_ZDIR1_3D(U,IDX,w,p) (ZMOMENTUM1(U,IDX)*w+p)
+#define INVISCIDFLUX5_ZDIR1_3D(U,IDX,w,p) (TOTALENERGY1(U,IDX)*w+p*w)
 
-#define FLUX_HYDRO_1L_ZDIR_3D(F,U,i,wi,pi)\
-  F(1) = Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i);MYNEWLINE\
-  F(2) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*wi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*wi;MYNEWLINE\
-  F(4) = Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*wi+pi;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR3D,i)*wi+pi*wi
+#define INVISCIDFLUX1_ZDIR2_3D(U,IDX,i,n1,n2,w,p)  ZMOMENTUM2(U,IDX,i,n1,n2)
+#define INVISCIDFLUX2_ZDIR2_3D(U,IDX,i,n1,n2,w,p) (XMOMENTUM2(U,IDX,i,n1,n2)*w)
+#define INVISCIDFLUX3_ZDIR2_3D(U,IDX,i,n1,n2,w,p) (YMOMENTUM2(U,IDX,i,n1,n2)*w)
+#define INVISCIDFLUX4_ZDIR2_3D(U,IDX,i,n1,n2,w,p) (ZMOMENTUM2(U,IDX,i,n1,n2)*w+p)
+#define INVISCIDFLUX5_ZDIR2_3D(U,IDX,i,n1,n2,w,p) (TOTALENERGY2(U,IDX,i,n1,n2)*w+p*w)
 
-#define FLUX_HYDRO_2T_ZDIR_3D(F,U,i,idx,wi,pi)\
-  F(1) = Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*wi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*wi;MYNEWLINE\
-  F(4) = Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*wi+pi;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*wi+pi*wi
-
-#define FLUX_HYDRO_2L_ZDIR_3D(F,U,i,idx,wi,pi)\
-  F(1) = Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*wi;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*wi;MYNEWLINE\
-  F(4) = Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*wi+pi;MYNEWLINE\
-  F(5) = TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*wi+pi*wi
+#define INVISCIDFLUX1_ZDIR3_3D(U,IDX,i,j,n1,n2,n3,w,p)  ZMOMENTUM3(U,IDX,i,j,n1,n2,n3)
+#define INVISCIDFLUX2_ZDIR3_3D(U,IDX,i,j,n1,n2,n3,w,p) (XMOMENTUM3(U,IDX,i,j,n1,n2,n3)*w)
+#define INVISCIDFLUX3_ZDIR3_3D(U,IDX,i,j,n1,n2,n3,w,p) (YMOMENTUM3(U,IDX,i,j,n1,n2,n3)*w)
+#define INVISCIDFLUX4_ZDIR3_3D(U,IDX,i,j,n1,n2,n3,w,p) (ZMOMENTUM3(U,IDX,i,j,n1,n2,n3)*w+p)
+#define INVISCIDFLUX5_ZDIR3_3D(U,IDX,i,j,n1,n2,n3,w,p) (TOTALENERGY3(U,IDX,i,j,n1,n2,n3)*w+p*w)
 
 #if 0
-! Flux difference in x-direction for inviscid hydrodynamics in 3D
+! Flux Jacobian matrix for inviscid hydrodynamics in 3D
 #endif
-#define FLUXDIFF_HYDRO_XDIR_3D(F,Ui,Uj,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)-MYNEWLINE\
-         X_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D);MYNEWLINE\
-  F(2) = (X_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D)*uj+pj);MYNEWLINE\
-  F(3) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*ui-MYNEWLINE\
-         Y_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D)*uj;MYNEWLINE\
-  F(4) = Z_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*ui-MYNEWLINE\
-         Z_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D)*uj;MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR3D)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_FROM_CONSVAR(Uj,NVAR3D)*uj+pj*uj)
 
-#define FLUXDIFF_HYDRO_1T_XDIR_3D(F,U,i,j,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)-MYNEWLINE\
-         X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j);MYNEWLINE\
-  F(2) = (X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j)*uj+pj);MYNEWLINE\
-  F(3) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*ui-MYNEWLINE\
-         Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j)*uj;MYNEWLINE\
-  F(4) = Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*ui-MYNEWLINE\
-         Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j)*uj;MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR3D,i)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR3D,j)*uj+pj*uj)
-
-#define FLUXDIFF_HYDRO_1L_XDIR_3D(F,U,i,j,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)-MYNEWLINE\
-         X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j);MYNEWLINE\
-  F(2) = (X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j)*uj+pj);MYNEWLINE\
-  F(3) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*ui-MYNEWLINE\
-         Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j)*uj;MYNEWLINE\
-  F(4) = Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*ui-MYNEWLINE\
-         Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j)*uj;MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR3D,i)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR3D,j)*uj+pj*uj)
-
-#define FLUXDIFF_HYDRO_2T_XDIR_3D(F,U,i,j,idx,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)-MYNEWLINE\
-         X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx);MYNEWLINE\
-  F(2) = (X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*uj+pj);MYNEWLINE\
-  F(3) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*ui-MYNEWLINE\
-         Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*uj;MYNEWLINE\
-  F(4) = Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*ui-MYNEWLINE\
-         Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*uj;MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*uj+pj*uj)
-
-#define FLUXDIFF_HYDRO_2L_XDIR_3D(F,U,i,j,idx,ui,uj,pi,pj)\
-  F(1) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)-MYNEWLINE\
-         X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx);MYNEWLINE\
-  F(2) = (X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*ui+pi)-MYNEWLINE\
-         (X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*uj+pj);MYNEWLINE\
-  F(3) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*ui-MYNEWLINE\
-         Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*uj;MYNEWLINE\
-  F(4) = Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*ui-MYNEWLINE\
-         Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*uj;MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*ui+pi*ui)-MYNEWLINE\
-         (TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*uj+pj*uj)
+#define FLUXJACOBIMATRIX11_3D(dscale,CX,CY,CZ,u,v,w,E) 0.0_DP
+#define FLUXJACOBIMATRIX12_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*CX
+#define FLUXJACOBIMATRIX13_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*CY
+#define FLUXJACOBIMATRIX14_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*CZ
+#define FLUXJACOBIMATRIX15_3D(dscale,CX,CY,CZ,u,v,w,E) 0.0_DP
+#define FLUXJACOBIMATRIX21_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi)-ui*ui)*CX-MYNEWLINE ui*vi*CY-MYNEWLINE ui*wi*CZ)
+#define FLUXJACOBIMATRIX22_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((3.0_DP-(HYDRO_GAMMA))*ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ)
+#define FLUXJACOBIMATRIX23_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(ui*CY-MYNEWLINE ((HYDRO_GAMMA)-1.0_DP)*vi*CX)
+#define FLUXJACOBIMATRIX24_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(ui*CZ-MYNEWLINE ((HYDRO_GAMMA)-1.0_DP)*wi*CX)
+#define FLUXJACOBIMATRIX25_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((HYDRO_GAMMA)-1.0_DP)*CX
+#define FLUXJACOBIMATRIX31_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi)-vi*vi)*CY-MYNEWLINE ui*vi*CX-MYNEWLINE vi*wi*CZ)
+#define FLUXJACOBIMATRIX32_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(vi*CX-MYNEWLINE ((HYDRO_GAMMA)-1.0_DP)*ui*CY)
+#define FLUXJACOBIMATRIX33_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((3.0_DP-(HYDRO_GAMMA))*vi*CY+MYNEWLINE ui*CX+MYNEWLINE wi*CZ)
+#define FLUXJACOBIMATRIX34_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(vi*CZ-MYNEWLINE ((HYDRO_GAMMA)-1.0_DP)*wi*CY)
+#define FLUXJACOBIMATRIX35_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((HYDRO_GAMMA)-1.0_DP)*CY
+#define FLUXJACOBIMATRIX41_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi)-wi*wi)*CZ-MYNEWLINE ui*wi*CX-MYNEWLINE vi*wi*CY)
+#define FLUXJACOBIMATRIX42_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(wi*CX-MYNEWLINE ((HYDRO_GAMMA)-1.0_DP)*ui*CZ)
+#define FLUXJACOBIMATRIX43_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(wi*CY-MYNEWLINE ((HYDRO_GAMMA)-1.0_DP)*vi*CZ)
+#define FLUXJACOBIMATRIX44_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((3.0_DP-(HYDRO_GAMMA))*wi*CZ+MYNEWLINE ui*CX+MYNEWLINE vi*CY)
+#define FLUXJACOBIMATRIX45_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((HYDRO_GAMMA)-1.0_DP)*CZ
+#define FLUXJACOBIMATRIX51_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((HYDRO_GAMMA)-1.0_DP)*(ui*ui+vi*vi+wi*wi)-MYNEWLINE (HYDRO_GAMMA)*Ei)*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ)
+#define FLUXJACOBIMATRIX52_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((HYDRO_GAMMA)*Ei-((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi))*CX-MYNEWLINE((HYDRO_GAMMA)-1.0_DP)*ui*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
+#define FLUXJACOBIMATRIX53_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((HYDRO_GAMMA)*Ei-((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi))*CY-MYNEWLINE ((HYDRO_GAMMA)-1.0_DP)*vi*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
+#define FLUXJACOBIMATRIX54_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*(((HYDRO_GAMMA)*Ei-((HYDRO_GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi))*CZ-MYNEWLINE ((HYDRO_GAMMA)-1.0_DP)*wi*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
+#define FLUXJACOBIMATRIX55_3D(dscale,CX,CY,CZ,u,v,w,E) dscale*((HYDRO_GAMMA)*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
 
 #if 0
-! Flux difference in y-direction for inviscid hydrodynamics in 3D
+! Flux Jacobian matrix in x-direction for inviscid hydrodynamics in 2D
 #endif
-#define FLUXDIFF_HYDRO_YDIR_3D(F,Ui,Uj,vi,vj,pi,pj)\
-  F(1) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)-MYNEWLINE\
-         Y_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D);MYNEWLINE\
-  F(2) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*vi-MYNEWLINE\
-	 X_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D)*vj;MYNEWLINE\
-  F(3) = (Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*vi+pi)-MYNEWLINE\
-         (Y_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D)*vj+pj);MYNEWLINE\
-  F(4) = Z_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*vi-MYNEWLINE\
-	 Z_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D)*vj;MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR3D)*vi+pi*vi)-MYNEWLINE\
-         (TOTAL_ENERGY_FROM_CONSVAR(Uj,NVAR3D)*vj+pj*vj)
 
-#define FLUXDIFF_HYDRO_1T_YDIR_3D(F,U,i,j,vi,vj,pi,pj)\
-  F(1) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)-MYNEWLINE\
-         Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j);MYNEWLINE\
-  F(2) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*vi-MYNEWLINE\
-	 X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j)*vj;MYNEWLINE\
-  F(3) = (Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*vi+pi)-MYNEWLINE\
-         (Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j)*vj+pj);MYNEWLINE\
-  F(4) = Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*vi-MYNEWLINE\
-	 Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j)*vj;MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR3D,i)*vi+pi*vi)-MYNEWLINE\
-         (TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR3D,j)*vj+pj*vj)
-
-#define FLUXDIFF_HYDRO_1L_YDIR_3D(F,U,i,j,vi,vj,pi,pj)\
-  F(1) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)-MYNEWLINE\
-         Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j);MYNEWLINE\
-  F(2) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*vi-MYNEWLINE\
-	 X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j)*vj;MYNEWLINE\
-  F(3) = (Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*vi+pi)-MYNEWLINE\
-         (Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j)*vj+pj);MYNEWLINE\
-  F(4) = Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*vi-MYNEWLINE\
-	 Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j)*vj;MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR3D,i)*vi+pi*vi)-MYNEWLINE\
-         (TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR3D,j)*vj+pj*vj)
-
-#define FLUXDIFF_HYDRO_2T_YDIR_3D(F,U,i,j,idx,vi,vj,pi,pj)\
-  F(1) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)-MYNEWLINE\
-         Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*vi-MYNEWLINE\
-	 X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*vj;MYNEWLINE\
-  F(3) = (Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*vi+pi)-MYNEWLINE\
-         (Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*vj+pj);MYNEWLINE\
-  F(4) = Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*vi-MYNEWLINE\
-	 Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*vj;MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*vi+pi*vi)-MYNEWLINE\
-         (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*vj+pj*vj)
-
-#define FLUXDIFF_HYDRO_2L_YDIR_3D(F,U,i,j,idx,vi,vj,pi,pj)\
-  F(1) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)-MYNEWLINE\
-         Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*vi-MYNEWLINE\
-	 X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*vj;MYNEWLINE\
-  F(3) = (Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*vi+pi)-MYNEWLINE\
-         (Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*vj+pj);MYNEWLINE\
-  F(4) = Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*vi-MYNEWLINE\
-	 Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*vj;MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*vi+pi*vi)-MYNEWLINE\
-         (TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*vj+pj*vj)
+#define FLUXJACOBIMATRIX11_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX11_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX12_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX12_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX13_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX13_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX14_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX14_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX15_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX15_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX21_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX21_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX22_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX22_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX23_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX23_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX24_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX24_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX25_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX25_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX31_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX31_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX32_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX32_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX33_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX33_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX34_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX34_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX35_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX35_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX41_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX41_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX42_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX42_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX43_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX43_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX44_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX44_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX45_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX45_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX51_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX51_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX52_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX52_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX53_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX53_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX54_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX54_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX55_XDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX55_3D(dscale,1.0_DP,0.0_DP,0.0_DP,u,v,w,E)
 
 #if 0
-! Flux difference in z-direction for inviscid hydrodynamics in 3D
+! Flux Jacobian matrix in y-direction for inviscid hydrodynamics in 2D
 #endif
-#define FLUXDIFF_HYDRO_ZDIR_3D(F,Ui,Uj,wi,wj,pi,pj)\
-  F(1) = Z_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)-MYNEWLINE\
-         Z_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D);MYNEWLINE\
-  F(2) = X_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*wi-MYNEWLINE\
-	 X_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D)*wj;MYNEWLINE\
-  F(3) = Y_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*wi-MYNEWLINE\
-	 Y_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D)*wj;MYNEWLINE\
-  F(4) = (Z_MOMENTUM_FROM_CONSVAR(Ui,NVAR3D)*wi+pi)-MYNEWLINE\
-         (Z_MOMENTUM_FROM_CONSVAR(Uj,NVAR3D)*wj+pj);MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_FROM_CONSVAR(Ui,NVAR3D)*wi+pi*wi)-MYNEWLINE\
-         (TOTAL_ENERGY_FROM_CONSVAR(Uj,NVAR3D)*wj+pj*wj)
 
-#define FLUXDIFF_HYDRO_1T_ZDIR_3D(F,U,i,j,wi,wj,pi,pj)\
-  F(1) = Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)-MYNEWLINE\
-         Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j);MYNEWLINE\
-  F(2) = X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*wi-MYNEWLINE\
-	 X_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j)*wj;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*wi-MYNEWLINE\
-	 Y_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j)*wj;MYNEWLINE\
-  F(4) = (Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,i)*wi+pi)-MYNEWLINE\
-         (Z_MOMENTUM_1T_FROM_CONSVAR(U,NVAR3D,j)*wj+pj);MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR3D,i)*wi+pi*wi)-MYNEWLINE\
-         (TOTAL_ENERGY_1T_FROM_CONSVAR(U,NVAR3D,j)*wj+pj*wj)
-
-#define FLUXDIFF_HYDRO_1L_ZDIR_3D(F,U,i,j,wi,wj,pi,pj)\
-  F(1) = Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)-MYNEWLINE\
-         Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j);MYNEWLINE\
-  F(2) = X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*wi-MYNEWLINE\
-	 X_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j)*wj;MYNEWLINE\
-  F(3) = Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*wi-MYNEWLINE\
-	 Y_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j)*wj;MYNEWLINE\
-  F(4) = (Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,i)*wi+pi)-MYNEWLINE\
-         (Z_MOMENTUM_1L_FROM_CONSVAR(U,NVAR3D,j)*wj+pj);MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR3D,i)*wi+pi*wi)-MYNEWLINE\
-         (TOTAL_ENERGY_1L_FROM_CONSVAR(U,NVAR3D,j)*wj+pj*wj)
-
-#define FLUXDIFF_HYDRO_2T_ZDIR_3D(F,U,i,j,idx,wi,wj,pi,pj)\
-  F(1) = Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)-MYNEWLINE\
-         Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*wi-MYNEWLINE\
-	 X_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*wj;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*wi-MYNEWLINE\
-	 Y_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*wj;MYNEWLINE\
-  F(4) = (Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*wi+pi)-MYNEWLINE\
-         (Z_MOMENTUM_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*wj+pj);MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR3D,i,idx)*wi+pi*wi)-MYNEWLINE\
-         (TOTAL_ENERGY_2T_FROM_CONSVAR(U,NVAR3D,j,idx)*wj+pj*wj)
-
-#define FLUXDIFF_HYDRO_2L_ZDIR_3D(F,U,i,j,idx,wi,wj,pi,pj)\
-  F(1) = Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)-MYNEWLINE\
-         Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx);MYNEWLINE\
-  F(2) = X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*wi-MYNEWLINE\
-	 X_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*wj;MYNEWLINE\
-  F(3) = Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*wi-MYNEWLINE\
-	 Y_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*wj;MYNEWLINE\
-  F(4) = (Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*wi+pi)-MYNEWLINE\
-         (Z_MOMENTUM_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*wj+pj);MYNEWLINE\
-  F(5) = (TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR3D,i,idx)*wi+pi*wi)-MYNEWLINE\
-         (TOTAL_ENERGY_2L_FROM_CONSVAR(U,NVAR3D,j,idx)*wj+pj*wj)
+#define FLUXJACOBIMATRIX11_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX11_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX12_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX12_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX13_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX13_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX14_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX14_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX15_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX15_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX21_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX21_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX22_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX22_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX23_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX23_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX24_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX24_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX25_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX25_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX31_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX31_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX32_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX32_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX33_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX33_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX34_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX34_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX35_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX35_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX41_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX41_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX42_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX42_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX43_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX43_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX44_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX44_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX45_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX45_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX51_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX51_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX52_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX52_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX53_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX53_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX54_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX54_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX55_YDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX55_3D(dscale,0.0_DP,1.0_DP,0.0_DP,u,v,w,E)
 
 #if 0
-! Diagonal matrix for inviscid hydrodynamics in 3D
+! Flux Jacobian matrix in z-direction for inviscid hydrodynamics in 2D
 #endif
-#define MATRIXDIAG_HYDRO_2T_3D(K,i,idx,dscale,CX,CY,CZ,ui,vi,wi)\
-  K(1,i,idx) = 0.0_DP;MYNEWLINE\
-  K(2,i,idx) = dscale*((3.0_DP-(GAMMA))*ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
-  K(3,i,idx) = dscale*(ui*CX+MYNEWLINE (3.0_DP-(GAMMA))*vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
-  K(4,i,idx) = dscale*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE (3.0_DP-(GAMMA))*wi*CZ);MYNEWLINE\
-  K(5,i,idx) = dscale*((GAMMA)*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
 
-#if 0
-! Diagonal matrix for inviscid hydrodynamics in 3D
+#define FLUXJACOBIMATRIX11_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX11_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX12_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX12_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX13_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX13_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX14_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX14_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX15_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX15_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX21_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX21_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX22_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX22_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX23_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX23_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX24_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX24_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX25_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX25_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX31_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX31_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX32_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX32_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX33_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX33_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX34_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX34_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX35_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX35_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX41_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX41_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX42_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX42_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX43_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX43_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX44_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX44_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX45_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX45_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX51_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX51_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX52_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX52_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX53_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX53_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX54_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX54_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+#define FLUXJACOBIMATRIX55_ZDIR_3D(dscale,u,v,w,E) FLUXJACOBIMATRIX55_3D(dscale,0.0_DP,0.0_DP,1.0_DP,u,v,w,E)
+
+#if HYDRO_NDIM == 1
+
+#define INVISCIDFLUX1_XDIR1 INVISCIDFLUX1_XDIR1_1D
+#define INVISCIDFLUX2_XDIR1 INVISCIDFLUX2_XDIR1_1D
+#define INVISCIDFLUX3_XDIR1 INVISCIDFLUX3_XDIR1_1D
+
+#define INVISCIDFLUX1_XDIR2 INVISCIDFLUX1_XDIR2_1D
+#define INVISCIDFLUX2_XDIR2 INVISCIDFLUX2_XDIR2_1D
+#define INVISCIDFLUX3_XDIR2 INVISCIDFLUX3_XDIR2_1D
+
+#define INVISCIDFLUX1_XDIR3 INVISCIDFLUX1_XDIR3_1D
+#define INVISCIDFLUX2_XDIR3 INVISCIDFLUX2_XDIR3_1D
+#define INVISCIDFLUX3_XDIR3 INVISCIDFLUX3_XDIR3_1D
+
+#define FLUXJACOBIMATRIX11 FLUXJACOBIMATRIX11_1D
+#define FLUXJACOBIMATRIX12 FLUXJACOBIMATRIX12_1D
+#define FLUXJACOBIMATRIX13 FLUXJACOBIMATRIX13_1D
+#define FLUXJACOBIMATRIX21 FLUXJACOBIMATRIX21_1D
+#define FLUXJACOBIMATRIX22 FLUXJACOBIMATRIX22_1D
+#define FLUXJACOBIMATRIX23 FLUXJACOBIMATRIX23_1D
+#define FLUXJACOBIMATRIX31 FLUXJACOBIMATRIX31_1D
+#define FLUXJACOBIMATRIX32 FLUXJACOBIMATRIX32_1D
+#define FLUXJACOBIMATRIX33 FLUXJACOBIMATRIX33_1D
+
+#define FLUXJACOBIMATRIX11_XDIR FLUXJACOBIMATRIX11_XDIR_1D
+#define FLUXJACOBIMATRIX12_XDIR FLUXJACOBIMATRIX12_XDIR_1D
+#define FLUXJACOBIMATRIX13_XDIR FLUXJACOBIMATRIX13_XDIR_1D
+#define FLUXJACOBIMATRIX21_XDIR FLUXJACOBIMATRIX21_XDIR_1D
+#define FLUXJACOBIMATRIX22_XDIR FLUXJACOBIMATRIX22_XDIR_1D
+#define FLUXJACOBIMATRIX23_XDIR FLUXJACOBIMATRIX23_XDIR_1D
+#define FLUXJACOBIMATRIX31_XDIR FLUXJACOBIMATRIX31_XDIR_1D
+#define FLUXJACOBIMATRIX32_XDIR FLUXJACOBIMATRIX32_XDIR_1D
+#define FLUXJACOBIMATRIX33_XDIR FLUXJACOBIMATRIX33_XDIR_1D
+
+#elif HYDRO_NDIM == 2
+
+#define INVISCIDFLUX1_XDIR1 INVISCIDFLUX1_XDIR1_2D
+#define INVISCIDFLUX2_XDIR1 INVISCIDFLUX2_XDIR1_2D
+#define INVISCIDFLUX3_XDIR1 INVISCIDFLUX3_XDIR1_2D
+#define INVISCIDFLUX4_XDIR1 INVISCIDFLUX4_XDIR1_2D
+
+#define INVISCIDFLUX1_XDIR2 INVISCIDFLUX1_XDIR2_2D
+#define INVISCIDFLUX2_XDIR2 INVISCIDFLUX2_XDIR2_2D
+#define INVISCIDFLUX3_XDIR2 INVISCIDFLUX3_XDIR2_2D
+#define INVISCIDFLUX4_XDIR2 INVISCIDFLUX4_XDIR2_2D
+
+#define INVISCIDFLUX1_XDIR3 INVISCIDFLUX1_XDIR3_2D
+#define INVISCIDFLUX2_XDIR3 INVISCIDFLUX2_XDIR3_2D
+#define INVISCIDFLUX3_XDIR3 INVISCIDFLUX3_XDIR3_2D
+#define INVISCIDFLUX4_XDIR3 INVISCIDFLUX4_XDIR3_2D
+
+#define INVISCIDFLUX1_YDIR1 INVISCIDFLUX1_YDIR1_2D
+#define INVISCIDFLUX2_YDIR1 INVISCIDFLUX2_YDIR1_2D
+#define INVISCIDFLUX3_YDIR1 INVISCIDFLUX3_YDIR1_2D
+#define INVISCIDFLUX4_YDIR1 INVISCIDFLUX4_YDIR1_2D
+
+#define INVISCIDFLUX1_YDIR2 INVISCIDFLUX1_YDIR2_2D
+#define INVISCIDFLUX2_YDIR2 INVISCIDFLUX2_YDIR2_2D
+#define INVISCIDFLUX3_YDIR2 INVISCIDFLUX3_YDIR2_2D
+#define INVISCIDFLUX4_YDIR2 INVISCIDFLUX4_YDIR2_2D
+
+#define INVISCIDFLUX1_YDIR3 INVISCIDFLUX1_YDIR3_2D
+#define INVISCIDFLUX2_YDIR3 INVISCIDFLUX2_YDIR3_2D
+#define INVISCIDFLUX3_YDIR3 INVISCIDFLUX3_YDIR3_2D
+#define INVISCIDFLUX4_YDIR3 INVISCIDFLUX4_YDIR3_2D
+
+#define FLUXJACOBIMATRIX11 FLUXJACOBIMATRIX11_2D
+#define FLUXJACOBIMATRIX12 FLUXJACOBIMATRIX12_2D
+#define FLUXJACOBIMATRIX13 FLUXJACOBIMATRIX13_2D
+#define FLUXJACOBIMATRIX14 FLUXJACOBIMATRIX14_2D
+#define FLUXJACOBIMATRIX21 FLUXJACOBIMATRIX21_2D
+#define FLUXJACOBIMATRIX22 FLUXJACOBIMATRIX22_2D
+#define FLUXJACOBIMATRIX23 FLUXJACOBIMATRIX23_2D
+#define FLUXJACOBIMATRIX24 FLUXJACOBIMATRIX24_2D
+#define FLUXJACOBIMATRIX31 FLUXJACOBIMATRIX31_2D
+#define FLUXJACOBIMATRIX32 FLUXJACOBIMATRIX32_2D
+#define FLUXJACOBIMATRIX33 FLUXJACOBIMATRIX33_2D
+#define FLUXJACOBIMATRIX34 FLUXJACOBIMATRIX34_2D
+#define FLUXJACOBIMATRIX41 FLUXJACOBIMATRIX41_2D
+#define FLUXJACOBIMATRIX42 FLUXJACOBIMATRIX42_2D
+#define FLUXJACOBIMATRIX43 FLUXJACOBIMATRIX43_2D
+#define FLUXJACOBIMATRIX44 FLUXJACOBIMATRIX44_2D
+
+#define FLUXJACOBIMATRIX11_XDIR FLUXJACOBIMATRIX11_XDIR_2D
+#define FLUXJACOBIMATRIX12_XDIR FLUXJACOBIMATRIX12_XDIR_2D
+#define FLUXJACOBIMATRIX13_XDIR FLUXJACOBIMATRIX13_XDIR_2D
+#define FLUXJACOBIMATRIX14_XDIR FLUXJACOBIMATRIX14_XDIR_2D
+#define FLUXJACOBIMATRIX21_XDIR FLUXJACOBIMATRIX21_XDIR_2D
+#define FLUXJACOBIMATRIX22_XDIR FLUXJACOBIMATRIX22_XDIR_2D
+#define FLUXJACOBIMATRIX23_XDIR FLUXJACOBIMATRIX23_XDIR_2D
+#define FLUXJACOBIMATRIX24_XDIR FLUXJACOBIMATRIX24_XDIR_2D
+#define FLUXJACOBIMATRIX31_XDIR FLUXJACOBIMATRIX31_XDIR_2D
+#define FLUXJACOBIMATRIX32_XDIR FLUXJACOBIMATRIX32_XDIR_2D
+#define FLUXJACOBIMATRIX33_XDIR FLUXJACOBIMATRIX33_XDIR_2D
+#define FLUXJACOBIMATRIX34_XDIR FLUXJACOBIMATRIX34_XDIR_2D
+#define FLUXJACOBIMATRIX41_XDIR FLUXJACOBIMATRIX41_XDIR_2D
+#define FLUXJACOBIMATRIX42_XDIR FLUXJACOBIMATRIX42_XDIR_2D
+#define FLUXJACOBIMATRIX43_XDIR FLUXJACOBIMATRIX43_XDIR_2D
+#define FLUXJACOBIMATRIX44_XDIR FLUXJACOBIMATRIX44_XDIR_2D
+
+#define FLUXJACOBIMATRIX11_YDIR FLUXJACOBIMATRIX11_YDIR_2D
+#define FLUXJACOBIMATRIX12_YDIR FLUXJACOBIMATRIX12_YDIR_2D
+#define FLUXJACOBIMATRIX13_YDIR FLUXJACOBIMATRIX13_YDIR_2D
+#define FLUXJACOBIMATRIX14_YDIR FLUXJACOBIMATRIX14_YDIR_2D
+#define FLUXJACOBIMATRIX21_YDIR FLUXJACOBIMATRIX21_YDIR_2D
+#define FLUXJACOBIMATRIX22_YDIR FLUXJACOBIMATRIX22_YDIR_2D
+#define FLUXJACOBIMATRIX23_YDIR FLUXJACOBIMATRIX23_YDIR_2D
+#define FLUXJACOBIMATRIX24_YDIR FLUXJACOBIMATRIX24_YDIR_2D
+#define FLUXJACOBIMATRIX31_YDIR FLUXJACOBIMATRIX31_YDIR_2D
+#define FLUXJACOBIMATRIX32_YDIR FLUXJACOBIMATRIX32_YDIR_2D
+#define FLUXJACOBIMATRIX33_YDIR FLUXJACOBIMATRIX33_YDIR_2D
+#define FLUXJACOBIMATRIX34_YDIR FLUXJACOBIMATRIX34_YDIR_2D
+#define FLUXJACOBIMATRIX41_YDIR FLUXJACOBIMATRIX41_YDIR_2D
+#define FLUXJACOBIMATRIX42_YDIR FLUXJACOBIMATRIX42_YDIR_2D
+#define FLUXJACOBIMATRIX43_YDIR FLUXJACOBIMATRIX43_YDIR_2D
+#define FLUXJACOBIMATRIX44_YDIR FLUXJACOBIMATRIX44_YDIR_2D
+
+#elif HYDRO_NDIM == 3
+
+#define INVISCIDFLUX1_XDIR1 INVISCIDFLUX1_XDIR1_3D
+#define INVISCIDFLUX2_XDIR1 INVISCIDFLUX2_XDIR1_3D
+#define INVISCIDFLUX3_XDIR1 INVISCIDFLUX3_XDIR1_3D
+#define INVISCIDFLUX4_XDIR1 INVISCIDFLUX4_XDIR1_3D
+#define INVISCIDFLUX5_XDIR1 INVISCIDFLUX5_XDIR1_3D
+
+#define INVISCIDFLUX1_XDIR2 INVISCIDFLUX1_XDIR2_3D
+#define INVISCIDFLUX2_XDIR2 INVISCIDFLUX2_XDIR2_3D
+#define INVISCIDFLUX3_XDIR2 INVISCIDFLUX3_XDIR2_3D
+#define INVISCIDFLUX4_XDIR2 INVISCIDFLUX4_XDIR2_3D
+#define INVISCIDFLUX5_XDIR2 INVISCIDFLUX5_XDIR2_3D
+
+#define INVISCIDFLUX1_XDIR3 INVISCIDFLUX1_XDIR3_3D
+#define INVISCIDFLUX2_XDIR3 INVISCIDFLUX2_XDIR3_3D
+#define INVISCIDFLUX3_XDIR3 INVISCIDFLUX3_XDIR3_3D
+#define INVISCIDFLUX4_XDIR3 INVISCIDFLUX4_XDIR3_3D
+#define INVISCIDFLUX5_XDIR3 INVISCIDFLUX5_XDIR3_3D
+
+#define INVISCIDFLUX1_YDIR1 INVISCIDFLUX1_YDIR1_3D
+#define INVISCIDFLUX2_YDIR1 INVISCIDFLUX2_YDIR1_3D
+#define INVISCIDFLUX3_YDIR1 INVISCIDFLUX3_YDIR1_3D
+#define INVISCIDFLUX4_YDIR1 INVISCIDFLUX4_YDIR1_3D
+#define INVISCIDFLUX5_YDIR1 INVISCIDFLUX5_YDIR1_3D
+
+#define INVISCIDFLUX1_YDIR2 INVISCIDFLUX1_YDIR2_3D
+#define INVISCIDFLUX2_YDIR2 INVISCIDFLUX2_YDIR2_3D
+#define INVISCIDFLUX3_YDIR2 INVISCIDFLUX3_YDIR2_3D
+#define INVISCIDFLUX4_YDIR2 INVISCIDFLUX4_YDIR2_3D
+#define INVISCIDFLUX5_YDIR2 INVISCIDFLUX5_YDIR2_3D
+
+#define INVISCIDFLUX1_YDIR3 INVISCIDFLUX1_YDIR3_3D
+#define INVISCIDFLUX2_YDIR3 INVISCIDFLUX2_YDIR3_3D
+#define INVISCIDFLUX3_YDIR3 INVISCIDFLUX3_YDIR3_3D
+#define INVISCIDFLUX4_YDIR3 INVISCIDFLUX4_YDIR3_3D
+#define INVISCIDFLUX5_YDIR3 INVISCIDFLUX5_YDIR3_3D
+
+#define INVISCIDFLUX1_ZDIR1 INVISCIDFLUX1_ZDIR1_3D
+#define INVISCIDFLUX2_ZDIR1 INVISCIDFLUX2_ZDIR1_3D
+#define INVISCIDFLUX3_ZDIR1 INVISCIDFLUX3_ZDIR1_3D
+#define INVISCIDFLUX4_ZDIR1 INVISCIDFLUX4_ZDIR1_3D
+#define INVISCIDFLUX5_ZDIR1 INVISCIDFLUX5_ZDIR1_3D
+
+#define INVISCIDFLUX1_ZDIR2 INVISCIDFLUX1_ZDIR2_3D
+#define INVISCIDFLUX2_ZDIR2 INVISCIDFLUX2_ZDIR2_3D
+#define INVISCIDFLUX3_ZDIR2 INVISCIDFLUX3_ZDIR2_3D
+#define INVISCIDFLUX4_ZDIR2 INVISCIDFLUX4_ZDIR2_3D
+#define INVISCIDFLUX5_ZDIR2 INVISCIDFLUX5_ZDIR2_3D
+
+#define INVISCIDFLUX1_ZDIR3 INVISCIDFLUX1_ZDIR3_3D
+#define INVISCIDFLUX2_ZDIR3 INVISCIDFLUX2_ZDIR3_3D
+#define INVISCIDFLUX3_ZDIR3 INVISCIDFLUX3_ZDIR3_3D
+#define INVISCIDFLUX4_ZDIR3 INVISCIDFLUX4_ZDIR3_3D
+#define INVISCIDFLUX5_ZDIR3 INVISCIDFLUX5_ZDIR3_3D
+
+#define FLUXJACOBIMATRIX11 FLUXJACOBIMATRIX11_3D
+#define FLUXJACOBIMATRIX12 FLUXJACOBIMATRIX12_3D
+#define FLUXJACOBIMATRIX13 FLUXJACOBIMATRIX13_3D
+#define FLUXJACOBIMATRIX14 FLUXJACOBIMATRIX14_3D
+#define FLUXJACOBIMATRIX15 FLUXJACOBIMATRIX15_3D
+#define FLUXJACOBIMATRIX21 FLUXJACOBIMATRIX21_3D
+#define FLUXJACOBIMATRIX22 FLUXJACOBIMATRIX22_3D
+#define FLUXJACOBIMATRIX23 FLUXJACOBIMATRIX23_3D
+#define FLUXJACOBIMATRIX24 FLUXJACOBIMATRIX24_3D
+#define FLUXJACOBIMATRIX25 FLUXJACOBIMATRIX25_3D
+#define FLUXJACOBIMATRIX31 FLUXJACOBIMATRIX31_3D
+#define FLUXJACOBIMATRIX32 FLUXJACOBIMATRIX32_3D
+#define FLUXJACOBIMATRIX33 FLUXJACOBIMATRIX33_3D
+#define FLUXJACOBIMATRIX34 FLUXJACOBIMATRIX34_3D
+#define FLUXJACOBIMATRIX35 FLUXJACOBIMATRIX35_3D
+#define FLUXJACOBIMATRIX41 FLUXJACOBIMATRIX41_3D
+#define FLUXJACOBIMATRIX42 FLUXJACOBIMATRIX42_3D
+#define FLUXJACOBIMATRIX43 FLUXJACOBIMATRIX43_3D
+#define FLUXJACOBIMATRIX44 FLUXJACOBIMATRIX44_3D
+#define FLUXJACOBIMATRIX45 FLUXJACOBIMATRIX45_3D
+#define FLUXJACOBIMATRIX51 FLUXJACOBIMATRIX51_3D
+#define FLUXJACOBIMATRIX52 FLUXJACOBIMATRIX52_3D
+#define FLUXJACOBIMATRIX53 FLUXJACOBIMATRIX53_3D
+#define FLUXJACOBIMATRIX54 FLUXJACOBIMATRIX54_3D
+#define FLUXJACOBIMATRIX55 FLUXJACOBIMATRIX55_3D
+
+#define FLUXJACOBIMATRIX11_XDIR FLUXJACOBIMATRIX11_XDIR_3D
+#define FLUXJACOBIMATRIX12_XDIR FLUXJACOBIMATRIX12_XDIR_3D
+#define FLUXJACOBIMATRIX13_XDIR FLUXJACOBIMATRIX13_XDIR_3D
+#define FLUXJACOBIMATRIX14_XDIR FLUXJACOBIMATRIX14_XDIR_3D
+#define FLUXJACOBIMATRIX15_XDIR FLUXJACOBIMATRIX15_XDIR_3D
+#define FLUXJACOBIMATRIX21_XDIR FLUXJACOBIMATRIX21_XDIR_3D
+#define FLUXJACOBIMATRIX22_XDIR FLUXJACOBIMATRIX22_XDIR_3D
+#define FLUXJACOBIMATRIX23_XDIR FLUXJACOBIMATRIX23_XDIR_3D
+#define FLUXJACOBIMATRIX24_XDIR FLUXJACOBIMATRIX24_XDIR_3D
+#define FLUXJACOBIMATRIX25_XDIR FLUXJACOBIMATRIX25_XDIR_3D
+#define FLUXJACOBIMATRIX31_XDIR FLUXJACOBIMATRIX31_XDIR_3D
+#define FLUXJACOBIMATRIX32_XDIR FLUXJACOBIMATRIX32_XDIR_3D
+#define FLUXJACOBIMATRIX33_XDIR FLUXJACOBIMATRIX33_XDIR_3D
+#define FLUXJACOBIMATRIX34_XDIR FLUXJACOBIMATRIX34_XDIR_3D
+#define FLUXJACOBIMATRIX35_XDIR FLUXJACOBIMATRIX35_XDIR_3D
+#define FLUXJACOBIMATRIX41_XDIR FLUXJACOBIMATRIX41_XDIR_3D
+#define FLUXJACOBIMATRIX42_XDIR FLUXJACOBIMATRIX42_XDIR_3D
+#define FLUXJACOBIMATRIX43_XDIR FLUXJACOBIMATRIX43_XDIR_3D
+#define FLUXJACOBIMATRIX44_XDIR FLUXJACOBIMATRIX44_XDIR_3D
+#define FLUXJACOBIMATRIX45_XDIR FLUXJACOBIMATRIX45_XDIR_3D
+#define FLUXJACOBIMATRIX51_XDIR FLUXJACOBIMATRIX51_XDIR_3D
+#define FLUXJACOBIMATRIX52_XDIR FLUXJACOBIMATRIX52_XDIR_3D
+#define FLUXJACOBIMATRIX53_XDIR FLUXJACOBIMATRIX53_XDIR_3D
+#define FLUXJACOBIMATRIX54_XDIR FLUXJACOBIMATRIX54_XDIR_3D
+#define FLUXJACOBIMATRIX55_XDIR FLUXJACOBIMATRIX55_XDIR_3D
+
+#define FLUXJACOBIMATRIX11_YDIR FLUXJACOBIMATRIX11_YDIR_3D
+#define FLUXJACOBIMATRIX12_YDIR FLUXJACOBIMATRIX12_YDIR_3D
+#define FLUXJACOBIMATRIX13_YDIR FLUXJACOBIMATRIX13_YDIR_3D
+#define FLUXJACOBIMATRIX14_YDIR FLUXJACOBIMATRIX14_YDIR_3D
+#define FLUXJACOBIMATRIX15_YDIR FLUXJACOBIMATRIX15_YDIR_3D
+#define FLUXJACOBIMATRIX21_YDIR FLUXJACOBIMATRIX21_YDIR_3D
+#define FLUXJACOBIMATRIX22_YDIR FLUXJACOBIMATRIX22_YDIR_3D
+#define FLUXJACOBIMATRIX23_YDIR FLUXJACOBIMATRIX23_YDIR_3D
+#define FLUXJACOBIMATRIX24_YDIR FLUXJACOBIMATRIX24_YDIR_3D
+#define FLUXJACOBIMATRIX25_YDIR FLUXJACOBIMATRIX25_YDIR_3D
+#define FLUXJACOBIMATRIX31_YDIR FLUXJACOBIMATRIX31_YDIR_3D
+#define FLUXJACOBIMATRIX32_YDIR FLUXJACOBIMATRIX32_YDIR_3D
+#define FLUXJACOBIMATRIX33_YDIR FLUXJACOBIMATRIX33_YDIR_3D
+#define FLUXJACOBIMATRIX34_YDIR FLUXJACOBIMATRIX34_YDIR_3D
+#define FLUXJACOBIMATRIX35_YDIR FLUXJACOBIMATRIX35_YDIR_3D
+#define FLUXJACOBIMATRIX41_YDIR FLUXJACOBIMATRIX41_YDIR_3D
+#define FLUXJACOBIMATRIX42_YDIR FLUXJACOBIMATRIX42_YDIR_3D
+#define FLUXJACOBIMATRIX43_YDIR FLUXJACOBIMATRIX43_YDIR_3D
+#define FLUXJACOBIMATRIX44_YDIR FLUXJACOBIMATRIX44_YDIR_3D
+#define FLUXJACOBIMATRIX45_YDIR FLUXJACOBIMATRIX45_YDIR_3D
+#define FLUXJACOBIMATRIX51_YDIR FLUXJACOBIMATRIX51_YDIR_3D
+#define FLUXJACOBIMATRIX52_YDIR FLUXJACOBIMATRIX52_YDIR_3D
+#define FLUXJACOBIMATRIX53_YDIR FLUXJACOBIMATRIX53_YDIR_3D
+#define FLUXJACOBIMATRIX54_YDIR FLUXJACOBIMATRIX54_YDIR_3D
+#define FLUXJACOBIMATRIX55_YDIR FLUXJACOBIMATRIX55_YDIR_3D
+
+#define FLUXJACOBIMATRIX11_ZDIR FLUXJACOBIMATRIX11_ZDIR_3D
+#define FLUXJACOBIMATRIX12_ZDIR FLUXJACOBIMATRIX12_ZDIR_3D
+#define FLUXJACOBIMATRIX13_ZDIR FLUXJACOBIMATRIX13_ZDIR_3D
+#define FLUXJACOBIMATRIX14_ZDIR FLUXJACOBIMATRIX14_ZDIR_3D
+#define FLUXJACOBIMATRIX15_ZDIR FLUXJACOBIMATRIX15_ZDIR_3D
+#define FLUXJACOBIMATRIX21_ZDIR FLUXJACOBIMATRIX21_ZDIR_3D
+#define FLUXJACOBIMATRIX22_ZDIR FLUXJACOBIMATRIX22_ZDIR_3D
+#define FLUXJACOBIMATRIX23_ZDIR FLUXJACOBIMATRIX23_ZDIR_3D
+#define FLUXJACOBIMATRIX24_ZDIR FLUXJACOBIMATRIX24_ZDIR_3D
+#define FLUXJACOBIMATRIX25_ZDIR FLUXJACOBIMATRIX25_ZDIR_3D
+#define FLUXJACOBIMATRIX31_ZDIR FLUXJACOBIMATRIX31_ZDIR_3D
+#define FLUXJACOBIMATRIX32_ZDIR FLUXJACOBIMATRIX32_ZDIR_3D
+#define FLUXJACOBIMATRIX33_ZDIR FLUXJACOBIMATRIX33_ZDIR_3D
+#define FLUXJACOBIMATRIX34_ZDIR FLUXJACOBIMATRIX34_ZDIR_3D
+#define FLUXJACOBIMATRIX35_ZDIR FLUXJACOBIMATRIX35_ZDIR_3D
+#define FLUXJACOBIMATRIX41_ZDIR FLUXJACOBIMATRIX41_ZDIR_3D
+#define FLUXJACOBIMATRIX42_ZDIR FLUXJACOBIMATRIX42_ZDIR_3D
+#define FLUXJACOBIMATRIX43_ZDIR FLUXJACOBIMATRIX43_ZDIR_3D
+#define FLUXJACOBIMATRIX44_ZDIR FLUXJACOBIMATRIX44_ZDIR_3D
+#define FLUXJACOBIMATRIX45_ZDIR FLUXJACOBIMATRIX45_ZDIR_3D
+#define FLUXJACOBIMATRIX51_ZDIR FLUXJACOBIMATRIX51_ZDIR_3D
+#define FLUXJACOBIMATRIX52_ZDIR FLUXJACOBIMATRIX52_ZDIR_3D
+#define FLUXJACOBIMATRIX53_ZDIR FLUXJACOBIMATRIX53_ZDIR_3D
+#define FLUXJACOBIMATRIX54_ZDIR FLUXJACOBIMATRIX54_ZDIR_3D
+#define FLUXJACOBIMATRIX55_ZDIR FLUXJACOBIMATRIX55_ZDIR_3D
+
+#else
+
+#ifdef HYDRO_NDIM
+#error "Invalid spatial dimension specified!"
 #endif
-#define MATRIX_HYDRO_2T_3D(K,i,idx,dscale,CX,CY,CZ,ui,vi,wi,Ei)	\
-  K( 1,i,idx) = 0.0_DP;MYNEWLINE\
-  K( 2,i,idx) = dscale*((((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi)-ui*ui)*CX-MYNEWLINE ui*vi*CY-MYNEWLINE ui*wi*CZ);MYNEWLINE\
-  K( 3,i,idx) = dscale*((((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi)-vi*vi)*CY-MYNEWLINE ui*vi*CX-MYNEWLINE vi*wi*CZ);MYNEWLINE\
-  K( 4,i,idx) = dscale*((((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi)-wi*wi)*CZ-MYNEWLINE ui*wi*CX-MYNEWLINE vi*wi*CY);MYNEWLINE\
-  K( 5,i,idx) = dscale*(((GAMMA)-1.0_DP)*(ui*ui+vi*vi+wi*wi)-MYNEWLINE (GAMMA)*Ei)*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
-  K( 6,i,idx) = dscale*CX;MYNEWLINE\
-  K( 7,i,idx) = dscale*((3.0_DP-(GAMMA))*ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ);MYNEWLINE\
-  K( 8,i,idx) = dscale*(vi*CX-MYNEWLINE ((GAMMA)-1.0_DP)*ui*CY);MYNEWLINE\
-  K( 9,i,idx) = dscale*(wi*CX-MYNEWLINE ((GAMMA)-1.0_DP)*ui*CZ);MYNEWLINE\
-  K(10,i,idx) = dscale*(((GAMMA)*Ei-((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi))*CX-MYNEWLINE((GAMMA)-1.0_DP)*ui*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ));MYNEWLINE\
-  K(11,i,idx) = dscale*CY;MYNEWLINE\
-  K(12,i,idx) = dscale*(ui*CY-MYNEWLINE ((GAMMA)-1.0_DP)*vi*CX);MYNEWLINE\
-  K(13,i,idx) = dscale*((3.0_DP-(GAMMA))*vi*CY+MYNEWLINE ui*CX+MYNEWLINE wi*CZ);MYNEWLINE\
-  K(14,i,idx) = dscale*(wi*CY-MYNEWLINE ((GAMMA)-1.0_DP)*vi*CZ);MYNEWLINE\
-  K(15,i,idx) = dscale*(((GAMMA)*Ei-((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi))*CY-MYNEWLINE ((GAMMA)-1.0_DP)*vi*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ));MYNEWLINE\
-  K(16,i,idx) = dscale*CZ;MYNEWLINE\
-  K(17,i,idx) = dscale*(ui*CZ-MYNEWLINE ((GAMMA)-1.0_DP)*wi*CX);MYNEWLINE\
-  K(18,i,idx) = dscale*(vi*CZ-MYNEWLINE ((GAMMA)-1.0_DP)*wi*CY);MYNEWLINE\
-  K(19,i,idx) = dscale*((3.0_DP-(GAMMA))*wi*CZ+MYNEWLINE ui*CX+MYNEWLINE vi*CY);MYNEWLINE\
-  K(20,i,idx) = dscale*(((GAMMA)*Ei-((GAMMA)-1.0_DP)/2.0_DP*(ui*ui+vi*vi+wi*wi))*CZ-MYNEWLINE ((GAMMA)-1.0_DP)*wi*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ));MYNEWLINE\
-  K(21,i,idx) = 0.0_DP;MYNEWLINE\
-  K(22,i,idx) = dscale*((GAMMA)-1.0_DP)*CX;MYNEWLINE\
-  K(23,i,idx) = dscale*((GAMMA)-1.0_DP)*CY;MYNEWLINE\
-  K(24,i,idx) = dscale*((GAMMA)-1.0_DP)*CZ;MYNEWLINE\
-  K(25,i,idx) = dscale*((GAMMA)*(ui*CX+MYNEWLINE vi*CY+MYNEWLINE wi*CZ))
+
+#endif
 #endif

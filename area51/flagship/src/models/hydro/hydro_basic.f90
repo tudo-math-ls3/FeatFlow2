@@ -36,6 +36,7 @@
 module hydro_basic
 
 #include "hydro.h"
+#define _HYDRO_TOTALENERGY_ nvar
 
   use basicgeometry
   use boundarycondaux
@@ -162,20 +163,6 @@ module hydro_basic
 
   ! Perturbation parameter is chosen as SQRT(machine precision)
   integer, parameter, public :: PERTURB_SQRTEPS = 2
-
-!</constantblock>
-
-
-!<constantblock description="Global constants for number of variables">
-
-  ! number of solution components in 1D
-  integer, parameter, public :: NVAR1D = 3
-
-  ! number of solution components in 2D
-  integer, parameter, public :: NVAR2D = 4
-
-  ! number of solution components in 3D
-  integer, parameter, public :: NVAR3D = 5
 
 !</constantblock>
 
@@ -511,79 +498,78 @@ contains
 
     if (trim(cvariable) .eq. 'density') then
       do ieq = 1, neq
-        Dvalue(ieq) = DENSITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = DENSITY2(Ddata,IDX2_FORWARD_F,ieq,0,0)
       end do
 
     elseif (trim(cvariable) .eq. 'velocity_magnitude') then
       select case(nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = VELOCITY_MAGNITUDE_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = VELMAGNITUDE2_1D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = VELOCITY_MAGNITUDE_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = VELMAGNITUDE2_2D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = VELOCITY_MAGNITUDE_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = VELMAGNITUDE2_3D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       end select
 
     elseif (trim(cvariable) .eq. 'velocity_x') then
       do ieq = 1, neq
-        Dvalue(ieq) = X_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_FORWARD_F,ieq,0,0)
       end do
 
     elseif (trim(cvariable) .eq. 'velocity_y') then
       do ieq = 1, neq
-        Dvalue(ieq) = Y_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_FORWARD_F,ieq,0,0)
       end do
 
     elseif (trim(cvariable) .eq. 'velocity_z') then
       do ieq = 1, neq
-        Dvalue(ieq) = Z_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_FORWARD_F,ieq,0,0)
       end do
 
     elseif (trim(cvariable) .eq. 'momentum_x') then
       do ieq = 1, neq
-        Dvalue(ieq) = X_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_FORWARD_F,ieq,0,0)
       end do
 
     elseif (trim(cvariable) .eq. 'momentum_y') then
       do ieq = 1, neq
-        Dvalue(ieq) = Y_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_FORWARD_F,ieq,0,0)
       end do
 
     elseif (trim(cvariable) .eq. 'momentum_z') then
       do ieq = 1, neq
-        Dvalue(ieq) = Z_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_FORWARD_F,ieq,0,0)
       end do
 
     elseif (trim(cvariable) .eq. 'energy') then
       do ieq = 1, neq
-        Dvalue(ieq) = TOTAL_ENERGY_1T_FROM_CONSVAR(Ddata, nvar, ieq)/&
-                      DENSITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_FORWARD_F,ieq,0,0)
       end do
       
     elseif (trim(cvariable) .eq. 'total_energy') then
       do ieq = 1, neq
-        Dvalue(ieq) = TOTAL_ENERGY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_FORWARD_F,ieq,0,0)
       end do
         
     elseif (trim(cvariable) .eq. 'internal_energy') then
       select case (nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = INTERNALENERGY2_1D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = INTERNALENERGY2_2D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = INTERNALENERGY2_3D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       end select
 
@@ -591,15 +577,15 @@ contains
       select case (nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = KINETIC_ENERGY_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = KINETICENERGY2_1D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = KINETIC_ENERGY_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = KINETICENERGY2_2D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = KINETIC_ENERGY_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = KINETICENERGY2_3D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       end select
 
@@ -607,15 +593,15 @@ contains
       select case (nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = PRESSURE2_1D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = PRESSURE2_2D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = PRESSURE2_3D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       end select
 
@@ -623,15 +609,15 @@ contains
       select case (nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = MACHNUMBER2_1D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = MACHNUMBER2_2D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = MACHNUMBER2_3D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       end select
 
@@ -639,15 +625,15 @@ contains
       select case (nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = SOUNDSPEED2_1D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = SOUNDSPEED2_2D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = SOUNDSPEED2_3D(Ddata,IDX2_FORWARD_F,ieq,0,0)
         end do
       end select
 
@@ -695,153 +681,150 @@ contains
     ! local variables
     integer :: ieq
 
-    
-    if(trim(cvariable) .eq. 'density') then
+
+    if (trim(cvariable) .eq. 'density') then
       do ieq = 1, neq
-        Dvalue(ieq) = DENSITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = DENSITY2(Ddata,IDX2_REVERSE_F,ieq,0,0)
       end do
 
-    elseif(trim(cvariable) .eq. 'velocity_magnitude') then
+    elseif (trim(cvariable) .eq. 'velocity_magnitude') then
       select case(nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = VELOCITY_MAGNITUDE_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = VELMAGNITUDE2_1D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
-
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = VELOCITY_MAGNITUDE_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = VELMAGNITUDE2_2D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
-
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = VELOCITY_MAGNITUDE_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = VELMAGNITUDE2_3D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       end select
 
-    elseif(trim(cvariable) .eq. 'velocity_x') then
+    elseif (trim(cvariable) .eq. 'velocity_x') then
       do ieq = 1, neq
-        Dvalue(ieq) = X_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_REVERSE_F,ieq,0,0)
       end do
 
-    elseif(trim(cvariable) .eq. 'velocity_y') then
+    elseif (trim(cvariable) .eq. 'velocity_y') then
       do ieq = 1, neq
-        Dvalue(ieq) = Y_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_REVERSE_F,ieq,0,0)
       end do
 
-    elseif(trim(cvariable) .eq. 'velocity_z') then
+    elseif (trim(cvariable) .eq. 'velocity_z') then
       do ieq = 1, neq
-        Dvalue(ieq) = Z_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_REVERSE_F,ieq,0,0)
       end do
 
-    elseif(trim(cvariable) .eq. 'momentum_x') then
+    elseif (trim(cvariable) .eq. 'momentum_x') then
       do ieq = 1, neq
-        Dvalue(ieq) = X_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_REVERSE_F,ieq,0,0)
       end do
 
-    elseif(trim(cvariable) .eq. 'momentum_y') then
+    elseif (trim(cvariable) .eq. 'momentum_y') then
       do ieq = 1, neq
-        Dvalue(ieq) = Y_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_REVERSE_F,ieq,0,0)
       end do
 
-    elseif(trim(cvariable) .eq. 'momentum_z') then
+    elseif (trim(cvariable) .eq. 'momentum_z') then
       do ieq = 1, neq
-        Dvalue(ieq) = Z_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_REVERSE_F,ieq,0,0)
       end do
 
-    elseif(trim(cvariable) .eq. 'energy') then
+    elseif (trim(cvariable) .eq. 'energy') then
       do ieq = 1, neq
-        Dvalue(ieq) = TOTAL_ENERGY_1L_FROM_CONSVAR(Ddata, nvar, ieq)/&
-                      DENSITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_REVERSE_F,ieq,0,0)
       end do
       
-    elseif(trim(cvariable) .eq. 'total_energy') then
+    elseif (trim(cvariable) .eq. 'total_energy') then
       do ieq = 1, neq
-        Dvalue(ieq) = TOTAL_ENERGY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
+        Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_REVERSE_F,ieq,0,0)
       end do
-
-    elseif(trim(cvariable) .eq. 'internal_energy') then
+        
+    elseif (trim(cvariable) .eq. 'internal_energy') then
       select case (nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = INTERNALENERGY2_1D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = INTERNALENERGY2_2D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = INTERNALENERGY2_3D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       end select
 
-    elseif(trim(cvariable) .eq. 'kinetic_energy') then
+    elseif (trim(cvariable) .eq. 'kinetic_energy') then
       select case (nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = KINETIC_ENERGY_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = KINETICENERGY2_1D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = KINETIC_ENERGY_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = KINETICENERGY2_2D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = KINETIC_ENERGY_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = KINETICENERGY2_3D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       end select
 
-    elseif(trim(cvariable) .eq. 'pressure') then
+    elseif (trim(cvariable) .eq. 'pressure') then
       select case (nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = PRESSURE2_1D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = PRESSURE2_2D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = PRESSURE2_3D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       end select
 
-    elseif(trim(cvariable) .eq. 'machnumber') then
+    elseif (trim(cvariable) .eq. 'machnumber') then
       select case (nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = MACHNUMBER2_1D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = MACHNUMBER2_2D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = MACHNUMBER2_3D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       end select
 
-    elseif(trim(cvariable) .eq. 'speedofsound') then
+    elseif (trim(cvariable) .eq. 'speedofsound') then
       select case (nvar)
       case (NVAR1D)
         do ieq = 1, neq
-          Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
+          Dvalue(ieq) = SOUNDSPEED2_1D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       case (NVAR2D)
         do ieq = 1, neq
-          Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR_2D(Ddata, nvar, ieq)
+          Dvalue(ieq) = SOUNDSPEED2_2D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       case (NVAR3D)
         do ieq = 1, neq
-          Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR_3D(Ddata, nvar, ieq)
+          Dvalue(ieq) = SOUNDSPEED2_3D(Ddata,IDX2_REVERSE_F,ieq,0,0)
         end do
       end select
 
     else
-
+   
       call output_line('Invalid variable name!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_getVarBlockformat')
       call sys_halt()

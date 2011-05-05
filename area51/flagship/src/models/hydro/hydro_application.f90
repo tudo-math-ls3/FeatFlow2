@@ -100,6 +100,8 @@
 
 module hydro_application
 
+#include "hydro.h"
+
   use afcstabilisation
   use bilinearformevaluation
   use boundary

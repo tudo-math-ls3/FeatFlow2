@@ -66,7 +66,8 @@
 
 module zpinch_callback2d
 
-#include "hydro.h"
+#define HYDRO_NDIM 2
+#include "../hydro/hydro.h"
 
   use collection
   use hydro_basic
@@ -636,12 +637,8 @@ contains
       Ej = p_DsolutionHydro(jdx+4)/p_DsolutionHydro(jdx+1)
       
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      ci = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
       
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
@@ -863,12 +860,8 @@ contains
       Ej = p_DsolutionHydro(jdx+4)/p_DsolutionHydro(jdx+1)
       
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      ci = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
       
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
@@ -1092,13 +1085,9 @@ contains
       vj = p_DsolutionHydro(neq*2+j)/p_DsolutionHydro(j)
       Ej = p_DsolutionHydro(neq*3+j)/p_DsolutionHydro(j)
             
-! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      ! Compute the speed of sound
+      ci = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
@@ -1322,13 +1311,9 @@ contains
       vj = p_DsolutionHydro(neq*2+j)/p_DsolutionHydro(j)
       Ej = p_DsolutionHydro(neq*3+j)/p_DsolutionHydro(j)
       
-! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      ci = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
-      cj = sqrt(max((GAMMA-1.0_DP)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      ! Compute the speed of sound
+      ci = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-1.0_DP)*(HYDRO_GAMMA)*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
       
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
