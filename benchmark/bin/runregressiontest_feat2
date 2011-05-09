@@ -405,9 +405,9 @@ fb_customise() {
 		pc64-penryn-linux-gcc-*4.4)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.4.5"
+		    modules="$modules gcc/4.4.6"
 		    LIDOJOBNAMEPREFIX=fb-gcc
-		    COMPILERNAME="GCC 4.4.5"
+		    COMPILERNAME="GCC 4.4.6"
 		    ;;
 
 		# GNU compiler suite 4.6.0
@@ -419,13 +419,13 @@ fb_customise() {
 		    COMPILERNAME="GCC 4.6.0"
 		    ;;
 
-		# GNU compiler suite 4.5.2 and default GNU compiler
+		# GNU compiler suite 4.5.3 and default GNU compiler
 		pc64-penryn-linux-gcc-*4.5|pc64-penryn-linux-gcc-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules gcc/4.5.2"
+		    modules="$modules gcc/4.5.3"
 		    LIDOJOBNAMEPREFIX=fb-gcc
-		    COMPILERNAME="GCC 4.5.2"
+		    COMPILERNAME="GCC 4.5.3"
 		    ;;
 
 		# Pathscale compiler suite
@@ -441,9 +441,9 @@ fb_customise() {
 		pc64-penryn-linux-pgi-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules pgi/11.2-0"
+		    modules="$modules pgi/11.4-0"
 		    LIDOJOBNAMEPREFIX=fb-pgi
-		    COMPILERNAME="PGI 11.2"
+		    COMPILERNAME="PGI 11.4"
 		    ;;
 
 		# Sun Studio compiler suite 12.1
