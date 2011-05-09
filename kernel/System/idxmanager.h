@@ -1,6 +1,8 @@
 #ifndef _IDXMANAGER_H_
 #define _IDXMANAGER_H_
 
+#include "feat2constants.h"
+
 #if 0
 !-*- mode: f90; -*-
 !##############################################################################
@@ -29,24 +31,43 @@
 !##############################################################################
 #endif
 
-#define LANGUAGE_C 1
-#define LANGUAGE_F 2
-
 #ifndef LANGUAGE
 #define LANGUAGE LANGUAGE_F
 #endif
 
+
 #if 0
-! Fortran array indices typically start at position 1, whereas the first
-! index of an array in C is 0. This mismatch can be compensated by setting
-! IOFFSET to -1 so that arrays can be addressed uniformly starting at 1.
-! If C-programmers wish to adress arrays starting at position 0, then
-! IOFFSET can be set to 0 before this header file is included.
+!##############################################################################
+! Supported array index addressing: C- or Fortran-style
+!
+! Default array index addressing is Fortran
+!##############################################################################
 #endif
 
-#if LANGUAGE == LANGUAGE_C
-#ifndef IOFFSET
-#define IOFFSET (-1)
+#ifndef IDXADDR
+#define IDXADDR IDXADDR_F
+#endif
+
+
+#if 0
+!##############################################################################
+! Fortran array indices typically start at position 1, whereas the first
+! index of an array in C is 0. This mismatch can be compensated by setting
+! __IDFOFFSET__ to +/-1 so that arrays can be addressed uniformly from C and Fortran.
+! If both LANGUAGE and IDXADDR coincide, then __IDFOFFSET__ is set to 0, otherwise
+! it is set to +1 or -1 depending on the combination LANGUAGE/IDXADDR.
+!##############################################################################
+#endif
+
+#if LANGUAGE == IDXADDR
+#define __IDFOFFSET__ 0
+#else
+#if (LANGUAGE == LANGUAGE_C) && (IDXADDR == LANGUAGE_F)
+#define __IDFOFFSET__ -1
+#elif (LANGUAGE == LANGUAGE_F) && (IDXADDR == LANGUAGE_C)
+#define __IDFOFFSET__  1
+#else
+#error "Unsupported combination LANGUAGE/IDXADDR!"
 #endif
 #endif
 
@@ -61,15 +82,12 @@
 !##############################################################################
 #endif
 
-#define COLUMN_MAJOR_ORDER 1
-#define ROW_MAJOR_ORDER    2
-
 #ifndef MEMORY_LAYOUT
 #ifdef LANGUAGE
-#if LANGUAGE == LANGUAGE_C
-#define MEMORY_LAYOUT ROW_MAJOR_ORDER
-#elif LANGUAGE == LANGUAGE_F
+#if LANGUAGE == LANGUAGE_F
 #define MEMORY_LAYOUT COLUMN_MAJOR_ORDER
+#elif LANGUAGE == LANGUAGE_C
+#define MEMORY_LAYOUT ROW_MAJOR_ORDER
 #else
 #error "Unsupported programming language"
 #endif
@@ -86,20 +104,29 @@
 !##############################################################################
 #endif
 
-#define IDX1_FORWARD_C(i1) (i1+IOFFSET)
-#define IDX1_REVERSE_C(i1) (i1+IOFFSET)
-#define IDX1_FORWARD_F(i1) i1
-#define IDX1_REVERSE_F(i1) i1
+#if __IDFOFFSET__ == 0
+#define __IDX1_C__(i1) i1
+#define __IDX1_F__(i1) i1
+#else
+#define __IDX1_C__(i1) (i1+(__IDFOFFSET__))
+#define __IDX1_F__(i1) (i1+(__IDFOFFSET__))
+#endif
 
-#define IDX2_FORWARD_C(i1,i2,n1,n2) ((n2)*(i1+IOFFSET)+i2+IOFFSET)
-#define IDX2_REVERSE_C(i1,i2,n1,n2) ((n1)*(i2+IOFFSET)+i1+IOFFSET)
-#define IDX2_FORWARD_F(i1,i2,n1,n2) i1,i2
-#define IDX2_REVERSE_F(i1,i2,n1,n2) i2,i1
+#if __IDFOFFSET__ == 0
+#define __IDX2_C__(i1,i2,n1,n2) ((n2)*(i1)+(i2))
+#define __IDX2_F__(i1,i2,n1,n2) i1,i2
+#else
+#define __IDX2_C__(i1,i2,n1,n2) ((n2)*(i1+(__IDFOFFSET__))+(i2)+(__IDFOFFSET__))
+#define __IDX2_F__(i1,i2,n1,n2) i1+(__IDFOFFSET__),i2+(__IDFOFFSET__)
+#endif
 
-#define IDX3_FORWARD_C(i1,i2,i3,n1,n2,n3) ((n3)*(n2)*(i1+IOFFSET)+(n3)*(i2+IOFFSET)+i3+IOFFSET)
-#define IDX3_REVERSE_C(i1,i2,i3,n1,n2,n3) ((n1)*(n2)*(i3+IOFFSET)+(n1)*(i2+IOFFSET)+i1+IOFFSET)
-#define IDX3_FORWARD_F(i1,i2,i3,n1,n2,n3) i1,i2,i3
-#define IDX3_REVERSE_F(i1,i2,i3,n1,n2,n3) i3,i2,i1
+#if __IDFOFFSET__ == 0
+#define __IDX3_C__(i1,i2,i3,n1,n2,n3) ((n3)*(n2)*(i1)+(n3)*(i2)+i3)
+#define __IDX3_F__(i1,i2,i3,n1,n2,n3) i1,i2,i3
+#else
+#define __IDX3_C__(i1,i2,i3,n1,n2,n3) ((n3)*(n2)*(i1+(__IDFOFFSET__))+(n3)*(i2+(__IDFOFFSET__))+(i3)+(__IDFOFFSET__))
+#define __IDX3_F__(i1,i2,i3,n1,n2,n3) i1+(__IDFOFFSET__),i2+(__IDFOFFSET__),i3+(__IDFOFFSET__)
+#endif
 
 
 #if 0
@@ -126,52 +153,71 @@
 !##############################################################################
 #endif
 
-#if MEMORY_LAYOUT == COLUMN_MAJOR_ORDER
-
 #if LANGUAGE == LANGUAGE_F
 
-#define IDX1(i1)                IDX1_FORWARD_F(i1)
-#define IDX2(i1,i2,n1,n2)       IDX2_FORWARD_F(i1,i2,n1,n2)
-#define IDX3(i1,i2,i3,n1,n2,n3) IDX3_FORWARD_F(i1,i2,i3,n1,n2,n3)
+#define IDX1_FORWARD(a,i1)                a(__IDX1_F__(i1))
+#define IDX2_FORWARD(a,i1,i2,n1,n2)       a(__IDX2_F__(i1,i2,n1,n2))
+#define IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3) a(__IDX3_F__(i1,i2,i3,n1,n2,n3))
 
-#elif LANGUAGE == LANGUAGE_C
+#define IDX1_REVERSE(a,i1)                a(__IDX1_F__(i1))
+#define IDX2_REVERSE(a,i1,i2,n1,n2)       a(__IDX2_F__(i2,i1,n2,n1))
+#define IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3) a(__IDX3_F__(i3,i2,i1,n3,n2,n1))
 
-#define IDX1(i1)                IDX1_REVERSE_C(i1)
-#define IDX2(i1,i2,n1,n2)       IDX2_REVERSE_C(i1,i2,n1,n2)
-#define IDX3(i1,i2,i3,n1,n2,n3) IDX3_REVERSE_C(i1,i2,i3,n1,n2,n3)
+#if MEMORY_LAYOUT == COLUMN_MAJOR_ORDER
 
-#else
-#error "Unsupported programming language"
-#endif
+#define IDX1(a,i1)                IDX1_FORWARD(a,i1)
+#define IDX2(a,i1,i2,n1,n2)       IDX2_FORWARD(a,i1,i2,n1,n2)
+#define IDX3(a,i1,i2,i3,n1,n2,n3) IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3)
 
 #elif MEMORY_LAYOUT == ROW_MAJOR_ORDER
 
-#if LANGUAGE == LANGUAGE_F
-
-#define IDX1(i1)                IDX1_REVERSE_F(i1)
-#define IDX2(i1,i2,n1,n2)       IDX2_REVERSE_F(i1,i2,n1,n2)
-#define IDX3(i1,i2,i3,n1,n2,n3) IDX3_REVERSE_F(i1,i2,i3,n1,n2,n3)
-
-#elif LANGUAGE == LANGUAGE_C
-
-#define IDX1(i1)                IDX1_FORWARD_C(i1)
-#define IDX2(i1,i2,n1,n2)       IDX2_FORWARD_C(i1,i2,n1,n2)
-#define IDX3(i1,i2,i3,n1,n2,n3) IDX3_FORWARD_C(i1,i2,i3,n1,n2,n3)
-
-#else
-#error "Unsupported programming language"
-#endif
+#define IDX1(a,i1)                IDX1_REVERSE(a,i1)
+#define IDX2(a,i1,i2,n1,n2)       IDX2_REVERSE(a,i1,i2,n1,n2)
+#define IDX3(a,i1,i2,i3,n1,n2,n3) IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3)
 
 #else
 #error "Unsupported memory layout"
 #endif
 
-#define IDX1_ALLOCATE(n1)       IDX1(n1)
-#define IDX2_ALLOCATE(n1,n2)    IDX2(n1,n2,n1,n2)
-#define IDX3_ALLOCATE(n1,n2,n3) IDX3(n1,n2,n3,n1,n2,n3)
+#elif LANGUAGE == LANGUAGE_C
 
-#define IDX1_MALLOC(n1)       IDX1(n1)+1
-#define IDX2_MALLOC(n1,n2)    IDX2(n1,n2,n1,n2)+1
-#define IDX3_MALLOC(n1,n2,n3) IDX3(n1,n2,n3,n1,n2,n3)+1
+#define IDX1_FORWARD(a,i1)                a[__IDX1_C__(i1)]
+#define IDX2_FORWARD(a,i1,i2,n1,n2)       a[__IDX2_C__(i1,i2,n1,n2)]
+#define IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3) a[__IDX3_C__(i1,i2,i3,n1,n2,n3)]
+
+#define IDX1_REVERSE(a,i1)                a[__IDX1_C__(i1)]
+#define IDX2_REVERSE(a,i1,i2,n1,n2)       a[__IDX2_C__(i2,i1,n2,n1)]
+#define IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3) a[__IDX3_C__(i3,i2,i1,n3,n2,n1)]
+
+#if MEMORY_LAYOUT == COLUMN_MAJOR_ORDER
+
+#define IDX1(a,i1)                IDX1_REVERSE(a,i1)
+#define IDX2(a,i1,i2,n1,n2)       IDX2_REVERSE(a,i1,i2,n1,n2)
+#define IDX3(a,i1,i2,i3,n1,n2,n3) IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3)
+
+#elif MEMORY_LAYOUT == ROW_MAJOR_ORDER
+
+#define IDX1(a,i1)                IDX1_FORWARD(a,i1)
+#define IDX2(a,i1,i2,n1,n2)       IDX2_FORWARD(a,i1,i2,n1,n2)
+#define IDX3(a,i1,i2,i3,n1,n2,n3) IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3)
+
+#else
+#error "Unsupported memory layout"
+#endif
+
+#else
+#error "Unsupported programming language"
+#endif
+
+
+#define IDX1_ALLOCATE(a,n1)       IDX1(a,n1)
+#define IDX2_ALLOCATE(a,n1,n2)    IDX2(a,n1,n2,n1,n2)
+#define IDX3_ALLOCATE(a,n1,n2,n3) IDX3(a,n1,n2,n3,n1,n2,n3)
+
+#define IDX1_MALLOC(a,n1)         IDX1(a,n1)
+#define IDX2_MALLOC(a,n1,n2)      IDX2(a,n1,n2,n1,n2)
+#define IDX3_MALLOC(a,n1,n2,n3)   IDX3(a,n1,n2,n3,n1,n2,n3)
+
+#define IDX1_
 
 #endif
