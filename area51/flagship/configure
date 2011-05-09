@@ -6,16 +6,22 @@
 # Enable auto-tuning using genetic algorithms.
 # APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AUTOTUNE"
 
+# Specify header files which should be copied to the object directory
+HEADER_FILES_TO_COPY="src/flagship.h src/models/hydro/hydro.h src/models/mhd/mhd.h src/kernel/thermodynamics.h src/kernel/magnetohydrodynamics.h"
+
+# Sepcify list of application source files
+SRCLIST_APP="`ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90`"
+
+# Add CUDA support (if available)
+SRCEXTRA_APP="`ls src/kernel/*.cu`"
+
 # Use system-wide configure
 ../../bin/configure \
     --appname=flagship-\$\(ID\) \
     --programfile=src/flagship.f90 \
-    --srclist_app="`ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90`" \
-    --header-files-to-copy=src/flagship.h \
-    --header-files-to-copy=src/models/hydro/hydro.h \
-    --header-files-to-copy=src/models/mhd/mhd.h \
-    --header-files-to-copy=src/kernel/thermodynamics.h \
-    --header-files-to-copy=src/kernel/magnetohydrodynamics.h \
+    --srclist_app="$SRCLIST_APP" \
+    --srcextra_app="$SRCEXTRA_APP" \
+    --header-files-to-copy="$HEADER_FILES_TO_COPY" \
     --apponlyflags="$APPONLYFLAGS"\
     $@
 

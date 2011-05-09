@@ -2692,6 +2692,19 @@ endif
 endif
 
 
+##############################################################################
+# Add CUDA support
+##############################################################################
+HAS_CUDA10 := $(shell echo $(HAS_CUDA10) | tr '[a-z]' '[A-Z]')
+HAS_CUDA11 := $(shell echo $(HAS_CUDA11) | tr '[a-z]' '[A-Z]')
+HAS_CUDA12 := $(shell echo $(HAS_CUDA12) | tr '[a-z]' '[A-Z]')
+HAS_CUDA13 := $(shell echo $(HAS_CUDA13) | tr '[a-z]' '[A-Z]')
+HAS_CUDA20 := $(shell echo $(HAS_CUDA20) | tr '[a-z]' '[A-Z]')
+HAS_CUDA21 := $(shell echo $(HAS_CUDA21) | tr '[a-z]' '[A-Z]')
+ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)))
+include $(TEMPLATESDIR)/nvcc-generic.mk
+endif
+
 
 ##############################################################################
 # Check for forced 32bit/64bit binary
@@ -2768,6 +2781,16 @@ endif
 	else \
 	    echo '  C++ compiler       : *** not set ! ***'; \
 	fi
+        # If cuda switch -DHAS_CUDAxx does occur in compiler flags,
+        # show CUDA compiler
+ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)))
+	@if test -z "$(findstring exit 1, $(CUDA))"; then \
+	    echo '  CUDA compiler      :' $(shell (which 2>/dev/null $(CUDA) || \
+		echo "\*\*\* $(CUDA) not found ! \*\*\*")); \
+	else \
+	    echo '  CUDA compiler      : *** not set ! ***'; \
+	fi
+endif
 	@echo
 	@echo 'Linker to be used:'
 	@if test -z "$(findstring exit 1, $(LD))"; then \
@@ -2784,6 +2807,7 @@ endif
 	@echo '  CFLAGSF90    =' $(CFLAGSF90)
 	@echo '  CFLAGSC      =' $(CFLAGSC)
 	@echo '  CFLAGSCXX    =' $(CFLAGSCXX)
+	@echo '  CFLAGSCUDA   =' $(CFLAGSCUDA)
 	@echo '  LDFLAGS      =' $(LDFLAGS)
 	@echo '  APPONLYFLAGS =' $(APPONLYFLAGS)
 	@echo '  MODEXTENSION =' $(MODEXTENSION)

@@ -322,11 +322,13 @@ my %defaults = (
     CFLAGSC              => [],
     CFLAGSCOPROC         => [],
     CFLAGSCXX            => [],
+    CFLAGSCUDA           => [],
     CFLAGSF77            => [],
     CFLAGSF90            => [],
     COPROCLIST           => [],
     CPP                  => "",
     CXX                  => "",
+    CUDA                 => "",
     F77                  => "",
     F90                  => "",
     FORCE_ID             => "NO",
@@ -355,6 +357,7 @@ my %defaults = (
     RANLIB               => "",
     RELINK_ALWAYS        => "YES",
     SRCEXTRA             => [],
+    SRCEXTRA_APP         => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
     SRCLIST_APP          => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
 );
 
@@ -397,11 +400,13 @@ GetOptions (
             "cflagsc=s{0,}"                 => \@{ $cl{'CFLAGSC'} },
             "cflagscoproc=s{0,}"            => \@{ $cl{'CFLAGSCOPROC'} },
             "cflagscxx=s{0,}"               => \@{ $cl{'CFLAGSCXX'} },
+            "cflagscuda=s{0,}"              => \@{ $cl{'CFLAGSCUDA'} },
             "cflagsf77=s{0,}"               => \@{ $cl{'CFLAGSF77'} },
             "cflagsf90=s{0,}"               => \@{ $cl{'CFLAGSF90'} },
 	    "coproclist=s{0,}"              => \@{ $cl{'COPROCLIST'} },
-            "cxx=s"                         => \$cl{'CXX'},
             "cpp=s"                         => \$cl{'CPP'},
+            "cuda=s"                        => \$cl{'CUDA'},
+            "cxx=s"                         => \$cl{'CXX'},
             "debug"                         => \$cl{'debug'},
             "f77=s"                         => \$cl{'F77'},
             "f90=s"                         => \$cl{'F90'},
@@ -451,7 +456,7 @@ GetOptions (
             "relink-always!"                => \$cl{'RELINK_ALWAYS'},
             "serial"                        => sub { $cl{'MPI'} = "no" },
             "srcextra=s{0,}"                => \@{ $cl{'SRCEXTRA'} },
-            "srclist-app=s"                 => \@{ $cl{'SRCLIST_APP'} },
+            "srcextra_app=s"                => \@{ $cl{'SRCEXTRA_APP'} },
             "srclist_app=s"                 => \@{ $cl{'SRCLIST_APP'} },
             "suppressflags=s"               => \@{ $cl{'suppressflags'} },
             "version"                       => \$cl{'version'},
@@ -586,10 +591,12 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --cflagsc=\""        . join(',', @{$cl{'CFLAGSC'}})      . "\"" if ($#{$cl{'CFLAGSC'}} >= 0);
     $options .= " --cflagscoproc=\""   . join(',', @{$cl{'CFLAGSCOPROC'}}) . "\"" if ($#{$cl{'CFLAGSCOPROC'}} >= 0);
     $options .= " --cflagscxx=\""      . join(',', @{$cl{'CFLAGSCXX'}})    . "\"" if ($#{$cl{'CFLAGSCXX'}} >= 0);
+    $options .= " --cflagscuda=\""     . join(',', @{$cl{'CFLAGSCUDA'}})   . "\"" if ($#{$cl{'CFLAGSCUDA'}} >= 0);
     $options .= " --cflagsf77=\""      . join(',', @{$cl{'CFLAGSF77'}})    . "\"" if ($#{$cl{'CFLAGSF77'}} >= 0);
     $options .= " --cflagsf90=\""      . join(',', @{$cl{'CFLAGSF90'}})    . "\"" if ($#{$cl{'CFLAGSF90'}} >= 0);
     $options .= " --coproclist=\""     . join(',', @{$cl{'COPROCLIST'}})   . "\"" if ($#{$cl{'COPROCLIST'}} >= 0);
     $options .= " --cpp=\""            . $cl{'CPP'}                        . "\"" if (defined($cl{'CPP'}) && $cl{'CPP'});
+    $options .= " --cuda=\""           . $cl{'CUDA'}                       . "\"" if (defined($cl{'CUDA'}) && $cl{'CUDA'});
     $options .= " --cxx=\""            . $cl{'CXX'}                        . "\"" if (defined($cl{'CXX'}) && $cl{'CXX'});
     $options .= " --debug"                                                        if (defined($cl{'debug'}) && $cl{'debug'});
     $options .= " --f77=\""            . $cl{'F77'}                        . "\"" if (defined($cl{'F77'}) && $cl{'F77'});
@@ -674,9 +681,10 @@ if ($cl{'regressionbenchmark'}) {
     closedir(DIRECTORY);
 } else {
     my @srclist_app = &get_sourcefilelist();
-    &create_feastAppMakefile(\@srclist_app);
+    my @srcextra_app = &get_extrasourcefilelist();
+    &create_feastAppMakefile(\@srclist_app,\@srcextra_app);
     # Some prose at the end
-    &print_statistics_about_feastAppMakefile(\@srclist_app);
+    &print_statistics_about_feastAppMakefile(\@srclist_app,\@srcextra_app);
 }
 
 if ($warnings ne "") {
@@ -853,9 +861,10 @@ sub check_options {
     # lists of values and multiple instances of the option are allowed.
     # Normalise the values by converting strings to real arrays.
     foreach my $entry ('APPONLYFLAGS', 'BUILDLIB', 'CFLAGSC', 'CFLAGSCOPROC', 'CFLAGSCXX',
-    		       'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
+    		       'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
     		       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
-    		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCEXTRA', 'SRCLIST_APP') {
+    		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCEXTRA', 'SRCEXTRA_APP',
+		       'SRCLIST_APP') {
     	# $cl{'...'} has been passed as an array to GetOptions()
     	# and as such is always defined. But is does not necessarily have
     	# entries: unset => #entries=-1; set, but empty => #entries=0
@@ -998,7 +1007,7 @@ sub check_options {
     # Valid keywords? (both for options that take exactly one string and those that can take multiple)
     my %validkeywords = (
 	"BINARY"              => [ "std", "32", "64" ],
-	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "opengl" ],  # List of valid coprocessor backends
+	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "opengl" ],  # List of valid coprocessor backends
 	"FORCE_ID"            => [ "yes", "no" ],
         "INTSIZE"             => [ "std", "large" ],
         "MPI"                 => [ "yes", "no" ],
@@ -1076,6 +1085,7 @@ sub check_options {
 # Function: Create Makefile for a FEAT2 application
 sub create_feastAppMakefile {
     my $srclist_app = $_[0];
+    my $srcextra_app = $_[1];
     my $entry;
 
     # Hash containing -- with special keywords -- all dependencies of
@@ -1115,6 +1125,15 @@ sub create_feastAppMakefile {
 
     # Dependencies of each object file from application modules
     foreach $entry ( @{$srclist_app} ) {
+	$path{$entry} = &concat_filename($SRCDIR_APP, $entry);
+        $objectfiles_and_dependencies .=
+	    &make_dep_list(\%dependencyLists, $path{$entry},
+			   "\$(SRCDIR_APP)/" . $entry, 1, "o", "o",
+			   "\$(OBJDIR)", \%headerFilesToCopy) . "\n\n";
+    }
+
+    # Dependencies of each object file from application extra source files
+    foreach $entry ( @{$srcextra_app} ) {
 	$path{$entry} = &concat_filename($SRCDIR_APP, $entry);
         $objectfiles_and_dependencies .=
 	    &make_dep_list(\%dependencyLists, $path{$entry},
@@ -1313,6 +1332,25 @@ sub create_feastAppMakefile {
         "# Create binary with or without mpi wrappers\n" .
         "MPIWRAPPERS         = $entry\n\n";
 
+    $entry = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
+    print MAKEFILE_HDL
+        "# Create binary with Coprocessor support?\n";
+
+    if ($#{$entry} >= 0) {
+
+	# convert array with coprocessors into hash for easier lookups
+	my %coprocs = ();
+	map { $coprocs{$_} = $_; } @{ $entry };
+
+	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
+			'cuda20', 'cuda21') {
+	    print MAKEFILE_HDL
+		"HAS_" . uc($entry) . "          = ";
+	    print MAKEFILE_HDL "YES\n" if (defined($coprocs{$entry}));
+	    print MAKEFILE_HDL "NO\n" unless (defined($coprocs{$entry}));
+	}
+    }
+
     print MAKEFILE_HDL
         "\n";
 
@@ -1399,6 +1437,12 @@ sub create_feastAppMakefile {
 
     print MAKEFILE_HDL
 	&format_list("SRCLIST_APP    = ", 8, 70, join(' ', sort keys %srclist), "\\\n", "\\") . "\n";
+
+    %srclist = ();
+    map { $srclist{$_} = "" } @{$srcextra_app};
+
+    print MAKEFILE_HDL
+	&format_list("SRCEXTRA_APP   = ", 8, 70, join(' ', sort keys %srclist), "\\\n", "\\") . "\n";
     undef %srclist;
 
     print MAKEFILE_HDL
@@ -1467,10 +1511,11 @@ sub create_feastAppMakefile {
         "# List of all object files from Fortran 90 source files (only modules)\n" .
         "OBJF90   = \$(patsubst %.f90, \$(OBJDIR)/%.o, \$(notdir \$(SRCF90)))\n\n" .
         "# List of object files only needed for current build ID\n" .
-        "OBJEXTRA = \$(patsubst %.f,   \$(OBJDIR)/%.o, \$(filter %.f,   \$(notdir \$(SRCEXTRA)))) \\\n" .
-        "\t   \$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))) \\\n" .
-        "\t   \$(patsubst %.c,   \$(OBJDIR)/%.o, \$(filter %.c,   \$(notdir \$(SRCEXTRA)))) \\\n" .
-        "\t   \$(patsubst %.cc,  \$(OBJDIR)/%.o, \$(filter %.cc,  \$(notdir \$(SRCEXTRA)))) \n\n" .
+        "OBJEXTRA = \$(patsubst %.f,   \$(OBJDIR)/%.o, \$(filter %.f,   \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))) \\\n" .
+        "\t   \$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))) \\\n" .
+        "\t   \$(patsubst %.c,   \$(OBJDIR)/%.o, \$(filter %.c,   \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))) \\\n" .
+        "\t   \$(patsubst %.cc,  \$(OBJDIR)/%.o, \$(filter %.cc,  \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))) \\\n" .
+        "\t   \$(patsubst %.cu,  \$(OBJDIR)/%.o, \$(filter %.cu,  \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))) \n\n" .
 
         "# Main object file (i.e. file containing the 'program' statement)\n" .
         "OBJPRG = \$(patsubst %.f90, \$(OBJDIR)/%.o, \$(notdir \$(PROGRAM_FILE)))\n\n" .
@@ -1506,8 +1551,8 @@ sub create_feastAppMakefile {
     print MAKEFILE_HDL "# Settings from configure command line which override settings from Makefile.inc\n";
     my $colwidth = 0;
     foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
-		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX', 'F77',
-		       'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
+		       'CFLAGSCXX', 'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX',
+		       'CUDA', 'F77', 'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
 		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
 		       'MPILIBS', 'RANLIB', 'SRCEXTRA') {
 	$colwidth = &max(length($entry), $colwidth);
@@ -1515,8 +1560,8 @@ sub create_feastAppMakefile {
     $colwidth++;
     my $overwritten = 0;
     foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
-		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX', 'F77',
-		       'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
+		       'CFLAGSCXX', 'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX',
+		       'CUDA', 'F77', 'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
 		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
 		       'MPILIBS', 'RANLIB', 'SRCEXTRA') {
 	# Determine type of variable: scalar or array
@@ -1558,7 +1603,7 @@ sub create_feastAppMakefile {
 	}
     }
     if ($#{$cl{'suppressflags'}} >= 0) {
-        foreach $entry ("CFLAGSF77", "CFLAGSF90", "CFLAGSC", "CFLAGSCOPROC", "CFLAGSCXX", "LDFLAGS") {
+        foreach $entry ("CFLAGSF77", "CFLAGSF90", "CFLAGSC", "CFLAGSCOPROC", "CFLAGSCXX", "CFLAGSCUDA", "LDFLAGS") {
             foreach (@{$cl{'suppressflags'}}) {
                 print MAKEFILE_HDL
                     $entry . " " x ($colwidth - length($entry)) . ":= \$(filter-out $_, \$($entry))\n";
@@ -1609,77 +1654,26 @@ sub create_feastAppMakefile {
 	    "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
 
 	# if CUDA is listed as coprocessor,  it needs to be linked linked against the binary
-	if (defined($coprocs{'cuda10'})) {
-	    print MAKEFILE_HDL
-		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
-		"ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
-		"MESSAGE  := \$(MESSAGE) \\\n" .
-		"\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
-		"\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
-		"else\n" .
-		"APPONLYFLAGS := -DHAS_CUDA10 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
-		"endif\n" .
-		"ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
-		"MESSAGE  := \$(MESSAGE) \\\n" .
-		"\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
-		"\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
-		"else\n" .
-		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
-		"endif\n";
-	}
-	if (defined($coprocs{'cuda11'})) {
-	    print MAKEFILE_HDL
-		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
-		"ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
-		"MESSAGE  := \$(MESSAGE) \\\n" .
-		"\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
-		"\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
-		"else\n" .
-		"APPONLYFLAGS := -DHAS_CUDA11 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
-		"endif\n" .
-		"ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
-		"MESSAGE  := \$(MESSAGE) \\\n" .
-		"\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
-		"\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
-		"else\n" .
-		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
-		"endif\n";
-	}
-	if (defined($coprocs{'cuda12'})) {
-	    print MAKEFILE_HDL
-		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
-		"ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
-		"MESSAGE  := \$(MESSAGE) \\\n" .
-		"\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
-		"\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
-		"else\n" .
-		"APPONLYFLAGS := -DHAS_CUDA12 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
-		"endif\n" .
-		"ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
-		"MESSAGE  := \$(MESSAGE) \\\n" .
-		"\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
-		"\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
-		"else\n" .
-		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
-		"endif\n";
-	}
-	if (defined($coprocs{'cuda13'})) {
-	    print MAKEFILE_HDL
-		"# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
-		"ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
-		"MESSAGE  := \$(MESSAGE) \\\n" .
-		"\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
-		"\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
-		"else\n" .
-		"APPONLYFLAGS := -DHAS_CUDA13 \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
-		"endif\n" .
-		"ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
-		"MESSAGE  := \$(MESSAGE) \\\n" .
-		"\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
-		"\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
-		"else\n" .
-		"LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
-		"endif\n";
+	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
+			'cuda20', 'cuda21') {
+	    if (defined($coprocs{$entry})) {
+		print MAKEFILE_HDL
+		    "# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
+		    "ifeq (\$(strip \$(CUDA_INC_PATH)),)\n" .
+		    "MESSAGE  := \$(MESSAGE) \\\n" .
+		    "\t    echo '*** Warning: CUDA_INC_PATH unset. Only standard include paths will'; \\\n" .
+		    "\t    echo '*** Warning: be searched for the file <cuda_runtime.h>.';\n" .
+		    "else\n" .
+		    "APPONLYFLAGS := -DHAS_" . uc($entry) . " \$(APPONLYFLAGS) -I\$(CUDA_INC_PATH) \n" .
+		    "endif\n" .
+		    "ifeq (\$(strip \$(CUDA_LIB_PATH)),)\n" .
+		    "MESSAGE  := \$(MESSAGE) \\\n" .
+		    "\t    echo '*** Warning: CUDA_LIB_PATH unset. Only standard library paths will'; \\\n" .
+		    "\t    echo '*** Warning: be searched for the libraries <libcudart.so> and <libcublas.so>.';\n" .
+		    "else\n" .
+		    "LDFLAGS      := \$(LDFLAGS) -L\$(CUDA_LIB_PATH) -lcudart -lcublas\n" .
+		    "endif\n";
+	    }
 	}
 
 	# if OPENGL is listed as coprocessor, X11, GL and GLEW need to be linked linked against the binary
@@ -1844,11 +1838,12 @@ sub create_feastAppMakefile {
 #	"\t   exit 1;\n" .
 #	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
 #	"# all the command line options a compile command usually gets.\n" .
-#	"F77 = \$(MESSAGE) echo\n" .
-#	"F90 = \$(F77)\n" .
-#	"CC  = \$(F77)\n" .
-#	"CXX = \$(F77)\n" .
-#	"LD  = \$(F77)\n" .
+#	"F77  = \$(MESSAGE) echo\n" .
+#	"F90  = \$(F77)\n" .
+#	"CC   = \$(F77)\n" .
+#	"CUDA = \$(F77)\n" .
+#	"CXX  = \$(F77)\n" .
+#	"LD   = \$(F77)\n" .
 #	"endif\n" .
 #	"endif\n\n" .
 
@@ -1866,11 +1861,12 @@ sub create_feastAppMakefile {
 	"	   exit 1;\n" .
 	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
 	"# all the command line options a compile command usually gets.\n" .
-	"F77 = \$(MESSAGE) echo\n" .
-	"F90 = \$(F77)\n" .
-	"CC  = \$(F77)\n" .
-	"CXX = \$(F77)\n" .
-	"LD  = \$(F77)\n" .
+	"F77  = \$(MESSAGE) echo\n" .
+	"F90  = \$(F77)\n" .
+	"CC   = \$(F77)\n" .
+	"CUDA = \$(F77)\n" .
+	"CXX  = \$(F77)\n" .
+	"LD   = \$(F77)\n" .
 	"endif\n\n" .
 
 	"# Makefile variable BINARY must have exactly one out of three possible values:\n" .
@@ -1914,11 +1910,12 @@ sub create_feastAppMakefile {
 	"\t   exit 1;\n" .
 	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
 	"# all the command line options a compile command usually gets.\n" .
-	"F77 = \$(MESSAGE) echo\n" .
-	"F90 = \$(F77)\n" .
-	"CC  = \$(F77)\n" .
-	"CXX = \$(F77)\n" .
-	"LD  = \$(F77)\n" .
+	"F77  = \$(MESSAGE) echo\n" .
+	"F90  = \$(F77)\n" .
+	"CC   = \$(F77)\n" .
+	"CUDA = \$(F77)\n" .
+	"CXX  = \$(F77)\n" .
+	"LD   = \$(F77)\n" .
 	"endif\n" .
 	"endif\n" .
 	"endif\n" .
@@ -2001,7 +1998,7 @@ sub create_feastAppMakefile {
         "# in order to always raise an error when make is invoked.\n" .
         "ifeq (\$(strip \$(MPI)), YES)\n" .
         "ifneq (,\$(findstring -DENABLE_SERIAL_BUILD ,\\\n" .
-        "\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCXX) ))\n" .
+        "\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
         "MESSAGE := \$(MESSAGE) \\\n" .
         "\t   echo; \\\n" .
         "\t   echo '*** Error: Build type MPI=YES cannot be used in combination'; \\\n" .
@@ -2087,19 +2084,19 @@ sub create_feastAppMakefile {
 
 	"# Catch case (coproc-bail-out) that coprocessor support is not available for all build IDs\n" .
 	"ifneq (,\$(findstring -DENABLE_COPROCESSOR_SUPPORT ,\\\n" .
-	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCXX) ))\n" .
+	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
 	"# Initialise value\n" .
 	"DETAIL :=\n" .
 	"ifneq (, \$(findstring -DUSE_COMPILER_PATHSCALE ,\\\n" .
-	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCXX) ))\n" .
+	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
 	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with the Pathscale compiler suite:';\n" .
 	"endif\n" .
 	"ifneq (, \$(findstring -DUSE_COMPILER_OPEN64 ,\\\n" .
-	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCXX) ))\n" .
+	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
 	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with the Open64 compiler suite:';\n" .
 	"endif\n" .
 	"ifneq (, \$(findstring -DUSE_COMPILER_NEC ,\\\n" .
-	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCXX) ))\n" .
+	"\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCOPROC) \$(CFLAGSCUDA) \$(CFLAGSCXX) ))\n" .
 	"DETAIL := \$(DETAIL) echo '*** because cross-language linking is not possible with NEC compilers:';\n" .
 	"endif\n" .
 	"# Throw error if value is set by now\n" .
@@ -2113,11 +2110,12 @@ sub create_feastAppMakefile {
 	"\t   exit 51;\n" .
 	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
 	"# all the command line options a compile command usually gets.\n" .
-	"F77 = \$(MESSAGE) echo\n" .
-	"F90 = \$(F77)\n" .
-	"CC  = \$(F77)\n" .
-	"CXX = \$(F77)\n" .
-	"LD  = \$(F77)\n" .
+	"F77  = \$(MESSAGE) echo\n" .
+	"F90  = \$(F77)\n" .
+	"CC   = \$(F77)\n" .
+	"CUDA = \$(F77)\n" .
+	"CXX  = \$(F77)\n" .
+	"LD   = \$(F77)\n" .
 	"endif\n" .
 	"endif\n\n\n\n";
 
@@ -2299,13 +2297,13 @@ sub create_feastAppMakefile {
         "# supposed to be located in \$(SRCDIR_ARCH).\n" .
         "\$(OBJDIR)/%.o: | \$(OBJDIR)\n" .
 
-    # Generic rule for *.f files out of SRCEXTRA
-	"# Generic rule for *.f files out of SRCEXTRA\n" .
-	"\$(patsubst %.f, \$(OBJDIR)/%.o, \$(filter %.f, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA)\n" .
-	"\t\$(F77) \$(APPONLYFLAGS) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA)) -o \$\@\n\n" .
+    # Generic rule for *.f files out of SRCEXTRA and SRCEXTRA_APP
+	"# Generic rule for *.f files out of SRCEXTRA and SRCEXTRA_APP\n" .
+	"\$(patsubst %.f, \$(OBJDIR)/%.o, \$(filter %.f, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
+	"\t\$(F77) \$(APPONLYFLAGS) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
-    # Generic rule for *.f90 files out of SRCEXTRA
-	"# Generic rule for *.f90 files out of SRCEXTRA\n" .
+    # Generic rule for *.f90 files out of SRCEXTRA and SRCEXTRA_APP
+	"# Generic rule for *.f90 files out of SRCEXTRA and SRCEXTRA_APP\n" .
 	"# Note 1:\n" .
 	"# Remember that those files are supposed to provide no Fortran module\n" .
 	"# - otherwise they would be on the normal kernel file list - and as\n" .
@@ -2313,55 +2311,65 @@ sub create_feastAppMakefile {
 	"# for compilers that do not create .mod files in the object directory,\n" .
 	"# in the working directory.\n" .
 	"# Note 2:\n" .
-	"# Fortran 90 source files listed in in SRCEXTRA may try to 'use' Fortran 90\n" .
-	"# modules from the kernel. Add the complete list of object files generated\n" .
-	"# from the kernel's Fortran 90 sources to the dependency list of the\n" .
-	"# SRCEXTRA's Fortran 90 source files to prevent them from being compiled\n" .
-	"# prematurely, e.g. in a highly parallel make run (make -j N, with N>32 or\n" .
-	"# N missing).\n" .
-	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA) \$(filter-out \$(OBJEXTRA), \$(OBJ))\n" .
-	"\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA)) -o \$\@\n\n" .
+	"# Fortran 90 source files listed in SRCEXTRA and SRCEXTRA_APP may try to\n" .
+	"# 'use' Fortran 90 modules from the kernel. Add the complete list of object\n" .
+	"# files generated from the kernel's Fortran 90 sources to the dependency\n" .
+	"# list of the SRCEXTRA's and SRCEXTRA_APP's Fortran 90 source files to prevent\n" .
+	"# them from being compiled prematurely, e.g. in a highly parallel make run\n" .
+	"# (make -j N, with N>32 or N missing).\n" .
+	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP) \$(filter-out \$(OBJEXTRA), \$(OBJ))\n" .
+	"\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
-    # Generic rule for *.c files out of SRCEXTRA
-	"# Generic rule for *.c files out of SRCEXTRA\n" .
-	"\$(patsubst %.c, \$(OBJDIR)/%.o, \$(filter %.c, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA)\n" .
-        "\t\$(CC) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).c, \$(SRCEXTRA)) -o \$\@\n\n" .
+    # Generic rule for *.c files out of SRCEXTRA and SRCEXTRA_APP
+	"# Generic rule for *.c files out of SRCEXTRA and SRCEXTRA_APP\n" .
+	"\$(patsubst %.c, \$(OBJDIR)/%.o, \$(filter %.c, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
+        "\t\$(CC) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).c, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
-    # Generic rule for *.cc files out of SRCEXTRA
-	"# Generic rule for *.cc files out of SRCEXTRA\n" .
-	"\$(patsubst %.cc, \$(OBJDIR)/%.o, \$(filter %.cc, \$(notdir \$(SRCEXTRA)))): \$(SRCEXTRA)\n" .
-	"\t\$(CXX) \$(APPONLYFLAGS) \$(CFLAGSCXX) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA)) -o \$\@\n\n" .
+    # Generic rule for *.cc files out of SRCEXTRA and SRCEXTRA_APP
+	"# Generic rule for *.cc files out of SRCEXTRA and SRCEXTRA_APP\n" .
+	"\$(patsubst %.cc, \$(OBJDIR)/%.o, \$(filter %.cc, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
+	"\t\$(CXX) \$(APPONLYFLAGS) \$(CFLAGSCXX) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
-    # All files listed in $(SRCEXTRA) should be compiled, but depending on
-    # its extension with a separate rule. Fortran, Fortran90, C and C++
-    # source files have been dealt with above. If, however, a file is
-    # listed in $(SRCEXTRA) that does not exist in $(SRCDIR_ARCH) none
-    # of the above rules matched. The following rule is a catch-all for
+    # Generic rule for *.cu files out of SRCEXTRA and SRCEXTRA_APP
+	"# Generic rule for *.cu files out of SRCEXTRA and SRCEXTRA_APP\n" .
+	"\$(patsubst %.cu, \$(OBJDIR)/%.o, \$(filter %.cu, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
+	"\t\$(CUDA) \$(APPONLYFLAGS) \$(CFLAGSCUDA) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cu, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+
+    # All files listed in $(SRCEXTRA) and $(SRCEXTRA_APP) should be
+    # compiled, but depending on its extension with a separate
+    # rule. Fortran, Fortran90, C, C++ and CUDA source files have been
+    # dealt with above. If, however, a file is listed in $(SRCEXTRA)
+    # or $(SRCEXTRA_APP) that does not exist in $(SRCDIR_ARCH) none of
+    # the above rules matched. The following rule is a catch-all for
     # any remaining object file to be compiled - be it because its
     # source file is written in another language or be it because its
     # source file simply does not exist.
-    # But ensure that no kernel module that is - wrongfully - missing from
-    # SRCLIST_KERNEL etc. is reported as being listed in $(SRCEXTRA). This
-    # would baffle the user completely.
-        "# All files listed in \$(SRCEXTRA) should be compiled, but depending on\n" .
-        "# its extension with a separate rule. Fortran, Fortran90, C and C++\n" .
-        "# source files have been dealt with above. If, however, a file is\n" .
-        "# listed in \$(SRCEXTRA) that does not exist in \$(SRCDIR_ARCH) none\n" .
+
+    # But ensure that no kernel module that is - wrongfully - missing
+    # from SRCLIST_KERNEL etc. is reported as being listed in
+    # $(SRCEXTRA) and $(SRCEXTRA_APP). This would baffle the user
+    # completely.
+        "# All files listed in \$(SRCEXTRA) and \$(SRCEXTRA_APP) should be\n" .
+        "# compiled, but depending on its extension with a separate rule.\n" .
+        "# Fortran, Fortran90, C, C++ and CUDA source files have been dealt\n" .
+        "# with above. If, however, a file is listed in \$(SRCEXTRA) or\n" .
+	"# \$(SRCEXTRA_APP )that does not exist in \$(SRCDIR_ARCH) none\n" .
         "# of the above rules matched. The following rule is a catch-all for\n" .
         "# any remaining object file to be compiled - be it because its\n" .
         "# source file is written in another language or be it because its\n" .
         "# source file simply does not exist.\n" .
         "# But ensure that no kernel module that is - wrongfully - missing from\n" .
-        "# SRCLIST_KERNEL etc. is reported as being listed in \$(SRCEXTRA). This\n" .
-        "# would baffle the user completely.\n" .
+        "# SRCLIST_KERNEL etc. is reported as being listed in \$(SRCEXTRA) or\n" .
+        "# \$(SRCEXTRA_APP). This would baffle the user completely.\n" .
         "\$(OBJDIR)/%.o:\n" .
-        "# File from SRCEXTRA that can not be found?\n" .
+        "# File from SRCEXTRA and SRCEXTRA_APP that can not be found?\n" .
         "define srcextra_file_not_found\n" .
         "    echo;\n" .
-        "    echo \"ERROR: <\$(filter \$*.%, \$(SRCEXTRA))> not found.\";\n" .
+        "    echo \"ERROR: <\$(filter \$*.%, \$(SRCEXTRA) \$(SRCEXTRA_APP))> not found.\";\n" .
         "    echo;\n" .
-        "    echo \"<\$(filter \$*.%, \$(SRCEXTRA))> is specified in SRCEXTRA (defined in\";\n" .
-        "    echo \"\$(MAKEFILE_CPU_INC) or \$(dir \$(MAKEFILE_CPU_INC))/templates/*.mk\";\n" .
+        "    echo \"<\$(filter \$*.%, \$(SRCEXTRA) \$(SRCEXTRA_APP))> is specified in\";\n" .
+	"    echo \"SRCEXTRA or SRCEXTRA_APP (defined in \$(MAKEFILE_CPU_INC) or\";\n" .
+        "    echo \"\$(dir \$(MAKEFILE_CPU_INC))/templates/*.mk\";\n" .
         "    echo \"and as such is to be compiled additionally for this build ID.\";\n" .
         "    echo \"It is supposed to reside in directory\";\n" .
         "    echo \"\$(SRCDIR_ARCH),\";\n" .
@@ -2369,17 +2377,17 @@ sub create_feastAppMakefile {
         "    echo;\n" .
         "    exit 1;\n" .
         "endef\n" .
-        "# No file from SRCEXTRA? Then probably a file is missing from SRCLIST_KERNEL.\n" .
+        "# No file from SRCEXTRA or SRCEXTRA_APP? Then probably a file is missing from SRCLIST_KERNEL.\n" .
         "define kernel_file_not_on_the_list\n" .
         "    echo;\n" .
         "    echo \"ERROR: No rule to make target <\$*.o>.\";\n" .
         "    echo;\n" .
         "    echo \"You might have forgotten to add the corresponding source file to any\";\n" .
-        "    echo \"of the Makefile variables SRCLIST_KERNEL, SRCLIST_ARCH or SRCLIST_APP.\";\n" .
+        "    echo \"of the Makefile variables SRCLIST_KERNEL, SRCLIST_ARCH, SRCLIST_APP or SRCEXTRA_APP.\";\n" .
         "    echo;\n" .
         "    exit 1\n" .
         "endef\n" .
-        "\t\@\$(if \$(strip \$(filter \$*.%, \$(SRCEXTRA))), \\\n" .
+        "\t\@\$(if \$(strip \$(filter \$*.%, \$(SRCEXTRA) \$(SRCEXTRA_APP))), \\\n" .
         "\t\t\$(srcextra_file_not_found), \$(kernel_file_not_on_the_list))\n\n" .
         "\n\n";
 
@@ -3401,7 +3409,7 @@ sub create_feastAppMakefile {
 	".PHONY: tags\n" .
         "tags: \$(SRCF77) \$(SRCF90) \$(SRCEXTRA)\n" .
         "\trm -f TAGS\n" .
-        "\tctags -e \$(filter %.c %.f %.f90,\$^)\n\n" .
+        "\tctags -e \$(filter %.c %.cc %.cu %.f %.f90,\$^)\n\n" .
 
 
     # print help message
@@ -4054,23 +4062,23 @@ sub debug_command_line_options {
 
     my $colwidth = 0;
     foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
-		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90',
-		       'COPROCLIST', 'CPP', 'CXX', 'F77', 'F90', 'FORCE_ID',
+		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CFLAGSCUDA',
+		       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'F77', 'F90', 'FORCE_ID',
 		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
-                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCLIST_APP') {
+                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCEXTRA_APP', 'SRCLIST_APP') {
 	$colwidth = &max(length($entry), $colwidth);
     }
     $colwidth++;
 
     foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
-		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90',
-		       'COPROCLIST', 'CPP', 'CXX', 'F77', 'F90', 'FORCE_ID',
+		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CFLAGSCUDA',
+		       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'F77', 'F90', 'FORCE_ID',
 		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
-                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCLIST_APP') {
+                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCEXTRA_APP', 'SRCLIST_APP') {
 	# Determine type of variable: scalar or array
 	if (ref($cl{$entry}) eq "") {
 	    # current token is a scalar value, print if not empty
@@ -4413,30 +4421,61 @@ sub get_sourcefilelist {
 		if ($files == 0) {
 		    die "\n\n$progname: ERROR:\n".
 			"You did not specify a list of application-specific source file\n" .
-			"with the --srclist-app command line option. Additionally, the\n" .
+			"with the --srclist_app command line option. Additionally, the\n" .
 			"subdirectory <" . SRCDIR_APP . ">, searched by default for " .
 			"application-specific\n" .
 			"source files in such a case, does not contain any *.f90 file.\n" .
 			"I refuse to create <" . $MAKEFILE . ">.\n\n" .
 			"Please specify the list of application-specific source files with\n" .
-			"the --srclist-app command line option.\n";
+			"the --srclist_app command line option.\n";
 		}
 		print "done\n";
 		return @{ $defaults{'SRCLIST_APP'} };
 	    } else {
 		die "\n\n$progname: ERROR:\n".
 		    "You did not specify a list of application-specific source files\n" .
-		    "with the --srclist-app command line option. Additionally, the\n" .
+		    "with the --srclist_app command line option. Additionally, the\n" .
 		    "subdirectory <" . SRCDIR_APP . ">, searched by default for " .
 		    "application-specific\n" .
 		    "source files in such a case, does not exist.\n" .
 		    "I refuse to create <" . $MAKEFILE . ">.\n\n" .
 		    "Please specify the list of application-specific source files with\n" .
-		    "the --srclist-app command line option.\n";
+		    "the --srclist_app command line option.\n";
 	    }
 	}
     }
     # Return an empty array, just to meet the interface. Code should never come here, though.
+    return @{[]};
+}
+
+
+
+# Function: Returns extra source file list
+sub get_extrasourcefilelist {
+    # $cl{'SRCEXTRA_APP'} has been passed as an array to GetOptions()
+    # and as such is always defined. But is does not necessarily have
+    # entries. So, don't test with perl function defined() whether it is
+    # set. Instead test whether it contains one or more entries.
+    # (Remember that Perl starts counting from zero, like C does.)
+    if ($#{ $cl{'SRCEXTRA_APP'} } >= 0) {
+        # Remove duplicate entries from application source file list
+        my @tmplist = ();
+        $oldEntry = "";
+        foreach my $entry (sort @{ $cl{'SRCEXTRA_APP'} }) {
+            # Exclude empty list members
+            if ($entry) {
+                # We have a sorted list of source files. Checking
+                # whether two subsequent files have identical names
+                # excludes duplicate entries.
+                if ($entry ne $oldEntry) {
+                    push @tmplist, $entry;
+                    $oldEntry = $entry;
+                }
+            }
+        }
+	return @tmplist;
+    }
+    # Return an empty array
     return @{[]};
 }
 
@@ -4811,23 +4850,29 @@ sub max() {
 # Function: Print statistics about Makefile for a FEAT2 application created just now
 sub print_statistics_about_feastAppMakefile {
     my $srclist_app = $_[0];
+    my $srcextra_app = $_[1];
     my $string = "";
 
     print "\n$MAKEFILE successfully generated by $progname !\n\n";
     print "Configuration:\n";
-    print "  Application name             : " .
+    print "  Application name                 : " .
 	( (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'} ) . "\n";
-    print "  Application program file     : <" .
+    print "  Application program file         : <" .
 	&get_programsourcefile() . ">\n";
 
-    print &format_list("  Application's source files   :", 33, 75,
+    print &format_list("  Application's source files       :", 37, 75,
 		       "<" . join("> <", @{$srclist_app}), "", "") . ">\n";
 
+    if ($#{$cl{'SRCEXTRA_APP'}} >= 0) {
+	print &format_list("  Application's extra source files :", 37, 75,
+			   "<" . join("> <", @{$srcextra_app}), "", "") . ">\n";
+    }
+
     $string = (defined($cl{'RELINK_ALWAYS'})) ? $cl{'RELINK_ALWAYS'} : $defaults{'RELINK_ALWAYS'};
-    print "  Application binary           : will be " .
+    print "  Application binary               : will be " .
 	( ($string eq "YES") ? "relinked every time make is invoked" : "linked only when missing" ) . "\n";
 
-    print "  Application binary type      : ";
+    print "  Application binary type          : ";
     $string = (defined($cl{'BINARY'})) ? $cl{'BINARY'} : $defaults{'BINARY'};
     if ($string eq "STD") {
         print "use system environment\n";
@@ -4847,16 +4892,16 @@ sub print_statistics_about_feastAppMakefile {
 	$string =~ s/^([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)(-[^-]+|)$/$1/;
     }
     $string .= "-opt" . ((defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'});
-    print "  Object files go to           : <$string>,\n";
+    print "  Object files go to               : <$string>,\n";
     # Replace the symbolic names $(HOME) and $(ID), used in the Makefile,
     # with something that works on the command line: ~ and build ID.
     $string = $objdir_lib;
     $string =~ s/\$\(HOME\)/~/;
     $string =~ s/\$\(LIBID\)/$buildID_lib/;
     $string .= "-opt" . ((defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'});
-    print "                                 <$string>\n";
+    print "                                     <$string>\n";
 
-    print "  Optimisation level           : ";
+    print "  Optimisation level               : ";
     $string = (defined($cl{'OPT'})) ? $cl{'OPT'} : $defaults{'OPT'};
     if ($string eq "EXPENSIVE") {
         print "expensive optimisations\n";
@@ -4867,27 +4912,27 @@ sub print_statistics_about_feastAppMakefile {
     }
 
     $string = (defined($cl{'INTSIZE'})) ? $cl{'INTSIZE'} : $defaults{'INTSIZE'};
-    print "  Integer size                 : " .
+    print "  Integer size                     : " .
         ( ($string eq "STD") ? "standard" : "large integers" ) . "\n";
 
     $string = (defined($cl{'MONITOR_COMPILE_ENV'})) ? $cl{'MONITOR_COMPILE_ENV'} : $defaults{'MONITOR_COMPILE_ENV'};
-    print "  Detect changes in compile env: " .
+    print "  Detect changes in compile env    : " .
 	( ($string eq "YES") ? "enabled" : "disabled" ) . "\n";
 
     $string = (defined($cl{'OPENMP'})) ? $cl{'OPENMP'} : $defaults{'OPENMP'};
-    print "  OpenMP support               : " .
+    print "  OpenMP support                   : " .
         ( ($string eq "YES") ? "yes" : "no" ) . "\n";
 
     $string = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
-    print "  MPI support                  : " .
+    print "  MPI support                      : " .
         ( ($string eq "YES") ? "yes" : "no" ) . "\n";
 
     $string = (defined($cl{'MPIWRAPPERS'})) ? $cl{'MPIWRAPPERS'} : $defaults{'MPIWRAPPERS'};
-    print "  Use MPI wrapper commands     : " .
+    print "  Use MPI wrapper commands         : " .
 	( ($string eq "YES") ? "enabled" : "disabled" ) . "\n";
 
     if ($#{$cl{'COPROCLIST'}} >= 0) {
-	print &format_list("  Coprocessor(s)               :", 33, 100,
+	print &format_list("  Coprocessor(s)                   :", 37, 100,
 			   join(' ', @{$cl{'COPROCLIST'}}), "", "") . "\n";
     }
 
@@ -4929,6 +4974,8 @@ sub show_help {
         "--cflagscoproc=<string>\n" .
 	"                    Set C compiler flags for coproc library to <string>,\n" .
 	"                    requires --coproclist=<target>\n" .
+        "--cflagscuda=<string>\n" .
+	"                    Set CUDA compiler flags to <string>\n" .
         "--cflagscxx=<string>\n" .
 	"                    Set C++ compiler flags to <string>\n" .
         "--cflagsf77=<string>\n" .
@@ -4938,9 +4985,10 @@ sub show_help {
 	"--coproclist=<string>\n" .
 	"                    Identifier for coprocessor support.\n" .
 	"                    Valid IDs are: cpu, opengl, cuda10, cuda11, cuda12,\n" .
-	"                    cuda13. Note that the cpu identifier must always be\n" .
-	"                    set if coprocessor support is requested.\n" .
+	"                    cuda13, cuda20, cuda21. Note that the cpu identifier must\n" .
+	"                    always be set if coprocessor support is requested.\n" .
         "--cpp=<file>        C preprocessor\n" .
+        "--cuda=<file>       CUDA compiler\n" .
         "--cxx=<file>        C++ compiler\n" .
         "--debug             Show settings stored into Makefile which will\n" .
         "                    override defaults from Makefile.inc.\n" .
@@ -5035,6 +5083,10 @@ sub show_help {
         "                    When developing on multiple platforms, your\n" .
         "                    application might not be relinked if no source file\n" .
         "                    has changed since you changed platform!\n" .
+        "--srcextra=<string>\n" .
+	"                    Set extra source files (other than Fortran) to <string>\n" .
+        "--srcextra_app=<string>\n" .
+	"                    Set application's extra source files (other than Fortran) to <string>\n" .
         "--srclist_app=<string>\n" .
 	"                    Set application's source files to <string>\n" .
         "--suppressflags=<string>\n" .
@@ -5046,7 +5098,6 @@ sub show_help {
         "                    because of a specific compiler option that ought not\n" .
         "                    be removed globally, you can inhibit its usage for\n" .
         "                    your application by adding the exact string to <string>.\n" .
-
         "Options which cause $progname to print only information without a\n" .
         "Makefile being created:\n" .
         "--help              Print this message\n" .
