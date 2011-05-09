@@ -49,6 +49,11 @@ program flagship
   integer, external :: signal_SIGINT, signal_SIGQUIT
 
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+  ! Initialize CUDA subsystem
+  call coproc_init()
+#endif
+
   ! Initialize Feat2 subsystem
   call system_init()
 
