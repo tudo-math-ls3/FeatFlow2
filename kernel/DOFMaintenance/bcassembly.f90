@@ -1887,7 +1887,8 @@ contains
         ! will produce two index sets: One index set for [0.0, 0.0]
         ! and one for [3.0, TMAX).
         
-      case (EL_DG_P1_2D)
+        
+        case (EL_DG_P1_2D,EL_DG_Q1_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
@@ -1923,23 +1924,23 @@ contains
           ! Index of the endpoint. If we are at the last element, the
           ! endpoint is the start point.
           if (ielidx .lt. icount) then
-            i2 = IelementsAtBoundaryIdx (ielidx)
+            i2 = IelementsAtBoundaryIdx (ielidx+1)
+            ! If parameter values are available, get the parameter value.
+            ! Otherwise, take the standard value from above!
+            if (associated(p_DvertexParameterValue)) &
+              dpar = p_DvertexParameterValue(i2)
           else
-            i2 = IelementsAtBoundaryIdx (1)
+            i2 = IelementsAtBoundaryIdx (ielidx)
+            dpar = rboundaryRegion%iboundSegIdx
           end if
-
-          ! If parameter values are available, get the parameter value.
-          ! Otherwise, take the standard value from above!
-          if (associated(p_DvertexParameterValue)) &
-            dpar = p_DvertexParameterValue(i2)
-                
+          
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
-                                  ipoint1,dpar, Dvalues, rcollection)
+                                  ipoint2,dpar, Dvalues, rcollection)
                                     
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then  
             ! Save the computed function value
-            DdofValue(mod(ilocalEdge,3)+1,ielidx) = Dvalues(1) 
+            DdofValue(mod(ilocalEdge,NNVE)+1,ielidx) = Dvalues(1) 
           end if
           
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1950,9 +1951,10 @@ contains
             ! time the number of the local DOF of Q1, as an edge always
             ! follows a corner vertex!
             Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
-            Idofs(mod(ilocalEdge,3)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,3)+1,ielidx))
+            Idofs(mod(ilocalEdge,NNVE)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,NNVE)+1,ielidx))
           end if
         end if
+
 
       case (EL_P2,EL_Q2)
 
@@ -2024,6 +2026,107 @@ contains
           ! The element midpoint does not have to be considered, as it cannot
           ! be on the boundary.
         end if
+        
+      case (EL_DG_Q2_2D)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        if ( ipoint1 .ne. 0 ) then
+        
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          if (associated(p_DvertexParameterValue)) &
+            dpar = p_DvertexParameterValue(I)
+                
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  ipoint1,dpar, Dvalues, rcollection)
+                                    
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then   
+            ! Save the computed function value of the corner.
+            DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+          end if
+          
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          if (Dvalues(1) .ne. SYS_INFINITY_DP) then
+            ! Set the DOF number < 0 to indicate that it is Dirichlet.
+            ! ilocalEdge is the number of the local edge - and at the same
+            ! time the number of the local DOF of Q1, as an edge always
+            ! follows a corner vertex!
+            Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+          end if
+        end if
+        
+        ! Right point inside? -> Corresponding DOF must be computed
+        if ( ipoint2 .ne. 0 ) then
+        
+          ! Index of the endpoint. If we are at the last element, the
+          ! endpoint is the start point.
+          if (ielidx .lt. icount) then
+            i2 = IelementsAtBoundaryIdx (ielidx+1)
+            ! If parameter values are available, get the parameter value.
+            ! Otherwise, take the standard value from above!
+            if (associated(p_DvertexParameterValue)) &
+              dpar = p_DvertexParameterValue(i2)
+          else
+            i2 = IelementsAtBoundaryIdx (ielidx)
+            dpar = rboundaryRegion%iboundSegIdx
+          end if
+          
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  ipoint2,dpar, Dvalues, rcollection)
+                                    
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then  
+            ! Save the computed function value
+            DdofValue(mod(ilocalEdge,NNVE)+1,ielidx) = Dvalues(1) 
+          end if
+          
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          if (Dvalues(1) .ne. SYS_INFINITY_DP) then
+            ! Set the DOF number < 0 to indicate that it is Dirichlet.
+            ! ilocalEdge is the number of the local edge - and at the same
+            ! time the number of the local DOF of Q1, as an edge always
+            ! follows a corner vertex!
+            Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+            Idofs(mod(ilocalEdge,NNVE)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,NNVE)+1,ielidx))
+          end if
+        end if
+        
+        
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        if ( iedge .ne. 0 ) then
+          
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          if (associated(p_DedgeParameterValue)) &
+            dpar = p_DedgeParameterValue(I)
+                
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNCMID,&
+                                  iedge,dpar, Dvalues, rcollection)
+                                    
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+            ! Save the computed function value of the edge midpoint.
+            ! This is found at position ilocalEdge+4, as the first four
+            ! elements in DdofValue correspond to the corners!
+            DdofValue(ilocalEdge+nve,ielidx) = Dvalues(1) 
+          end if
+          
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          if (Dvalues(1) .ne. SYS_INFINITY_DP) then
+            ! Set the DOF number < 0 to indicate that it is Dirichlet
+            ! ilocalEdge is the number of the local edge, corresponding
+            ! to the local DOF ilocalEdge+4, as the first four elements
+            ! in this array correspond to the values in the corners.
+            Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
+          end if
+              
+          ! The element midpoint does not have to be considered, as it cannot
+          ! be on the boundary.
+        end if
 
       case (EL_QP1,EL_DG_T1_2D)
         ! Three DOF`s: Function value in the element midpoint 
@@ -2049,6 +2152,45 @@ contains
           ! Save 0 as X- and Y-derivative.
           DdofValue(2,ielidx) = 0.0_DP
           DdofValue(3,ielidx) = 0.0_DP
+          
+        end if
+        
+        ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
+        ! Dirichlet boundary.
+        if (Dvalues(1) .ne. SYS_INFINITY_DP) then
+          ! Set the DOF numbers < 0 to indicate that it is Dirichlet
+          Idofs(1:3,ielidx) = -abs(Idofs(1:3,ielidx))
+        end if
+        
+      case (EL_DG_T2_2D)
+        ! Six DOF`s: Function value in the element midpoint 
+        ! and first and second derivatives.
+        ! Either the edge or an adjacent vertex is on the boundary.
+        
+        ! If parameter values are available, get the parameter value.
+        ! Otherwise, take the standard value from above!
+        if (associated(p_DvertexParameterValue)) &
+          dpar = p_DvertexParameterValue(I)
+              
+        ! Get the value at the corner point and accept it as
+        ! Dirichlet value.
+        call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                ipoint1,dpar, Dvalues,rcollection)
+                                
+        if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+
+          ! Dvalues(1) gives us the function value in the point. Save it
+          DdofValue(1,ielidx) = Dvalues(1)
+          
+          ! Save 0 as X- and Y-derivative.
+          DdofValue(2,ielidx) = 0.0_DP
+          DdofValue(3,ielidx) = 0.0_DP
+          
+          ! Save 0 as second derivatives
+          DdofValue(4,ielidx) = 0.0_DP
+          DdofValue(5,ielidx) = 0.0_DP
+          DdofValue(6,ielidx) = 0.0_DP
           
         end if
         

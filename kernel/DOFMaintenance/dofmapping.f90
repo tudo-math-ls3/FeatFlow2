@@ -227,6 +227,13 @@ contains
     case (EL_DG_P1_2D)
       ! DOF`s in the vertices
       NDFG_uniform2D = rtriangulation%NEL*3
+    case (EL_DG_Q1_2D)
+      ! Each element has 4 DOFs in the vertices
+      NDFG_uniform2D = rtriangulation%NEL*4
+    case (EL_DG_Q2_2D)
+      ! Each element has 9 DOFS
+      ! in the vertices, edge midpoints and element midpoints
+      NDFG_uniform2D = rtriangulation%NEL*9
     case (EL_P2)
       ! DOF`s in the vertices and edge midpoints
       NDFG_uniform2D = rtriangulation%NVT + rtriangulation%NMT
@@ -600,6 +607,14 @@ contains
         case (EL_DG_P1_2D)
           ! DOF`s in the vertices
           call dof_locGlobUniMult_DGP12D(IelIdx, IdofGlob)
+          return
+        case (EL_DG_Q1_2D)
+          ! DOF`s in the vertices
+          call dof_locGlobUniMult_DGQ12D(IelIdx, IdofGlob)
+          return
+        case (EL_DG_Q2_2D)
+          ! DOF`s in the vertices, edge midpoints and element midpoint
+          call dof_locGlobUniMult_DGQ22D(IelIdx, IdofGlob)
           return
         case (EL_P2)
           ! DOF`s in the vertices and egde midpoints
@@ -1155,7 +1170,7 @@ contains
   ! This subroutine calculates the global indices in the array IdofGlob
   ! of the degrees of freedom of the elements in the list IelIdx.
   ! all elements in the list are assumed to be the DG P1.
-  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! A uniform grid is assumed, i.e. a grid completely discretised by the
   ! same element.
 !</description>
 
@@ -1186,6 +1201,103 @@ contains
       IdofGlob(1,i) = 1+3*(IelIdx(i)-1)
       IdofGlob(2,i) = 2+3*(IelIdx(i)-1)
       IdofGlob(3,i) = 3+3*(IelIdx(i)-1)
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_DGQ12D(IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be the DG Q1.
+  ! A uniform grid is assumed, i.e. a grid completely discretised by the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+  
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF`s. Every element gives 4 DOF`s which are
+      ! 'internally' associated to the vertices but are not coupled.
+      IdofGlob(1,i) = 1+4*(IelIdx(i)-1)
+      IdofGlob(2,i) = 2+4*(IelIdx(i)-1)
+      IdofGlob(3,i) = 3+4*(IelIdx(i)-1)
+      IdofGlob(4,i) = 4+4*(IelIdx(i)-1)
+    end do
+
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_DGQ22D(IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be the DG Q2.
+  ! A uniform grid is assumed, i.e. a grid completely discretised by the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+  
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF`s. Every element gives 9 DOF`s which are
+      ! not coupled to any other element
+      IdofGlob(1,i) = 1+9*(IelIdx(i)-1)
+      IdofGlob(2,i) = 2+9*(IelIdx(i)-1)
+      IdofGlob(3,i) = 3+9*(IelIdx(i)-1)
+      IdofGlob(4,i) = 4+9*(IelIdx(i)-1)
+      IdofGlob(5,i) = 5+9*(IelIdx(i)-1)
+      IdofGlob(6,i) = 6+9*(IelIdx(i)-1)
+      IdofGlob(7,i) = 7+9*(IelIdx(i)-1)
+      IdofGlob(8,i) = 8+9*(IelIdx(i)-1)
+      IdofGlob(9,i) = 9+9*(IelIdx(i)-1)
     end do
 
   end subroutine

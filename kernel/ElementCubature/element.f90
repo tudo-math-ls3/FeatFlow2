@@ -638,6 +638,12 @@ module element
 
   ! Discontinuous Galerkin element based on P1, 2D.
   integer(I32), parameter, public :: EL_DG_P1_2D   = EL_P1 + 101
+  
+  ! Discontinuous Galerkin element based on Q1, 2D.
+  integer(I32), parameter, public :: EL_DG_Q1_2D   = EL_P1 + 102
+  
+  ! Discontinuous Galerkin element based on Q2, 2D.
+  integer(I32), parameter, public :: EL_DG_Q2_2D   = EL_P1 + 103
 
 !</constantblock>
 
@@ -951,10 +957,10 @@ contains
     case (EL_Q0)
       ! local DOFs for Q0
       elem_igetNDofLoc = 1
-    case (EL_Q1)
+    case (EL_Q1,EL_DG_Q1_2D)
       ! local DOFs for Q1
       elem_igetNDofLoc = 4
-    case (EL_Q2)
+    case (EL_Q2,EL_DG_Q2_2D)
       ! local DOFs for Q2
       elem_igetNDofLoc = 9
     case (EL_Q3)
@@ -1138,7 +1144,7 @@ contains
     case (EL_Q1)
       ! local DOFs for Q1
       ndofAtVertices = 4
-    case (EL_Q2)
+    case (EL_Q2,EL_DG_Q2_2D)
       ! local DOFs for Q2
       ndofAtVertices = 4
       ndofAtEdges    = 4
@@ -1167,14 +1173,18 @@ contains
       ndofAtEdges    = 8
       ndofAtElement  = 2
     case (EL_DG_T0_2D)
-      ! local DOFs for 1D DG Taylor constant
+      ! local DOFs for 2D DG Taylor constant
       ndofAtElement = 1
     case (EL_DG_T1_2D)
-      ! local DOFs for 1D DG Taylor linear
+      ! local DOFs for 2D DG Taylor linear
       ndofAtElement = 3
     case (EL_DG_T2_2D)
-      ! local DOFs for 1D DG Taylor quadratic
+      ! local DOFs for 2D DG Taylor quadratic
       ndofAtElement = 6
+      
+    case (EL_DG_Q1_2D)
+      ! local DOFs for DG Q1
+      ndofAtElement = 4
     
       
     ! -= 3D Tetrahedron Elements =-
@@ -1302,7 +1312,8 @@ contains
       elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB,&
-          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D)
+          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
+          EL_DG_Q1_2D, EL_DG_Q2_2D)
       ! These work on the reference quadrilateral
       elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
     case (EL_QP1NP,EL_QP1NPD)
@@ -1378,7 +1389,8 @@ contains
       
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB,&
-          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D)
+          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
+          EL_DG_Q1_2D,  EL_DG_Q2_2D)
       ! Bilinear quadrilateral transformation, 2D.
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
     
@@ -1504,10 +1516,10 @@ contains
     case (EL_P1T)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
-    case (EL_Q1)
+    case (EL_Q1,EL_DG_Q1_2D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
-    case (EL_Q2)
+    case (EL_Q2, EL_DG_Q2_2D)
       ! Function + 1st derivative + 2nd derivative
       elem_getMaxDerivative = 6
     case (EL_Q3)
@@ -1739,7 +1751,8 @@ contains
       
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB,&
-          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D)
+          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
+          EL_DG_Q1_2D, EL_DG_Q2_2D)
       ! 2D Quadrilateral
       ishp = BGEOM_SHAPE_QUAD
     
@@ -1898,11 +1911,11 @@ contains
         call elem_P1T (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q0)
         call elem_Q0 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-      case (EL_Q1)
+      case (EL_Q1,EL_DG_Q1_2D)
         call elem_Q1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM11_2D)
         bwrapSim2 = .true.
-      case (EL_Q2)
+      case (EL_Q2, EL_DG_Q2_2D)
         call elem_Q2 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q2H_2D)
         bwrapSim2 = .true.
@@ -2107,10 +2120,10 @@ contains
     case (EL_Q0)
       call elem_Q0 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_Q1)
+    case (EL_Q1,EL_DG_Q1_2D)
       call elem_Q1 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_Q2)
+    case (EL_Q2, EL_DG_Q2_2D)
       call elem_Q2 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_QP1)
@@ -2298,8 +2311,10 @@ contains
       call elem_P1T_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_Q0)
       call elem_Q0_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_Q1)
+    case (EL_Q1,EL_DG_Q1_2D)
       call elem_Q1_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_DG_Q2_2D) !EL_Q2???
+      call elem_Q2_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_EM30, EL_EM30_UNPIVOTED ,EL_EM30_UNSCALED)
       call elem_EM30_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_E030)
@@ -2498,10 +2513,10 @@ contains
     case (EL_Q0)
       call elem_Q0_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
-    case (EL_Q1)
+    case (EL_Q1,EL_DG_Q1_2D)
       call elem_Q1_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
-    case (EL_Q2)
+    case (EL_Q2,EL_DG_Q2_2D)
       call elem_Q2_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
@@ -2721,7 +2736,7 @@ contains
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
-    case (EL_Q1)
+    case (EL_Q1,EL_DG_Q1_2D)
       call elem_Q1_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
@@ -2733,7 +2748,7 @@ contains
     case (EL_EM11_2D)
       call elem_eval_EM11_2D(celement, revalElementSet, Bder, Dbas)
     
-    case (EL_Q2)
+    case (EL_Q2,EL_DG_Q2_2D)
       call elem_Q2_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
