@@ -272,8 +272,9 @@ use constant MUST_INCLUDE => "";
 #  macros that need to be evaluated when being included into a
 #  Fortran source file.)
 my $HEADER_FILES_TO_COPY =
-    "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/idxmanager.h";
-
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/idxmanager.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/feat2constants.h ".
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/fmath.h";
 
 # All header files referenced by Fortran 90 source files
 # (format: name plus path, inode, md5 sum of content)
