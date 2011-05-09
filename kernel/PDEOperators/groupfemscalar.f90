@@ -376,7 +376,8 @@ contains
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
       
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
-      Isize = (/3, rafcstab%NEDGE/)
+      rafcstab%ncoeff = 3
+      Isize = (/rafcstab%ncoeff, rafcstab%NEDGE/)
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_DcoefficientsAtEdge)
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
@@ -441,7 +442,8 @@ contains
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
       
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
-      Isize = (/3, rafcstab%NEDGE/)
+      rafcstab%ncoeff = 3
+      Isize = (/rafcstab%ncoeff, rafcstab%NEDGE/)
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_DcoefficientsAtEdge)
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
@@ -489,7 +491,8 @@ contains
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
       
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
-      Isize = (/3, rafcstab%NEDGE/)
+      rafcstab%ncoeff = 3
+      Isize = (/rafcstab%ncoeff, rafcstab%NEDGE/)
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_DcoefficientsAtEdge)
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
@@ -550,7 +553,8 @@ contains
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
       ! Handle for DcoefficientsAtEdge: (/d_ij,s_ij/)
-      Isize = (/2, rafcstab%NEDGE/)
+      rafcstab%ncoeff = 2
+      Isize = (/rafcstab%ncoeff, rafcstab%NEDGE/)
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_DcoefficientsAtEdge)
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&

@@ -311,6 +311,11 @@ module linearsystemblock
     ! Handle identifying the vector entries or = ST_NOHANDLE if not
     ! allocated.
     integer                    :: h_Ddata = ST_NOHANDLE
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Handle identifying the vector entries on DEVICE
+    integer*8                  :: h_Ddata_device = ST_NOHANDLE
+#endif
     
     ! Start position of the vector data in the array identified by
     ! h_Ddata. Normally = 1. Can be set to > 1 if the vector is a subvector
@@ -2042,6 +2047,12 @@ contains
   nullify(rx%p_rdiscreteBC)
   nullify(rx%p_rdiscreteBCfict)
   if (associated(rx%RvectorBlock)) deallocate(rx%RvectorBlock)
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+  ! Release vector data on device
+  if (rx%h_Ddata_device .ne. ST_NOHANDLE)&
+      call coproc_freeIntOnDevice(rx%h_Ddata_device)
+#endif
   
   end subroutine
   

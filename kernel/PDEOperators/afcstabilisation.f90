@@ -427,6 +427,13 @@ module afcstabilisation
     ! corresponds to the maximum number of nonzero row entries.
     integer :: NNVEDGE = 0
 
+    ! Number of different matrix coefficients stored in
+    ! DmatrixCoeffsAtNode and DmatrixCoeffsAtEdge, respectively.
+    integer :: nmatCoeff = 0
+
+    ! Number of different coefficients stored in DCoefficientsAtEdge
+    integer :: ncoeff = 0
+
     ! Flag: compute auxiliary structures for flux prelimiting
     logical :: bprelimiting = .false.
 
@@ -461,6 +468,17 @@ module afcstabilisation
 
     ! Handle to auxiliary matrix data at edges (i.e. off-diagonal entries)
     integer :: h_DmatrixCoeffsAtEdge = ST_NOHANDLE
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Handle to vertices at edge structure on DEVICE
+    integer*8 :: h_IverticesAtEdge_device = ST_NOHANDLE
+    
+    ! Handle to auxiliary matrix data at nodes on DEVICE
+    integer*8 :: h_DmatrixCoeffsAtNode_device = ST_NOHANDLE
+    
+    ! Handle to auxiliary matrix data at edges on DEVICE
+    integer*8 :: h_DmatrixCoeffsAtEdge_device = ST_NOHANDLE
+#endif
 
     ! Pointer to the vector of correction factors
     type(t_vectorScalar), pointer :: p_rvectorAlpha => null()
@@ -755,6 +773,22 @@ contains
     rafcstab%NVARtransformed       = 1
     rafcstab%NEDGE                 = 0
     rafcstab%NNVEDGE               = 0
+    rafcstab%nmatCoeff             = 0
+    rafcstab%ncoeff                = 0
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Release edge structure on device
+    if (rafcstab%h_IverticesAtEdge_device .ne. ST_NOHANDLE)&
+        call coproc_freeIntOnDevice(rafcstab%h_IverticesAtEdge_device)
+
+    ! Release matrix data at nodes on device
+    if (rafcstab%h_DmatrixCoeffsAtNode_device .ne. ST_NOHANDLE)&
+        call coproc_freeDoubleOnDevice(rafcstab%h_DmatrixCoeffsAtNode_device)
+
+    ! Release matrix data at edges on device
+    if (rafcstab%h_DmatrixCoeffsAtEdge_device .ne. ST_NOHANDLE)&
+        call coproc_freeDoubleOnDevice(rafcstab%h_DmatrixCoeffsAtEdge_device)
+#endif
 
   contains
 
@@ -1627,6 +1661,9 @@ contains
       call storage_new('afcstab_initMatrixCoeffs', 'DmatrixCoeffsAtEdge', Isize3D,&
           ST_DOUBLE, rafcstab%h_DmatrixCoeffsAtEdge, ST_NEWBLOCK_ZERO)
     end if
+
+    ! Store number of auxiliary matrices
+    rafcstab%nmatCoeff = n
 
   end subroutine afcstab_initMatrixCoeffs
 

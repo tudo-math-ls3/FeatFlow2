@@ -1790,7 +1790,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildDivVectorBlock(rafcstab, rx,&
-      fcb_calcFlux_sim, dscale, bclear, ry, rcollection)
+      fcb_calcFlux_sim, dscale, bclear, ry, rcollection, fcb_calcDivVector)
 
 !<description>
     ! This subroutine assembles the divergence vector for block vectors.
@@ -1812,6 +1812,7 @@ contains
 
     ! callback functions to compute local fluxes
     include 'intf_gfsyscallback.inc'
+    optional :: fcb_calcDivVector
 !</input>
 
 !<inputoutput>
@@ -1836,7 +1837,8 @@ contains
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
       call gfsys_buildDivVectorScalar(rafcstab, rx%RvectorBlock(1),&
-          fcb_calcFlux_sim, dscale, bclear, ry%RvectorBlock(1), rcollection)
+          fcb_calcFlux_sim, dscale, bclear, ry%RvectorBlock(1),&
+          rcollection, fcb_calcDivVector)
       return
     end if
 
@@ -1858,16 +1860,23 @@ contains
     ! Clear vector?
     if (bclear) call lsysbl_clearVector(ry)
 
-    ! Set pointers
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
-    call lsysbl_getbase_double(rx, p_Dx)
-    call lsysbl_getbase_double(ry, p_Dy)
-    
-    ! Assemble the divergence vector
-    call doDivVector(p_IverticesAtEdgeIdx, p_IverticesAtEdge, rafcstab%NEQ,&
-        rx%nblocks, p_DmatrixCoeffsAtEdge, p_Dx, dscale, p_Dy)
+    ! Check if user-defined assembly is provided
+    if (present(fcb_calcDivVector)) then
+      ! Call used-defined assembly
+      call fcb_calcDivVector(rafcstab, rx, ry, dscale,&
+          fcb_calcFlux_sim, rcollection)
+    else
+      ! Set pointers
+      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+      call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
+      call lsysbl_getbase_double(rx, p_Dx)
+      call lsysbl_getbase_double(ry, p_Dy)
+      
+      ! Assemble the divergence vector
+      call doDivVector(p_IverticesAtEdgeIdx, p_IverticesAtEdge, rafcstab%NEQ,&
+          rx%nblocks, p_DmatrixCoeffsAtEdge, p_Dx, dscale, p_Dy)
+    end if
 
   contains
 
@@ -1978,7 +1987,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildDivVectorScalar(rafcstab, rx,&
-      fcb_calcFlux_sim, dscale, bclear, ry, rcollection)
+      fcb_calcFlux_sim, dscale, bclear, ry, rcollection, fcb_calcDivVector)
 
 !<description>
     ! This subroutine assembles the divergence vector. Note that the
@@ -2000,6 +2009,7 @@ contains
 
     ! callback functions to compute local fluxes
     include 'intf_gfsyscallback.inc'
+    optional :: fcb_calcDivVector
 !</input>
 
 !<inputoutput>
@@ -2015,6 +2025,7 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_vectorBlock) :: rxBlock,ryBlock
     real(DP), dimension(:), pointer :: p_Dx,p_Dy
     real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
@@ -2039,16 +2050,31 @@ contains
     ! Clear vector?
     if (bclear) call lsyssc_clearVector(ry)
 
-    ! Set pointers
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
-    call lsyssc_getbase_double(rx, p_Dx)
-    call lsyssc_getbase_double(ry, p_Dy)
+    ! Check if user-defined assembly is provided
+    if (present(fcb_calcDivVector)) then
+      ! Create auxiliary 1-block vectors
+      call lsysbl_createVecFromScalar(rx, rxBlock)
+      call lsysbl_createVecFromScalar(ry, ryBlock)
 
-    ! Assemble the divergence vector
-    call doDivVector(p_IverticesAtEdgeIdx, p_IverticesAtEdge, rafcstab%NEQ,&
-        rx%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale, p_Dy)
+      ! Call user-defined assembly
+      call fcb_calcDivVector(rafcstab, rxBlock, ryBlock, dscale,&
+          fcb_calcFlux_sim, rcollection)
+
+      ! Release auxiliary 1-block vectors
+      call lsysbl_releaseVector(rxBlock)
+      call lsysbl_releaseVector(ryBlock)
+    else
+      ! Set pointers
+      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+      call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
+      call lsyssc_getbase_double(rx, p_Dx)
+      call lsyssc_getbase_double(ry, p_Dy)
+      
+      ! Assemble the divergence vector
+      call doDivVector(p_IverticesAtEdgeIdx, p_IverticesAtEdge, rafcstab%NEQ,&
+          rx%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale, p_Dy)
+    end if
     
   contains
 

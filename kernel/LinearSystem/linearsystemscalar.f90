@@ -572,6 +572,11 @@ module linearsystemscalar
     ! = ST_NOHANDLE if not allocated on the global heap. 
     integer :: h_Ddata = ST_NOHANDLE
     
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Handle identifying the vector entries on DEVICE.
+    integer*8 :: h_Ddata_device = ST_NOHANDLE
+#endif
+
     ! Flag whether or not the vector is resorted.
     !  <0: Vector is unsorted, sorting strategy is prepared in 
     !      h_IsortPermutation for a possible resorting of the entries.
@@ -9054,6 +9059,12 @@ contains
   rvector%isortStrategy = 0
   rvector%h_IsortPermutation = ST_NOHANDLE
   rvector%p_rspatialDiscr => null()
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+  ! Release vector data on device
+  if (rvector%h_Ddata_device .ne. ST_NOHANDLE)&
+      call coproc_freeIntOnDevice(rvector%h_Ddata_device)
+#endif
    
   end subroutine
   
