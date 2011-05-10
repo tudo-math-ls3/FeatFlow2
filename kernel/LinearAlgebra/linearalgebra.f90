@@ -442,6 +442,12 @@ module linearalgebra
   public :: lalg_vectorLinearCombSnglDble2D
   public :: lalg_vectorLinearCombSnglQuad2D
   public :: lalg_vectorLinearCombDblQuad2D
+  public :: lalg_vectorLinearCombSngl3D
+  public :: lalg_vectorLinearCombDble3D
+  public :: lalg_vectorLinearCombQuad3D
+  public :: lalg_vectorLinearCombSnglDble3D
+  public :: lalg_vectorLinearCombSnglQuad3D
+  public :: lalg_vectorLinearCombDblQuad3D
 
   interface lalg_scalarProduct
     module procedure lalg_scalarProductSngl
