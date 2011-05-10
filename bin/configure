@@ -2570,6 +2570,7 @@ sub create_feastAppMakefile {
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
         "\t\tCC=\"\$(CC)\" \\\n" .
+	"\t\tCUDA=\"\$(CUDA)\" \\\n" .
         "\t\tOPT=\"\$(OPT)\" \\\n" .
         "\t\tCFLAGSCOPROC_FROM_FEAT2=\"\$(CFLAGSCOPROC)\" \\\n" .
         "\t\tCFLAGSF90=\"\$(CFLAGSF90)\" \\\n" .
