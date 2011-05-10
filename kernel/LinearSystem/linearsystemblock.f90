@@ -236,6 +236,14 @@
 !#
 !# 70.) lsysbl_scaleMatrix
 !#      -> Scale a matrix by a constant
+!#
+!# 71.) lsysbl_copyH2D_Vector
+!#      -> Copies the data of a vector from the host memory
+!#         to the memory of the coprocessor device.
+!#
+!# 72.) lsysbl_copyD2H_Vector
+!#      -> Copies the data of a vector from the memory of the
+!#         coprocessor device to the host memory
 !# </purpose>
 !##############################################################################
 
@@ -312,11 +320,6 @@ module linearsystemblock
     ! allocated.
     integer                    :: h_Ddata = ST_NOHANDLE
 
-#ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Handle identifying the vector entries on DEVICE
-    integer*8                  :: h_Ddata_device = ST_NOHANDLE
-#endif
-    
     ! Start position of the vector data in the array identified by
     ! h_Ddata. Normally = 1. Can be set to > 1 if the vector is a subvector
     ! in a larger memory block allocated on the heap.
@@ -550,6 +553,8 @@ module linearsystemblock
   public :: lsysbl_createscalarfromvec
   public :: lsysbl_convertScalarBlockVector
   public :: lsysbl_convertBlockScalarVector
+  public :: lsysbl_copyH2D_Vector
+  public :: lsysbl_copyD2H_Vector
     
 contains
 
@@ -2048,12 +2053,6 @@ contains
   nullify(rx%p_rdiscreteBCfict)
   if (associated(rx%RvectorBlock)) deallocate(rx%RvectorBlock)
 
-#ifdef ENABLE_COPROCESSOR_SUPPORT
-  ! Release vector data on device
-  if (rx%h_Ddata_device .ne. ST_NOHANDLE)&
-      call coproc_freeIntOnDevice(rx%h_Ddata_device)
-#endif
-  
   end subroutine
   
   ! ***************************************************************************
@@ -3113,7 +3112,7 @@ contains
     rvector%cdataType   = rscalarVec%cdataType
     rvector%h_Ddata     = rscalarVec%h_Ddata
     rvector%nblocks     = nactblocks
-    
+
     ! Copy the content of the scalar matrix structure into the
     ! first block of the block vector
     allocate(rvector%RvectorBlock(nactblocks))
@@ -7698,5 +7697,76 @@ contains
     end subroutine do_convertSngl
 
   end subroutine lsysbl_convertBlockScalarVector
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_copyH2D_Vector(rvector, bclear)
+
+!<description>
+    ! This subroutine copies the data of a vector from the host memory
+    ! to the memory of the coprocessor device. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Switch: If TRUE, then memory is allocated on the device and
+    ! cleared. If FALSE, then memory is allocated on the device and
+    ! the content from the host memory is transferred.
+    logical :: bclear
+!</input>
+
+!<inputoutput>
+    ! Block vector
+    type(t_vectorBlock), intent(inout) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! Clear the vector?
+    if (bclear) then
+      call storage_clearMemory(rvector%h_Ddata)
+    else
+      ! No, we have to copy the content from host to device memory
+      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_H2D)
+    end if
+  
+  end subroutine lsysbl_copyH2D_Vector
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_copyD2H_Vector(rvector, bclear)
+
+!<description>
+    ! This subroutine copies the data of a vector from the memory of
+    ! the coprocessor device to the host memory. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Switch: If TRUE, then memory is allocated on the device and
+    ! cleared. If FALSE, then memory is allocated on the device and
+    ! the content from the host memory is transferred.
+    logical :: bclear
+!</input>
+
+!<inputoutput>
+    ! Block vector
+    type(t_vectorBlock), intent(inout) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! Clear the vector?
+    if (bclear) then
+      ! Yes, we can simply overwrite the content in host memory
+      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_D2H)
+    else
+      ! No, we have to copy-add the content from device to host memory
+      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_ACCUMULATE_D2H)
+    end if
+  
+  end subroutine lsysbl_copyD2H_Vector
 
 end module

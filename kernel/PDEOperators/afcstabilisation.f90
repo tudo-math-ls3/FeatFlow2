@@ -72,7 +72,7 @@
 !#
 !# 18.) afcstab_getbase_DmatCoeffAtEdge
 !#      -> Returns pointer to the off-diagonal entries
-!#         of the auxiiliary constant matrix coefficients
+!#         of the auxiliary constant matrix coefficients
 !#
 !# 19.) afcstab_generateVerticesAtEdge
 !#      -> Generates the standard edge data structure
@@ -87,12 +87,29 @@
 !#                                 afcstab_failsafeLimitingArray
 !#      -> Perform failsafe flux correction
 !#
+!# 23.) afcstab_copyH2D_IverticesAtEdge
+!#      -> Copies the vertices at edge structure from the host memory
+!#         to the device memory.
+!#
+!# 24.) afcstab_copyD2H_IverticesAtEdge
+!#      -> Copies the vertices at edge structure from the device memory
+!#         to the host memory.
+!#
+!# 25.) afcstab_copyH2D_DmatCoeffAtEdge
+!# -> Copies the off-diagonal entries of the auxiliary constant matrix
+!#         coefficients from the host memory to the device memory.
+!#
+!# 26.) afcstab_copyD2H_DmatCoeffAtEdge
+!# -> Copies the off-diagonal entries of the auxiliary constant matrix
+!#         coefficients from the device memory to the host memory.
+!#
 !# The following auxiliary routines are available:
 !#
 !# 1.) afcstab_limit = afcstab_limit_unbounded/
 !#                     afcstab_limit_bounded
 !#     -> Compute the nodal correction factors, i.e., the ratio of
 !#        admissible solution increments and raw antidiffusion
+!#
 !# </purpose>
 !##############################################################################
 module afcstabilisation
@@ -132,6 +149,10 @@ module afcstabilisation
   public :: afcstab_generateOffdiagEdges
   public :: afcstab_generateExtSparsity
   public :: afcstab_failsafeLimiting
+  public :: afcstab_copyD2H_IverticesAtEdge
+  public :: afcstab_copyD2H_DmatCoeffAtEdge
+  public :: afcstab_copyH2D_IverticesAtEdge
+  public :: afcstab_copyH2D_DmatCoeffAtEdge
   
   public :: afcstab_limit
  
@@ -469,17 +490,6 @@ module afcstabilisation
     ! Handle to auxiliary matrix data at edges (i.e. off-diagonal entries)
     integer :: h_DmatrixCoeffsAtEdge = ST_NOHANDLE
 
-#ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Handle to vertices at edge structure on DEVICE
-    integer*8 :: h_IverticesAtEdge_device = ST_NOHANDLE
-    
-    ! Handle to auxiliary matrix data at nodes on DEVICE
-    integer*8 :: h_DmatrixCoeffsAtNode_device = ST_NOHANDLE
-    
-    ! Handle to auxiliary matrix data at edges on DEVICE
-    integer*8 :: h_DmatrixCoeffsAtEdge_device = ST_NOHANDLE
-#endif
-
     ! Pointer to the vector of correction factors
     type(t_vectorScalar), pointer :: p_rvectorAlpha => null()
 
@@ -775,20 +785,6 @@ contains
     rafcstab%NNVEDGE               = 0
     rafcstab%nmatCoeff             = 0
     rafcstab%ncoeff                = 0
-
-#ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Release edge structure on device
-    if (rafcstab%h_IverticesAtEdge_device .ne. ST_NOHANDLE)&
-        call coproc_freeIntOnDevice(rafcstab%h_IverticesAtEdge_device)
-
-    ! Release matrix data at nodes on device
-    if (rafcstab%h_DmatrixCoeffsAtNode_device .ne. ST_NOHANDLE)&
-        call coproc_freeDoubleOnDevice(rafcstab%h_DmatrixCoeffsAtNode_device)
-
-    ! Release matrix data at edges on device
-    if (rafcstab%h_DmatrixCoeffsAtEdge_device .ne. ST_NOHANDLE)&
-        call coproc_freeDoubleOnDevice(rafcstab%h_DmatrixCoeffsAtEdge_device)
-#endif
 
   contains
 
@@ -3652,5 +3648,99 @@ contains
     end do
 
   end subroutine afcstab_getbase_arrayScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_copyH2D_IverticesAtEdge(rafcstab)
+
+!<description>
+    ! This subroutine copies the vertices at edge structure from the
+    ! host memory to the memory of the coprocessor device. If no
+    ! device is available, then an error is thrown.
+!</description>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_IverticesAtEdge, ST_SYNCBLOCK_COPY_H2D)
+    
+  end subroutine afcstab_copyH2D_IverticesAtEdge
+
+!*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_copyD2H_IverticesAtEdge(rafcstab)
+
+!<description>
+    ! This subroutine copies the vertices at edge structure from the
+    ! memory of the coprocessor device to the host memory. If no
+    ! device is available, then an error is thrown.
+!</description>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+  
+    if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_IverticesAtEdge, ST_SYNCBLOCK_COPY_D2H)
+
+  end subroutine afcstab_copyD2H_IverticesAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_copyH2D_DmatCoeffAtEdge(rafcstab)
+
+!<description>
+    ! This subroutine copies the off-diagonal entries of the auxiliary
+    ! constant matrix coefficients from the host memory to the memory
+    ! of the coprocessor device. If no device is available, then an
+    ! error is thrown.
+!</description>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge, ST_SYNCBLOCK_COPY_H2D)
+    
+  end subroutine afcstab_copyH2D_DmatCoeffAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_copyD2H_DmatCoeffAtEdge(rafcstab)
+
+!<description>
+    ! This subroutine copies the off-diagonal entries of the auxiliary
+    ! constant matrix coefficients from the memory of the coprocessor
+    ! device to the host memory. If no device is available, then an
+    ! error is thrown.
+!</description>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge, ST_SYNCBLOCK_COPY_D2H)
+    
+  end subroutine afcstab_copyD2H_DmatCoeffAtEdge
   
 end module afcstabilisation

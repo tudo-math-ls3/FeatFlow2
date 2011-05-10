@@ -253,6 +253,14 @@
 !# 73.) lsyssc_getbase_KrowIdx
 !#      -> Returns the pointer of the KrowIdx-array
 !#
+!# 74.) lsyssc_copyH2D_Vector
+!#      -> Copies the data of a vector from the host memory
+!#         to the memory of the coprocessor device.
+!#
+!# 75.) lsyssc_copyD2H_Vector
+!#      -> Copies the data of a vector from the memory of the
+!#         coprocessor device to the host memory
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -572,11 +580,6 @@ module linearsystemscalar
     ! = ST_NOHANDLE if not allocated on the global heap. 
     integer :: h_Ddata = ST_NOHANDLE
     
-#ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Handle identifying the vector entries on DEVICE.
-    integer*8 :: h_Ddata_device = ST_NOHANDLE
-#endif
-
     ! Flag whether or not the vector is resorted.
     !  <0: Vector is unsorted, sorting strategy is prepared in 
     !      h_IsortPermutation for a possible resorting of the entries.
@@ -915,6 +918,8 @@ module linearsystemscalar
   public :: lsyssc_sortMatrixCols
   public :: lsyssc_createRowCMatrix
   public :: lsyssc_getbase_KrowIdx
+  public :: lsyssc_copyH2D_Vector
+  public :: lsyssc_copyD2H_Vector
 
   public :: lsyssc_rebuildKdiagonal 
   public :: lsyssc_infoMatrix
@@ -9060,12 +9065,6 @@ contains
   rvector%h_IsortPermutation = ST_NOHANDLE
   rvector%p_rspatialDiscr => null()
 
-#ifdef ENABLE_COPROCESSOR_SUPPORT
-  ! Release vector data on device
-  if (rvector%h_Ddata_device .ne. ST_NOHANDLE)&
-      call coproc_freeIntOnDevice(rvector%h_Ddata_device)
-#endif
-   
   end subroutine
   
   !****************************************************************************
@@ -10017,7 +10016,78 @@ contains
   end subroutine
 
   !****************************************************************************
-  
+
+!<subroutine>
+
+  subroutine lsyssc_copyH2D_Vector(rvector, bclear)
+
+!<description>
+    ! This subroutine copies the data of a vector from the host memory
+    ! to the memory of the coprocessor device. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Switch: If TRUE, then memory is allocated on the device and
+    ! cleared. If FALSE, then memory is allocated on the device and
+    ! the content from the host memory is transferred.
+    logical :: bclear
+!</input>
+
+!<inputoutput>
+    ! Scalar vector
+    type(t_vectorScalar), intent(inout) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! Clear the vector?
+    if (bclear) then
+      call storage_clearMemory(rvector%h_Ddata)
+    else
+      ! No, we have to copy the content from host to device memory
+      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_H2D)
+    end if
+    
+  end subroutine lsyssc_copyH2D_Vector
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_copyD2H_Vector(rvector, bclear)
+
+!<description>
+    ! This subroutine copies the data of a vector from the memory of
+    ! the coprocessor device to the host memory. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Switch: If TRUE, then memory is allocated on the device and
+    ! cleared. If FALSE, then memory is allocated on the device and
+    ! the content from the host memory is transferred.
+    logical :: bclear
+!</input>
+
+!<inputoutput>
+    ! Scalar vector
+    type(t_vectorScalar), intent(inout) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! Clear the vector?
+    if (bclear) then
+      ! Yes, we can simply overwrite the content in host memory
+      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_D2H)
+    else
+      ! No, we have to copy-add the content from device to host memory
+      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_ACCUMULATE_D2H)
+    end if
+
+  end subroutine lsyssc_copyD2H_Vector
+
+  !****************************************************************************
+
 !<subroutine>
 
   subroutine lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
