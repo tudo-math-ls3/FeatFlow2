@@ -1,12 +1,12 @@
 /*#############################################################################
  ******************************************************************************
- * <name> hydro_callback2_cuda </name>
+ * <name> hydro_calcFluxScDiss2d_cuda </name>
  ******************************************************************************
  *
  * <purpose>
- * This file contains all callback functions which are required to
- * solve the compressible Euler/Navier-Stokes equations in 2D with
- * CUDA support.
+ * This CUDA kernel computes the fluxes for the low-order scheme in 2D
+ * using scalar artificial viscosities proportional to the spectral
+ * radius (largest eigenvalue) of the Roe-matrix.
  * </purpose>
  *
  *#############################################################################/
@@ -50,12 +50,8 @@ extern "C"
 					 int * iedgeset);
 }
 
-/*******************************************************************************
- * This CUDA kernel computes the fluxes for the low-order scheme in 2D
- * using scalar artificial viscosities proportional to the spectral
- * radius (largest eigenvalue) of the Roe-matrix.
- *******************************************************************************
- */
+/*******************************************************************************/
+
 __global__ void hydro_calcFluxScDiss2d_knl(double * DmatrixCoeffsAtEdge,
 					   int * IverticesAtEdge,
 					   double * Dx,
@@ -87,6 +83,16 @@ __global__ void hydro_calcFluxScDiss2d_knl(double * DmatrixCoeffsAtEdge,
     IDX2(DdataAtEdge,2,2,NVAR2D,2) = IDX2_REVERSE(Dx,2,j,NVAR2D,neq);
     IDX2(DdataAtEdge,3,2,NVAR2D,2) = IDX2_REVERSE(Dx,3,j,NVAR2D,neq);
     IDX2(DdataAtEdge,4,2,NVAR2D,2) = IDX2_REVERSE(Dx,4,j,NVAR2D,neq);
+
+    // IDX2(DdataAtEdge,1,1,NVAR2D,2) = IDX2_FORWARD(Dx,1,i,NVAR2D,neq);
+    // IDX2(DdataAtEdge,2,1,NVAR2D,2) = IDX2_FORWARD(Dx,2,i,NVAR2D,neq);
+    // IDX2(DdataAtEdge,3,1,NVAR2D,2) = IDX2_FORWARD(Dx,3,i,NVAR2D,neq);
+    // IDX2(DdataAtEdge,4,1,NVAR2D,2) = IDX2_FORWARD(Dx,4,i,NVAR2D,neq);
+
+    // IDX2(DdataAtEdge,1,2,NVAR2D,2) = IDX2_FORWARD(Dx,1,j,NVAR2D,neq);
+    // IDX2(DdataAtEdge,2,2,NVAR2D,2) = IDX2_FORWARD(Dx,2,j,NVAR2D,neq);
+    // IDX2(DdataAtEdge,3,2,NVAR2D,2) = IDX2_FORWARD(Dx,3,j,NVAR2D,neq);
+    // IDX2(DdataAtEdge,4,2,NVAR2D,2) = IDX2_FORWARD(Dx,4,j,NVAR2D,neq);
 
     //--------------------------------------------------------------------------
     // Evaluate the Galerkin fluxes
@@ -286,15 +292,21 @@ __global__ void hydro_calcFluxScDiss2d_knl(double * DmatrixCoeffsAtEdge,
     IDX2_REVERSE(Dy,2,j,NVAR2D,neq) += IDX3(DfluxesAtEdge,2,2,1,NVAR2D,2,1);
     IDX2_REVERSE(Dy,3,j,NVAR2D,neq) += IDX3(DfluxesAtEdge,3,2,1,NVAR2D,2,1);
     IDX2_REVERSE(Dy,4,j,NVAR2D,neq) += IDX3(DfluxesAtEdge,4,2,1,NVAR2D,2,1);
+
+    // IDX2_FORWARD(Dy,1,i,NVAR2D,neq) += IDX3(DfluxesAtEdge,1,1,1,NVAR2D,2,1);
+    // IDX2_FORWARD(Dy,2,i,NVAR2D,neq) += IDX3(DfluxesAtEdge,2,1,1,NVAR2D,2,1);
+    // IDX2_FORWARD(Dy,3,i,NVAR2D,neq) += IDX3(DfluxesAtEdge,3,1,1,NVAR2D,2,1);
+    // IDX2_FORWARD(Dy,4,i,NVAR2D,neq) += IDX3(DfluxesAtEdge,4,1,1,NVAR2D,2,1);
+
+    // IDX2_FORWARD(Dy,1,j,NVAR2D,neq) += IDX3(DfluxesAtEdge,1,2,1,NVAR2D,2,1);
+    // IDX2_FORWARD(Dy,2,j,NVAR2D,neq) += IDX3(DfluxesAtEdge,2,2,1,NVAR2D,2,1);
+    // IDX2_FORWARD(Dy,3,j,NVAR2D,neq) += IDX3(DfluxesAtEdge,3,2,1,NVAR2D,2,1);
+    // IDX2_FORWARD(Dy,4,j,NVAR2D,neq) += IDX3(DfluxesAtEdge,4,2,1,NVAR2D,2,1);
   }
 }
 
-/*******************************************************************************
- * This function computes the fluxes for the low-order scheme in 2D
- * using scalar artificial viscosities proportional to the spectral
- * radius (largest eigenvalue) of the Roe-matrix.
- *******************************************************************************
- */
+/*******************************************************************************/
+
 int hydro_calcFluxScDiss2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
 				unsigned long * h_IverticesAtEdge,
 				unsigned long * h_Dx,
@@ -319,8 +331,11 @@ int hydro_calcFluxScDiss2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
   block.x = blocksize;
   grid.x = (unsigned)ceil((*nedges)/(double)(block.x));
 
-  hydro_calcFluxScDiss2d_knl<<<grid, block>>>(d_DmatrixCoeffsAtEdge, d_IverticesAtEdge, d_Dx, d_Dy, (*dscale), 
-					      (*neq), (*nvar), (*nedge), (*nmatcoeff), (*nedges), (*iedgeset));
+  hydro_calcFluxScDiss2d_knl<<<grid, block>>>(d_DmatrixCoeffsAtEdge,
+					      d_IverticesAtEdge,
+					      d_Dx, d_Dy, (*dscale), 
+					      (*neq), (*nvar), (*nedge),
+					      (*nmatcoeff), (*nedges), (*iedgeset));
   coproc_checkErrors("hydro_calcFluxScDiss2d_cuda");
   return 0;
 }
