@@ -106,6 +106,21 @@
 !# 20.) storage_getblocktype
 !#      -> Get the type of the data type from a given string
 !#         representation or return ST_NOHANDLE if data type is not supported
+!#
+!# 21.) storage_allocMemory
+!#      -> Allocates a memory block in the device memory
+!#
+!# 22.) storage_deallocMemory
+!#      -> Deallocates a memory block in the device memory
+!#
+!# 23.) storage_syncMemory
+!#      -> Synchronises memory blocks between host and device memory.
+!#
+!# 24.) storage_clearMemory
+!#      -> Clears a memory block in the device memory
+!#
+!# 25.) storage_getMemoryAddress
+!#      -> Get the memory address in the device memory
 !# </purpose>
 !##############################################################################
 
@@ -210,6 +225,22 @@ module storage
   
 !</constantblock>
 
+!<constantblock description="Constants for synchronising memory">
+
+  ! copy storage block from host memory to device memory (overwrite)
+  integer, parameter, public :: ST_SYNCBLOCK_COPY_H2D       = 1
+  
+  ! copy storage block from device memory to host memory (overwrite)
+  integer, parameter, public :: ST_SYNCBLOCK_COPY_D2H       = 2
+
+  ! copy storage block from host memory to device memory (accumulate)
+  integer, parameter, public :: ST_SYNCBLOCK_ACCUMULATE_H2D = 3
+  
+  ! copy storage block from device memory to host memory (accumulate)
+  integer, parameter, public :: ST_SYNCBLOCK_ACCUMULATE_D2H = 4
+
+!</constantblock>
+
 !</constants>
 
 !<types>
@@ -234,6 +265,9 @@ module storage
 
     ! Amount of memory (in bytes) associated to this block.
     integer(I64) :: imemBytes = 0_I64
+
+    ! Pointer to memory address or 0 if not assigned
+    integer(I64) :: p_memAddress = 0_I64
 
     ! Pointer to 1D real array or NULL() if not assigned
     real(SP), dimension(:), pointer       :: p_Fsingle1D    => null()
@@ -398,7 +432,8 @@ module storage
     module procedure storage_new
     module procedure storage_newFixed
     module procedure storage_new1D
-    module procedure storage_new1DFixed   
+    module procedure storage_new1DFixed
+    module procedure storage_newIndirect
   end interface storage_new
 
   public :: storage_new
@@ -808,6 +843,11 @@ module storage
   public :: storage_restoreFpdbObject
   public :: storage_setdatatype
   public :: storage_getblocktype
+  public :: storage_allocMemory
+  public :: storage_deallocMemory
+  public :: storage_syncMemory
+  public :: storage_clearMemory
+  public :: storage_getMemoryAddress
 
 contains
 
@@ -2499,6 +2539,248 @@ contains
 
 !<subroutine>
 
+  subroutine storage_newIndirect (scall, sname, ihandleTemplate, ihandle, rheap)
+
+!<description>
+  !This routine reserves a memory block of desired size and type
+  !adopting all dimensions, types, etc. from the template handle
+!</description>
+
+!<input>
+
+  !name of the calling routine
+  character(LEN=*), intent(in) :: scall
+
+  !clear name of data field
+  character(LEN=*), intent(in) :: sname
+
+  ! Handle of the template memory block.
+  integer, intent(out) :: ihandleTemplate
+
+!</input>
+
+!<inputoutput>
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</inputoutput>
+
+!<output>
+
+  ! Handle of the memory block.
+  integer, intent(out) :: ihandle
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+  type(t_storageNode), pointer :: p_rnode
+
+  
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandleTemplate .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_newIndirect')
+      call sys_halt()
+    end if
+    if (.not. associated(p_rheap%p_Rdescriptors)) then
+      call output_line ('Heap not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_newIndirect')
+      call sys_halt()
+    end if
+
+    p_rnode => p_rheap%p_Rdescriptors(ihandleTemplate)
+
+    ! What dimension are we?
+    select case(p_rnode%idimension)
+
+    case (1)
+      
+      select case (p_rnode%idataType)
+      case (ST_SINGLE)
+        call storage_new ('storage_newIndirect',p_rnode%sname,&
+                          lbound(p_rnode%p_Fsingle1D,1),&
+                          ubound(p_rnode%p_Fsingle1D,1),&
+                          ST_SINGLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_DOUBLE)
+        call storage_new ('storage_newIndirect',p_rnode%sname,&
+                          lbound(p_rnode%p_Ddouble1D,1),&
+                          ubound(p_rnode%p_Ddouble1D,1),&
+                          ST_DOUBLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_QUAD)
+        call storage_new ('storage_newIndirect',p_rnode%sname,&
+                          lbound(p_rnode%p_Qquad1D,1),&
+                          ubound(p_rnode%p_Qquad1D,1),&
+                          ST_QUAD, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT)
+        call storage_new ('storage_newIndirect',p_rnode%sname,&
+                          lbound(p_rnode%p_Iinteger1D,1),&
+                          ubound(p_rnode%p_Iinteger1D,1),&
+                          ST_INT, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT8)
+        call storage_new ('storage_newIndirect',p_rnode%sname,&
+                          lbound(p_rnode%p_Iint8_1D,1),&
+                          ubound(p_rnode%p_Iint8_1D,1),&
+                          ST_INT8, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT16)
+        call storage_new ('storage_newIndirect',p_rnode%sname,&
+                          lbound(p_rnode%p_Iint16_1D,1),&
+                          ubound(p_rnode%p_Iint16_1D,1),&
+                          ST_INT16, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT32)
+        call storage_new ('storage_newIndirect',p_rnode%sname,&
+                          lbound(p_rnode%p_Iint32_1D,1),&
+                          ubound(p_rnode%p_Iint32_1D,1),&
+                          ST_INT32, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT64)
+        call storage_new ('storage_newIndirect',p_rnode%sname,&
+                          lbound(p_rnode%p_Iint64_1D,1),&
+                          ubound(p_rnode%p_Iint64_1D,1),&
+                          ST_INT64, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_LOGICAL)
+        call storage_new ('storage_newIndirect',p_rnode%sname,&
+                          lbound(p_rnode%p_Blogical1D,1),&
+                          ubound(p_rnode%p_Blogical1D,1),&
+                          ST_LOGICAL, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_CHAR)
+        call storage_new ('storage_newIndirect',p_rnode%sname,&
+                          lbound(p_rnode%p_Schar1D,1),&
+                          ubound(p_rnode%p_Schar1D,1),&
+                          ST_CHAR, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      end select
+
+    case (2)
+      
+      select case (p_rnode%IdataType)
+      case (ST_SINGLE)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Fsingle2D),&
+                          ubound(p_rnode%p_Fsingle2D),&
+                          ST_SINGLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_DOUBLE)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Ddouble2D),&
+                          ubound(p_rnode%p_Ddouble2D),&
+                          ST_DOUBLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_QUAD)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Qquad2D),&
+                          ubound(p_rnode%p_Qquad2D),&
+                          ST_QUAD, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Iinteger2D),&
+                          ubound(p_rnode%p_Iinteger2D),&
+                          ST_INT, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT8)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Iint8_2D),&
+                          ubound(p_rnode%p_Iint8_2D),&
+                          ST_INT8, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT16)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Iint16_2D),&
+                          ubound(p_rnode%p_Iint16_2D),&
+                          ST_INT16, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT32)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Iint32_2D),&
+                          ubound(p_rnode%p_Iint32_2D),&
+                          ST_INT32, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT64)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Iint64_2D),&
+                          ubound(p_rnode%p_Iint64_2D),&
+                          ST_INT64, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_LOGICAL)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Blogical2D),&
+                          ubound(p_rnode%p_Blogical2D),&
+                          ST_LOGICAL, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_CHAR)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Schar2D),&
+                          ubound(p_rnode%p_Schar2D),&
+                          ST_CHAR, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      end select
+
+    case (3)
+
+      select case (p_rnode%IdataType)
+      case (ST_SINGLE)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Fsingle3D),&
+                          ubound(p_rnode%p_Fsingle3D),&
+                          ST_SINGLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_DOUBLE)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Ddouble3D),&
+                          ubound(p_rnode%p_Ddouble3D),&
+                          ST_DOUBLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_QUAD)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Qquad3D),&
+                          ubound(p_rnode%p_Qquad3D),&
+                          ST_QUAD, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Iinteger3D),&
+                          ubound(p_rnode%p_Iinteger3D),&
+                          ST_INT, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT8)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Iint8_3D),&
+                          ubound(p_rnode%p_Iint8_3D),&
+                          ST_INT8, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT16)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Iint16_3D),&
+                          ubound(p_rnode%p_Iint16_3D),&
+                          ST_INT16, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT32)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Iint32_3D),&
+                          ubound(p_rnode%p_Iint32_3D),&
+                          ST_INT32, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_INT64)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Iint64_3D),&
+                          ubound(p_rnode%p_Iint64_3D),&
+                          ST_INT64, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_LOGICAL)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Blogical3D),&
+                          ubound(p_rnode%p_Blogical3D),&
+                          ST_LOGICAL, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      case (ST_CHAR)
+        call storage_new ('storage_newIndirect', p_rnode%sname,&
+                          lbound(p_rnode%p_Schar3D),&
+                          ubound(p_rnode%p_Schar3D),&
+                          ST_CHAR, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
+      end select
+
+    case default
+      call output_line ('Unsupported dimension!', &
+                         OU_CLASS_ERROR,OU_MODE_STD,'storage_newIndirect')
+      call sys_halt()
+    end select
+
+  end subroutine storage_newIndirect
+
+!************************************************************************
+
+!<subroutine>
+
   subroutine storage_free (ihandle, rheap)
 
 !<description>
@@ -2547,8 +2829,19 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_free')
       call sys_halt()
     end if
-    
-    ! Release the memory assigned to that handle.
+
+
+    ! Release the memory assigned to that handle
+    if (p_rnode%p_memAddress .ne. 0) then
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+      call coproc_freeMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+#else
+      call output_line ('Unable to free memory address!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_free')
+#endif
+    end if
+
+    ! Release the memory assigned to that 
     if (associated(p_rnode%p_Fsingle1D))  deallocate(p_rnode%p_Fsingle1D)
     if (associated(p_rnode%p_Ddouble1D))  deallocate(p_rnode%p_Ddouble1D)
     if (associated(p_rnode%p_Qquad1D))    deallocate(p_rnode%p_Qquad1D)
@@ -16646,5 +16939,743 @@ contains
       ctype = ST_NOHANDLE
     end select
   end function storage_getblocktype
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_allocMemory (ihandle, rheap)
+
+!<description>
+  ! This routine allocates a memory block in the device memory 
+  ! associated with the given handle of the heap. The handle
+  ! must already be associated with some memory block.
+!</description>
+
+!<inputoutput>
+
+  ! Handle of the memory block
+  integer :: ihandle
+
+  ! OPTIONAL: local heap structure.
+  ! If not given, the global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</inputoutput>
+
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+  type(t_storageNode), pointer :: p_rnode
+
+    
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+    
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_allocMemory')
+      call sys_halt()
+    end if
+
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+
+    ! Check if memory address is already in use
+    if (p_rnode%p_memAddress .ne. 0_I64)&
+        call coproc_freeMemoryOnDevice(p_rnode%p_memAddress)
+
+    ! Allocate memory on device with correct size
+    if (p_rnode%imemBytes .ne. 0_I64)&
+        call coproc_newMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+
+#else
+
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_allocMemory')
+    call sys_halt()
+
+#endif
+
+  end subroutine storage_allocMemory
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine storage_deallocMemory (ihandle, rheap)
+
+!<description>
+  ! This routine deallocates a memory block in the device memory 
+  ! associated with the given handle of the heap. The handle must
+  ! already be associated with some memory block.
+!</description>
+
+!<inputoutput>
+
+  ! Handle of the memory block
+  integer :: ihandle
+
+  ! OPTIONAL: local heap structure.
+  ! If not given, the global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</inputoutput>
+
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+  type(t_storageNode), pointer :: p_rnode
+    
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+    
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_deallocMemory')
+      call sys_halt()
+    end if
+
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+
+    ! Check if memory address is already in use
+    if (p_rnode%p_memAddress .ne. 0_I64)&
+        call coproc_freeMemoryOnDevice(p_rnode%p_memAddress)
+
+#else
+
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_deallocMemory')
+    call sys_halt()
+
+#endif
+
+  end subroutine storage_deallocMemory
+
+!************************************************************************
+
+!<subroutine>
+
+  recursive subroutine storage_syncMemory (ihandle, csyncBlock, rheap)
+
+!<description>
+  ! This routine synchronises the handle of the heap between host
+  ! memory and device memory.
+!</description>
+
+!<input>
+
+  ! Synchronisation identifier (ST_SYNCBLOCK_COPY_H2D,
+  ! ST_SYNCBLOCK_COPY_D2H, ST_SYNCBLOCK_ACCUMULATE_D2H,
+  ! ST_SYNCBLOCK_ACCUMULATE_H2D). Specifies how to
+  ! synchronise the data in host and device memory.
+  integer, intent(in) :: csyncBlock
+
+!</input>
+
+!<inputoutput>
+
+  ! Handle of the memory block to be releases
+  integer :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</inputoutput>
+
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+  type(t_storageNode), pointer :: p_rnode, p_rnodeTmp
+  integer(I64) :: p_memAddress
+  integer :: ihandleTmp
+  
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+    
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+      call sys_halt()
+    end if
+
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    
+    select case(csyncBlock)
+    case (ST_SYNCBLOCK_COPY_H2D)
+      
+      ! Check if memory on device is allocated
+      if (p_rnode%p_memAddress .eq. 0_I64)&
+          call storage_allocMemory(ihandle, p_rheap)
+
+      ! What dimension are we?
+      select case(p_rnode%idimension)
+        
+      case (1)
+        
+        ! What data type are we?
+        select case(p_rnode%idataType)
+        case (ST_SINGLE)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Fsingle1D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_DOUBLE)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Ddouble1D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_QUAD)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Qquad1D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iinteger1D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT8)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint8_1D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT16)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint16_1D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT32)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint32_1D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT64)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint64_1D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_LOGICAL)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Blogical1D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_CHAR)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Schar1D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        end select
+
+      case (2)
+        
+        ! What data type are we?
+        select case(p_rnode%idataType)
+        case (ST_SINGLE)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Fsingle2D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_DOUBLE)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Ddouble2D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_QUAD)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Qquad2D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iinteger2D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT8)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint8_2D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT16)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint16_2D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT32)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint32_2D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT64)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint64_2D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_LOGICAL)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Blogical2D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_CHAR)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Schar2D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        end select
+
+      case (3)
+
+        ! What data type are we?
+        select case(p_rnode%idataType)
+        case (ST_SINGLE)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Fsingle3D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_DOUBLE)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Ddouble3D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_QUAD)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Qquad3D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iinteger3D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT8)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint8_3D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT16)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint16_3D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT32)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint32_3D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_INT64)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint64_3D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_LOGICAL)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Blogical3D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        case (ST_CHAR)
+          call coproc_copyMemoryHostToDevice(p_rnode%p_Schar3D,&
+              p_rnode%p_memAddress, p_rnode%imemBytes)
+        end select
+
+      case default
+        call output_line ('Unsupported simension!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+        call sys_halt()
+      end select
+
+    case (ST_SYNCBLOCK_COPY_D2H)
+
+      ! Check if memory on device is allocated
+      if (p_rnode%p_memAddress .eq. 0_I64) then
+        call output_line ('Invalid memory address!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+      end if
+
+      ! What dimension are we?
+      select case(p_rnode%idimension)
+        
+      case (1)
+        
+        ! What data type are we?
+        select case(p_rnode%idataType)
+        case (ST_SINGLE)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Fsingle1D, p_rnode%imemBytes)
+        case (ST_DOUBLE)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Ddouble1D, p_rnode%imemBytes)
+        case (ST_QUAD)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Qquad1D, p_rnode%imemBytes)
+        case (ST_INT)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iinteger1D, p_rnode%imemBytes)
+        case (ST_INT8)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint8_1D, p_rnode%imemBytes)
+        case (ST_INT16)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint16_1D, p_rnode%imemBytes)
+        case (ST_INT32)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint32_1D, p_rnode%imemBytes)
+        case (ST_INT64)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint64_1D, p_rnode%imemBytes)
+        case (ST_LOGICAL)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Blogical1D, p_rnode%imemBytes)
+        case (ST_CHAR)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Schar1D, p_rnode%imemBytes)
+        end select
+
+      case (2)
+        
+        ! What data type are we?
+        select case(p_rnode%idataType)
+        case (ST_SINGLE)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Fsingle2D, p_rnode%imemBytes)
+        case (ST_DOUBLE)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Ddouble2D, p_rnode%imemBytes)
+        case (ST_QUAD)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Qquad2D, p_rnode%imemBytes)
+        case (ST_INT)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iinteger2D, p_rnode%imemBytes)
+        case (ST_INT8)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint8_2D, p_rnode%imemBytes)
+        case (ST_INT16)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint16_2D, p_rnode%imemBytes)
+        case (ST_INT32)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint32_2D, p_rnode%imemBytes)
+        case (ST_INT64)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint64_2D, p_rnode%imemBytes)
+        case (ST_LOGICAL)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Blogical2D, p_rnode%imemBytes)
+        case (ST_CHAR)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Schar2D, p_rnode%imemBytes)
+        end select
+
+      case (3)
+
+        ! What data type are we?
+        select case(p_rnode%idataType)
+        case (ST_SINGLE)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Fsingle3D, p_rnode%imemBytes)
+        case (ST_DOUBLE)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Ddouble3D, p_rnode%imemBytes)
+        case (ST_QUAD)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Qquad3D, p_rnode%imemBytes)
+        case (ST_INT)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iinteger3D, p_rnode%imemBytes)
+        case (ST_INT8)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint8_3D, p_rnode%imemBytes)
+        case (ST_INT16)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint16_3D, p_rnode%imemBytes)
+        case (ST_INT32)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint32_3D, p_rnode%imemBytes)
+        case (ST_INT64)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Iint64_3D, p_rnode%imemBytes)
+        case (ST_LOGICAL)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Blogical3D, p_rnode%imemBytes)
+        case (ST_CHAR)
+          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+              p_rnode%p_Schar3D, p_rnode%imemBytes)
+        end select
+
+      case default
+        call output_line ('Unsupported dimension!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+        call sys_halt()
+      end select
+
+    case (ST_SYNCBLOCK_ACCUMULATE_H2D)
+
+      ! Check if memory on device is allocated
+      if (p_rnode%p_memAddress .eq. 0_I64) then
+        ! Device memory has not been allocated so this is a simple copy
+        call storage_syncMemory(ihandle, ST_SYNCBLOCK_COPY_H2D, p_rheap)
+      else
+        ! This is tricky. We need to transfer the data from host memory
+        ! into device memory and accumulate it into device memory. This
+        ! cannot be done directly but some temporal storage is required.
+      
+        ! Make a backup of the memory pointer
+        p_memAddress = p_rnode%p_memAddress
+        
+        ! Allocate memory on the device by hand
+        call coproc_newMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+
+        ! Copy content of host memory associated with handle ihandle
+        ! into temporal memory block on device. Note that the memory
+        ! address has been modified by hand, so that data is preserved.
+        call storage_syncMemory(ihandle, ST_SYNCBLOCK_COPY_H2D, p_rheap)
+
+        ! We are back from recursion and both memory blocks are
+        ! available in device memory. So we can add both memory blocks
+        ! and store the result at the original memory address.
+        call coproc_addMemoryOnDevice(p_rnode%p_memAddress, p_memAddress,&
+            p_memAddress, p_rnode%imemBytes)
+      
+        ! Release temporal memory block ...
+        call coproc_freeMemoryOnDevice(p_rnode%p_memAddress)
+
+        ! ... and restore backup of original memory address
+        p_rnode%p_memAddress = p_memAddress
+      end if
+
+    case (ST_SYNCBLOCK_ACCUMULATE_D2H)
+      
+      ! Check if memory on device is allocated
+      if (p_rnode%p_memAddress .ne. 0_I64) then
+
+        ! This is tricky. We need to transfer the data from device
+        ! memory into host memory and accumulate it into host memory.
+        
+        ! For this we need some temporal storage in host memory
+        ihandleTmp = ST_NOHANDLE
+        call storage_new('storage_syncMemory', 'ihandleTmp',&
+                         ihandle, ihandleTmp, p_rheap)
+
+        ! Transfer the memory address associated with handle ihandle
+        ! to the temporal memory block associated with ihandltTmp
+        p_rnodeTmp => p_rheap%p_Rdescriptors(ihandleTmp)
+        p_rnodeTmp%p_memAddress = p_rnode%p_memAddress
+
+        ! Copy content from device memory to host memory block
+        ! associated with temporal handle ihandleTmp.
+        call storage_syncMemory(ihandleTmp, ST_SYNCBLOCK_COPY_D2H, p_rheap)
+
+        ! We are back from recursion and both memory blocks are
+        ! available in host memory. So we can add both memory blocks
+        ! and store the result at the original memory address.
+
+        ! What dimension are we?
+        select case(p_rnode%idimension)
+          
+        case (1)
+
+          ! What data type are we?
+          select case(p_rnode%idataType)
+          case (ST_SINGLE)
+            call lalg_vectorLinearCombSngl (p_rnodeTmp%p_Fsingle1D,&
+                p_rnode%p_Fsingle1D, 1.0_SP, 1.0_SP)
+          case (ST_DOUBLE)
+            call lalg_vectorLinearCombDble (p_rnodeTmp%p_Ddouble1D,&
+                p_rnode%p_Ddouble1D, 1.0_DP, 1.0_DP)
+          case (ST_QUAD)
+            call lalg_vectorLinearCombQuad (p_rnodeTmp%p_Qquad1D,&
+                p_rnode%p_Qquad1D, 1.0_QP, 1.0_QP)
+          case (ST_INT)
+            p_rnode%p_Iinteger1D = p_rnode%p_Iinteger1D + p_rnodeTmp%p_Iinteger1D
+          case (ST_INT8)
+            p_rnode%p_Iint8_1D = p_rnode%p_Iint8_1D + p_rnodeTmp%p_Iint8_1D
+          case (ST_INT16)
+            p_rnode%p_Iint16_1D = p_rnode%p_Iint16_1D + p_rnodeTmp%p_Iint16_1D
+          case (ST_INT32)
+            p_rnode%p_Iint32_1D = p_rnode%p_Iint32_1D + p_rnodeTmp%p_Iint32_1D
+          case (ST_INT64)
+            p_rnode%p_Iint64_1D = p_rnode%p_Iint64_1D + p_rnodeTmp%p_Iint64_1D
+          end select
+
+        case (2)
+
+          ! What data type are we?
+          select case(p_rnode%idataType)
+          case (ST_SINGLE)
+            call lalg_vectorLinearCombSngl2D (p_rnodeTmp%p_Fsingle2D,&
+                p_rnode%p_Fsingle2D, 1.0_SP, 1.0_SP)
+          case (ST_DOUBLE)
+            call lalg_vectorLinearCombDble2D (p_rnodeTmp%p_Ddouble2D,&
+                p_rnode%p_Ddouble2D, 1.0_DP, 1.0_DP)
+          case (ST_QUAD)
+            call lalg_vectorLinearCombQuad2D (p_rnodeTmp%p_Qquad2D,&
+                p_rnode%p_Qquad2D, 1.0_QP, 1.0_QP)
+          case (ST_INT)
+            p_rnode%p_Iinteger2D = p_rnode%p_Iinteger2D + p_rnodeTmp%p_Iinteger2D
+          case (ST_INT8)
+            p_rnode%p_Iint8_2D = p_rnode%p_Iint8_2D + p_rnodeTmp%p_Iint8_2D
+          case (ST_INT16)
+            p_rnode%p_Iint16_2D = p_rnode%p_Iint16_2D + p_rnodeTmp%p_Iint16_2D
+          case (ST_INT32)
+            p_rnode%p_Iint32_2D = p_rnode%p_Iint32_2D + p_rnodeTmp%p_Iint32_2D
+          case (ST_INT64)
+            p_rnode%p_Iint64_2D = p_rnode%p_Iint64_2D + p_rnodeTmp%p_Iint64_2D
+          end select
+
+        case (3)
+
+          ! What data type are we?
+          select case(p_rnode%idataType)
+          case (ST_SINGLE)
+            call lalg_vectorLinearCombSngl3D (p_rnodeTmp%p_Fsingle3D,&
+                p_rnode%p_Fsingle3D, 1.0_SP, 1.0_SP)
+          case (ST_DOUBLE)
+            call lalg_vectorLinearCombDble3D (p_rnodeTmp%p_Ddouble3D,&
+                p_rnode%p_Ddouble3D, 1.0_DP, 1.0_DP)
+          case (ST_QUAD)
+            call lalg_vectorLinearCombQuad3D (p_rnodeTmp%p_Qquad3D,&
+                p_rnode%p_Qquad3D, 1.0_QP, 1.0_QP)
+          case (ST_INT)
+            p_rnode%p_Iinteger3D = p_rnode%p_Iinteger3D + p_rnodeTmp%p_Iinteger3D
+          case (ST_INT8)
+            p_rnode%p_Iint8_3D = p_rnode%p_Iint8_3D + p_rnodeTmp%p_Iint8_3D
+          case (ST_INT16)
+            p_rnode%p_Iint16_3D = p_rnode%p_Iint16_3D + p_rnodeTmp%p_Iint16_3D
+          case (ST_INT32)
+            p_rnode%p_Iint32_3D = p_rnode%p_Iint32_3D + p_rnodeTmp%p_Iint32_3D
+          case (ST_INT64)
+            p_rnode%p_Iint64_3D = p_rnode%p_Iint64_3D + p_rnodeTmp%p_Iint64_3D
+          end select
+          
+        case default
+          call output_line ('Unsupported dimension!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+          call sys_halt()
+        end select
+
+        ! Manually remove memory address from handle ihandleTmp
+        p_rnodeTmp%p_memAddress = 0_I64
+
+        ! Release temporal handle ihandleTmp
+        call storage_free(ihandleTmp)
+
+      else
+        call output_line ('Invalid memory address!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+        call sys_halt()
+      end if
+      
+
+    case default
+      call output_line ('Unsupported synchronisation!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+      call sys_halt()
+    end select
+
+#else
+
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+    call sys_halt()
+
+#endif
+
+  end subroutine storage_syncMemory
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_clearMemory (ihandle, rheap)
+
+!<description>
+  ! This routine clears a memory block in the device memory 
+  ! associated with the given handle of the heap. The handle must
+  ! already be associated with some memory block.
+!</description>
+
+!<inputoutput>
+
+  ! Handle of the memory block
+  integer :: ihandle
+
+  ! OPTIONAL: local heap structure.
+  ! If not given, the global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</inputoutput>
+
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+  type(t_storageNode), pointer :: p_rnode
+    
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+    
+    if (ihandle .eq. ST_NOHANDLE) then
+      call output_line ('Wrong handle!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_deallocMemory')
+      call sys_halt()
+    end if
+
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+
+    ! Check if memory address is already in use
+    if (p_rnode%p_memAddress .eq. 0_I64)&
+        call coproc_newMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+
+    ! Fill memory with zeros
+    call coproc_clearMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+
+#else
+
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_clearMemory')
+    call sys_halt()
+
+#endif
+
+  end subroutine storage_clearMemory
+
+!************************************************************************
+
+!<function>
+
+  function storage_getMemoryAddress (ihandle, rheap) result(p_memAddress)
+
+!<description>
+  ! Returns the memory address of the memory block associated with
+  ! handle ihandle in device memory.
+!</description>
+
+!<input>
+  ! Handle of the memory block to be releases
+  integer, intent(in) :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(in), target, optional :: rheap
+!</input>
+
+!<result>
+  ! Memory address of the memory block in device memory
+  integer(I64) :: p_memAddress
+!</result>
+
+!</function>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+  type(t_storageNode), pointer :: p_rnode
+
+
+    ! Get the heap to use - local or global one.
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    if (ihandle .le. ST_NOHANDLE) then
+      call output_line ('Handle invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getMemoryAddress')
+      call sys_halt()
+    end if
+
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    
+    ! Return memory address
+    p_memAddress = p_rnode%p_memAddress
+
+#else
+
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getMemoryAddress')
+    call sys_halt()
+
+#endif
+
+  end function storage_getMemoryAddress
 
 end module storage
