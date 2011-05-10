@@ -162,7 +162,7 @@ LDFLAGS       =
 #endif
 
 # include paths
-INC           =
+INC           = -I$(FEAT2BASEDIR)/librariesNEW/coproc
 
 # List of files only needed for a specific build ID
 # (please include path information, at best using Makefile variables)
