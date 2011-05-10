@@ -146,7 +146,7 @@ module uuid
   ! Type for universally unique identifier
   type t_uuid
     ! the UUID data
-    integer, dimension(16) :: data
+    integer, dimension(16) :: data = 0
   end type t_uuid
   
   public :: t_uuid
