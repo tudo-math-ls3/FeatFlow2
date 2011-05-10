@@ -300,7 +300,7 @@
 
 !<subroutine>
 
-  subroutine fcb_calcDivVector(rafcstab, rx, ry, dscale,&
+  subroutine fcb_calcDivVector(rafcstab, rx, ry, dscale, bclear,&
       fcb_calcFlux_sim, rcollection)
 
     use afcstabilisation
@@ -318,6 +318,11 @@
 
     ! scaling factor
     real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
 
     ! callback functions to compute local fluxes
     optional :: fcb_calcFlux_sim

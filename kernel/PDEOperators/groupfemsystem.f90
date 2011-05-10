@@ -1835,10 +1835,11 @@ contains
 
 
     ! Check if block vectors contain only one block.
-    if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
+
+    if (.not.present(fcb_calcDivVector) .and.&
+        (rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
       call gfsys_buildDivVectorScalar(rafcstab, rx%RvectorBlock(1),&
-          fcb_calcFlux_sim, dscale, bclear, ry%RvectorBlock(1),&
-          rcollection, fcb_calcDivVector)
+          fcb_calcFlux_sim, dscale, bclear, ry%RvectorBlock(1), rcollection)
       return
     end if
 
@@ -1857,14 +1858,11 @@ contains
       call sys_halt()
     end if
 
-    ! Clear vector?
-    if (bclear) call lsysbl_clearVector(ry)
-
     ! Check if user-defined assembly is provided
     if (present(fcb_calcDivVector)) then
       ! Call used-defined assembly
       call fcb_calcDivVector(rafcstab, rx, ry, dscale,&
-          fcb_calcFlux_sim, rcollection)
+          bclear, fcb_calcFlux_sim, rcollection)
     else
       ! Set pointers
       call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
@@ -1873,6 +1871,9 @@ contains
       call lsysbl_getbase_double(rx, p_Dx)
       call lsysbl_getbase_double(ry, p_Dy)
       
+      ! Clear vector?
+      if (bclear) call lsysbl_clearVector(ry)
+
       ! Assemble the divergence vector
       call doDivVector(p_IverticesAtEdgeIdx, p_IverticesAtEdge, rafcstab%NEQ,&
           rx%nblocks, p_DmatrixCoeffsAtEdge, p_Dx, dscale, p_Dy)
