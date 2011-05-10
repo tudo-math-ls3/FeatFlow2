@@ -15,8 +15,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <iostream>
-#include "../../kernel/coproc_core.h"
-#include "../../kernel/coproc_storage_cuda.h"
+#include "coproc_core.h"
+#include "coproc_storage_cuda.h"
 
 #define LANGUAGE LANGUAGE_C
 #include "../../../../../kernel/System/idxmanager.h"
