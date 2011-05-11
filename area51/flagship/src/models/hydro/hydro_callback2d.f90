@@ -727,11 +727,11 @@ contains
   end subroutine hydro_calcFluxScDiss2d_sim
 
   ! ***************************************************************************
-#ifdef ENABLE_COPROCESSOR_SUPPORT
+
 !<subroutine>
 
   subroutine hydro_calcDivVecScDiss2d_cuda(rafcstab, rx, ry, dscale,&
-      fcb_calcFlux_sim, rcollection)
+      bclear, rcollection)
 
     use afcstabilisation
     use collection
@@ -751,9 +751,10 @@ contains
     ! scaling factor
     real(DP), intent(in) :: dscale
 
-    ! callback functions to compute local fluxes
-    include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
-    optional :: fcb_calcFlux_sim
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
 !</input>
 
 !<inputoutput>
@@ -768,82 +769,42 @@ contains
 !</inputoutput>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
     ! local variables
-    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
-    real(DP), dimension(:), pointer :: p_Dx,p_Dy
-    real(SP), dimension(:), pointer :: p_Fx,p_Fy
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
-    integer :: IEDGEmax,IEDGEset,igroup,isize
+    integer :: IEDGEmax,IEDGEset,igroup
+    integer(I64) :: p_DmatrixCoeffsAtEdge
+    integer(I64) :: p_IverticesAtEdge
+    integer(I64) :: p_Dx, p_Dy
+    
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    if (storage_getMemoryAddress(rafcstab%h_IverticesAtEdge) .eq. 0_I64)&
+        call afcstab_copyH2D_IverticesAtEdge(rafcstab)
+    p_IverticesAtEdge = storage_getMemoryAddress(rafcstab%h_IverticesAtEdge)
+    
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
+        call afcstab_copyH2D_DmatCoeffAtEdge(rafcstab)
+    p_DmatrixCoeffsAtEdge = storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge)
 
-    ! temporal arrays
-    real(DP), dimension(:), pointer :: Dy
-    real(SP), dimension(:), pointer :: Fy
-    real(DP), dimension(:), pointer :: DmatrixCoeffsAtEdgeTmp
-    integer, dimension(:), pointer :: IverticesAtEdgeTmp
-    integer :: i,j,iedge,idx
-
-    ! We will need it anyway
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    if (p_Dx .eq. 0_I64) then
+      call lsysbl_copyH2D_Vector(rx, .false.)
+      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination vector ry exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Vector(ry, .true.)
+    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+   
+    ! Set pointer
     call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-
-    ! Check if edge structure is available on device
-    if (rafcstab%h_IverticesAtEdge_device .eq. ST_NOHANDLE) then
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      isize = product(shape(p_IverticesAtEdge))
-      call coproc_newIntOnDevice(rafcstab%h_IverticesAtEdge_device, isize)
-      call coproc_copyIntToDevice(p_IverticesAtEdge,&
-          rafcstab%h_IverticesAtEdge_device, isize)
-    end if
-
-    ! Check if matrix coefficients are available on device
-    if (rafcstab%h_DmatrixCoeffsAtEdge_device .eq. ST_NOHANDLE) then
-      call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
-      isize = product(shape(p_DmatrixCoeffsAtEdge))
-      call coproc_newDoubleOnDevice(rafcstab%h_DmatrixCoeffsAtEdge_device, isize)
-      call coproc_copyDoubleToDevice(p_DmatrixCoeffsAtEdge,&
-          rafcstab%h_DmatrixCoeffsAtEdge_device, isize)
-    end if
     
-    ! Check if solution vector is available on device
-    if (rx%h_Ddata_device .eq. ST_NOHANDLE) then
-      if (rx%cdataType .eq. ST_DOUBLE) then
-        call coproc_newDoubleOnDevice(rx%h_Ddata_device, rx%NEQ)
-      elseif (rx%cdataType .eq. ST_SINGLE) then
-        call coproc_newSingleOnDevice(rx%h_Ddata_device, rx%NEQ)
-      else
-        call output_line('Vector is of wrong precision!!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecScDiss2d_cuda')
-        call sys_halt()
-      end if
-    end if
-    
-    if (rx%cdataType .eq. ST_DOUBLE) then
-      call lsysbl_getbase_double(rx, p_Dx)
-      call coproc_copyDoubleToDevice(p_Dx, rx%h_Ddata_device, rx%NEQ)
-    elseif (rx%cdataType .eq. ST_SINGLE) then
-      call lsysbl_getbase_single(rx, p_Fx)
-      call coproc_copySingleToDevice(p_Fx, rx%h_Ddata_device, rx%NEQ)
-    else
-      call output_line('Vector is of wrong precision!!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecScDiss2d_cuda')
-      call sys_halt()
-    end if
-
-    ! Check if result vector is available on device
-    if (ry%h_Ddata_device .eq. ST_NOHANDLE) then
-      if (ry%cdataType .eq. ST_DOUBLE) then
-        call coproc_newDoubleOnDevice(ry%h_Ddata_device, ry%NEQ)
-        call coproc_clearDoubleOnDevice(ry%h_Ddata_device, ry%NEQ)
-      elseif (ry%cdataType .eq. ST_SINGLE) then
-        call coproc_newSingleOnDevice(ry%h_Ddata_device, ry%NEQ)
-        call coproc_clearSingleOnDevice(ry%h_Ddata_device, ry%NEQ)
-      else
-        call output_line('Vector is of wrong precision!!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecScDiss2d_cuda')
-        call sys_halt()
-      end if
-    end if
-
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
     do igroup = 1, size(p_IverticesAtEdgeIdx)-1
@@ -858,32 +819,25 @@ contains
       IEDGEmax = p_IverticesAtEdgeIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxScDiss2d_cuda(rafcstab%h_DmatrixCoeffsAtEdge_device,&
-          rafcstab%h_IverticesAtEdge_device,rx%h_Ddata_device, ry%h_Ddata_device,&
-          dscale, rafcstab%NEQ, rafcstab%NVAR, rafcstab%NEDGE, rafcstab%nmatCoeff,&
-          IEDGEmax-IEDGEset+1, IEDGEset)
+        call fcb_calcflux123_sim(p_Dx, p_Dy,&
+            p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
+            dscale, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
 
-    if (ry%cdataType .eq. ST_DOUBLE) then
-      allocate(Dy(ry%NEQ))
-      call lsysbl_getbase_double(ry, p_Dy)
-      call coproc_copyDoubleToHost(ry%h_Ddata_device, Dy, ry%NEQ)
-      p_Dy = p_Dy + Dy
-      deallocate(Dy)
-    elseif (ry%cdataType .eq. ST_SINGLE) then
-      allocate(Fy(ry%NEQ))
-      call lsysbl_getbase_single(ry, p_Fy)
-      call coproc_copySingleToHost(ry%h_Ddata_device, Fy, ry%NEQ)
-      p_Fy = p_Fy + Fy
-      deallocate(Fy)
-    else
-      call output_line('Vector is of wrong precision!!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecScDiss2d_cuda')
-      call sys_halt()
-    end if
+    ! Transfer destination vector back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Vector(ry, bclear)
+
+#else
+
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecScDiss2d_cuda')
+    call sys_halt()
+    
+#endif
 
   end subroutine hydro_calcDivVecScDiss2d_cuda
-#endif
 
   !*****************************************************************************
 
