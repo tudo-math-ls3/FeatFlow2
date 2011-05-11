@@ -2573,6 +2573,7 @@ sub create_feastAppMakefile {
 	"\t\tCUDA=\"\$(CUDA)\" \\\n" .
         "\t\tOPT=\"\$(OPT)\" \\\n" .
         "\t\tCFLAGSCOPROC_FROM_FEAT2=\"\$(CFLAGSCOPROC)\" \\\n" .
+        "\t\tCFLAGSCUDA=\"\$(CFLAGSCUDA)\" \\\n" .
         "\t\tCFLAGSF90=\"\$(CFLAGSF90)\" \\\n" .
         "\t\tAPPONLYFLAGS=\"\$(APPONLYFLAGS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
