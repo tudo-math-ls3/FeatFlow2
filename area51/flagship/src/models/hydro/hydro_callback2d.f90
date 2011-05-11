@@ -819,9 +819,9 @@ contains
       IEDGEmax = p_IverticesAtEdgeIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-        call fcb_calcflux123_sim(p_Dx, p_Dy,&
-            p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
-            dscale, IEDGEmax-IEDGEset+1, IEDGEset)
+      call hydro_calcFluxScDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
+          p_Dx, p_Dy, dscale, rafcstab%NEQ, rafcstab%NVAR, rafcstab%NEDGE,&
+          rafcstab%nmatCoeff, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
