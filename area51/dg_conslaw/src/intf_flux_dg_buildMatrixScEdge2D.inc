@@ -47,7 +47,7 @@
   type(t_collection), intent(inout), target, optional :: rcollection
   type(t_vectorScalar), intent(in) :: rvectorSol
   integer, dimension(:), intent(in) :: IelementList
-  real(DP), dimension(:,:,:), intent(out) :: Dside
+  real(DP), dimension(:,:,:,:), intent(out) :: Dside
     
   !</input>
   

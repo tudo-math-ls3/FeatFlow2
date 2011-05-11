@@ -61,8 +61,8 @@
   !  1  ,  0  : from the first element (up-/downwind)
   !  0  ,  1  : from the outer element (up-/downwind)
   ! 1/2 , 1/2 : fifty fifty            (Galerkin)
-  ! nrows,ncolumns,2 sides,ncubp,nelements
-  real(DP), dimension(:,:,:,:,:), intent(out) :: Dside
+  ! nrows,ncolumns,2 sides,nterms,ncubp,nelements
+  real(DP), dimension(:,:,:,:,:,:), intent(out) :: Dside
   !</output>
     
   !</subroutine>

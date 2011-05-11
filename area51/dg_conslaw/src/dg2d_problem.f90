@@ -1273,6 +1273,97 @@ contains
   
   
   
+  ! This routine builds the Euler-Jacobian in x direction
+  function Euler_buildJacobixcfromRoe(Q) result(Jx)
+
+    ! Left eigenvectors
+    real(DP), dimension(4,4)	:: Jx
+
+    ! The solution components q1 = roe, q2 = u, q3 = v, q4 = H, q5 = c
+    real(DP), dimension(5), intent(IN)		:: Q
+
+    ! Local variables
+    real(dp) :: rho, u, v, H, c, E
+    
+    ! Constant Gamma
+    real(dp) :: gamma = 1.4_dp
+   
+    rho = Q(1)
+    u = Q(2)
+    v = Q(3)
+    H = Q(4)
+    c = Q(5)
+    E = (H+(gamma-1.0_dp)*0.5_dp*(u*u+v*v))/gamma
+    
+    
+    
+       ! Build matrix
+       Jx(1,1) = 0.0_dp
+       Jx(2,1) = 0.5_dp*(gamma-3.0_dp)*u*u+0.5_dp*(gamma-1.0_dp)*v*v
+       Jx(3,1) = -u*v
+       Jx(4,1) = -gamma*u*E+(gamma-1.0_dp)*u*(u*u+v*v)
+       Jx(1,2) = 1.0_dp
+       Jx(2,2) = (3.0_dp-gamma)*u
+       Jx(3,2) = v
+       Jx(4,2) = gamma*E-0.5_dp*(gamma-1.0_dp)*(v*v+3.0_dp*u*u)
+       Jx(1,3) = 0.0_dp
+       Jx(2,3) = -(gamma-1.0_dp)*v
+       Jx(3,3) = u
+       Jx(4,3) = -(gamma-1.0_dp)*u*v
+       Jx(1,4) = 0.0_dp
+       Jx(2,4) = (gamma-1.0_dp)
+       Jx(3,4) = 0.0_dp
+       Jx(4,4) = gamma*u
+           
+  end function 
+  
+  
+  
+  ! This routine builds the Euler-Jacobian in y direction
+  function Euler_buildJacobiycfromRoe(Q) result(Jy)
+
+    ! Left eigenvectors
+    real(DP), dimension(4,4)	:: Jy
+
+    ! The solution components q1 = roe, q2 = u, q3 = v, q4 = H, q5 = c
+    real(DP), dimension(5), intent(IN)		:: Q
+
+    ! Local variables
+    real(dp) :: rho, u, v, H, c, E
+    
+    ! Constant Gamma
+    real(dp) :: gamma = 1.4_dp
+   
+    rho = Q(1)
+    u = Q(2)
+    v = Q(3)
+    H = Q(4)
+    c = Q(5)
+    E = (H+(gamma-1.0_dp)*0.5_dp*(u*u+v*v))/gamma
+    
+    
+       ! Build matrix
+       Jy(1,1) = 0.0_dp
+       Jy(2,1) = -u*v
+       Jy(3,1) = 0.5_dp*(gamma-3.0_dp)*v*v+0.5_dp*(gamma-1.0_dp)*u*u
+       Jy(4,1) = -gamma*v*E+(gamma-1.0_dp)*v*(u*u+v*v)
+       Jy(1,2) = 0.0_dp
+       Jy(2,2) = v
+       Jy(3,2) = -(gamma-1.0_dp)*u
+       Jy(4,2) = -(gamma-1.0_dp)*u*v
+       Jy(1,3) = 1.0_dp
+       Jy(2,3) = u
+       Jy(3,3) = (3.0_dp-gamma)*v
+       Jy(4,3) = gamma*E-0.5_dp*(gamma-1.0_dp)*(u*u+3.0_dp*v*v)
+       Jy(1,4) = 0.0_dp
+       Jy(2,4) = 0.0_dp
+       Jy(3,4) = (gamma-1.0_dp)
+       Jy(4,4) = gamma*v
+           
+  end function 
+  
+  
+  
   ! This routine returns the eigenvalues of the jacobi matrix
   function Euler_buildEigenvaluescfromRoe(Q,a,b) result(Eigenvalues)
 

@@ -9537,7 +9537,7 @@ end do
     real(DP), dimension(:,:,:), pointer :: p_Dentryii, p_Dentryia, p_Dentryai, p_Dentryaa
     real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:), pointer :: p_Domega
-    real(DP), dimension(:,:,:), pointer :: p_Dside
+    real(DP), dimension(:,:,:,:), pointer :: p_Dside
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial
     real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
@@ -9616,7 +9616,7 @@ end do
         rmatrixAssembly(2)%indofTest,rmatrixAssembly(1)%nelementsPerBlock))
     
     ! Allocate space for the coefficient of the solutions DOFs on each side of the edge
-    allocate(p_Dside(2,ncubp,rmatrixAssembly(1)%nelementsPerBlock))
+    allocate(p_Dside(2,rlocalMatrixAssembly(1)%rform%itermcount,ncubp,rmatrixAssembly(1)%nelementsPerBlock))
         
     ! Allocate space for the entries in the local matrices
     allocate(p_Dentryii(rmatrixAssembly(1)%indofTrial,&
@@ -9631,7 +9631,7 @@ end do
         
         
     ! Allocate space for the flux variables DIM(nvar,ialbet,ncubp,elementsperblock)
-    allocate(DfluxValues(1,ncubp,rlocalMatrixAssembly(1)%nelementsPerBlock))
+    allocate(DfluxValues(rlocalMatrixAssembly(1)%rform%itermcount,ncubp,rlocalMatrixAssembly(1)%nelementsPerBlock))
     
 !    ! Get some more pointers to local data.
 !    p_Kentry => rlocalMatrixAssembly%p_Kentry
@@ -10213,13 +10213,13 @@ end do
 
                   ! Testfunction on the 'first' (i) side
                   p_Dentryii(jdofe,idofe,iel) = &
-                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)
+                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(1,ialbet,icubp,iel)
                   p_Dentryai(jdofe,idofe,iel) = &
-                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)
+                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(2,ialbet,icubp,iel)
                   
                   ! Testfunction on the 'second' (a) side
                   p_Dentryia(jdofe,idofe,iel) = &
-                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,icubp,iel)
+                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,ialbet,icubp,iel)
                       
 !                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
 !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)      
@@ -10236,7 +10236,7 @@ end do
 !                      end if
                       
                   p_Dentryaa(jdofe,idofe,iel) = &
-                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(2,icubp,iel)
+                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(2,ialbet,icubp,iel)
                 
 !                write(*,*) 'ia',ia
 !                write(*,*) 'daux1',daux1
@@ -10811,7 +10811,7 @@ end do
     real(DP), dimension(:,:,:,:,:), pointer :: p_Dentryii, p_Dentryia, p_Dentryai, p_Dentryaa
     real(DP), dimension(:,:,:), pointer :: p_Dcoords
     real(DP), dimension(:), pointer :: p_Domega
-    real(DP), dimension(:,:,:,:,:), pointer :: p_Dside
+    real(DP), dimension(:,:,:,:,:,:), pointer :: p_Dside
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial
     real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
@@ -10904,7 +10904,7 @@ end do
     allocate(daux1(nvar,nvar),daux2(nvar,nvar))
     
     ! Allocate space for the coefficient of the solutions DOFs on each side of the edge
-    allocate(p_Dside(nvar,nvar,2,ncubp,rmatrixAssembly(1)%nelementsPerBlock))
+    allocate(p_Dside(nvar,nvar,2,rmatrixAssembly(1)%rform%itermCount,ncubp,rmatrixAssembly(1)%nelementsPerBlock))
         
     ! Allocate space for the entries in the local matrices
     allocate(p_Dentryii(nvar,nvar,rmatrixAssembly(1)%indofTrial,&
@@ -10919,7 +10919,7 @@ end do
         
         
     ! Allocate space for the flux variables DIM(nvar,nvar,ialbet,ncubp,elementsperblock)
-    allocate(DfluxValues(nvar,nvar,1,ncubp,rlocalMatrixAssembly(1)%nelementsPerBlock))
+    allocate(DfluxValues(nvar,nvar,rmatrixAssembly(1)%rform%itermCount,ncubp,rlocalMatrixAssembly(1)%nelementsPerBlock))
     
 !    ! Get some more pointers to local data.
 !    p_Kentry => rlocalMatrixAssembly%p_Kentry
@@ -11503,13 +11503,13 @@ end do
                   do iblock = 1, nvar
                   do jblock = 1, nvar
                   p_Dentryii(iblock,jblock,jdofe,idofe,iel) = &
-                      p_Dentryii(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(iblock,jblock,1,icubp,iel)
+                      p_Dentryii(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(iblock,jblock,1,ialbet,icubp,iel)
                   p_Dentryai(iblock,jblock,jdofe,idofe,iel) = &
-                      p_Dentryai(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(iblock,jblock,2,icubp,iel)
+                      p_Dentryai(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(iblock,jblock,2,ialbet,icubp,iel)
                   
                   ! Testfunction on the 'second' (a) side
                   p_Dentryia(iblock,jblock,jdofe,idofe,iel) = &
-                      p_Dentryia(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(iblock,jblock,1,icubp,iel)
+                      p_Dentryia(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(iblock,jblock,1,ialbet,icubp,iel)
                       
 !                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
 !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)      
@@ -11526,7 +11526,7 @@ end do
 !                      end if
                       
                   p_Dentryaa(iblock,jblock,jdofe,idofe,iel) = &
-                      p_Dentryaa(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(iblock,jblock,2,icubp,iel)
+                      p_Dentryaa(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(iblock,jblock,2,ialbet,icubp,iel)
                  end do
                  end do 
 !                write(*,*) 'ia',ia
@@ -11540,8 +11540,7 @@ end do
 !                write(*,*) 'test2',rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
 !                pause
 
-
-                end do
+                end do ! idofe
               
               end do ! jdofe
               
@@ -12144,7 +12143,7 @@ end do
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
 
       call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-      rintSubset%ielementDistribution =  0
+      rintSubset%ielementDistribution =  1
       rintSubset%ielementStartIdx     =  IELset
       rintSubset%p_Ielements          => IelementList(IELset:IELmax)
       rintSubset%p_IdofsTrial         => p_IdofsTrial

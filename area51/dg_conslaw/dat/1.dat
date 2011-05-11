@@ -39,17 +39,19 @@ triname = ./pre/QUAD.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 1
+# 3: DG Q1
+# 4: DG Q2
+FEkind = 4
 
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.001
+dt = 0.01
 
 # Final time
-ttfinal = 0.1
+ttfinal = 0.5
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -72,8 +74,10 @@ limiter = 0
 # 4: Classical RK of 4th order
 # 5: Implicit linear convection
 # 6: Implicit Burgers equation
-# 7: Implicit System
-timestepping = 7
+# 7: Implicit system (decoupled)
+# 8: Implicit Euler equations
+# 9: Implicit linear convection Newton-like implementation
+timestepping = 9
 
 # What type to build the RHS
 rhstype = 1
@@ -100,7 +104,7 @@ gravconst = 1.0
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 0
+extrapoints = 3
 
 # Name of output file
 ofile = ./gmv/u2d
