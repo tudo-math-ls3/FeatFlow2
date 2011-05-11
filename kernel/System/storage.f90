@@ -1097,7 +1097,7 @@ contains
 
 !<input>
   ! The handle to release
-  integer, intent(inout) :: ihandle
+  integer, intent(in) :: ihandle
 !</input>
 
 !<inputoutput>
@@ -2555,7 +2555,7 @@ contains
   character(LEN=*), intent(in) :: sname
 
   ! Handle of the template memory block.
-  integer, intent(out) :: ihandleTemplate
+  integer, intent(in) :: ihandleTemplate
 
 !</input>
 
@@ -2791,7 +2791,7 @@ contains
 !<inputoutput>
 
   ! Handle of the memory block to be releases
-  integer :: ihandle
+  integer, intent(inout) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2894,10 +2894,14 @@ contains
   ! overwritten by 0.
 !</description>
 
-!<inputoutput>
+!<input>
 
-  ! Handle of the memory block to be releases
-  integer :: ihandle
+    ! Handle of the memory block to be cleared
+  integer, intent(in) :: ihandle
+
+!</input>
+
+!<inputoutput>
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -14816,6 +14820,16 @@ contains
     ! Replace the old node by the new one, finish
     p_rnode = rstorageNode
 
+    ! Release the memory assigned to that handle
+    if (p_rnode%p_memAddress .ne. 0) then
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+      call coproc_freeMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+#else
+      call output_line ('Unable to free memory address!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocDefault')
+#endif
+    end if
+
   end subroutine storage_reallocDefault
 
 !************************************************************************
@@ -15609,6 +15623,16 @@ contains
 
     ! Replace the old node by the new one, finish
     p_rnode = rstorageNode
+
+    ! Release the memory assigned to that handle
+    if (p_rnode%p_memAddress .ne. 0) then
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+      call coproc_freeMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+#else
+      call output_line ('Unable to free memory address!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
+#endif
+    end if
 
   end subroutine storage_reallocFixed
 
@@ -16952,15 +16976,15 @@ contains
   ! must already be associated with some memory block.
 !</description>
 
-!<inputoutput>
-
+!<input>
   ! Handle of the memory block
-  integer :: ihandle
+  integer, intent(in) :: ihandle
+!</input>
 
+!<inputoutput>
   ! OPTIONAL: local heap structure.
   ! If not given, the global heap is used.
   type(t_storageBlock), intent(inout), target, optional :: rheap
-
 !</inputoutput>
 
 !</subroutine>
@@ -17018,15 +17042,15 @@ contains
   ! already be associated with some memory block.
 !</description>
 
-!<inputoutput>
-
+!<input>
   ! Handle of the memory block
-  integer :: ihandle
+  integer, intent(in) :: ihandle
+!</input>
 
+!<inputoutput>
   ! OPTIONAL: local heap structure.
   ! If not given, the global heap is used.
   type(t_storageBlock), intent(inout), target, optional :: rheap
-
 !</inputoutput>
 
 !</subroutine>
@@ -17080,24 +17104,20 @@ contains
 !</description>
 
 !<input>
+  ! Handle of the memory block
+  integer, intent(in) :: ihandle
 
   ! Synchronisation identifier (ST_SYNCBLOCK_COPY_H2D,
   ! ST_SYNCBLOCK_COPY_D2H, ST_SYNCBLOCK_ACCUMULATE_D2H,
   ! ST_SYNCBLOCK_ACCUMULATE_H2D). Specifies how to
   ! synchronise the data in host and device memory.
   integer, intent(in) :: csyncBlock
-
 !</input>
 
 !<inputoutput>
-
-  ! Handle of the memory block to be releases
-  integer :: ihandle
-
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   type(t_storageBlock), intent(inout), target, optional :: rheap
-
 !</inputoutput>
 
 !</subroutine>
@@ -17562,15 +17582,15 @@ contains
   ! already be associated with some memory block.
 !</description>
 
-!<inputoutput>
-
+!<input>
   ! Handle of the memory block
-  integer :: ihandle
+  integer, intent(in) :: ihandle
+!</input>
 
+!<inputoutput>
   ! OPTIONAL: local heap structure.
   ! If not given, the global heap is used.
   type(t_storageBlock), intent(inout), target, optional :: rheap
-
 !</inputoutput>
 
 !</subroutine>
@@ -17627,7 +17647,7 @@ contains
 !</description>
 
 !<input>
-  ! Handle of the memory block to be releases
+  ! Handle of the memory block
   integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
