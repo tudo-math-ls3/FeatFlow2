@@ -10028,16 +10028,15 @@ contains
 !</description>
 
 !<input>
+    ! Scalar vector
+    type(t_vectorScalar), intent(in) :: rvector
+
     ! Switch: If TRUE, then memory is allocated on the device and
     ! cleared. If FALSE, then memory is allocated on the device and
     ! the content from the host memory is transferred.
     logical :: bclear
 !</input>
 
-!<inputoutput>
-    ! Scalar vector
-    type(t_vectorScalar), intent(inout) :: rvector
-!</inputoutput>
 !</subroutine>
 
     ! Clear the vector?
@@ -10063,16 +10062,15 @@ contains
 !</description>
 
 !<input>
+    ! Scalar vector
+    type(t_vectorScalar), intent(in) :: rvector
+
     ! Switch: If TRUE, then memory is allocated on the device and
     ! cleared. If FALSE, then memory is allocated on the device and
     ! the content from the host memory is transferred.
     logical :: bclear
 !</input>
 
-!<inputoutput>
-    ! Scalar vector
-    type(t_vectorScalar), intent(inout) :: rvector
-!</inputoutput>
 !</subroutine>
 
     ! Clear the vector?
