@@ -1834,8 +1834,8 @@ contains
     integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
 
 
-    ! Check if block vectors contain only one block.
-
+    ! Check if block vectors contain only one block and no
+    ! user-defined callback function is provided.
     if (.not.present(fcb_calcDivVector) .and.&
         (rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
       call gfsys_buildDivVectorScalar(rafcstab, rx%RvectorBlock(1),&
@@ -1861,8 +1861,7 @@ contains
     ! Check if user-defined assembly is provided
     if (present(fcb_calcDivVector)) then
       ! Call used-defined assembly
-      call fcb_calcDivVector(rafcstab, rx, ry, dscale,&
-          bclear, fcb_calcFlux_sim, rcollection)
+      call fcb_calcDivVector(rafcstab, rx, ry, dscale, bclear, rcollection)
     else
       ! Set pointers
       call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
@@ -2048,9 +2047,6 @@ contains
       call sys_halt()
     end if
 
-    ! Clear vector?
-    if (bclear) call lsyssc_clearVector(ry)
-
     ! Check if user-defined assembly is provided
     if (present(fcb_calcDivVector)) then
       ! Create auxiliary 1-block vectors
@@ -2058,8 +2054,7 @@ contains
       call lsysbl_createVecFromScalar(ry, ryBlock)
 
       ! Call user-defined assembly
-      call fcb_calcDivVector(rafcstab, rxBlock, ryBlock, dscale,&
-          fcb_calcFlux_sim, rcollection)
+      call fcb_calcDivVector(rafcstab, rxBlock, ryBlock, dscale, bclear, rcollection)
 
       ! Release auxiliary 1-block vectors
       call lsysbl_releaseVector(rxBlock)
@@ -2071,6 +2066,9 @@ contains
       call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
       call lsyssc_getbase_double(rx, p_Dx)
       call lsyssc_getbase_double(ry, p_Dy)
+
+      ! Clear vector?
+      if (bclear) call lsyssc_clearVector(ry)
       
       ! Assemble the divergence vector
       call doDivVector(p_IverticesAtEdgeIdx, p_IverticesAtEdge, rafcstab%NEQ,&
