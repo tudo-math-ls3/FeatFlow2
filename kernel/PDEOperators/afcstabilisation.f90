@@ -3661,15 +3661,16 @@ contains
     ! device is available, then an error is thrown.
 !</description>
 
-!<inputoutput>
+!<input>
     ! Stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-!</inputoutput>
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
 !</subroutine>
+
 
     if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemory(rafcstab%h_IverticesAtEdge, ST_SYNCBLOCK_COPY_H2D)
-    
+
   end subroutine afcstab_copyH2D_IverticesAtEdge
 
 !*****************************************************************************
@@ -3684,12 +3685,12 @@ contains
     ! device is available, then an error is thrown.
 !</description>
 
-!<inputoutput>
+!<input>
     ! Stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-!</inputoutput>
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
 !</subroutine>
-  
+
     if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemory(rafcstab%h_IverticesAtEdge, ST_SYNCBLOCK_COPY_D2H)
 
@@ -3708,15 +3709,16 @@ contains
     ! error is thrown.
 !</description>
 
-!<inputoutput>
+!<input>
     ! Stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-!</inputoutput>
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
 !</subroutine>
+
 
     if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge, ST_SYNCBLOCK_COPY_H2D)
-    
+
   end subroutine afcstab_copyH2D_DmatCoeffAtEdge
 
   !*****************************************************************************
@@ -3732,15 +3734,15 @@ contains
     ! error is thrown.
 !</description>
 
-!<inputoutput>
+!<input>
     ! Stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-!</inputoutput>
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
 !</subroutine>
 
     if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge, ST_SYNCBLOCK_COPY_D2H)
-    
+
   end subroutine afcstab_copyD2H_DmatCoeffAtEdge
   
 end module afcstabilisation
