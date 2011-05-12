@@ -21,7 +21,47 @@
 
 
 /*******************************************************************************
- * Create new memory on device
+ * Allocate new memory on host
+ *******************************************************************************
+ */
+int coproc_newMemoryOnHost(unsigned long * p_MemoryBlock,
+			   unsigned long * imemBytes)
+{
+  void * d_MemoryBlock = 0;
+
+  cudaHostAlloc((void**)&d_MemoryBlock, *imemBytes, cudaHostAllocDefault);
+  *p_MemoryBlock = (unsigned long) d_MemoryBlock;
+  coproc_checkErrors("coproc_newMemoryOnHost");
+  return 0;
+}
+
+int FNAME(coproc_newmemoryonhost)(unsigned long * p_MemoryBlock,
+				  unsigned long * imemBytes)
+{
+  return coproc_newMemoryOnHost(p_MemoryBlock, imemBytes);
+}
+
+/*******************************************************************************
+ * Free existing memory on host
+ *******************************************************************************
+ */
+int coproc_freeMemoryOnHost(unsigned long * p_MemoryBlock)
+{
+  void * d_MemoryBlock = (void*)(*p_MemoryBlock);
+
+  cudaFreeHost(d_MemoryBlock);
+  *p_MemoryBlock = 0;
+  coproc_checkErrors("coproc_freeMemoryOnHost");
+  return 0;
+}
+
+int FNAME(coproc_freememoryonhost)(unsigned long * p_MemoryBlock)
+{
+  return coproc_freeMemoryOnHost(p_MemoryBlock);
+}
+
+/*******************************************************************************
+ * Allocate new memory on device
  *******************************************************************************
  */
 int coproc_newMemoryOnDevice(unsigned long * p_MemoryBlock,
@@ -161,28 +201,95 @@ int FNAME(coproc_copymemorydevicetodevice)(unsigned long * p_MemoryBlockSrc,
 }
 
 /*******************************************************************************
- * Add two memory blocks in device memory
+ * Add two float memory blocks in device memory
  *******************************************************************************
  */
-int coproc_addMemoryOnDevice(unsigned long * p_MemoryBlock1,
-			     unsigned long * p_MemoryBlock2,
-			     unsigned long * p_MemoryBlockDest,
-			     unsigned long * imemBytes)
+
+__global__ void addFloatOnDevice_knl(float * d_MemoryBlock1,
+				     float * d_MemoryBlock2,
+				     float * d_MemoryBlockDest,
+				     int imemSize)
 {
-  void * d_MemoryBlock1    = (void*)(*p_MemoryBlock1);
-  void * d_MemoryBlock2    = (void*)(*p_MemoryBlock2);
-  void * d_MemoryBlockDest = (void*)(*p_MemoryBlockDest);
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-  // Here, we need to write a CUDA kernel.
+  if (idx<imemSize)
+  {
+    d_MemoryBlockDest[idx] = d_MemoryBlock1[idx] + d_MemoryBlock2[idx];
+  }
+}
 
+int coproc_addFloatOnDevice(unsigned long * p_MemoryBlock1,
+			    unsigned long * p_MemoryBlock2,
+			    unsigned long * p_MemoryBlockDest,
+			    unsigned long * imemSize)
+{
+  float * d_MemoryBlock1    = (float*)(*p_MemoryBlock1);
+  float * d_MemoryBlock2    = (float*)(*p_MemoryBlock2);
+  float * d_MemoryBlockDest = (float*)(*p_MemoryBlockDest);
+
+  int blocksize = 128;
+  dim3 grid;
+  dim3 block;
+  block.x = blocksize;
+  grid.x = (unsigned)ceil((*imemSize)/(double)(block.x));
+  addFloatOnDevice_knl<<<grid, block>>>(d_MemoryBlock1,	d_MemoryBlock2,
+					d_MemoryBlockDest, *imemSize);
   return 0;
 }
 
-int FNAME(coproc_addmemoryondevice)(unsigned long * p_MemoryBlock1,
+int FNAME(coproc_addfloatondevice)(unsigned long * p_MemoryBlock1,
+				   unsigned long * p_MemoryBlock2,
+				   unsigned long * p_MemoryBlockDest,
+				   unsigned long * imemSize)
+{
+  return coproc_addFloatOnDevice(p_MemoryBlock1, p_MemoryBlock2,
+				 p_MemoryBlockDest, imemSize);
+}
+
+/*******************************************************************************
+ * Add two double memory blocks in device memory
+ *******************************************************************************
+ */
+
+__global__ void addDoubleOnDevice_knl(double * d_MemoryBlock1,
+				      double * d_MemoryBlock2,
+				      double * d_MemoryBlockDest,
+				      int imemSize)
+{
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (idx<imemSize)
+  {
+    d_MemoryBlockDest[idx] = d_MemoryBlock1[idx] + d_MemoryBlock2[idx];
+  }
+}
+
+int coproc_addDoubleOnDevice(unsigned long * p_MemoryBlock1,
+			     unsigned long * p_MemoryBlock2,
+			     unsigned long * p_MemoryBlockDest,
+			     unsigned long * imemSize)
+{
+  double * d_MemoryBlock1    = (double*)(*p_MemoryBlock1);
+  double * d_MemoryBlock2    = (double*)(*p_MemoryBlock2);
+  double * d_MemoryBlockDest = (double*)(*p_MemoryBlockDest);
+  
+  int blocksize = 128;
+  dim3 grid;
+  dim3 block;
+  block.x = blocksize;
+  grid.x = (unsigned)ceil((*imemSize)/(double)(block.x));
+  addDoubleOnDevice_knl<<<grid, block>>>(d_MemoryBlock1, d_MemoryBlock2,
+					 d_MemoryBlockDest, *imemSize);
+  
+  return 0;
+}
+
+int FNAME(coproc_adddoubleondevice)(unsigned long * p_MemoryBlock1,
 				    unsigned long * p_MemoryBlock2,
 				    unsigned long * p_MemoryBlockDest,
-				    unsigned long * imemBytes)
+				    unsigned long * imemSize)
 {
-  return coproc_addMemoryOnDevice(p_MemoryBlock1, p_MemoryBlock2,
-				  p_MemoryBlockDest, imemBytes);
+  return coproc_addDoubleOnDevice(p_MemoryBlock1, p_MemoryBlock2,
+				  p_MemoryBlockDest, imemSize);
 }
+

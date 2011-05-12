@@ -15,6 +15,14 @@
 
 extern "C"
 {
+  int coproc_newMemoryOnHost(unsigned long * p_MemoryBlock,
+			     unsigned long * imemBytes);
+  int FNAME(coproc_newmemoryonhost)(unsigned long * p_MemoryBlock,
+				    unsigned long * imemBytes);
+
+  int coproc_freeMemoryOnHost(unsigned long * p_MemoryBlock);
+  int FNAME(coproc_freememoryonhost)(unsigned long * p_MemoryBlock);
+
   int coproc_newMemoryOnDevice(unsigned long * p_MemoryBlock,
 			       unsigned long * imemBytes);
   int FNAME(coproc_newmemoryondevice)(unsigned long * p_MemoryBlock,
@@ -49,11 +57,20 @@ extern "C"
 					     unsigned long * p_MemoryBlockDest,
 					     unsigned long * imemBytes);
 
-  int coproc_addMemoryOnDevice(unsigned long * p_MemoryBlock1,
+  int coproc_addFloatOnDevice(unsigned long * p_MemoryBlock1,
 			       unsigned long * p_MemoryBlock2,
 			       unsigned long * p_MemoryBlockDest,
 			       unsigned long * imemBytes);
-  int FNAME(coproc_addmemoryondevice)(unsigned long * p_MemoryBlock1,
+  int FNAME(coproc_addfloatondevice)(unsigned long * p_MemoryBlock1,
+				      unsigned long * p_MemoryBlock2,
+				      unsigned long * p_MemoryBlockDest,
+				      unsigned long * imemBytes);
+
+  int coproc_addDoubleOnDevice(unsigned long * p_MemoryBlock1,
+			       unsigned long * p_MemoryBlock2,
+			       unsigned long * p_MemoryBlockDest,
+			       unsigned long * imemBytes);
+  int FNAME(coproc_adddoubleondevice)(unsigned long * p_MemoryBlock1,
 				      unsigned long * p_MemoryBlock2,
 				      unsigned long * p_MemoryBlockDest,
 				      unsigned long * imemBytes);
