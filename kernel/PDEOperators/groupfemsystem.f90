@@ -795,7 +795,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildDivOperatorBlock(rafcstab, rx,&
-      fcb_calcMatrixDiagonal_sim, fcb_calcMatrix_sim, dscale,&
+      fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, dscale,&
       bclear, rdivMatrix, rcollection)
 
 !<description>
@@ -842,7 +842,8 @@ contains
     logical, intent(in) :: bclear
 
     ! Callback functions to compute local matrices
-    include 'intf_gfsyscallback.inc'
+    include 'intf_calcMatrixDiagSys_sim.inc'
+    include 'intf_calcMatrixSys_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -858,7 +859,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_array), dimension(rx%nblocks,rx%nblocks)  :: rarray
+    type(t_array), dimension(:,:), allocatable  :: rarray
     real(DP), dimension(:), pointer :: p_Dx
     real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
     real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
@@ -873,7 +874,7 @@ contains
         (rdivMatrix%nblocksPerCol .eq. 1) .and.&
         (rdivMatrix%nblocksPerRow .eq. 1)) then
       call gfsys_buildDivOperatorScalar(rafcstab, rx%RvectorBlock(1),&
-          fcb_calcMatrixDiagonal_sim, fcb_calcMatrix_sim,&
+          fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
           dscale, bclear, rdivMatrix%RmatrixBlock(1,1), rcollection)
       return
     end if
@@ -900,6 +901,9 @@ contains
       call sys_halt()
     end if
 
+    ! Allocate temporal memory
+    allocate(rarray(rx%nblocks,rx%nblocks))
+    
     ! Set pointers
     call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -942,6 +946,9 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
       call sys_halt()
     end select
+
+    ! Deallocate temporal memory
+    deallocate(rarray)
 
   contains
 
@@ -1021,7 +1028,7 @@ contains
         end do
 
         ! Use callback function to compute diagonal entries
-        call fcb_calcMatrixDiagonal_sim(&
+        call fcb_calcMatrixDiagSys_sim(&
             DdataAtNode(:,1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
             IverticesAtNode(:,1:IEQmax-IEQset+1),&
@@ -1104,7 +1111,7 @@ contains
           end do
           
           ! Use callback function to compute off-diagonal entries
-          call fcb_calcMatrix_sim(&
+          call fcb_calcMatrixSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IverticesAtEdge(:,IEDGEset:IEDGEmax),&
@@ -1255,7 +1262,7 @@ contains
         end do
 
         ! Use callback function to compute diagonal entries
-        call fcb_calcMatrixDiagonal_sim(&
+        call fcb_calcMatrixDiagSys_sim(&
             DdataAtNode(:,1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
             IverticesAtNode(:,1:IEQmax-IEQset+1),&
@@ -1344,7 +1351,7 @@ contains
           end do
           
           ! Use callback function to compute off-diagonal entries
-          call fcb_calcMatrix_sim(&
+          call fcb_calcMatrixSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IverticesAtEdge(:,IEDGEset:IEDGEmax),&
@@ -1433,7 +1440,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildDivOperatorScalar(rafcstab, rx,&
-      fcb_calcMatrixDiagonal_sim, fcb_calcMatrix_sim, dscale,&
+      fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, dscale,&
       bclear, rdivMatrix, rcollection)
 
 !<description>
@@ -1477,7 +1484,8 @@ contains
     logical, intent(in) :: bclear
 
     ! Callback functions to compute local matrices
-    include 'intf_gfsyscallback.inc'
+    include 'intf_calcMatrixDiagSys_sim.inc'
+    include 'intf_calcMatrixSys_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -1641,7 +1649,7 @@ contains
         end do
 
         ! Use callback function to compute diagonal entries
-        call fcb_calcMatrixDiagonal_sim(&
+        call fcb_calcMatrixDiagSys_sim(&
             DdataAtNode(:,1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
             IverticesAtNode(:,1:IEQmax-IEQset+1),&
@@ -1719,7 +1727,7 @@ contains
           end do
           
           ! Use callback function to compute off-diagonal entries
-          call fcb_calcMatrix_sim(&
+          call fcb_calcMatrixSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IverticesAtEdge(:,IEDGEset:IEDGEmax),&
@@ -1789,8 +1797,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildDivVectorBlock(rafcstab, rx,&
-      fcb_calcFlux_sim, dscale, bclear, ry, rcollection, fcb_calcDivVector)
+  subroutine gfsys_buildDivVectorBlock(rafcstab, rx, fcb_calcFlux_sim,&
+      dscale, bclear, ry, rcollection, fcb_calcDivVector)
 
 !<description>
     ! This subroutine assembles the divergence vector for block vectors.
@@ -1810,8 +1818,11 @@ contains
     ! FLASE : assemble vector in an additive way
     logical, intent(in) :: bclear
 
-    ! callback functions to compute local fluxes
-    include 'intf_gfsyscallback.inc'
+    ! callback function to compute local fluxes
+    include 'intf_calcFlux_sim.inc'
+
+    ! callback  function to overwrite the standard operation
+    include 'intf_calcDivVector.inc'
     optional :: fcb_calcDivVector
 !</input>
 
@@ -1986,8 +1997,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildDivVectorScalar(rafcstab, rx,&
-      fcb_calcFlux_sim, dscale, bclear, ry, rcollection, fcb_calcDivVector)
+  subroutine gfsys_buildDivVectorScalar(rafcstab, rx, fcb_calcFlux_sim,&
+      dscale, bclear, ry, rcollection, fcb_calcDivVector)
 
 !<description>
     ! This subroutine assembles the divergence vector. Note that the
@@ -2008,7 +2019,10 @@ contains
     logical, intent(in) :: bclear
 
     ! callback functions to compute local fluxes
-    include 'intf_gfsyscallback.inc'
+    include 'intf_calcFlux_sim.inc'
+
+    ! callback function to overwrite the standard operation
+    include 'intf_calcDivVector.inc'
     optional :: fcb_calcDivVector
 !</input>
 
@@ -2206,8 +2220,11 @@ contains
     ! FLASE : assemble vector in an additive way
     logical, intent(in) :: bclear
 
-    ! callback functions to compute local matrices
-    include 'intf_gfsyscallback.inc'
+    ! callback function to compute local fluxes
+    include 'intf_calcFlux_sim.inc'
+
+    ! callback function to compute local characteristics
+    include 'intf_calcCharacteristics_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -3398,8 +3415,11 @@ contains
     ! FLASE : assemble vector in an additive way
     logical, intent(in) :: bclear
 
-    ! callback functions to compute local matrices
-    include 'intf_gfsyscallback.inc'
+    ! callback function to compute local fluxes
+    include 'intf_calcFlux_sim.inc'
+
+    ! callback function to compute local characteristics
+    include 'intf_calcCharacteristics_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -4597,17 +4617,29 @@ contains
     integer, intent(in), optional :: NVARtransformed
     
     ! OPTIONAL: callback function to compute variable transformation
-    include 'intf_gfsyscallback.inc'
+    include 'intf_calcFluxTransformation_sim.inc'
     optional :: fcb_calcFluxTransformation_sim
+
+    include 'intf_calcDiffTransformation_sim.inc'
     optional :: fcb_calcDiffTransformation_sim
+
+    include 'intf_calcNodalTransformation_sim.inc'
     optional :: fcb_calcNodalTransformation_sim
 
     ! OPTIONAL: callback functions to overwrite the standard operations
-    include 'intf_groupfemcallback.inc'
+    include 'intf_calcADIncrements.inc'
     optional :: fcb_calcADIncrements
+
+    include 'intf_calcBounds.inc'
     optional :: fcb_calcBounds
+
+    include 'intf_limitNodal.inc'
     optional :: fcb_limitNodal
+
+    include 'intf_limitEdgewise.inc'
     optional :: fcb_limitEdgewise
+
+    include 'intf_calcCorrection.inc'
     optional :: fcb_calcCorrection
 !</input>
 
@@ -6277,17 +6309,29 @@ contains
     integer, intent(in), optional :: NVARtransformed
 
     ! OPTIONAL: callback function to compute variable transformation
-    include 'intf_gfsyscallback.inc'
+    include 'intf_calcFluxTransformation_sim.inc'
     optional :: fcb_calcFluxTransformation_sim
+
+    include 'intf_calcDiffTransformation_sim.inc'
     optional :: fcb_calcDiffTransformation_sim
+
+    include 'intf_calcNodalTransformation_sim.inc'
     optional :: fcb_calcNodalTransformation_sim
 
     ! OPTIONAL: callback functions to overwrite the standard operations
-    include 'intf_groupfemcallback.inc'
+    include 'intf_calcADIncrements.inc'
     optional :: fcb_calcADIncrements
+
+    include 'intf_calcBounds.inc'
     optional :: fcb_calcBounds
+
+    include 'intf_limitNodal.inc'
     optional :: fcb_limitNodal
+
+    include 'intf_limitEdgewise.inc'
     optional :: fcb_limitEdgewise
+
+    include 'intf_calcCorrection.inc'
     optional :: fcb_calcCorrection
 !</input>
 
@@ -7883,7 +7927,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildFluxFCTBlock(rafcstab, rx, fcb_calcFlux2_sim,&
+  subroutine gfsys_buildFluxFCTBlock(rafcstab, rx, fcb_calcFluxFCT_sim,&
       theta, tstep, dscale, binit, rmatrix, ry, rcollection)
 
 !<description>
@@ -7911,7 +7955,7 @@ contains
     logical, intent(in) :: binit
 
     ! callback functions to compute antidiffusive fluxes
-    include 'intf_gfsyscallback.inc'
+    include 'intf_calcFluxFCT_sim.inc'
 
     ! OPTIONAL: mass matrix
     type(t_matrixScalar), intent(in), optional :: rmatrix
@@ -7940,11 +7984,11 @@ contains
     if (rx%nblocks .eq. 1) then
       if (present(ry)) then
         call gfsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-            fcb_calcFlux2_sim, theta, tstep, dscale, binit,&
+            fcb_calcFluxFCT_sim, theta, tstep, dscale, binit,&
             rmatrix, ry%RvectorBlock(1), rcollection)
       else
         call gfsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-            fcb_calcFlux2_sim, theta, tstep, dscale, binit,&
+            fcb_calcFluxFCT_sim, theta, tstep, dscale, binit,&
             rmatrix, rcollection=rcollection)
       end if
       return
@@ -8256,7 +8300,7 @@ contains
         end do
 
         ! Use callback function to compute internodal fluxes
-        call fcb_calcFlux2_sim(&
+        call fcb_calcFluxFCT_sim(&
             DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&
@@ -8336,7 +8380,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildFluxFCTScalar(rafcstab, rx, fcb_calcFlux2_sim,&
+  subroutine gfsys_buildFluxFCTScalar(rafcstab, rx, fcb_calcFluxFCT_sim,&
       theta, tstep, dscale, binit, rmatrix, ry, rcollection)
 
 !<description>
@@ -8364,7 +8408,7 @@ contains
     logical, intent(in) :: binit
 
     ! callback functions to compute antidiffusive fluxes
-    include 'intf_gfsyscallback.inc'
+    include 'intf_calcFluxFCT_sim.inc'
 
     ! OPTIONAL: mass matrix
     type(t_matrixScalar), intent(in), optional :: rmatrix
@@ -8696,7 +8740,7 @@ contains
         end do
 
         ! Use callback function to compute internodal fluxes
-        call fcb_calcFlux2_sim(&
+        call fcb_calcFluxFCT_sim(&
             DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
             DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
             IverticesAtEdge(:,IEDGEset:IEDGEmax),&

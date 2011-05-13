@@ -526,16 +526,17 @@ module afcstabilisation
   ! necessary to address the content of multiple scalar submatrices
   ! simultaneously. 
 
+
   type t_array
 
     ! Type of data associated to the handle ST_DOUBLE, ST_SINGLE)
     integer :: idataType = 0
 
     ! Pointer to the double-valued matrix data
-    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(:), pointer :: p_Ddata => null()
 
     ! Pointer to the single-valued matrix data
-    real(SP), dimension(:), pointer :: p_Fdata
+    real(SP), dimension(:), pointer :: p_Fdata => null()
 
   end type t_array
 !</typeblock>
@@ -2978,7 +2979,7 @@ contains
     integer, intent(in) :: nsteps
 
     ! callback function to extract variables
-    include 'intf_afcstabcallback.inc'
+    include 'intf_extractVariableBlock.inc'
 !</input>
 
 !<inputoutput>
@@ -3129,7 +3130,7 @@ contains
     integer, intent(in) :: nsteps
 
     ! callback function to extract variables
-    include 'intf_afcstabcallback.inc'
+    include 'intf_extractVariableArray.inc'
 !</input>
 
 !<inputoutput>

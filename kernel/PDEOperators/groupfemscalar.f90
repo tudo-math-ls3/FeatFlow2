@@ -596,7 +596,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvOperatorBlock(rafcstab, rx,&
-      fcb_calcMatrixDiagonal_sim, fcb_calcMatrix_sim, dscale,&
+      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
       bbuildStabilisation, bclear, rconvMatrix, rcollection)
     
 !<description>
@@ -634,7 +634,8 @@ contains
     logical, intent(in) :: bclear
 
     ! Callback functions to compute matrix entries
-    include 'intf_gfsccallback.inc'
+    include 'intf_calcMatrixDiagSc_sim.inc'
+    include 'intf_calcMatrixSc_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -659,7 +660,7 @@ contains
     else
       
       call gfsc_buildConvOperatorScalar(rafcstab, rx%RvectorBlock(1),&
-          fcb_calcMatrixDiagonal_sim, fcb_calcMatrix_sim, dscale,&
+          fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
           bbuildStabilisation, bclear, rconvMatrix, rcollection)
 
     end if
@@ -671,7 +672,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvOperatorScalar(rafcstab, rx,&
-      fcb_calcMatrixDiagonal_sim, fcb_calcMatrix_sim, dscale,&
+      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
       bbuildStabilisation, bclear, rconvMatrix, rcollection)
 
 !<description>
@@ -733,7 +734,8 @@ contains
     logical, intent(in) :: bclear
 
     ! Callback functions to compute matrix entries
-    include 'intf_gfsccallback.inc'
+    include 'intf_calcMatrixDiagSc_sim.inc'
+    include 'intf_calcMatrixSc_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -920,7 +922,7 @@ contains
         end do
 
         ! Use callback function to compute diagonal entries
-        call fcb_calcMatrixDiagonal_sim(&
+        call fcb_calcMatrixDiagSc_sim(&
             DdataAtNode(1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
             IverticesAtNode(:,1:IEQmax-IEQset+1),&
@@ -998,7 +1000,7 @@ contains
           end do
           
           ! Use callback function to compute off-diagonal entries
-          call fcb_calcMatrix_sim(&
+          call fcb_calcMatrixSc_sim(&
               DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IverticesAtEdge(:,IEDGEset:IEDGEmax),&
@@ -1137,7 +1139,7 @@ contains
         end do
 
         ! Use callback function to compute diagonal entries
-        call fcb_calcMatrixDiagonal_sim(&
+        call fcb_calcMatrixDiagSc_sim(&
             DdataAtNode(1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
             IverticesAtNode(:,1:IEQmax-IEQset+1),&
@@ -1217,7 +1219,7 @@ contains
           end do
           
           ! Use callback function to compute off-diagonal entries
-          call fcb_calcMatrix_sim(&
+          call fcb_calcMatrixSc_sim(&
               DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IverticesAtEdge(:,IEDGEset:IEDGEmax),&
@@ -3502,7 +3504,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, rx, fcb_calcMatrix_sim,&
+  subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, rx, fcb_calcMatrixSc_sim,&
       hstep, dscale, bbuildStabilisation, bclear, rjacobianMatrix, rcollection)
 
 !<description>
@@ -3537,7 +3539,7 @@ contains
     logical, intent(in) :: bclear
 
     ! callback functions to compute velocity
-    include 'intf_gfsccallback.inc'
+    include 'intf_calcMatrixSc_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -3559,7 +3561,7 @@ contains
     else
       
       call gfsc_buildConvJacobianScalar(&
-          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrix_sim, hstep,&
+          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrixSc_sim, hstep,&
           dscale, bbuildStabilisation, bclear, rjacobianMatrix, rcollection)
       
     end if
@@ -3570,7 +3572,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, rx, fcb_calcMatrix_sim,&
+  subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, rx, fcb_calcMatrixSc_sim,&
       hstep, dscale, bbuildStabilisation, bclear, rjacobianMatrix, rcollection)
 
 !<description>
@@ -3602,7 +3604,7 @@ contains
     logical, intent(in) :: bclear
 
     ! callback functions to compute velocity
-    include 'intf_gfsccallback.inc'
+    include 'intf_calcMatrixSc_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -7066,7 +7068,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianFCTBlock(RcoeffMatrices, rx,&
-      fcb_calcMatrix_sim, theta, tstep, hstep, bclear, rafcstab,&
+      fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
       rjacobianMatrix, rconsistentMassMatrix, rcollection)
 
 !<description>
@@ -7101,7 +7103,7 @@ contains
     logical, intent(in) :: bclear
 
     ! callback functions to compute velocity
-    include 'intf_gfsccallback.inc'
+    include 'intf_calcMatrixSc_sim.inc'
 
     ! OPTIONAL: consistent mass matrix
     type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
@@ -7128,7 +7130,7 @@ contains
     else
 
       call gfsc_buildJacobianFCTScalar(&
-          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrix_sim,&
+          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrixSc_sim,&
           theta, tstep, hstep, bclear, rafcstab, rjacobianMatrix,&
           rconsistentMassMatrix, rcollection)
 
@@ -7140,7 +7142,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianFCTScalar(RcoeffMatrices, rx,&
-      fcb_calcMatrix_sim, theta, tstep, hstep, bclear, rafcstab,&
+      fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
       rjacobianMatrix, rconsistentMassMatrix, rcollection)
 
 !<description>
@@ -7174,7 +7176,7 @@ contains
     logical, intent(in) :: bclear
     
     ! callback functions to compute velocity
-    include 'intf_gfsccallback.inc'
+    include 'intf_calcMatrixSc_sim.inc'
     
     ! OPTIONAL: consistent mass matrix
     type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
@@ -8201,7 +8203,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianTVDBlock(RcoeffMatrices, rx,&
-      fcb_calcMatrix_sim, tstep, hstep, bclear, rafcstab,&
+      fcb_calcMatrixSc_sim, tstep, hstep, bclear, rafcstab,&
       rjacobianMatrix, bextendedSparsity, rcollection)
 
 !<description>
@@ -8238,7 +8240,7 @@ contains
     logical, intent(in), optional :: bextendedSparsity
     
     ! callback functions to compute velocity
-    include 'intf_gfsccallback.inc'
+    include 'intf_calcMatrixSc_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -8262,7 +8264,7 @@ contains
     else
 
       call gfsc_buildJacobianTVDScalar(&
-          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrix_sim,&
+          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrixSc_sim,&
           tstep, hstep, bclear, rafcstab, rjacobianMatrix,&
           bextendedSparsity, rcollection)
 
@@ -8274,7 +8276,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianTVDScalar(RcoeffMatrices, rx,&
-      fcb_calcMatrix_sim, tstep, hstep, bclear, rafcstab,&
+      fcb_calcMatrixSc_sim, tstep, hstep, bclear, rafcstab,&
       rjacobianMatrix, bextendedSparsity, rcollection)
 
 !<description>
@@ -8309,7 +8311,7 @@ contains
     logical, intent(in), optional :: bextendedSparsity
     
     ! callback functions to compute velocity
-    include 'intf_gfsccallback.inc'
+    include 'intf_calcMatrixSc_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -9287,7 +9289,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianGPBlock(RcoeffMatrices, rconsistentMassMatrix,&
-      rx, rx0, fcb_calcMatrix_sim, theta, tstep, hstep, bclear, rafcstab,&
+      rx, rx0, fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
       rjacobianMatrix, bextendedSparsity, rcollection)
 
 !<description>
@@ -9333,7 +9335,7 @@ contains
     logical, intent(in), optional :: bextendedSparsity
 
      ! callback functions to compute velocity
-    include 'intf_gfsccallback.inc'
+    include 'intf_calcMatrixSc_sim.inc'
 !</input>
 
 !<inputoutput>
@@ -9359,7 +9361,7 @@ contains
       
       call gfsc_buildJacobianGPScalar(&
           RcoeffMatrices, rconsistentMassMatrix, rx%RvectorBlock(1),&
-          rx0%RvectorBlock(1), fcb_calcMatrix_sim, theta, tstep, hstep,&
+          rx0%RvectorBlock(1), fcb_calcMatrixSc_sim, theta, tstep, hstep,&
           bclear, rafcstab, rjacobianMatrix,bextendedSparsity, rcollection)
 
     end if
@@ -9370,7 +9372,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianGPScalar(RcoeffMatrices, rconsistentMassMatrix,&
-      rx, rx0, fcb_calcMatrix_sim, theta, tstep, hstep, bclear, rafcstab,&
+      rx, rx0, fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
       rjacobianMatrix, bextendedSparsity, rcollection)
 
 !<description>
@@ -9414,7 +9416,7 @@ contains
     logical, intent(in), optional :: bextendedSparsity
 
     ! callback functions to compute velocity
-    include 'intf_gfsccallback.inc'
+    include 'intf_calcMatrixSc_sim.inc'
 !</input>
 
 !<inputoutput>
