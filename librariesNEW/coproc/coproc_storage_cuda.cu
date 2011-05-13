@@ -201,14 +201,14 @@ int FNAME(coproc_copymemorydevicetodevice)(unsigned long * p_MemoryBlockSrc,
 }
 
 /*******************************************************************************
- * Add two float memory blocks in device memory
+ * Add two real memory blocks in device memory
  *******************************************************************************
  */
 
-__global__ void addFloatOnDevice_knl(float * d_MemoryBlock1,
-				     float * d_MemoryBlock2,
-				     float * d_MemoryBlockDest,
-				     int imemSize)
+__global__ void addSingleOnDevice_knl(float * d_MemoryBlock1,
+				      float * d_MemoryBlock2,
+				      float * d_MemoryBlockDest,
+				      int imemSize)
 {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -218,10 +218,10 @@ __global__ void addFloatOnDevice_knl(float * d_MemoryBlock1,
   }
 }
 
-int coproc_addFloatOnDevice(unsigned long * p_MemoryBlock1,
-			    unsigned long * p_MemoryBlock2,
-			    unsigned long * p_MemoryBlockDest,
-			    unsigned long * imemSize)
+int coproc_addSingleOnDevice(unsigned long * p_MemoryBlock1,
+			     unsigned long * p_MemoryBlock2,
+			     unsigned long * p_MemoryBlockDest,
+			     unsigned long * imemSize)
 {
   float * d_MemoryBlock1    = (float*)(*p_MemoryBlock1);
   float * d_MemoryBlock2    = (float*)(*p_MemoryBlock2);
@@ -231,19 +231,19 @@ int coproc_addFloatOnDevice(unsigned long * p_MemoryBlock1,
   dim3 grid;
   dim3 block;
   block.x = blocksize;
-  grid.x = (unsigned)ceil((*imemSize)/(double)(block.x));
-  addFloatOnDevice_knl<<<grid, block>>>(d_MemoryBlock1,	d_MemoryBlock2,
-					d_MemoryBlockDest, *imemSize);
+  grid.x = (unsigned)ceil((*imemSize)/(float)(block.x));
+  addSingleOnDevice_knl<<<grid, block>>>(d_MemoryBlock1, d_MemoryBlock2,
+					 d_MemoryBlockDest, *imemSize);
   return 0;
 }
 
-int FNAME(coproc_addfloatondevice)(unsigned long * p_MemoryBlock1,
-				   unsigned long * p_MemoryBlock2,
-				   unsigned long * p_MemoryBlockDest,
-				   unsigned long * imemSize)
+int FNAME(coproc_addsingleondevice)(unsigned long * p_MemoryBlock1,
+				    unsigned long * p_MemoryBlock2,
+				    unsigned long * p_MemoryBlockDest,
+				    unsigned long * imemSize)
 {
-  return coproc_addFloatOnDevice(p_MemoryBlock1, p_MemoryBlock2,
-				 p_MemoryBlockDest, imemSize);
+  return coproc_addSingleOnDevice(p_MemoryBlock1, p_MemoryBlock2,
+				  p_MemoryBlockDest, imemSize);
 }
 
 /*******************************************************************************
@@ -279,8 +279,7 @@ int coproc_addDoubleOnDevice(unsigned long * p_MemoryBlock1,
   block.x = blocksize;
   grid.x = (unsigned)ceil((*imemSize)/(double)(block.x));
   addDoubleOnDevice_knl<<<grid, block>>>(d_MemoryBlock1, d_MemoryBlock2,
-					 d_MemoryBlockDest, *imemSize);
-  
+					 d_MemoryBlockDest, *imemSize); 
   return 0;
 }
 
@@ -293,3 +292,94 @@ int FNAME(coproc_adddoubleondevice)(unsigned long * p_MemoryBlock1,
 				  p_MemoryBlockDest, imemSize);
 }
 
+/*******************************************************************************
+ * Add two integer memory blocks in device memory
+ *******************************************************************************
+ */
+
+__global__ void addIntegerOnDevice_knl(int * d_MemoryBlock1,
+				       int * d_MemoryBlock2,
+				       int * d_MemoryBlockDest,
+				       int imemSize)
+{
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (idx<imemSize)
+  {
+    d_MemoryBlockDest[idx] = d_MemoryBlock1[idx] + d_MemoryBlock2[idx];
+  }
+}
+
+int coproc_addIntegerOnDevice(unsigned long * p_MemoryBlock1,
+			      unsigned long * p_MemoryBlock2,
+			      unsigned long * p_MemoryBlockDest,
+			      unsigned long * imemSize)
+{
+  int * d_MemoryBlock1    = (int*)(*p_MemoryBlock1);
+  int * d_MemoryBlock2    = (int*)(*p_MemoryBlock2);
+  int * d_MemoryBlockDest = (int*)(*p_MemoryBlockDest);
+  
+  int blocksize = 128;
+  dim3 grid;
+  dim3 block;
+  block.x = blocksize;
+  grid.x = (unsigned)ceil((*imemSize)/(int)(block.x));
+  addIntegerOnDevice_knl<<<grid, block>>>(d_MemoryBlock1, d_MemoryBlock2,
+					  d_MemoryBlockDest, *imemSize);
+  return 0;
+}
+
+int FNAME(coproc_addintegerondevice)(unsigned long * p_MemoryBlock1,
+				     unsigned long * p_MemoryBlock2,
+				     unsigned long * p_MemoryBlockDest,
+				     unsigned long * imemSize)
+{
+  return coproc_addIntegerOnDevice(p_MemoryBlock1, p_MemoryBlock2,
+				   p_MemoryBlockDest, imemSize);
+}
+
+/*******************************************************************************
+ * Add two logical memory blocks in device memory
+ *******************************************************************************
+ */
+
+__global__ void addLogicalOnDevice_knl(int * d_MemoryBlock1,
+				       int * d_MemoryBlock2,
+				       int * d_MemoryBlockDest,
+				       int imemSize)
+{
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (idx<imemSize)
+  {
+    d_MemoryBlockDest[idx] = d_MemoryBlock1[idx] || d_MemoryBlock2[idx];
+  }
+}
+
+int coproc_addLogicalOnDevice(unsigned long * p_MemoryBlock1,
+			      unsigned long * p_MemoryBlock2,
+			      unsigned long * p_MemoryBlockDest,
+			      unsigned long * imemSize)
+{
+  int * d_MemoryBlock1    = (int*)(*p_MemoryBlock1);
+  int * d_MemoryBlock2    = (int*)(*p_MemoryBlock2);
+  int * d_MemoryBlockDest = (int*)(*p_MemoryBlockDest);
+  
+  int blocksize = 128;
+  dim3 grid;
+  dim3 block;
+  block.x = blocksize;
+  grid.x = (unsigned)ceil((*imemSize)/(int)(block.x));
+  addLogicalOnDevice_knl<<<grid, block>>>(d_MemoryBlock1, d_MemoryBlock2,
+					  d_MemoryBlockDest, *imemSize);
+  return 0;
+}
+
+int FNAME(coproc_addlogicalondevice)(unsigned long * p_MemoryBlock1,
+				     unsigned long * p_MemoryBlock2,
+				     unsigned long * p_MemoryBlockDest,
+				     unsigned long * imemSize)
+{
+  return coproc_addLogicalOnDevice(p_MemoryBlock1, p_MemoryBlock2,
+				   p_MemoryBlockDest, imemSize);
+}

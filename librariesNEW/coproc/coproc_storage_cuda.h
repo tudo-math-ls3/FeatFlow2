@@ -57,11 +57,11 @@ extern "C"
 					     unsigned long * p_MemoryBlockDest,
 					     unsigned long * imemBytes);
 
-  int coproc_addFloatOnDevice(unsigned long * p_MemoryBlock1,
+  int coproc_addsingleOnDevice(unsigned long * p_MemoryBlock1,
 			       unsigned long * p_MemoryBlock2,
 			       unsigned long * p_MemoryBlockDest,
 			       unsigned long * imemBytes);
-  int FNAME(coproc_addfloatondevice)(unsigned long * p_MemoryBlock1,
+  int FNAME(coproc_addsingleondevice)(unsigned long * p_MemoryBlock1,
 				      unsigned long * p_MemoryBlock2,
 				      unsigned long * p_MemoryBlockDest,
 				      unsigned long * imemBytes);
@@ -74,6 +74,24 @@ extern "C"
 				      unsigned long * p_MemoryBlock2,
 				      unsigned long * p_MemoryBlockDest,
 				      unsigned long * imemBytes);
+
+  int coproc_addIntegerOnDevice(unsigned long * p_MemoryBlock1,
+				unsigned long * p_MemoryBlock2,
+				unsigned long * p_MemoryBlockDest,
+				unsigned long * imemBytes);
+  int FNAME(coproc_addintegerondevice)(unsigned long * p_MemoryBlock1,
+				       unsigned long * p_MemoryBlock2,
+				       unsigned long * p_MemoryBlockDest,
+				       unsigned long * imemBytes);
+
+  int coproc_addLogicalOnDevice(unsigned long * p_MemoryBlock1,
+				unsigned long * p_MemoryBlock2,
+				unsigned long * p_MemoryBlockDest,
+				unsigned long * imemBytes);
+  int FNAME(coproc_addlogicalondevice)(unsigned long * p_MemoryBlock1,
+				       unsigned long * p_MemoryBlock2,
+				       unsigned long * p_MemoryBlockDest,
+				       unsigned long * imemBytes);
 }
 
 #endif
