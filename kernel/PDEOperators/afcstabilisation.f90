@@ -3669,7 +3669,8 @@ contains
 
 
     if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_IverticesAtEdge, ST_SYNCBLOCK_COPY_H2D)
+        call storage_syncMemory(rafcstab%h_IverticesAtEdge,&
+        ST_SYNCBLOCK_COPY_H2D, .true.)
 
   end subroutine afcstab_copyH2D_IverticesAtEdge
 
@@ -3692,7 +3693,8 @@ contains
 !</subroutine>
 
     if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_IverticesAtEdge, ST_SYNCBLOCK_COPY_D2H)
+        call storage_syncMemory(rafcstab%h_IverticesAtEdge,&
+        ST_SYNCBLOCK_COPY_D2H, .true.)
 
   end subroutine afcstab_copyD2H_IverticesAtEdge
 
@@ -3717,7 +3719,8 @@ contains
 
 
     if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge, ST_SYNCBLOCK_COPY_H2D)
+        call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge,&
+        ST_SYNCBLOCK_COPY_H2D, .true.)
 
   end subroutine afcstab_copyH2D_DmatCoeffAtEdge
 
@@ -3741,7 +3744,8 @@ contains
 !</subroutine>
 
     if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge, ST_SYNCBLOCK_COPY_D2H)
+        call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge,&
+        ST_SYNCBLOCK_COPY_D2H, .true.)
 
   end subroutine afcstab_copyD2H_DmatCoeffAtEdge
   
