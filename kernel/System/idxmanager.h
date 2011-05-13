@@ -169,11 +169,19 @@
 #define IDX2(a,i1,i2,n1,n2)       IDX2_FORWARD(a,i1,i2,n1,n2)
 #define IDX3(a,i1,i2,i3,n1,n2,n3) IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3)
 
+#define IDX1T(a,i1)                IDX1_REVERSE(a,i1)
+#define IDX2T(a,i1,i2,n1,n2)       IDX2_REVERSE(a,i1,i2,n1,n2)
+#define IDX3T(a,i1,i2,i3,n1,n2,n3) IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3)
+
 #elif MEMORY_LAYOUT == ROW_MAJOR_ORDER
 
 #define IDX1(a,i1)                IDX1_REVERSE(a,i1)
 #define IDX2(a,i1,i2,n1,n2)       IDX2_REVERSE(a,i1,i2,n1,n2)
 #define IDX3(a,i1,i2,i3,n1,n2,n3) IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3)
+
+#define IDX1T(a,i1)                IDX1_FORWARD(a,i1)
+#define IDX2T(a,i1,i2,n1,n2)       IDX2_FORWARD(a,i1,i2,n1,n2)
+#define IDX3T(a,i1,i2,i3,n1,n2,n3) IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3)
 
 #else
 #error "Unsupported memory layout"
@@ -195,11 +203,19 @@
 #define IDX2(a,i1,i2,n1,n2)       IDX2_REVERSE(a,i1,i2,n1,n2)
 #define IDX3(a,i1,i2,i3,n1,n2,n3) IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3)
 
+#define IDX1T(a,i1)                IDX1_FORWARD(a,i1)
+#define IDX2T(a,i1,i2,n1,n2)       IDX2_FORWARD(a,i1,i2,n1,n2)
+#define IDX3T(a,i1,i2,i3,n1,n2,n3) IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3)
+
 #elif MEMORY_LAYOUT == ROW_MAJOR_ORDER
 
 #define IDX1(a,i1)                IDX1_FORWARD(a,i1)
 #define IDX2(a,i1,i2,n1,n2)       IDX2_FORWARD(a,i1,i2,n1,n2)
 #define IDX3(a,i1,i2,i3,n1,n2,n3) IDX3_FORWARD(a,i1,i2,i3,n1,n2,n3)
+
+#define IDX1T(a,i1)                IDX1_REVERSE(a,i1)
+#define IDX2T(a,i1,i2,n1,n2)       IDX2_REVERSE(a,i1,i2,n1,n2)
+#define IDX3T(a,i1,i2,i3,n1,n2,n3) IDX3_REVERSE(a,i1,i2,i3,n1,n2,n3)
 
 #else
 #error "Unsupported memory layout"
