@@ -51,7 +51,7 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 3
 
 # type of system coupling
 # 0 = segregated approach
@@ -135,13 +135,13 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/rect_01x0.1_trias.prm
+prmfile = grids/2d/zpinch_6x120_rz.prm
 
 # file which contains the triangulation
-trifile = grids/2d/rect_01x0.1_trias.tri
+trifile = grids/2d/zpinch_6x120_rz.tri
 
 # type of finite element space(s)
-celement = EL_P1_2D
+celement = EL_Q1_2D
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -260,7 +260,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.231
+dfinalTime = 0.1
 
 # initial time step size
 dinitialStep = 1e-3
