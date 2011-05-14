@@ -1821,7 +1821,7 @@ contains
     ! callback function to compute local fluxes
     include 'intf_calcFlux_sim.inc'
 
-    ! callback  function to overwrite the standard operation
+    ! OPTIONAL: callback  function to overwrite the standard operation
     include 'intf_calcDivVector.inc'
     optional :: fcb_calcDivVector
 !</input>
@@ -1872,7 +1872,8 @@ contains
     ! Check if user-defined assembly is provided
     if (present(fcb_calcDivVector)) then
       ! Call used-defined assembly
-      call fcb_calcDivVector(rafcstab, rx, ry, dscale, bclear, rcollection)
+      call fcb_calcDivVector(rafcstab, rx, ry, dscale, bclear,&
+          fcb_calcFlux_sim, rcollection)
     else
       ! Set pointers
       call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
@@ -2021,7 +2022,7 @@ contains
     ! callback functions to compute local fluxes
     include 'intf_calcFlux_sim.inc'
 
-    ! callback function to overwrite the standard operation
+    ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcDivVector.inc'
     optional :: fcb_calcDivVector
 !</input>
@@ -2068,7 +2069,8 @@ contains
       call lsysbl_createVecFromScalar(ry, ryBlock)
 
       ! Call user-defined assembly
-      call fcb_calcDivVector(rafcstab, rxBlock, ryBlock, dscale, bclear, rcollection)
+      call fcb_calcDivVector(rafcstab, rxBlock, ryBlock, dscale, bclear,&
+          fcb_calcFlux_sim, rcollection)
 
       ! Release auxiliary 1-block vectors
       call lsysbl_releaseVector(rxBlock)

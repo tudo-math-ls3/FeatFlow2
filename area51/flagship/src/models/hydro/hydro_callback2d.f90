@@ -730,8 +730,8 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcDivVecScDiss2d_cuda(rafcstab, rx, ry, dscale,&
-      bclear, rcollection)
+  subroutine hydro_calcDivVecScDiss2d_cuda(rafcstab, rx, ry, dscale, bclear,&
+      fcb_calcFlux_sim, rcollection)
 
     use afcstabilisation
     use collection
@@ -755,6 +755,9 @@ contains
     ! TRUE  : clear vector before assembly
     ! FLASE : assemble vector in an additive way
     logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local fluxes
+    include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
 !</input>
 
 !<inputoutput>

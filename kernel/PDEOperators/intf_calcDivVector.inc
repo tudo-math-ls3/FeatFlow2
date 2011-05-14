@@ -4,7 +4,8 @@
 
 !<subroutine>
 
-  subroutine fcb_calcDivVector(rafcstab, rx, ry, dscale, bclear, rcollection)
+  subroutine fcb_calcDivVector(rafcstab, rx, ry, dscale, bclear,&
+      fcb_calcFlux_sim, rcollection)
 
     use afcstabilisation
     use collection
@@ -26,6 +27,10 @@
     ! TRUE  : clear vector before assembly
     ! FLASE : assemble vector in an additive way
     logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local fluxes
+    include 'intf_calcFlux_sim.inc'
+    optional :: fcb_calcFlux_sim
 !</input>
 
 !<inputoutput>
