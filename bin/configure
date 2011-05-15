@@ -367,6 +367,8 @@ my %defaults = (
 # === Program starts here ===
 #
 #
+@SIG{'INT', 'HUP', 'QUIT', 'PIPE'} = ('signal_handler') x 4;
+
 #
 # Parse command line
 #
@@ -5161,4 +5163,58 @@ sub which {
     } else {
         return undef;
     }
+}
+
+
+
+# Function to catch interrupt signals;
+# sole argument is signal name.
+sub signal_handler {
+    my ($sig) = @_;
+
+    print STDERR "\n*** Caught signal $sig, aborting.\n";
+
+    # Figure out whether this configure instance is a child of another
+    # configure process, i.e. configuring a single benchmark application as
+    # part of configuring the benchmark itself.
+    if (scalar keys(%cachedtests) > 0) {
+	# Unfortunately, we do not only need to kill the parent, but in most
+	# cases even the grand parent and the great grand parent, as the
+	# benchmark Perl configure script invokes per benchmark application a
+	# shell configure script with per-application settings which in turn
+	# calls the Perl configure script. So, determine the process
+	# hierarchy.
+	my %ppid = ();
+	my %cmd = ();
+	my $i = 0;
+	open(PSEF_PIPE, "ps -ef|")
+	    or warn "$progname: Cannot determine process hierarchy and hence not kill grand parent pid.\n";
+	<PSEF_PIPE>;
+	while (<PSEF_PIPE>) {
+	    chomp();
+	    my @psefField = split(' ', $_, 8);
+	    my $pid     = $psefField[1];
+	    $ppid{$pid} = $psefField[2];
+	    $cmd{$pid}  = $psefField[7];
+	}
+	close(PSEF_PIPE);
+
+	my $thisppid = getppid();
+	my $msgPrefixShown = 0;
+	foreach my $pid ($ppid{$ppid{$thisppid}}, $ppid{$thisppid}, $thisppid) {
+	    if ($cmd{$pid} =~ m/\/configure\b/) {
+		if (kill(0, $pid)) {   # Check if pid still exists
+		    unless ($msgPrefixShown) {
+			print "*** Terminating parent configures (PIDs $pid";
+		    } else {
+			print ", $pid";
+		    }
+		    $msgPrefixShown++;
+		    kill 9, $pid;
+		}
+	    }
+	}
+	print ").\n";
+    }
+    exit 1;
 }
