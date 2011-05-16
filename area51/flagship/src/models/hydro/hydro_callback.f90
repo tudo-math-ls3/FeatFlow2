@@ -247,8 +247,8 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     ! Copy solution vectors to coprocessor device
-    call lsysbl_copyH2D_Vector(rsolution0, .false.)
-    call lsysbl_copyH2D_Vector(rsolution, .false.)
+    call lsysbl_copyH2D_Vector(rsolution0, .false., .false.)
+    call lsysbl_copyH2D_Vector(rsolution, .false., .false.)
 #endif
 
     ! Get section name

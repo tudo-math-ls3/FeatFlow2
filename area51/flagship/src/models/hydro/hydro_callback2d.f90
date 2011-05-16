@@ -784,25 +784,25 @@ contains
     
     ! Check if edge structure is available on device and copy it otherwise
     if (storage_getMemoryAddress(rafcstab%h_IverticesAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_IverticesAtEdge(rafcstab)
+        call afcstab_copyH2D_IverticesAtEdge(rafcstab, .true.)
     p_IverticesAtEdge = storage_getMemoryAddress(rafcstab%h_IverticesAtEdge)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
     if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_DmatCoeffAtEdge(rafcstab)
+        call afcstab_copyH2D_DmatCoeffAtEdge(rafcstab, .true.)
     p_DmatrixCoeffsAtEdge = storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
     p_Dx = storage_getMemoryAddress(rx%h_Ddata)
     if (p_Dx .eq. 0_I64) then
-      call lsysbl_copyH2D_Vector(rx, .false.)
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
       p_Dx = storage_getMemoryAddress(rx%h_Ddata)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
-    call lsysbl_copyH2D_Vector(ry, .true.)
+    call lsysbl_copyH2D_Vector(ry, .true., .false.)
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
@@ -830,7 +830,7 @@ contains
     ! Transfer destination vector back to host memory. If bclear is
     ! .TRUE. then the content of the host memory can be overwritten;
     ! otherwise we need to copy-add the content from device memory
-    call lsysbl_copyD2H_Vector(ry, bclear)
+    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
 
 #else
 
