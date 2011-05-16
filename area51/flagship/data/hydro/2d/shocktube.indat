@@ -16,9 +16,9 @@
 defconst: rho0 = 1.0
 
 # Specify the initial solution
-deffunc: @initsol_rho = if(x < 0.0, 1.0e0/_rho0, 1.25e-1/_rho0) ; x,y,z,t
+deffunc: @initsol_rho = if(x < 0.5, 1.0e0/_rho0, 1.25e-1/_rho0) ; x,y,z,t
 deffunc: @initsol_vel = 0.0 ; x,y,z,t
-deffunc: @initsol_Etot = if(x < 0.0, 2.5e0/_rho0, 2.5e-1/_rho0) ; x,y,z,t
+deffunc: @initsol_Etot = if(x < 0.5, 2.5e0/_rho0, 2.5e-1/_rho0) ; x,y,z,t
 
 # Specify the boundary conditions
 [bdrcond_strong_primal]
