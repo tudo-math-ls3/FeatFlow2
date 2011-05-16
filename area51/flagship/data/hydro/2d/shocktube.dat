@@ -135,13 +135,13 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/rect_01x0.1_trias.prm
+prmfile = grids/2d/rect_01x0.1_quads.prm
 
 # file which contains the triangulation
-trifile = grids/2d/rect_01x0.1_trias.tri
+trifile = grids/2d/rect_01x0.1_quads.tri
 
 # type of finite element space(s)
-celement = EL_P1_2D
+celement = EL_Q1_2D
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -191,7 +191,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 0
@@ -310,10 +310,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 2
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 2
 
 # type of multigrid cycle
 # 0 = F-cylce
