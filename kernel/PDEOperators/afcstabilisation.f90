@@ -3654,7 +3654,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyH2D_IverticesAtEdge(rafcstab)
+  subroutine afcstab_copyH2D_IverticesAtEdge(rafcstab, btranspose)
 
 !<description>
     ! This subroutine copies the vertices at edge structure from the
@@ -3665,13 +3665,16 @@ contains
 !<input>
     ! Stabilisation structure
     type(t_afcstab), intent(in) :: rafcstab
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
 !</input>
 !</subroutine>
 
 
     if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemory(rafcstab%h_IverticesAtEdge,&
-        ST_SYNCBLOCK_COPY_H2D, .true.)
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
 
   end subroutine afcstab_copyH2D_IverticesAtEdge
 
@@ -3679,7 +3682,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyD2H_IverticesAtEdge(rafcstab)
+  subroutine afcstab_copyD2H_IverticesAtEdge(rafcstab, btranspose)
 
 !<description>
     ! This subroutine copies the vertices at edge structure from the
@@ -3690,12 +3693,15 @@ contains
 !<input>
     ! Stabilisation structure
     type(t_afcstab), intent(in) :: rafcstab
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
 !</input>
 !</subroutine>
 
     if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemory(rafcstab%h_IverticesAtEdge,&
-        ST_SYNCBLOCK_COPY_D2H, .true.)
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
 
   end subroutine afcstab_copyD2H_IverticesAtEdge
 
@@ -3703,7 +3709,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyH2D_DmatCoeffAtEdge(rafcstab)
+  subroutine afcstab_copyH2D_DmatCoeffAtEdge(rafcstab, btranspose)
 
 !<description>
     ! This subroutine copies the off-diagonal entries of the auxiliary
@@ -3715,13 +3721,16 @@ contains
 !<input>
     ! Stabilisation structure
     type(t_afcstab), intent(in) :: rafcstab
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
 !</input>
 !</subroutine>
 
 
     if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge,&
-        ST_SYNCBLOCK_COPY_H2D, .true.)
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
 
   end subroutine afcstab_copyH2D_DmatCoeffAtEdge
 
@@ -3729,7 +3738,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyD2H_DmatCoeffAtEdge(rafcstab)
+  subroutine afcstab_copyD2H_DmatCoeffAtEdge(rafcstab, btranspose)
 
 !<description>
     ! This subroutine copies the off-diagonal entries of the auxiliary
@@ -3741,12 +3750,15 @@ contains
 !<input>
     ! Stabilisation structure
     type(t_afcstab), intent(in) :: rafcstab
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
 !</input>
 !</subroutine>
 
     if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge,&
-        ST_SYNCBLOCK_COPY_D2H, .true.)
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
 
   end subroutine afcstab_copyD2H_DmatCoeffAtEdge
   

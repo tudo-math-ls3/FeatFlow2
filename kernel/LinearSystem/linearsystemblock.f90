@@ -7702,7 +7702,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_copyH2D_Vector(rvector, bclear)
+  subroutine lsysbl_copyH2D_Vector(rvector, bclear, btranspose)
 
 !<description>
     ! This subroutine copies the data of a vector from the host memory
@@ -7718,6 +7718,9 @@ contains
     ! cleared. If FALSE, then memory is allocated on the device and
     ! the content from the host memory is transferred.
     logical :: bclear
+
+    ! Switch: If TRUE then the memory is transposed.
+    logical, intent(in) :: btranspose
 !</input>
 
 !</subroutine>
@@ -7727,7 +7730,7 @@ contains
       call storage_clearMemory(rvector%h_Ddata)
     else
       ! No, we have to copy the content from host to device memory
-      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_H2D)
+      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_H2D, btranspose)
     end if
   
   end subroutine lsysbl_copyH2D_Vector
@@ -7736,7 +7739,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_copyD2H_Vector(rvector, bclear)
+  subroutine lsysbl_copyD2H_Vector(rvector, bclear, btranspose)
 
 !<description>
     ! This subroutine copies the data of a vector from the memory of
@@ -7752,6 +7755,9 @@ contains
     ! cleared. If FALSE, then memory is allocated on the device and
     ! the content from the host memory is transferred.
     logical :: bclear
+
+    ! Switch: If TRUE then the memory is transposed.
+    logical, intent(in) :: btranspose
 !</input>
 
 !</subroutine>
@@ -7762,7 +7768,7 @@ contains
       call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_D2H)
     else
       ! No, we have to copy-add the content from device to host memory
-      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_ACCUMULATE_D2H)
+      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_ACCUMULATE_D2H, btranspose)
     end if
   
   end subroutine lsysbl_copyD2H_Vector
