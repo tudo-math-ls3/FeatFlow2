@@ -386,7 +386,7 @@ fb_customise() {
 #		    modules="$modules g95/32bit-default-integers/0.93_2010-03-31"
 		    modules="$modules g95/32bit-default-integers/0.93_2010-06-17"
 #		    modules="$modules g95/64bit-default-integers/0.91"
-		    LIDOJOBNAMEPREFIX=fb-g95
+		    LIDOJOBNAMEPREFIX=ff2-g95
 #		    # g95 only gives deterministic results if combined with gcc 4.0 or 4.1, nothing higher.
 #		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --cc=gcc4"
 		    COMPILERNAME="G95 0.93 (2010-06-17)"
@@ -397,7 +397,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.3.5"
-		    LIDOJOBNAMEPREFIX=fb-gcc
+		    LIDOJOBNAMEPREFIX=ff2-gcc43
 		    COMPILERNAME="GCC 4.3.5"
 		    ;;
 
@@ -406,7 +406,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.4.6"
-		    LIDOJOBNAMEPREFIX=fb-gcc
+		    LIDOJOBNAMEPREFIX=ff2-gcc44
 		    COMPILERNAME="GCC 4.4.6"
 		    ;;
 
@@ -415,7 +415,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.6.0"
-		    LIDOJOBNAMEPREFIX=fb-gcc
+		    LIDOJOBNAMEPREFIX=ff2-gcc46
 		    COMPILERNAME="GCC 4.6.0"
 		    ;;
 
@@ -424,7 +424,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.5.3"
-		    LIDOJOBNAMEPREFIX=fb-gcc
+		    LIDOJOBNAMEPREFIX=ff2-gcc45
 		    COMPILERNAME="GCC 4.5.3"
 		    ;;
 
@@ -433,7 +433,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules pathscale"
-		    LIDOJOBNAMEPREFIX=fb-psc
+		    LIDOJOBNAMEPREFIX=ff2-psc
 		    COMPILERNAME="Pathscale 3.2.99"
 		    ;;
 
@@ -442,7 +442,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules pgi/11.5-0"
-		    LIDOJOBNAMEPREFIX=fb-pgi
+		    LIDOJOBNAMEPREFIX=ff2-pgi
 		    COMPILERNAME="PGI 11.5"
 		    ;;
 
@@ -451,7 +451,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules sunstudio/12.1_update_1"
-		    LIDOJOBNAMEPREFIX=fb-sun
+		    LIDOJOBNAMEPREFIX=ff2-sun121
 		    COMPILERNAME="SunStudio 12.1"
 		    ;;
 
@@ -460,7 +460,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules oraclestudio/12.2"
-		    LIDOJOBNAMEPREFIX=fb-sun
+		    LIDOJOBNAMEPREFIX=ff2-sun122
 		    COMPILERNAME="OracleStudio 12.2"
 		    ;;
 
@@ -469,7 +469,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl intel/cce/10.1.023 intel/fce/10.1.023"
-		    LIDOJOBNAMEPREFIX=fb-intel
+		    LIDOJOBNAMEPREFIX=ff2-intel101
 		    COMPILERNAME="Intel 10.1"
 		    ;;
 
@@ -478,7 +478,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl intel/cce/11.0.084 intel/fce/11.0.084"
-		    LIDOJOBNAMEPREFIX=fb-intel
+		    LIDOJOBNAMEPREFIX=ff2-intel110
 		    COMPILERNAME="Intel 11.0"
 		    ;;
 
@@ -487,7 +487,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl intel/cce/12.0.1.107 intel/fce/12.0.1.107"
-		    LIDOJOBNAMEPREFIX=fb-intel
+		    LIDOJOBNAMEPREFIX=ff2-intel120
 		    COMPILERNAME="Intel 12.0"
 		    ;;
 
@@ -496,7 +496,7 @@ fb_customise() {
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl intel/cce/11.1.075 intel/fce/11.1.075"
-		    LIDOJOBNAMEPREFIX=fb-intel
+		    LIDOJOBNAMEPREFIX=ff2-intel111
 		    COMPILERNAME="Intel 11.1"
 		    ;;
 	    esac
