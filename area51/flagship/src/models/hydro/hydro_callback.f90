@@ -104,6 +104,9 @@
 module hydro_callback
 
 #include "hydro.h"
+#ifdef _HYDRO_TOTALENERGY_
+#undef _HYDRO_TOTALENERGY_
+#endif
 #define _HYDRO_TOTALENERGY_ nvar
 
   use afcstabilisation
