@@ -1,12 +1,12 @@
 /*#############################################################################
  ******************************************************************************
- * <name> hydro_calcFluxScDiss2d_cuda </name>
+ * <name> hydro_calcFluxRusDissDiSp2d_cuda </name>
  ******************************************************************************
  *
  * <purpose>
  * This CUDA kernel computes the fluxes for the low-order scheme in 2D
- * using scalar artificial viscosities proportional to the spectral
- * radius (largest eigenvalue) of the Roe-matrix.
+ * using scalar artificial viscosities of Rusanov-type, whereby dimensional
+ * splitting is employed.
  * </purpose>
  *
  *#############################################################################/
@@ -26,45 +26,45 @@
 
 extern "C"
 {
-  int hydro_calcFluxScDiss2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
-				  unsigned long * h_IverticesAtEdge,
-				  unsigned long * h_Dx,
-				  unsigned long * h_Dy,
-				  double * dscale,
-				  int * nblocks,
-				  int * neq,
-				  int * nvar,
-				  int * nedge,
-				  int * nmatcoeff,
-				  int * nedges,
-				  int * iedgeset);
-  int FNAME(hydro_calcfluxscdiss2d_cuda)(unsigned long * h_DmatrixCoeffsAtEdge,
-					 unsigned long * h_IverticesAtEdge,
-					 unsigned long * h_Dx,
-					 unsigned long * h_Dy,
-					 double * dscale,
-					 int * nblocks,
-					 int * neq,
-					 int * nvar,
-					 int * nedge,
-					 int * nmatcoeff,
-					 int * nedges,
-					 int * iedgeset);
+  int hydro_calcFluxRusDissDiSp2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
+				       unsigned long * h_IverticesAtEdge,
+				       unsigned long * h_Dx,
+				       unsigned long * h_Dy,
+				       double * dscale,
+				       int * nblocks,
+				       int * neq,
+				       int * nvar,
+				       int * nedge,
+				       int * nmatcoeff,
+				       int * nedges,
+				       int * iedgeset);
+  int FNAME(hydro_calcfluxrusdissdisp2d_cuda)(unsigned long * h_DmatrixCoeffsAtEdge,
+					      unsigned long * h_IverticesAtEdge,
+					      unsigned long * h_Dx,
+					      unsigned long * h_Dy,
+					      double * dscale,
+					      int * nblocks,
+					      int * neq,
+					      int * nvar,
+					      int * nedge,
+					      int * nmatcoeff,
+					      int * nedges,
+					      int * iedgeset);
 }
 
 /*******************************************************************************/
 template <int isystemformat>
-__global__ void hydro_calcFluxScDiss2d_knl(double * DmatrixCoeffsAtEdge,
-					   int * IverticesAtEdge,
-					   double * Dx,
-					   double * Dy,
-					   double dscale,
-					   int neq,
-					   int nvar,
-					   int nedge,
-					   int nmatcoeff,
-					   int nedges,
-					   int iedgeset)
+__global__ void hydro_calcFluxRusDissDiSp2d_knl(double * DmatrixCoeffsAtEdge,
+						int * IverticesAtEdge,
+						double * Dx,
+						double * Dy,
+						double dscale,
+						int neq,
+						int nvar,
+						int nedge,
+						int nmatcoeff,
+						int nedges,
+						int iedgeset)
 {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   
@@ -172,42 +172,48 @@ __global__ void hydro_calcFluxScDiss2d_knl(double * DmatrixCoeffsAtEdge,
 #endif
 
     //--------------------------------------------------------------------------
-    // Evaluate the scalar dissipation proportional to the spectral
-    // radius (largest eigenvalue) of the Roe-matrix
+    // Evaluate the scalar dissipation of Rusanov-type
     //--------------------------------------------------------------------------
 
-    // Compute skew-symmetric coefficient
-    double a[HYDRO_NDIM];
-    a[0] = RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
-			IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge));
-    a[1] = RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
-			IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge));
-    double anorm = sqrt(a[0] * a[0] + a[1] * a[1]);
-
-    // Compute densities
-    double ri = DENSITY3(DdataAtEdge,IDX3,1,1,NVAR2D,2,1);
-    double rj = DENSITY3(DdataAtEdge,IDX3,2,1,NVAR2D,2,1);
-
-    // Compute enthalpies
-    double hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,1,NVAR2D,2,1)+pi)/ri;
-    double hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,1,NVAR2D,2,1)+pj)/rj;
-
-    //! Compute Roe mean values
-    double aux  = ROE_MEAN_RATIO(ri,rj);
-    double u_ij = ROE_MEAN_VALUE(ui,uj,aux);
-    double v_ij = ROE_MEAN_VALUE(vi,vj,aux);
-    double H_ij = ROE_MEAN_VALUE(hi,hj,aux);
-
-    // Compute auxiliary variables
-    double vel_ij = u_ij * a[0] + v_ij * a[1];
-    double q_ij   = RCONST(0.5) * (u_ij * u_ij + v_ij * v_ij);
+    // Compute specific energies
+    double Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,1,NVAR2D,2,1);
+    double Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,1,NVAR2D,2,1);
 
     // Compute the speed of sound
-    //TODO echtes double epsilon einbauen
-    double c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), 1e-14));
+    double ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ei-RCONST(0.5)*(ui*ui+vi*vi)), 1e-14));
+    double cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ej-RCONST(0.5)*(uj*uj+vj*vj)), 1e-14));
 
-    // Compute scalar dissipation
-    double d_ij = abs(vel_ij) + anorm*c_ij;
+#ifdef HYDRO_USE_IBP
+    // Compute scalar dissipation with dimensional splitting based on
+    // the skew-symmetric part which does not include the symmetric
+    // boundary contribution
+    double d_ij = max( abs(RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
+					IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge))*uj)+
+		       abs(RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
+					IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)))*cj,
+		       abs(RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
+					IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge))*ui)+
+		       abs(RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
+					IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)))*ci )
+                + max( abs(RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
+					IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge))*vj)+
+		       abs(RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
+					IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)))*cj,
+		       abs(RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
+					IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge))*vi)+
+		       abs(RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
+					IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)))*ci );
+#else
+    // Compute scalar dissipation with dimensional splitting
+    double d_ij = max( abs(IDX3(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*uj)+
+		       abs(IDX3(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge))*cj,
+		       abs(IDX3(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*ui)+
+		       abs(IDX3(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge))*ci )
+                + max( abs(IDX3(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*vj)+
+		       abs(IDX3(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge))*cj,
+		       abs(IDX3(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*vi)+
+		       abs(IDX3(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge))*ci );
+#endif
 
     // Multiply the solution difference by the scalar dissipation
     double Diff[NVAR2D];
@@ -320,7 +326,7 @@ __global__ void hydro_calcFluxScDiss2d_knl(double * DmatrixCoeffsAtEdge,
 
 /*******************************************************************************/
 
-int hydro_calcFluxScDiss2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
+int hydro_calcFluxRusDissDiSp2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
 				unsigned long * h_IverticesAtEdge,
 				unsigned long * h_Dx,
 				unsigned long * h_Dy,
@@ -342,34 +348,34 @@ int hydro_calcFluxScDiss2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
   grid.x = (unsigned)ceil((*nedges)/(double)(block.x));
 
   if (*nblocks == 1) {
-    hydro_calcFluxScDiss2d_knl<0><<<grid, block>>>(d_DmatrixCoeffsAtEdge,
-						   d_IverticesAtEdge,
-						   d_Dx, d_Dy, (*dscale), 
-						   (*neq), (*nvar),
-						   (*nedge), (*nmatcoeff),
-						   (*nedges), (*iedgeset));
+    hydro_calcFluxRusDissDiSp2d_knl<0><<<grid, block>>>(d_DmatrixCoeffsAtEdge,
+						    d_IverticesAtEdge,
+						    d_Dx, d_Dy, (*dscale), 
+						    (*neq), (*nvar),
+						    (*nedge), (*nmatcoeff),
+						    (*nedges), (*iedgeset));
   } else {
-    hydro_calcFluxScDiss2d_knl<1><<<grid, block>>>(d_DmatrixCoeffsAtEdge,
-						   d_IverticesAtEdge,
-						   d_Dx, d_Dy, (*dscale), 
-						   (*neq), (*nvar),
-						   (*nedge), (*nmatcoeff),
-						   (*nedges), (*iedgeset));
+    hydro_calcFluxRusDissDiSp2d_knl<1><<<grid, block>>>(d_DmatrixCoeffsAtEdge,
+						    d_IverticesAtEdge,
+						    d_Dx, d_Dy, (*dscale), 
+						    (*neq), (*nvar),
+						    (*nedge), (*nmatcoeff),
+						    (*nedges), (*iedgeset));
   }
-  coproc_checkErrors("hydro_calcFluxScDiss2d_cuda");
+  coproc_checkErrors("hydro_calcFluxRusDissDiSp2d_cuda");
   return 0;
 }
 
-int FNAME(hydro_calcfluxscdiss2d_cuda)(unsigned long * h_DmatrixCoeffsAtEdge,
-				       unsigned long * h_IverticesAtEdge,
-				       unsigned long * h_Dx,
-				       unsigned long * h_Dy,
-				       double * dscale,
-				       int * nblocks, int * neq, int * nvar,
-				       int * nedge,   int * nmatcoeff,
-				       int * nedges,  int * iedgeset)
+int FNAME(hydro_calcfluxrusdissdisp2d_cuda)(unsigned long * h_DmatrixCoeffsAtEdge,
+					    unsigned long * h_IverticesAtEdge,
+					    unsigned long * h_Dx,
+					    unsigned long * h_Dy,
+					    double * dscale,
+					    int * nblocks, int * neq, int * nvar,
+					    int * nedge,   int * nmatcoeff,
+					    int * nedges,  int * iedgeset)
 {
-  return hydro_calcFluxScDiss2d_cuda(h_DmatrixCoeffsAtEdge, h_IverticesAtEdge,
-				     h_Dx, h_Dy, dscale, nblocks, neq, nvar,
-				     nedge, nmatcoeff, nedges, iedgeset);
+  return hydro_calcFluxRusDissDiSp2d_cuda(h_DmatrixCoeffsAtEdge, h_IverticesAtEdge,
+					  h_Dx, h_Dy, dscale, nblocks, neq, nvar,
+					  nedge, nmatcoeff, nedges, iedgeset);
 }

@@ -246,10 +246,12 @@ contains
 
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Copy solution vectors to coprocessor device
-    call lsysbl_copyH2D_Vector(rsolution0, .false., .false.)
+    ! Copy solution vector to coprocessor device; in the first
+    ! nonlinear step, the solution vector from the previous time step
+    ! is also required on the device. Thus, we need to transfer it
+    call lsysbl_copyH2D_Vector(rsolution, .false., .false.)
     if (istep .eq. 0)&
-        call lsysbl_copyH2D_Vector(rsolution, .false., .false.)
+        call lsysbl_copyH2D_Vector(rsolution0, .false., .false.)
 #endif
 
     ! Get section name
@@ -1170,7 +1172,6 @@ contains
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDiss2d_sim, dscale, .true., rrhs, rcollection)
 #endif
-
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -1189,10 +1190,16 @@ contains
                   hydro_calcFluxScDiss1d_sim, dscale, .true., rrhs, rcollection)
 
             case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  hydro_calcFluxScDissDiSp2d_sim, dscale, .true., rrhs, rcollection,&
+                  hydro_calcDivVecScDissDiSp2d_cuda)
+#else
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDissDiSp2d_sim, dscale, .true., rrhs, rcollection)
-
+#endif
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -1210,10 +1217,16 @@ contains
                   hydro_calcFluxRoeDiss1d_sim, dscale, .true., rrhs, rcollection)
 
             case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  hydro_calcFluxRoeDiss2d_sim, dscale, .true., rrhs, rcollection,&
+                  hydro_calcDivVecRoeDiss2d_cuda)
+#else
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDiss2d_sim, dscale, .true., rrhs, rcollection)
-
+#endif
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -1232,10 +1245,16 @@ contains
                   hydro_calcFluxRoeDiss1d_sim, dscale, .true., rrhs, rcollection)
               
             case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  hydro_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs, rcollection,&
+                  hydro_calcDivVecRoeDissDiSp2d_cuda)
+#else
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs, rcollection)
-
+#endif
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -1253,10 +1272,16 @@ contains
                   hydro_calcFluxRusDiss1d_sim, dscale, .true., rrhs, rcollection)
 
             case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  hydro_calcFluxRusDiss2d_sim, dscale, .true., rrhs, rcollection,&
+                  hydro_calcDivVecRusDiss2d_cuda)
+#else
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDiss2d_sim, dscale, .true., rrhs, rcollection)
-
+#endif
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -1275,10 +1300,16 @@ contains
                   hydro_calcFluxRusDiss1d_sim, dscale, .true., rrhs, rcollection)
 
             case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  hydro_calcFluxRusDissDiSp2d_sim, dscale, .true., rrhs, rcollection,&
+                  hydro_calcDivVecRusDissDiSp2d_cuda)
+#else
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDissDiSp2d_sim, dscale, .true., rrhs, rcollection)
-
+#endif
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -1691,7 +1722,6 @@ contains
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss2d_sim, dscale, .false., rres, rcollection)
 #endif
-
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -1710,10 +1740,16 @@ contains
               hydro_calcFluxScDiss1d_sim, dscale, .false., rres, rcollection)
 
         case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxScDissDiSp2d_sim, dscale, .false., rres, rcollection,&
+              hydro_calcDivVecScDissDiSp2d_cuda)
+#else
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDissDiSp2d_sim, dscale, .false., rres, rcollection)
-
+#endif
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -1731,9 +1767,16 @@ contains
               hydro_calcFluxRoeDiss1d_sim, dscale, .false., rres, rcollection)
 
         case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRoeDiss2d_sim, dscale, .false., rres, rcollection,&
+              hydro_calcDivVecRoeDiss2d_cuda)
+#else
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss2d_sim, dscale, .false., rres, rcollection)
+#endif
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
@@ -1753,10 +1796,16 @@ contains
               hydro_calcFluxRoeDiss1d_sim, dscale, .false., rres, rcollection)
 
         case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRoeDissDiSp2d_sim, dscale, .false., rres, rcollection,&
+              hydro_calcDivVecRoeDissDiSp2d_cuda)
+#else
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDissDiSp2d_sim, dscale, .false., rres, rcollection)
-
+#endif
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -1774,10 +1823,16 @@ contains
               hydro_calcFluxRusDiss1d_sim, dscale, .false., rres, rcollection)
 
         case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRusDiss2d_sim, dscale, .false., rres, rcollection,&
+              hydro_calcDivVecRusDiss2d_cuda)
+#else
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss2d_sim, dscale, .false., rres, rcollection)
-
+#endif
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -1796,10 +1851,16 @@ contains
               hydro_calcFluxRusDiss1d_sim, dscale, .false., rres, rcollection)
 
         case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRusDissDiSp2d_sim, dscale, .false., rres, rcollection,&
+              hydro_calcDivVecRusDissDiSp2d_cuda)
+#else
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDissDiSp2d_sim, dscale, .false., rres, rcollection)
-
+#endif
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
@@ -2172,6 +2233,35 @@ contains
               hydro_calcFluxScDiss3d_sim, dscale, .false., rrhs, rcollection)
         end select
 
+      case (DISSIPATION_SCALAR_DSPLIT)
+
+        ! Assemble divergence of flux with scalar dissipation
+        ! adopting dimensional splitting
+
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxScDiss1d_sim, dscale, .false., rrhs, rcollection)
+
+        case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxScDissDiSp2d_sim, dscale, .false., rrhs, rcollection,&
+              hydro_calcDivVecScDissDiSp2d_cuda)
+#else
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxScDissDiSp2d_sim, dscale, .false., rrhs, rcollection)
+#endif
+
+        case (NDIM3D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxScDissDiSp3d_sim, dscale, .false., rrhs, rcollection)
+        end select
+
       case (DISSIPATION_ROE)
 
         ! Assemble divergence of flux with Roe-type dissipation
@@ -2183,14 +2273,48 @@ contains
               hydro_calcFluxRoeDiss1d_sim, dscale, .false., rrhs, rcollection)
 
         case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRoeDiss2d_sim, dscale, .false., rrhs, rcollection,&
+              hydro_calcDivVecRoeDiss2d_cuda)
+#else
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss2d_sim, dscale, .false., rrhs, rcollection)
-
+#endif
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss3d_sim, dscale, .false., rrhs, rcollection)
+        end select
+
+      case (DISSIPATION_ROE_DSPLIT)
+
+        ! Assemble divergence of flux with Roe-type dissipation
+        ! adopting dimensional splitting
+
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRoeDiss1d_sim, dscale, .false., rrhs, rcollection)
+
+        case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRoeDissDiSp2d_sim, dscale, .false., rrhs, rcollection,&
+              hydro_calcDivVecRoeDissDiSp2d_cuda)
+#else
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRoeDissDiSp2d_sim, dscale, .false., rrhs, rcollection)
+#endif
+        case (NDIM3D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRoeDissDiSp3d_sim, dscale, .false., rrhs, rcollection)
         end select
 
       case (DISSIPATION_RUSANOV)
@@ -2204,14 +2328,49 @@ contains
               hydro_calcFluxRusDiss1d_sim, dscale, .false., rrhs, rcollection)
 
         case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRusDiss2d_sim, dscale, .false., rrhs, rcollection,&
+              hydro_calcDivVecRusDiss2d_cuda)
+#else
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss2d_sim, dscale, .false., rrhs, rcollection)
+#endif
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss3d_sim, dscale, .false., rrhs, rcollection)
+        end select
+
+      case (DISSIPATION_RUSANOV_DSPLIT)
+
+        ! Assemble divergence of flux with Rusanov-type flux
+        ! adopting dimensional splitting
+
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRusDiss1d_sim, dscale, .false., rrhs, rcollection)
+
+        case (NDIM2D)
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRusDissDiSp2d_sim, dscale, .false., rrhs, rcollection,&
+              hydro_calcDivVecRusDissDiSp2d_cuda)
+#else
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRusDissDiSp2d_sim, dscale, .false., rrhs, rcollection)
+#endif
+        case (NDIM3D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              hydro_calcFluxRusDissDiSp3d_sim, dscale, .false., rrhs, rcollection)
         end select
 
       case default
