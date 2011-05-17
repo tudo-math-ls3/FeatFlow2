@@ -20,6 +20,12 @@
 
 #if defined(LANGUAGE) && LANGUAGE == LANGUAGE_F
 
+#if 0
+!##############################################################################
+! Preserve manual line breaks if preprocessing is done by F90CPP script
+!##############################################################################
+#endif
+
 #ifdef USE_PREPROC_F90CPP
 #undef MYNEWLINE
 #else
@@ -30,7 +36,13 @@
 #define MYNEWLINE
 #endif
 
-#define REAL_PREC QUAD_PREC
+#if 0
+!##############################################################################
+! Use double precision and default integer
+!##############################################################################
+#endif
+
+#define REAL_PREC DOUBLE_PREC
 #undef  INT_PREC
 
 #endif
