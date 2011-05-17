@@ -763,6 +763,7 @@ contains
 
     ! OPTIONAL: callback function to compute local fluxes
     include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
+    optional :: fcb_calcFlux_sim
 !</input>
 
 !<inputoutput>
@@ -1065,6 +1066,7 @@ contains
 
     ! OPTIONAL: callback function to compute local fluxes
     include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
+    optional :: fcb_calcFlux_sim
 !</input>
 
 !<inputoutput>
@@ -1421,6 +1423,7 @@ contains
 
     ! OPTIONAL: callback function to compute local fluxes
     include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
+    optional :: fcb_calcFlux_sim
 !</input>
 
 !<inputoutput>
@@ -1820,6 +1823,7 @@ contains
 
     ! OPTIONAL: callback function to compute local fluxes
     include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
+    optional :: fcb_calcFlux_sim
 !</input>
 
 !<inputoutput>
@@ -2127,6 +2131,7 @@ contains
 
     ! OPTIONAL: callback function to compute local fluxes
     include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
+    optional :: fcb_calcFlux_sim
 !</input>
 
 !<inputoutput>
@@ -2437,6 +2442,7 @@ contains
 
     ! OPTIONAL: callback function to compute local fluxes
     include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
+    optional :: fcb_calcFlux_sim
 !</input>
 
 !<inputoutput>
