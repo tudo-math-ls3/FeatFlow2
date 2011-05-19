@@ -92,6 +92,10 @@ TESTSUITE=
 # fb_customise() depending on the host this script is executed on.
 #
 #
+# Whether or not the number of processes to compile with (corresponds to
+# 'make -j XXX') should be decreased if machine is under load
+ADAPTCOMPILEPROCSTOLOAD="yes"
+#
 # 'arch', better name is 'host class' (LiDO, NEC, fbmath)
 ARCH=
 #
@@ -1162,7 +1166,20 @@ fb_compileBenchmark() {
     fi
     cd $BENCHMARKDIR
     fb_startTimer
-    make benchmark -k -j $COMPILEWITHPROCS > $AUXILIARYLOG 2>&1
+    ncpus=$COMPILEWITHPROCS
+    if [ "yes" = "$ADAPTCOMPILEPROCSTOLOAD" ]; then
+	case `uname -m` in
+	    "x86_64")
+		totalCPUs=`grep processor /proc/cpuinfo | wc -l`
+		loadNow=`cat /proc/loadavg | cut -d. -f1`
+		freeCPUs=`expr $totalCPUs - $loadNow`
+		if test $freeCPUs -lt 1; then freeCPUs=1; fi
+
+		if test $ncpus -gt $freeCPUs; then ncpus=$freeCPUs; fi
+		;;
+	esac
+    fi
+    make benchmark -k -j $ncpus > $AUXILIARYLOG 2>&1
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
