@@ -2,14 +2,14 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 5
+nlmax = 2
 
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-prmname = ./pre/QUAD.prm
-#prmname = ./pre/rect_01x0.1_quads.prm
+#prmname = ./pre/QUAD.prm
+prmname = ./pre/rect_01x0.1_quads.prm
 #prmname = ./pre/quadm5t5.prm
 #prmname = ./pre/isentrvort.prm
 #prmname = ./pre/zehnm.prm
@@ -23,8 +23,8 @@ prmname = ./pre/QUAD.prm
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-triname = ./pre/QUAD.tri
-#triname = ./pre/rect_01x0.1_quads.tri
+#triname = ./pre/QUAD.tri
+triname = ./pre/rect_01x0.1_quads.tri
 #triname = ./pre/quadm5t5.tri
 #triname = ./pre/isentrvort.tri
 #triname = ./pre/zehnm.tri
@@ -41,17 +41,17 @@ triname = ./pre/QUAD.tri
 # 2: DG T2
 # 3: DG Q1
 # 4: DG Q2
-FEkind = 4
+FEkind = 1
 
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.01
+dt = 0.001
 
 # Final time
-ttfinal = 0.5
+ttfinal = 0.130
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -65,19 +65,20 @@ theta = 1.0
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 0
+limiter = 12
 
 # What kind of time stepping to use
-# 1: RK SSP 3rd order
-# 2: dGP(2) 3rd/4th order
-# 3: Theta scheme (using MC as preconditioner)
-# 4: Classical RK of 4th order
-# 5: Implicit linear convection
-# 6: Implicit Burgers equation
-# 7: Implicit system (decoupled)
-# 8: Implicit Euler equations
-# 9: Implicit linear convection Newton-like implementation
-timestepping = 9
+#  1: RK SSP 3rd order
+#  2: dGP(2) 3rd/4th order
+#  3: Theta scheme (using MC as preconditioner)
+#  4: Classical RK of 4th order
+#  5: Implicit linear convection
+#  6: Implicit Burgers equation
+#  7: Implicit system (decoupled)
+#  8: Implicit Euler equations
+#  9: Implicit linear convection Newton-like implementation
+# 10: Implicit Euler equations Newton-like implementation
+timestepping = 10
 
 # What type to build the RHS
 rhstype = 1
