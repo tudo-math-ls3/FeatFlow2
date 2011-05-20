@@ -3122,18 +3122,25 @@ contains
                 rform%BconstantCoeff = .false.
                 rcollection%p_rvectorQuickAccess1 => rsolBlock   
                 rcollection%Dquickaccess(1) = dt
-                call bilf_dg_buildMatrixBlEdge2D (rform, CUB_G5_1D, .false., rmatrixABlock,&
+                call bilf_dg_buildMatrixBlEdge2D_ss (rform, CUB_G5_1D, .false., rmatrixABlock,&
                      rsolBlock, raddTriaData,&
-                     flux_dg_buildMatrixBlEdge2D_sim_iEuler_Newton,&
+                     flux_dg_buildMatrixBlEdge2D_sim_iEuler_Newton_ss,&
                      rcollection)!, cconstrType)
 
                 ! Calculate the preconditioner matrix
                 !        call lsysbl_clearMatrix(rmatrixBlock)
-                call lsysbl_copyMatrix (rmatrixABlock,rmatrixBlock)
+                !call lsysbl_copyMatrix (rmatrixABlock,rmatrixBlock)
+                call lsysbl_duplicateMatrix (rmatrixABlock,rmatrixBlock,&
+                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
                 do i = 1, nvar2d
+!                   call lsyssc_matrixLinearComb (rmatrixMC,rmatrixABlock%RmatrixBlock(i,i),1.0_dp/dt,1.0_dp,&
+!                        .true.,.true.,.true.,.false.,&
+!                        rmatrixBlock%Rmatrixblock(i,i))
+                   
                    call lsyssc_matrixLinearComb (rmatrixMC,rmatrixABlock%RmatrixBlock(i,i),1.0_dp/dt,1.0_dp,&
-                        .true.,.true.,.true.,.false.,&
+                        .false.,.false.,.true.,.false.,&
                         rmatrixBlock%Rmatrixblock(i,i))
+                   
                    !        call lsyssc_matrixLinearComb2 (rmatrixMC,1.0_dp,rmatrixABlock%RmatrixBlock(i,j),dt,rmatrixABlock%RmatrixBlock(i,j),&
                    !                                       .false.,.false.,.true.)
                 end do
@@ -3261,8 +3268,38 @@ contains
 
 
 
+             call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+                  getReferenceFunction_2D)
+             call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+
 
              ttime = ttime + dt
+             
+             
+             ! Write video file
+             ! If we want to make a video
+             if (imakevideo == 1) then
+
+             write(*,*) ''
+             write(*,*) 'Writing videofile'
+
+             ifilenumber = ifilenumber + 1
+
+             select case (ioutputtype)
+             case (1)
+               ! Output solution to gmv file
+                call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+             case (2)
+                ! Output solution to vtk file
+                call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+             end select
+    
+             dvideotime = dvideotimestep
+          end if
+             
+             
+             
+             
              if (ttime.ge.(ttfinal-1.0e-12)) exit iEulertimestepping3
           end do iEulertimestepping3
 
