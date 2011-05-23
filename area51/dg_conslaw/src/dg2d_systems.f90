@@ -3268,34 +3268,36 @@ contains
 
 
 
-             call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-                  getReferenceFunction_2D)
-             call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+!             call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+!                  getReferenceFunction_2D)
+!             call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+
+!             call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+!             call output_line ('Mass: ' // sys_sdEL(derror,10) )
 
 
              ttime = ttime + dt
              
              
-             ! Write video file
              ! If we want to make a video
-             if (imakevideo == 1) then
+                if ((imakevideo == 1).and.(ttime>dvideotime-0.001_DP*dt)) then
 
-             write(*,*) ''
-             write(*,*) 'Writing videofile'
+                   write(*,*) ''
+                   write(*,*) 'Writing videofile'
 
-             ifilenumber = ifilenumber + 1
+                   ifilenumber = ifilenumber + 1
 
-             select case (ioutputtype)
-             case (1)
-               ! Output solution to gmv file
-                call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-             case (2)
-                ! Output solution to vtk file
-                call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-             end select
-    
-             dvideotime = dvideotimestep
-          end if
+                   select case (ioutputtype)
+                   case (1)
+                      ! Output solution to gmv file
+                      call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+                   case (2)
+                      ! Output solution to vtk file
+                      call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+                   end select
+
+                   dvideotime = dvideotime + dvideotimestep
+                end if
              
              
              

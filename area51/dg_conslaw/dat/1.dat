@@ -8,11 +8,11 @@ nlmax = 2
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
 #prmname = ./pre/QUAD.prm
-prmname = ./pre/rect_01x0.1_quads.prm
+#prmname = ./pre/rect_01x0.1_quads.prm
 #prmname = ./pre/quadm5t5.prm
 #prmname = ./pre/isentrvort.prm
 #prmname = ./pre/zehnm.prm
-#prmname = ./pre/threezylindergrob.prm
+prmname = ./pre/threezylindergrob.prm
 #prmname = ./pre/RECT2x1.prm
 #prmname = ./pre/QUAD4x4.prm
 #prmname = ./pre/bartsimpson.prm
@@ -23,11 +23,11 @@ prmname = ./pre/rect_01x0.1_quads.prm
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
 #triname = ./pre/QUAD.tri
-triname = ./pre/rect_01x0.1_quads.tri
+#triname = ./pre/rect_01x0.1_quads.tri
 #triname = ./pre/quadm5t5.tri
 #triname = ./pre/isentrvort.tri
 #triname = ./pre/zehnm.tri
-#triname = ./pre/threezylindergrob.tri
+triname = ./pre/threezylindergrob.tri
 #triname = ./pre/RECT2x1.tri
 #triname = ./pre/QUAD4x4.tri
 #triname = ./pre/bartsimpson.tri
@@ -49,7 +49,7 @@ FEkind = 1
 dt = 0.01
 
 # Final time
-ttfinal = 0.231
+ttfinal = 50.0
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -63,7 +63,7 @@ theta = 1.0
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 0
+limiter = 12
 
 # What kind of time stepping to use
 #  1: RK SSP 3rd order
@@ -103,7 +103,7 @@ gravconst = 1.0
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 3
+extrapoints = 0
 
 # Name of output file
 ofile = ./gmv/u2d
@@ -119,4 +119,4 @@ outtype = 2
 makevideo = 1
 
 # Make gmv snapshot every ... seconds (should be n*dt)
-videotimestep = 0.01
+videotimestep = 0.1
