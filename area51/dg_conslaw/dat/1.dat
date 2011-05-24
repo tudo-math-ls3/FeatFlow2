@@ -1,7 +1,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 2
+nlmax = 1
 
 
 # Name of the parametrisation file
@@ -46,10 +46,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.01
+dt = 0.1
 
 # Final time
-ttfinal = 50.0
+ttfinal = 17
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -116,7 +116,7 @@ outtype = 2
 # Create files for video?
 # 0: No
 # 1: Yes
-makevideo = 1
+makevideo = 0
 
 # Make gmv snapshot every ... seconds (should be n*dt)
 videotimestep = 0.1

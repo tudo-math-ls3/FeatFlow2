@@ -13244,121 +13244,223 @@ contains
 
              ! Loop over the additive factors in the bilinear form.
              do ialbet = 1,rlocalMatrixAssembly(1)%rform%itermcount
+             
+                ! Test if we only need the trial functions on one side of the edge
+                if ((p_Dside(1,ialbet)==1.0_dp).and.(p_Dside(2,ialbet)==0.0_dp)) then
+                ! Trialfunction only needed on first side
 
-                ! Get from Idescriptors the type of the derivatives for the 
-                ! test and trial functions. The summand we calculate
-                ! here will be added to the matrix entry:
-                !
-                ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
-                !
-                ! -> Ix=0: function value, 
-                !      =1: first derivative, ...
-                !    as defined in the module 'derivative'.
+                    ! Get from Idescriptors the type of the derivatives for the 
+                    ! test and trial functions. The summand we calculate
+                    ! here will be added to the matrix entry:
+                    !
+                    ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
+                    !
+                    ! -> Ix=0: function value, 
+                    !      =1: first derivative, ...
+                    !    as defined in the module 'derivative'.
 
-                ia = rlocalMatrixAssembly(1)%rform%Idescriptors(1,ialbet)
-                ib = rlocalMatrixAssembly(1)%rform%Idescriptors(2,ialbet)
+                    ia = rlocalMatrixAssembly(1)%rform%Idescriptors(1,ialbet)
+                    ib = rlocalMatrixAssembly(1)%rform%Idescriptors(2,ialbet)
 
-                ! Multiply domega with the coefficient of the form.
-                ! This gives the actual value to multiply the
-                ! function value with before summing up to the integral.
-                ! Get the precalculated coefficient from the coefficient array.
-                daux1 = domega1 * DfluxValues(:,:,ialbet,icubp,iel)
-                daux2 = domega2 * DfluxValues(:,:,ialbet,icubp,iel) * (-1.0_dp)
+                    ! Multiply domega with the coefficient of the form.
+                    ! This gives the actual value to multiply the
+                    ! function value with before summing up to the integral.
+                    ! Get the precalculated coefficient from the coefficient array.
+                    daux1 = domega1 * DfluxValues(:,:,ialbet,icubp,iel)
+                    daux2 = domega2 * DfluxValues(:,:,ialbet,icubp,iel) * (-1.0_dp)
 
-                ! Now loop through all possible combinations of DOF`s
-                ! in the current cubature point. The outer loop
-                ! loops through the "O" in the above picture,
-                ! the test functions:
+                    ! Now loop through all possible combinations of DOF`s
+                    ! in the current cubature point. The outer loop
+                    ! loops through the "O" in the above picture,
+                    ! the test functions:
 
-                do idofe = 1,indofTest
+                    do idofe = 1,indofTest
 
-                   ! Get the value of the (test) basis function 
-                   ! phi_i (our "O") in the cubature point:
-                   db1 = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ib,icubp,iel)
-                   db2 = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ib,icubp,iel)
+                       ! Get the value of the (test) basis function 
+                       ! phi_i (our "O") in the cubature point:
+                       db1 = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ib,icubp,iel)
+                       db2 = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ib,icubp,iel)
 
-                   ! Perform an inner loop through the other DOF`s
-                   ! (the "X"). 
+                       ! Perform an inner loop through the other DOF`s
+                       ! (the "X"). 
 
-                   do jdofe = 1,indofTrial
+                       do jdofe = 1,indofTrial
 
-                      ! Get the value of the basis function 
-                      ! psi_j (our "X") in the cubature point. 
-                      ! Them multiply:
-                      !    db * dbas(..) * daux
-                      ! ~= phi_i * psi_j * coefficient * cub.weight
-                      ! Summing this up gives the integral, so the contribution
-                      ! to the global matrix. 
-                      !
-                      ! Simply summing up db * dbas(..) * daux would give
-                      ! the coefficient of the local matrix. We save this
-                      ! contribution in the local matrix of element iel.
+                          ! Get the value of the basis function 
+                          ! psi_j (our "X") in the cubature point. 
+                          ! Them multiply:
+                          !    db * dbas(..) * daux
+                          ! ~= phi_i * psi_j * coefficient * cub.weight
+                          ! Summing this up gives the integral, so the contribution
+                          ! to the global matrix. 
+                          !
+                          ! Simply summing up db * dbas(..) * daux would give
+                          ! the coefficient of the local matrix. We save this
+                          ! contribution in the local matrix of element iel.
 
-                      !JCOLB = Kentry(jdofe,idofe,iel)
-                      !p_DA(JCOLB) = p_DA(JCOLB) + db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
-                      !                  p_Dentry(jdofe,idofe,iel) = &
-                      !                      p_Dentry(jdofe,idofe,iel)+db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
+                          
+                          do iblock = 1, nvar
+                             do jblock = 1, nvar
+                                ! Testfunction on the 'first' (i) side
+                                ! Attention: The p_DbasTest are really the trialfunctions (they are the same)
+                                p_Dentryii(iblock,jblock,jdofe,idofe,iel) = &
+                                     p_Dentryii(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(1,ialbet)
 
-                      !                  ! Testfunction on the 'first' (i) side
-                      !                  p_Dentryii(jdofe,idofe,iel) = &
-                      !                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)   
-                      !                  p_Dentryai(jdofe,idofe,iel) = &
-                      !                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)   
-                      !                  
-                      !                  ! Testfunction on the 'second' (a) side
-                      !                  p_Dentryia(jdofe,idofe,iel) = &
-                      !                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(1,icubp,iel)
-                      !                  p_Dentryaa(jdofe,idofe,iel) = &
-                      !                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(2,icubp,iel)
-                      !                
+                                ! Testfunction on the 'second' (a) side
+                                p_Dentryia(iblock,jblock,jdofe,idofe,iel) = &
+                                     p_Dentryia(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(1,ialbet)
+                             end do
+                          end do
+                          
+                       end do ! idofe
 
+                    end do ! jdofe                
+                
+                elseif ((p_Dside(1,ialbet)==0.0_dp).and.(p_Dside(2,ialbet)==1.0_dp)) then
+                ! Trialfunction only needed on the second side
 
-                      ! Testfunction on the 'first' (i) side
-                      do iblock = 1, nvar
-                         do jblock = 1, nvar
-                            ! Attention: The p_DbasTest are really the trialfunctions (they are the same)
-                            p_Dentryii(iblock,jblock,jdofe,idofe,iel) = &
-                                 p_Dentryii(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(1,ialbet)
-                            p_Dentryai(iblock,jblock,jdofe,idofe,iel) = &
-                                 p_Dentryai(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(1,ialbet)
+                    ! Get from Idescriptors the type of the derivatives for the 
+                    ! test and trial functions. The summand we calculate
+                    ! here will be added to the matrix entry:
+                    !
+                    ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
+                    !
+                    ! -> Ix=0: function value, 
+                    !      =1: first derivative, ...
+                    !    as defined in the module 'derivative'.
 
-                            ! Testfunction on the 'second' (a) side
-                            p_Dentryia(iblock,jblock,jdofe,idofe,iel) = &
-                                 p_Dentryia(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(2,ialbet)
+                    ia = rlocalMatrixAssembly(1)%rform%Idescriptors(1,ialbet)
+                    ib = rlocalMatrixAssembly(1)%rform%Idescriptors(2,ialbet)
 
-                            !                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
-                            !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)      
-                            !                write(*,*) 'ia',ia
-                            !                write(*,*) 'daux1',daux1
-                            !                write(*,*) 'daux2',daux2
-                            !                write(*,*) 'db1',db1
-                            !                write(*,*) 'db2',db2
-                            !                write(*,*) 'dside1',p_Dside(1,iel)
-                            !                write(*,*) 'dside2',p_Dside(2,iel)
-                            !                write(*,*) 'test1',rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)
-                            !                write(*,*) 'test2',rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
-                            !                        pause
-                            !                      end if
+                    ! Multiply domega with the coefficient of the form.
+                    ! This gives the actual value to multiply the
+                    ! function value with before summing up to the integral.
+                    ! Get the precalculated coefficient from the coefficient array.
+                    daux1 = domega1 * DfluxValues(:,:,ialbet,icubp,iel)
+                    daux2 = domega2 * DfluxValues(:,:,ialbet,icubp,iel) * (-1.0_dp)
 
-                            p_Dentryaa(iblock,jblock,jdofe,idofe,iel) = &
-                                 p_Dentryaa(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(2,ialbet)
-                         end do
-                      end do
-                      !                write(*,*) 'ia',ia
-                      !                write(*,*) 'daux1',daux1
-                      !                write(*,*) 'daux2',daux2
-                      !                write(*,*) 'db1',db1
-                      !                write(*,*) 'db2',db2
-                      !                write(*,*) 'dside1',p_Dside(1,iel)
-                      !                write(*,*) 'dside2',p_Dside(2,iel)
-                      !                write(*,*) 'test1',rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)
-                      !                write(*,*) 'test2',rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
-                      !                pause
+                    ! Now loop through all possible combinations of DOF`s
+                    ! in the current cubature point. The outer loop
+                    ! loops through the "O" in the above picture,
+                    ! the test functions:
 
-                   end do ! idofe
+                    do idofe = 1,indofTest
 
-                end do ! jdofe
+                       ! Get the value of the (test) basis function 
+                       ! phi_i (our "O") in the cubature point:
+                       db1 = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ib,icubp,iel)
+                       db2 = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ib,icubp,iel)
 
+                       ! Perform an inner loop through the other DOF`s
+                       ! (the "X"). 
+
+                       do jdofe = 1,indofTrial
+
+                          ! Get the value of the basis function 
+                          ! psi_j (our "X") in the cubature point. 
+                          ! Them multiply:
+                          !    db * dbas(..) * daux
+                          ! ~= phi_i * psi_j * coefficient * cub.weight
+                          ! Summing this up gives the integral, so the contribution
+                          ! to the global matrix. 
+                          !
+                          ! Simply summing up db * dbas(..) * daux would give
+                          ! the coefficient of the local matrix. We save this
+                          ! contribution in the local matrix of element iel.
+
+                          
+                          do iblock = 1, nvar
+                             do jblock = 1, nvar
+                                ! Testfunction on the 'first' (i) side
+                                ! Attention: The p_DbasTest are really the trialfunctions (they are the same)
+                                p_Dentryai(iblock,jblock,jdofe,idofe,iel) = &
+                                     p_Dentryai(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(2,ialbet)
+
+                                ! Testfunction on the 'second' (a) side
+                                p_Dentryaa(iblock,jblock,jdofe,idofe,iel) = &
+                                     p_Dentryaa(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(2,ialbet)
+                             end do
+                          end do
+                          
+                       end do ! idofe
+
+                    end do ! jdofe                
+                
+                else ! Trialfunctions are needed on both sides
+                
+                    ! Get from Idescriptors the type of the derivatives for the 
+                    ! test and trial functions. The summand we calculate
+                    ! here will be added to the matrix entry:
+                    !
+                    ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
+                    !
+                    ! -> Ix=0: function value, 
+                    !      =1: first derivative, ...
+                    !    as defined in the module 'derivative'.
+
+                    ia = rlocalMatrixAssembly(1)%rform%Idescriptors(1,ialbet)
+                    ib = rlocalMatrixAssembly(1)%rform%Idescriptors(2,ialbet)
+
+                    ! Multiply domega with the coefficient of the form.
+                    ! This gives the actual value to multiply the
+                    ! function value with before summing up to the integral.
+                    ! Get the precalculated coefficient from the coefficient array.
+                    daux1 = domega1 * DfluxValues(:,:,ialbet,icubp,iel)
+                    daux2 = domega2 * DfluxValues(:,:,ialbet,icubp,iel) * (-1.0_dp)
+
+                    ! Now loop through all possible combinations of DOF`s
+                    ! in the current cubature point. The outer loop
+                    ! loops through the "O" in the above picture,
+                    ! the test functions:
+
+                    do idofe = 1,indofTest
+
+                       ! Get the value of the (test) basis function 
+                       ! phi_i (our "O") in the cubature point:
+                       db1 = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ib,icubp,iel)
+                       db2 = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ib,icubp,iel)
+
+                       ! Perform an inner loop through the other DOF`s
+                       ! (the "X"). 
+
+                       do jdofe = 1,indofTrial
+
+                          ! Get the value of the basis function 
+                          ! psi_j (our "X") in the cubature point. 
+                          ! Them multiply:
+                          !    db * dbas(..) * daux
+                          ! ~= phi_i * psi_j * coefficient * cub.weight
+                          ! Summing this up gives the integral, so the contribution
+                          ! to the global matrix. 
+                          !
+                          ! Simply summing up db * dbas(..) * daux would give
+                          ! the coefficient of the local matrix. We save this
+                          ! contribution in the local matrix of element iel.
+
+                          
+                          do iblock = 1, nvar
+                             do jblock = 1, nvar
+                                ! Testfunction on the 'first' (i) side
+                                ! Attention: The p_DbasTest are really the trialfunctions (they are the same)
+                                p_Dentryii(iblock,jblock,jdofe,idofe,iel) = &
+                                     p_Dentryii(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(1,ialbet)
+                                p_Dentryai(iblock,jblock,jdofe,idofe,iel) = &
+                                     p_Dentryai(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(2,ialbet)
+
+                                ! Testfunction on the 'second' (a) side
+                                p_Dentryia(iblock,jblock,jdofe,idofe,iel) = &
+                                     p_Dentryia(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(1,ialbet)
+                                p_Dentryaa(iblock,jblock,jdofe,idofe,iel) = &
+                                     p_Dentryaa(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(2,ialbet)
+                             end do
+                          end do
+                          
+                       end do ! idofe
+
+                    end do ! jdofe
+                
+                end if
+             
              end do ! ialbet
 
           end do ! icubp 
@@ -13421,41 +13523,36 @@ contains
           do jblock = 1, nvar
              call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),p_Da)
              do iel = 1,IELmax-IELset+1
-
+             
+             if (IelementList(2,IELset+iel-1).ne.0) then
+             ! Not at the boundary - write all DOFs
                 do idofe = 1,indofTest
                    do jdofe = 1,indofTrial
-                      !              p_DA(p_Kentry(jdofe,idofe,iel)) = &
-                      !                  p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
-
-                      !                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryii(jdofe,idofe,iel)) = &
-                      !                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
-                      !                
-                      !                if (IelementList(2,IELset+iel-1).ne.0) then
-                      !                
-                      !                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryia(jdofe,idofe,iel)) = &
-                      !                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryia(jdofe,idofe,iel)) + p_Dentryia(iblock,jblock,jdofe,idofe,iel)
-                      !                
-                      !                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryai(jdofe,idofe,iel)) = &
-                      !                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryai(jdofe,idofe,iel)) + p_Dentryai(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
-                      !                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryaa(jdofe,idofe,iel)) = &
-                      !                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryaa(jdofe,idofe,iel)) + p_Dentryaa(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
-                      !                end if  
+                      
                       p_Da(p_Kentryii(jdofe,idofe,iel)) = &
                            p_Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
 
-                      if (IelementList(2,IELset+iel-1).ne.0) then
+                      p_Da(p_Kentryia(jdofe,idofe,iel)) = &
+                           p_Da(p_Kentryia(jdofe,idofe,iel)) + p_Dentryia(iblock,jblock,jdofe,idofe,iel)
 
-                         p_Da(p_Kentryia(jdofe,idofe,iel)) = &
-                              p_Da(p_Kentryia(jdofe,idofe,iel)) + p_Dentryia(iblock,jblock,jdofe,idofe,iel)
-
-                         p_Da(p_Kentryai(jdofe,idofe,iel)) = &
-                              p_Da(p_Kentryai(jdofe,idofe,iel)) + p_Dentryai(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
-                         p_Da(p_Kentryaa(jdofe,idofe,iel)) = &
-                              p_Da(p_Kentryaa(jdofe,idofe,iel)) + p_Dentryaa(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
-                      end if
+                      p_Da(p_Kentryai(jdofe,idofe,iel)) = &
+                           p_Da(p_Kentryai(jdofe,idofe,iel)) + p_Dentryai(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
+                      p_Da(p_Kentryaa(jdofe,idofe,iel)) = &
+                           p_Da(p_Kentryaa(jdofe,idofe,iel)) + p_Dentryaa(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
 
                    end do
                 end do
+             else
+             ! At the boundary - write only inner DOFs
+                do idofe = 1,indofTest
+                   do jdofe = 1,indofTrial
+                      
+                      p_Da(p_Kentryii(jdofe,idofe,iel)) = &
+                           p_Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
+
+                   end do
+                end do             
+             end if
 
              end do ! iel
           end do ! jblock
