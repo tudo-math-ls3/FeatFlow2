@@ -4424,7 +4424,6 @@ contains
       end if
       
       ! That is it
-stop
     end subroutine
     
   end subroutine
