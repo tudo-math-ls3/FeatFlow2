@@ -433,10 +433,10 @@ contains
     
     if (dalpha .ne. 0.0_DP) then
       ! Calculate:
-      !    alpha/2 ||u||^2
-      Derror(4) = Derror(4) + 0.5_DP*dalpha * Derror(2)
+      !    alpha/2 ||u||^2 = 1/2 ||P(lambda)||^2
+      Derror(4) = Derror(4) + 0.5_DP * Derror(2)
       
-      ! Calculate ||u|| = 1/alpha ||lambda||
+      ! Calculate ||u|| = 1/alpha ||P(lambda)||
       Derror(2) = 1.0_DP/dalpha * sqrt(Derror(2))
     else
       Derror(2) = 0.0_DP
