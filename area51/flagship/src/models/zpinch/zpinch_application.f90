@@ -1293,6 +1293,12 @@ contains
     ! Pointer to the boundary condition structure
     type(t_boundaryCondition), pointer :: p_rbdrCondHydro, p_rbdrCondTransport
 
+    ! Matrix for the linearised FCT algorithm
+    type(t_matrixScalar) :: rmatrix1
+
+    ! Vectors for the linearised FCT algorithm
+    type(t_vectorBlock), dimension(2) :: Rvector1, Rvector2, Rvector3
+
     ! Vector for the element-wise feature indicator
     type(t_vectorScalar) :: relementError
 
@@ -1708,9 +1714,11 @@ contains
       !-------------------------------------------------------------------------
 
       ! Apply linearised FEM-FCT post-processing
-      call zpinch_calcLinearisedFCT(RbdrCond, p_rproblemLevel, rtimestep,&
+      call zpinch_calcLinearisedFCT(p_rproblemLevel, rtimestep,&
           p_rsolverHydro, p_rsolverTransport, Rsolution, ssectionName,&
-          ssectionNameHydro, ssectionNameTransport, rcollection)
+          ssectionNameHydro, ssectionNameTransport, rcollection,&
+          rmatrix=rmatrix1, Rvector1=Rvector1,&
+          Rvector2=Rvector2, Rvector3=Rvector3)
 
       ! Calculate velocity field (\rho v)
       call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
@@ -1878,6 +1886,15 @@ contains
         call grph_releaseGraph(rgraph)
       end if
     end if
+
+    ! Release vectors and matrices for the linearised FCT algorithm
+    call lsyssc_releaseMatrix(rmatrix1)
+    call lsysbl_releaseVector(Rvector1(1))
+    call lsysbl_releaseVector(Rvector1(2))
+    call lsysbl_releaseVector(Rvector2(1))
+    call lsysbl_releaseVector(Rvector2(2))
+    call lsysbl_releaseVector(Rvector3(1))
+    call lsysbl_releaseVector(Rvector3(2))
 
   end subroutine zpinch_solveTransientPrimal
 

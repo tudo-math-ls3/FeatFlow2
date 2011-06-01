@@ -543,15 +543,15 @@ contains
         call lsyssc_createVector(rafcstab%p_rvectorFluxPrel, rafcstab%NEDGE, .false., ST_DOUBLE)
       end if
 
-      ! We need the nodal vector for the low-order predictor
-      allocate(rafcstab%p_rvectorPredictor)
-      if (present(rblockDiscretisation)) then
-        call lsysbl_createVectorBlock(rblockDiscretisation,&
-            rafcstab%p_rvectorPredictor, .false., ST_DOUBLE)
-      else
-        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
-            rafcstab%NEQ, 1, .false., ST_DOUBLE)
-      end if
+!!$      ! We need the nodal vector for the low-order predictor
+!!$      allocate(rafcstab%p_rvectorPredictor)
+!!$      if (present(rblockDiscretisation)) then
+!!$        call lsysbl_createVectorBlock(rblockDiscretisation,&
+!!$            rafcstab%p_rvectorPredictor, .false., ST_DOUBLE)
+!!$      else
+!!$        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
+!!$            rafcstab%NEQ, 1, .false., ST_DOUBLE)
+!!$      end if
 
 
     case (AFCSTAB_SYMMETRIC)

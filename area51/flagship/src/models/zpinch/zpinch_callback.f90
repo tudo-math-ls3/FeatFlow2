@@ -1765,18 +1765,16 @@ contains
 
 !<subroutine>
   
-  subroutine zpinch_calcLinearisedFCT(RbdrCond, rproblemLevel, rtimestep,&
+  subroutine zpinch_calcLinearisedFCT(rproblemLevel, rtimestep,&
       rsolverHydro, rsolverTransport, Rsolution, ssectionName,&
-      ssectionNameHydro, ssectionNameTransport, rcollection, Rsource)
+      ssectionNameHydro, ssectionNameTransport, rcollection, Rsource,&
+      rmatrix, Rvector1, Rvector2, Rvector3)
 
 !<description>
     ! This subroutine calculates the linearised FCT correction
 !</description>
 
 !<input>
-    ! array of boundary condition structure
-    type(t_boundaryCondition), dimension(:), intent(in) :: RbdrCond
-
     ! time-stepping algorithm
     type(t_timestep), intent(in) :: rtimestep
 
@@ -1802,22 +1800,43 @@ contains
 
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
+    
+    ! OPTIONAL: matrix to store the discrete transport operator used
+    ! to compute the approximation to the time derivative (if not
+    ! present, then temporal memory is allocated)
+    type(t_matrixScalar), intent(inout), target, optional :: rmatrix
+
+    ! OPTIONAL: auxiliary vectors used to compute the approximation to
+    ! the time derivative (if not present, then temporal memory is allocated)
+    type(t_vectorBlock), dimension(:), intent(inout), target, optional :: Rvector1
+    type(t_vectorBlock), dimension(:), intent(inout), target, optional :: Rvector2
+    type(t_vectorBlock), dimension(:), intent(inout), target, optional :: Rvector3
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    type(t_timestep) :: rtimestepAux
-    type(t_vectorBlock), dimension(:), pointer :: p_Rpredictor
-    type(t_vectorBlock), pointer :: p_rpredictorHydro,p_rpredictorTransport
     type(t_parlist), pointer :: p_rparlist
+    type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_matrixScalar), target :: rmatrixTmp
+    type(t_vectorBlock), dimension(:), pointer :: p_Rvector1, p_Rvector2, p_Rvector3
+    type(t_vectorBlock), dimension(2), target :: Rvector1Tmp, Rvector2Tmp, Rvector3Tmp
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
     real(DP), dimension(:), pointer :: p_DalphaHydro, p_DalphaTransport
+    real(DP) :: dnorm0, dnorm
+    real(DP) :: depsAbsApproxTimeDerivative,depsRelApproxTimeDerivative
     integer, dimension(2) :: IposAFC
+    integer :: consistentMassMatrixHydro,consistentMassMatrixTransport
     integer :: convectionAFC,inviscidAFC
-    integer :: lumpedMassMatrixHydro
-    integer :: lumpedMassMatrixTransport,consistentMassMatrixTransport
+    integer :: ctypeAFCstabilisationConvection
+    integer :: ctypeAFCstabilisationInviscid
+    integer :: iapproxtimederivativetypeHydro,iapproxtimederivativetypeTransport
+    integer :: ilimitersynchronisation,nfailsafe,ivariable,nvariable,ite
     integer :: imassantidiffusiontypeHydro,imassantidiffusiontypeTransport
-    integer :: ilimitersynchronisation,nfailsafe,ivariable,nvariable
+    integer :: lumpedMassMatrixHydro,lumpedMassMatrixTransport
+    integer :: nmaxIterationsApproxTimeDerivative,iblock
+    integer(I32) :: istabilisationSpecConvection
+    integer(I32) :: istabilisationSpecInviscid
+    logical :: bcompatible
 
 
     ! Set pointer to parameter list
@@ -1829,6 +1848,7 @@ contains
         ssectionNameHydro, 'inviscidAFC', inviscidAFC)
     call parlst_getvalue_int(p_rparlist,&
         ssectionNameTransport, 'convectionAFC', convectionAFC)
+
 
     ! Do we have to apply linearised FEM-FCT?
     if ((inviscidAFC .le. 0) .or. (convectionAFC .le. 0)) return
@@ -1847,14 +1867,12 @@ contains
     call parlst_getvalue_int(p_rparlist, ssectionNameHydro,&
         'lumpedmassmatrix', lumpedmassmatrixHydro)
     call parlst_getvalue_int(p_rparlist, ssectionNameHydro,&
-        'nfailsafe', nfailsafe)
-    call parlst_getvalue_int(p_rparlist, ssectionNameHydro,&
         'imassantidiffusiontype', imassantidiffusiontypeHydro)
+    call parlst_getvalue_int(p_rparlist, ssectionNameHydro,&
+        'nfailsafe', nfailsafe)
 
     call parlst_getvalue_int(p_rparlist, ssectionNameTransport,&
         'lumpedmassmatrix', lumpedmassmatrixTransport)
-    call parlst_getvalue_int(p_rparlist, ssectionNameTransport,&
-        'consistentmassmatrix', consistentmassmatrixTransport)
     call parlst_getvalue_int(p_rparlist, ssectionNameTransport,&
         'imassantidiffusiontype', imassantidiffusiontypeTransport)
     
@@ -1867,110 +1885,602 @@ contains
     ! Should we apply consistent mass antidiffusion?
     if (imassantidiffusiontypeHydro .eq. MASS_CONSISTENT) then
 
-      ! Initialize dummy timestep
-      rtimestepAux%dStep = 1.0_DP
-      rtimestepAux%theta = 0.0_DP
-          
-      ! Set pointer to predictor
-      p_rpredictorHydro => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+      ! Get more parameters from parameter list
+      call parlst_getvalue_int(p_rparlist, ssectionNameHydro,&
+          'consistentmassmatrix', consistentMassMatrixHydro)
+      call parlst_getvalue_int(p_rparlist, ssectionNameHydro,&
+          'iapproxtimederivativetype', iapproxtimederivativetypeHydro)
 
-      ! Compute low-order "right-hand side" without theta parameter
-      if (present(Rsource)) then
-        if (Rsource(1)%NEQ .eq. 0) then
-          ! ... without source term
-          call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-              rsolverHydro, Rsolution(1), p_rpredictorHydro,&
-              ssectionNameHydro,rcollection)
-        else
-          ! ... with source term
-          call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-              rsolverHydro, Rsolution(1), p_rpredictorHydro,&
-              ssectionNameHydro, rcollection, Rsource(1))
-        end if
+      ! Set up vector1 for computing the approximate time derivative
+      if (present(Rvector1)) then
+        p_Rvector1 => Rvector1
       else
-        ! ... without source term
-        call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-            rsolverHydro, Rsolution(1), p_rpredictorHydro,&
-            ssectionNameHydro, rcollection)
+        p_Rvector1 => Rvector1Tmp
       end if
 
-      ! Compute low-order predictor
-      call lsysbl_invertedDiagMatVec(&
-          rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
-          p_rpredictorHydro, 1.0_DP, p_rpredictorHydro)
+      ! Check if Rvector1(1) is compatible to the first solution
+      ! vector; otherwise create new vector as a duplicate of the
+      ! first solution vector
+      call lsysbl_isVectorCompatible(p_Rvector1(1), Rsolution(1), bcompatible)
+      if (.not.bcompatible)&
+          call lsysbl_duplicateVector(Rsolution(1), p_Rvector1(1),&
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
+      !-------------------------------------------------------------------------
+  
+      ! How should we compute the approximate time derivative?
+      select case(iapproxtimederivativetypeHydro)
+
+      case(AFCSTAB_GALERKIN)
+        
+        ! Get more parameters from parameter list
+        call parlst_getvalue_double(p_rparlist,&
+            ssectionNameHydro, 'depsAbsApproxTimeDerivative',&
+            depsAbsApproxTimeDerivative, 1e-4_DP)
+        call parlst_getvalue_double(p_rparlist,&
+            ssectionNameHydro, 'depsRelApproxTimeDerivative',&
+            depsRelApproxTimeDerivative, 1e-2_DP)
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionNameHydro, 'nmaxIterationsApproxTimeDerivative',&
+            nmaxIterationsApproxTimeDerivative, 5)
+
+        ! Set up vector2 for computing the approximate time derivative
+        if (present(Rvector2)) then
+          p_Rvector2 => Rvector2
+        else
+          p_Rvector2 => Rvector2Tmp
+        end if
+
+        ! Check if Rvector2(1) is compatible to the first solution
+        ! vector; otherwise create new vector as a duplicate of the
+        ! solution vector
+        call lsysbl_isVectorCompatible(p_Rvector2(1), Rsolution(1), bcompatible)
+        if (.not.bcompatible)&
+            call lsysbl_duplicateVector(Rsolution(1), p_Rvector2(1),&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+        ! Set up vector3 for computing the approximate time derivative
+        if (present(Rvector3)) then
+          p_Rvector3 => Rvector3
+        else
+          p_Rvector3 => Rvector3Tmp
+        end if
+        
+        ! Check if Rvector3(1) is compatible to the first solution
+        ! vector; otherwise create new vector as a duplicate of the
+        ! solution vector
+        call lsysbl_isVectorCompatible(p_Rvector3(1), Rsolution(1), bcompatible)
+        if (.not.bcompatible)&
+            call lsysbl_duplicateVector(Rsolution(1), p_Rvector3(1),&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+        ! Make a backup copy of the stabilisation type because we have
+        ! to overwrite it to enforce using the standard Galerkin
+        ! scheme; this implies that the specification flag is changed,
+        ! so make a backup copy of it, too
+        ctypeAFCstabilisationInviscid =&
+            rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation
+        istabilisationSpecInviscid =&
+            rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec
+
+        ! Enforce using the standard Galerkin method without any stabilisation
+        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
+
+        ! Compute $K(u^L)*u^L$ and store the result in rvector2
+        call hydro_calcDivergenceVector(rproblemLevel,&
+            rsolverHydro%rboundaryCondition, Rsolution(1), rtimestep%dTime,&
+            1.0_DP, .true., p_Rvector2(1), ssectionNameHydro, rcollection)
+
+        ! Build the geometric source term (if any)
+        call hydro_calcGeometricSourceterm(p_rparlist, ssectionNameHydro,&
+            rproblemLevel, Rsolution(1), 1.0_DP, .false., p_Rvector2(1),&
+            rcollection)
+
+        ! Apply the source vector to the residual (if any)
+        if (present(Rsource)) then
+          if (Rsource(1)%NEQ .gt. 0)&
+              call lsysbl_vectorLinearComb(Rsource(1), p_Rvector2(1),&
+              1.0_DP, 1.0_DP)
+        end if
+
+        ! Reset stabilisation structure to its original configuration
+        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = ctypeAFCstabilisationInviscid
+        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec    = istabilisationSpecInviscid
+
+        ! Scale rvector2 by the inverse of the lumped mass matrix and store
+        ! the result in rvector1; this is the solution of the lumped version
+        call lsysbl_invertedDiagMatVec(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+            p_Rvector2(1), 1.0_DP, p_Rvector1(1))
+        
+        ! Store norm of the initial guess from the lumped version
+        dnorm0 = lsysbl_vectorNorm(p_Rvector1(1), LINALG_NORML2)
+
+        richardson1: do ite = 1, nmaxIterationsApproxTimeDerivative
+          ! Initialise rvector3 by the constant right-hand side
+          call lsysbl_copyVector(p_Rvector2(1), p_Rvector3(1))
+          
+          ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
+          do iblock = 1,Rsolution(1)%nblocks
+            call lsyssc_scalarMatVec(&
+                rproblemLevel%Rmatrix(consistentMassMatrixHydro),&
+                p_Rvector1(1)%RvectorBlock(iblock),&
+                p_Rvector3(1)%RvectorBlock(iblock),&
+                -1.0_DP, 1.0_DP)
+          end do
+          
+          ! Scale rvector3 by the inverse of the lumped mass matrix
+          call lsysbl_invertedDiagMatVec(&
+              rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+              p_Rvector3(1), 1.0_DP, p_Rvector3(1))
+
+          ! Apply solution increment (rvector3) to the previous solution iterate
+          call lsysbl_vectorLinearComb(p_Rvector3(1), p_Rvector1(1), 1.0_DP, 1.0_DP)
+
+          ! Check for convergence
+          dnorm = lsysbl_vectorNorm(p_Rvector3(1), LINALG_NORML2)
+          if ((dnorm .le. depsAbsApproxTimeDerivative) .or.&
+              (dnorm .le. depsRelApproxTimeDerivative*dnorm0)) exit richardson1
+        end do richardson1
+
+        ! Release temporal memory
+        if (.not.present(Rvector2)) call lsysbl_releaseVector(Rvector2Tmp(1))
+        if (.not.present(Rvector3)) call lsysbl_releaseVector(Rvector3Tmp(1))
+
+        !-----------------------------------------------------------------------
+
+      case(AFCSTAB_UPWIND)
+        
+        ! Make a backup copy of the stabilisation type because we have
+        ! to overwrite it to enforce using the standard Galerkin
+        ! scheme; this implies that the specification flag is changed,
+        ! so make a backup copy of it, too
+        ctypeAFCstabilisationInviscid =&
+            rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation
+        istabilisationSpecInviscid =&
+            rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec
+        
+        ! Enforce using the standard Galerkin method without any stabilisation
+        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = AFCSTAB_UPWIND
+        
+        ! Compute $L(u^L)*u^L$ and store the result in rvector1
+        call hydro_calcDivergenceVector(rproblemLevel,&
+            rsolverHydro%rboundaryCondition, Rsolution(1), rtimestep%dTime,&
+            1.0_DP, .true., p_Rvector1(1), ssectionNameHydro, rcollection)
+        
+        ! Build the geometric source term (if any)
+        call hydro_calcGeometricSourceterm(p_rparlist, ssectionNameHydro,&
+            rproblemLevel, Rsolution(1), 1.0_DP, .false., p_Rvector1(1),&
+            rcollection)
+
+        ! Apply the source vector to the residual (if any)
+        if (present(Rsource)) then
+          if (Rsource(1)%NEQ .gt. 0)&
+              call lsysbl_vectorLinearComb(Rsource(1), p_Rvector1(1), 1.0_DP, 1.0_DP)
+        end if
+
+        ! Reset stabilisation structures to their original configuration
+        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = ctypeAFCstabilisationInviscid
+        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec    = istabilisationSpecInviscid
+
+        ! Scale it by the inverse of the lumped mass matrix
+        call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+            p_Rvector1(1), 1.0_DP, p_Rvector1(1))
+
+      case default
+        call output_line('Unsupported type of divergence term!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLinearisedFCT')
+        call sys_halt()
+      end select
+
+      !-------------------------------------------------------------------------
+      
       ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
           1.0_DP, 1.0_DP, .true., ssectionNameHydro, rcollection,&
-          rsolutionTimeDeriv=p_rpredictorHydro)
+          rsolutionTimeDeriv=p_Rvector1(1))
 
+      ! Release temporal memory
+      if (.not.present(Rvector1)) call lsysbl_releaseVector(Rvector1Tmp(1))
+      
     else
-      ! Build the raw antidiffusive fluxes without contribution from
-      ! consistent mass matrix
+      
+      !-------------------------------------------------------------------------
+      
+      ! Build the raw antidiffusive fluxes without including the
+      ! contribution from consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
           1.0_DP, 1.0_DP, .true., ssectionNameHydro, rcollection)
     end if
+
+!!$      ! Initialize dummy timestep
+!!$      rtimestepAux%dStep = 1.0_DP
+!!$      rtimestepAux%theta = 0.0_DP
+!!$          
+!!$      ! Set pointer to predictor
+!!$      p_rpredictorHydro => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+!!$
+!!$      ! Compute low-order "right-hand side" without theta parameter
+!!$      if (present(Rsource)) then
+!!$        if (Rsource(1)%NEQ .eq. 0) then
+!!$          ! ... without source term
+!!$          call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+!!$              rsolverHydro, Rsolution(1), p_rpredictorHydro,&
+!!$              ssectionNameHydro,rcollection)
+!!$        else
+!!$          ! ... with source term
+!!$          call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+!!$              rsolverHydro, Rsolution(1), p_rpredictorHydro,&
+!!$              ssectionNameHydro, rcollection, Rsource(1))
+!!$        end if
+!!$      else
+!!$        ! ... without source term
+!!$        call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+!!$            rsolverHydro, Rsolution(1), p_rpredictorHydro,&
+!!$            ssectionNameHydro, rcollection)
+!!$      end if
+!!$
+!!$      ! Compute low-order predictor
+!!$      call lsysbl_invertedDiagMatVec(&
+!!$          rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$          p_rpredictorHydro, 1.0_DP, p_rpredictorHydro)
+!!$
+!!$      ! Build the raw antidiffusive fluxes with contribution from
+!!$      ! consistent mass matrix
+!!$      call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
+!!$          1.0_DP, 1.0_DP, .true., ssectionNameHydro, rcollection,&
+!!$          rsolutionTimeDeriv=p_rpredictorHydro)
+!!$
+!!$    else
+!!$      ! Build the raw antidiffusive fluxes without contribution from
+!!$      ! consistent mass matrix
+!!$      call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
+!!$          1.0_DP, 1.0_DP, .true., ssectionNameHydro, rcollection)
+!!$    end if
 
     !--- transport model -------------------------------------------------------
 
     ! Should we apply consistent mass antidiffusion?
     if (imassantidiffusiontypeTransport .eq. MASS_CONSISTENT) then
       
-      ! Initialize dummy timestep
-      rtimestepAux%dStep = 1.0_DP
-      rtimestepAux%theta = 0.0_DP
-      
-      ! Set pointer to predictor
-      p_rpredictorTransport => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
-      
-      ! Compute the preconditioner
-      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolverTransport, Rsolution(2), ssectionNameTransport, rcollection)
-      
-      ! Compute low-order "right-hand side" without theta parameter
-      if (present(Rsource)) then
-        if (Rsource(2)%NEQ .eq. 0) then
-          ! ... without source term
-          call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-              rsolverTransport, Rsolution(2), p_rpredictorTransport,&
-              ssectionNameTransport, rcollection,&
-              fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
-              fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
-        else
-          ! ... with source term
-          call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-              rsolverTransport, Rsolution(2), p_rpredictorTransport,&
-              ssectionNameTransport, rcollection, Rsource(2),&
-              fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
-              fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
-        end if
+      ! Get more parameters from parameter list
+      call parlst_getvalue_int(p_rparlist, ssectionNameTransport,&
+          'consistentmassmatrix', consistentmassmatrixTransport)
+      call parlst_getvalue_int(p_rparlist, ssectionNameTransport,&
+          'iapproxtimederivativetype', iapproxtimederivativetypeTransport)
+
+      ! Set up matrix for discrete transport operator
+      if (present(rmatrix)) then
+        p_rmatrix => rmatrix
       else
-        ! ... without source term
-        call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-            rsolverTransport, Rsolution(2), p_rpredictorTransport,&
-            ssectionNameTransport, rcollection,&
-            fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
-            fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
+        p_rmatrix => rmatrixTmp
       end if
+
+      ! Check if matrix is compatible to consistent mass matrix; otherwise
+      ! create matrix as a duplicate of the consistent mass matrix
+      call lsyssc_isMatrixCompatible(p_rmatrix,&
+          rproblemLevel%Rmatrix(consistentMassMatrixTransport), bcompatible)
+      if (.not.bcompatible)&
+          call lsyssc_duplicateMatrix(&
+          rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
+          p_rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       
-      ! Compute low-order predictor
-      call lsysbl_invertedDiagMatVec(&
-          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-          p_rpredictorTransport, 1.0_DP, p_rpredictorTransport)
-      
+      ! Set up vector1 for computing the approximate time derivative
+      if (present(Rvector1)) then
+        p_Rvector1 => Rvector1
+      else
+        p_Rvector1 => Rvector1Tmp
+      end if
+
+      ! Check if rvector1(2) is compatible to the second solution
+      ! vector; otherwise create new vector as a duplicate of the
+      ! solution vector
+      call lsysbl_isVectorCompatible(p_Rvector1(2), Rsolution(2), bcompatible)
+      if (.not.bcompatible)&
+          call lsysbl_duplicateVector(Rsolution(2), p_Rvector1(2),&
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+      !-------------------------------------------------------------------------
+
+      ! How should we compute the approximate time derivative?
+      select case(iapproxtimederivativetypeTransport)
+
+      case(AFCSTAB_GALERKIN)
+        
+        ! Get more parameters from parameter list
+        call parlst_getvalue_double(p_rparlist,&
+            ssectionNameHydro, 'depsAbsApproxTimeDerivative',&
+            depsAbsApproxTimeDerivative, 1e-4_DP)
+        call parlst_getvalue_double(p_rparlist,&
+            ssectionNameHydro, 'depsRelApproxTimeDerivative',&
+            depsRelApproxTimeDerivative, 1e-2_DP)
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionNameHydro, 'nmaxIterationsApproxTimeDerivative',&
+            nmaxIterationsApproxTimeDerivative, 5)
+
+        ! Set up vector2 for computing the approximate time derivative
+        if (present(Rvector2)) then
+          p_Rvector2 => Rvector2
+        else
+          p_Rvector2 => Rvector2Tmp
+        end if
+
+        ! Check if rvector2(2) is compatible to the second solution
+        ! vector; otherwise create new vector as a duplicate of the
+        ! solution vector
+        call lsysbl_isVectorCompatible(p_Rvector2(2), Rsolution(2), bcompatible)
+        if (.not.bcompatible)&
+            call lsysbl_duplicateVector(Rsolution(2), p_Rvector2(2),&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+        ! Set up vector3 for computing the approximate time derivative
+        if (present(Rvector3)) then
+          p_Rvector3 => Rvector3
+        else
+          p_Rvector3 => Rvector3Tmp
+        end if
+        
+        ! Check if rvector3(2) is compatible to the second solution
+        ! vector; otherwise create new vector as a duplicate of the
+        ! solution vector
+        call lsysbl_isVectorCompatible(p_Rvector3(2), Rsolution(2), bcompatible)
+        if (.not.bcompatible)&
+            call lsysbl_duplicateVector(Rsolution(2), p_Rvector3(2),&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+
+        ! Make a backup copy of the stabilisation types because we
+        ! have to overwrite them to enforce using the standard
+        ! Galerkin scheme; this implies that their specification flags
+        ! are changed, so make a backup copy of them, too
+        ctypeAFCstabilisationConvection =&
+            rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+        istabilisationSpecConvection =&
+            rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
+
+        ! Enforce using the standard Galerkin method without any stabilisation
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
+
+        ! Create discrete transport operator of high-order (Galerkin method)
+        call transp_calcTransportOperator(rproblemLevel,&
+            rsolverTransport%rboundaryCondition, Rsolution(2), rtimestep%dTime,&
+            1.0_DP, p_rmatrix, ssectionNameTransport, rcollection, bforceUpdate=.true.)
+
+        ! Reset stabilisation structures to their original configuration
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = ctypeAFCstabilisationConvection
+        rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec    = istabilisationSpecConvection
+
+        ! Compute $K(u^L)*u^L$ and store the result in rvector2
+        call lsyssc_scalarMatVec(p_rmatrix, Rsolution(2)%rvectorBlock(1),&
+            p_Rvector2(2)%RvectorBlock(1), 1.0_DP, 0.0_DP)
+
+        ! Evaluate linear form for the boundary integral (if any)
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call transp_calcLinfBdrCond1D(rproblemLevel,&
+              rsolverTransport%rboundaryCondition, Rsolution(2),&
+              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP1d_sim,&
+              p_Rvector2(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+
+        case (NDIM2D)
+          call transp_calcLinfBdrCond2D(rproblemLevel,&
+              rsolverTransport%rboundaryCondition, Rsolution(2),&
+              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP2d_sim,&
+              p_Rvector2(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+
+        case (NDIM3D)
+!!$          call transp_calcLinfBdrCond3D(rproblemLevel,&
+!!$              rsolverTransport%rboundaryCondition, Rsolution(2),&
+!!$              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP3d_sim,&
+!!$              p_Rvector2(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+          print *, "Boundary conditions in 3D have not been implemented yet!"
+          stop
+        end select
+
+        ! Build the geometric source term (if any)
+        call transp_calcGeometricSourceterm(p_rparlist, ssectionNameTransport,&
+            rproblemLevel, Rsolution(2), 1.0_DP, .false., p_Rvector2(2),&
+            rcollection)
+
+        ! Apply the source vector to the residual (if any)
+        if (present(Rsource)) then
+          if (Rsource(2)%NEQ .gt. 0)&
+              call lsysbl_vectorLinearComb(Rsource(2), p_Rvector2(2), 1.0_DP, 1.0_DP)
+        end if
+
+        ! Scale rvector2(2) by the inverse of the lumped mass matrix and store
+        ! the result in rvector1(2); this is the solution of the lumped version
+        call lsysbl_invertedDiagMatVec(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            p_Rvector2(2), 1.0_DP, p_Rvector1(2))
+        
+        ! Store norm of the initial guess from the lumped version
+        dnorm0 = lsyssc_vectorNorm(p_rvector1(2)%RvectorBlock(1), LINALG_NORML2)
+
+        richardson2: do ite = 1, nmaxIterationsApproxTimeDerivative
+          ! Initialise rvector3 by the constant right-hand side
+          call lsysbl_copyVector(p_rvector2(2), p_rvector3(2))
+          
+          ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
+          call lsyssc_scalarMatVec(&
+              rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
+              p_Rvector1(2)%RvectorBlock(1), p_Rvector3(2)%RvectorBlock(1),&
+              -1.0_DP, 1.0_DP)
+          
+          ! Scale rvector3 by the inverse of the lumped mass matrix
+          call lsysbl_invertedDiagMatVec(&
+              rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+              p_Rvector3(2), 1.0_DP, p_Rvector3(2))
+          
+          ! Apply solution increment (rvector3) to the previous solution iterate
+          call lsysbl_vectorLinearComb(p_Rvector3(2), p_Rvector1(2), 1.0_DP, 1.0_DP)
+
+          ! Check for convergence
+          dnorm = lsyssc_vectorNorm(p_rvector3(2)%RvectorBlock(1), LINALG_NORML2)
+          if ((dnorm .le. depsAbsApproxTimeDerivative) .or.&
+              (dnorm .le. depsRelApproxTimeDerivative*dnorm0)) exit richardson2
+        end do richardson2
+
+        ! Release temporal memory
+        if (.not.present(Rvector2)) call lsysbl_releaseVector(Rvector2Tmp(2))
+        if (.not.present(Rvector3)) call lsysbl_releaseVector(Rvector3Tmp(2))
+
+        !-------------------------------------------------------------------------
+
+      case(AFCSTAB_UPWIND)
+
+        ! Make a backup copy of the stabilisation types because we
+        ! have to overwrite them to enforce using the standard
+        ! Galerkin scheme; this implies that their specification flags
+        ! are changed, so make a backup copy of them, too
+        ctypeAFCstabilisationConvection =&
+            rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+        istabilisationSpecConvection =&
+            rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
+
+        ! Enforce using the standard Galerkin method without any stabilisation
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = AFCSTAB_UPWIND
+        
+        ! Create discrete transport operator of low-order
+        call transp_calcTransportOperator(rproblemLevel,&
+            rsolverTransport%rboundaryCondition, Rsolution(2), rtimestep%dTime,&
+            1.0_DP, p_rmatrix, ssectionNameTransport, rcollection, bforceUpdate=.true.)
+
+        ! Reset stabilisation structures for further usage
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = ctypeAFCstabilisationConvection
+        rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec    = istabilisationSpecConvection
+
+
+        ! Compute $L(u^L)*u^L$ and store the result in rvector1
+        call lsyssc_scalarMatVec(p_rmatrix, Rsolution(2)%rvectorBlock(1),&
+            p_Rvector1(2)%RvectorBlock(1), 1.0_DP, 0.0_DP)
+
+        ! Evaluate linear form for the boundary integral (if any)
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call transp_calcLinfBdrCond1D(rproblemLevel,&
+              rsolverTransport%rboundaryCondition, Rsolution(2),&
+              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP1d_sim,&
+              p_Rvector1(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+
+        case (NDIM2D)
+          call transp_calcLinfBdrCond2D(rproblemLevel,&
+              rsolverTransport%rboundaryCondition, Rsolution(2),&
+              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP2d_sim,&
+              p_Rvector1(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+
+        case (NDIM3D)
+!!$          call transp_calcLinfBdrCond3D(rproblemLevel,&
+!!$              rsolverTransport%rboundaryCondition, Rsolution(2),&
+!!$              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP3d_sim,&
+!!$              p_Rvector1(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+          print *, "Boundary conditions in 3D have not been implemented yet!"
+          stop
+        end select
+
+        ! Build the geometric source term (if any)
+        call transp_calcGeometricSourceterm(p_rparlist, ssectionNameTransport,&
+            rproblemLevel, Rsolution(2), 1.0_DP, .false., p_Rvector1(2),&
+            rcollection)
+
+        ! Apply the source vector to the residual (if any)
+        if (present(Rsource)) then
+          if (Rsource(2)%NEQ .gt. 0)&
+              call lsysbl_vectorLinearComb(Rsource(2), p_Rvector2(2), 1.0_DP, 1.0_DP)
+        end if
+
+        ! Scale it by the inverse of the lumped mass matrix
+        call lsysbl_invertedDiagMatVec(&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            p_Rvector1(2), 1.0_DP, p_Rvector1(2))
+        
+      case default
+        call output_line('Unsupported type of transport operator!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLinearisedFCT')
+        call sys_halt()
+      end select
+
+      !-------------------------------------------------------------------------
+
       ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
-      call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
+      call gfsc_buildFluxFCT(&
+          rproblemLevel%Rafcstab(convectionAFC),&
           Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
-          rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
-          p_rpredictorTransport)
+          rmatrix=rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
+          rxTimeDeriv=p_Rvector1(2))
+
+      ! Release temporal memory
+      if (.not.present(rmatrix))  call lsyssc_releaseMatrix(rmatrixTmp)
+      if (.not.present(Rvector1)) call lsysbl_releaseVector(Rvector1Tmp(2))
+
     else
-      ! Build the raw antidiffusive fluxes without contribution from
-      ! consistent mass matrix
-      call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
+
+      !-------------------------------------------------------------------------
+
+      ! Build the raw antidiffusive fluxes without including the
+      ! contribution from consistent mass matrix
+      call gfsc_buildFluxFCT(&
+          rproblemLevel%Rafcstab(convectionAFC),&
           Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.)
     end if
+
+
+!!$      ! Initialize dummy timestep
+!!$      rtimestepAux%dStep = 1.0_DP
+!!$      rtimestepAux%theta = 0.0_DP
+!!$      
+!!$      ! Set pointer to predictor
+!!$      p_rpredictorTransport => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
+!!$      
+!!$      ! Compute the preconditioner
+!!$      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+!!$          rsolverTransport, Rsolution(2), ssectionNameTransport, rcollection)
+!!$      
+!!$      ! Compute low-order "right-hand side" without theta parameter
+!!$      if (present(Rsource)) then
+!!$        if (Rsource(2)%NEQ .eq. 0) then
+!!$          ! ... without source term
+!!$          call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+!!$              rsolverTransport, Rsolution(2), p_rpredictorTransport,&
+!!$              ssectionNameTransport, rcollection,&
+!!$              fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
+!!$              fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
+!!$        else
+!!$          ! ... with source term
+!!$          call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+!!$              rsolverTransport, Rsolution(2), p_rpredictorTransport,&
+!!$              ssectionNameTransport, rcollection, Rsource(2),&
+!!$              fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
+!!$              fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
+!!$        end if
+!!$      else
+!!$        ! ... without source term
+!!$        call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+!!$            rsolverTransport, Rsolution(2), p_rpredictorTransport,&
+!!$            ssectionNameTransport, rcollection,&
+!!$            fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
+!!$            fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
+!!$      end if
+!!$      
+!!$      ! Compute low-order predictor
+!!$      call lsysbl_invertedDiagMatVec(&
+!!$          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+!!$          p_rpredictorTransport, 1.0_DP, p_rpredictorTransport)
+!!$      
+!!$      ! Build the raw antidiffusive fluxes with contribution from
+!!$      ! consistent mass matrix
+!!$      call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
+!!$          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
+!!$          rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
+!!$          p_rpredictorTransport)
+!!$    else
+!!$      ! Build the raw antidiffusive fluxes without contribution from
+!!$      ! consistent mass matrix
+!!$      call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
+!!$          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.)
+!!$    end if
 
     !---------------------------------------------------------------------------
     ! Perform failsafe flux correction (if required)
@@ -1992,14 +2502,14 @@ contains
             Sfailsafevariables(ivariable), isubstring=ivariable)
       end do
 
-      ! Set up the predictor, that is, make a virtual copy of the
-      ! predictor vectors from the hydrodynamic system and the scalar tracer
-      ! equation which can be passed to the failsafe subroutine.
-      allocate(p_rpredictor(2))
-      call lsysbl_duplicateVector(p_rpredictorHydro, p_Rpredictor(1),&
-          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_SHARE)
-      call lsysbl_duplicateVector(p_rpredictorTransport, p_Rpredictor(2),&
-          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_SHARE)
+!!$      ! Set up the predictor, that is, make a virtual copy of the
+!!$      ! predictor vectors from the hydrodynamic system and the scalar tracer
+!!$      ! equation which can be passed to the failsafe subroutine.
+!!$      allocate(p_rpredictor(2))
+!!$      call lsysbl_duplicateVector(p_rpredictorHydro, p_Rpredictor(1),&
+!!$          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_SHARE)
+!!$      call lsysbl_duplicateVector(p_rpredictorTransport, p_Rpredictor(2),&
+!!$          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_SHARE)
     end if
 
     ! What type of limiter synchronisation is performed?
@@ -2010,49 +2520,54 @@ contains
       if (nfailsafe .gt. 0) then
         
         ! Compute linearised FEM-FCT correction for the hydrodynamic model
-        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-            AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
-            ssectionNameHydro, rcollection)
+        call hydro_calcCorrectionFCT(rproblemLevel,&
+            Rsolution(1), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_STANDARD-&
+            AFCSTAB_FCTALGO_CORRECT,&
+            Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Apply failsafe flux correction for the hydrodynamic model
-        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(inviscidAFC),&
+        call afcstab_failsafeLimiting(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            hydro_getVariable, Rsolution(1), p_rpredictorHydro)
+            hydro_getVariable, Rsolution(1), p_rvector1(1))
 
         ! Compute and apply linearised FEM-FCT correction for the
         ! transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            Rsolution(2), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
 
         !!!
         ! NOTE: We may add failsafe for scalar transport problem here!
         !!!
                 
-        ! Deallocate temporal memory
-        call lsysbl_releaseVector(p_Rpredictor(1))
-        call lsysbl_releaseVector(p_Rpredictor(2))
-        deallocate(SfailsafeVariables, p_Rpredictor)
+!!$        ! Deallocate temporal memory
+!!$        call lsysbl_releaseVector(p_Rpredictor(1))
+!!$        call lsysbl_releaseVector(p_Rpredictor(2))
+!!$        deallocate(SfailsafeVariables, p_Rpredictor)
         
       else
         
         ! Compute and apply linearised FEM-FCT correction for the
         ! hydrodynamic model
-        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
-            ssectionNameHydro, rcollection)
+        call hydro_calcCorrectionFCT(rproblemLevel,&
+            Rsolution(1), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_STANDARD+&
+            AFCSTAB_FCTALGO_SCALEBYMASS,&
+            Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Compute and apply linearised FEM-FCT correction for the
         ! transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            Rsolution(2), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
       end if
       
@@ -2060,16 +2575,18 @@ contains
     case (1)   ! minimum synchronisation
       
       ! Compute linearised FEM-FCT correction for the hydrodynamic model
-      call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
-          ssectionNameHydro, rcollection)
+      call hydro_calcCorrectionFCT(rproblemLevel,&
+          Rsolution(1), rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT,&
+          Rsolution(1), ssectionNameHydro, rcollection)
       
       ! Compute linearised FEM-FCT correction for the transport model
       call gfsc_buildConvectionVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-          rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          Rsolution(2), rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
       ! Set pointers
@@ -2085,29 +2602,32 @@ contains
       if (nfailsafe .gt. 0) then
 
         ! Apply failsafe flux correction for both models
-        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+        call afcstab_failsafeLimiting(&
+            rproblemLevel%Rafcstab(IposAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rpredictor)
+            zpinch_getVariable, Rsolution, p_Rvector1)
         
-        ! Deallocate temporal memory
-        call lsysbl_releaseVector(p_Rpredictor(1))
-        call lsysbl_releaseVector(p_Rpredictor(2))
-        deallocate(SfailsafeVariables, p_Rpredictor)
+!!$        ! Deallocate temporal memory
+!!$        call lsysbl_releaseVector(p_Rpredictor(1))
+!!$        call lsysbl_releaseVector(p_Rpredictor(2))
+!!$        deallocate(SfailsafeVariables, p_Rpredictor)
         
       else
         
         ! Apply linearised FEM-FCT correction for the hydrodynamic model
-        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
-            ssectionNameHydro, rcollection)
+        call hydro_calcCorrectionFCT(rproblemLevel,&
+            Rsolution(1), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS,&
+            Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Apply linearised FEM-FCT correction for the transportmodel
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            Rsolution(2), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
       end if
 
@@ -2115,10 +2635,11 @@ contains
     case (2)   ! Hydrodynamic model first, transport model second
       
       ! Compute linearised FEM-FCT correction for the hydrodynamic model
-      call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
-          ssectionNameHydro, rcollection)
+      call hydro_calcCorrectionFCT(rproblemLevel,&
+          Rsolution(1), rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT,&
+          Rsolution(1), ssectionNameHydro, rcollection)
       
       ! Copy correction factor for hydrodynamic model to transport model
       call afcstab_copyStabilisation(&
@@ -2129,9 +2650,11 @@ contains
       ! (without initialisation)
       call gfsc_buildConvectionVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-          rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
+          rproblemLevel%Rafcstab(convectionAFC),&
+          Rsolution(2), rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_INITALPHA-&
+          AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
       ! Copy final correction factor back to hydrodynamic system
       call afcstab_copyStabilisation(&
@@ -2144,26 +2667,28 @@ contains
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rpredictor)
+            zpinch_getVariable, Rsolution, p_Rvector1)
         
-        ! Deallocate temporal memory
-        call lsysbl_releaseVector(p_Rpredictor(1))
-        call lsysbl_releaseVector(p_Rpredictor(2))
-        deallocate(SfailsafeVariables, p_Rpredictor)
+!!$        ! Deallocate temporal memory
+!!$        call lsysbl_releaseVector(p_Rpredictor(1))
+!!$        call lsysbl_releaseVector(p_Rpredictor(2))
+!!$        deallocate(SfailsafeVariables, p_Rpredictor)
 
       else
         
         ! Apply linearised FEM-FCT correction for the hydrodynamic model
-        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
-            ssectionNameHydro, rcollection)
+        call hydro_calcCorrectionFCT(rproblemLevel,&
+            Rsolution(1), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS,&
+            Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Apply linearised FEM-FCT correction for the transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            Rsolution(2), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
       end if
 
@@ -2173,8 +2698,9 @@ contains
       ! Compute linearised FEM-FCT correction for the transport model
       call gfsc_buildConvectionVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-          rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          Rsolution(2), rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
       ! Copy correction factor for transport model to hydrodynamic model
@@ -2184,9 +2710,11 @@ contains
       
       ! Compute linearised FEM-FCT correction for the hydrodynamic model
       ! (without initialisation)
-      call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT,&
+      call hydro_calcCorrectionFCT(rproblemLevel,&
+          Rsolution(1), rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_INITALPHA-&
+          AFCSTAB_FCTALGO_CORRECT,&
           Rsolution(1), ssectionNameHydro, rcollection)
       
       ! Copy final correction factor back to transport model
@@ -2200,26 +2728,28 @@ contains
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rpredictor)
+            zpinch_getVariable, Rsolution, p_Rvector1)
         
-        ! Deallocate temporal memory
-        call lsysbl_releaseVector(p_Rpredictor(1))
-        call lsysbl_releaseVector(p_Rpredictor(2))
-        deallocate(SfailsafeVariables, p_Rpredictor)
+!!$        ! Deallocate temporal memory
+!!$        call lsysbl_releaseVector(p_Rpredictor(1))
+!!$        call lsysbl_releaseVector(p_Rpredictor(2))
+!!$        deallocate(SfailsafeVariables, p_Rpredictor)
 
       else
       
         ! Apply linearised FEM-FCT correction for the hydrodynamic model
-        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
-            ssectionNameHydro, rcollection)
+        call hydro_calcCorrectionFCT(rproblemLevel,&
+            Rsolution(1), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS,&
+            Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Apply linearised FEM-FCT correction for the transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            Rsolution(2), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
       end if
       
@@ -2230,10 +2760,11 @@ contains
 
         ! Compute and apply linearised FEM-FCT correction for
         ! hydrodynamic model
-        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-            AFCSTAB_FCTALGO_CORRECT, Rsolution(1),&
-            ssectionNameHydro, rcollection)
+        call hydro_calcCorrectionFCT(rproblemLevel,&
+            Rsolution(1), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_STANDARD-&
+            AFCSTAB_FCTALGO_CORRECT,&
+            Rsolution(1), ssectionNameHydro, rcollection)
 
         ! Copy correction factor for hydrodynamic model to transport model
         call afcstab_copyStabilisation(&
@@ -2244,21 +2775,22 @@ contains
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rpredictor)
+            zpinch_getVariable, Rsolution, p_Rvector1)
         
-        ! Deallocate temporal memory
-        call lsysbl_releaseVector(p_Rpredictor(1))
-        call lsysbl_releaseVector(p_Rpredictor(2))
-        deallocate(SfailsafeVariables, p_Rpredictor)
+!!$        ! Deallocate temporal memory
+!!$        call lsysbl_releaseVector(p_Rpredictor(1))
+!!$        call lsysbl_releaseVector(p_Rpredictor(2))
+!!$        deallocate(SfailsafeVariables, p_Rpredictor)
         
       else
         
         ! Compute and apply linearised FEM-FCT correction for
         ! hydrodynamic model
-        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
-            ssectionNameHydro, rcollection)
+        call hydro_calcCorrectionFCT(rproblemLevel,&
+            Rsolution(1), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_STANDARD+&
+            AFCSTAB_FCTALGO_SCALEBYMASS,&
+            Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Copy correction factor for hydrodynamic model to transport model
         call afcstab_copyStabilisation(&
@@ -2268,8 +2800,9 @@ contains
         ! Apply linearised FEM-FCT correction for transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            Rsolution(2), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
       end if
       
@@ -2282,8 +2815,9 @@ contains
         ! transport model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            Rsolution(2), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
 
         ! Copy correction factor for transport model to hydrodynamic model
@@ -2295,12 +2829,12 @@ contains
         call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rpredictor)
+            zpinch_getVariable, Rsolution, p_Rvector1)
         
-        ! Deallocate temporal memory
-        call lsysbl_releaseVector(p_Rpredictor(1))
-        call lsysbl_releaseVector(p_Rpredictor(2))
-        deallocate(SfailsafeVariables, p_Rpredictor)
+!!$        ! Deallocate temporal memory
+!!$        call lsysbl_releaseVector(p_Rpredictor(1))
+!!$        call lsysbl_releaseVector(p_Rpredictor(2))
+!!$        deallocate(SfailsafeVariables, p_Rpredictor)
         
       else
         
@@ -2308,8 +2842,9 @@ contains
         ! hydrodynamic model
         call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
-            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            Rsolution(2), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
         
         ! Copy correction factor for transport model to hydrodynamic system
@@ -2318,10 +2853,11 @@ contains
             rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
         
         ! Apply linearised FEM-FCT correction  for transport model
-        call hydro_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1),&
-            ssectionNameHydro, rcollection)
+        call hydro_calcCorrectionFCT(rproblemLevel,&
+            Rsolution(1), rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS,&
+            Rsolution(1), ssectionNameHydro, rcollection)
       end if
 
 
@@ -2335,21 +2871,21 @@ contains
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)
     case (NDIM1D)
-      call bdrf_filterVectorExplicit(rbdrCond(1), Rsolution(1),&
-          rtimestep%dTime, hydro_calcBoundaryvalues1d)
+      call bdrf_filterVectorExplicit(rsolverHydro%rboundaryCondition,&
+          Rsolution(1), rtimestep%dTime, hydro_calcBoundaryvalues1d)
 
     case (NDIM2D)
-      call bdrf_filterVectorExplicit(rbdrCond(1), Rsolution(1),&
-          rtimestep%dTime, hydro_calcBoundaryvalues2d)
+      call bdrf_filterVectorExplicit(rsolverHydro%rboundaryCondition,&
+          Rsolution(1), rtimestep%dTime, hydro_calcBoundaryvalues2d)
 
     case (NDIM3D)
-      call bdrf_filterVectorExplicit(rbdrCond(1), Rsolution(1),&
-          rtimestep%dTime, hydro_calcBoundaryvalues3d)
+      call bdrf_filterVectorExplicit(rsolverHydro%rboundaryCondition,&
+          Rsolution(1), rtimestep%dTime, hydro_calcBoundaryvalues3d)
     end select
 
     ! Impose boundary conditions for the solution vector
-    call bdrf_filterVectorExplicit(rbdrCond(2), Rsolution(2),&
-        rtimestep%dTime)
+    call bdrf_filterVectorExplicit(rsolverTransport%rboundaryCondition,&
+        Rsolution(2), rtimestep%dTime)
     
   end subroutine zpinch_calcLinearisedFCT
 

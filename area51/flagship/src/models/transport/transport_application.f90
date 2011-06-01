@@ -1345,9 +1345,12 @@ contains
       end if
     end if
 
-    ! Set update notification in problem level structure
+    ! Set update notifiers for the discrete transport operator and the
+    ! preconditioned in the problem level structure
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                     PROBLEV_MSPEC_UPDATE)
+                                     TRANSP_TROPER_UPDATE)
+    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     TRANSP_PRECOND_UPDATE)
 
   contains
 
@@ -1869,8 +1872,8 @@ contains
         end do richardson
         
         ! Initialise stabilisation structure by hand
-        rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
-        rafcstab%bprelimiting = .false.
+        rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
+        rafcstab%ctypePrelimiting   = AFCSTAB_NOPRELIMITING
         rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
         call gfsc_initStabilisation(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
         call afcstab_generateVerticesAtEdge(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
@@ -2410,8 +2413,12 @@ contains
         rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
     rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
 
-    ! Set update notification for velocity field/preconditioner
-    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
+    ! Set update notifiers for the discrete transport operator and the
+    ! preconditioner in the problem level structure
+    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     TRANSP_TROPER_UPDATE)
+    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     TRANSP_PRECOND_UPDATE)
 
     ! Calculate the standard Galerkin preconditioner
     ! (required for rhs and residual calculation)
@@ -2441,9 +2448,12 @@ contains
     rtimestep%dStep = dStep
     rtimestep%theta = theta
 
-    ! Again, set update notification for velocity field/preconditioner
-    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
-
+    ! Again, set update notifiers for the discrete transport operator
+    ! and the preconditioner in the problem level structure
+    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     TRANSP_TROPER_UPDATE)
+    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     TRANSP_PRECOND_UPDATE)
 
     ! We need the lumped mass matrix for scaling
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -3524,6 +3534,12 @@ contains
     ! Vector for the right-hand side
     type(t_vectorBlock) :: rrhs
 
+    ! Matrix for the linearised FCT algorithm
+    type(t_matrixScalar) :: rmatrix1
+
+    ! Vectors for the linearised FCT algorithm
+    type(t_vectorBlock) :: rvector1, rvector2, rvector3
+
     ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
 
@@ -3774,8 +3790,9 @@ contains
       end select
 
       ! Perform linearised FEM-FCT post-processing
-      call transp_calcLinearisedFCT(rbdrCond, p_rproblemLevel,&
-          rtimestep, rsolver, rsolution, ssectionName, rcollection)
+      call transp_calcLinearisedFCT(p_rproblemLevel, rtimestep, rsolver,&
+          rsolution, ssectionName, rcollection, rmatrix=rmatrix1,&
+          rvector1=rvector1, rvector2=rvector2, rvector3=rvector3)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
@@ -3931,6 +3948,12 @@ contains
     if (irhstype > 0) then
       call lsysbl_releaseVector(rrhs)
     end if
+
+    ! Release vectors and matrices for the linearised FCT algorithm
+    call lsyssc_releaseMatrix(rmatrix1)
+    call lsysbl_releaseVector(rvector1)
+    call lsysbl_releaseVector(rvector2)
+    call lsysbl_releaseVector(rvector3)
 
   end subroutine transp_solveTransientPrimal
 
@@ -5222,6 +5245,12 @@ contains
       ! Create dual solution vector initialised by zeros
       call lsysbl_releaseVector(rsolutionDual)
       call lsysbl_createVectorBlock(rsolutionPrimal, rsolutionDual, .true.)
+
+      ! Force update of the discrete transport operator and the
+      ! preconditioner. This may be necessary if the velocity is
+      ! constant, and hence, no repeated updates would be performed.
+      call problem_setSpec(rproblem, TRANSP_TROPER_UPDATE+&
+                                     TRANSP_PRECOND_UPDATE,'ior')
 
       ! Reset the time-stepping and solver algorithms
       call tstep_resetTimestep(rtimestep, .false.)

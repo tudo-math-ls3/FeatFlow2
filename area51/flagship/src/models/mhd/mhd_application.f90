@@ -607,7 +607,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 !</input>
 
@@ -1443,7 +1443,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 !</input>
 
@@ -1489,7 +1489,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! problem level
@@ -1514,7 +1514,6 @@ contains
     type(t_vectorBlock) :: rvectorBlock, rvectorHigh, rvectorAux
     type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
     type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     type(t_fparser), pointer :: p_rfparser
     type(t_collection) :: rcollectionTmp
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
@@ -1712,10 +1711,7 @@ contains
 
       ! Loop over all blocks of the global solution vector
       do iblock = 1, rvector%nblocks
-        
-        ! Set pointer to spatial discretisation
-        p_rspatialDiscr => rvector%RvectorBlock(iblock)%p_rspatialDiscr
-        
+                
         ! Scalar vectors in interleaved format have to be treated differently
         if (rvector%RvectorBlock(iblock)%NVAR .eq. 1) then
 
@@ -2531,7 +2527,7 @@ contains
     ! parameter list
     type(t_parlist), intent(in) :: rparlist
 
-    ! section name in parameter list
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! adaptation structure
@@ -2674,7 +2670,7 @@ contains
 !</description>
 
 !<input>
-      ! section name in parameter list
+      ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! boundary condition structure
@@ -2707,6 +2703,9 @@ contains
 
     ! Pointer to the discretisation structure
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
+
+    ! Vectors for the linearised FCT algorithm
+    type(t_vectorBlock) :: rvector1, rvector2, rvector3
 
     ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
@@ -2981,8 +2980,9 @@ contains
       end select
 
       ! Perform linearised FEM-FCT post-processing
-      call mhd_calcLinearisedFCT(rbdrCond, p_rproblemLevel,&
-          rtimestep, rsolver, rsolution, ssectionName, rcollection)
+      call mhd_calcLinearisedFCT(p_rproblemLevel, rtimestep,&
+          rsolver, rsolution, ssectionName, rcollection,&
+          rvector1=rvector1, rvector2=rvector2, rvector3=rvector3)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
@@ -3121,6 +3121,10 @@ contains
       end if
     end if
 
+    ! Release vectors for the linearised FCT algorithm
+    call lsysbl_releaseVector(rvector1)
+    call lsysbl_releaseVector(rvector2)
+    call lsysbl_releaseVector(rvector3)
   end subroutine mhd_solveTransientPrimal
 
   !*****************************************************************************

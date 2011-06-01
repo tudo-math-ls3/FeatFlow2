@@ -2866,6 +2866,9 @@ contains
     ! Pointer to the discretisation structure
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
+    ! Vectors for the linearised FCT algorithm
+    type(t_vectorBlock) :: rvector1, rvector2, rvector3
+
     ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
 
@@ -3139,8 +3142,9 @@ contains
       end select
 
       ! Perform linearised FEM-FCT post-processing
-      call hydro_calcLinearisedFCT(rbdrCond, p_rproblemLevel,&
-          rtimestep, rsolver, rsolution, ssectionName, rcollection)
+      call hydro_calcLinearisedFCT(p_rproblemLevel, rtimestep,&
+          rsolver, rsolution, ssectionName, rcollection,&
+          rvector1=rvector1, rvector2=rvector2, rvector3=rvector3)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
@@ -3278,6 +3282,11 @@ contains
         call grph_releaseGraph(rgraph)
       end if
     end if
+
+    ! Release vectors for the linearised FCT algorithm
+    call lsysbl_releaseVector(rvector1)
+    call lsysbl_releaseVector(rvector2)
+    call lsysbl_releaseVector(rvector3)
 
   end subroutine hydro_solveTransientPrimal
 

@@ -508,15 +508,15 @@ contains
             rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       end if
 
-      ! We need the nodal block vector for the low-order predictor
-      allocate(rafcstab%p_rvectorPredictor)
-      if (present(rblockDiscretisation)) then
-        call lsysbl_createVectorBlock(rblockDiscretisation,&
-            rafcstab%p_rvectorPredictor, .false., ST_DOUBLE)
-      else
-        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
-            rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
-      end if
+!!$      ! We need the nodal block vector for the low-order predictor
+!!$      allocate(rafcstab%p_rvectorPredictor)
+!!$      if (present(rblockDiscretisation)) then
+!!$        call lsysbl_createVectorBlock(rblockDiscretisation,&
+!!$            rafcstab%p_rvectorPredictor, .false., ST_DOUBLE)
+!!$      else
+!!$        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
+!!$            rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
+!!$      end if
 
       
     case DEFAULT

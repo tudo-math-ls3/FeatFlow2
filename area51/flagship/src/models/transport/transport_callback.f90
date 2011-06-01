@@ -97,6 +97,9 @@
 !#      -> Calculates the geometric source term for axi-symmetric,
 !#         cylindrical or sperical symmetric coordinate systems.
 !#
+!# 20.) transp_calcTransportOperator
+!#      -> Calculates the discrete transport operator.
+!#
 !#
 !# Frequently asked questions?
 !#
@@ -176,6 +179,7 @@ module transport_callback
   public :: transp_calcVelocityField
   public :: transp_calcLinearisedFCT
   public :: transp_calcGeometricSourceterm
+  public :: transp_calcTransportOperator
   public :: transp_coeffVectorAnalytic
   public :: transp_refFuncAnalytic
   public :: transp_weightFuncAnalytic
@@ -264,10 +268,10 @@ contains
     integer(i32) :: iSpec
     integer :: jacobianMatrix
 
+
     ! Get section name
     call collct_getvalue_string(rcollection,&
         'ssectionname', ssectionName)
-
 
     !###########################################################################
     ! REMARK: The order in which the operations are performed is
@@ -383,7 +387,8 @@ contains
       fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
       fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
       fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
-      fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim)
+      fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+      bforceUpdate)
 
 !<description>
     ! This subroutine calculates the nonlinear preconditioner for the
@@ -401,14 +406,14 @@ contains
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
-    ! user-defined callback functions
+    ! OPTIONAL: user-defined callback functions
     include 'intf_transpCalcMatrix.inc'
     optional :: fcb_calcMatrixDiagPrimal_sim
     optional :: fcb_calcMatrixPrimal_sim
     optional :: fcb_calcMatrixDiagDual_sim
     optional :: fcb_calcMatrixDual_sim
 
-    ! user-defined callback functions
+    ! OPTIONAL: user-defined callback functions
     include 'intf_transpCoeffMatBdr.inc'
     optional :: fcb_coeffMatBdrPrimal1d_sim
     optional :: fcb_coeffMatBdrPrimal2d_sim
@@ -416,6 +421,11 @@ contains
     optional :: fcb_coeffMatBdrDual1d_sim
     optional :: fcb_coeffMatBdrDual2d_sim
     optional :: fcb_coeffMatBdrDual3d_sim
+
+    ! OPTIONAL: flag to overwrite update notifier
+    ! If true, then the preconditioner is updated even if the
+    ! update notifier does not indicate the need of an update
+    logical, intent(in), optional :: bforceUpdate
 !</input>
 
 !<inputoutput>
@@ -433,674 +443,68 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
-    type(t_collection) :: rcollectionTmp
-    character(LEN=SYS_STRLEN) :: smode
-    logical :: bbuildStabilisation
-    integer :: systemMatrix, transportMatrix, lumpedMassMatrix, consistentMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
-    integer :: imasstype, ivelocitytype, idiffusiontype
-    integer :: convectionAFC, diffusionAFC, velocityfield
+    integer :: lumpedMassMatrix, consistentMassMatrix
+    integer :: systemMatrix, transportMatrix, imasstype
+    logical :: breturn
 
-    !###########################################################################
-    ! REMARK: If you want to add a new type of velocity/diffusion,
-    ! then search for the tag @FAQ2: in this subroutine and create a
-    ! new CASE which performs the corresponding task for the new type
-    ! of velocity/ diffusion.
-    !###########################################################################
 
-    ! Check if the preconditioner has to be updated and return otherwise.
-    if (iand(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE) .eq. 0) return
+    breturn = .true.
+    if (present(bforceUpdate)) breturn = not(bforceUpdate)
+
+    ! Check if the preconditioner and/or the discrete transport
+    ! operator have to be updated and return otherwise.
+    if ((iand(rproblemLevel%iproblemSpec, TRANSP_PRECOND_UPDATE) .eq. 0) .and.&
+        (iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_UPDATE)  .eq. 0) .and.&
+        breturn) return
 
     ! Start time measurement for matrix evaluation
     p_rtimer => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyMatrix', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
-    ! Remove update notifier for further calls. Depending on the
+    ! Remove update notifier from the preconditioner. Depending on the
     ! velocity, diffusion type it will be re-activited below.
     rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
-                                      not(PROBLEV_MSPEC_UPDATE))
+                                      not(TRANSP_PRECOND_UPDATE))
 
-    ! Get parameters from parameter list which are required unconditionally
+    ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
         'rparlist', ssectionName=ssectionName)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'transportmatrix', transportMatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffmatrix_s', coeffMatrix_S)
 
-    !---------------------------------------------------------------------------
-    ! Assemble diffusion operator (for the right-hand side):
-    !
-    ! After integration by parts it is given by
-    !
-    ! $$ Su = -\int_\Omega \nabla w \cdot (D \nabla u) {\rm d}{\bf x} $$
-    !
-    ! The diffusion operator is symmetric so that it is the same for
-    ! the primal and the dual problem. If no diffusion is present,
-    ! i.e. $D \equiv 0$, then the transport operator is initialised by
-    ! zeros. If there is anisotropic diffusion, i.e. $D=D({\bf x},t)$,
-    ! then we may also initialize some stabilisation structure.
-    !
-    ! The bilinear form for the diffusion operator consists of the
-    ! volume integral (see above) only.
-    !
-    ! Non-homogeneous Neumann boundary conditions
-    !
-    ! $$ q_N = {\bf n} \cdot \nabla u = h \qquad \mbox{on} \quad \Gamma_N $$
-    !
-    ! are built into the right-hand side vector.
-    !---------------------------------------------------------------------------
-
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'idiffusiontype', idiffusiontype)
-
-    ! Primal and dual mode are equivalent
-    ! @FAQ2: Which type of diffusion are we?
-    select case(idiffusiontype)
-    case (DIFFUSION_ZERO)
-      ! zero diffusion, clear the transport matrix
-      call lsyssc_clearMatrix(rproblemLevel%Rmatrix(transportMatrix))
-
-    case (DIFFUSION_ISOTROPIC)
-      ! Isotropic diffusion
-      call lsyssc_duplicateMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_S),&
-          rproblemLevel%Rmatrix(transportMatrix),&
-          LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
-
-    case (DIFFUSION_ANISOTROPIC)
-      ! Anisotropic diffusion
-      call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'diffusionAFC', diffusionAFC)
-
-      if (diffusionAFC > 0) then
-
-        ! What kind of stabilisation should be applied?
-        select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
-
-        case (AFCSTAB_DMP)
-          ! Satisfy discrete maximum principle
-          call gfsc_buildDiffusionOperator(&
-              rproblemLevel%Rafcstab(diffusionAFC),&
-              1.0_DP, .false., .true.,&
-              rproblemLevel%Rmatrix(transportMatrix))
-
-        case (AFCSTAB_SYMMETRIC)
-          ! Satisfy discrete maximum principle
-          ! and assemble stabilisation structure
-          call gfsc_buildDiffusionOperator(&
-              rproblemLevel%Rafcstab(diffusionAFC),&
-              1.0_DP, .true., .true.,&
-              rproblemLevel%Rmatrix(transportMatrix))
-
-        case default
-          ! Compute the standard Galerkin approximation
-          call lsyssc_duplicateMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_S),&
-          rproblemLevel%Rmatrix(transportMatrix),&
-          LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
-        end select
-
-      else   ! diffusionAFC < 0
-
-        ! Compute the standard Galerkin approximation
-        call lsyssc_duplicateMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_S),&
-          rproblemLevel%Rmatrix(transportMatrix),&
-          LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
-
-      end if   ! diffusionAFC
-
-
-    case (DIFFUSION_VARIABLE)
-      call output_line('Variable diffusion matrices are yet not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
-      call sys_halt()
-
-      ! Set update notification in problem level structure
-      rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                       PROBLEV_MSPEC_UPDATE)
-
-    case default
-      call output_line('Invalid type of diffusion!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
-      call sys_halt()
-    end select
-
-
-    !---------------------------------------------------------------------------
-    ! Assemble convective operator (for the right-hand side):
-    !
-    ! (1) without integration by parts:
-    !     $$ -\int_\Omega w \nabla \cdot {\bf f}(u) {\rm d}{\bf x} $$
-    !
-    !     then boundary conditions need to be imposed in strong sense
-    !     by filtering the system matrix, the solution vector and/or
-    !     the residual explicitly.
-    !
-    ! (2) with integration by parts:
-    !     $$ \int_\Omega \nabla w \cdot {\bf f}(u) {\rm d}{\bf x} $$
-    !
-    !     with weakly imposed boundary conditions 
-    !
-    !     $$ -\int_{\Gamma_-} w {\bf f}(u_0) \cdot {\bf n} {\rm d}{\bf s} $$
-    !
-    !     imposed at some part of the boundary. At the remaining part
-    !     of the boundary nothing is prescribed and the corresponding
-    !     boundary integral is built into the bilinear form
-    !
-    !     $$ -\int_{\Gamma_+} w {\bf f}(u) \cdot {\bf n} {\rm d}{\bf s} $$
-    !
-    ! The convective operator is skew-symmetric so that we have to
-    ! distinguish between the primal and the dual problem.
-    !---------------------------------------------------------------------------
-
-    call parlst_getvalue_string(p_rparlist,&
-        ssectionName, 'mode', smode)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'convectionAFC', convectionAFC)
-
-    ! Attach user-defined collection structure to temporal collection
-    ! structure (may be required by the callback function)
-    rcollectionTmp%p_rnextCollection => rcollection
-
-    ! Set vector for velocity field (if any)
-    if (transp_hasVelocityVector(ivelocityType)) then
-      call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'velocityfield', velocityfield)
-      rcollectionTmp%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
-    end if
-
-    ! Are we in primal or dual mode?
-    if (trim(smode) .eq. 'primal') then
-
-      !-------------------------------------------------------------------------
-      ! We are in primal mode which means that we have to build two
-      ! bilinear forms: one for the volume integral and one for the
-      ! surface integral which is used to weakly impose Dirichlet
-      ! boundary conditions. Note that lumping is performed for the
-      ! boundary term to prevent the generation of oscillations.
-      !-------------------------------------------------------------------------
-
-      ! @FAQ2: Which type of velocity are we?
-      select case(abs(ivelocitytype))
-      case default
-        ! The user-defined callback function for matrix coefficients
-        ! is used if present; otherwise an error is thrown
-        if (present(fcb_calcMatrixPrimal_sim) .and.&
-            present(fcb_calcMatrixDiagPrimal_sim)) then
-
-          ! Check if stabilisation should be applied
-          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-          case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
-            bbuildStabilisation = .false.
-          case default
-            bbuildStabilisation = .true.
-          end select
-
-          select case(rproblemLevel%rtriangulation%ndim)
-          case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-          end select
-
-        else ! callback function not present
-
-          call output_line('Missing user-defined callback function!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
-          call sys_halt()
-
-        end if
-
-
-      case (VELOCITY_ZERO)
-        ! zero velocity, do nothing
-
-
-      case (VELOCITY_CONSTANT,&
-            VELOCITY_TIMEDEP)
-        ! linear velocity
-
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-
-        case (AFCSTAB_GALERKIN)
-
-          ! Apply standard Galerkin discretisation
-          select case(rproblemLevel%rtriangulation%ndim)
-          case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvP1d_sim, transp_calcMatGalConvP1d_sim,&
-                1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvP2d_sim, transp_calcMatGalConvP2d_sim,&
-                1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvP3d_sim, transp_calcMatGalConvP3d_sim,&
-                1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-          end select
-
-        case default
-
-          ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          select case(rproblemLevel%rtriangulation%ndim)
-          case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvP1d_sim, transp_calcMatUpwConvP1d_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvP2d_sim, transp_calcMatUpwConvP2d_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvP3d_sim, transp_calcMatUpwConvP3d_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-          end select
-
-        end select
-
-        if (abs(ivelocitytype) .eq. VELOCITY_TIMEDEP) then
-          ! Set update notification in problem level structure
-          rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                           PROBLEV_MSPEC_UPDATE)
-        end if
-
-
-      case (VELOCITY_BURGERS_SPACETIME)
-        ! nonlinear Burgers` equation in space-time
-
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-
-        case (AFCSTAB_GALERKIN)
-
-          ! Apply standard Galerkin discretisation
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatDiagSTBurgP2d_sim, transp_calcMatGalSTBurgP2d_sim,&
-              1.0_DP, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-        case default
-
-          ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatDiagSTBurgP2d_sim, transp_calcMatUpwSTBurgP2d_sim,&
-              1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-        end select
-
-        ! Set update notification in problem level structure
-        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                         PROBLEV_MSPEC_UPDATE)
-
-
-      case (VELOCITY_BUCKLEV_SPACETIME)
-        ! nonlinear Buckley-Leverett equation in space-time
-
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-
-        case (AFCSTAB_GALERKIN)
-
-          ! Apply standard Galerkin discretisation
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatDiagSTBLevP2d_sim, transp_calcMatGalSTBLevP2d_sim,&
-              1.0_DP, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-        case default
-
-          ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatDiagSTBLevP2d_sim, transp_calcMatUpwSTBLevP2d_sim,&
-              1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-        end select
-
-        ! Set update notification in problem level structure
-        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                         PROBLEV_MSPEC_UPDATE)
-
-
-      case (VELOCITY_BURGERS1D)
-        ! nonlinear Burgers` equation in 1D
-
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-
-        case (AFCSTAB_GALERKIN)
-
-          ! Apply standard Galerkin discretisation
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatDiagBurgP1d_sim, transp_calcMatGalBurgP1d_sim,&
-              1.0_DP, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-        case default
-
-          ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatDiagBurgP1d_sim, transp_calcMatUpwBurgP1d_sim,&
-              1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-        end select
-
-        ! Set update notification in problem level structure
-        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                         PROBLEV_MSPEC_UPDATE)
-
-
-      case (VELOCITY_BURGERS2D)
-        ! nonlinear Burgers` equation in 2D
-
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-
-        case (AFCSTAB_GALERKIN)
-
-          ! Apply standard Galerkin discretisation
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatDiagBurgP2d_sim, transp_calcMatGalBurgP2d_sim,&
-              1.0_DP, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-        case default
-
-          ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatDiagBurgP2d_sim, transp_calcMatUpwBurgP2d_sim,&
-              1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-        end select
-
-        ! Set update notification in problem level structure
-        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                         PROBLEV_MSPEC_UPDATE)
-
-
-      case (VELOCITY_BUCKLEV1D)
-        ! nonlinear Buckley-Leverett equation in 1D
-
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-
-        case (AFCSTAB_GALERKIN)
-
-          ! Apply standard Galerkin discretisation
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatDiagBLevP1d_sim, transp_calcMatGalBLevP1d_sim,&
-              1.0_DP, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-        case default
-
-          ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatDiagBLevP1d_sim, transp_calcMatUpwBLevP1d_sim,&
-              1.0_DP, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-        end select
-
-        ! Set update notification in problem level structure
-        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                         PROBLEV_MSPEC_UPDATE)
-      end select
-
-      ! Evaluate bilinear form for boundary integral (if any)
-      call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
-          rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
-          fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
-          fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
-          fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
-          BILF_MATC_LUMPED)
-
-    elseif (trim(smode) .eq. 'dual') then
-
-      !-------------------------------------------------------------------------
-      ! We are in dual mode which means that we have to build two
-      ! bilinear forms: one for the volume integral and one for the
-      ! surface integral which is used to weakly impose Dirichlet
-      ! boundary conditions. Note that lumping is performed for the
-      ! boundary term to prevent the generation of oscillations.
-      !-------------------------------------------------------------------------
-
-      ! @FAQ2: Which type of velocity are we?
-      select case(abs(ivelocitytype))
-      case default
-        ! The user-defined callback function for matrix coefficients
-        ! is used if present; otherwise an error is thrown
-        if (present(fcb_calcMatrixDual_sim) .and.&
-            present(fcb_calcMatrixDiagDual_sim)) then
-
-          ! Check if stabilisation should be applied
-          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-          case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
-            bbuildStabilisation = .false.
-          case default
-            bbuildStabilisation = .true.
-          end select
-
-          select case(rproblemLevel%rtriangulation%ndim)
-          case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-          end select
-
-        else ! callback function not present
-
-          call output_line('Missing user-defined callback function!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
-          call sys_halt()
-
-        end if
-
-
-      case (VELOCITY_ZERO)
-        ! zero velocity, do nothing
-
-
-      case (VELOCITY_CONSTANT,&
-            VELOCITY_TIMEDEP)
-        ! linear velocity
-
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-
-        case (AFCSTAB_GALERKIN)
-
-          ! Apply standard Galerkin discretisation
-          select case(rproblemLevel%rtriangulation%ndim)
-          case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvD1d_sim, transp_calcMatGalConvD1d_sim,&
-                1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvD2d_sim, transp_calcMatGalConvD2d_sim,&
-                1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvD3d_sim, transp_calcMatGalConvD3d_sim,&
-                1.0_DP, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-          end select
-          
-        case default
-
-          ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          select case(rproblemLevel%rtriangulation%ndim)
-          case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvD1d_sim, transp_calcMatUpwConvD1d_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvD2d_sim, transp_calcMatUpwConvD2d_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-
-          case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatDiagConvD3d_sim, transp_calcMatUpwConvD3d_sim,&
-                1.0_DP, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
-          end select
-
-        end select
-
-        if (abs(ivelocitytype) .eq. VELOCITY_TIMEDEP) then
-          ! Set update notification in problem level structure
-          rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                       PROBLEV_MSPEC_UPDATE)
-        end if
-
-        ! @TODO: The dual mode has only been implemented for linear
-        ! convection. If you need to compute the dual problem for
-        ! some other velocity type, then you have to add the
-        ! implementation of the dual transport operator below!
-
-      end select
-
-      ! Evaluate bilinear form for boundary integral (if any)
-      call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
-          rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
-          fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
-          fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
-          fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
-          BILF_MATC_LUMPED)
-
-    else
-      call output_line('Invalid mode!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
-      call sys_halt()
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Assemble the global system operator
-    !---------------------------------------------------------------------------
-
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'systemmatrix', systemMatrix)
+    ! Get parameter from parameter list
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'imasstype', imasstype)
 
+    ! What type o mass matrix are we?
     select case(imasstype)
     case (MASS_LUMPED)
-
+      
       !-------------------------------------------------------------------------
       ! Compute the global operator for transient flow
       !
       !   $ A = ML-theta*dt*L $
       !-------------------------------------------------------------------------
 
+      ! Get additional parameters from parameter list
       call parlst_getvalue_int(p_rparlist,&
           ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'systemmatrix', systemMatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'transportmatrix', transportMatrix)
 
+      ! Assemble the discrete transport operator
+      call transp_calcTransportOperator(rproblemlevel,&
+        rsolver%rboundaryCondition, rsolution, rtimestep%dTime, 1.0_DP,&
+        rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
+        fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+        fcb_calcMatrixDiagDual_sim,  fcb_calcMatrixDual_sim,&
+        fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+        fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+        fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+        bforceUpdate)
+     
+      ! Build global system operator
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rmatrix(transportMatrix),&
@@ -1116,9 +520,26 @@ contains
       !   $ A = MC-theta*dt*L $
       !-------------------------------------------------------------------------
 
+      ! Get additional parameters from parameter list
       call parlst_getvalue_int(p_rparlist,&
           ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'systemmatrix', systemMatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'transportmatrix', transportMatrix)
 
+      ! Assemble the discrete transport operator
+      call transp_calcTransportOperator(rproblemlevel,&
+        rsolver%rboundaryCondition, rsolution, rtimestep%dTime, 1.0_DP,&
+        rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
+        fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+        fcb_calcMatrixDiagDual_sim,  fcb_calcMatrixDual_sim,&
+        fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+        fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+        fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+        bforceUpdate)
+
+      ! Build global system operator
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%Rmatrix(consistentMassMatrix),&
           rproblemLevel%Rmatrix(transportMatrix),&
@@ -1134,16 +555,40 @@ contains
       !   $ A = -L $
       !-------------------------------------------------------------------------
 
+      ! Get additional parameters from parameter list
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'transportmatrix', transportMatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'systemmatrix', systemMatrix)
+    
+      ! Build global system operator
+      call transp_calcTransportOperator(rproblemlevel,&
+        rsolver%rboundaryCondition, rsolution, rtimestep%dTime, 1.0_DP,&
+        rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
+        fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+        fcb_calcMatrixDiagDual_sim,  fcb_calcMatrixDual_sim,&
+        fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+        fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+        fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+        bforceUpdate)
+
       call lsyssc_copyMatrix(rproblemLevel%Rmatrix(transportMatrix),&
           rproblemLevel%Rmatrix(systemMatrix))
       call lsyssc_scaleMatrix(rproblemLevel%Rmatrix(systemMatrix), -1.0_DP)
-
+      
     end select
 
     ! Impose boundary conditions in strong sence (if any)
     if (rsolver%rboundaryCondition%bStrongBdrCond) then
       call bdrf_filterMatrix(rsolver%rboundaryCondition,&
           rproblemLevel%Rmatrix(systemMatrix), 1.0_DP)
+    end if
+
+    ! Set update notifier for the preconditioner if the update
+    ! notifier for the discret transport operator has been set
+    if (iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_UPDATE) .ne. 0) then
+      rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                         TRANSP_PRECOND_UPDATE)
     end if
 
     ! Ok, we updated the (nonlinear) system operator successfully. Now we still
@@ -1185,12 +630,12 @@ contains
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
-    ! user-defined callback functions
+    ! OPTIONAL: user-defined callback functions
     include 'intf_transpCalcMatrix.inc'
     optional :: fcb_calcMatrixPrimal_sim
     optional :: fcb_calcMatrixDual_sim
 
-    ! user-defined callback functions
+    ! OPTIONAL: user-defined callback functions
     include 'intf_transpCoeffMatBdr.inc'
     optional :: fcb_coeffMatBdrPrimal1d_sim
     optional :: fcb_coeffMatBdrPrimal2d_sim
@@ -1507,8 +952,8 @@ contains
       end select
 
       ! Evaluate bilinear form for boundary integral (if any)
-      call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
+      call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver%rboundaryCondition,&
+          rsolution, smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
           fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
           fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
@@ -1596,8 +1041,8 @@ contains
       end select
 
       ! Evaluate bilinear form for boundary integral (if any)
-      call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
+      call transp_calcBilfBdrCondQuick(rproblemLevel, rsolver%rboundaryCondition,&
+          rsolution, smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rproblemLevel%Rmatrix(transportMatrix), ssectionName, rcollection,&
           fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
           fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
@@ -2723,11 +2168,13 @@ contains
         call gfsc_buildFluxFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP, .true.,&
-            rproblemLevel%Rmatrix(consistentMassMatrix), rsolution)
+            rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+            rxPredictor=p_rpredictor)
       else
         call gfsc_buildFluxFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP, .true.)
+            rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP, .true.,&
+            rxPredictor=p_rpredictor)
         
         ! Perform flux correction
         call gfsc_buildConvectionVectorFCT(&
@@ -2856,22 +2303,6 @@ contains
     integer :: convectionAFC, ivelocitytype
 
 
-    !###########################################################################
-    ! REMARK: If you want to add a new type of velocity/diffusion,
-    ! then search for the tag @FAQ2: in this subroutine and create a
-    ! new CASE which performs the corresponding task for the new type
-    ! of velocity/ diffusion.
-    !###########################################################################
-
-    ! Check if the preconditioner has to be initialised
-    if (iand(rproblemLevel%iproblemSpec,&
-             PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
-      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, ssectionName, rcollection)
-      rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
-                                        not(PROBLEV_MSPEC_INITIALIZE))
-    end if
-
     !---------------------------------------------------------------------------
     ! We calculate the constant right-hand side vector based on the
     ! transport operator. If boundary conditions are imposed in weak
@@ -2922,7 +2353,7 @@ contains
         dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
 
         ! Build transport term $(1-theta)*dt*K(u^n)u^n$, where
-        ! $T(u^n)$ denotes the discrete transport operator of high or
+        ! $K(u^n)$ denotes the discrete transport operator of high or
         ! low order evaluated at the old solution values
         call lsyssc_scalarMatVec(&
             rproblemLevel%Rmatrix(transportMatrix),&
@@ -2937,8 +2368,8 @@ contains
             rsolution%RvectorBlock(1), rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP)
 
         ! Evaluate linear form for the boundary integral (if any)
-        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-            smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep, dscale,&
+        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver%rboundaryCondition,&
+            rsolution, smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep, dscale,&
             rrhs%RvectorBlock(1), ssectionName, rcollection,&
             fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
             fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
@@ -3067,23 +2498,7 @@ contains
     integer :: convectionAFC, diffusionAFC, ivelocitytype
     integer :: imasstype, imassantidiffusiontype
 
-
-    !###########################################################################
-    ! REMARK: If you want to add a new type of velocity/diffusion,
-    ! then search for the tag @FAQ2: in this subroutine and create a
-    ! new CASE which performs the corresponding task for the new type
-    ! of velocity/ diffusion.
-    !###########################################################################
-
-    ! Check if the preconditioner has to be initialised
-    if (iand(rproblemLevel%iproblemSpec,&
-             PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
-      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, ssectionName, rcollection)
-      rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
-                                        not(PROBLEV_MSPEC_INITIALIZE))
-    end if
-
+    
     !---------------------------------------------------------------------------
     ! We calculate the nonlinear residual vector based on the
     ! transport operator. If boundary conditions are imposed in weak
@@ -3137,8 +2552,8 @@ contains
             rsolution%rvectorBlock(1), rres%RvectorBlock(1), dscale, 1.0_DP)
         
         ! Evaluate linear form for the boundary integral (if any)
-        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-            smode, ivelocitytype, rtimestep%dTime, dscale,&
+        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver%rboundaryCondition,&
+            rsolution, smode, ivelocitytype, rtimestep%dTime, dscale,&
             rres%RvectorBlock(1), ssectionName, rcollection,&
             fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
             fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
@@ -3174,8 +2589,8 @@ contains
           rsolution%rvectorBlock(1), rres%RvectorBlock(1), 1.0_DP, 1.0_DP)
 
       ! Evaluate linear form for boundary integral (if any)
-      call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver, rsolution,&
-          smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
+      call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver%rboundaryCondition,&
+          rsolution, smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
           rres%RvectorBlock(1), ssectionName, rcollection,&
           fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
           fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
@@ -3233,11 +2648,13 @@ contains
           call gfsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-              rproblemLevel%Rmatrix(consistentMassMatrix), rsolution)
+              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rxPredictor=p_rpredictor)
         else
           call gfsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
-              rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
+              rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
+              rxPredictor=p_rpredictor)
         end if
 
         ! Set operation specifier
@@ -3346,7 +2763,8 @@ contains
 !<subroutine>
 
   subroutine transp_setBoundaryCondition(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rres, ssectionName, rcollection)
+      rsolver, rsolution, rsolution0, rres, ssectionName, rcollection,&
+      rmatrix, rboundaryCondition)
 
 !<description>
     ! This subroutine imposes the Dirichlet boundary conditions in
@@ -3363,6 +2781,10 @@ contains
 
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolution0
+
+    ! OPTIONAL: boundary condition; if not present, the boundary
+    ! condition associated with the solver structure is used
+    type(t_boundaryCondition), intent(in), target, optional :: rboundaryCondition
 !</input>
 
 !<inputoutput>
@@ -3381,43 +2803,66 @@ contains
     ! collection structure to provide additional
     ! information to the boundary setting routine
     type(t_collection), intent(InOUT) :: rcollection
+
+    ! OPTIONAL: system matrix; if not present, the system matrix
+    ! associated with the solver structure is used
+    type(t_matrixScalar), intent(inout), target, optional :: rmatrix
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
+    type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_boundaryCondition), pointer :: p_rboundaryCondition
     integer :: imatrix
 
-    ! Get parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection,&
-        'rparlist', ssectionName=ssectionName)
 
-    ! What type of preconditioner are we?
-    select case(rsolver%iprecond)
-    case (NLSOL_PRECOND_BLOCKD,&
-          NLSOL_PRECOND_DEFCOR,&
-          NLSOL_PRECOND_NEWTON_FAILED)
+    ! What system matrix should be used?
+    if (present(rmatrix)) then
+      p_rmatrix => rmatrix
+    else
+      
+      ! Get parameter list
+      p_rparlist => collct_getvalue_parlst(rcollection,&
+          'rparlist', ssectionName=ssectionName)
+      
+      ! What type of preconditioner are we?
+      select case(rsolver%iprecond)
+      case (NLSOL_PRECOND_BLOCKD,&
+            NLSOL_PRECOND_DEFCOR,&
+            NLSOL_PRECOND_NEWTON_FAILED)
+        
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'systemmatrix', imatrix)
+        
+      case (NLSOL_PRECOND_NEWTON)
+        
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'jacobianmatrix', imatrix)
+        
+      case default
+        call output_line('Invalid nonlinear preconditioner!',&
+            OU_CLASS_ERROR, OU_MODE_STD,'transp_setBoundaryCondition')
+        call sys_halt()
+      end select
+      
+      p_rmatrix => rproblemLevel%Rmatrix(imatrix)
+      
+    end if
 
-      call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'systemmatrix', imatrix)
+    ! What boundary conditions should be used?
+    if (present(rboundaryCondition)) then
+      p_rboundaryCondition => rboundaryCondition
+    else
+      p_rboundaryCondition => rsolver%rboundaryCondition
+    end if
 
-    case (NLSOL_PRECOND_NEWTON)
-
-      call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'jacobianmatrix', imatrix)
-
-    case default
-      call output_line('Invalid nonlinear preconditioner!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'transp_setBoundaryCondition')
-      call sys_halt()
-    end select
 
     ! Impose boundary conditions for the solution vector and impose
     ! zeros in the residual vector and the off-diagonal positions of
     ! the system matrix which depends on the nonlinear solver
-    call bdrf_filterSolution(rsolver%rboundaryCondition,&
-        rproblemLevel%Rmatrix(imatrix), rsolution, rres,&
-        rsolution0, rtimestep%dTime)
+    call bdrf_filterSolution(p_rboundaryCondition,&
+        rmatrix , rsolution, rres, rsolution0, rtimestep%dTime)
 
   end subroutine transp_setBoundaryCondition
  
@@ -3425,7 +2870,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+  subroutine transp_calcBilfBdrCond1D(rproblemLevel, rboundaryCondition,&
       rsolution, dtime, dscale, fcoeff_buildMatrixScBdr1D_sim,&
       rmatrix, ssectionName, rcollection, cconstrType)
 
@@ -3444,9 +2889,9 @@ contains
 !<input>
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
-
-    ! solver structure
-    type(t_solver), intent(in) :: rsolver
+    
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! solution vector
     type(t_vectorBlock), intent(in), target :: rsolution
@@ -3479,7 +2924,6 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_boundaryCondition), pointer :: p_rboundaryCondition
     type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
     type(t_boundaryRegion) :: rboundaryRegion
@@ -3490,8 +2934,7 @@ contains
 
     ! Evaluate bilinear form for boundary integral and 
     ! return if there are no weak boundary conditions
-    p_rboundaryCondition => rsolver%rboundaryCondition
-    if (.not.p_rboundaryCondition%bWeakBdrCond) return
+    if (.not.rboundaryCondition%bWeakBdrCond) return
 
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
@@ -3518,7 +2961,7 @@ contains
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
-        p_rboundaryCondition%rfparser, .true.)
+        rboundaryCondition%rfparser, .true.)
     
     ! Attach velocity vector (if any) to second quick access vector of
     ! the temporal collection structure
@@ -3534,11 +2977,10 @@ contains
 
     
     ! Set pointers
-    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
-        p_IbdrCondType)
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
 
     ! Loop over all boundary components
-    do ibdc = 1, p_rboundaryCondition%iboundarycount
+    do ibdc = 1, rboundaryCondition%iboundarycount
 
       ! Check if this segment has weak boundary conditions
       if (iand(p_IbdrCondType(ibdc), BDRC_WEAK) .ne. BDRC_WEAK) cycle
@@ -3590,7 +3032,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+  subroutine transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
       rsolution, dtime, dscale, fcoeff_buildMatrixScBdr2D_sim,&
       rmatrix, ssectionName, rcollection, cconstrType)
 
@@ -3610,8 +3052,8 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
 
-    ! solver structure
-    type(t_solver), intent(in) :: rsolver
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! solution vector
     type(t_vectorBlock), intent(in), target :: rsolution
@@ -3644,7 +3086,6 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_boundaryCondition), pointer :: p_rboundaryCondition
     type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
     type(t_boundaryRegion) :: rboundaryRegion
@@ -3655,8 +3096,7 @@ contains
 
     ! Evaluate bilinear form for boundary integral and 
     ! return if there are no weak boundary conditions
-    p_rboundaryCondition => rsolver%rboundaryCondition
-    if (.not.p_rboundaryCondition%bWeakBdrCond) return
+    if (.not.rboundaryCondition%bWeakBdrCond) return
 
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
@@ -3688,7 +3128,7 @@ contains
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
-        p_rboundaryCondition%rfparser, .true.)
+        rboundaryCondition%rfparser, .true.)
     
     ! Attach velocity vector (if any) to second quick access vector of
     ! the temporal collection structure
@@ -3704,13 +3144,13 @@ contains
 
 
     ! Set pointers
-    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx,&
         p_IbdrCondCpIdx)
-    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondType,&
         p_IbdrCondType)
     
     ! Loop over all boundary components
-    do ibdc = 1, p_rboundaryCondition%iboundarycount
+    do ibdc = 1, rboundaryCondition%iboundarycount
       
       ! Loop over all boundary segments
       do isegment = p_IbdrCondCpIdx(ibdc), p_IbdrCondCpIdx(ibdc+1)-1
@@ -3749,7 +3189,7 @@ contains
           rform%BconstantCoeff    = .false.
           
           ! Create boundary region
-          call bdrc_createRegion(p_rboundaryCondition,&
+          call bdrc_createRegion(rboundaryCondition,&
               ibdc, isegment-p_IbdrCondCpIdx(ibdc)+1,&
               rboundaryRegion)
           
@@ -3779,11 +3219,12 @@ contains
 !<subroutine>
 
   subroutine transp_calcBilfBdrCondQuick(rproblemLevel,&
-      rsolver, rsolution, smode, ivelocitytype, dtime, dscale,&
-      rmatrix, ssectionName, rcollection,&
+      rboundaryCondition, rsolution, smode, ivelocitytype,&
+      dtime, dscale, rmatrix, ssectionName, rcollection,&
       fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
       fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
-      fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim, cconstrType)
+      fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+      cconstrType)
 
 !<description>
     ! This subroutine is a shortcut for building the bilinear form
@@ -3796,8 +3237,8 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
 
-    ! solver structure
-    type(t_solver), intent(in) :: rsolver
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
@@ -3817,7 +3258,7 @@ contains
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
-    ! user-defined callback functions
+    ! OPTIONAL: user-defined callback functions
     include 'intf_transpCoeffMatBdr.inc'
     optional :: fcb_coeffMatBdrPrimal1d_sim
     optional :: fcb_coeffMatBdrPrimal2d_sim
@@ -3841,6 +3282,14 @@ contains
 !</inputoutput>
 !</subroutine>
 
+
+    !###########################################################################
+    ! REMARK: If you want to add a new type of velocity/diffusion,
+    ! then search for the tag @FAQ2: in this subroutine and create a
+    ! new CASE which performs the corresponding task for the new type
+    ! of velocity/ diffusion.
+    !###########################################################################
+
     ! Are we in primal or dual mode?
     if (trim(smode) .eq. 'primal') then
       
@@ -3853,7 +3302,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffMatBdrPrimal1d_sim)) then
-            call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+            call transp_calcBilfBdrCond1D(rproblemLevel, rboundaryCondition,&
                 rsolution, dtime, dscale, fcb_coeffMatBdrPrimal1d_sim,&
                 rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
@@ -3866,7 +3315,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffMatBdrPrimal2d_sim)) then
-            call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+            call transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
                 rsolution, dtime, dscale, fcb_coeffMatBdrPrimal2d_sim,&
                 rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
@@ -3879,7 +3328,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffMatBdrPrimal3d_sim)) then
-!!$            call transp_calcBilfBdrCond3D(rproblemLevel, rsolver,&
+!!$            call transp_calcBilfBdrCond3D(rproblemLevel, rboundaryContidion,&
 !!$                rsolution, dtime, dscale, fcb_coeffMatBdrPrimal3d_sim,&
 !!$                rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
@@ -3889,57 +3338,70 @@ contains
           end if
         end select
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-          call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+          call transp_calcBilfBdrCond1D(rproblemLevel, rboundaryCondition,&
               rsolution, dtime, dscale, transp_coeffMatBdrConvP1d_sim,&
               rmatrix, ssectionName, rcollection, cconstrType)
         case (NDIM2D)
           ! linear velocity in 2D
-          call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+          call transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
               rsolution, dtime, dscale, transp_coeffMatBdrConvP2d_sim,&
               rmatrix, ssectionName, rcollection, cconstrType)
         case (NDIM3D)
           ! linear velocity in 3D
-!!$          call transp_calcBilfBdrCond3D(rproblemLevel, rsolver,&
+!!$          call transp_calcBilfBdrCond3D(rproblemLevel, rboundaryCondition,&
 !!$              rsolution, dtime, dscale, transp_coeffMatBdrConvP3d_sim,&
 !!$              rmatrix, ssectionName, rcollection, cconstrType)
         end select
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
-        call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+        call transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffMatBdrSTBurgP2d_sim,&
             rmatrix, ssectionName, rcollection, cconstrType)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
-        call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+        call transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffMatBdrSTBLevP2d_sim,&
             rmatrix, ssectionName, rcollection, cconstrType)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
-        call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+        call transp_calcBilfBdrCond1D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffMatBdrBurgP1d_sim,&
             rmatrix, ssectionName, rcollection, cconstrType)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
-        call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+        call transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffMatBdrBurgP2d_sim,&
             rmatrix, ssectionName, rcollection, cconstrType)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
-        call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+        call transp_calcBilfBdrCond1D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffMatBdrBLevP1d_sim,&
             rmatrix, ssectionName, rcollection, cconstrType)
 
       end select
 
+      !-----------------------------------------------------------------------
 
     elseif (trim(smode) .eq. 'dual') then
 
@@ -3952,7 +3414,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffMatBdrDual1d_sim)) then
-            call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+            call transp_calcBilfBdrCond1D(rproblemLevel, rboundaryCondition,&
                 rsolution, dtime, dscale, fcb_coeffMatBdrDual1d_sim,&
                 rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
@@ -3965,7 +3427,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffMatBdrDual2d_sim)) then
-            call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+            call transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
                 rsolution, dtime, dscale, fcb_coeffMatBdrDual2d_sim,&
                 rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
@@ -3978,7 +3440,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffMatBdrDual3d_sim)) then
-!!$            call transp_calcBilfBdrCond3D(rproblemLevel, rsolver,&
+!!$            call transp_calcBilfBdrCond3D(rproblemLevel, rboundaryCondition,&
 !!$                rsolution, dtime, dscale, fcb_coeffMatBdrDual3d_sim,&
 !!$                rmatrix, ssectionName, rcollection, cconstrType)
           else ! callback function not present
@@ -3988,53 +3450,64 @@ contains
           end if
         end select
 
+        !-----------------------------------------------------------------------
+        
       case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-          call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+          call transp_calcBilfBdrCond1D(rproblemLevel, rboundaryCondition,&
               rsolution, dtime, dscale, transp_coeffMatBdrConvD1d_sim,&
               rmatrix, ssectionName, rcollection, cconstrType)
         case (NDIM2D)
           ! linear velocity in 2D
-          call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+          call transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
               rsolution, dtime, dscale, transp_coeffMatBdrConvD2d_sim,&
               rmatrix, ssectionName, rcollection, cconstrType)
         case (NDIM3D)
           ! linear velocity in 3D
-!!$          call transp_calcBilfBdrCond3D(rproblemLevel, rsolver,&
+!!$          call transp_calcBilfBdrCond3D(rproblemLevel, rboundaryCondition,&
 !!$              rsolution, dtime, dscale, transp_coeffMatBdrConvD3d_sim,&
 !!$              rmatrix, ssectionName, rcollection, cconstrType)
         end select
 
+        !-----------------------------------------------------------------------
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
-!!$        call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrSTBurgersD2d_sim,&
 !!$            rmatrix, ssectionName, rcollection, cconstrType)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
-!!$        call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrSTBLevD2d_sim,&
 !!$            rmatrix, ssectionName, rcollection, cconstrType)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
-!!$        call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBdrCond1D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBurgersD1d_sim,&
 !!$            rmatrix, ssectionName, rcollection, cconstrType)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
-!!$        call transp_calcBilfBdrCond2D(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBurgersD2d_sim,&
 !!$            rmatrix, ssectionName, rcollection, cconstrType)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
-!!$        call transp_calcBilfBdrCond1D(rproblemLevel, rsolver,&
+!!$        call transp_calcBilfBdrCond1D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, dscale, transp_coeffMatBdrBLevD1d_sim,&
 !!$            rmatrix, ssectionName, rcollection, cconstrType)
 
@@ -4052,7 +3525,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+  subroutine transp_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
       rsolution, dtime, dscale, fcoeff_buildVectorScBdr1D_sim,&
       rvector, ssectionName, rcollection)
 
@@ -4072,9 +3545,9 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
 
-    ! solver structure
-    type(t_solver), intent(in) :: rsolver
-
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+    
     ! solution vector
     type(t_vectorBlock), intent(in), target :: rsolution
 
@@ -4101,7 +3574,6 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_boundaryCondition), pointer :: p_rboundaryCondition
     type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
     type(t_boundaryRegion) :: rboundaryRegion
@@ -4113,8 +3585,7 @@ contains
 
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
-    p_rboundaryCondition => rsolver%rboundaryCondition
-    if (.not.p_rboundaryCondition%bWeakBdrCond) return
+    if (.not.rboundaryCondition%bWeakBdrCond) return
 
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
@@ -4141,7 +3612,7 @@ contains
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
-        p_rboundaryCondition%rfparser, .true.)
+        rboundaryCondition%rfparser, .true.)
 
     ! Attach velocity vector (if any) to second quick access vector of
     ! the temporal collection structure
@@ -4157,17 +3628,17 @@ contains
     
     
     ! Set pointers
-    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondType,&
         p_IbdrCondType)
 
     ! Set additional pointers for periodic boundary conditions
-    if (p_rboundaryCondition%bPeriodic) then
-      call storage_getbase_int(p_rboundaryCondition%h_IbdrCompPeriodic,&
+    if (rboundaryCondition%bPeriodic) then
+      call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic,&
           p_IbdrCompPeriodic)
     end if
 
     ! Loop over all boundary components
-    do ibdc = 1, p_rboundaryCondition%iboundarycount
+    do ibdc = 1, rboundaryCondition%iboundarycount
       
       ! Check if this segment has weak boundary conditions
       if (iand(p_IbdrCondType(ibdc), BDRC_WEAK) .ne. BDRC_WEAK) cycle
@@ -4223,7 +3694,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+  subroutine transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
       rsolution, dtime, dscale, fcoeff_buildVectorScBdr2D_sim,&
       rvector, ssectionName, rcollection)
 
@@ -4243,8 +3714,8 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
 
-    ! solver structure
-    type(t_solver), intent(in) :: rsolver
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! solution vector
     type(t_vectorBlock), intent(in), target :: rsolution
@@ -4272,7 +3743,6 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_boundaryCondition), pointer :: p_rboundaryCondition
     type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
     type(t_boundaryRegion) :: rboundaryRegion,rboundaryRegionMirror,rregion
@@ -4284,8 +3754,7 @@ contains
 
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
-    p_rboundaryCondition => rsolver%rboundaryCondition
-    if (.not.p_rboundaryCondition%bWeakBdrCond) return
+    if (.not.rboundaryCondition%bWeakBdrCond) return
 
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
@@ -4317,7 +3786,7 @@ contains
     ! Attach function parser from boundary conditions to collection
     ! structure and specify its name in quick access string array
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
-        p_rboundaryCondition%rfparser, .true.)
+        rboundaryCondition%rfparser, .true.)
     
     ! Attach velocity vector (if any) to second quick access vector of
     ! the temporal collection structure
@@ -4334,21 +3803,21 @@ contains
     
     
     ! Set pointers
-    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx,&
         p_IbdrCondCpIdx)
-    call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondType,&
         p_IbdrCondType)
 
     ! Set additional pointers for periodic boundary conditions
-    if (p_rboundaryCondition%bPeriodic) then
-      call storage_getbase_int(p_rboundaryCondition%h_IbdrCompPeriodic,&
+    if (rboundaryCondition%bPeriodic) then
+      call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic,&
           p_IbdrCompPeriodic)
-      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondPeriodic,&
+      call storage_getbase_int(rboundaryCondition%h_IbdrCondPeriodic,&
           p_IbdrCondPeriodic)
     end if
     
     ! Loop over all boundary components
-    do ibdc = 1, p_rboundaryCondition%iboundarycount
+    do ibdc = 1, rboundaryCondition%iboundarycount
       
       ! Loop over all boundary segments
       do isegment = p_IbdrCondCpIdx(ibdc), p_IbdrCondCpIdx(ibdc+1)-1
@@ -4377,7 +3846,7 @@ contains
           rform%Idescriptors(1) = DER_FUNC
           
           ! Create boundary segment
-          call bdrc_createRegion(p_rboundaryCondition, ibdc,&
+          call bdrc_createRegion(rboundaryCondition, ibdc,&
               isegment-p_IbdrCondCpIdx(ibdc)+1, rboundaryRegion)
           
           ! Check if special treatment of mirror boundary condition is required
@@ -4385,7 +3854,7 @@ contains
               (iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
           
             ! Create boundary region for mirror boundary in 01-parametrisation
-            call bdrc_createRegion(p_rboundaryCondition, p_IbdrCompPeriodic(isegment),&
+            call bdrc_createRegion(rboundaryCondition, p_IbdrCompPeriodic(isegment),&
                 p_IbdrCondPeriodic(isegment)-p_IbdrCondCpIdx(p_IbdrCompPeriodic(isegment))+1,&
                 rboundaryRegionMirror)
             
@@ -4444,8 +3913,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcLinfBdrCondQuick(rproblemLevel,&
-      rsolver, rsolution, smode, ivelocitytype, dtime, dscale,&
-      rvector, ssectionName, rcollection,&
+      rboundaryCondition, rsolution, smode, ivelocitytype,&
+      dtime, dscale, rvector, ssectionName, rcollection,&
       fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
       fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
       fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
@@ -4461,9 +3930,9 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
 
-    ! solver structure
-    type(t_solver), intent(in) :: rsolver
-
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+    
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
 
@@ -4502,6 +3971,13 @@ contains
 !</subroutine>
 
 
+    !###########################################################################
+    ! REMARK: If you want to add a new type of velocity/diffusion,
+    ! then search for the tag @FAQ2: in this subroutine and create a
+    ! new CASE which performs the corresponding task for the new type
+    ! of velocity/ diffusion.
+    !###########################################################################
+
     ! Are we in primal or dual mode?
     if (trim(smode) .eq. 'primal') then
       
@@ -4514,7 +3990,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffVecBdrPrimal1d_sim)) then
-            call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+            call transp_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
                 rsolution, dtime, dscale, fcb_coeffVecBdrPrimal1d_sim,&
                 rvector, ssectionName, rcollection)
           else ! callback function not present
@@ -4527,7 +4003,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffVecBdrPrimal2d_sim)) then
-            call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+            call transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
                 rsolution, dtime, dscale, fcb_coeffVecBdrPrimal2d_sim,&
                 rvector, ssectionName, rcollection)
           else ! callback function not present
@@ -4540,7 +4016,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffVecBdrPrimal3d_sim)) then
-!!$            call transp_calcLinfBdrCond3D(rproblemLevel, rsolver,&
+!!$            call transp_calcLinfBdrCond3D(rproblemLevel, rboundaryCondition,&
 !!$                rsolution, dtime, dscale, fcb_coeffVecBdrPrimal3d_sim,&
 !!$                rvector, ssectionName, rcollection)
           else ! callback function not present
@@ -4550,57 +4026,70 @@ contains
           end if
         end select
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-          call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+          call transp_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
               rsolution, dtime, dscale, transp_coeffVecBdrConvP1d_sim,&
               rvector, ssectionName, rcollection)
         case (NDIM2D)
           ! linear velocity in 2D
-          call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+          call transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
               rsolution, dtime, dscale, transp_coeffVecBdrConvP2d_sim,&
               rvector, ssectionName, rcollection)
         case (NDIM3D)
           ! linear velocity in 3D
-!!$          call transp_calcLinfBdrCond3D(rproblemLevel, rsolver,&
+!!$          call transp_calcLinfBdrCond3D(rproblemLevel, rboundaryCondition,&
 !!$              rsolution, dtime, dscale, transp_coeffVecBdrConvP3d_sim,&
 !!$              rvector, ssectionName, rcollection)
         end select
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
-        call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+        call transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffVecBdrSTBurgP2d_sim,&
             rvector, ssectionName, rcollection)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
-        call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+        call transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffVecBdrSTBLevP2d_sim,&
             rvector, ssectionName, rcollection)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
-        call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+        call transp_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffVecBdrBurgP1d_sim,&
             rvector, ssectionName, rcollection)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
-        call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+        call transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffVecBdrBurgP2d_sim,&
             rvector, ssectionName, rcollection)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
-        call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+        call transp_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffVecBdrBLevP1d_sim,&
             rvector, ssectionName, rcollection)
 
       end select
 
+      !-------------------------------------------------------------------------
 
     elseif (trim(smode) .eq. 'dual') then
 
@@ -4613,7 +4102,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffVecBdrDual1d_sim)) then
-            call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+            call transp_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
                 rsolution, dtime, dscale, fcb_coeffVecBdrDual1d_sim,&
                 rvector, ssectionName, rcollection)
           else ! callback function not present
@@ -4626,7 +4115,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffVecBdrDual2d_sim)) then
-            call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+            call transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
                 rsolution, dtime, dscale, fcb_coeffVecBdrDual2d_sim,&
                 rvector, ssectionName, rcollection)
           else ! callback function not present
@@ -4639,7 +4128,7 @@ contains
           ! The user-defined callback function is used if present;
           ! otherwise an error is throws
           if (present(fcb_coeffVecBdrDual3d_sim)) then
-!!$            call transp_calcLinfBdrCond3D(rproblemLevel, rsolver,&
+!!$            call transp_calcLinfBdrCond3D(rproblemLevel, rboundaryCondition,&
 !!$                rsolution, dtime, dscale, fcb_coeffVecBdrDual3d_sim,&
 !!$                rvector, ssectionName, rcollection)
           else ! callback function not present
@@ -4649,53 +4138,64 @@ contains
           end if
         end select
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_ZERO, VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-          call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+          call transp_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
             rsolution, dtime, dscale, transp_coeffVecBdrConvD1d_sim,&
             rvector, ssectionName, rcollection)
         case (NDIM2D)
           ! linear velocity in 2D
-          call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+          call transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
               rsolution, dtime, dscale, transp_coeffVecBdrConvD2d_sim,&
               rvector, ssectionName, rcollection)
         case (NDIM3D)
           ! linear velocity in 3D
-!!$          call transp_calcLinfBdrCond3D(rproblemLevel, rsolver,&
+!!$          call transp_calcLinfBdrCond3D(rproblemLevel, rboundaryCondition,&
 !!$              rsolution, dtime, dscale, transp_coeffVecBdrConvD3d_sim,&
 !!$              rvector, ssectionName, rcollection)
         end select
 
+        !-----------------------------------------------------------------------
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
-!!$        call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrSTBurgersD2d_sim,&
 !!$            rvector, ssectionName, rcollection)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
-!!$        call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrSTBLevD2d_sim,&
 !!$            rvector, ssectionName, rcollection)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
-!!$        call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBurgersD1d_sim,&
 !!$            rvector, ssectionName, rcollection)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
-!!$        call transp_calcLinfBdrCond2D(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBurgersD2d_sim,&
 !!$            rvector, ssectionName, rcollection)
 
+        !-----------------------------------------------------------------------
+
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
-!!$        call transp_calcLinfBdrCond1D(rproblemLevel, rsolver,&
+!!$        call transp_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, dscale, transp_coeffVecBdrBLevD1d_sim,&
 !!$            rvector, ssectionName, rcollection)
 
@@ -4827,9 +4327,9 @@ contains
         end do
       end do
 
-      ! Set update notification in problem level structure
+      ! Set update notifier for transport operator in problem level structure
       p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec,&
-                                         PROBLEV_MSPEC_UPDATE)
+                                         TRANSP_TROPER_UPDATE)
 
       ! Proceed to coarser problem level if minimum level has not been reached
       if (p_rproblemLevel%ilev .le. nlmin) exit
@@ -4843,48 +4343,82 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcLinearisedFCT(rbdrCond, rproblemLevel,&
-      rtimestep, rsolver, rsolution, ssectionName, rcollection, rsource)
+  subroutine transp_calcLinearisedFCT(rproblemLevel, rtimestep,&
+      rsolver, rsolution, ssectionName, rcollection, rsource,&
+      fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+      fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+      fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim,&
+      rmatrix, rvector1, rvector2, rvector3)
 
 !<description>
     ! This subroutine calculates the linearised FCT correction
 !</description>
 
 !<input>
-    ! boundary condition structure
-    type(t_boundaryCondition), intent(in) :: rbdrCond
-
-    ! time-stepping algorithm
+    ! time-stepping structure
     type(t_timestep), intent(in) :: rtimestep
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
 
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! OPTIONAL: source vector
     type(t_vectorBlock), intent(in), optional :: rsource
+
+    ! OPTIONAL: user-defined callback functions
+    include 'intf_transpCoeffVecBdr.inc'
+    optional :: fcb_coeffVecBdrPrimal1d_sim
+    optional :: fcb_coeffVecBdrPrimal2d_sim
+    optional :: fcb_coeffVecBdrPrimal3d_sim
+    optional :: fcb_coeffVecBdrDual1d_sim
+    optional :: fcb_coeffVecBdrDual2d_sim
+    optional :: fcb_coeffVecBdrDual3d_sim
 !</input>
 
 !<inputoutput>
     ! problem level structure
     type(t_problemLevel), intent(inout) :: rproblemLevel
 
-    ! solver structure
-    type(t_solver), intent(inout) :: rsolver
-
     ! solution vector
     type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
+
+    ! OPTIONAL: matrix to store the discrete transport operator used
+    ! to compute the approximation to the time derivative (if not
+    ! present, then temporal memory is allocated)
+    type(t_matrixScalar), intent(inout), target, optional :: rmatrix
+
+    ! OPTIONAL: auxiliary vectors used to compute the approximation to
+    ! the time derivative (if not present, then temporal memory is allocated)
+    type(t_vectorBlock), intent(inout), target, optional :: rvector1
+    type(t_vectorBlock), intent(inout), target, optional :: rvector2
+    type(t_vectorBlock), intent(inout), target, optional :: rvector3
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    type(t_timestep) :: rtimestepAux
     type(t_parlist), pointer :: p_rparlist
-    type(t_vectorBlock), pointer :: p_rpredictor
-    integer :: convectionAFC,lumpedMassMatrix,consistentMassMatrix
-    integer :: imassantidiffusiontype
+    type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_matrixScalar), target :: rmatrixTmp
+    type(t_vectorBlock), pointer :: p_rvector1, p_rvector2, p_rvector3
+    type(t_vectorBlock), target :: rvector1Tmp, rvector2Tmp, rvector3Tmp
+    character(LEN=SYS_STRLEN) :: smode
+    real(DP) :: dnorm0, dnorm
+    real(DP) :: depsAbsApproxTimeDerivative,depsRelApproxTimeDerivative
+    integer :: convectionAFC, diffusionAFC, ivelocitytype
+    integer :: imassantidiffusiontype, iapproxtimederivativetype
+    integer :: lumpedMassMatrix,consistentMassMatrix
+    integer :: ctypeAFCstabilisationConvection
+    integer :: ctypeAFCstabilisationDiffusion
+    integer :: ite,nmaxIterationsApproxTimeDerivative
+    integer(I32) :: istabilisationSpecConvection
+    integer(I32) :: istabilisationSpecDiffusion
+    logical :: bcompatible, bforceUpdate
+
 
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
@@ -4893,6 +4427,8 @@ contains
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'diffusionAFC', diffusionAFC)
 
     ! Do we have to apply linearised FEM-FCT?
     if (convectionAFC .le. 0) return
@@ -4903,10 +4439,8 @@ contains
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'lumpedmassmatrix', lumpedmassmatrix)
     call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'consistentmassmatrix', consistentmassmatrix)
-    call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
-
+       
     !---------------------------------------------------------------------------
     ! Linearised FEM-FCT algorithm
     !---------------------------------------------------------------------------
@@ -4914,35 +4448,265 @@ contains
     ! Should we apply consistent mass antidiffusion?
     if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
       
-      ! Initialize dummy timestep
-      rtimestepAux%dStep = 1.0_DP
-      rtimestepAux%theta = 0.0_DP
+      ! Get more parameters from parameter list
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'consistentmassmatrix', consistentmassmatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'iapproxtimederivativetype', iapproxtimederivativetype)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'ivelocitytype', ivelocitytype)
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'mode', smode)
       
-      ! Set pointer to predictor
-      p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
+      ! Set up matrix for discrete transport operator
+      if (present(rmatrix)) then
+        p_rmatrix => rmatrix
+      else
+        p_rmatrix => rmatrixTmp
+      end if
+
+      ! Check if matrix is compatible to consistent mass matrix; otherwise
+      ! create matrix as a duplicate of the consistent mass matrix
+      call lsyssc_isMatrixCompatible(p_rmatrix,&
+          rproblemLevel%Rmatrix(consistentMassMatrix), bcompatible)
+      if (.not.bcompatible) then
+        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(consistentMassMatrix),&
+            p_rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        bforceUpdate = .true.
+      else
+        bforceUpdate = .false.
+      end if
+
+      ! Set up vector1 for computing the approximate time derivative
+      if (present(rvector1)) then
+        p_rvector1 => rvector1
+      else
+        p_rvector1 => rvector1Tmp
+      end if
+
+      ! Check if rvector1 is compatible to the solution vector; otherwise
+      ! create new vector as a duplicate of the solution vector
+      call lsysbl_isVectorCompatible(p_rvector1, rsolution, bcompatible)
+      if (.not.bcompatible)&
+          call lsysbl_duplicateVector(rsolution, p_rvector1,&
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       
-      ! Compute the preconditioner
-      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, ssectionName, rcollection)
-      
-      ! Compute low-order "right-hand side" without theta parameter
-      call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-          rsolver, rsolution, p_rpredictor, ssectionName, rcollection, rsource)
-      
-      ! Compute low-order predictor
-      call lsysbl_invertedDiagMatVec(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          p_rpredictor, 1.0_DP, p_rpredictor)
-      
+      !-------------------------------------------------------------------------
+
+      ! How should we compute the approximate time derivative?
+      select case(iapproxtimederivativetype)
+
+      case(AFCSTAB_GALERKIN)
+        
+        ! Get more parameters from parameter list
+        call parlst_getvalue_double(p_rparlist,&
+            ssectionName, 'depsAbsApproxTimeDerivative',&
+            depsAbsApproxTimeDerivative, 1e-4_DP)
+        call parlst_getvalue_double(p_rparlist,&
+            ssectionName, 'depsRelApproxTimeDerivative',&
+            depsRelApproxTimeDerivative, 1e-2_DP)
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'nmaxIterationsApproxTimeDerivative',&
+            nmaxIterationsApproxTimeDerivative, 5)
+
+        ! Set up vector2 for computing the approximate time derivative
+        if (present(rvector2)) then
+          p_rvector2 => rvector2
+        else
+          p_rvector2 => rvector2Tmp
+        end if
+        
+        ! Check if rvector2 is compatible to the solution vector; otherwise
+        ! create new vector as a duplicate of the solution vector
+        call lsysbl_isVectorCompatible(p_rvector2, rsolution, bcompatible)
+        if (.not.bcompatible)&
+            call lsysbl_duplicateVector(rsolution, p_rvector2,&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+        ! Set up vector3 for computing the approximate time derivative
+        if (present(rvector3)) then
+          p_rvector3 => rvector3
+        else
+          p_rvector3 => rvector3Tmp
+        end if
+        
+        ! Check if rvector3 is compatible to the solution vector; otherwise
+        ! create new vector as a duplicate of the solution vector
+        call lsysbl_isVectorCompatible(p_rvector3, rsolution, bcompatible)
+        if (.not.bcompatible)&
+            call lsysbl_duplicateVector(rsolution, p_rvector3,&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        
+        
+        ! Make a backup copy of the stabilisation types because we
+        ! have to overwrite them to enforce using the standard
+        ! Galerkin scheme; this implies that their specification flags
+        ! are changed, so make a backup copy of them, too
+        ctypeAFCstabilisationConvection =&
+            rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+        ctypeAFCstabilisationDiffusion =&
+            rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
+        istabilisationSpecConvection =&
+            rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
+        istabilisationSpecDiffusion =&
+            rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec
+        
+        ! Enforce using the standard Galerkin method without any stabilisation
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
+        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation  = AFCSTAB_GALERKIN
+
+        ! Create discrete transport operator of high-order (Galerkin method)
+        call transp_calcTransportOperator(rproblemLevel,&
+            rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
+            1.0_DP, p_rmatrix, ssectionName, rcollection, bforceUpdate=bforceUpdate)
+
+        ! Reset stabilisation structures to their original configuration
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = ctypeAFCstabilisationConvection
+        rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec    = istabilisationSpecConvection
+        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation  = ctypeAFCstabilisationDiffusion
+        rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec     = istabilisationSpecDiffusion
+
+
+        ! Compute $K(u^L)*u^L$ and store the result in rvector2
+        call lsyssc_scalarMatVec(p_rmatrix,&
+            rsolution%rvectorBlock(1), p_rvector2%RvectorBlock(1), 1.0_DP, 0.0_DP)
+        
+        ! Evaluate linear form for the boundary integral (if any)
+        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver%rboundaryCondition,&
+            rsolution, smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
+            p_rvector2%RvectorBlock(1), ssectionName, rcollection,&
+            fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+            fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+            fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
+
+        ! Build the geometric source term (if any)
+        call transp_calcGeometricSourceterm(p_rparlist, ssectionName,&
+            rproblemLevel, rsolution, 1.0_DP, .false., p_rvector2, rcollection)
+
+        ! Apply the source vector to the residual (if any)
+        if (present(rsource)) then
+          if (rsource%NEQ .gt. 0)&
+              call lsysbl_vectorLinearComb(rsource, p_rvector2, 1.0_DP, 1.0_DP)
+        end if
+
+        ! Scale rvector2 by the inverse of the lumped mass matrix and store
+        ! the result in rvector1; this is the solution of the lumped version
+        call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            p_rvector2, 1.0_DP, p_rvector1)
+        
+        ! Store norm of the initial guess from the lumped version
+        dnorm0 = lsyssc_vectorNorm(p_rvector1%RvectorBlock(1), LINALG_NORML2)
+
+        richardson: do ite = 1, nmaxIterationsApproxTimeDerivative
+          ! Initialise rvector3 by the constant right-hand side
+          call lsysbl_copyVector(p_rvector2, p_rvector3)
+          
+          ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
+          call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
+              p_rvector1%RvectorBlock(1), p_rvector3%RvectorBlock(1), -1.0_DP, 1.0_DP)
+          
+          ! Scale rvector3 by the inverse of the lumped mass matrix
+          call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rvector3, 1.0_DP, p_rvector3)
+
+          ! Apply solution increment (rvector3) to the previous solution iterate
+          call lsysbl_vectorLinearComb(p_rvector3, p_rvector1, 1.0_DP, 1.0_DP)
+
+          ! Check for convergence
+          dnorm = lsyssc_vectorNorm(p_rvector3%RvectorBlock(1), LINALG_NORML2)
+          if ((dnorm .le. depsAbsApproxTimeDerivative) .or.&
+              (dnorm .le. depsRelApproxTimeDerivative*dnorm0)) exit richardson
+        end do richardson
+
+        ! Release temporal memory
+        if (.not.present(rvector2)) call lsysbl_releaseVector(rvector2Tmp)
+        if (.not.present(rvector3)) call lsysbl_releaseVector(rvector3Tmp)
+
+        !-------------------------------------------------------------------------
+
+      case(AFCSTAB_UPWIND)
+
+        ! Make a backup copy of the stabilisation types because we
+        ! have to overwrite them to enforce using the standard
+        ! Galerkin scheme; this implies that their specification flags
+        ! are changed, so make a backup copy of them, too
+        ctypeAFCstabilisationConvection =&
+            rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+        ctypeAFCstabilisationDiffusion =&
+            rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
+        istabilisationSpecConvection =&
+            rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
+        istabilisationSpecDiffusion =&
+            rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec
+        
+        ! Enforce using the standard Galerkin method without any stabilisation
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = AFCSTAB_UPWIND
+        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation  = AFCSTAB_UPWIND
+
+        ! Create discrete transport operator of low-order
+        call transp_calcTransportOperator(rproblemLevel,&
+            rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
+            1.0_DP, p_rmatrix, ssectionName, rcollection, bforceUpdate=bforceUpdate)
+
+        ! Reset stabilisation structures for further usage
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = ctypeAFCstabilisationConvection
+        rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec    = istabilisationSpecConvection
+        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation  = ctypeAFCstabilisationDiffusion
+        rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec     = istabilisationSpecDiffusion
+
+
+        ! Compute $L(u^L)*u^L$ and store the result in rvector1
+        call lsyssc_scalarMatVec(p_rmatrix,&
+            rsolution%rvectorBlock(1), p_rvector1%RvectorBlock(1), 1.0_DP, 0.0_DP)
+
+        ! Evaluate linear form for the boundary integral (if any)
+        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver%rboundaryCondition,&
+            rsolution, smode, ivelocitytype, rtimestep%dTime, 1.0_DP,&
+            p_rvector1%RvectorBlock(1), ssectionName, rcollection,&
+            fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+            fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+            fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
+
+        ! Build the geometric source term (if any)
+        call transp_calcGeometricSourceterm(p_rparlist, ssectionName,&
+            rproblemLevel, rsolution, 1.0_DP, .false., p_rvector1, rcollection)
+
+        ! Apply the source vector to the residual (if any)
+        if (present(rsource)) then
+          if (rsource%NEQ .gt. 0)&
+              call lsysbl_vectorLinearComb(rsource, p_rvector2, 1.0_DP, 1.0_DP)
+        end if
+
+        ! Scale it by the inverse of the lumped mass matrix
+        call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            p_rvector1, 1.0_DP, p_rvector1)
+
+      case default
+        call output_line('Unsupported type of transport operator!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinearisedFCT')
+        call sys_halt()
+      end select
+
+      !-------------------------------------------------------------------------
+
       ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
       call gfsc_buildFluxFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
-          rproblemLevel%Rmatrix(consistentMassMatrix), p_rpredictor)
+          rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+          rxTimeDeriv=p_rvector1)
+
+      ! Release temporal memory
+      if (.not.present(rmatrix))  call lsyssc_releaseMatrix(rmatrixTmp)
+      if (.not.present(rvector1)) call lsysbl_releaseVector(rvector1Tmp)
+
     else
-      ! Build the raw antidiffusive fluxes without contribution from
-      ! consistent mass matrix
+
+      !-------------------------------------------------------------------------
+
+      ! Build the raw antidiffusive fluxes without including the
+      ! contribution from consistent mass matrix
       call gfsc_buildFluxFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true.)
@@ -4957,8 +4721,8 @@ contains
         AFCSTAB_FCTALGO_SCALEBYMASS, rsolution)
 
     ! Impose boundary conditions for the solution vector
-    call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-        rtimestep%dTime)
+    call bdrf_filterVectorExplicit(rsolver%rboundaryCondition,&
+        rsolution, rtimestep%dTime)
 
   end subroutine transp_calcLinearisedFCT
 
@@ -5051,7 +4815,7 @@ contains
     
     ! This subroutine assumes that the first quick access double
     ! value holds the simulation time
-    dtime  = rcollection%DquickAccess(1)
+    dtime = rcollection%DquickAccess(1)
 
     ! Loop over all components of the linear form
     do itermCount = 1, ubound(Dcoefficients,1)
@@ -5905,5 +5669,723 @@ contains
     end subroutine doSourceVelocityConsistent
 
   end subroutine transp_calcGeometricSourceterm
+
+!*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_calcTransportOperator(rproblemLevel, rboundaryCondition,&
+      rsolution, dtime, dscale, rmatrix, ssectionName, rcollection,&
+      fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+      fcb_calcMatrixDiagDual_sim,  fcb_calcMatrixDual_sim,&
+      fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+      fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+      fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+      bforceUpdate)
+
+!<description>
+    ! This subroutine calculates the discrete transport operator for
+    ! the primal and dual problem, respectively. The resulting
+    ! operator includes convective and diffusive terms as well as
+    ! contributions from boundary terms due to weakly imposed boundary
+    ! condition. 
+
+!</description>
+
+!<input>
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: user-defined callback functions
+    include 'intf_transpCalcMatrix.inc'
+    optional :: fcb_calcMatrixDiagPrimal_sim
+    optional :: fcb_calcMatrixPrimal_sim
+    optional :: fcb_calcMatrixDiagDual_sim
+    optional :: fcb_calcMatrixDual_sim
+
+    ! OPTIONAL: user-defined callback functions
+    include 'intf_transpCoeffMatBdr.inc'
+    optional :: fcb_coeffMatBdrPrimal1d_sim
+    optional :: fcb_coeffMatBdrPrimal2d_sim
+    optional :: fcb_coeffMatBdrPrimal3d_sim
+    optional :: fcb_coeffMatBdrDual1d_sim
+    optional :: fcb_coeffMatBdrDual2d_sim
+    optional :: fcb_coeffMatBdrDual3d_sim
+
+    ! OPTIONAL: flag to overwrite update notifier
+    ! If true, then the transport operator is updated even if the
+    ! update notifier does not indicate the need of an update
+    logical, intent(in), optional :: bforceUpdate
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! destination matrix for the transport operator
+    type(t_matrixScalar), intent(inout) :: rmatrix
+
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    type(t_collection) :: rcollectionTmp
+    character(LEN=SYS_STRLEN) :: smode
+    logical :: bbuildStabilisation
+    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
+    integer :: imasstype, ivelocitytype, idiffusiontype
+    integer :: convectionAFC, diffusionAFC, velocityfield
+    logical :: breturn
+
+    
+    !###########################################################################
+    ! REMARK: If you want to add a new type of velocity/diffusion,
+    ! then search for the tag @FAQ2: in this subroutine and create a
+    ! new CASE which performs the corresponding task for the new type
+    ! of velocity/ diffusion.
+    !###########################################################################
+
+
+    breturn = .true.
+    if (present(bforceUpdate)) breturn = not(bforceUpdate)
+
+    ! Check if the discrete transport operator has to be updated and
+    ! return otherwise.
+    if ((iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_UPDATE) .eq. 0) .and.&
+        breturn) return
+    
+    ! Set pointer to parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+
+    ! Get positions of coefficient matrices from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'coeffmatrix_S', coeffMatrix_S)
+
+    ! Remove update notifier from the transport operator. Depending on
+    ! the velocity, diffusion type it will be re-activited below.
+    rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
+                                      not(TRANSP_TROPER_UPDATE))
+
+    !---------------------------------------------------------------------------
+    ! Assemble diffusion operator (for the right-hand side):
+    !
+    ! After integration by parts it is given by
+    !
+    ! $$ Su = -\int_\Omega \nabla w \cdot (D \nabla u) {\rm d}{\bf x} $$
+    !
+    ! The diffusion operator is symmetric so that it is the same for
+    ! the primal and the dual problem. If no diffusion is present,
+    ! i.e. $D \equiv 0$, then the transport operator is initialised by
+    ! zeros. If there is anisotropic diffusion, i.e. $D=D({\bf x},t)$,
+    ! then we may also initialize some stabilisation structure.
+    !
+    ! The bilinear form for the diffusion operator consists of the
+    ! volume integral (see above) only.
+    !
+    ! Non-homogeneous Neumann boundary conditions
+    !
+    ! $$ q_N = {\bf n} \cdot \nabla u = h \qquad \mbox{on} \quad \Gamma_N $$
+    !
+    ! are built into the right-hand side vector.
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'idiffusiontype', idiffusiontype)
+
+    ! Primal and dual mode are equivalent
+    ! @FAQ2: Which type of diffusion are we?
+    select case(idiffusiontype)
+    case (DIFFUSION_ZERO)
+      ! zero diffusion, clear the transport matrix
+      call lsyssc_clearMatrix(rmatrix)
+
+      !-------------------------------------------------------------------------
+
+    case (DIFFUSION_ISOTROPIC)
+      ! Isotropic diffusion
+      call lsyssc_duplicateMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_S),&
+          rmatrix, LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+      if (dscale .ne. 1.0_DP)&
+          call lsyssc_scaleMatrix(rmatrix, dscale)
+
+      !-------------------------------------------------------------------------
+
+    case (DIFFUSION_ANISOTROPIC)
+      ! Anisotropic diffusion
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'diffusionAFC', diffusionAFC)
+
+      if (diffusionAFC > 0) then
+
+        ! What kind of stabilisation should be applied?
+        select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+
+        case (AFCSTAB_DMP)
+          ! Satisfy discrete maximum principle
+          call gfsc_buildDiffusionOperator(&
+              rproblemLevel%Rafcstab(diffusionAFC),&
+              dscale, .false., .true., rmatrix)
+
+        case (AFCSTAB_SYMMETRIC)
+          ! Satisfy discrete maximum principle
+          ! and assemble stabilisation structure
+          call gfsc_buildDiffusionOperator(&
+              rproblemLevel%Rafcstab(diffusionAFC),&
+              dscale, .true., .true., rmatrix)
+
+        case default
+          ! Compute the standard Galerkin approximation
+          call lsyssc_duplicateMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_S),&
+          rmatrix, LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+          if (dscale .ne. 1.0_DP)&
+              call lsyssc_scaleMatrix(rmatrix, dscale)
+        end select
+
+      else   ! diffusionAFC < 0
+
+        ! Compute the standard Galerkin approximation
+        call lsyssc_duplicateMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_S),&
+          rmatrix, LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+        if (dscale .ne. 1.0_DP)&
+            call lsyssc_scaleMatrix(rmatrix, dscale)
+
+      end if   ! diffusionAFC
+
+      !-------------------------------------------------------------------------
+
+    case (DIFFUSION_VARIABLE)
+      call output_line('Variable diffusion matrices are yet not implemented!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcTransportOperator')
+      call sys_halt()
+
+      ! Set update notifier for transport operator in problem level structure
+      rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                       TRANSP_TROPER_UPDATE)
+
+    case default
+      call output_line('Invalid type of diffusion!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcTransportOperator')
+      call sys_halt()
+    end select
+
+    
+    !---------------------------------------------------------------------------
+    ! Assemble convective operator (for the right-hand side):
+    !
+    ! (1) without integration by parts:
+    !     $$ -\int_\Omega w \nabla \cdot {\bf f}(u) {\rm d}{\bf x} $$
+    !
+    !     then boundary conditions need to be imposed in strong sense
+    !     by filtering the system matrix, the solution vector and/or
+    !     the residual explicitly.
+    !
+    ! (2) with integration by parts:
+    !     $$ \int_\Omega \nabla w \cdot {\bf f}(u) {\rm d}{\bf x} $$
+    !
+    !     with weakly imposed boundary conditions 
+    !
+    !     $$ -\int_{\Gamma_-} w {\bf f}(u_0) \cdot {\bf n} {\rm d}{\bf s} $$
+    !
+    !     imposed at some part of the boundary. At the remaining part
+    !     of the boundary nothing is prescribed and the corresponding
+    !     boundary integral is built into the bilinear form
+    !
+    !     $$ -\int_{\Gamma_+} w {\bf f}(u) \cdot {\bf n} {\rm d}{\bf s} $$
+    !
+    ! The convective operator is skew-symmetric so that we have to
+    ! distinguish between the primal and the dual problem.
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_string(p_rparlist,&
+        ssectionName, 'mode', smode)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'convectionAFC', convectionAFC)
+
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+
+    ! Set vector for velocity field (if any)
+    if (transp_hasVelocityVector(ivelocityType)) then
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
+    end if
+
+
+    ! Are we in primal or dual mode?
+    if (trim(smode) .eq. 'primal') then
+
+      !-------------------------------------------------------------------------
+      ! We are in primal mode which means that we have to build two
+      ! bilinear forms: one for the volume integral and one for the
+      ! surface integral which is used to weakly impose Dirichlet
+      ! boundary conditions. Note that lumping is performed for the
+      ! boundary term to prevent the generation of oscillations.
+      !-------------------------------------------------------------------------
+
+      ! @FAQ2: Which type of velocity are we?
+      select case(abs(ivelocitytype))
+
+      case default
+        ! The user-defined callback function for matrix coefficients
+        ! is used if present; otherwise an error is thrown
+        if (present(fcb_calcMatrixPrimal_sim) .and.&
+            present(fcb_calcMatrixDiagPrimal_sim)) then
+
+          ! Check if stabilisation should be applied
+          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
+            bbuildStabilisation = .false.
+          case default
+            bbuildStabilisation = .true.
+          end select
+
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM1D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+          case (NDIM2D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+          case (NDIM3D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+          end select
+
+        else ! callback function not present
+
+          call output_line('Missing user-defined callback function!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcTransportOperator')
+          call sys_halt()
+
+        end if
+
+        !-----------------------------------------------------------------------
+
+      case (VELOCITY_ZERO)
+        ! zero velocity, do nothing
+
+        !-----------------------------------------------------------------------
+
+      case (VELOCITY_CONSTANT,&
+            VELOCITY_TIMEDEP)
+        ! linear velocity
+
+        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+
+        case (AFCSTAB_GALERKIN)
+
+          ! Apply standard Galerkin discretisation
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM1D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvP1d_sim, transp_calcMatGalConvP1d_sim,&
+                dscale, .false., .false., rmatrix, rcollectionTmp)
+
+          case (NDIM2D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvP2d_sim, transp_calcMatGalConvP2d_sim,&
+                dscale, .false., .false., rmatrix, rcollectionTmp)
+
+          case (NDIM3D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvP3d_sim, transp_calcMatGalConvP3d_sim,&
+                dscale, .false., .false., rmatrix, rcollectionTmp)
+          end select
+
+        case default
+
+          ! Apply low-order discretisation
+          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM1D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvP1d_sim, transp_calcMatUpwConvP1d_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+          case (NDIM2D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvP2d_sim, transp_calcMatUpwConvP2d_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+          case (NDIM3D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvP3d_sim, transp_calcMatUpwConvP3d_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+          end select
+
+        end select
+
+        if (abs(ivelocitytype) .eq. VELOCITY_TIMEDEP) then
+          ! Set update notifier for transport operator in problem level structure
+          rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                           TRANSP_TROPER_UPDATE)
+        end if
+
+        !-----------------------------------------------------------------------
+
+      case (VELOCITY_BURGERS_SPACETIME)
+        ! nonlinear Burgers` equation in space-time
+
+        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+
+        case (AFCSTAB_GALERKIN)
+
+          ! Apply standard Galerkin discretisation
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatDiagSTBurgP2d_sim, transp_calcMatGalSTBurgP2d_sim,&
+              dscale, .false., .false., rmatrix, rcollectionTmp)
+
+        case default
+
+          ! Apply low-order discretisation
+          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatDiagSTBurgP2d_sim, transp_calcMatUpwSTBurgP2d_sim,&
+              dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+        end select
+
+        ! Set update notifier for transport operator in problem level structure
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                         TRANSP_TROPER_UPDATE)
+
+        !-----------------------------------------------------------------------
+
+      case (VELOCITY_BUCKLEV_SPACETIME)
+        ! nonlinear Buckley-Leverett equation in space-time
+
+        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+
+        case (AFCSTAB_GALERKIN)
+
+          ! Apply standard Galerkin discretisation
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatDiagSTBLevP2d_sim, transp_calcMatGalSTBLevP2d_sim,&
+              dscale, .false., .false., rmatrix, rcollectionTmp)
+
+        case default
+
+          ! Apply low-order discretisation
+          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatDiagSTBLevP2d_sim, transp_calcMatUpwSTBLevP2d_sim,&
+              dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+        end select
+
+        ! Set update notifier for transport operator in problem level structure
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                         TRANSP_TROPER_UPDATE)
+
+        !-----------------------------------------------------------------------
+
+      case (VELOCITY_BURGERS1D)
+        ! nonlinear Burgers` equation in 1D
+
+        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+
+        case (AFCSTAB_GALERKIN)
+
+          ! Apply standard Galerkin discretisation
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatDiagBurgP1d_sim, transp_calcMatGalBurgP1d_sim,&
+              dscale, .false., .false., rmatrix, rcollectionTmp)
+
+        case default
+
+          ! Apply low-order discretisation
+          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatDiagBurgP1d_sim, transp_calcMatUpwBurgP1d_sim,&
+              dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+        end select
+
+        ! Set update notifier for transport operator in problem level structure
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                         TRANSP_TROPER_UPDATE)
+
+        !-----------------------------------------------------------------------
+
+      case (VELOCITY_BURGERS2D)
+        ! nonlinear Burgers` equation in 2D
+
+        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+
+        case (AFCSTAB_GALERKIN)
+
+          ! Apply standard Galerkin discretisation
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatDiagBurgP2d_sim, transp_calcMatGalBurgP2d_sim,&
+              dscale, .false., .false., rmatrix, rcollectionTmp)
+
+        case default
+
+          ! Apply low-order discretisation
+          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatDiagBurgP2d_sim, transp_calcMatUpwBurgP2d_sim,&
+              dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+        end select
+
+        ! Set update notifier for transport operator in problem level structure
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                         TRANSP_TROPER_UPDATE)
+
+        !-----------------------------------------------------------------------
+
+      case (VELOCITY_BUCKLEV1D)
+        ! nonlinear Buckley-Leverett equation in 1D
+
+        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+
+        case (AFCSTAB_GALERKIN)
+
+          ! Apply standard Galerkin discretisation
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatDiagBLevP1d_sim, transp_calcMatGalBLevP1d_sim,&
+              dscale, .false., .false., rmatrix, rcollectionTmp)
+
+        case default
+
+          ! Apply low-order discretisation
+          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatDiagBLevP1d_sim, transp_calcMatUpwBLevP1d_sim,&
+              dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+        end select
+
+        ! Set update notifier for transport operator in problem level structure
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                         TRANSP_TROPER_UPDATE)
+      end select
+
+      !-------------------------------------------------------------------------
+
+      ! Evaluate bilinear form for boundary integral (if any)
+      call transp_calcBilfBdrCondQuick(rproblemLevel,&
+          rboundaryCondition, rsolution, smode, ivelocitytype,&
+          dTime, dscale, rmatrix, ssectionName, rcollection,&
+          fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+          fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+          fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+          BILF_MATC_LUMPED)
+
+    elseif (trim(smode) .eq. 'dual') then
+
+      !-------------------------------------------------------------------------
+      ! We are in dual mode which means that we have to build two
+      ! bilinear forms: one for the volume integral and one for the
+      ! surface integral which is used to weakly impose Dirichlet
+      ! boundary conditions. Note that lumping is performed for the
+      ! boundary term to prevent the generation of oscillations.
+      !-------------------------------------------------------------------------
+
+      ! @FAQ2: Which type of velocity are we?
+      select case(abs(ivelocitytype))
+      case default
+        ! The user-defined callback function for matrix coefficients
+        ! is used if present; otherwise an error is thrown
+        if (present(fcb_calcMatrixDual_sim) .and.&
+            present(fcb_calcMatrixDiagDual_sim)) then
+
+          ! Check if stabilisation should be applied
+          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
+            bbuildStabilisation = .false.
+          case default
+            bbuildStabilisation = .true.
+          end select
+
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM1D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+          case (NDIM2D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+          case (NDIM3D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+          end select
+
+        else ! callback function not present
+
+          call output_line('Missing user-defined callback function!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcTransportOperator')
+          call sys_halt()
+
+        end if
+
+        !-----------------------------------------------------------------------
+
+      case (VELOCITY_ZERO)
+        ! zero velocity, do nothing
+
+        !-----------------------------------------------------------------------
+
+      case (VELOCITY_CONSTANT,&
+            VELOCITY_TIMEDEP)
+        ! linear velocity
+
+        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+
+        case (AFCSTAB_GALERKIN)
+
+          ! Apply standard Galerkin discretisation
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM1D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvD1d_sim, transp_calcMatGalConvD1d_sim,&
+                dscale, .false., .false., rmatrix, rcollectionTmp)
+
+          case (NDIM2D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvD2d_sim, transp_calcMatGalConvD2d_sim,&
+                dscale, .false., .false., rmatrix, rcollectionTmp)
+
+          case (NDIM3D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvD3d_sim, transp_calcMatGalConvD3d_sim,&
+                dscale, .false., .false., rmatrix, rcollectionTmp)
+          end select
+          
+        case default
+
+          ! Apply low-order discretisation
+          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM1D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvD1d_sim, transp_calcMatUpwConvD1d_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+          case (NDIM2D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvD2d_sim, transp_calcMatUpwConvD2d_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+
+          case (NDIM3D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatDiagConvD3d_sim, transp_calcMatUpwConvD3d_sim,&
+                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+          end select
+
+        end select
+
+        if (abs(ivelocitytype) .eq. VELOCITY_TIMEDEP) then
+          ! Set update notifier for transport operator in problem level structure
+          rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                       TRANSP_TROPER_UPDATE)
+        end if
+
+        !-----------------------------------------------------------------------
+
+        ! @TODO: The dual mode has only been implemented for linear
+        ! convection. If you need to compute the dual problem for
+        ! some other velocity type, then you have to add the
+        ! implementation of the dual transport operator below!
+
+      end select
+
+      ! Evaluate bilinear form for boundary integral (if any)
+      call transp_calcBilfBdrCondQuick(rproblemLevel,&
+          rboundaryCondition, rsolution, smode, ivelocitytype,&
+          dTime, dscale, rmatrix, ssectionName, rcollection,&
+          fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
+          fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
+          fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim,&
+          BILF_MATC_LUMPED)
+
+    else
+      call output_line('Invalid mode!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcTransportOperator')
+      call sys_halt()
+    end if
+
+  end subroutine transp_calcTransportOperator
 
 end module transport_callback
