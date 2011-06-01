@@ -1833,8 +1833,8 @@ contains
         end do
         
         ! Initialise stabilisation structure by hand
-        rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
-        rafcstab%bprelimiting = .false.
+        rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
+        rafcstab%ctypePrelimiting   = AFCSTAB_NOPRELIMITING
         rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)

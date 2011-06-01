@@ -1901,15 +1901,14 @@ contains
       ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., p_rpredictorHydro,&
-          ssectionNameHydro, rcollection)
+          1.0_DP, 1.0_DP, .true., ssectionNameHydro, rcollection,&
+          rsolutionTimeDeriv=p_rpredictorHydro)
 
     else
       ! Build the raw antidiffusive fluxes without contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., Rsolution(1),&
-          ssectionNameHydro, rcollection)
+          1.0_DP, 1.0_DP, .true., ssectionNameHydro, rcollection)
     end if
 
     !--- transport model -------------------------------------------------------

@@ -1947,8 +1947,8 @@ contains
 
       ! Assemble the raw antidiffusive fluxes
       call hydro_calcFluxFCT(rproblemLevel, rsolution, rtimestep%theta,&
-          rtimestep%dStep, 1.0_DP, (ite .eq. 0), rsolution, ssectionName,&
-          rcollection)
+          rtimestep%dStep, 1.0_DP, (ite .eq. 0), ssectionName, rcollection,&
+          rsolutionPredictor=rsolution)
 
       !-------------------------------------------------------------------------
       ! Set operation specifier
@@ -2623,12 +2623,13 @@ contains
       ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., p_rpredictor, ssectionName, rcollection)
+          1.0_DP, 1.0_DP, .true., ssectionName, rcollection,&
+          rsolutionTimeDeriv=p_rpredictor)
     else
       ! Build the raw antidiffusive fluxes without contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., rsolution, ssectionName, rcollection)
+          1.0_DP, 1.0_DP, .true., ssectionName, rcollection)
     end if
 
     !---------------------------------------------------------------------------
@@ -2700,8 +2701,9 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcFluxFCT(rproblemLevel, rsolution1, theta,&
-      tstep, dscale, binit, rsolution2, ssectionName, rcollection)
+  subroutine hydro_calcFluxFCT(rproblemLevel, rsolution,&
+      theta, tstep, dscale, binit, ssectionName, rcollection,&
+      rsolutionTimeDeriv, rsolutionPredictor)
 
 !<description>
     ! This subroutine calculates the raw antidiffusive fluxes for
@@ -2710,7 +2712,7 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorBlock), intent(in) :: rsolution1
+    type(t_vectorBlock), intent(in) :: rsolution
 
     ! implicitness parameter
     real(DP), intent(in) :: theta
@@ -2726,11 +2728,14 @@ contains
     ! FALSE : assemble the antidiffusive flux using some initial values
     logical, intent(in) :: binit
 
-    ! OPTIONAL: second solution vector
-    type(t_vectorBlock), intent(in) :: rsolution2
-
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: approximate time derivative of solution vector
+    type(t_vectorBlock), intent(in), optional :: rsolutionTimeDeriv
+
+    ! OPTIONAL: low-order predictor used for prelimiting
+    type(t_vectorBlock), intent(in), optional :: rsolutionPredictor
 !</input>
 
 !<inputoutput>
@@ -2777,15 +2782,19 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTScDiss1d_sim,&
+              rsolution, hydro_calcFluxFCTScDiss1d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rsolution2, rcollection)
+              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTScDiss1d_sim,&
-              theta, tstep, dscale, binit, rcollection=rcollection)
+              rsolution, hydro_calcFluxFCTScDiss1d_sim,&
+              theta, tstep, dscale, binit,&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rcollection=rcollection)
         end if
 
       case (NDIM2D)
@@ -2793,15 +2802,19 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTScDiss2d_sim,&
+              rsolution, hydro_calcFluxFCTScDiss2d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rsolution2, rcollection)
+              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTScDiss2d_sim,&
-              theta, tstep, dscale, binit, rcollection=rcollection)
+              rsolution, hydro_calcFluxFCTScDiss2d_sim,&
+              theta, tstep, dscale, binit,&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rcollection=rcollection)
         end if
 
       case (NDIM3D)
@@ -2809,15 +2822,19 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTScDiss3d_sim,&
+              rsolution, hydro_calcFluxFCTScDiss3d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rsolution2, rcollection)
+              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTScDiss3d_sim,&
-              theta, tstep, dscale, binit, rcollection=rcollection)
+              rsolution, hydro_calcFluxFCTScDiss3d_sim,&
+              theta, tstep, dscale, binit,&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rcollection=rcollection)
         end if
       end select
 
@@ -2832,15 +2849,19 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRoeDiss1d_sim,&
+              rsolution, hydro_calcFluxFCTRoeDiss1d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rsolution2, rcollection)
+              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRoeDiss1d_sim,&
-              theta, tstep, dscale, binit, rcollection=rcollection)
+              rsolution, hydro_calcFluxFCTRoeDiss1d_sim,&
+              theta, tstep, dscale, binit,&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rcollection=rcollection)
         end if
 
       case (NDIM2D)
@@ -2848,15 +2869,19 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRoeDiss2d_sim,&
+              rsolution, hydro_calcFluxFCTRoeDiss2d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rsolution2, rcollection)
+              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRoeDiss2d_sim,&
-              theta, tstep, dscale, binit, rcollection=rcollection)
+              rsolution, hydro_calcFluxFCTRoeDiss2d_sim,&
+              theta, tstep, dscale, binit,&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rcollection=rcollection)
         end if
 
       case (NDIM3D)
@@ -2864,15 +2889,19 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRoeDiss3d_sim,&
+              rsolution, hydro_calcFluxFCTRoeDiss3d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rsolution2, rcollection)
+              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRoeDiss3d_sim,&
-              theta, tstep, dscale, binit, rcollection=rcollection)
+              rsolution, hydro_calcFluxFCTRoeDiss3d_sim,&
+              theta, tstep, dscale, binit,&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rcollection=rcollection)
         end if
       end select
 
@@ -2887,15 +2916,19 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRusDiss1d_sim,&
+              rsolution, hydro_calcFluxFCTRusDiss1d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rsolution2, rcollection)
+              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRusDiss1d_sim,&
-              theta, tstep, dscale, binit, rcollection=rcollection)
+              rsolution, hydro_calcFluxFCTRusDiss1d_sim,&
+              theta, tstep, dscale, binit,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         end if
 
       case (NDIM2D)
@@ -2903,15 +2936,19 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRusDiss2d_sim,&
+              rsolution, hydro_calcFluxFCTRusDiss2d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rsolution2, rcollection)
+              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRusDiss2d_sim,&
-              theta, tstep, dscale, binit, rcollection=rcollection)
+              rsolution, hydro_calcFluxFCTRusDiss2d_sim,&
+              theta, tstep, dscale, binit,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         end if
 
       case (NDIM3D)
@@ -2919,15 +2956,19 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRusDiss3d_sim,&
+              rsolution, hydro_calcFluxFCTRusDiss3d_sim,&
               theta, tstep, dscale, binit,&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rsolution2, rcollection)
+              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rxTimeDeriv=rsolutionTimeDeriv,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         else
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution1, hydro_calcFluxFCTRusDiss3d_sim,&
-              theta, tstep, dscale, binit, rcollection=rcollection)
+              rsolution, hydro_calcFluxFCTRusDiss3d_sim,&
+              theta, tstep, dscale, binit,&
+              rxPredictor=rsolutionPredictor,&
+              rcollection=rcollection)
         end if
       end select
 

@@ -202,6 +202,16 @@ module afcstabilisation
   
 !</constantblock>
 
+!<constantblock description="Global format flags for prelimiting">
+
+  ! No prelimiting
+  integer, parameter, public :: AFCSTAB_NOPRELIMITING         = 0
+
+  ! Standard prelimiting
+  integer, parameter, public :: AFCSTAB_PRELIMITING_STD       = 1
+
+  ! Minmod prelimiting
+  integer, parameter, public :: AFCSTAB_PRELIMITING_MINMOD    = 2
 
 !<constantblock description="Bitfield identifiers for state of stabilisation">
 
@@ -411,6 +421,9 @@ module afcstabilisation
     ! Format Tag: Identifies the type of stabilisation
     integer :: ctypeAFCstabilisation = AFCSTAB_GALERKIN
 
+    ! Format Tag: Identifies the type of prelimiting
+    integer :: ctypePrelimiting = AFCSTAB_GALERKIN
+
     ! Format Tag: Identifies the format of the scalar template matrix
     ! underlying the edge-based sparsity structure (if any)
     integer :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
@@ -454,9 +467,6 @@ module afcstabilisation
 
     ! Number of different coefficients stored in DCoefficientsAtEdge
     integer :: ncoeff = 0
-
-    ! Flag: compute auxiliary structures for flux prelimiting
-    logical :: bprelimiting = .false.
 
     ! Handle to index pointer for edge structure
     ! The numbers IverticesAtEdgeIdx(k):IverticesAtEdgeIdx(k+1)-1
@@ -643,8 +653,8 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName,&
         "iprelimiting", iprelimiting, 0)
 
-    ! Set flag for prelimiting
-    rafcstab%bprelimiting = (iprelimiting .ne. 0)
+    ! Set type of prelimiting
+    rafcstab%ctypePrelimiting = iprelimiting
 
   end subroutine afcstab_initFromParameterlist
 
@@ -1095,13 +1105,13 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
       rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
+      rafcstabDest%ctypePrelimiting      = rafcstabSrc%ctypePrelimiting
       rafcstabDest%cmatrixFormat         = rafcstabSrc%cmatrixFormat
       rafcstabDest%NEQ                   = rafcstabSrc%NEQ
       rafcstabDest%NVAR                  = rafcstabSrc%NVAR
       rafcstabDest%NVARtransformed       = rafcstabSrc%NVARtransformed
       rafcstabDest%NEDGE                 = rafcstabSrc%NEDGE
       rafcstabDest%NNVEDGE               = rafcstabSrc%NNVEDGE
-      rafcstabDest%bprelimiting          = rafcstabSrc%bprelimiting
     end if
 
     ! Copy edge structre
@@ -1379,13 +1389,13 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
       rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
+      rafcstabDest%ctypePrelimiting      = rafcstabSrc%ctypePrelimiting
       rafcstabDest%cmatrixFormat         = rafcstabSrc%cmatrixFormat
       rafcstabDest%NEQ                   = rafcstabSrc%NEQ
       rafcstabDest%NVAR                  = rafcstabSrc%NVAR
       rafcstabDest%NVARtransformed       = rafcstabSrc%NVARtransformed
       rafcstabDest%NEDGE                 = rafcstabSrc%NEDGE
       rafcstabDest%NNVEDGE               = rafcstabSrc%NNVEDGE
-      rafcstabDest%bprelimiting          = rafcstabSrc%bprelimiting
     end if
 
     ! Duplicate edge structre
