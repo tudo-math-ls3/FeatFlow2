@@ -2501,6 +2501,10 @@ contains
         ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
         rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
         
+        ! Compute pressures
+        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
         ! Compute enthalpies
         hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
         hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
@@ -2552,7 +2556,11 @@ contains
         ! Compute densities
         ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
         rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
-        
+
+        ! Compute pressures
+        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
         ! Compute enthalpies
         hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
         hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
@@ -2585,6 +2593,10 @@ contains
         ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
         rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
         
+        ! Compute pressures
+        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
         ! Compute enthalpies
         hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
         hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
@@ -2618,10 +2630,18 @@ contains
     if (present(DleftEigenvectorsAtEdge)) then
       do idx = 1, nedges
         
+        ! Compute velocities
+        ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
         ! Compute densities
         ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
         rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
         
+        ! Compute pressures
+        pi = PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        pj = PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
         ! Compute enthalpies
         hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
         hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
