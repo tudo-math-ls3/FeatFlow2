@@ -2814,6 +2814,7 @@ endif
 	@echo '  INC          =' $(INC)
 	@echo '  INTSIZE      =' $(INTSIZE)
 	@echo '  SRCEXTRA     =' $(SRCEXTRA)
+	@echo '  SRCEXTRA_APP =' $(SRCEXTRA_APP)
 	@echo '  BUILDLIB     =' $(BUILDLIB)
 	@echo '  LIBDIR       =' $(LIBDIR)
 	@echo '  LIBS         =' $(LIBS)
