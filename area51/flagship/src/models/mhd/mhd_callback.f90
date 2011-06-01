@@ -1646,9 +1646,7 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_vectorBlock), pointer :: p_rvector1, p_rvector2, p_rvector3
-    type(t_vectorBlock), target :: rvector1Tmp, rvector2Tmp, rvector3Tmp
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
-    character(LEN=SYS_STRLEN) :: smode
     real(DP) :: dnorm0, dnorm
     real(DP) :: depsAbsApproxTimeDerivative,depsRelApproxTimeDerivative
     integer :: inviscidAFC,nfailsafe,ivariable,nvariable,iblock
@@ -1693,14 +1691,12 @@ contains
           ssectionName, 'consistentmassmatrix', consistentmassmatrix)
       call parlst_getvalue_int(p_rparlist,&
           ssectionName, 'iapproxtimederivativetype', iapproxtimederivativetype)
-      call parlst_getvalue_string(p_rparlist,&
-          ssectionName, 'mode', smode)
 
       ! Set up vector1 for computing the approximate time derivative
       if (present(rvector1)) then
         p_rvector1 => rvector1
       else
-        p_rvector1 => rvector1Tmp
+        allocate(p_rvector1)
       end if
 
       ! Check if rvector1 is compatible to the solution vector; otherwise
@@ -1732,7 +1728,7 @@ contains
         if (present(rvector2)) then
           p_rvector2 => rvector2
         else
-          p_rvector2 => rvector2Tmp
+          allocate(p_rvector2)
         end if
         
         ! Check if rvector2 is compatible to the solution vector; otherwise
@@ -1746,7 +1742,7 @@ contains
         if (present(rvector3)) then
           p_rvector3 => rvector3
         else
-          p_rvector3 => rvector3Tmp
+          allocate(p_rvector3)
         end if
         
         ! Check if rvector3 is compatible to the solution vector; otherwise
@@ -1820,8 +1816,14 @@ contains
         end do richardson
 
         ! Release temporal memory
-        if (.not.present(rvector2)) call lsysbl_releaseVector(rvector2Tmp)
-        if (.not.present(rvector3)) call lsysbl_releaseVector(rvector3Tmp)
+        if (.not.present(rvector2)) then
+          call lsysbl_releaseVector(p_rvector2)
+          deallocate(p_rvector2)
+        end if
+        if (.not.present(rvector3)) then
+          call lsysbl_releaseVector(p_rvector3)
+          deallocate(p_rvector3)
+        end if
 
         !-------------------------------------------------------------------------
 
@@ -1877,7 +1879,10 @@ contains
           rsolutionTimeDeriv=p_rvector1)
 
       ! Release temporal memory
-      if (.not.present(rvector1)) call lsysbl_releaseVector(rvector1Tmp)
+      if (.not.present(rvector1) .and. nfailsafe .eq. 0) then
+        call lsysbl_releaseVector(p_rvector1)
+        deallocate(p_rvector1)
+      end if
       
     else
       
@@ -1918,11 +1923,29 @@ contains
           rsolution, ssectionName, rcollection)
       
       ! Apply failsafe flux correction
-      call afcstab_failsafeLimiting(&
-          rproblemLevel%Rafcstab(inviscidAFC),&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-          mhd_getVariable, rsolution, p_rvector1)
+      if (associated(p_rvector1)) then
+        ! ... reusing vector1 as temporal memory so the failsafe
+        ! procedure does not allocate new memoey internally
+        call afcstab_failsafeLimiting(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+            mhd_getVariable, rsolution, p_rvector1)
+
+        ! Release temporal memory
+        if (.not.present(rvector1)) then
+          call lsysbl_releaseVector(p_rvector1)
+          deallocate(p_rvector1)
+        end if
+      else
+        ! ... without providing temporal memory so the failsafe
+        ! procdure allocates new memory internally
+        call afcstab_failsafeLimiting(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+            mhd_getVariable, rsolution)
+      end if
 
       ! Deallocate temporal memory
       deallocate(SfailsafeVariables)

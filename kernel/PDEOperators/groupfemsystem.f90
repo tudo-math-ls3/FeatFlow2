@@ -796,7 +796,7 @@ contains
 
   subroutine gfsys_buildDivOperatorBlock(rafcstab, rx,&
       fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, dscale,&
-      bclear, rdivMatrix, rcollection)
+      bclear, rdivOp, rcollection, fcb_calcDivOperator)
 
 !<description>
     ! This subroutine assembles the discrete divergence operator which results
@@ -844,6 +844,10 @@ contains
     ! Callback functions to compute local matrices
     include 'intf_calcMatrixDiagSys_sim.inc'
     include 'intf_calcMatrixSys_sim.inc'
+
+    ! OPTIONAL: callback  function to overwrite the standard operation
+    include 'intf_calcDivOperator.inc'
+    optional :: fcb_calcDivOperator
 !</input>
 
 !<inputoutput>
@@ -851,7 +855,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! The divergence operator
-    type(t_matrixBlock), intent(inout) :: rdivMatrix
+    type(t_matrixBlock), intent(inout) :: rdivOp
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -868,19 +872,22 @@ contains
     logical :: bisFullMatrix
 
 
-    ! Check if block vector contains only one block and if
-    ! global operator is stored in interleave format.
-    if ((rx%nblocks .eq. 1) .and.&
-        (rdivMatrix%nblocksPerCol .eq. 1) .and.&
-        (rdivMatrix%nblocksPerRow .eq. 1)) then
+    ! Check if block vector contains only one block, if global
+    ! operator is stored in interleave format and no user-defined
+    ! callback function is provided.
+    if (.not.present(fcb_calcDivOperator) .and.&
+        (rx%nblocks .eq. 1)               .and.&
+        (rdivOp%nblocksPerCol .eq. 1) .and.&
+        (rdivOp%nblocksPerRow .eq. 1)) then
       call gfsys_buildDivOperatorScalar(rafcstab, rx%RvectorBlock(1),&
           fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
-          dscale, bclear, rdivMatrix%RmatrixBlock(1,1), rcollection)
+          dscale, bclear, rdivOp%RmatrixBlock(1,1), rcollection,&
+          fcb_calcDivOperator)
       return
     end if
 
     ! Check if block matrix exhibits group structure
-    if (rdivMatrix%imatrixSpec .ne. LSYSBS_MSPEC_GROUPMATRIX) then
+    if (rdivOp%imatrixSpec .ne. LSYSBS_MSPEC_GROUPMATRIX) then
       call output_line('Block matrix must have group structure!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
       call sys_halt()
@@ -901,54 +908,61 @@ contains
       call sys_halt()
     end if
 
-    ! Allocate temporal memory
-    allocate(rarray(rx%nblocks,rx%nblocks))
-    
-    ! Set pointers
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_DmatCoeffAtNode(rafcstab, p_DmatrixCoeffsAtNode)
-    call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
-    call afcstab_getbase_array(rdivMatrix, rarray, bisFullMatrix)
-    call lsysbl_getbase_double(rx, p_Dx)
-    
-    ! What kind of matrix are we?
-    select case(rdivMatrix%RmatrixBlock(1,1)%cmatrixFormat)
-    case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
-      !-------------------------------------------------------------------------
-      ! Matrix format 7 and 9
-      !-------------------------------------------------------------------------
-
-      ! Set diagonal pointer
-      if (rdivMatrix%RmatrixBlock(1,1)%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-        call lsyssc_getbase_Kld(rdivMatrix%RmatrixBlock(1,1), p_Kdiagonal)
-      else
-        call lsyssc_getbase_Kdiagonal(rdivMatrix%RmatrixBlock(1,1), p_Kdiagonal)
-      end if
-
-      ! What type of matrix are we?
-      if (bisFullMatrix) then
+    ! Check if user-defined assembly is provided
+    if (present(fcb_calcDivOperator)) then
+      ! Call used-defined assembly
+      call fcb_calcDivOperator(rafcstab, rx, rdivOp, dscale, bclear,&
+          fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection)
+    else
+      ! Allocate temporal memory
+      allocate(rarray(rx%nblocks,rx%nblocks))
+      
+      ! Set pointers
+      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+      call afcstab_getbase_DmatCoeffAtNode(rafcstab, p_DmatrixCoeffsAtNode)
+      call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
+      call afcstab_getbase_array(rdivOp, rarray, bisFullMatrix)
+      call lsysbl_getbase_double(rx, p_Dx)
+      
+      ! What kind of matrix are we?
+      select case(rdivOp%RmatrixBlock(1,1)%cmatrixFormat)
+      case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+        !-----------------------------------------------------------------------
+        ! Matrix format 7 and 9
+        !-----------------------------------------------------------------------
         
-        call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-            rafcstab%NEQ, rx%nblocks, p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge,&
-            p_Dx, dscale, bclear, rarray)
-     
-      else   ! bisFullMatrix == no
-
-        call doOperatorMat79Diag(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-            rafcstab%NEQ, rx%nblocks, p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge,&
-            p_Dx, dscale, bclear, rarray)
-
-      end if   ! bisFullMatrix
-
-    case DEFAULT
-      call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
-      call sys_halt()
-    end select
-
-    ! Deallocate temporal memory
-    deallocate(rarray)
+        ! Set diagonal pointer
+        if (rdivOp%RmatrixBlock(1,1)%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+          call lsyssc_getbase_Kld(rdivOp%RmatrixBlock(1,1), p_Kdiagonal)
+        else
+          call lsyssc_getbase_Kdiagonal(rdivOp%RmatrixBlock(1,1), p_Kdiagonal)
+        end if
+        
+        ! What type of matrix are we?
+        if (bisFullMatrix) then
+          
+          call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+              rafcstab%NEQ, rx%nblocks, p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge,&
+              p_Dx, dscale, bclear, rarray)
+          
+        else   ! bisFullMatrix == no
+          
+          call doOperatorMat79Diag(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+              rafcstab%NEQ, rx%nblocks, p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge,&
+              p_Dx, dscale, bclear, rarray)
+          
+        end if   ! bisFullMatrix
+        
+      case DEFAULT
+        call output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
+        call sys_halt()
+      end select
+      
+      ! Deallocate temporal memory
+      deallocate(rarray)
+    end if
 
   contains
 
@@ -1441,7 +1455,7 @@ contains
 
   subroutine gfsys_buildDivOperatorScalar(rafcstab, rx,&
       fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, dscale,&
-      bclear, rdivMatrix, rcollection)
+      bclear, rdivOp, rcollection, fcb_calcDivOperator)
 
 !<description>
     ! This subroutine assembles the discrete divergence operator which results
@@ -1486,6 +1500,10 @@ contains
     ! Callback functions to compute local matrices
     include 'intf_calcMatrixDiagSys_sim.inc'
     include 'intf_calcMatrixSys_sim.inc'
+
+    ! OPTIONAL: callback  function to overwrite the standard operation
+    include 'intf_calcDivOperator.inc'
+    optional :: fcb_calcDivOperator
 !</input>
 
 !<inputoutput>
@@ -1493,7 +1511,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! The divergence operator
-    type(t_matrixScalar), intent(inout) :: rdivMatrix
+    type(t_matrixScalar), intent(inout) :: rdivOp
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -1501,6 +1519,8 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_vectorBlock) :: rxBlock
+    type(t_matrixBlock) :: rdivOpBlock
     real(DP), dimension(:), pointer :: p_DivOp,p_Dx
     real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
     real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
@@ -1523,52 +1543,67 @@ contains
       call sys_halt()
     end if
 
-    ! Set pointers
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_DmatCoeffAtNode(rafcstab, p_DmatrixCoeffsAtNode)
-    call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
-    call lsyssc_getbase_double(rdivMatrix, p_DivOp)
-    call lsyssc_getbase_double(rx, p_Dx)
-    
-    ! What kind of matrix are we?
-    select case(rdivMatrix%cmatrixFormat)
-    case(LSYSSC_MATRIX7INTL, LSYSSC_MATRIX9INTL)
-      !-------------------------------------------------------------------------
-      ! Matrix format 7 and 9 interleaved
-      !-------------------------------------------------------------------------
-
-      ! Set diagonal pointer
-      if (rdivMatrix%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-        call lsyssc_getbase_Kld(rdivMatrix, p_Kdiagonal)
-      else
-        call lsyssc_getbase_Kdiagonal(rdivMatrix, p_Kdiagonal)
-      end if
-
-      ! What type of matrix are we?
-      select case(rdivMatrix%cinterleavematrixFormat)
-
-      case (LSYSSC_MATRIX1)
-        call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-            rafcstab%NEQ, rdivMatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
-            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx, dscale, bclear, p_DivOp)
+    ! Check if user-defined assembly is provided
+    if (present(fcb_calcDivOperator)) then
+      ! Create auxiliary 1-block vector and matrix
+      call lsysbl_createVecFromScalar(rx, rxBlock)
+      call lsysbl_createMatFromScalar(rdivOp, rdivOpBlock)
+      
+      ! Call user-defined assembly
+      call fcb_calcDivOperator(rafcstab, rxBlock, rdivOpBlock, dscale, bclear,&
+          fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection)
+      
+      ! Release auxiliary 1-block vector and matrix
+      call lsysbl_releaseVector(rxBlock)
+      call lsysbl_releaseMatrix(rdivOpBlock)
+    else
+      ! Set pointers
+      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+      call afcstab_getbase_DmatCoeffAtNode(rafcstab, p_DmatrixCoeffsAtNode)
+      call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
+      call lsyssc_getbase_double(rdivOp, p_DivOp)
+      call lsyssc_getbase_double(rx, p_Dx)
+      
+      ! What kind of matrix are we?
+      select case(rdivOp%cmatrixFormat)
+      case(LSYSSC_MATRIX7INTL, LSYSSC_MATRIX9INTL)
+        !-------------------------------------------------------------------------
+        ! Matrix format 7 and 9 interleaved
+        !-------------------------------------------------------------------------
         
-      case (LSYSSC_MATRIXD)
-        call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-            rafcstab%NEQ, rdivMatrix%NA, rx%NVAR, rx%NVAR,&
-            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx, dscale, bclear, p_DivOp)
-
+        ! Set diagonal pointer
+        if (rdivOp%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+          call lsyssc_getbase_Kld(rdivOp, p_Kdiagonal)
+        else
+          call lsyssc_getbase_Kdiagonal(rdivOp, p_Kdiagonal)
+        end if
+        
+        ! What type of matrix are we?
+        select case(rdivOp%cinterleavematrixFormat)
+          
+        case (LSYSSC_MATRIX1)
+          call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+              rafcstab%NEQ, rdivOp%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
+              p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx, dscale, bclear, p_DivOp)
+          
+        case (LSYSSC_MATRIXD)
+          call doOperatorMat79(p_Kdiagonal, p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+              rafcstab%NEQ, rdivOp%NA, rx%NVAR, rx%NVAR,&
+              p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx, dscale, bclear, p_DivOp)
+          
+        case DEFAULT
+          call output_line('Unsupported interleave matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
+          call sys_halt()
+        end select
+        
       case DEFAULT
-        call output_line('Unsupported interleave matrix format!',&
+        call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
         call sys_halt()
       end select
-
-    case DEFAULT
-      call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
-      call sys_halt()
-    end select
+    end if
 
   contains
 
@@ -6352,7 +6387,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_ML,p_Dx,p_Dy
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
-    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_Dflux0
+    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_Dflux0,p_DfluxPrel
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
     integer :: nvariable
@@ -6436,37 +6471,41 @@ contains
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
       call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
 
-      ! Special treatment for semi-implicit FEM-FCT algorithm
+      ! Special treatment for semi-implicit FEM-FCT algorithm; we need
+      ! the spatial part of the antidiffusive fluxes which, in this
+      ! special case, is stored in the fluxes for prelimiting
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
       else
         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       end if
 
-      ! Compute sums of antidiffusive increments
+      ! Do we have to prelimit the antidiffusive fluxes?
       if (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING) then
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
 
+        ! Compute sums of antidiffusive increments with prelimiting
         if (present(fcb_calcADIncrements)) then
           ! User-supplied callback routine
           call fcb_calcADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha, p_Dpp,&
-              p_Dpm, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
+              p_Dpm, fcb_calcFluxTransformation_sim, p_DfluxPrel, rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doPreADIncrementsTransformed(p_IverticesAtEdgeIdx,&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              nvariable, p_Dx, p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
+              nvariable, p_Dx, p_Dflux, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
         else
           ! Standard routine without flux transformation
           call doPreADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
+              p_Dflux, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
         end if
         
       else
         
+        ! Compute sums of antidiffusive increments without prelimiting
         if (present(fcb_calcADIncrements)) then
           ! User-supplied callback routine
           call fcb_calcADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
@@ -6908,10 +6947,10 @@ contains
     ! antidiffusive fluxes without transformation and with prelimiting
 
     subroutine doPreADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Dflux, Dflux0, Dalpha, Dpp, Dpm)
+        NEDGE, NEQ, NVAR, Dflux, DfluxPrel, Dalpha, Dpp, Dpm)
       
       ! input parameters
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,Dflux0
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,DfluxPrel
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
       integer, intent(in) :: NEDGE,NEQ,NVAR
@@ -6952,7 +6991,7 @@ contains
           F_ij = Dalpha(iedge) * Dflux(:,iedge)
           
           ! MinMod prelimiting
-          alpha_ij = minval(mprim_minmod3(F_ij, Dflux0(:,iedge), F_ij))
+          alpha_ij = minval(mprim_minmod3(F_ij, DfluxPrel(:,iedge), F_ij))
           
           ! Synchronisation of correction factors
           Dalpha(iedge) = Dalpha(iedge) * alpha_ij
@@ -6980,11 +7019,11 @@ contains
     ! Perform minmod prelimiting of the raw antidiffusive fluxes
 
     subroutine doPreADIncrementsTransformed(IverticesAtEdgeIdx, IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Dflux0, Dalpha, Dpp, Dpm)
+        NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, DfluxPrel, Dalpha, Dpp, Dpm)
 
       ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,Dflux0
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,DfluxPrel
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
@@ -7064,7 +7103,7 @@ contains
           ! for the explicit part for prelimiting
           call fcb_calcFluxTransformation_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              Dflux0(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
+              DfluxPrel(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedPrelFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
           
@@ -7997,21 +8036,25 @@ contains
       ! Call subroutine for scalar vectors
       if (present(rxTimeDeriv)) then
         if (present(rxPredictor)) then
+          ! ... both approximate time derivative and predictor are present
           call gfsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
               fcb_calcFluxFCT_sim, theta, tstep,dscale, binit, rmatrix,&
               rxTimeDeriv%RvectorBlock(1), rxPredictor%RvectorBlock(1),&
               rcollection=rcollection)
         else
+          ! ... only the approximate time derivative is present
           call gfsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
               fcb_calcFluxFCT_sim, theta, tstep,dscale, binit, rmatrix,&
               rxTimeDeriv%RvectorBlock(1), rcollection=rcollection)
         end if
       else
         if (present(rxPredictor)) then
+          ! ... only the predictor is present
           call gfsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
               fcb_calcFluxFCT_sim, theta, tstep,dscale, binit, rmatrix,&
               rxPredictor=rxPredictor%RvectorBlock(1), rcollection=rcollection)
         else
+          ! ... neither the approximate time derivative nor the predictor is present
           call gfsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
               fcb_calcFluxFCT_sim, theta, tstep,dscale, binit, rmatrix,&
               rcollection=rcollection)
@@ -8110,12 +8153,13 @@ contains
       ! Are we in the first step?
       if (binit) then
         
-        ! Assemble total raw-antidiffusive fluxes for the first step
-        ! (implicitness parameter theta cancels out)
+        ! Assemble the total raw-antidiffusive fluxes for the first
+        ! step (implicitness parameter theta cancels out)
         call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale, p_Dflux)
 
-        ! Assemble explicit part of raw-antidiffusive fluxes (if any)
+        ! Assemble explicit part of the raw-antidiffusive fluxes; for
+        ! fully implicit schemes, the explicit part vanishes
         if (theta .ne. 1.0_DP) then
           call lalg_copyVector(p_Dflux, p_Dflux0)
           call lalg_scaleVector(p_Dflux0, 1.0_DP-theta)
@@ -8123,14 +8167,24 @@ contains
         
       else
         
-        ! Assemble implicit part of raw-antidiffusive fluxes
-        call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
+        ! Assemble implicit part of the raw-antidiffusive fluxes; for
+        ! fully explicit schemes, the implicit part vanishes
+        if (theta .ne. 0.0_DP)&
+            call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, theta*dscale, p_Dflux)
 
-        ! Assemble total raw-antidiffusive fluxes for intermediate steps
-        if(theta .ne. 1.0_DP)&
+        ! Combine the explicit and implicit parts of the
+        ! raw-antidiffusive fluxes (if both exist)
+        if (theta .ne. 1.0_DP) then
+          if (theta .ne. 0.0_DP) then
+            ! both explicit and implicit parts exist
             call doCombineFluxes(rafcstab%NVAR, rafcstab%NEDGE, 1.0_DP,&
-            p_Dflux0, p_Dflux)
+                p_Dflux0, p_Dflux)
+          else
+            ! only the explicit part exists
+            call lalg_copyVector(p_Dflux0, p_Dflux)
+          end if
+        end if
       end if
 
       !-------------------------------------------------------------------------
@@ -8144,18 +8198,19 @@ contains
         ! Are we in the first step?
         if (binit) then
 
-          ! Assemble explicit part of raw-antidiffusive fluxes
-          if (theta .eq. 1.0_DP) then
-            call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_Dmatrix, p_Dx, -dscale/tstep, .true., p_Dflux0)
-          else
-            call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_Dmatrix, p_Dx, -dscale/tstep, .false., p_Dflux0)
-          end if
-          
+          ! In the first step, the contribution of the explicit and
+          ! implicit part of the mass antidiffusive fluxes cancel each
+          ! other so that we have to apply mass antidiffusion only to
+          ! the explicit fluxes. Since the explicit fluxes have not
+          ! been initialied in the fully implicit case (i.e. theta=1)
+          ! we have to take care of the initialisation here
+          call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
+              rafcstab%NVAR, p_Dmatrix, p_Dx, -dscale/tstep, (theta .eq. 1.0_DP),&
+              p_Dflux0)
+
         else
           
-          ! Assemble explicit part of raw-antidiffusive fluxes
+          ! Apply mass antidiffusion to the implicit fluxes
           call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
               rafcstab%NVAR, p_Dmatrix, p_Dx, dscale/tstep, .false., p_Dflux)
         end if
@@ -8169,14 +8224,17 @@ contains
 
         if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
 
-          ! We have to store the initial fluxes separately
+          ! We have to store the initial fluxes separately (i.e. the
+          ! raw-antidiffusive fluxes based on the initial solution
+          ! without the contribution of the consistent mass matrix and
+          ! without scaling by the implicitness parameter theta)
           call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
               rafcstab%p_rvectorFluxPrel)
 
         elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING) then
           
-          ! We have to assemble the raw-antidiffusive fluxes for
-          ! prelimiting separately based on the predictor
+          ! We have to assemble the raw-antidiffusive fluxes used for
+          ! prelimiting separately based on the low-order predictor
           if (present(rxPredictor)) then
             call lsysbl_getbase_double(rxPredictor, p_DxPredictor)
             call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
@@ -8238,7 +8296,8 @@ contains
         call lsyssc_getbase_double(rmatrix, p_Dmatrix)
         call lsysbl_getbase_double(rxTimeDeriv, p_DxTimeDeriv)
       
-        ! Apply mass antidiffusion to antidiffusive fluxes
+        ! Apply mass antidiffusion to antidiffusive fluxes based on
+        ! the approximation to the time derivative
         call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_Dmatrix, p_DxTimeDeriv, dscale, .false., p_Dflux)
       end if
@@ -8260,8 +8319,7 @@ contains
         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
         call lsyssc_getbase_double(rmatrix, p_Dmatrix)
 
-        ! Clear vector and assemble antidiffusive fluxes
-        call lalg_clearVector(p_Dflux)
+        ! Assemble mass-antidiffusive fluxes based on the solution
         call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_Dmatrix, p_Dx, dscale, .true., p_Dflux)
 
@@ -8435,7 +8493,7 @@ contains
             ij = IverticesAtEdge(3,iedge)
             
             ! Compute the raw antidiffusives fluxes
-            Dflux(:,iedge) = dscale*DmatrixData(ij)*(Dx(i,:)-Dx(j,:))
+            Dflux(:,iedge) = dscale * DmatrixData(ij) * (Dx(i,:)-Dx(j,:))
           end do
           !$omp end parallel do
 
@@ -8453,7 +8511,7 @@ contains
             
             ! Compute the raw antidiffusives fluxes
             Dflux(:,iedge) = Dflux(:,iedge)&
-                           + dscale*DmatrixData(ij)*(Dx(i,:)-Dx(j,:))
+                           + dscale * DmatrixData(ij) * (Dx(i,:)-Dx(j,:))
           end do
           !$omp end parallel do
 
@@ -8488,7 +8546,8 @@ contains
       else
 
         do iedge = 1, NEDGE
-          Dflux2(:,iedge) = Dflux2(:,iedge) + dscale * Dflux1(:,iedge)
+          Dflux2(:,iedge) = Dflux2(:,iedge)&
+                          + dscale * Dflux1(:,iedge)
         end do
 
       end if
@@ -8648,12 +8707,13 @@ contains
       ! Are we in the first step?
       if (binit) then
         
-        ! Assemble total raw-antidiffusive fluxes for the first step
-        ! (implicitness parameter theta cancels out)
+        ! Assemble the total raw-antidiffusive fluxes for the first
+        ! step (implicitness parameter theta cancels out)
         call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale, p_Dflux)
 
-        ! Assemble explicit part of raw-antidiffusive fluxes
+        ! Assemble explicit part of the raw-antidiffusive fluxes; for
+        ! fully implicit schemes, the explicit part vanishes
         if (theta .ne. 1.0_DP) then
           call lalg_copyVector(p_Dflux, p_Dflux0)
           call lalg_scaleVector(p_Dflux0, 1.0_DP-theta)
@@ -8661,14 +8721,24 @@ contains
 
       else
 
-        ! Assemble implicit part of raw-antidiffusive fluxes
-        call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
+        ! Assemble implicit part of the raw-antidiffusive fluxes; for
+        ! fully explicit schemes, the implicit part vanishes
+        if (theta .ne. 0.0_DP)&
+            call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, theta*dscale, p_Dflux)
         
-        ! Assemble total raw-antidiffusive fluxes for intermediate steps
-        if(theta .ne. 1.0_DP)&
+        ! Combine the explicit and implicit parts of the
+        ! raw-antidiffusive fluxes (if both exist)
+        if (theta .ne. 1.0_DP) then
+          if (theta .ne. 0.0_DP) then
+            ! both explicit and implicit parts exist
             call doCombineFluxes(rafcstab%NVAR, rafcstab%NEDGE, 1.0_DP,&
-            p_Dflux0, p_Dflux)
+                p_Dflux0, p_Dflux)
+          else
+            ! only the explicit part exists
+            call lalg_copyVector(p_Dflux0, p_Dflux)
+          end if
+        end if
       end if
 
       !-------------------------------------------------------------------------
@@ -8682,18 +8752,19 @@ contains
         ! Are we in the first step?
         if (binit) then
 
-          ! Assemble explicit part of raw-antidiffusive fluxes
-          if (theta .eq. 1.0_DP) then
-            call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_Dmatrix, p_Dx, -dscale/tstep, .true., p_Dflux0)
-          else
-            call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-                rafcstab%NVAR, p_Dmatrix, p_Dx, -dscale/tstep, .false., p_Dflux0)
-          end if
+          ! In the first step, the contribution of the explicit and
+          ! implicit part of the mass antidiffusive fluxes cancel each
+          ! other so that we have to apply mass antidiffusion only to
+          ! the explicit fluxes. Since the explicit fluxes have not
+          ! been initialied in the fully implicit case (i.e. theta=1)
+          ! we have to take care of the initialisation here
+          call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
+              rafcstab%NVAR, p_Dmatrix, p_Dx, -dscale/tstep, (theta .eq. 1.0_DP),&
+              p_Dflux0)
 
         else
-
-          ! Assemble explicit part of raw-antidiffusive fluxes
+          
+          ! Apply mass antidiffusion to the implicit fluxes
           call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
               rafcstab%NVAR, p_Dmatrix, p_Dx, dscale/tstep, .false., p_Dflux)
         end if
@@ -8707,14 +8778,17 @@ contains
 
         if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
 
-          ! We have to store the initial fluxes separately
+          ! We have to store the initial fluxes separately (i.e. the
+          ! raw-antidiffusive fluxes based on the initial solution
+          ! without the contribution of the consistent mass matrix and
+          ! without scaling by the implicitness parameter theta)
           call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
               rafcstab%p_rvectorFluxPrel)
 
         elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING) then
           
-          ! We have to assemble the raw-antidiffusive fluxes for
-          ! prelimiting separately based on the predictor
+          ! We have to assemble the raw-antidiffusive fluxes used for
+          ! prelimiting separately based on the low-order predictor
           if (present(rxPredictor)) then
             call lsyssc_getbase_double(rxPredictor, p_DxPredictor)
             call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
@@ -8726,8 +8800,8 @@ contains
             elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
               ! Compute fluxes for minmod prelimiting
               call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-                  rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_DxPredictor,&
-                  dscale, p_DfluxPrel)
+                  rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_DxPredictor, dscale,&
+                  p_DfluxPrel)
             else
               call output_line('Invalid type of prelimiting!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
@@ -8777,7 +8851,8 @@ contains
         call lsyssc_getbase_double(rmatrix, p_Dmatrix)
         call lsyssc_getbase_double(rxTimeDeriv, p_DxTimeDeriv)
         
-        ! Apply mass antidiffusion to antidiffusive fluxes
+        ! Apply mass antidiffusion to antidiffusive fluxes based on
+        ! the approximation to the time derivative
         call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_Dmatrix, p_DxTimeDeriv, dscale, .false., p_Dflux)
       end if
@@ -8975,7 +9050,7 @@ contains
             ij = IverticesAtEdge(3,iedge)
             
             ! Compute the raw antidiffusives fluxes
-            Dflux(:,iedge) = dscale*DmatrixData(ij)*(Dx(:,i)-Dx(:,j))
+            Dflux(:,iedge) = dscale * DmatrixData(ij) * (Dx(:,i)-Dx(:,j))
           end do
           !$omp end parallel do
           
@@ -8993,7 +9068,7 @@ contains
             
             ! Compute the raw antidiffusives fluxes
             Dflux(:,iedge) = Dflux(:,iedge)&
-                           + dscale*DmatrixData(ij)*(Dx(:,i)-Dx(:,j))
+                           + dscale * DmatrixData(ij) * (Dx(:,i)-Dx(:,j))
           end do
           !$omp end parallel do
           

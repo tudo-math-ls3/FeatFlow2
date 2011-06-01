@@ -11417,21 +11417,25 @@ contains
     ! Call subroutine for scalar vectors
     if (present(rxTimeDeriv)) then
       if (present(rxPredictor)) then
+        ! ... both approximate time derivative and predictor are present
         call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
             theta, tstep,dscale, binit, rmatrix,&
             rxTimeDeriv=rxTimeDeriv%RvectorBlock(1),&
             rxPredictor=rxPredictor%RvectorBlock(1))
       else
+        ! ... only the approximate time derivative is present
         call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
             theta, tstep,dscale, binit, rmatrix,&
             rxTimeDeriv=rxTimeDeriv%RvectorBlock(1))
       end if
     else
       if (present(rxPredictor)) then
+        ! ... only the predictor is present
         call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
             theta, tstep,dscale, binit, rmatrix,&
             rxPredictor=rxPredictor%RvectorBlock(1))
       else
+        ! ... neither the approximate time derivative nor the predictor is present
         call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
             theta, tstep,dscale, binit, rmatrix)
       end if
@@ -11586,12 +11590,13 @@ contains
       ! Are we in the first step?
       if (binit) then
         
-        ! Assemble total raw-antidiffusive fluxes for the first step
-        ! (implicitness parameter theta cancels out)
+        ! Assemble the total raw-antidiffusive fluxes for the first
+        ! step (implicitness parameter theta cancels out)
         call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
             p_DcoefficientsAtEdge, p_Dx, dscale, p_Dflux)
         
-        ! Assemble explicit part of raw-antidiffusive fluxes (if any)
+        ! Assemble explicit part of the raw-antidiffusive fluxes; for
+        ! fully implicit schemes, the explicit part vanishes
         if (theta .ne. 1.0_DP) then
           call lalg_copyVector(p_Dflux, p_Dflux0)
           call lalg_scaleVector(p_Dflux0, 1.0_DP-theta)
@@ -11599,13 +11604,23 @@ contains
         
       else
         
-        ! Assemble implicit part of raw-antidiffusive fluxes
-        call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
+        ! Assemble implicit part of the raw-antidiffusive fluxes; for
+        ! fully explicit schemes, the implicit part vanishes
+        if (theta .ne. 0.0_DP)&
+            call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
             p_DcoefficientsAtEdge, p_Dx, theta*dscale, p_Dflux)
         
-        ! Assemble total raw-antidiffusive fluxes for intermediate steps
-        if(theta .ne. 1.0_DP)&
+        ! Combine the explicit and implicit parts of the
+        ! raw-antidiffusive fluxes (if both exist)
+        if (theta .ne. 1.0_DP) then
+          if (theta .ne. 0.0_DP) then
+            ! both explicit and implicit parts exist
             call doCombineFluxes(rafcstab%NEDGE, 1.0_DP, p_Dflux0, p_Dflux)
+          else
+            ! only the explicit part exists
+            call lalg_copyVector(p_Dflux0, p_Dflux)
+          end if
+        end if
       end if
       
       !-------------------------------------------------------------------------
@@ -11619,18 +11634,19 @@ contains
         ! Are we in the first step?
         if (binit) then
 
-          ! Assemble explicit part of raw-antidiffusive fluxes
-          if (theta .eq. 1.0_DP) then
-            call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-                p_Dmatrix, p_Dx, -dscale/tstep, .true., p_Dflux0)
-          else
-            call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-                p_Dmatrix, p_Dx, -dscale/tstep, .false., p_Dflux0)
-          end if
+          ! In the first step, the contribution of the explicit and
+          ! implicit part of the mass antidiffusive fluxes cancel each
+          ! other so that we have to apply mass antidiffusion only to
+          ! the explicit fluxes. Since the explicit fluxes have not
+          ! been initialied in the fully implicit case (i.e. theta=1)
+          ! we have to take care of the initialisation here
+          call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
+              p_Dmatrix, p_Dx, -dscale/tstep, (theta .eq. 1.0_DP),&
+              p_Dflux0)
           
         else
           
-          ! Assemble explicit part of raw-antidiffusive fluxes
+          ! Apply mass antidiffusion to the implicit fluxes
           call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
               p_Dmatrix, p_Dx, dscale/tstep, .false., p_Dflux)
         end if
@@ -11644,14 +11660,17 @@ contains
 
         if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
 
-          ! We have to store the initial fluxes separately
+          ! We have to store the initial fluxes separately (i.e. the
+          ! raw-antidiffusive fluxes based on the initial solution
+          ! without the contribution of the consistent mass matrix and
+          ! without scaling by the implicitness parameter theta)
           call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
               rafcstab%p_rvectorFluxPrel)
 
         elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING) then
           
           ! We have to assemble the raw-antidiffusive fluxes for
-          ! prelimiting separately based on the predictor
+          ! prelimiting separately based on the low-order predictor
           if (present(rxPredictor)) then
             call lsyssc_getbase_double(rxPredictor, p_DxPredictor)
             call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
@@ -11722,7 +11741,8 @@ contains
         call lsyssc_getbase_double(rmatrix, p_Dmatrix)
         call lsyssc_getbase_double(rxTimeDeriv, p_DxTimeDeriv)
       
-        ! Apply mass antidiffusion to antidiffusive fluxes
+        ! Apply mass antidiffusion to antidiffusive fluxes based on
+        ! the approximation to the time derivative
         call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
             p_Dmatrix, p_DxTimeDeriv, dscale, .false., p_Dflux)
       end if

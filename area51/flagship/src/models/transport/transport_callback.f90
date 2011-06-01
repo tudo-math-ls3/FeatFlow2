@@ -4403,9 +4403,7 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_matrixScalar), pointer :: p_rmatrix
-    type(t_matrixScalar), target :: rmatrixTmp
     type(t_vectorBlock), pointer :: p_rvector1, p_rvector2, p_rvector3
-    type(t_vectorBlock), target :: rvector1Tmp, rvector2Tmp, rvector3Tmp
     character(LEN=SYS_STRLEN) :: smode
     real(DP) :: dnorm0, dnorm
     real(DP) :: depsAbsApproxTimeDerivative,depsRelApproxTimeDerivative
@@ -4462,7 +4460,7 @@ contains
       if (present(rmatrix)) then
         p_rmatrix => rmatrix
       else
-        p_rmatrix => rmatrixTmp
+        allocate(p_rmatrix)
       end if
 
       ! Check if matrix is compatible to consistent mass matrix; otherwise
@@ -4481,7 +4479,7 @@ contains
       if (present(rvector1)) then
         p_rvector1 => rvector1
       else
-        p_rvector1 => rvector1Tmp
+        allocate(p_rvector1)
       end if
 
       ! Check if rvector1 is compatible to the solution vector; otherwise
@@ -4513,7 +4511,7 @@ contains
         if (present(rvector2)) then
           p_rvector2 => rvector2
         else
-          p_rvector2 => rvector2Tmp
+          allocate(p_rvector2)
         end if
         
         ! Check if rvector2 is compatible to the solution vector; otherwise
@@ -4527,7 +4525,7 @@ contains
         if (present(rvector3)) then
           p_rvector3 => rvector3
         else
-          p_rvector3 => rvector3Tmp
+          allocate(p_rvector3)
         end if
         
         ! Check if rvector3 is compatible to the solution vector; otherwise
@@ -4565,7 +4563,6 @@ contains
         rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec    = istabilisationSpecConvection
         rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation  = ctypeAFCstabilisationDiffusion
         rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec     = istabilisationSpecDiffusion
-
 
         ! Compute $K(u^L)*u^L$ and store the result in rvector2
         call lsyssc_scalarMatVec(p_rmatrix,&
@@ -4619,8 +4616,14 @@ contains
         end do richardson
 
         ! Release temporal memory
-        if (.not.present(rvector2)) call lsysbl_releaseVector(rvector2Tmp)
-        if (.not.present(rvector3)) call lsysbl_releaseVector(rvector3Tmp)
+        if (.not.present(rvector2)) then
+          call lsysbl_releaseVector(p_rvector2)
+          deallocate(p_rvector2)
+        end if
+        if (.not.present(rvector3)) then
+          call lsysbl_releaseVector(p_rvector3)
+          deallocate(p_rvector3)
+        end if
 
         !-------------------------------------------------------------------------
 
@@ -4653,7 +4656,6 @@ contains
         rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec    = istabilisationSpecConvection
         rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation  = ctypeAFCstabilisationDiffusion
         rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec     = istabilisationSpecDiffusion
-
 
         ! Compute $L(u^L)*u^L$ and store the result in rvector1
         call lsyssc_scalarMatVec(p_rmatrix,&
@@ -4698,8 +4700,14 @@ contains
           rxTimeDeriv=p_rvector1)
 
       ! Release temporal memory
-      if (.not.present(rmatrix))  call lsyssc_releaseMatrix(rmatrixTmp)
-      if (.not.present(rvector1)) call lsysbl_releaseVector(rvector1Tmp)
+      if (.not.present(rmatrix)) then
+        call lsyssc_releaseMatrix(rmatrix)
+        deallocate(p_rmatrix)
+      end if
+      if (.not.present(rvector1)) then
+        call lsysbl_releaseVector(p_rvector1)
+        deallocate(p_rvector1)
+      end if
 
     else
 
