@@ -46,6 +46,11 @@ imasstype = 2
 # 1 = consistent mass antidiffusion
 imassantidiffusiontype = 1
 
+# type of approximate time derivative
+# 0 = Galerkin method
+# 1 = low-order method
+iapproxtimederivativetype = 1
+
 # type of dissipation
 # 0 = no dissipation
 # 1 = scalar dissipation (-1 = dimensional splitting)
@@ -218,10 +223,10 @@ igeometricsourcetype = 2
 # type of spatial stabilization:
 #  0 = no stabilization (Galerkin)
 #  1 = discrete upwinding
-# 10 = semi-impl. FEM-FCT
-# 11 = semi-expl. FEM-FCT
-# 12 = linearised FEM-FCT
-# 13 = iterative FEM-FCT
+# 10 = semi-impl. FEM-FCT (iprelimiting =0, =2)
+# 11 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
+# 12 = linearised FEM-FCT (iprelimiting =0, =1, =2)
+# 13 = iterative FEM-FCT (iprelimiting =0, =1, =2)
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP

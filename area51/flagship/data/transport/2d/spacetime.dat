@@ -46,6 +46,11 @@ imasstype = 0
 # 1 = consistent mass antidiffusion
 imassantidiffusiontype = 0
 
+# type of approximate time derivative
+# 0 = Galerkin method
+# 1 = low-order method
+iapproxtimederivativetype = 1
+
 # type of flow velocity
 # 0 = zero velocity v=0
 # 1 = linear constant velocity v=v(x)
@@ -176,10 +181,10 @@ errorestimator = ErrorEstimator
 # type of spatial stabilization:
 #  0 = no stabilization (Galerkin)
 #  1 = discrete upwinding
-# 10 = semi-impl. FEM-FCT
-# 11 = semi-expl. FEM-FCT
-# 12 = linearised FEM-FCT
-# 13 = iterative FEM-FCT
+# 10 = semi-impl. FEM-FCT (iprelimiting =0, =2)
+# 11 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
+# 12 = linearised FEM-FCT (iprelimiting =0, =1, =2)
+# 13 = iterative FEM-FCT (iprelimiting =0, =1, =2)
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP

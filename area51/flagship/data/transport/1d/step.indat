@@ -8,7 +8,7 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol1 = if(x >= 0.2 & x <= 0.4, 1e-12, 1e-8) ; x,y,z,t
+deffunc: @initsol1 = if(x >= 0.2 & x <= 0.4, 1.0, 0.0) ; x,y,z,t
 deffunc: @initsol2 = if(x >= 0.2 & x <= 0.4, -100*x^2+60*x-8, 0.0) ; x,y,z,t
 deffunc: @initsol3 = if(x >= 0.2 & x <= 0.4, 1-10*abs(x-0.3), 0.0) ; x,y,z,t
 
@@ -53,5 +53,5 @@ IBCT
 NCOMP
 1
 PARAMETERS
-0.0  T  'FLUX_WEAK'  1e-8
+0.0  T  'FLUX_WEAK'  0.0
 0.0  T  'FLUX_WEAK'  0.0
