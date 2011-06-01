@@ -1192,9 +1192,13 @@ contains
         if (IverticesAtElement(ive,iel) .eq. 0) exit ! Triangle in a quad mesh
         jel = IneighboursAtElement(ive,iel)
         if (jel .eq. 0) cycle                        ! Boundary neighbour
-        Ddistances(ive+1) = sqrt((Dpoint(1)-DmidpointCoords(1,jel))**2.0_dp +&
-                                 (Dpoint(2)-DmidpointCoords(2,jel))**2.0_dp)
+        Ddistances(ive+1) = (Dpoint(1)-DmidpointCoords(1,jel))**2.0_dp +&
+                            (Dpoint(2)-DmidpointCoords(2,jel))**2.0_dp
       end do
+
+      ! Distance of the current element to the new position
+      Ddistances(1) = (Dpoint(1)-DmidpointCoords(1,iel))**2.0_dp +&
+                      (Dpoint(2)-DmidpointCoords(2,iel))**2.0_dp
 
       ! Position with the smallest distance
       minl = minloc(Ddistances,1)
