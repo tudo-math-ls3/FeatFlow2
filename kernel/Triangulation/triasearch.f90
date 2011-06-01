@@ -27,6 +27,10 @@
 !# 5.) tsrch_getElementsByRaytrace
 !#     -> Determins all elements containing a set of points
 !#        using raytracing search
+!#
+!# 6.) tsrch_getElem_midpoint2D
+!#     Search for an element containing a specific point.
+!#     Midpoint-distance method in 2D.
 !# </purpose>
 !##############################################################################
 
@@ -79,6 +83,13 @@ module triasearch
   
   public :: tsrch_getElem_raytrace3D
   public :: tsrch_getElementsByRaytrace  
+
+  interface tsrch_getElem_midpoint2D
+    module procedure tsrch_getElem_midpoint2d_dir
+    module procedure tsrch_getElem_midpoint2d_ind
+  end interface
+
+  public :: tsrch_getElem_midpoint2D
 
   ! ***************************************************************************
   ! ***************************************************************************
@@ -302,7 +313,7 @@ contains
         
         ! Get the distance
         ddist = sqrt((Dmidpoint(1)-Dpoint(1))**2 + &
-                (Dmidpoint(2)-Dpoint(2))**2)
+                     (Dmidpoint(2)-Dpoint(2))**2)
         
         ! Chech if the distance is smaller than the current one.
         if ((dmindist .lt. 0.0_DP) .or. (ddist .lt. dmindist)) then 
@@ -363,9 +374,8 @@ contains
 
 !<subroutine>
 
-  subroutine tsrch_getElem_raytrace2D_dir (&
-      Dpoint,rtriangulation,iel, &
-      DvertexCoords,IverticesAtElement,IedgesAtElement,IneighboursAtElement,&
+  subroutine tsrch_getElem_raytrace2D_dir (Dpoint,iel,DvertexCoords,&
+      IverticesAtElement,IedgesAtElement,IneighboursAtElement,&
       iresult,ilastElement,ilastEdge,imaxIterations)
   
 !<description>
@@ -378,23 +388,20 @@ contains
   ! contains the point.
   real(DP), dimension(:), intent(in) :: Dpoint
   
-  ! Triangulation structure.
-  type(t_triangulation), intent(in) :: rtriangulation
-  
   ! OPTIONAL: Maximum number of cell layers to pass. Default value is 100.
   integer, intent(in), optional :: imaxIterations
 
   ! Vertex coordinates of the mesh
-  real(DP), dimension(:,:) :: DvertexCoords
+  real(DP), dimension(:,:), intent(in) :: DvertexCoords
   
   ! Vertices adjacent to an element in the mesh
-  integer, dimension(:,:) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
   
   ! Edges adjacent to an element in the mesh
-  integer, dimension(:,:) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
   
   ! Neighbours around an element in the mesh
-  integer, dimension(:,:) :: IneighboursAtElement
+  integer, dimension(:,:), intent(in) :: IneighboursAtElement
 
 !</input>
 
@@ -402,7 +409,7 @@ contains
   ! On input: Number of an element where to start the search.
   !           =0: Choose element automatically.
   ! On output: Number of the element containing the point Dpoint.
-  !            =0 if the element was not found.
+  !           =0 if the element was not found.
   integer, intent(inout) :: iel
 !</inputoutput>
   
@@ -559,7 +566,7 @@ contains
     ! So the element contains the whole line (dxmid,dymid)->(dx,dy) --
     ! and so indeed the point (dx,dy)! That is it.
     ! iel already has the element number, we only have to set the optional
-    ! argiments.
+    ! arguments.
     iel = 0
     if (present(iresult)) iresult = -2
     if (present(ilastElement)) ilastElement = ielold
@@ -571,8 +578,8 @@ contains
 
 !<subroutine>
 
-  subroutine tsrch_getElem_raytrace2D_ind (&
-      Dpoint,rtriangulation,iel, iresult,ilastElement,ilastEdge,imaxIterations)
+  subroutine tsrch_getElem_raytrace2D_ind (Dpoint,rtriangulation,iel,&
+      iresult,ilastElement,ilastEdge,imaxIterations)
   
 !<description>
   ! Find an element in the triangulation containing the point Dpoint.
@@ -642,9 +649,8 @@ contains
     call storage_getbase_int2d (rtriangulation%h_IedgesAtElement,&
         p_IedgesAtElement)
 
-    call tsrch_getElem_raytrace2D_dir (&
-        Dpoint,rtriangulation,iel, &
-        p_DvertexCoords,p_IverticesAtElement,p_IedgesAtElement,p_IneighboursAtElement,&
+    call tsrch_getElem_raytrace2D_dir (Dpoint,iel,p_DvertexCoords,&
+        p_IverticesAtElement,p_IedgesAtElement,p_IneighboursAtElement,&
         iresult,ilastElement,ilastEdge,imaxIterations)    
     
   end subroutine
@@ -723,9 +729,8 @@ contains
 
 !<subroutine>
 
-  subroutine tsrch_getElem_raytrace3D_dir(&
-      Dpoint,rtriangulation,iel, &
-      DvertexCoords,IverticesAtElement,IfacesAtElement,IneighboursAtElement,&
+  subroutine tsrch_getElem_raytrace3D_dir(Dpoint,iel,DvertexCoords,&
+      IverticesAtElement,IfacesAtElement,IneighboursAtElement,&
       iresult,ilastElement,ilastFace,imaxIterations)
   
 !<description>
@@ -738,12 +743,20 @@ contains
   ! contains the point.
   real(DP), dimension(:), intent(in) :: Dpoint
   
-  ! Triangulation structure.
-  type(t_triangulation), intent(in) :: rtriangulation
+  ! Vertex coordinates of the mesh
+  real(DP), dimension(:,:), intent(in) :: DvertexCoords
   
+  ! Vertices adjacent to an element in the mesh
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
+  
+  ! faces of an element in the mesh
+  integer, dimension(:,:), intent(in) :: IfacesAtElement
+  
+  ! Neighbours around an element in the mesh
+  integer, dimension(:,:), intent(in) :: IneighboursAtElement
+
   ! OPTIONAL: Maximum number of cell layers to pass. Default value is 100.
   integer, intent(in), optional :: imaxIterations
-
 !</input>
 
 !<inputoutput>
@@ -781,18 +794,7 @@ contains
 !</output>
   
 !</subroutine>
-  ! Vertex coordinates of the mesh
-  real(DP), dimension(:,:) :: DvertexCoords
-  
-  ! Vertices adjacent to an element in the mesh
-  integer, dimension(:,:) :: IverticesAtElement
-  
-  ! faces of an element in the mesh
-  integer, dimension(:,:) :: IfacesAtElement
-  
-  ! Neighbours around an element in the mesh
-  integer, dimension(:,:) :: IneighboursAtElement
-  
+    
 !  if (rtriangulation%h_IfacesAtElement .eq. ST_NOHANDLE) &
 !      call tria_genFacesAtElement3D (rtriangulation)
 !  
@@ -994,9 +996,8 @@ contains
     call storage_getbase_int2d (rtriangulation%h_IedgesAtElement,&
         p_IedgesAtElement)
 
-    call tsrch_getElem_raytrace3d_dir (&
-        Dpoint,rtriangulation,iel, &
-        p_DvertexCoords,p_IverticesAtElement,p_IedgesAtElement,p_IneighboursAtElement,&
+    call tsrch_getElem_raytrace3d_dir (Dpoint,iel,p_DvertexCoords,&
+        p_IverticesAtElement,p_IedgesAtElement,p_IneighboursAtElement,&
         iresult,ilastElement,ilastFace,imaxIterations)    
     
   end subroutine
@@ -1099,5 +1100,223 @@ contains
     end do
 
   end subroutine
+
+!************************************************************************
+
+!<subroutine>
+
+  pure subroutine tsrch_getElem_midpoint2D_dir(&
+      Dpoint,DvertexCoords,DmidpointCoords,IverticesAtElement,&
+      IneighboursAtElement,iel,iresult,ilastElement,imaxIterations)
+
+!<description>
+  ! Find an element in the triangulation containing the point Dpoint.
+  ! Distance to midpoint method for 2D meshes.
+!</description>
+
+!<input>
+  ! The coordinate of a point where the routine should check which element
+  ! contains the point.
+  real(DP), dimension(:), intent(in) :: Dpoint
+
+  ! Vertex coordinates of the mesh
+  real(DP), dimension(:,:), intent(in) :: DvertexCoords
+
+  ! Midpoint coordinates of the mesh
+  real(DP), dimension(:,:), intent(in) :: DmidpointCoords
+
+  ! Vertices adjacent to an element in the mesh
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
+
+  ! Neighbours around an element in the mesh
+  integer, dimension(:,:), intent(in) :: IneighboursAtElement
+  
+  ! OPTIONAL: Maximum number of cell layers to pass. Default value is 100.
+  integer, intent(in), optional :: imaxIterations
+  !</input>
+
+!<inputoutput>
+  ! On input: Number of an element where to start the search.
+  !           =0: Choose element automatically.
+  ! On output: Number of the element containing the point Dpoint.
+  !           =0 if the element was not found.
+  integer, intent(inout) :: iel
+!</inputoutput>
+
+!<output>
+  ! OPTIONAL: Result of the search.
+  ! =1 : The element was found successfully.
+  ! =0 : The midpoint-distance search broke down inside of the domain. 
+  ! =-1: The maximum number of iterations was exceeded
+  integer, intent(out), optional :: iresult
+  
+  ! OPTIONAL: Last analysed element.
+  ! If iresult= 1: ilastElement = iel
+  ! If iresult= 0: Number of the last analysed element before the search
+  !                was stopped.
+  ! If iresult=-1: Number of the last element in the raytracing search
+  integer, intent(out), optional :: ilastElement
+!</output>
+  
+!</subroutine>
+  
+    ! local variables
+    real(DP), dimension(ubound(IverticesAtElement,1)+1) :: Ddistances
+    real(DP), dimension(2,4) :: DcornerCoords
+    real(DP) :: ddistToMidpoint
+    integer :: ielold,imaxIter,ite,ive,jel,minl,nve,nnve
+    logical :: bcheck
+    
+    
+    ! Maximum number of iterations
+    imaxIter = 100
+    if (present(imaxIterations)) imaxIter = imaxIterations
+    
+    ! Start element. If the start element is not known, we start at 1.
+    if (iel .le. 0) iel = 1
+    
+    nnve = ubound(IverticesAtElement,1)
+
+    ! Initialise distante to midpoint
+    ddistToMidpoint = SYS_MAXREAL_DP
+    
+    ! We restrict our search to imaxIter neighbour cells; let us hope
+    ! a point is not moved more than imaxIter elements in one step...
+    ieliteration: do ite = 1,imaxIter
+      
+      ! Initialise distances
+      Ddistances = SYS_MAXREAL_DP
+
+      ! Calculate the distances to the midpoints of all neighbouring elements
+      do ive = 1, nnve
+        if (IverticesAtElement(ive,iel) .eq. 0) exit ! Triangle in a quad mesh
+        jel = IneighboursAtElement(ive,iel)
+        if (jel .eq. 0) cycle                        ! Boundary neighbour
+        Ddistances(ive+1) = sqrt((Dpoint(1)-DmidpointCoords(1,jel))**2.0_dp +&
+                                 (Dpoint(2)-DmidpointCoords(2,jel))**2.0_dp)
+      end do
+
+      ! Position with the smallest distance
+      minl = minloc(Ddistances,1)
+      
+      ! Check if the distance didn't change
+      if (minl .eq. 1) then
+        
+        ! Store number of vertices for current element
+        nve = ive-1
+        
+        ! Fetch the element
+        do ive = 1,nve
+          DcornerCoords(1,ive) = DvertexCoords(1,IverticesAtElement(ive,iel))
+          DcornerCoords(2,ive) = DvertexCoords(2,IverticesAtElement(ive,iel))
+        end do
+
+        ! Check if the point is in the element.
+        ! bcheck will be set to TRUE if that is the case.
+        if (nve .eq. TRIA_NVETRI2D) then
+          call gaux_isInElement_tri2D(Dpoint(1), Dpoint(2), DcornerCoords, bcheck)
+        else
+          call gaux_isInElement_quad2D(Dpoint(1), Dpoint(2), DcornerCoords, bcheck)
+        end if
+        
+        if (bcheck) then
+          ! We found the element.
+          if (present(iresult)) iresult = 1
+          if (present(ilastElement)) ilastElement = iel
+        else
+          ! We did not find the element.
+          if (present(iresult)) iresult = -1
+          if (present(ilastElement)) ilastElement = ielold
+          iel = 0
+        end if
+
+        ! In any case, we are done!
+        return
+        
+      end if
+      
+      ! Store element with the lowest distance
+      ielold = iel
+      iel    = IneighboursAtElement(minl-1,iel)
+      ddistToMidpoint = Ddistances(minl)
+      
+    end do ieliteration
+    
+    ! Element was not found, we only have to set the optional arguments
+    if (present(iresult)) iresult = -2
+    if (present(ilastElement)) ilastElement = iel
+    iel = 0
+
+  end subroutine tsrch_getElem_midpoint2D_dir
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine tsrch_getElem_midpoint2D_ind (Dpoint,DmidpointCoords,&
+      rtriangulation,iel,iresult,ilastElement,imaxIterations)
+
+!<description>
+  ! Find an element in the triangulation containing the point Dpoint.
+  ! Distance to midpoint method for 2D meshes.
+!</description>
+
+!<input>
+  ! The coordinate of a point where the routine should check which element
+  ! contains the point.
+  real(DP), dimension(:), intent(in) :: Dpoint
+
+  ! Midpoint coordinates of the mesh
+  real(DP), dimension(:,:), intent(in) :: DmidpointCoords
+
+  ! Triangulation
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! OPTIONAL: Maximum number of cell layers to pass. Default value is 100.
+  integer, intent(in), optional :: imaxIterations
+  !</input>
+
+!<inputoutput>
+  ! On input: Number of an element where to start the search.
+  !           =0: Choose element automatically.
+  ! On output: Number of the element containing the point Dpoint.
+  !           =0 if the element was not found.
+  integer, intent(inout) :: iel
+!</inputoutput>
+
+!<output>
+  ! OPTIONAL: Result of the search.
+  ! =1 : The element was found successfully.
+  ! =0 : The midpoint-distance search broke down inside of the domain. 
+  ! =-1: The maximum number of iterations was exceeded
+  integer, intent(out), optional :: iresult
+  
+  ! OPTIONAL: Last analysed element.
+  ! If iresult= 1: ilastElement = iel
+  ! If iresult= 0: Number of the last analysed element before the search
+  !                was stopped.
+  ! If iresult=-1: Number of the last element in the raytracing search
+  integer, intent(out), optional :: ilastElement
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement
+
+    call storage_getbase_double2d (&
+        rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    call storage_getbase_int2d (&
+        rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    call storage_getbase_int2d (&
+        rtriangulation%h_IneighboursAtElement,p_IneighboursAtElement)
+    
+    call tsrch_getElem_midpoint2D_dir(&
+        Dpoint,p_DvertexCoords,DmidpointCoords,p_IverticesAtElement,&
+        p_IneighboursAtElement,iel,iresult,ilastElement,imaxIterations)
+
+  end subroutine tsrch_getElem_midpoint2D_ind
 
 end module
