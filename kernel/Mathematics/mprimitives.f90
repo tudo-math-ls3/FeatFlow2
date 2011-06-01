@@ -3149,7 +3149,7 @@ contains
 !<description>
     ! The minmod functions returns zero if the two arguments a and b
     ! have different sign and the scaling parameter d by which the
-    ! third argument c hass to be scaled to obtain minmod(a,b) otherwise.
+    ! third argument c has to be scaled to obtain minmod(a,b) otherwise.
 !</description>
 
 !<input>
