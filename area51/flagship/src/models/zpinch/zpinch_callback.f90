@@ -2536,8 +2536,8 @@ contains
         ! Compute and apply linearised FEM-FCT correction for the
         ! transport model
         call gfsc_buildConvectionVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2564,8 +2564,8 @@ contains
         ! Compute and apply linearised FEM-FCT correction for the
         ! transport model
         call gfsc_buildConvectionVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2583,8 +2583,8 @@ contains
       
       ! Compute linearised FEM-FCT correction for the transport model
       call gfsc_buildConvectionVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           rproblemLevel%Rafcstab(convectionAFC),&
+          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           Rsolution(2), rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -2624,8 +2624,8 @@ contains
         
         ! Apply linearised FEM-FCT correction for the transportmodel
         call gfsc_buildConvectionVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2649,8 +2649,8 @@ contains
       ! Compute linearised FEM-FCT correction for the transport model
       ! (without initialisation)
       call gfsc_buildConvectionVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           rproblemLevel%Rafcstab(convectionAFC),&
+          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           Rsolution(2), rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_INITALPHA-&
@@ -2685,8 +2685,8 @@ contains
         
         ! Apply linearised FEM-FCT correction for the transport model
         call gfsc_buildConvectionVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2697,8 +2697,8 @@ contains
       
       ! Compute linearised FEM-FCT correction for the transport model
       call gfsc_buildConvectionVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           rproblemLevel%Rafcstab(convectionAFC),&
+          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           Rsolution(2), rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -2746,8 +2746,8 @@ contains
         
         ! Apply linearised FEM-FCT correction for the transport model
         call gfsc_buildConvectionVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2799,8 +2799,8 @@ contains
         
         ! Apply linearised FEM-FCT correction for transport model
         call gfsc_buildConvectionVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2814,8 +2814,8 @@ contains
         ! Compute and apply linearised FEM-FCT correction for
         ! transport model
         call gfsc_buildConvectionVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -2841,8 +2841,8 @@ contains
         ! Compute and apply linearised FEM-FCT correction for
         ! hydrodynamic model
         call gfsc_buildConvectionVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))

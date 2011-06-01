@@ -1883,8 +1883,8 @@ contains
             .true., p_rconsistentMassMatrix, rvectorHigh)
 
         ! Apply flux correction to solution profile
-        call gfsc_buildConvectionVectorFCT(p_rlumpedMassMatrix,&
-            rafcstab, rvector, 1._DP, .false.,&
+        call gfsc_buildConvectionVectorFCT(rafcstab,&
+            p_rlumpedMassMatrix, rvector, 1._DP, .false.,&
             AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 
         ! Release stabilisation structure

@@ -2178,8 +2178,8 @@ contains
         
         ! Perform flux correction
         call gfsc_buildConvectionVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             p_rpredictor, dweight, .false.,&
             AFCSTAB_FCTALGO_STANDARD, rrhs)
       end if
@@ -2197,8 +2197,8 @@ contains
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
         call gfsc_buildConvectionVectorGP(&
-            rproblemLevel%Rmatrix(consistentMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(consistentMassMatrix),&
             rsolution, rsolution0,&
             rtimestep%theta, dweight, rrhs)
       else
@@ -2683,8 +2683,8 @@ contains
 
         ! Perform flux correction
         call gfsc_buildConvectionVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             p_rpredictor, rtimestep%dStep, .false.,&
             ioperationSpec, rres)
 
@@ -2692,8 +2692,8 @@ contains
         if (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
             .eq. AFCSTAB_FEMFCT_ITERATIVE) then
           call gfsc_buildConvectionVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(convectionAFC),&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               p_rpredictor, rtimestep%dStep, .false.,&
               AFCSTAB_FCTALGO_CORRECT, rrhs)
         end if
@@ -2711,8 +2711,8 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildConvectionVectorGP(&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rproblemLevel%Rafcstab(convectionAFC),&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution, rsolution0,&
               rtimestep%theta, rtimestep%dStep, rres)
         else
@@ -4722,8 +4722,8 @@ contains
 
     ! Apply linearised FEM-FCT correction
     call gfsc_buildConvectionVectorFCT(&
-        rproblemLevel%Rmatrix(lumpedMassMatrix),&
         rproblemLevel%Rafcstab(convectionAFC),&
+        rproblemLevel%Rmatrix(lumpedMassMatrix),&
         rsolution, rtimestep%dStep, .false.,&
         AFCSTAB_FCTALGO_STANDARD+&
         AFCSTAB_FCTALGO_SCALEBYMASS, rsolution)

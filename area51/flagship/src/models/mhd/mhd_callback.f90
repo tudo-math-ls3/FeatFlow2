@@ -1343,8 +1343,8 @@ contains
       if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
           .eq. AFCSTAB_FEMFCT_ITERATIVE) then
         call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             p_rpredictor, rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT, rrhs, rcollection=rcollection)
       end if
@@ -2382,17 +2382,17 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDensity1d_sim, mhd_trafoDiffDensity1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDensity2d_sim, mhd_trafoDiffDensity2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDensity3d_sim, mhd_trafoDiffDensity3d_sim)
         end select
@@ -2403,17 +2403,17 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxEnergy1d_sim, mhd_trafoDiffEnergy1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxEnergy2d_sim, mhd_trafoDiffEnergy2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxEnergy3d_sim, mhd_trafoDiffEnergy3d_sim)
         end select
@@ -2424,17 +2424,17 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxPressure1d_sim, mhd_trafoDiffPressure1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxPressure2d_sim, mhd_trafoDiffPressure2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxPressure3d_sim, mhd_trafoDiffPressure3d_sim)
         end select
@@ -2445,18 +2445,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxVelocity1d_sim, mhd_trafoDiffVelocity1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxVelocity2d_sim, mhd_trafoDiffVelocity2d_sim,&
               fcb_limitEdgewise=mhd_limitEdgewiseVelocity)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxVelocity3d_sim, mhd_trafoDiffVelocity3d_sim,&
               fcb_limitEdgewise=mhd_limitEdgewiseVelocity)
@@ -2468,18 +2468,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMomentum1d_sim, mhd_trafoDiffMomentum1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMomentum2d_sim, mhd_trafoDiffMomentum2d_sim,&
               fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMomentum3d_sim, mhd_trafoDiffMomentum3d_sim,&
               fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
@@ -2491,18 +2491,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMagfield1d_sim, mhd_trafoDiffMagfield1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMagfield2d_sim, mhd_trafoDiffMagfield2d_sim,&
               fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMagfield3d_sim, mhd_trafoDiffMagfield3d_sim,&
               fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
@@ -2514,17 +2514,17 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDenEng1d_sim, mhd_trafoDiffDenEng1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDenEng2d_sim, mhd_trafoDiffDenEng2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDenEng3d_sim, mhd_trafoDiffDenEng3d_sim)
         end select
@@ -2535,17 +2535,17 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDenPre1d_sim, mhd_trafoDiffDenPre1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDenPre2d_sim, mhd_trafoDiffDenPre2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDenPre3d_sim, mhd_trafoDiffDenPre3d_sim)
         end select
@@ -2556,7 +2556,7 @@ contains
 
         ! Apply FEM-FCT algorithm for full conservative fluxes
         call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+            p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rsolution, dscale, bclear, iopSpec, rresidual)
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure,velocity') then
@@ -2567,17 +2567,17 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDenPreVel1d_sim, mhd_trafoDiffDenPreVel1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDenPreVel2d_sim, mhd_trafoDiffDenPreVel2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDenPreVel3d_sim, mhd_trafoDiffDenPreVel3d_sim)
         end select
@@ -2597,7 +2597,7 @@ contains
               ior(p_rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
           
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, rcollection=rcollection)
           
           ! Nothing more needs to be done
@@ -2631,7 +2631,7 @@ contains
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
       
       call gfsys_buildDivVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+          p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rsolution, dscale, bclear, iopSpec, rresidual, rcollection=rcollection)
     end if
 

@@ -1321,7 +1321,7 @@ contains
           AFCSTAB_FEMFCT_IMPLICIT)
 
 
-      ! Set pointer to predictor
+      ! Set pointer to the predictor vector
       p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
 
       ! Compute low-order predictor ...
@@ -1342,10 +1342,12 @@ contains
             rrhs, 1.0_DP, p_rpredictor)
       end if
 
-      ! Assemble the raw antidiffusive fluxes
+      ! Assemble the raw antidiffusive fluxes based on the current
+      ! solution vector and the low-order predictor; initialisation of
+      ! the explicit raw antidiffusive flux is performed only once
       call hydro_calcFluxFCT(rproblemLevel, rsolution, rtimestep%theta,&
           rtimestep%dStep, 1.0_DP, (ite .eq. 0), ssectionName, rcollection,&
-          rsolutionPredictor=rsolution)
+          rsolutionPredictor=p_rpredictor)
 
       !-------------------------------------------------------------------------
       ! Set operation specifier
@@ -1375,7 +1377,7 @@ contains
       end if
 
       ! Apply FEM-FCT algorithm
-      call hydro_calcCorrectionFCT(rproblemLevel, p_rpredictor,&
+      call hydro_calcCorrectionFCT(rproblemLevel, rsolution,&
           rtimestep%dStep, .false., ioperationSpec, rres,&
           ssectionName, rcollection)
 
@@ -1383,8 +1385,8 @@ contains
       if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
           .eq. AFCSTAB_FEMFCT_ITERATIVE) then
         call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             p_rpredictor, rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT, rrhs, rcollection=rcollection)
       end if
@@ -2425,19 +2427,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix), &
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDensity1d_sim, hydro_trafoDiffDensity1d_sim,&
               hydro_trafoNodalDensity1d_sim, rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDensity2d_sim, hydro_trafoDiffDensity2d_sim,&
               hydro_trafoNodalDensity2d_sim, rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDensity3d_sim, hydro_trafoDiffDensity3d_sim,&
               hydro_trafoNodalDensity3d_sim, rcollection=rcollection)
@@ -2449,19 +2451,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxEnergy1d_sim, hydro_trafoDiffEnergy1d_sim,&
               hydro_trafoNodalEnergy1d_sim, rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxEnergy2d_sim, hydro_trafoDiffEnergy2d_sim,&
               hydro_trafoNodalEnergy2d_sim, rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxEnergy3d_sim, hydro_trafoDiffEnergy3d_sim,&
               hydro_trafoNodalEnergy3d_sim, rcollection=rcollection)
@@ -2473,19 +2475,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxPressure1d_sim, hydro_trafoDiffPressure1d_sim,&
               hydro_trafoNodalPressure1d_sim, rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxPressure2d_sim, hydro_trafoDiffPressure2d_sim,&
               hydro_trafoNodalPressure2d_sim, rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxPressure3d_sim, hydro_trafoDiffPressure3d_sim,&
               hydro_trafoNodalPressure3d_sim, rcollection=rcollection)
@@ -2497,20 +2499,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxVelocity1d_sim, hydro_trafoDiffVelocity1d_sim,&
               hydro_trafoNodalVelocity1d_sim, rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxVelocity2d_sim, hydro_trafoDiffVelocity2d_sim,&
               hydro_trafoNodalVelocity2d_sim, rcollection=rcollection,&
               fcb_limitEdgewise=hydro_limitEdgewiseVelocity)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxVelocity3d_sim, hydro_trafoDiffVelocity3d_sim,&
               hydro_trafoNodalVelocity3d_sim, rcollection=rcollection,&
@@ -2523,20 +2525,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxMomentum1d_sim, hydro_trafoDiffMomentum1d_sim,&
               hydro_trafoNodalMomentum1d_sim, rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxMomentum2d_sim, hydro_trafoDiffMomentum2d_sim,&
               hydro_trafoNodalMomentum2d_sim, rcollection=rcollection,&
               fcb_limitEdgewise=hydro_limitEdgewiseMomentum)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxMomentum3d_sim, hydro_trafoDiffMomentum3d_sim,&
               hydro_trafoNodalMomentum3d_sim, rcollection=rcollection,&
@@ -2549,19 +2551,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenEng1d_sim, hydro_trafoDiffDenEng1d_sim,&
               hydro_trafoNodalDenEng1d_sim, rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenEng2d_sim, hydro_trafoDiffDenEng2d_sim,&
               hydro_trafoNodalDenEng2d_sim, rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenEng3d_sim, hydro_trafoDiffDenEng3d_sim,&
               hydro_trafoNodalDenEng3d_sim, rcollection=rcollection)
@@ -2573,19 +2575,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPre1d_sim, hydro_trafoDiffDenPre1d_sim,&
               hydro_trafoNodalDenPre1d_sim, rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPre2d_sim, hydro_trafoDiffDenPre2d_sim,&
               hydro_trafoNodalDenPre2d_sim, rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPre3d_sim, hydro_trafoDiffDenPre3d_sim,&
               hydro_trafoNodalDenPre3d_sim, rcollection=rcollection)
@@ -2597,7 +2599,7 @@ contains
 
         ! Apply FEM-FCT algorithm for full conservative fluxes
         call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+            p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rsolution, dscale, bclear, iopSpec, rresidual, rcollection=rcollection)
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure,velocity') then
@@ -2608,19 +2610,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPreVel1d_sim, hydro_trafoDiffDenPreVel1d_sim,&
               hydro_trafoNodalDenPreVel1d_sim, rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPreVel2d_sim, hydro_trafoDiffDenPreVel2d_sim,&
               hydro_trafoNodalDenPreVel2d_sim, rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPreVel3d_sim, hydro_trafoDiffDenPreVel3d_sim,&
               hydro_trafoNodalDenPreVel3d_sim, rcollection=rcollection)
@@ -2641,7 +2643,7 @@ contains
               ior(p_rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
           
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, rcollection=rcollection)
           
           ! Nothing more needs to be done
@@ -2675,7 +2677,7 @@ contains
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
       
       call gfsys_buildDivVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+          p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rsolution, dscale, bclear, iopSpec, rresidual, rcollection=rcollection)
     end if
 

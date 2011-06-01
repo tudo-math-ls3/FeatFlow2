@@ -1761,8 +1761,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvVecFCTBlock(rlumpedMassMatrix,&
-      rafcstab, rx, dscale, bclear, ioperationSpec, ry)
+  subroutine gfsc_buildConvVecFCTBlock(rafcstab, rmatrix,&
+      rx, dscale, bclear, ioperationSpec, ry)
 
 !<description>
     ! This subroutine assembles the convective vector and applies
@@ -1774,7 +1774,7 @@ contains
 
 !<input>
     ! lumped mass matrix
-    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
@@ -1811,9 +1811,8 @@ contains
 
     else
       
-      call gfsc_buildConvVecFCTScalar(rlumpedMassMatrix,&
-          rafcstab, rx%RvectorBlock(1), dscale, bclear,&
-          ioperationSpec, ry%RvectorBlock(1))
+      call gfsc_buildConvVecFCTScalar(rafcstab, rmatrix,&
+          rx%RvectorBlock(1), dscale, bclear, ioperationSpec, ry%RvectorBlock(1))
       
     end if
     
@@ -1823,8 +1822,8 @@ contains
   
 !<subroutine>
   
-  subroutine gfsc_buildConvVecFCTScalar(rlumpedMassMatrix,&
-      rafcstab, rx, dscale, bclear, ioperationSpec, ry)
+  subroutine gfsc_buildConvVecFCTScalar(rafcstab, rmatrix,&
+      rx, dscale, bclear, ioperationSpec, ry)
 
 !<description>
     ! This subroutine assembles the convective vector and applies
@@ -1897,7 +1896,7 @@ contains
 
 !<input>
     ! lumped mass matrix
-    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
@@ -2082,7 +2081,7 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(rx, p_Dx)
-      call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
+      call lsyssc_getbase_double(rmatrix, p_ML)
       call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
       call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
       call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
@@ -2188,7 +2187,7 @@ contains
 
       ! Apply antidiffusive fluxes
       if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
-        call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
+        call lsyssc_getbase_double(rmatrix, p_ML)
         call doCorrectScaleByMass(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
       else
@@ -2202,8 +2201,8 @@ contains
     ! Here, the working routines follow
 
     !**************************************************************
-    ! Assemble sums of antidiffusive increments
-    ! for the given antidiffusive fluxes
+    ! Assemble the sums of antidiffusive increments for the given
+    ! antidiffusive fluxes without prelimiting
     
     subroutine doADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
         NEDGE, Dflux, Dalpha, Dpp, Dpm)
@@ -2243,7 +2242,7 @@ contains
           j  = IverticesAtEdge(2, iedge)
           
           ! Apply multiplicative correction factor
-          f_ij = Dalpha(iedge)*Dflux(iedge)
+          f_ij = Dalpha(iedge) * Dflux(iedge)
 
           ! Compute the sums of antidiffusive increments
           Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
@@ -2259,8 +2258,8 @@ contains
     end subroutine doADIncrements
 
     !**************************************************************
-    ! Assemble sums of antidiffusive increments for the given anti-
-    ! diffusive fluxes without transformation and with standard prelimiting
+    ! Assemble the sums of antidiffusive increments for the given
+    ! antidiffusive fluxes with standard prelimiting
 
     subroutine doPreADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
         NEDGE, Dflux, DfluxPrel, Dalpha, Dpp, Dpm)
@@ -2274,14 +2273,14 @@ contains
       real(DP), dimension(:), intent(out) :: Dpp,Dpm
       
       ! local variables
-      real(DP) :: f_ij,fp_ij
+      real(DP) :: f_ij
       integer :: i,iedge,igroup,j
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
 
-      !$omp parallel default(shared) private(i,j,f_ij,fp_ij)&
+      !$omp parallel default(shared) private(i,j,f_ij)&
       !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
@@ -2299,20 +2298,23 @@ contains
           i  = IverticesAtEdge(1, iedge)
           j  = IverticesAtEdge(2, iedge)
         
-          ! Apply multiplicative correction factor
-          f_ij  = Dalpha(iedge)*Dflux(iedge)
-          fp_ij = Dalpha(iedge)*DfluxPrel(iedge)
+          ! Check if the antidiffusive flux is directed down the gradient
+          if (Dflux(iedge)*DfluxPrel(iedge) .lt. 0.0_DP) then
 
-          ! Cancel antidiffusive flux if it is directed down the gradient
-          if (f_ij*fp_ij .gt. 0.0_DP) then
-            f_ij = 0.0_DP; Dalpha(iedge) = 0.0_DP
+            ! Cancel antidiffusive flux completely
+            Dalpha(iedge) = 0.0_DP
+
+          else
+          
+            ! Apply multiplicative correction factor
+            f_ij  = Dalpha(iedge)*Dflux(iedge)
+            
+            ! Compute the sums of antidiffusive increments
+            Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
+            Dpp(j) = Dpp(j) + max(0.0_DP,-f_ij)
+            Dpm(i) = Dpm(i) + min(0.0_DP, f_ij)
+            Dpm(j) = Dpm(j) + min(0.0_DP,-f_ij)
           end if
-
-          ! Compute the sums of antidiffusive increments
-          Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
-          Dpp(j) = Dpp(j) + max(0.0_DP,-f_ij)
-          Dpm(i) = Dpm(i) + min(0.0_DP, f_ij)
-          Dpm(j) = Dpm(j) + min(0.0_DP,-f_ij)
         end do
         !$omp end do
 
@@ -2322,8 +2324,9 @@ contains
     end subroutine doPreADIncrements
 
     !**************************************************************
-    ! Assemble sums of antidiffusive increments for the given anti-
-    ! diffusive fluxes without transformation and with minmod prelimiting
+    ! Assemble the sums of antidiffusive increments for the given
+    ! antidiffusive fluxes without transformation and with minmod
+    ! prelimiting
 
     subroutine doMinModPreADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
         NEDGE, Dflux, DfluxPrel, Dalpha, Dpp, Dpm)
@@ -2337,14 +2340,14 @@ contains
       real(DP), dimension(:), intent(out) :: Dpp,Dpm
       
       ! local variables
-      real(DP) :: f_ij,fp_ij
+      real(DP) :: f_ij
       integer :: i,iedge,igroup,j
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
 
-      !$omp parallel default(shared) private(i,j,f_ij,fp_ij)&
+      !$omp parallel default(shared) private(i,j,f_ij)&
       !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
@@ -2362,24 +2365,28 @@ contains
           i  = IverticesAtEdge(1, iedge)
           j  = IverticesAtEdge(2, iedge)
         
-          ! Apply multiplicative correction factor
-          f_ij  = Dalpha(iedge)*Dflux(iedge)
-          fp_ij = Dalpha(iedge)*DfluxPrel(iedge)
+          ! Check if the antidiffusive flux is directed down the gradient
+          if (Dflux(iedge)*DfluxPrel(iedge) .lt. 0.0_DP) then
 
-          ! Perform MinMod prelimiting
-          if (f_ij*fp_ij .lt. 0.0_DP) then
-            ! Cancel antidiffusive fluxes completely
-            f_ij = 0.0_DP; Dalpha(iedge) = 0.0_DP
-          elseif (abs(f_ij) .gt. abs(fp_ij)) then
-            Dalpha(iedge) = Dalpha(iedge) * fp_ij/f_ij
-            f_ij = fp_ij
+            ! Cancel antidiffusive flux completely
+            Dalpha(iedge) = 0.0_DP
+
+          else
+
+            ! Perform MinMod prelimiting
+            if (abs(Dflux(iedge)) .gt. abs(DfluxPrel(iedge)))&
+                Dalpha(iedge) = Dalpha(iedge) * DfluxPrel(iedge)/Dflux(iedge)
+            
+            ! Apply multiplicative correction factor
+            f_ij  = Dalpha(iedge)*Dflux(iedge)
+            
+            ! Compute the sums of antidiffusive increments
+            Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
+            Dpp(j) = Dpp(j) + max(0.0_DP,-f_ij)
+            Dpm(i) = Dpm(i) + min(0.0_DP, f_ij)
+            Dpm(j) = Dpm(j) + min(0.0_DP,-f_ij)
+
           end if
-
-          ! Compute the sums of antidiffusive increments
-          Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
-          Dpp(j) = Dpp(j) + max(0.0_DP,-f_ij)
-          Dpm(i) = Dpm(i) + min(0.0_DP, f_ij)
-          Dpm(j) = Dpm(j) + min(0.0_DP,-f_ij)
         end do
         !$omp end do
 
@@ -2389,7 +2396,7 @@ contains
     end subroutine doMinModPreADIncrements
 
     !**************************************************************
-    ! Assemble local bounds from the predicted solution
+    ! Assemble the local bounds from the predicted solution
     
     subroutine doBounds(IverticesAtEdgeIdx, IverticesAtEdge, NEDGE, Dx, Dqp, Dqm)
       
@@ -2444,7 +2451,7 @@ contains
     end subroutine doBounds
 
     !**************************************************************
-    ! Compute nodal correction factors without constraints
+    ! Compute the nodal correction factors without constraints
     
     subroutine doLimitNodal(NEQ, dscale,&
         ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
@@ -3049,8 +3056,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvVecGPBlock(rconsistentMassMatrix, rafcstab, rx, rx0,&
-      theta, dscale, ry)
+  subroutine gfsc_buildConvVecGPBlock(rafcstab, rmatrix,&
+      rx, rx0, theta, dscale, ry)
 
 !<description>
     ! This subroutine assembles the convective vector and applies
@@ -3062,7 +3069,7 @@ contains
 
 !<input>
     ! consistent mass matrix
-    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
@@ -3097,9 +3104,8 @@ contains
 
     else
 
-      call gfsc_buildConvVecGPScalar(rconsistentMassMatrix,&
-          rafcstab, rx%RvectorBlock(1), rx0%RvectorBlock(1),&
-          theta, dscale, ry%RvectorBlock(1))
+      call gfsc_buildConvVecGPScalar(rafcstab, rmatrix, rx%RvectorBlock(1),&
+          rx0%RvectorBlock(1), theta, dscale, ry%RvectorBlock(1))
       
     end if
   end subroutine gfsc_buildConvVecGPBlock
@@ -3108,8 +3114,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvVecGPScalar(rconsistentMassMatrix, rafcstab, rx, rx0,&
-      theta, dscale, ry)
+  subroutine gfsc_buildConvVecGPScalar(rafcstab, rmatrix,&
+      rx, rx0, theta, dscale, ry)
 
 !<description>
     ! This subroutine assembles the convective vector and applies
@@ -3132,7 +3138,7 @@ contains
 
 !<input>
     ! consistent mass matrix
-    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
@@ -3185,7 +3191,7 @@ contains
     call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
-    call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+    call lsyssc_getbase_double(rmatrix, p_MC)
     call lsyssc_getbase_double(rx, p_Dx)
     call lsyssc_getbase_double(rx0, p_Dx0)
     call lsyssc_getbase_double(ry, p_Dy)
@@ -3601,7 +3607,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, rx, fcb_calcMatrixSc_sim,&
-      hstep, dscale, bbuildStabilisation, bclear, rjacobianMatrix, rcollection)
+      hstep, dscale, bbuildStabilisation, bclear, rjacobian, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective
@@ -3640,7 +3646,7 @@ contains
 
 !<inputoutput>
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobian
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -3658,7 +3664,7 @@ contains
       
       call gfsc_buildConvJacobianScalar(&
           RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrixSc_sim, hstep,&
-          dscale, bbuildStabilisation, bclear, rjacobianMatrix, rcollection)
+          dscale, bbuildStabilisation, bclear, rjacobian, rcollection)
       
     end if
 
@@ -3669,7 +3675,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, rx, fcb_calcMatrixSc_sim,&
-      hstep, dscale, bbuildStabilisation, bclear, rjacobianMatrix, rcollection)
+      hstep, dscale, bbuildStabilisation, bclear, rjacobian, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective part
@@ -3705,7 +3711,7 @@ contains
 
 !<inputoutput>
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobian
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -3719,10 +3725,10 @@ contains
     
     
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+    if (bclear) call lsyssc_clearMatrix(rjacobian)
     
     ! Set pointers
-    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(rjacobian, p_Jac)
     call lsyssc_getbase_double(rx, p_Dx)
     
     ! How many dimensions do we have?
@@ -3748,20 +3754,20 @@ contains
     
     
     ! What kind of matrix are we?
-    select case(rjacobianMatrix%cmatrixFormat)
+    select case(rjacobian%cmatrixFormat)
     case(LSYSSC_MATRIX7)
       !-------------------------------------------------------------------------
       ! Matrix format 7
       !-------------------------------------------------------------------------
 
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       
       ! Do we have to build the upwind Jacobian?
       if (bbuildStabilisation) then
@@ -3769,13 +3775,13 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_Dx, p_Jac)
         case (NDIM2D)
           call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
         case (NDIM3D)
           call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
         end select
 
       else   ! bbuildStabilisation
@@ -3783,13 +3789,13 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_Dx, p_Jac)
         case (NDIM2D)
           call doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
         case (NDIM3D)
           call doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
         end select
 
       end if   ! bbuildStabilisation
@@ -3804,14 +3810,14 @@ contains
       !-------------------------------------------------------------------------
 
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
-      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobian, p_Kdiagonal)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       
       ! Do we have to build the upwind Jacobian?
       if (bbuildStabilisation) then
@@ -3819,13 +3825,13 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_Dx, p_Jac)
         case (NDIM2D)
           call doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
         case (NDIM3D)
           call doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
         end select
       
       else   ! bbuildStabilisation
@@ -3833,13 +3839,13 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_Dx, p_Jac)
         case (NDIM2D)
           call doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
         case (NDIM3D)
           call doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
+              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
         end select
 
       end if   ! bbuildStabilisation
@@ -5381,7 +5387,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacLinearFCTBlock(rx, theta, tstep, hstep,&
-      bclear, rafcstab, rjacobianMatrix,rconsistentMassMatrix)
+      bclear, rafcstab, rjacobian, rmatrix)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -5412,7 +5418,7 @@ contains
     logical, intent(in) :: bclear
 
     ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in), optional :: rmatrix
 !</input>
 
 !<inputoutput>
@@ -5420,7 +5426,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobian
 !</inputoutput>
 !</subroutine>
 
@@ -5434,7 +5440,7 @@ contains
 
       call gfsc_buildJacLinearFCTScalar(&
           rx%RvectorBlock(1), theta, tstep, hstep, bclear,&
-          rafcstab, rjacobianMatrix, rconsistentMassMatrix)
+          rafcstab, rjacobian, rmatrix)
 
     end if
   end subroutine gfsc_buildJacLinearFCTBlock
@@ -5444,7 +5450,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacLinearFCTScalar(rx, theta, tstep, hstep,&
-      bclear, rafcstab, rjacobianMatrix, rconsistentMassMatrix)
+      bclear, rafcstab, rjacobian, rmatrix)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -5472,7 +5478,7 @@ contains
     logical, intent(in) :: bclear
 
     ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in), optional :: rmatrix
 !</input>
 
 !<inputoutput>
@@ -5480,7 +5486,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobian
 !</inputoutput>
 !</subroutine>
 
@@ -5502,14 +5508,14 @@ contains
     end if
     
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+    if (bclear) call lsyssc_clearMatrix(rjacobian)
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
-    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(rjacobian, p_Jac)
     call lsyssc_getbase_double(rx, p_Dx)
     
 
@@ -5519,17 +5525,17 @@ contains
     case (AFCSTAB_FEMFCT_IMPLICIT)
       
       ! What kind of matrix are we?
-      select case(rjacobianMatrix%cmatrixFormat)
+      select case(rjacobian%cmatrixFormat)
       case(LSYSSC_MATRIX7)
         !-------------------------------------------------------------------------
         ! Matrix format 7
         !-------------------------------------------------------------------------
 
         ! Set pointers
-        call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+        call lsyssc_getbase_Kld(rjacobian, p_Kld)
         
-        if (present(rconsistentMassMatrix)) then
-          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+        if (present(rmatrix)) then
+          call lsyssc_getbase_double(rmatrix, p_MC)
           call doJacobian_implFCTconsMass(&
               p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_MC, p_Dx,&
               p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
@@ -5545,11 +5551,11 @@ contains
         !-------------------------------------------------------------------------
 
         ! Set pointers
-        call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-        call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+        call lsyssc_getbase_Kld(rjacobian, p_Kld)
+        call lsyssc_getbase_Kdiagonal(rjacobian, p_Kdiagonal)
         
-        if (present(rconsistentMassMatrix)) then
-          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+        if (present(rmatrix)) then
+          call lsyssc_getbase_double(rmatrix, p_MC)
           call doJacobian_implFCTconsMass(&
               p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_MC, p_Dx,&
               p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
@@ -5737,7 +5743,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacLinearTVDBlock(rx, tstep, hstep,&
-      bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
+      bclear, rafcstab, rjacobian, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -5775,7 +5781,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobian
 !</inputoutput>
 !</subroutine>
 
@@ -5788,7 +5794,7 @@ contains
     else
 
       call gfsc_buildJacLinearTVDScalar(rx%RvectorBlock(1), tstep,&
-          hstep, bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
+          hstep, bclear, rafcstab, rjacobian, bextendedSparsity)
 
     end if
   end subroutine gfsc_buildJacLinearTVDBlock
@@ -5798,7 +5804,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacLinearTVDScalar(rx, tstep, hstep,&
-      bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
+      bclear, rafcstab, rjacobian, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation part
@@ -5832,7 +5838,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobian
 !</inputoutput>
 !</subroutine>
 
@@ -5851,7 +5857,7 @@ contains
 
 
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+    if (bclear) call lsyssc_clearMatrix(rjacobian)
 
     ! Check if stabilisation is prepared
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .or.&
@@ -5880,7 +5886,7 @@ contains
     call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
     call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(rjacobian, p_Jac)
     call lsyssc_getbase_double(rx, p_Dx)
     
     ! Assembled extended Jacobian matrix?
@@ -5892,20 +5898,20 @@ contains
 
 
     ! What kind of matrix format are we?
-    select case(rjacobianMatrix%cmatrixFormat)
+    select case(rjacobian%cmatrixFormat)
     case(LSYSSC_MATRIX7)
       !-------------------------------------------------------------------------
       ! Matrix format 7
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
       
       ! Create diagonal separator and increase it by one
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
       call doJacobianMat79_TVD(&
@@ -5925,14 +5931,14 @@ contains
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
-      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobian, p_Kdiagonal)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       
       call doJacobianMat79_TVD(&
           p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
@@ -6379,8 +6385,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacLinearGPBlock(rconsistentMassMatrix, rx,&
-      rx0, theta, tstep, hstep, bclear, rafcstab, rjacobianMatrix,&
+  subroutine gfsc_buildJacLinearGPBlock(rmatrix, rx,&
+      rx0, theta, tstep, hstep, bclear, rafcstab, rjacobian,&
       bextendedSparsity)
 
 !<description>
@@ -6395,7 +6401,7 @@ contains
 
 !<input>
     ! consistent mass matrix
-    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
@@ -6428,7 +6434,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobian
 !</inputoutput>
 !</subroutine>
 
@@ -6442,9 +6448,9 @@ contains
     else
 
       call gfsc_buildJacLinearGPScalar(&
-          rconsistentMassMatrix, rx%RvectorBlock(1),&
+          rmatrix, rx%RvectorBlock(1),&
           rx0%RvectorBlock(1), theta, tstep, hstep,&
-          bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
+          bclear, rafcstab, rjacobian, bextendedSparsity)
       
     end if
   end subroutine gfsc_buildJacLinearGPBlock
@@ -6453,8 +6459,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacLinearGPScalar(rconsistentMassMatrix, rx,&
-      rx0, theta, tstep, hstep, bclear, rafcstab, rjacobianMatrix,&
+  subroutine gfsc_buildJacLinearGPScalar(rmatrix, rx,&
+      rx0, theta, tstep, hstep, bclear, rafcstab, rjacobian,&
       bextendedSparsity)
 
 !<description>
@@ -6465,7 +6471,7 @@ contains
 
 !<input>
     ! consistent mass matrix
-    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
@@ -6498,7 +6504,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobian   
 !</inputoutput>
 !</subroutine>
 
@@ -6515,7 +6521,7 @@ contains
     logical :: bisExtended
 
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+    if (bclear) call lsyssc_clearMatrix(rjacobian)
 
     ! Check if stabilisation is prepared
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .or.&
@@ -6547,8 +6553,8 @@ contains
     call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
-    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
-    call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+    call lsyssc_getbase_double(rjacobian, p_Jac)
+    call lsyssc_getbase_double(rmatrix, p_MC)
     call lsyssc_getbase_double(rx, p_Dx)
     call lsyssc_getbase_double(rx0, p_Dx0)
 
@@ -6561,20 +6567,20 @@ contains
 
 
     ! What kind of matrix format are we?
-    select case(rjacobianMatrix%cmatrixFormat)
+    select case(rjacobian%cmatrixFormat)
     case(LSYSSC_MATRIX7)
       !-------------------------------------------------------------------------
       ! Matrix format 7
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
       call doJacobianMat79_GP(&
@@ -6594,14 +6600,14 @@ contains
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
-      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobian, p_Kdiagonal)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       
       call doJacobianMat79_GP(&
           p_IsuperdiagEdgesIdx, p_IverticesAtEdge, p_IsubdiagEdgesIdx,&
@@ -7165,7 +7171,7 @@ contains
 
   subroutine gfsc_buildJacobianFCTBlock(RcoeffMatrices, rx,&
       fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
-      rjacobianMatrix, rconsistentMassMatrix, rcollection)
+      rjacobian, rmatrix, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -7202,7 +7208,7 @@ contains
     include 'intf_calcMatrixSc_sim.inc'
 
     ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in), optional :: rmatrix
 !</input>
 
 !<inputoutput>
@@ -7210,7 +7216,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobian   
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -7227,8 +7233,8 @@ contains
 
       call gfsc_buildJacobianFCTScalar(&
           RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrixSc_sim,&
-          theta, tstep, hstep, bclear, rafcstab, rjacobianMatrix,&
-          rconsistentMassMatrix, rcollection)
+          theta, tstep, hstep, bclear, rafcstab, rjacobian,&
+          rmatrix, rcollection)
 
     end if
   end subroutine gfsc_buildJacobianFCTBlock
@@ -7239,7 +7245,7 @@ contains
 
   subroutine gfsc_buildJacobianFCTScalar(RcoeffMatrices, rx,&
       fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
-      rjacobianMatrix, rconsistentMassMatrix, rcollection)
+      rjacobian, rmatrix, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -7275,7 +7281,7 @@ contains
     include 'intf_calcMatrixSc_sim.inc'
     
     ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in), optional :: rmatrix
 !</input>
 
 !<inputoutput>
@@ -7283,7 +7289,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobian   
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -7308,14 +7314,14 @@ contains
     end if
     
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+    if (bclear) call lsyssc_clearMatrix(rjacobian)
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
-    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(rjacobian, p_Jac)
     call lsyssc_getbase_double(rx, p_Dx)
     
     ! How many dimensions do we have?
@@ -7345,19 +7351,19 @@ contains
     case (AFCSTAB_FEMFCT_IMPLICIT)
       
       ! What kind of matrix format are we?
-      select case(rjacobianMatrix%cmatrixFormat)
+      select case(rjacobian%cmatrixFormat)
       case(LSYSSC_MATRIX7)
         !-----------------------------------------------------------------------
         ! Matrix format 7
         !-----------------------------------------------------------------------
 
         ! Set pointers
-        call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
+        call lsyssc_getbase_Kld(rjacobian, p_Kld)
         
         ! How many dimensions do we have?
         select case(ndim)
         case (NDIM1D)
-          if (present(rconsistentMassMatrix)) then
+          if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_1D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_MC, p_Dx, p_Dflux, p_Dflux0,&
@@ -7370,7 +7376,7 @@ contains
           end if
           
         case (NDIM2D)
-          if (present(rconsistentMassMatrix)) then
+          if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_2D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dflux, p_Dflux0,&
@@ -7383,7 +7389,7 @@ contains
           end if
           
         case (NDIM3D)
-          if (present(rconsistentMassMatrix)) then
+          if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_3D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dflux, p_Dflux0,&
@@ -7403,12 +7409,12 @@ contains
         !-----------------------------------------------------------------------
 
         ! Set pointers
-        call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+        call lsyssc_getbase_Kdiagonal(rjacobian, p_Kdiagonal)
         
         ! How many dimensions do we have?
         select case(ndim)
         case (NDIM1D)
-          if (present(rconsistentMassMatrix)) then
+          if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_1D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_MC, p_Dx, p_Dflux, p_Dflux0,&
@@ -7421,7 +7427,7 @@ contains
           end if
             
         case (NDIM2D)
-          if (present(rconsistentMassMatrix)) then
+          if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_2D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dflux, p_Dflux0,&
@@ -7434,7 +7440,7 @@ contains
           end if
           
         case (NDIM3D)
-          if (present(rconsistentMassMatrix)) then
+          if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_3D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dflux, p_Dflux0,&
@@ -8300,7 +8306,7 @@ contains
 
   subroutine gfsc_buildJacobianTVDBlock(RcoeffMatrices, rx,&
       fcb_calcMatrixSc_sim, tstep, hstep, bclear, rafcstab,&
-      rjacobianMatrix, bextendedSparsity, rcollection)
+      rjacobian, bextendedSparsity, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -8344,7 +8350,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobian   
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -8361,7 +8367,7 @@ contains
 
       call gfsc_buildJacobianTVDScalar(&
           RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrixSc_sim,&
-          tstep, hstep, bclear, rafcstab, rjacobianMatrix,&
+          tstep, hstep, bclear, rafcstab, rjacobian,&
           bextendedSparsity, rcollection)
 
     end if
@@ -8373,7 +8379,7 @@ contains
 
   subroutine gfsc_buildJacobianTVDScalar(RcoeffMatrices, rx,&
       fcb_calcMatrixSc_sim, tstep, hstep, bclear, rafcstab,&
-      rjacobianMatrix, bextendedSparsity, rcollection)
+      rjacobian, bextendedSparsity, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -8415,7 +8421,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobian   
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -8448,7 +8454,7 @@ contains
     end if
 
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+    if (bclear) call lsyssc_clearMatrix(rjacobian)
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -8461,7 +8467,7 @@ contains
     call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
     call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(rjacobian, p_Jac)
     call lsyssc_getbase_double(rx, p_Dx)
 
     ! How many dimensions do we have?
@@ -8498,20 +8504,20 @@ contains
 
     
     ! What kind of matrix format are we?
-    select case(rjacobianMatrix%cmatrixFormat)
+    select case(rjacobian%cmatrixFormat)
     case(LSYSSC_MATRIX7)
       !-------------------------------------------------------------------------
       ! Matrix format 7
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
       ! How many dimensions do we have?
@@ -8552,14 +8558,14 @@ contains
       !-------------------------------------------------------------------------
 
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix,   p_Kcol)
-      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian,   p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobian, p_Kdiagonal)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       
       ! How many dimensions do we have?
       select case(ndim)
@@ -9384,9 +9390,9 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianGPBlock(RcoeffMatrices, rconsistentMassMatrix,&
+  subroutine gfsc_buildJacobianGPBlock(RcoeffMatrices, rmatrix,&
       rx, rx0, fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
-      rjacobianMatrix, bextendedSparsity, rcollection)
+      rjacobian, bextendedSparsity, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -9403,7 +9409,7 @@ contains
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! consistent mass matrix
-    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
@@ -9439,7 +9445,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobian   
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -9456,9 +9462,9 @@ contains
     else
       
       call gfsc_buildJacobianGPScalar(&
-          RcoeffMatrices, rconsistentMassMatrix, rx%RvectorBlock(1),&
+          RcoeffMatrices, rmatrix, rx%RvectorBlock(1),&
           rx0%RvectorBlock(1), fcb_calcMatrixSc_sim, theta, tstep, hstep,&
-          bclear, rafcstab, rjacobianMatrix,bextendedSparsity, rcollection)
+          bclear, rafcstab, rjacobian,bextendedSparsity, rcollection)
 
     end if
   end subroutine gfsc_buildJacobianGPBlock
@@ -9467,9 +9473,9 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianGPScalar(RcoeffMatrices, rconsistentMassMatrix,&
+  subroutine gfsc_buildJacobianGPScalar(RcoeffMatrices, rmatrix,&
       rx, rx0, fcb_calcMatrixSc_sim, theta, tstep, hstep, bclear, rafcstab,&
-      rjacobianMatrix, bextendedSparsity, rcollection)
+      rjacobian, bextendedSparsity, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -9484,7 +9490,7 @@ contains
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! consistent mass matrix
-    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
@@ -9520,7 +9526,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobian   
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -9553,7 +9559,7 @@ contains
     end if
 
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+    if (bclear) call lsyssc_clearMatrix(rjacobian)
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -9569,8 +9575,8 @@ contains
     call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
-    call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(rmatrix, p_MC)
+    call lsyssc_getbase_double(rjacobian, p_Jac)
     call lsyssc_getbase_double(rx, p_Dx)
     call lsyssc_getbase_double(rx0, p_Dx0)
     
@@ -9608,20 +9614,20 @@ contains
 
     
     ! What kind of matrix format are we?
-    select case(rjacobianMatrix%cmatrixFormat)
+    select case(rjacobian%cmatrixFormat)
     case(LSYSSC_MATRIX7)
       !-------------------------------------------------------------------------
       ! Matrix format 7
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
       ! How many dimensions do we have?
@@ -9664,14 +9670,14 @@ contains
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
-      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobian, p_Kdiagonal)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
             
       ! How many dimensions do we have?
       select case(ndim)
@@ -10662,7 +10668,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianSymmBlock(rx, dscale, hstep, bclear,&
-      rafcstab, rjacobianMatrix, bextendedSparsity)
+      rafcstab, rjacobian, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -10699,7 +10705,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobian   
 !</inputoutput>
 !</subroutine>
 
@@ -10712,7 +10718,7 @@ contains
     else
 
       call gfsc_buildJacobianSymmScalar(rx%RvectorBlock(1), dscale,&
-          hstep, bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
+          hstep, bclear, rafcstab, rjacobian, bextendedSparsity)
 
     end if
   end subroutine gfsc_buildJacobianSymmBlock
@@ -10722,7 +10728,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianSymmScalar(rx, dscale, hstep, bclear,&
-      rafcstab, rjacobianMatrix, bextendedSparsity)
+      rafcstab, rjacobian, bextendedSparsity)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -10755,7 +10761,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobian   
 !</inputoutput>
 !</subroutine>
 
@@ -10784,7 +10790,7 @@ contains
     end if
     
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
+    if (bclear) call lsyssc_clearMatrix(rjacobian)
     
     ! Check if off-diagonal edges need to be generated
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
@@ -10803,7 +10809,7 @@ contains
     call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
     call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-    call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
+    call lsyssc_getbase_double(rjacobian, p_Jac)
     call lsyssc_getbase_double(rx, p_Dx)
     
     ! Assembled extended Jacobian matrix?
@@ -10815,20 +10821,20 @@ contains
 
 
     ! What kind of matrix format are we?
-    select case(rjacobianMatrix%cmatrixFormat)
+    select case(rjacobian%cmatrixFormat)
     case(LSYSSC_MATRIX7)
       !-------------------------------------------------------------------------
       ! Matrix format 7
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
       call doJacobianMat79_Symm(&
@@ -10848,14 +10854,14 @@ contains
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobianMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobianMatrix, p_Kcol)
-      call lsyssc_getbase_Kdiagonal(rjacobianMatrix, p_Kdiagonal)
+      call lsyssc_getbase_Kld(rjacobian, p_Kld)
+      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rjacobian, p_Kdiagonal)
       
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
+      call storage_copy(rjacobian%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
       call doJacobianMat79_Symm(&
@@ -11725,12 +11731,20 @@ contains
           p_DcoefficientsAtEdge, p_Dx, dscale, p_Dflux)
       
       !-------------------------------------------------------------------------
-
-      ! Do we have to make a backup of the spatial part of the
-      ! raw-antidiffusive fluxes for the prelimiting step?
-      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING)&
-          call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
-          rafcstab%p_rvectorFluxPrel)
+      
+      if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
+        ! Compute fluxes for standard prelimiting based on the
+        ! low-order solution which serves as predictor
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+        call doPrelimitingFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
+            p_Dx, p_DfluxPrel)
+        
+      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
+        ! Make a backup of the spatial part of the raw-antidiffusive
+        ! fluxes which are used for minmod prelimiting
+        call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
+            rafcstab%p_rvectorFluxPrel)
+      end if
 
       !-------------------------------------------------------------------------
       
@@ -11858,8 +11872,10 @@ contains
         i  = IverticesAtEdge(1,iedge)
         j  = IverticesAtEdge(2,iedge)
         
-        ! Compute solution difference
-        Dflux(iedge) = Dx(j)-Dx(i)
+        ! Compute solution difference; in contrast to the literature,
+        ! we compute the solution difference $u_i-u_j$ and check if
+        ! $f_{ij}(u_i-u_j)<0$ in the prelimiting step.
+        Dflux(iedge) = Dx(i)-Dx(j)
       end do
       !$omp end parallel do
 
