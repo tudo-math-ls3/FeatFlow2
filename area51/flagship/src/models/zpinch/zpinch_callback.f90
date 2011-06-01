@@ -57,6 +57,7 @@ module zpinch_callback
   use solveraux
   use storage
   use timestepaux
+  use transport_basic, only : TRANSP_TROPER_UPDATE
   use transport_callback
   use transport_callback1d
   use transport_callback2d
@@ -671,7 +672,7 @@ contains
 
     ! Set update notification in problem level structure
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                     PROBLEV_MSPEC_UPDATE)
+                                     TRANSP_TROPER_UPDATE)
 
   end subroutine zpinch_calcVelocityField
 

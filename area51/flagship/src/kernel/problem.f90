@@ -58,6 +58,9 @@
 !# 15.) problem_getLevel
 !#      -> Returns a pointer to the problem level specified by the level number
 !#
+!# 16.) problem_setSpec
+!#      -> Sets the problem specification of one or more levels
+!#
 !# </purpose>
 !##############################################################################
 
@@ -98,6 +101,7 @@ module problem
   public :: problem_removeLevel
   public :: problem_infoLevel
   public :: problem_getLevel
+  public :: problem_setSpec
 
   !*****************************************************************************
 
@@ -116,20 +120,6 @@ module problem
 
   ! Convert hexahedrals to tetrahedrals
   integer(I32), parameter, public :: PROBDESC_MSPEC_CONVTETRAHEDRALS = 2**2
-
-!</constantblock>
-
-
-!<constantblock description="Flags for the problem level specification bitfield">
-
-  ! Standard problem level
-  integer(I32), parameter, public :: PROBLEV_MSPEC_STANDARD         = 0
-
-  ! Problem level requires update
-  integer(I32), parameter, public :: PROBLEV_MSPEC_UPDATE           = 2**0
-
-  ! Problem level requires initialisation
-  integer(I32), parameter, public :: PROBLEV_MSPEC_INITIALIZE       = 2**1
 
 !</constantblock>
 
@@ -224,12 +214,9 @@ module problem
 
   type t_problemLevel
 
-    ! Problem level specification tag. This is a bitfield coming from
-    ! an OR combination of different PROBLEV_MSPEC_xxxx constants and
-    ! specifies variour details of the problem level. If it is
-    ! =PROBLEV_MSPEC_INITIALIZE, the problem level is a usual problem
-    ! level taht needs no special handling.
-    integer(I32) :: iproblemSpec = PROBLEV_MSPEC_INITIALIZE
+    ! Specification tag. This bitfield can be used by the application
+    ! programmer to specify various details of the problem level.
+    integer(I32) :: iproblemSpec = 0_I32
 
     ! Number of the problem level
     integer :: ilev
@@ -1223,5 +1210,81 @@ contains
     nullify(p_rproblemLevel)
 
   end function problem_getLevel
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_setSpec(rproblem, iSpec, coperation, ilev)
+
+!<description>
+    ! This subroutine combines the problem level specification flag
+    ! with the bitfield iSpec using one of the operations (iand, ior,
+    ! ieor) specified by ioperation.
+!</description>
+
+!<input>
+    ! Bit field to set
+    integer(I32), intent(in) :: iSpec
+
+    ! Operation to combine iSpec and the problem level specification flag
+    character(len=*), intent(in) :: coperation
+
+    ! OPTIONAL: level number
+    integer, intent(in), optional :: ilev
+!</input>
+
+!<inputoutput>
+    ! problem structure
+    type(t_problem), intent(inout), target :: rproblem
+
+    ! local variable
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    
+    
+    if (present(ilev)) then
+      
+      p_rproblemLevel => rproblem%p_rproblemLevelMax
+      do while(associated(p_rproblemLevel))       
+        if (p_rproblemLevel%ilev .eq. ilev) then
+          if ((coperation .eq. 'iand') .or.&
+              (coperation .eq. 'IAND')) then
+            p_rproblemLevel%iproblemSpec = iand(p_rproblemLevel%iproblemSpec, iSpec)
+          elseif ((coperation .eq. 'ior') .or.&
+                  (coperation .eq. 'IOR')) then
+            p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec, iSpec)
+          elseif ((coperation .eq. 'ieor') .or.&
+                  (coperation .eq. 'IEOR')) then
+            p_rproblemLevel%iproblemSpec = ieor(p_rproblemLevel%iproblemSpec, iSpec)
+          else
+            p_rproblemLevel%iproblemSpec = iSpec
+          end if
+          return
+        end if
+        p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
+      end do
+
+    else
+      
+      p_rproblemLevel => rproblem%p_rproblemLevelMax
+      do while(associated(p_rproblemLevel))       
+        if ((coperation .eq. 'iand') .or.&
+            (coperation .eq. 'IAND')) then
+          p_rproblemLevel%iproblemSpec = iand(p_rproblemLevel%iproblemSpec, iSpec)
+        elseif ((coperation .eq. 'ior') .or.&
+                (coperation .eq. 'IOR')) then
+          p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec, iSpec)
+        elseif ((coperation .eq. 'ieor') .or.&
+                (coperation .eq. 'IEOR')) then
+          p_rproblemLevel%iproblemSpec = ieor(p_rproblemLevel%iproblemSpec, iSpec)
+        else
+          p_rproblemLevel%iproblemSpec = iSpec
+        end if
+        p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
+      end do
+
+    end if
+
+  end subroutine problem_setSpec
 
 end module problem

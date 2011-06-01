@@ -37,6 +37,17 @@ module transport_basic
 
 !<constants>
 
+!<constantblock description="Global specification flags for the problem level">
+
+  ! Discrete transport operator has to be updated/initialised
+  integer(I32), parameter, public :: TRANSP_TROPER_UPDATE   = 2**1
+
+  ! Preconditioner has to be updated/initialised
+  integer(I32), parameter, public :: TRANSP_PRECOND_UPDATE  = 2**2
+
+!</constantblock>
+
+
 !<constantblock description="Global type of mass matrix">
 
   ! no mass matrix, i.e., no time derivative
