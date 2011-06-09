@@ -1105,9 +1105,15 @@ contains
 
 !<subroutine>
 
+#if (DEBUG || _DEBUG)
+  subroutine tsrch_getElem_midpoint2D_dir(&
+      Dpoint,DvertexCoords,DmidpointCoords,IverticesAtElement,&
+      IneighboursAtElement,iel,iresult,ilastElement,imaxIterations)
+#else
   pure subroutine tsrch_getElem_midpoint2D_dir(&
       Dpoint,DvertexCoords,DmidpointCoords,IverticesAtElement,&
       IneighboursAtElement,iel,iresult,ilastElement,imaxIterations)
+#endif
 
 !<description>
   ! Find an element in the triangulation containing the point Dpoint.

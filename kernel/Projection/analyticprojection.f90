@@ -1107,7 +1107,7 @@ contains
     
     ! Initialise the stabilisation structure
     rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
-    rafcstab%bprelimiting = .false.
+    rafcstab%ctypePrelimiting = AFCSTAB_NOPRELIMITING
     rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
     call gfsc_initStabilisation(rmatrixMass, rafcstab)
     call afcstab_generateVerticesAtEdge(rmatrixMass, rafcstab)
@@ -1117,7 +1117,7 @@ contains
         0.0_DP, 0.0_DP, 1.0_DP, .true., rmatrixMass, rvectorAux)
 
     ! Apply flux correction to improve the low-order L2-projection
-    call gfsc_buildConvectionVectorFCT(p_rmatrixMassLumped, rafcstab, rvector, 1._DP,&
+    call gfsc_buildConvectionVectorFCT(rafcstab, p_rmatrixMassLumped, rvector, 1._DP,&
         .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 
     ! Release stabilisation structure

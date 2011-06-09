@@ -8897,9 +8897,6 @@ contains
     !**************************************************************
     ! Assemble fluxes for classical prelimiting.
 
-#ifndef USE_OPENMP
-    pure&
-#endif
       subroutine doPrelimitingFluxes(IverticesAtEdge, NEDGE, NEQ, NVAR, Dx, Dflux)
       
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
@@ -8931,9 +8928,6 @@ contains
     !**************************************************************
     ! Assemble raw antidiffusive mass fluxes
 
-#ifndef USE_OPENMP
-    pure&
-#endif
     subroutine doMassFluxes(IverticesAtEdge, NEDGE, NEQ, NVAR,&
         DmatrixData, Dx, dscale, bclear, Dflux)
       
@@ -9497,9 +9491,6 @@ contains
     !**************************************************************
     ! Assemble raw antidiffusive mass fluxes
 
-#ifndef USE_OPENMP
-    pure&
-#endif
     subroutine doMassFluxes(IverticesAtEdge, NEDGE, NEQ, NVAR,&
         DmatrixData, Dx, dscale, bclear, Dflux)
 
