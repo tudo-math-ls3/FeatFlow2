@@ -11807,9 +11807,6 @@ contains
     ! Assemble raw antidiffusive fluxes without
     ! contribution of the consistent mass matrix.
 
-#ifndef USE_OPENMP
-    pure&
-#endif
     subroutine doFluxes(IverticesAtEdge, NEDGE, DcoefficientsAtEdge,&
         Dx, dscale, Dflux)
       
@@ -11884,9 +11881,6 @@ contains
     !**************************************************************
     ! Assemble raw antidiffusive mass fluxes
 
-#ifndef USE_OPENMP
-    pure&
-#endif
     subroutine doMassFluxes(IverticesAtEdge, NEDGE, DmatrixData,&
         Dx, dscale, bclear, Dflux)
       
