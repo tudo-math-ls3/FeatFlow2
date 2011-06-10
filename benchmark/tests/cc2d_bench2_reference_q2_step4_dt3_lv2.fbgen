@@ -62,7 +62,6 @@ TIMEDISCRETISATION_DTIMESTEP. = 0.00125
 # Read the previous solution if it exists
 #
 # DISCRETISATION_IINITIALSOLUTIONLEVEL!. = 2,0
-PREVIOUSINDEX~ = `expr $(%DTMIN) - 1`
 # PREVIOUSDIR~ = "cc2d_bench2_reference_q2_step1-lv$(LV)-DTMIN$(PREVIOUSINDEX)"
 # DISCRETISATION_CTYPEINITIALSOLUTION. = `expr 2 \\* \\( $(%DTMIN) \\> 1 \\)`
 
