@@ -88,17 +88,36 @@
 
 # Schedule the tests.
 
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference1.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference2.fbconf
+# ./bin/lido_schedule_tests2 -w 01:00:00 --consecutive --altmake 1 -c 2 --vmem 1000 ./tests/cc2d_bench2_q2_reference1.fbconf
+# ./bin/lido_schedule_tests2 -w 01:00:00 --consecutive --altmake 1 -c 2 --vmem 1000 ./tests/cc2d_bench2_q2_reference2.fbconf
 
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference3_lv2.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference3_lv3.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference3_lv4.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference3_lv5.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference3_lv6.fbconf
+# ./bin/lido_schedule_tests2 -w 01:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference3_lv2.fbconf
+# ./bin/lido_schedule_tests2 -w 02:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference3_lv3.fbconf
+# ./bin/lido_schedule_tests2 -w 04:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference3_lv4.fbconf
+# ./bin/lido_schedule_tests2 -w 02:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference3_lv5.fbconf
+# ./bin/lido_schedule_tests2 -w 02:00:00 --consecutive --altmake 1 -c 2 --vmem 10000 ./tests/cc2d_bench2_q2_reference3_lv6.fbconf
 
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_lv2.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_lv3.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_lv4.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_lv5.fbconf
-# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_lv6.fbconf
+# ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt1_lv2.fbconf
+# ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt2_lv2.fbconf
+# ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt3_lv2.fbconf
+# ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt4_lv2.fbconf
+
+# ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt1_lv3.fbconf
+# ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt2_lv3.fbconf
+# ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt3_lv3.fbconf
+# ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt4_lv3.fbconf
+
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt1_lv4.fbconf
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt2_lv4.fbconf
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt3_lv4.fbconf
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt4_lv4.fbconf
+
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt1_lv5.fbconf
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt2_lv5.fbconf
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt3_lv5.fbconf
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt4_lv5.fbconf
+
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_dt1_lv6.fbconf
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_dt2_lv6.fbconf
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_dt3_lv6.fbconf
+# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_dt4_lv6.fbconf
