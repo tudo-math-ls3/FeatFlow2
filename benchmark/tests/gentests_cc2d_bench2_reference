@@ -47,6 +47,43 @@
 
 #####
 
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step1.fbgen ./tests/cc2d_bench2_q1t_org_reference1.fbdef ./tests/cc2d_bench2_q1t_org_reference1.fbconf
+
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step2.fbgen ./tests/cc2d_bench2_q1t_org_reference2.fbdef ./tests/cc2d_bench2_q1t_org_reference2.fbconf
+
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step3_lv2.fbgen ./tests/cc2d_bench2_q1t_org_reference3_lv2.fbdef ./tests/cc2d_bench2_q1t_org_reference3_lv2.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step3_lv3.fbgen ./tests/cc2d_bench2_q1t_org_reference3_lv3.fbdef ./tests/cc2d_bench2_q1t_org_reference3_lv3.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step3_lv4.fbgen ./tests/cc2d_bench2_q1t_org_reference3_lv4.fbdef ./tests/cc2d_bench2_q1t_org_reference3_lv4.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step3_lv5.fbgen ./tests/cc2d_bench2_q1t_org_reference3_lv5.fbdef ./tests/cc2d_bench2_q1t_org_reference3_lv5.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step3_lv6.fbgen ./tests/cc2d_bench2_q1t_org_reference3_lv6.fbdef ./tests/cc2d_bench2_q1t_org_reference3_lv6.fbconf
+
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt1_lv2.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv2.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv2.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt1_lv3.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv3.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv3.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt1_lv4.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv4.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv4.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt1_lv5.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv5.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv5.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt1_lv6.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv6.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv6.fbconf
+
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt2_lv2.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv2.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv2.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt2_lv3.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv3.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv3.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt2_lv4.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv4.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv4.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt2_lv5.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv5.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv5.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt2_lv6.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv6.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv6.fbconf
+
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt3_lv2.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv2.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv2.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt3_lv3.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv3.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv3.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt3_lv4.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv4.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv4.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt3_lv5.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv5.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv5.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt3_lv6.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv6.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv6.fbconf
+
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt4_lv2.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv2.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv2.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt4_lv3.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv3.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv3.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt4_lv4.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv4.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv4.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt4_lv5.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv5.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv5.fbconf
+./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org_step4_dt4_lv6.fbgen ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv6.fbdef ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv6.fbconf
+
+
+#####
+
 ./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q2_step1.fbgen ./tests/cc2d_bench2_q2_reference1.fbdef ./tests/cc2d_bench2_q2_reference1.fbconf
 
 ./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q2_step2.fbgen ./tests/cc2d_bench2_q2_reference2.fbdef ./tests/cc2d_bench2_q2_reference2.fbconf
@@ -110,7 +147,7 @@
 # ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt1_lv4.fbconf
 # ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt2_lv4.fbconf
 # ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt3_lv4.fbconf
-# ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt4_lv4.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt4_lv4.fbconf
 
 # ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt1_lv5.fbconf
 # ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt2_lv5.fbconf
