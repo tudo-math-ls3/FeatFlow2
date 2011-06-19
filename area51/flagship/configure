@@ -11,7 +11,8 @@ HEADER_FILES_TO_COPY="src/flagship.h src/models/hydro/hydro.h src/models/mhd/mhd
 
 # Specify list of application source files
 # (disable any ls alias setting)
-SRCLIST_APP="`\ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90 2>/dev/null` "
+#SRCLIST_APP="`\ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90 2>/dev/null` "
+SRCLIST_APP=" "
 
 # Add CUDA support (if available)
 # (disable any ls alias setting)
