@@ -449,7 +449,7 @@ contains
 
 
     breturn = .true.
-    if (present(bforceUpdate)) breturn = not(bforceUpdate)
+    if (present(bforceUpdate)) breturn = .not.(bforceUpdate)
 
     ! Check if the preconditioner and/or the discrete transport
     ! operator have to be updated and return otherwise.
@@ -5770,7 +5770,7 @@ contains
 
 
     breturn = .true.
-    if (present(bforceUpdate)) breturn = not(bforceUpdate)
+    if (present(bforceUpdate)) breturn = .not.(bforceUpdate)
 
     ! Check if the discrete transport operator has to be updated and
     ! return otherwise.
