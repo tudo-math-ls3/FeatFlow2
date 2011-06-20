@@ -426,8 +426,7 @@ contains
         rproblem, rcollection)
 
     ! Prepare internal data arrays of the solver structure
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'systemMatrix', systemMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName, 'systemMatrix', systemMatrix)
     call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax,&
         rsolver, systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
     call solver_updateStructure(rsolver)
@@ -3712,6 +3711,12 @@ contains
 
     end if
 
+    ! Force initialisation of the discrete transport operator and the
+    ! preconditioner. This may be necessary if the velocity is
+    ! constant, and hence, no repeated updates would be performed.
+    call problem_setSpec(rproblem, TRANSP_TROPER_INIT+&
+                                   TRANSP_PRECOND_INIT,'ior')
+
     ! Initialize right-hand side vector
     if (irhstype > 0) then
       call lsysbl_createVectorBlock(rsolution, rrhs)
@@ -3719,7 +3724,7 @@ contains
           rtimestep%dinitialTime, rrhs, rcollection)
     end if
 
-    ! Calculate the initial velocity field
+    ! Calculate the initial velocity field on all levels
     nlmin = solver_getMinimumMultigridlevel(rsolver)
     call transp_calcVelocityField(rparlist, ssectionName,&
         p_rproblemLevel, rtimestep%dinitialTime, rcollection, nlmin)
@@ -3848,9 +3853,9 @@ contains
         call stat_stopTimer(p_rtimerErrorEstimation)
 
 
-        !-------------------------------------------------------------------------
+        !-----------------------------------------------------------------------
         ! Perform h-adaptation
-        !-------------------------------------------------------------------------
+        !-----------------------------------------------------------------------
 
         ! Start time measurement for mesh adaptation
         call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
@@ -3880,9 +3885,9 @@ contains
         call stat_stopTimer(p_rtimerAdaptation)
 
 
-        !-------------------------------------------------------------------------
+        !-----------------------------------------------------------------------
         ! Re-generate the discretisation and coefficient matrices
-        !-------------------------------------------------------------------------
+        !-----------------------------------------------------------------------
 
         ! Start time measurement for generation of the triangulation
         call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
@@ -3903,30 +3908,44 @@ contains
             p_rproblemLevel, rcollection)
 
         ! Prepare internal data arrays of the solver structure
-        call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemmatrix', systemMatrix)
         call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
             systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
         call solver_updateStructure(rsolver)
 
-        ! Re-calculate the velocity field
-        nlmin = solver_getMinimumMultigridlevel(rsolver)
-        call transp_calcVelocityField(rparlist, ssectionName,&
-            p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
+        ! Re-calculate the velocity field ...
+        if (abs(ivelocitytype) .eq. VELOCITY_TIMEDEP) then
+          ! ... on all problem levels if it depends on time
+          nlmin = solver_getMinimumMultigridlevel(rsolver)
+          call transp_calcVelocityField(rparlist, ssectionName,&
+              p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
+        else
+          ! ... on the finest mesh only if the velocity is constant
+          call transp_calcVelocityField(rparlist, ssectionName,&
+              p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
+        end if
 
         ! Re-initialize the right-hand side vector
         if (irhstype > 0) then
           call lsysbl_resizeVectorBlock(rrhs,&
               p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
-          call transp_initRHS(rparlist, ssectionName, p_rproblemLevel&
-              , rtimestep%dinitialTime, rrhs, rcollection)
+          call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
+              rtimestep%dinitialTime, rrhs, rcollection)
         end if
 
+        ! Force initialisation of the discrete transport operator and
+        ! the preconditioner. This may be necessary if the velocity is
+        ! constant, and hence, no repeated updates would be performed.
+        p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec,&
+            TRANSP_TROPER_INIT+TRANSP_PRECOND_INIT)
+        
         ! Stop time measurement for generation of constant coefficient matrices
         call stat_stopTimer(p_rtimerAssemblyCoeff)
 
       elseif(abs(ivelocitytype) .eq. VELOCITY_TIMEDEP) then
 
-        ! Re-calculate the time-dependent velocity field
+        ! Re-calculate the time-dependent velocity field on all levels
         nlmin = solver_getMinimumMultigridlevel(rsolver)
         call transp_calcVelocityField(rparlist, ssectionName,&
             p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
@@ -4115,29 +4134,37 @@ contains
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
 
     ! Get global parameters
-    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        'discretisation', discretisation)
 
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
-    ! Initialize the solution vector and impose boundary conditions explicitly
+    ! Create the solution vector
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution,&
         .false., ST_DOUBLE)
+
+    ! Initialize the solution vector and impose boundary conditions
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
-        0.0_DP, rsolution, rcollection)
-    call bdrf_filterVectorExplicit(rbdrCond, rsolution, 0.0_DP)
+        rtimestep%dinitialTime, rsolution, rcollection)
+    call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+        rtimestep%dinitialTime)
 
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
 
-      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt)
+      call parlst_getvalue_int(rparlist,&
+          trim(sadaptivityName), 'nadapt', nadapt)
 
       if (nadapt > 0) then
 
@@ -4165,6 +4192,12 @@ contains
       nadapt = 0
 
     end if
+
+    ! Force initialisation of the discrete transport operator and the
+    ! preconditioner. This may be necessary if the velocity is
+    ! constant, and hence, no repeated updates would be performed.
+    call problem_setSpec(rproblem, TRANSP_TROPER_INIT+&
+                                   TRANSP_PRECOND_INIT,'ior')
 
     ! Stop time measurement for pre-processing
     call stat_stopTimer(p_rtimerPrePostprocess)
@@ -4292,11 +4325,18 @@ contains
           p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
-      call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'systemmatrix', systemMatrix)
       call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
           systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
 
+      ! Force initialisation of the discrete transport operator and
+      ! the preconditioner. This may be necessary if the velocity is
+      ! constant, and hence, no repeated updates would be performed.
+      p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec,&
+          TRANSP_TROPER_INIT+TRANSP_PRECOND_INIT)
+      
       ! Stop time measurement for generation of constant coefficient matrices
       call stat_stopTimer(p_rtimerAssemblyCoeff)
 
@@ -4418,9 +4458,12 @@ contains
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
 
     ! Get global parameters
-    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'discretisation', discretisation)
 
     ! Set pointer to maximum problem level
     p_rproblemLevel   => rproblem%p_rproblemLevelMax
@@ -4437,10 +4480,12 @@ contains
     ! Initialize the h-adaptation structure
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
 
-      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt)
+      call parlst_getvalue_int(rparlist,&
+          trim(sadaptivityName), 'nadapt', nadapt)
 
       if (nadapt > 0) then
 
@@ -4468,6 +4513,12 @@ contains
       nadapt = 0
 
     end if
+
+    ! Force initialisation of the discrete transport operator and the
+    ! preconditioner. This may be necessary if the velocity is
+    ! constant, and hence, no repeated updates would be performed.
+    call problem_setSpec(rproblem, TRANSP_TROPER_INIT+&
+                                   TRANSP_PRECOND_INIT,'ior')
 
     ! Stop time measurement for pre-processing
     call stat_stopTimer(p_rtimerPrePostprocess)
@@ -4672,14 +4723,22 @@ contains
       call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
       ! Re-initialize all constant coefficient matrices
-      call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rparlist, ssectionName,&
+          p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
-      call parlst_getvalue_int(rparlist, ssectionName, 'systemMatrix', systemMatrix)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'systemMatrix', systemMatrix)
       call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
           systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
 
+      ! Force initialisation of the discrete transport operator and
+      ! the preconditioner. This may be necessary if the velocity is
+      ! constant, and hence, no repeated updates would be performed.
+      p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec,&
+          TRANSP_TROPER_INIT+TRANSP_PRECOND_INIT)
+      
       ! Stop time measurement for generation of constant coefficient matrices
       call stat_stopTimer(p_rtimerAssemblyCoeff)
 
@@ -4800,9 +4859,12 @@ contains
     rtimestep%theta         = 1.0_DP
 
     ! Get global parameters
-    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'discretisation', discretisation)
 
     ! Set pointer to maximum problem level
     p_rproblemLevel   => rproblem%p_rproblemLevelMax
@@ -4818,10 +4880,12 @@ contains
     ! Initialize the h-adaptation structure
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
 
-      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt)
+      call parlst_getvalue_int(rparlist,&
+          trim(sadaptivityName), 'nadapt', nadapt)
 
       if (nadapt > 0) then
 
@@ -4849,6 +4913,12 @@ contains
       nadapt = 0
 
     end if
+
+    ! Force initialisation of the discrete transport operator and the
+    ! preconditioner. This may be necessary if the velocity is
+    ! constant, and hence, no repeated updates would be performed.
+    call problem_setSpec(rproblem, TRANSP_TROPER_INIT+&
+                                   TRANSP_PRECOND_INIT,'ior')
 
     ! Stop time measurement for pre-processing
     call stat_stopTimer(p_rtimerPrePostprocess)
@@ -4972,13 +5042,21 @@ contains
       call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
       ! Re-initialize all constant coefficient matrices
-      call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rparlist,&
+          ssectionName, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
-      call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'systemmatrix', systemMatrix)
       call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
           systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
+
+      ! Force initialisation of the discrete transport operator and
+      ! the preconditioner. This may be necessary if the velocity is
+      ! constant, and hence, no repeated updates would be performed.
+      p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec,&
+          TRANSP_TROPER_INIT+TRANSP_PRECOND_INIT)
 
       ! Stop time measurement for generation of constant coefficient matrices
       call stat_stopTimer(p_rtimerAssemblyCoeff)
@@ -5108,9 +5186,12 @@ contains
     rtimestep%theta         = 1.0_DP
 
     ! Get global parameters
-    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'discretisation', discretisation)
 
     ! Set pointer to maximum problem level
     p_rproblemLevel   => rproblem%p_rproblemLevelMax
@@ -5127,10 +5208,12 @@ contains
     ! Initialize the h-adaptation structure
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
 
-      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt)
+      call parlst_getvalue_int(rparlist,&
+          trim(sadaptivityName), 'nadapt', nadapt)
 
       if (nadapt > 0) then
 
@@ -5158,6 +5241,12 @@ contains
       nadapt = 0
 
     end if
+
+    ! Force initialisation of the discrete transport operator and the
+    ! preconditioner. This may be necessary if the velocity is
+    ! constant, and hence, no repeated updates would be performed.
+    call problem_setSpec(rproblem, TRANSP_TROPER_INIT+&
+                                   TRANSP_PRECOND_INIT,'ior')
 
     ! Stop time measurement for pre-processing
     call stat_stopTimer(p_rtimerPrePostprocess)
@@ -5368,14 +5457,22 @@ contains
       call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
       ! Re-initialize all constant coefficient matrices
-      call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rparlist,&
+          ssectionName, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
-      call parlst_getvalue_int(rparlist, ssectionName, 'systemMatrix', systemMatrix)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'systemMatrix', systemMatrix)
       call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
           systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
 
+      ! Force initialisation of the discrete transport operator and
+      ! the preconditioner. This may be necessary if the velocity is
+      ! constant, and hence, no repeated updates would be performed.
+      p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec,&
+          TRANSP_TROPER_INIT+TRANSP_PRECOND_INIT)
+      
       ! Stop time measurement for generation of constant coefficient matrices
       call stat_stopTimer(p_rtimerAssemblyCoeff)
 

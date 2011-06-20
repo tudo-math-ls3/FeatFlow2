@@ -39,11 +39,17 @@ module transport_basic
 
 !<constantblock description="Global specification flags for the problem level">
 
-  ! Discrete transport operator has to be updated/initialised
-  integer(I32), parameter, public :: TRANSP_TROPER_UPDATE   = 2**1
+  ! Discrete transport operator has to be initialised
+  integer(I32), parameter, public :: TRANSP_TROPER_INIT     = 2**1
 
-  ! Preconditioner has to be updated/initialised
-  integer(I32), parameter, public :: TRANSP_PRECOND_UPDATE  = 2**2
+  ! Discrete transport operator has to be updated
+  integer(I32), parameter, public :: TRANSP_TROPER_UPDATE   = 2**2
+
+  ! Preconditioner has to be initialised
+  integer(I32), parameter, public :: TRANSP_PRECOND_INIT    = 2**3
+
+  ! Preconditioner has to be updated
+  integer(I32), parameter, public :: TRANSP_PRECOND_UPDATE  = 2**4
 
 !</constantblock>
 

@@ -309,7 +309,17 @@ contains
     if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
       if (istep .eq. 0) then
-        ! Compute the constant right-hand side
+        ! If the preconditioner and/or the transport operator have not
+        ! been initialised (e.g., in the very first solution step or
+        ! if the mesh has been regenerated) they have to be generated
+        ! explicitly for the old solution from the previous time step.
+        if ((iand(rproblemLevel%iproblemSpec, TRANSP_PRECOND_INIT) .ne. 0) .or.&
+            (iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_INIT)  .ne. 0))&
+            call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution0, ssectionName, rcollection)
+
+        ! Compute the constant right-hand side only in the very first
+        ! step of each nonlinear solution loop
         call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
             rsolver, rsolution0, rrhs, ssectionName, rcollection, rsource)
       end if
@@ -453,7 +463,9 @@ contains
 
     ! Check if the preconditioner and/or the discrete transport
     ! operator have to be updated and return otherwise.
-    if ((iand(rproblemLevel%iproblemSpec, TRANSP_PRECOND_UPDATE) .eq. 0) .and.&
+    if ((iand(rproblemLevel%iproblemSpec, TRANSP_PRECOND_INIT)   .eq. 0) .and.&
+        (iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_INIT)    .eq. 0) .and.&
+        (iand(rproblemLevel%iproblemSpec, TRANSP_PRECOND_UPDATE) .eq. 0) .and.&
         (iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_UPDATE)  .eq. 0) .and.&
         breturn) return
 
@@ -462,10 +474,10 @@ contains
         'rtimerAssemblyMatrix', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
-    ! Remove update notifier from the preconditioner. Depending on the
-    ! velocity, diffusion type it will be re-activited below.
+    ! Remove init/update notifier from the preconditioner. Depending
+    ! on the velocity, diffusion type it will be re-activited below.
     rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
-                                      not(TRANSP_PRECOND_UPDATE))
+        not(TRANSP_PRECOND_INIT+TRANSP_PRECOND_UPDATE))
 
     ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
@@ -5768,13 +5780,13 @@ contains
     ! of velocity/ diffusion.
     !###########################################################################
 
-
     breturn = .true.
     if (present(bforceUpdate)) breturn = .not.(bforceUpdate)
 
     ! Check if the discrete transport operator has to be updated and
     ! return otherwise.
-    if ((iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_UPDATE) .eq. 0) .and.&
+    if ((iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_INIT)   .eq. 0) .and.&
+        (iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_UPDATE) .eq. 0) .and.&
         breturn) return
     
     ! Set pointer to parameter list
@@ -5794,7 +5806,7 @@ contains
     ! Remove update notifier from the transport operator. Depending on
     ! the velocity, diffusion type it will be re-activited below.
     rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
-                                      not(TRANSP_TROPER_UPDATE))
+        not(TRANSP_TROPER_INIT+TRANSP_TROPER_UPDATE))
 
     !---------------------------------------------------------------------------
     ! Assemble diffusion operator (for the right-hand side):
