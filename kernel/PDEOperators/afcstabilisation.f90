@@ -254,6 +254,9 @@ module afcstabilisation
   ! Auxiliary matrix coefficients have been attached
   integer(I32), parameter, public :: AFCSTAB_HAS_MATRIXCOEFFS     = 2_I32**12
 
+  ! Transformed nodal solution values have been computed
+  integer(I32), parameter, public :: AFCSTAB_HAS_NODEVALUES       = 2_I32**13
+
 !</constantblock>
 
 
@@ -291,6 +294,10 @@ module afcstabilisation
     
   ! Duplicate auxiliary matrix coefficients
   integer(I32), parameter, public :: AFCSTAB_DUP_MATRIXCOEFFS     = AFCSTAB_HAS_MATRIXCOEFFS
+
+  ! Duplicate transformed nodal solution values
+  integer(I32), parameter, public :: AFCSTAB_DUP_NODEVALUES       = AFCSTAB_HAS_NODEVALUES
+
 !</constantblock>
 
 
@@ -329,7 +336,10 @@ module afcstabilisation
 
   ! Share auxiliary matrix coefficients
   integer(I32), parameter, public :: AFCSTAB_SHARE_MATRIXCOEFFS     = AFCSTAB_DUP_MATRIXCOEFFS
-  
+
+  ! Share transformed nodal solution values
+  integer(I32), parameter, public :: AFCSTAB_SHARE_NODEVALUES       = AFCSTAB_DUP_NODEVALUES
+
 !</constantblock>
 
 
@@ -337,32 +347,36 @@ module afcstabilisation
 
   ! Initialize the edgewise correction factors by unity
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_INITALPHA    = 2_I32**0
+
+  ! Prelimit the raw antidiffusive fluxes
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_PRELIMIT     = 2_I32**1
   
   ! Compute the sums of antidiffusive increments
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_ADINCREMENTS = 2_I32**1
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_ADINCREMENTS = 2_I32**2
 
   ! Compute the distances to a local extremum
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_BOUNDS       = 2_I32**2
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_BOUNDS       = 2_I32**3
 
   ! Compute the nodal correction factors
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_LIMITNODAL   = 2_I32**3
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_LIMITNODAL   = 2_I32**4
 
   ! Compute edgewise correction factors
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_LIMITEDGE    = 2_I32**4
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_LIMITEDGE    = 2_I32**5
   
   ! Correct raw antidiffusive fluxes and apply them
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_CORRECT      = 2_I32**5
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_CORRECT      = 2_I32**6
 
   ! Scale corrected antidiffusive fluxes by the inverse of the
   ! lumped mass matrix prior to applying it to the residual/solution
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_SCALEBYMASS  = 2_I32**6
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_SCALEBYMASS  = 2_I32**7
 
   ! Constrain the raw antidiffusive fluxes by the size of limited
   ! limited rather than by the correction factors directly
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_CONSTRAIN    = 2_I32**7
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_CONSTRAIN    = 2_I32**8
   
   ! FEM-FCT algorithm without application of the corrected fluxes
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_PREPARE  = AFCSTAB_FCTALGO_INITALPHA +&
+                                                                AFCSTAB_FCTALGO_PRELIMIT +&
                                                                 AFCSTAB_FCTALGO_ADINCREMENTS +&
                                                                 AFCSTAB_FCTALGO_BOUNDS +&
                                                                 AFCSTAB_FCTALGO_LIMITNODAL +&
@@ -377,14 +391,24 @@ module afcstabilisation
 
 !<constantblock description="Default tolerances for stabilisation">
   
+  ! Absolute tolerance for prelimiting of antidiffusive fluxes
+#ifndef AFCSTAB_PRELIMABS
+  real(DP), parameter, public :: AFCSTAB_PRELIMABS = 1e-16
+#endif
+
+  ! Relative tolerance for prelimiting of antidiffusive fluxes
+#ifndef AFCSTAB_PRELIMREL
+  real(DP), parameter, public :: AFCSTAB_PRELIMREL = 1e-6
+#endif
+
   ! Absolute tolerance for stabilisation
 #ifndef AFCSTAB_EPSABS
-  real(DP), parameter, public :: AFCSTAB_EPSABS = 1e-12
+  real(DP), parameter, public :: AFCSTAB_EPSABS = 1e-16
 #endif 
 
   ! Relative tolerance for stabilisation
 #ifndef AFCSTAB_EPSREL
-  real(DP), parameter, public :: AFCSTAB_EPSREL = 1e-4
+  real(DP), parameter, public :: AFCSTAB_EPSREL = 1e-3
 #endif
 
 !</constantblock>
@@ -512,6 +536,9 @@ module afcstabilisation
     ! Pointer to the vector of prelimiting antidiffusive fluxes
     type(t_vectorScalar), pointer :: p_rvectorFluxPrel => null()
 
+    ! Pointer to the vector of nodal solution values
+    type(t_vectorScalar), pointer :: p_rvectorDx => null()
+
     ! Pointers to the vectors of antidiffusive contributions
     type(t_vectorScalar), pointer :: p_rvectorPp => null()
     type(t_vectorScalar), pointer :: p_rvectorPm => null()
@@ -535,7 +562,6 @@ module afcstabilisation
   ! This structure can be used to realise arrays-of-pointers which is
   ! necessary to address the content of multiple scalar submatrices
   ! simultaneously. 
-
 
   type t_array
 
@@ -722,6 +748,14 @@ contains
           call storage_free(rafcstab%h_DmatrixCoeffsAtEdge)
     end if
 
+    ! Release transformed nodal solution values
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEVALUES)) then
+      if (associated(rafcstab%p_rvectorDx)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorDx)
+        deallocate(rafcstab%p_rvectorDx)
+      end if
+    end if
+
     ! Release antidiffusive increments
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS)) then
       if (associated(rafcstab%p_rvectorPp)) then
@@ -773,6 +807,7 @@ contains
     end if
 
     ! Nullify pointers
+    rafcstab%p_rvectorDx        => null()
     rafcstab%p_rvectorPp        => null()
     rafcstab%p_rvectorPm        => null()
     rafcstab%p_rvectorQp        => null()
@@ -868,6 +903,11 @@ contains
             rafcstab%NEQ, rafcstab%h_DmatrixCoeffsAtNode,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
+
+      ! Resize transformed nodal vector
+      if (associated(rafcstab%p_rvectorDx))&
+          call lsyssc_resizeVector(rafcstab%p_rvectorDx,&
+          rafcstab%NEQ, .false., .false.)
 
       ! Resize nodal vectors P, Q, and R for '+' and '-'
       if (associated(rafcstab%p_rvectorPp))&
@@ -1180,6 +1220,27 @@ contains
           not(AFCSTAB_SHARE_MATRIXCOEFFS))
     end if
 
+    ! Copy transformed nodal solution values
+    if (check(idupFlag, AFCSTAB_DUP_NODEVALUES) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODEVALUES)) then
+      ! Unlink pointers to vectors which are shared by the structure
+      if (check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_NODEVALUES))&
+          nullify(rafcstabDest%p_rvectorDx)
+      ! Reset ownership
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          not(AFCSTAB_SHARE_NODEVALUES))
+      ! Copy transformed nodal solution values (if any)
+      if (associated(rafcstabSrc%p_rvectorDx)) then
+        if (.not.(associated(rafcstabDest%p_rvectorDx)))&
+            allocate(rafcstabDest%p_rvectorDx)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorDx,&
+            rafcstabDest%p_rvectorDx)
+      end if
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODEVALUES))
+    end if
+
     ! Copy antidiffusive fluxes
     if (check(idupFlag, AFCSTAB_DUP_ADFLUXES) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)) then
@@ -1473,6 +1534,24 @@ contains
       ! Set ownership to shared
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
           AFCSTAB_SHARE_MATRIXCOEFFS)
+    end if
+
+    ! Duplicate transformed nodal solution values
+    if (check(idupFlag, AFCSTAB_DUP_NODEVALUES) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODEVALUES)) then
+      ! Remove existing data owned by the destination structure
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_NODEVALUES))) then
+        call lsyssc_releaseVector(rafcstabDest%p_rvectorDx)
+        deallocate(rafcstabDest%p_rvectorDx)
+      end if
+      ! Copy pointers from source to destination structure
+      rafcstabDest%p_rvectorDx => rafcstabSrc%p_rvectorDx
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODEVALUES))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_NODEVALUES)
     end if
 
     ! Duplicate antidiffusive fluxes
