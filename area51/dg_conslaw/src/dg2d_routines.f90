@@ -7473,7 +7473,7 @@ contains
 
     real(dp), dimension(5) :: DQcharExt
 
-    real(dp) :: dlf
+    real(dp) :: dlf, dh
 
 
 
@@ -7796,8 +7796,10 @@ contains
                       if (DtIi(ivar) > 0.0_dp) then
                          dWstar = maxval(DtLin(ivar,1:iidx))
                          !Dalphaei(ivar,ivt) = min(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
+                         
+                         ! This is the one I take
                          Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar)+SYS_EPSREAL_DP)))
-
+                      
                          !            ! Extremumfix
                          !            if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL_DP) Dalphaei(ivar,ivt) = 1.0_dp
                          !            if ((ilim==3).and.(abs(dwstar-DWc(ivar))<abs(0.001*DWc(ivar)))) Dalphaei(ivar,ivt) = 1.0_dp
@@ -7817,7 +7819,10 @@ contains
                       elseif (DtIi(ivar) < 0.0_dp) then
                          dWstar = minval(DtLin(ivar,1:iidx))
                          !Dalphaei(ivar,ivt) = min(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
+                         
+                         ! This is the one I take
                          Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar)-SYS_EPSREAL_DP)))
+
 
                          !            ! Extremeumfix
                          !            if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL_DP) Dalphaei(ivar,ivt) = 1.0_dp
@@ -7835,6 +7840,8 @@ contains
 
                       else
                          !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt),1.0_dp)
+                         
+                         ! This is the one I take
                          Dalphaei(ivar,ivt) = max(Dalphaei(ivar,ivt),1.0_dp)
                       end if
 
@@ -7938,6 +7945,7 @@ contains
           case (3)
 
              ! Get minimum of all correction factors of all vertices on this element
+             DmAlpha = 0.0_dp
              do ivar = 1, nvar
                 Dalpha(ivar, iel) = max(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
 
@@ -13579,7 +13587,116 @@ contains
     !$omp end parallel
 
   end subroutine dg_bilf_assembleSubmeshMat9Bdr2D_Block_ss
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+   !****************************************************************************
 
+  !<subroutine>  
+
+  subroutine dg_makeSolPos (rvectorBlock)
+
+    !<description>
+
+    ! Checks for negative solution values and fixes the problem
+
+    !</description>
+
+    !<inputoutput>
+
+    ! The solution vector. Used to calculate the solution on the edges.
+    type(t_vectorBlock), intent(inout) :: rvectorBlock
+
+    !</inputoutput>
+
+    !</subroutine>
+    
+    
+    
+    ! Local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: iel, nvar, ivar, nlDOF
+    integer, dimension(:,:), allocatable :: IdofGlob
+    integer, dimension(:), allocatable :: IelList
+    real(dp) :: da, db
+
+    ! Get pointer to the data of the (solution) vector
+    call lsysbl_getbase_double (rvectorBlock, p_Ddata)
+    
+    ! Get number of local DOFs
+    nlDOF = elem_igetNDofLoc(rvectorBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%celement)
+    
+    ! Allocate space for DOFs
+    allocate(IdofGlob(nlDOF,rvectorBlock%p_rblockDiscr%p_rtriangulation%NEL))
+    
+    ! Allocate space for list of elements
+    allocate(IelList(rvectorBlock%p_rblockDiscr%p_rtriangulation%NEL))
+    
+    forall (iel=1:rvectorBlock%p_rblockDiscr%p_rtriangulation%NEL) IelList(iel) = iel
+    
+    ! Get DOFs
+    call dof_locGlobMapping_mult(rvectorBlock%p_rblockDiscr%RspatialDiscr(1), IelList, IdofGlob)
+
+    ! Get number of variables of the system
+    nvar = rvectorBlock%nblocks
+
+    do ivar = 1, nvar
+       if ((ivar == 2).or.(ivar==3)) cycle
+       do iel = 1, rvectorBlock%p_rblockDiscr%p_rtriangulation%NEL
+          ! Check value in midpoint
+          if (p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(1,iel)-1)<20.0_dp*SYS_EPSREAL_SP) then
+             p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(1,iel)-1)=20.0_dp*SYS_EPSREAL_SP
+          end if
+          
+          
+          da = (abs(p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2,iel)-1)) + &
+                abs(p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(3,iel)-1)))
+          db = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(1,iel)-1)
+          
+          if ( (da/db).ge.0.99_dp ) then
+             p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2,iel)-1) = &
+                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2,iel)-1) *db/da*0.99_dp
+             p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(3,iel)-1) = &
+                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(3,iel)-1) *db/da*0.99_dp
+          end if      
+          
+       end do
+    end do
+      
+    ! Deallocate space for DOFs and the elementlist
+    deallocate(IdofGlob,IelList)
+    
+  end subroutine
 
 
 end module dg2d_routines

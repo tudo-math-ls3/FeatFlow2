@@ -1,7 +1,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 1
+nlmax = 4
 
 
 # Name of the parametrisation file
@@ -12,12 +12,14 @@ nlmax = 1
 #prmname = ./pre/quadm5t5.prm
 #prmname = ./pre/isentrvort.prm
 #prmname = ./pre/zehnm.prm
-prmname = ./pre/threezylindergrob.prm
+#prmname = ./pre/threezylindergrob.prm
 #prmname = ./pre/RECT2x1.prm
 #prmname = ./pre/QUAD4x4.prm
 #prmname = ./pre/bartsimpson.prm
 #prmname = ./pre/dedeobstacle.prm
 #prmname = ./pre/damv1.prm
+#prmname = ./pre/ramp_5deg_inlet_quads.prm
+prmname = ./pre/ramp_5deg_quads.prm
 
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
@@ -33,6 +35,8 @@ triname = ./pre/threezylindergrob.tri
 #triname = ./pre/bartsimpson.tri
 #triname = ./pre/dedeobstacle.tri
 #triname = ./pre/damv1.tri
+#triname = ./pre/ramp_5deg_inlet_quads.tri
+triname = ./pre/ramp_5deg_quads.tri
 
 # What kind of finite elements do we use?
 # 0: DG T0
@@ -46,10 +50,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.1
+dt = 0.001
 
 # Final time
-ttfinal = 17
+ttfinal = 1.7
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -63,7 +67,7 @@ theta = 1.0
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 12
+limiter = 0
 
 # What kind of time stepping to use
 #  1: RK SSP 3rd order
@@ -116,7 +120,7 @@ outtype = 2
 # Create files for video?
 # 0: No
 # 1: Yes
-makevideo = 0
+makevideo = 1
 
 # Make gmv snapshot every ... seconds (should be n*dt)
-videotimestep = 0.1
+videotimestep = 0.005

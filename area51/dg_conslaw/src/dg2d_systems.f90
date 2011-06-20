@@ -512,7 +512,7 @@ contains
     call linsol_initUMFPACK4 (p_rsolverNode)
 
     ! Set the output level of the solver to 2 for some output
-    p_rsolverNode%ioutputLevel = 0
+    p_rsolverNode%ioutputLevel = 2
 
     ! The linear solver stops, when this relative or absolut norm of
     ! the residual is reached.
@@ -1492,7 +1492,7 @@ contains
 
 
           ! Fully implicit linear convection
-       case(5)
+       case (5)
 
 
 
@@ -3133,16 +3133,10 @@ contains
                 call lsysbl_duplicateMatrix (rmatrixABlock,rmatrixBlock,&
                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
                 do i = 1, nvar2d
-!                   call lsyssc_matrixLinearComb (rmatrixMC,rmatrixABlock%RmatrixBlock(i,i),1.0_dp/dt,1.0_dp,&
-!                        .true.,.true.,.true.,.false.,&
-!                        rmatrixBlock%Rmatrixblock(i,i))
-                   
+
                    call lsyssc_matrixLinearComb (rmatrixMC,rmatrixABlock%RmatrixBlock(i,i),1.0_dp/dt,1.0_dp,&
-                        .false.,.false.,.true.,.false.,&
-                        rmatrixBlock%Rmatrixblock(i,i))
-                   
-                   !        call lsyssc_matrixLinearComb2 (rmatrixMC,1.0_dp,rmatrixABlock%RmatrixBlock(i,j),dt,rmatrixABlock%RmatrixBlock(i,j),&
-                   !                                       .false.,.false.,.true.)
+                        .false.,.false.,.true.,.false.)
+
                 end do
 
                 !        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
@@ -3182,17 +3176,17 @@ contains
 
                 ! Create a BiCGStab-solver.
                 nullify(p_rpreconditioner)
-                !    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
-                call linsol_initUMFPACK4 (p_rsolverNode)
+                call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+                !call linsol_initUMFPACK4 (p_rsolverNode)
                 !    call linsol_initJacobi (p_rsolverNode)
 
                 ! Set the output level of the solver to 2 for some output
-                p_rsolverNode%ioutputLevel = 0
+                p_rsolverNode%ioutputLevel = 2
 
                 ! The linear solver stops, when this relative or absolut norm of
                 ! the residual is reached.
                 p_rsolverNode%depsRel = 1.0e-4
-                p_rsolverNode%depsAbs = 1.0e-4
+                p_rsolverNode%depsAbs = 1.0e-6
 
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
@@ -3239,6 +3233,9 @@ contains
                 
                 ! Limit solution
                 if (ilimiter .eq. 12) call dg_realKuzmin (rsolBlock, raddTriaData)
+                
+!                ! Fix negative solution values
+!                call dg_makeSolPos (rSolBlock)
 
                 write(*,*) '  Defect:',lsysbl_vectorNorm(rSolUpBlock,LINALG_NORML2)
 !
@@ -3277,6 +3274,8 @@ contains
 
 
              ttime = ttime + dt
+             
+             call lsysbl_releaseMatrix (rmatrixBlock)
              
              
              ! If we want to make a video

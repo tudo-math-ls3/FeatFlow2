@@ -1081,7 +1081,7 @@ contains
     ! Get densities
     rhol = Ql(1)
     rhor = Qr(1)
-
+    
     ! Calculate auxiliary variable
     denom = (sqrt(rhol)+sqrt(rhor))
 
@@ -1936,6 +1936,36 @@ contains
     Roe = half * (fL + fR - diss)
 
   end function Roe
+  
+  
+  
+  function DRoe(uL, uR, nx, ny, h)
+    real(dp) :: uL(4), uR(4)             !  Input: conservative variables rho*[1, u, v, E]
+    real(dp) :: nx, ny                   !  Input: face normal vector, [nx, ny]
+    real(dp) :: h                        !  Input: infinitesimal constant
+    real(dp), dimension(4,8) :: DRoe     ! Output: Approximate differential of Roe flux function
+    
+    real(dp), dimension(4) :: F, U
+    integer :: i
+    
+    F = Roe(uL, uR, nx, ny)
+    
+    do i = 1,4
+      U = uL
+      U(i) = U(i) + h
+      DRoe(:,i) = Roe(U, uR, nx, ny) - F
+    end do
+    
+    do i = 1,4
+      U = uL
+      U(i) = U(i) + h
+      DRoe(:,i+4) = Roe(uL, U, nx, ny) - F
+    end do
+    
+      DRoe = Droe/h
+    
+    
+  end function Droe
 
 
   !*****************************************************************************
@@ -1997,6 +2027,7 @@ contains
     vxL = uL(2)/uL(1)
     vyL = uL(3)/uL(1)
     pL = (gamma-one)*( uL(4) - half*rhoL*(vxL*vxL+vyL*vyL) )
+    pL = max(0.0_dp,pL)
     aL = sqrt(gamma*pL/rhoL)
     HL = ( uL(4) + pL ) / rhoL
     !  Right state
@@ -2004,6 +2035,7 @@ contains
     vxR = uR(2)/uR(1)
     vyR = uR(3)/uR(1)
     pR = (gamma-one)*( uR(4) - half*rhoR*(vxR*vxR+vyR*vyR) )
+    pR = max(0.0_dp,pR)
     aR = sqrt(gamma*pR/rhoR)
     HR = ( uR(4) + pR ) / rhoR
 
@@ -2061,7 +2093,7 @@ contains
     vx = (vxL+RT*vxR)/(one+RT)
     vy = (vyL+RT*vyR)/(one+RT)
     H = ( HL+RT* HR)/(one+RT)
-    a = sqrt( (gamma-one)*(H-half*(vx*vx+vy*vy)) )
+    a = sqrt( max(0.0_dp,(gamma-one)*(H-half*(vx*vx+vy*vy))) )
     vn = vx*nx2+vy*ny2
     vt = vx*nx1+vy*ny1
 
@@ -2075,6 +2107,8 @@ contains
     dpp =   pR - pL
     dvn =  vnR - vnL
     dvt =  vtR - vtL
+
+    a = max(a,1.0e-12)
 
     dV(1) = (dpp - rho*a*dvn )/(two*a*a)
     dV(2) =  rho*dvt/a
