@@ -1593,38 +1593,47 @@ contains
       ! Flux boundary conditions (Robin bc`s at the outlet)
       ! Assemble the convective part of the boundary integral at the outflow
 
-      ! Allocate temporal memory
-      allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+      if (associated(p_rvelocity)) then
 
-      ! Evaluate the velocity field in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
-      call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
-          p_rvelocity%RvectorBlock(1), Dpoints,&
-          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
-          
-          ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1)
-
-          ! Check if we are at the primal outflow boundary
-          if (dnv .gt. 0.0_DP) then
-            Dcoefficients(1,ipoint,iel) = -dscale * dnv
-          else
-            Dcoefficients(1,ipoint,iel) = 0.0_DP
-          end if
+        ! Allocate temporal memory
+        allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+        
+        ! Evaluate the velocity field in the cubature points on the boundary
+        ! and store the result in Daux(:,:,:,1)
+        call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
+            p_rvelocity%RvectorBlock(1), Dpoints,&
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+        
+        ! Multiply the velocity vector with the normal in each point
+        ! to get the normal velocity.
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            
+            ! Compute the normal velocity
+            dnv = dnx * Daux(ipoint,iel,1)
+            
+            ! Check if we are at the primal outflow boundary
+            if (dnv .gt. 0.0_DP) then
+              Dcoefficients(1,ipoint,iel) = -dscale * dnv
+            else
+              Dcoefficients(1,ipoint,iel) = 0.0_DP
+            end if
+          end do
         end do
-      end do
+        
+        ! Free temporal memory
+        deallocate(Daux)
+        
+      else
 
-      ! Free temporal memory
-      deallocate(Daux)
-      
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+
+      end if
+
     
     case default
       call output_line('Invalid type of boundary conditions!',&
@@ -1826,37 +1835,46 @@ contains
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s at the outlet)
 
-      ! Allocate temporal memory
-      allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+      if (associated(p_rvelocity)) then
 
-      ! Evaluate the velocity field in the cubature points on the boundary
-      ! and store the result in Daux(:,:,:,1)
-      call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
-          p_rvelocity%RvectorBlock(1), Dpoints,&
-          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-      ! Multiply the velocity vector with the normal in each point
-      ! to get the normal velocity.
-      do iel = 1, nelements
-        do ipoint = 1, npointsPerElement
-
-          ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
-
-          ! Compute the normal velocity
-          dnv = dnx * Daux(ipoint,iel,1)
-
-          ! Check if we are at the dual outflow boundary
-          if (dnv .lt. 0.0_DP) then
-            Dcoefficients(1,ipoint,iel) = dscale * dnv
-          else
-            Dcoefficients(1,ipoint,iel) = 0.0_DP
-          end if
+        ! Allocate temporal memory
+        allocate(Daux(npointsPerElement, nelements, NDIM1D+1))
+        
+        ! Evaluate the velocity field in the cubature points on the boundary
+        ! and store the result in Daux(:,:,:,1)
+        call fevl_evaluate_sim(DER_FUNC1D, Daux(:,:,1),&
+            p_rvelocity%RvectorBlock(1), Dpoints,&
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+        
+        ! Multiply the velocity vector with the normal in each point
+        ! to get the normal velocity.
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Get the normal vector in the point from the boundary
+            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            
+            ! Compute the normal velocity
+            dnv = dnx * Daux(ipoint,iel,1)
+            
+            ! Check if we are at the dual outflow boundary
+            if (dnv .lt. 0.0_DP) then
+              Dcoefficients(1,ipoint,iel) = dscale * dnv
+            else
+              Dcoefficients(1,ipoint,iel) = 0.0_DP
+            end if
+          end do
         end do
-      end do
+        
+        ! Free temporal memory
+        deallocate(Daux)
 
-      ! Free temporal memory
-      deallocate(Daux)
+      else
+
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+
+      end if
 
       
     case default
