@@ -444,16 +444,19 @@ contains
     case (0)
       ieltypeUV = EL_E031
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
       bquadallowed = .true.
 
     case (1)
       ieltypeUV = EL_E030
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
       bquadallowed = .true.
 
     case (2)
       ieltypeUV = EL_EM31
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
       bquadallowed = .true.
 
     case (3)
@@ -465,56 +468,67 @@ contains
     case (4)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1
+      ieltypeC = EL_Q2
       bquadallowed = .true.
                   
     case (5)
       ieltypeUV = EL_EM30_UNPIVOTED
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
       bquadallowed = .true.
 
     case (6)
       ieltypeUV = EL_EM30_UNSCALED
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
       bquadallowed = .true.
 
     case (7)
       ieltypeUV = EL_EM30_NEW
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
       bquadallowed = .true.
 
     case (8)
       ieltypeUV = EL_EB30
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
       bquadallowed = .true.
 
     case (10)
       ieltypeUV = EL_EB50
       ieltypeP = EL_QP1
+      ieltypeC = EL_Q2
       bquadallowed = .true.
 
     case (11)
       ieltypeUV = EL_EM50
       ieltypeP = EL_QP1
+      ieltypeC = EL_Q2
       bquadallowed = .true.
 
     case (12)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1NP
+      ieltypeC = EL_Q2
       bquadallowed = .true.
 
     case (13)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1NPD
+      ieltypeC = EL_Q2
       bquadallowed = .true.
 
     case (20)
       ieltypeUV = EL_Q1
       ieltypeP = EL_Q1
+      ieltypeC = EL_Q1
       bquadallowed = .true.
 
     case (30)
       ieltypeUV = EL_P1T
       ieltypeP = EL_P0
+      ieltypeC = EL_P1
       btriallowed  = .true.
 
     case default
@@ -634,14 +648,17 @@ contains
     case (0)
       ieltypeUV = EL_E031
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (1)
       ieltypeUV = EL_E030
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (2)
       ieltypeUV = EL_EM31
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (3)
       ieltypeUV = EL_EM30
@@ -651,46 +668,57 @@ contains
     case (4)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1
+      ieltypeC = EL_Q2
                   
     case (5)
       ieltypeUV = EL_EM30_UNPIVOTED
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (6)
       ieltypeUV = EL_EM30_UNSCALED
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (7)
       ieltypeUV = EL_EM30_NEW
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (8)
       ieltypeUV = EL_EB30
       ieltypeP = EL_Q0
+      ieltypeC = EL_Q1
 
     case (10)
       ieltypeUV = EL_EB50
       ieltypeP = EL_QP1
+      ieltypeC = EL_Q2
 
     case (11)
       ieltypeUV = EL_EM50
       ieltypeP = EL_QP1
+      ieltypeC = EL_Q2
 
     case (12)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1NP
+      ieltypeC = EL_Q2
 
     case (13)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1NPD
+      ieltypeC = EL_Q2
 
     case (20)
       ieltypeUV = EL_Q1
       ieltypeP = EL_Q1
+      ieltypeC = EL_Q1
 
     case (30)
       ieltypeUV = EL_P1T
       ieltypeP = EL_P0
+      ieltypeC = EL_P1
 
     case default
       call output_line (&
