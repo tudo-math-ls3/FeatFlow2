@@ -483,18 +483,21 @@ contains
     rnonlinearIterationTmp%dtheta = rtimestepping%dweightMatrixLHS
     rnonlinearIterationTmp%dgamma = rtimestepping%dweightMatrixLHS * &
         real(1-rproblem%rphysics%iequation,DP)
+    rnonlinearIterationTmp%deta   = 1.0_DP
     rnonlinearIterationTmp%dtau   = 1.0_DP
     rnonlinearIterationTmp%dmu    = rtimestepping%dweightMatrixLHS
     rnonlinearIterationTmp%dkappa = rtimestepping%dweightMatrixLHS
     rnonlinearIterationTmp%djota  = rtimestepping%dweightMatrixLHS
 
-    ! For fully implicit pressure, just use the timestep size.
+    ! For fully implicit pressure, just scale by the timestep size.
     ! For semi-implicit pressure, scale by the full weight of the LHS.
     ! There is only a difference if Crank-Nicolson or similar is used.
     if (ipressureFullyImplicit .ne. 1) then
-      rnonlinearIterationTmp%deta   = rtimestepping%dweightMatrixLHS
+      call lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+          rtimestepping%dweightMatrixLHS)
     else
-      rnonlinearIterationTmp%deta   = rtimestepping%dtstep
+      call lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+          rtimestepping%dtstep)
     end if
     
     ! Update the preconditioner for the case, something changed (e.g.
@@ -509,6 +512,15 @@ contains
     ! iteration.
     call cc_solveCoreEquation (rproblem,rnonlinearIterationTmp,rnlSolver,&
         rvector,rtempVectorRhs,rtempVector)             
+
+    ! scale the pressure back, then we have again the correct solution vector.
+    if (ipressureFullyImplicit .ne. 1) then
+      call lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+          1.0_DP/rtimestepping%dweightMatrixLHS)
+    else
+      call lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+          1.0_DP/rtimestepping%dtstep)
+    end if
 
     ! rvector is the solution vector u^{n+1}.    
   
