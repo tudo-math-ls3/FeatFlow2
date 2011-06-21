@@ -427,6 +427,7 @@ contains
     rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * &
         real(1-rproblem%rphysics%iequation,DP)
         
+    rnonlinearCCMatrix%djota = -rtimestepping%dweightMatrixRHS
     rnonlinearCCMatrix%deta = 0.0_DP
     rnonlinearCCMatrix%dtau = 0.0_DP
 
@@ -484,8 +485,8 @@ contains
     rnonlinearIterationTmp%dgamma = rtimestepping%dweightMatrixLHS * &
         real(1-rproblem%rphysics%iequation,DP)
     rnonlinearIterationTmp%dtau   = 1.0_DP
-    rnonlinearIterationTmp%dmu    = rtimestepping%dweightMatrixLHS
-    rnonlinearIterationTmp%dkappa = rtimestepping%dweightMatrixLHS
+    rnonlinearIterationTmp%dmu    = 1.0_DP
+    rnonlinearIterationTmp%dkappa = 1.0_DP
     rnonlinearIterationTmp%djota  = rtimestepping%dweightMatrixLHS
 
     ! For fully implicit pressure, just use the timestep size.

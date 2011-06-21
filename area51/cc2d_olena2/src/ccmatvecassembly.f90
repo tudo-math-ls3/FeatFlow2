@@ -1897,11 +1897,13 @@ contains
         ! Fixed convection
         call stdop_assembleSimpleMatrix (rmatrix%RmatrixBlock(4,4),&
             DER_DERIV_X,DER_FUNC,&
-            rnonlinearCCMatrix%djota*rproblem%rphysics%dconvectionBeta1,bclear=.false.)
+            rnonlinearCCMatrix%djota*rproblem%rphysics%dconvectionBeta1,&
+            bclear=.false.)
 
         call stdop_assembleSimpleMatrix (rmatrix%RmatrixBlock(4,4),&
             DER_DERIV_Y,DER_FUNC,&
-            rnonlinearCCMatrix%djota*rproblem%rphysics%dconvectionBeta2,bclear=.false.)
+            rnonlinearCCMatrix%djota*rproblem%rphysics%dconvectionBeta2,&
+            bclear=.false.)
 
         ! ---------------------------------------------------
         ! That was easy -- the adventure begins now... The nonlinearity!
@@ -2880,13 +2882,15 @@ contains
       type(t_vectorBlock) :: rvectorTempBlock,rdefectTempBlock
       type(t_collection) :: rcollection
       type(t_bilinearForm) :: rform
+      real(DP), dimension(:), pointer :: p_Ddata
 
       ! TO BE MODIFIED!
   
       ! Generate Laplace+convection operator
       call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(4,4),&
           rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
+      call lsyssc_getbase_double (rmatrixTemp,p_Ddata)
+      
       ! Mass for time-dependent problems!
       call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMassConcentration,&
@@ -2906,15 +2910,17 @@ contains
 
       ! Constant convection
       call stdop_assembleSimpleMatrix (rmatrixTemp,&
-          DER_DERIV_X,DER_FUNC,rproblem%rphysics%dconvectionBeta1,bclear=.false.)
+          DER_DERIV_X,DER_FUNC,&
+          rnonlinearCCMatrix%djota * rproblem%rphysics%dconvectionBeta1,bclear=.false.)
       call stdop_assembleSimpleMatrix (rmatrixTemp,&
-          DER_DERIV_Y,DER_FUNC,rproblem%rphysics%dconvectionBeta2,bclear=.false.)
+          DER_DERIV_Y,DER_FUNC,&
+          rnonlinearCCMatrix%djota * rproblem%rphysics%dconvectionBeta2,bclear=.false.)
 
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
       if (rproblem%rphysics%dconvectionWeight .ne. 0.0_DP) then
       
-        rform%itermCount = 2
+        rform%itermCount = 1
         rform%Idescriptors(1,1) = DER_DERIV_X
         rform%Idescriptors(2,1) = DER_FUNC
         rform%Idescriptors(1,2) = DER_DERIV_Y
@@ -2925,7 +2931,8 @@ contains
         rform%Dcoefficients(1)  = 1.0 
         rform%Dcoefficients(2)  = 1.0 
         
-        rcollection%DquickAccess(1) = rproblem%rphysics%dconvectionWeight
+        rcollection%DquickAccess(1) = &
+            rnonlinearCCMatrix%djota * rproblem%rphysics%dconvectionWeight
         rcollection%p_rvectorQuickAccess1 => rvelocityVector
         
         call bilf_buildMatrixScalar2 (rform, .false., rmatrixTemp,&
@@ -3043,8 +3050,8 @@ contains
       
     do j=1,ubound(Dcoefficients,3)
       do i=1,ubound(Dcoefficients,2)
-        Dcoefficients(1,i,j) = p_Dvalues(i,j,1)
-        Dcoefficients(2,i,j) = p_Dvalues(i,j,2)
+        Dcoefficients(1,i,j) = dconvectionWeight * p_Dvalues(i,j,1)
+        Dcoefficients(2,i,j) = dconvectionWeight * p_Dvalues(i,j,2)
       end do
     end do
     
