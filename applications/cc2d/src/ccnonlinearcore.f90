@@ -661,8 +661,8 @@ contains
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
       rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
-      rnonlinearCCMatrix%deta = 1.0_DP
-      rnonlinearCCMatrix%dtau = 1.0_DP
+      rnonlinearCCMatrix%deta = rnonlinearIteration%deta
+      rnonlinearCCMatrix%dtau = rnonlinearIteration%dtau
       
       call cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP,rproblem)        
       
@@ -851,8 +851,8 @@ contains
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
       rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
-      rnonlinearCCMatrix%deta = 1.0_DP
-      rnonlinearCCMatrix%dtau = 1.0_DP
+      rnonlinearCCMatrix%deta = rnonlinearIteration%deta
+      rnonlinearCCMatrix%dtau = rnonlinearIteration%dtau
 
       ! Assemble the matrix.        
       call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -1407,8 +1407,8 @@ contains
           rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
           rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
           if (bassembleNewton) rnonlinearCCMatrix%dnewton = rnonlinearIteration%dgamma
-          rnonlinearCCMatrix%deta = 1.0_DP
-          rnonlinearCCMatrix%dtau = 1.0_DP
+          rnonlinearCCMatrix%deta = rnonlinearIteration%deta
+          rnonlinearCCMatrix%dtau = rnonlinearIteration%dtau
 
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
