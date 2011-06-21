@@ -261,7 +261,7 @@ drhsMultiplyY = 1.0
 # (QP1  = Quadrilateral discontinuous P1 element)
 # (E020 = non-conforming Crouzeix-Raviart element)
 
-ielementType = 3
+ielementType = 4
 
 # ------------------------------------------------------------------------
 
@@ -282,7 +282,7 @@ iUpwind = 0
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
 
-dUpsam = 1.0
+dUpsam = 0.0
 
 # 2nd Relaxation parameter in the jump stabilisation. Standard = 0.
 
