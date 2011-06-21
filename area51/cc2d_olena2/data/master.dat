@@ -78,7 +78,7 @@ ielementType = 4
 
 [CC-CONCENTREQUATION]
 
-ddiffusionWeight = 0.001
+ddiffusionWeight = 0.01
 dconvectionWeight = 1.0
 dconvectionBeta1 = 0.000
 dconvectionBeta2 = 0.000
@@ -90,6 +90,6 @@ dkappaWeight = 0.0
 itimedependence = 1
 niterations = 10000                  
 dtimeInit = 0.0                      
-dtimeMax = 1.0                
+dtimeMax = 20.0                
 dtimeStep = 0.05
 dtimeStepTheta = 0.5
