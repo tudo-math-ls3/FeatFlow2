@@ -338,6 +338,33 @@ module ccbasic
     
     ! Yield stress for Bingham fluid
     real(DP) :: dviscoYield
+    
+    !<!--    
+    !        Weights for the concentration equation and additional terms
+    !        in the continuity equation
+    !-->
+    
+    ! Weight for the diffusion in the concentration equation
+    real(DP) :: ddiffusionWeight = 1.0
+
+    ! Weight for the convection in the concentration equation
+    real(DP) :: dconvectionWeight = 1.0
+
+    ! Constant convection, X and Y direction, for debugging purposes.
+    ! NOT weighted by dconvectionWeight!!!
+
+    real(DP) :: dconvectionBeta1 = 0.0
+    real(DP) :: dconvectionBeta2 = 0.0
+
+    ! Weight for the reaction term in the concentration equation
+    real(DP) :: dreactionWeight = 1.0
+
+    ! Weight for pressure in the continuity equation
+    real(DP) :: dmuWeight = 1.0
+
+    ! Weight for the concentration to be included into the
+    ! continuity equation
+    real(DP) :: dkappaWeight = 1.0
 
   end type
 

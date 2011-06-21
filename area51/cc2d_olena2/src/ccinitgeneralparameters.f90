@@ -241,6 +241,29 @@ contains
     
     rproblem%rphysics%dnu = 1.0_DP/rproblem%rphysics%dnu
     
+    ! Read the parameters of the concentration equation
+    
+    call parlst_getvalue_double (rproblem%rparamList,'CC-CONCENTREQUATION',&
+                                 'ddiffusionWeight',rproblem%rphysics%ddiffusionWeight,1.0_DP)
+    
+    call parlst_getvalue_double (rproblem%rparamList,'CC-CONCENTREQUATION',&
+                                 'dconvectionWeight',rproblem%rphysics%dconvectionWeight,1.0_DP)
+
+    call parlst_getvalue_double (rproblem%rparamList,'CC-CONCENTREQUATION',&
+                                 'dconvectionBeta1',rproblem%rphysics%dconvectionBeta1,0.0_DP)
+    
+    call parlst_getvalue_double (rproblem%rparamList,'CC-CONCENTREQUATION',&
+                                 'dconvectionBeta2',rproblem%rphysics%dconvectionBeta2,0.0_DP)
+    
+    call parlst_getvalue_double (rproblem%rparamList,'CC-CONCENTREQUATION',&
+                                 'dreactionWeight',rproblem%rphysics%dreactionWeight,1.0_DP)
+    
+    call parlst_getvalue_double (rproblem%rparamList,'CC-CONCENTREQUATION',&
+                                 'dmuWeight',rproblem%rphysics%dmuWeight,1.0_DP)
+                                 
+    call parlst_getvalue_double (rproblem%rparamList,'CC-CONCENTREQUATION',&
+                                 'dkappaWeight',rproblem%rphysics%dkappaWeight,1.0_DP)
+    
   end subroutine
 
   ! ***************************************************************************

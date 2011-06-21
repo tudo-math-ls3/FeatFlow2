@@ -817,12 +817,9 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: cmatBuildType,istrongDerivativeBmatrix
+  integer :: cmatBuildType
   integer :: iprojTypeVelocity, iprojTypePressure
   
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
-    
     ! Get the projection types
     call parlst_getvalue_int (rproblem%rparamList, 'CC-PROLREST', &
         'IPROJTYPEVELOCITY', iprojTypeVelocity, 0)
@@ -1027,16 +1024,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: j,istrongDerivativeBmatrix
+    integer :: j
 
     ! Structure for a precomputed jump stabilisation matrix
     type(t_jumpStabilisation) :: rjumpStabil
     
     ! Structure for the bilinear form for assembling Stokes,...
     ! TYPE(t_bilinearForm) :: rform
-
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
 
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
@@ -1102,60 +1096,34 @@ contains
     ! These are build either as "int p grad(phi)" (standard case)
     ! or as "int grad(p) phi" (special case, only for nonconstant pressure).
     
-    if (istrongDerivativeBmatrix .eq. 0) then
+    ! Build the first pressure matrix B1.
+    call stdop_assembleSimpleMatrix (rasmTempl%rmatrixB1,&
+        DER_FUNC,DER_DERIV_X,-1.0_DP)
 
-      ! Standard case.
+    ! Build the second pressure matrix B2.
+    call stdop_assembleSimpleMatrix (rasmTempl%rmatrixB2,&
+        DER_FUNC,DER_DERIV_Y,-1.0_DP)
+        
+    ! Copy the B-matrices toi the DxT matrices in case we use
+    ! virtually transposed matrices.
+    ! Switch the sign of the D-matrices, so we have +divergence
+    ! instead of -divergence!
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixB1,&
+        rasmTempl%rmatrixD1T,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixB2,&
+        rasmTempl%rmatrixD2T,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+
+    call lsyssc_scaleMatrix (rasmTempl%rmatrixD1T,-1.0_DP)
+    call lsyssc_scaleMatrix (rasmTempl%rmatrixD2T,-1.0_DP)
     
-      ! Build the first pressure matrix B1.
-      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixB1,&
-          DER_FUNC,DER_DERIV_X,-1.0_DP)
+    ! Set up the matrices D1 and D2 by transposing B1 and B2.
+    ! For that purpose, virtually transpose B1/B2.
+    call lsyssc_transposeMatrix (rasmTempl%rmatrixD1T,&
+        rasmTempl%rmatrixD1,LSYSSC_TR_CONTENT)
 
-      ! Build the second pressure matrix B2.
-      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixB2,&
-          DER_FUNC,DER_DERIV_Y,-1.0_DP)
-      
-      ! Set up the matrices D1 and D2 by transposing B1 and B2.
-      ! For that purpose, virtually transpose B1/B2.
-      call lsyssc_transposeMatrix (rasmTempl%rmatrixB1,&
-          rasmTempl%rmatrixD1,LSYSSC_TR_CONTENT)
-
-      call lsyssc_transposeMatrix (rasmTempl%rmatrixB2,&
-          rasmTempl%rmatrixD2,LSYSSC_TR_CONTENT)
-          
-    else if (istrongDerivativeBmatrix .eq. 1) then
-    
-      ! Special case for nonconstant pressure.
-    
-      ! Build the first pressure matrix B1.
-      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixB1,&
-          DER_DERIV_X,DER_FUNC,1.0_DP)
-
-      ! Build the second pressure matrix B2.
-      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixB2,&
-          DER_DERIV_Y,DER_FUNC,1.0_DP)
-      
-      ! Build the first divergence matrix D1
-      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixD1,&
-          DER_FUNC,DER_DERIV_X,-1.0_DP)
-
-      ! Build the second divergence matrix D2
-      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixD2,&
-          DER_FUNC,DER_DERIV_Y,-1.0_DP)
-          
-      ! Set up the D1^T and D2^T matrices as transposed D1 and D2.
-      ! We have to allocate separate memory for that.
-      call lsyssc_allocEmptyMatrix(rasmTempl%rmatrixD1T,LSYSSC_SETM_UNDEFINED)
-      call lsyssc_allocEmptyMatrix(rasmTempl%rmatrixD2T,LSYSSC_SETM_UNDEFINED)
-      
-      ! Transpose only the content, the structure is the same as B1 and B2.
-      call lsyssc_transposeMatrix (rasmTempl%rmatrixD1,&
-          rasmTempl%rmatrixD1T,LSYSSC_TR_CONTENT)
-
-      call lsyssc_transposeMatrix (rasmTempl%rmatrixD2,&
-          rasmTempl%rmatrixD2T,LSYSSC_TR_CONTENT)
-          
-    end if
-                              
+    call lsyssc_transposeMatrix (rasmTempl%rmatrixD2T,&
+        rasmTempl%rmatrixD2,LSYSSC_TR_CONTENT)
+        
     ! -----------------------------------------------------------------------
     ! Fast edge-oriented stabilisation
     ! -----------------------------------------------------------------------

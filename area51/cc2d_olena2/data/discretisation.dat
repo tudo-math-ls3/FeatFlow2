@@ -261,7 +261,7 @@ drhsMultiplyY = 1.0
 # (QP1  = Quadrilateral discontinuous P1 element)
 # (E020 = non-conforming Crouzeix-Raviart element)
 
-ielementType = 4
+ielementType = 3
 
 # ------------------------------------------------------------------------
 
@@ -317,13 +317,6 @@ iMass              = 1
 # Type of lumping of the mass matrix. 0=usual lumping,1=diagonal lumping
 iMassLumpType      = 0
 
-# Construction of the divergence/gradient (B-) matrices.
-# =0: Create gradient matrix by weak derivative integral (standard, div=B^T)
-# =1: Create gradient matrix by strong derivative integral (div!=B^T).
-#     Only possible for non-constant pressure functions (e.g. Q2/QP1 discretisation)
-
-istrongDerivativeBmatrix = 0
-
 # cubature formula for Mass matrix. 
 # ="": use default cubature formula.
 
@@ -376,6 +369,39 @@ dAdMatThreshold    = 20.0
 # restriction) that should be used when a solution must be projected
 # to a higher or lower level in the discretisation
 # (e.g. when solving with a multigrid solver).
+
+
+#####################
+[CC-CONCENTREQUATION]
+#####################
+
+# Weight for the diffusion in the concentration equation
+
+ddiffusionWeight = 1.0
+
+# Weight for the convection in the concentration equation
+
+dconvectionWeight = 1.0
+
+# Constant convection, X and Y direction, for debugging purposes.
+# NOT weighted by dconvectionWeight!!!
+
+dconvectionBeta1 = 0.0
+dconvectionBeta2 = 0.0
+
+# Weight for the reaction term in the concentration equation
+
+dreactionWeight = 1.0
+
+# Weight for pressure in the continuity equation
+
+dmuWeight = 1.0
+
+# Weight for the concentration to be included into the
+# continuity equation
+
+dkappaWeight = 1.0
+
 
 #############
 [CC-PROLREST]

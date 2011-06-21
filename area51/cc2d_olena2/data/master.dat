@@ -65,3 +65,17 @@ simportdatafiles(8) =
 #
 # which will overwrite the three parameters NLMIN, NLMAX and RE
 # from the original set of DAT files read in simportdatafiles.
+
+[CC-DISCRETISATION]
+ielementType = 4
+
+
+[CC-CONCENTREQUATION]
+
+ddiffusionWeight = 0.0001
+dconvectionWeight = 1.0
+dconvectionBeta1 = 0.000
+dconvectionBeta2 = 0.000
+dreactionWeight = 0.0
+dmuWeight = 0.0
+dkappaWeight = 0.0

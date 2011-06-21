@@ -1764,13 +1764,17 @@ contains
 
       real(DP) :: dweight1
       
-      dweight1 = 0.0_DP !0.5_DP
+      ! Get the weight of the mass matrix from the physics-structure
+      dweight1 = rproblem%rphysics%dmuWeight
 
       ! For the moment, there cannot be found much in P. 
       ! If the matrix exists (scale factor <> 0), we clear the
       ! content, otherwise we ignore it.
       if (rmatrix%RmatrixBlock(3,3)%dscaleFactor .ne. 0.0_DP) then
+      
         call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
+        
+        ! rnonlinearCCMatrix%dmu defines the weight for the timestepping!
 
         ! TO BE MODIFIED!
         call lsyssc_matrixLinearComb (&
@@ -1779,6 +1783,12 @@ contains
               rmatrix%RmatrixBlock(3,3),1.0_DP,&
               rmatrix%RmatrixBlock(3,3),&
               .false.,.false.,.true.,.true.)          
+      
+      else
+        
+        call output_line ("No mass matrix?!?", &
+            OU_CLASS_ERROR,OU_MODE_STD,'assemblePressureMatrix')
+        call sys_halt()
         
       end if
                                     
@@ -1806,19 +1816,29 @@ contains
 
       real(DP) :: dweight2
       
-      dweight2 = -0.3_DP
+      ! Get the weight of the mass matrix from the physics-structure
+      dweight2 = rproblem%rphysics%dkappaWeight
 
       ! For the moment, there cannot be found much in K. 
       ! If the matrix exists (scale factor <> 0), we clear the
       ! content, otherwise we ignore it.
       if (rmatrix%RmatrixBlock(3,4)%dscaleFactor .ne. 0.0_DP) then
+      
         call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,4))
 
+        ! rnonlinearCCMatrix%dkappa defines the weight for the timestepping!
+      
         ! TO BE MODIFIED!
         call stdop_assembleSimpleMatrix (rmatrix%RmatrixBlock(3,4),&
             DER_DERIV_X,DER_FUNC,&
             rnonlinearCCMatrix%dkappa*dweight2*rmatrix%RmatrixBlock(3,4)%dscaleFactor,&
             bclear=.false.)
+        
+      else
+        
+        call output_line ("No mass matrix?!?", &
+            OU_CLASS_ERROR,OU_MODE_STD,'assemblePressureMatrix')
+        call sys_halt()
         
       end if
                                     
@@ -1842,18 +1862,26 @@ contains
     type(t_problem), intent(inout), target :: rproblem
 
     ! Solution vector
-    type(t_vectorBlock), intent(in), optional :: rvector
+    type(t_vectorBlock), intent(in), target, optional :: rvector
+    
+      ! local variables
+      type(t_convStreamDiff2) :: rstreamlineDiffusion2
+      type(t_matrixBlock) :: rmatrixTempBlock
+      type(t_collection) :: rcollection
+      type(t_bilinearForm) :: rform
 
       ! For the moment, there cannot be found much in C. 
       ! If the matrix exists (scale factor <> 0), we clear the
       ! content, otherwise we ignore it.
       if (rmatrix%RmatrixBlock(4,4)%dscaleFactor .ne. 0.0_DP) then
+      
         call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,4))
 
         ! Mass for time-dependent problems!
         call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixMassConcentration,&
-              rnonlinearCCMatrix%dalpha,&
+              rnonlinearCCMatrix%dalpha &
+              + rnonlinearCCMatrix%djota*rproblem%rphysics%dreactionWeight,&
               rmatrix%RmatrixBlock(4,4),1.0_DP,&
               rmatrix%RmatrixBlock(4,4),&
               .false.,.false.,.true.,.true.)          
@@ -1861,21 +1889,55 @@ contains
         ! Assemble convection+Laplace        
         call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixLaplaceConcentration,&
-              rnonlinearCCMatrix%djota*0.0001_DP,&
+              rnonlinearCCMatrix%djota*rproblem%rphysics%ddiffusionWeight,&
               rmatrix%RmatrixBlock(4,4),1.0_DP,&
               rmatrix%RmatrixBlock(4,4),&
               .false.,.false.,.true.,.true.)          
 
+        ! Fixed convection
         call stdop_assembleSimpleMatrix (rmatrix%RmatrixBlock(4,4),&
             DER_DERIV_X,DER_FUNC,&
-            rnonlinearCCMatrix%djota*0.01_DP,bclear=.false.)
+            rnonlinearCCMatrix%djota*rproblem%rphysics%dconvectionBeta1,bclear=.false.)
+
+        call stdop_assembleSimpleMatrix (rmatrix%RmatrixBlock(4,4),&
+            DER_DERIV_Y,DER_FUNC,&
+            rnonlinearCCMatrix%djota*rproblem%rphysics%dconvectionBeta2,bclear=.false.)
+
+        ! ---------------------------------------------------
+        ! That was easy -- the adventure begins now... The nonlinearity!
+        if (rproblem%rphysics%dconvectionWeight .ne. 0.0_DP) then
+        
+          if (.not. present(rvector)) then
+            call output_line ('Velocity vector not present!', &
+                              OU_CLASS_ERROR,OU_MODE_STD,'assembleConcentrationMatrix')
+            stop
+          end if
+        
+          ! ---------------------------------------------------
+          ! That was easy -- the adventure begins now... The nonlinearity!
+          if (rproblem%rphysics%dconvectionWeight .ne. 0.0_DP) then
+          
+            rform%itermCount = 2
+            rform%Idescriptors(1,1) = DER_DERIV_X
+            rform%Idescriptors(2,1) = DER_FUNC
+            rform%Idescriptors(1,2) = DER_DERIV_Y
+            rform%Idescriptors(2,2) = DER_FUNC
+
+            rform%ballCoeffConstant = .false.
+            rform%BconstantCoeff = .false.
+            rform%Dcoefficients(1)  = 1.0 
+            rform%Dcoefficients(2)  = 1.0 
             
-        ! Current implementation: Laplace.
-        !call lsyssc_matrixLinearComb (&
-        !    rnonlinearCCMatrix%p_rasmTempl%rmatrixLaplaceConcentration,1.0_DP,&
-        !    rmatrix%RmatrixBlock(4,4),0.0_DP,&
-        !    rmatrix%RmatrixBlock(4,4),&
-        !    .false.,.false.,.true.,.true.)
+            rcollection%DquickAccess(1) = &
+                rnonlinearCCMatrix%djota * rproblem%rphysics%dconvectionWeight
+            rcollection%p_rvectorQuickAccess1 => rvector
+            
+            call bilf_buildMatrixScalar2 (rform, .false., rmatrix%RmatrixBlock(4,4),&
+                fcoeff_convection,rcollection)
+
+          end if
+          
+        end if
         
       end if
                                     
@@ -2724,8 +2786,8 @@ contains
 
       real(DP) :: dweight1, dweight2
       
-      dweight1 = 0.0_DP !0.5_DP
-      dweight2 = -0.3_DP
+      dweight1 = rproblem%rphysics%dmuWeight
+      dweight2 = rproblem%rphysics%dkappaWeight
 
       ! TO BE MODIFIED!
 
@@ -2737,8 +2799,9 @@ contains
       
       ! Pressure mass matrix
       call lsyssc_matrixLinearComb (&
-            rnonlinearCCMatrix%p_rasmTempl%rmatrixMassPressure,dweight1,&
-            rmatrixTemp,rnonlinearCCMatrix%dmu,&
+            rnonlinearCCMatrix%p_rasmTempl%rmatrixMassPressure,&
+                rnonlinearCCMatrix%dmu*dweight1,&
+            rmatrixTemp,0.0_DP,&
             rmatrixTemp,&
             .false.,.false.,.true.,.true.)          
 
@@ -2811,7 +2874,12 @@ contains
     ! Standard problem structure that defines all underlying parameters.
     type(t_problem), intent(inout), target :: rproblem
 
+      ! local variables
       type(t_matrixScalar) :: rmatrixTemp
+      type(t_matrixBlock) :: rmatrixTempBlock
+      type(t_vectorBlock) :: rvectorTempBlock,rdefectTempBlock
+      type(t_collection) :: rcollection
+      type(t_bilinearForm) :: rform
 
       ! TO BE MODIFIED!
   
@@ -2822,7 +2890,8 @@ contains
       ! Mass for time-dependent problems!
       call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMassConcentration,&
-            rnonlinearCCMatrix%dalpha,&
+            rnonlinearCCMatrix%dalpha &
+            + rnonlinearCCMatrix%djota*rproblem%rphysics%dreactionWeight,&
             rmatrixTemp,0.0_DP,&
             rmatrixTemp,&
             .false.,.false.,.true.,.true.)          
@@ -2830,13 +2899,39 @@ contains
       ! Generate Laplace+convection operator
       call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixLaplaceConcentration,&
-            rnonlinearCCMatrix%djota*0.0001_DP,&
+            rnonlinearCCMatrix%djota*rproblem%rphysics%ddiffusionWeight,&
             rmatrixTemp,1.0_DP,&
             rmatrixTemp,&
             .false.,.false.,.true.,.true.)          
 
+      ! Constant convection
       call stdop_assembleSimpleMatrix (rmatrixTemp,&
-          DER_DERIV_X,DER_FUNC,rnonlinearCCMatrix%djota*0.01_DP,bclear=.false.)
+          DER_DERIV_X,DER_FUNC,rproblem%rphysics%dconvectionBeta1,bclear=.false.)
+      call stdop_assembleSimpleMatrix (rmatrixTemp,&
+          DER_DERIV_Y,DER_FUNC,rproblem%rphysics%dconvectionBeta2,bclear=.false.)
+
+      ! ---------------------------------------------------
+      ! That was easy -- the adventure begins now... The nonlinearity!
+      if (rproblem%rphysics%dconvectionWeight .ne. 0.0_DP) then
+      
+        rform%itermCount = 2
+        rform%Idescriptors(1,1) = DER_DERIV_X
+        rform%Idescriptors(2,1) = DER_FUNC
+        rform%Idescriptors(1,2) = DER_DERIV_Y
+        rform%Idescriptors(2,2) = DER_FUNC
+
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff = .false.
+        rform%Dcoefficients(1)  = 1.0 
+        rform%Dcoefficients(2)  = 1.0 
+        
+        rcollection%DquickAccess(1) = rproblem%rphysics%dconvectionWeight
+        rcollection%p_rvectorQuickAccess1 => rvelocityVector
+        
+        call bilf_buildMatrixScalar2 (rform, .false., rmatrixTemp,&
+            fcoeff_convection,rcollection)
+
+      end if
 
       call lsyssc_scalarMatVec (rmatrixTemp, &
           rvector%RvectorBlock(4), rdefect%RvectorBlock(4), &
@@ -2847,5 +2942,115 @@ contains
     end subroutine
     
   end subroutine
+  
+! ***************************************************************************
+  !<subroutine>
+
+  subroutine fcoeff_convection (rdiscretisationTrial,rdiscretisationTest,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in)                            :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+    
+    ! An array accepting the DOF`s on all elements in the trial space.
+    ! DIMENSION(#local DOF`s in trial space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    real(DP) :: dconvectionWeight
+    real(DP), dimension(:,:,:), allocatable :: p_Dvalues
+    integer :: i,j
+  
+    dconvectionWeight = rcollection%DquickAccess(1)
+    p_rvector => rcollection%p_RvectorQuickAccess1
+    allocate (p_Dvalues(ubound(Dcoefficients,2),ubound(Dcoefficients,3),2))
+
+    call fevl_evaluate_sim (DER_FUNC, p_Dvalues(:,:,1), &
+        p_rvector%Rvectorblock(1), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+    call fevl_evaluate_sim (DER_FUNC, p_Dvalues(:,:,2), &
+        p_rvector%Rvectorblock(2), Dpoints, &
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+      
+    do j=1,ubound(Dcoefficients,3)
+      do i=1,ubound(Dcoefficients,2)
+        Dcoefficients(1,i,j) = p_Dvalues(i,j,1)
+        Dcoefficients(2,i,j) = p_Dvalues(i,j,2)
+      end do
+    end do
+    
+    deallocate (p_Dvalues)
+
+  end subroutine
+  
 
 end module
