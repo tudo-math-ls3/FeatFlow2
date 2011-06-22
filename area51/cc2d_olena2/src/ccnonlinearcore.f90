@@ -1082,10 +1082,10 @@ contains
               ! whether to use Newton or not.
               dresInit = sqrt(rnonlinearIteration%DresidualInit(1)**2 + &
                               rnonlinearIteration%DresidualInit(2)**2 + &
-                              rnonlinearIteration%DresidualInit(4)**2 )
+                              rnonlinearIteration%DresidualInit(3)**2 )
               dres    = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
                              rnonlinearIteration%DresidualOld(2)**2 + &
-                             rnonlinearIteration%DresidualOld(4)**2 )
+                             rnonlinearIteration%DresidualOld(3)**2 )
               if ((dres .lt. p_rnewton%depsAbsNewton) .and. &
                   (dres .lt. p_rnewton%depsRelNewton * dresInit)) then
                 bassembleNewton = .true.
@@ -1154,10 +1154,10 @@ contains
             ! Calculate the new absolute stopping criterion:
             dresInit = sqrt(rnonlinearIteration%DresidualInit(1)**2 + &
                             rnonlinearIteration%DresidualInit(2)**2 + &
-                            rnonlinearIteration%DresidualInit(4)**2 )
+                            rnonlinearIteration%DresidualInit(3)**2 )
             dres    = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
                            rnonlinearIteration%DresidualOld(2)**2 + &
-                           rnonlinearIteration%DresidualOld(4)**2 )
+                           rnonlinearIteration%DresidualOld(3)**2 )
             
             dtempdef = dres / dresInit
             
