@@ -2920,7 +2920,7 @@ contains
       ! That was easy -- the adventure begins now... The nonlinearity!
       if (rproblem%rphysics%dconvectionWeight .ne. 0.0_DP) then
       
-        rform%itermCount = 1
+        rform%itermCount = 2
         rform%Idescriptors(1,1) = DER_DERIV_X
         rform%Idescriptors(2,1) = DER_FUNC
         rform%Idescriptors(1,2) = DER_DERIV_Y
