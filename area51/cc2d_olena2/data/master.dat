@@ -68,37 +68,48 @@ simportdatafiles(8) =
 
 [BDEXPRESSIONS]
 bdExpressions(3) =
-  'Dirichlet0'     0    0.0
-  'Dirichlet1'     0    1.0
-  'ParProfile'     2    1.5
+  'SOLU1'     -1    'TIME*X^2'
+  'SOLU2'     -1    'TIME*Y^2'
+  'SOLC'      -1    'TIME*(X^2+Y^2)'
   
 [BDCONDITIONS]
+ineumannBoundary = 1
+
 bdComponent1(1)=
-   4.0  3  0  
+   4.0  3  1  'SOLU1' 'SOLU2' 'SOLC'
 
-bdComponent2(1)=
-   4.0  3  1  'Dirichlet0'  'Dirichlet0' 'Dirichlet1'   # Complete boundary component Dirichlet-0 boundary
-
+[PARAMTRIANG]
+sParametrisation = '%{spredirectory}/QUAD.prm'
+sMesh = '%{spredirectory}/QUAD.tri'
 
 [CC-DISCRETISATION]
+NLMAX = 5
 RE = 1
 ielementType = 4
-
+iequation    = 1
 
 [CC-CONCENTREQUATION]
-
-ddiffusionWeight = 0.001
+ddiffusionWeight = 1.0
 dconvectionWeight = 1.0
-dconvectionBeta1 = 0.000
-dconvectionBeta2 = 0.000
-dreactionWeight = 0.0
-dmuWeight = 0.1
-dkappaWeight = 0.1
+dconvectionBeta1 = 0.0
+dconvectionBeta2 = 0.0
+dreactionWeight = 1.0
+dmuWeight = 1.0
+dkappaWeight = 1.0
 
 [TIME-DISCRETISATION]
-itimedependence = 1
+itimedependence = 0
 niterations = 10000                  
-dtimeInit = 0.0                      
+dtimeInit = 0.0
 dtimeMax = 20.0                
-dtimeStep = 0.05
-dtimeStepTheta = 0.5
+dtimeStep = 1.0
+dtimeStepTheta = 1.0
+
+[CC-POSTPROCESSING]
+ierrorAnalysisL2 = 0
+
+[CC2D-NONLINEAR]
+depsD              = 1.0E-13
+depsDiv            = 1.0E-13
+depsC              = 1.0E-13
+nmaxIterations     = 20

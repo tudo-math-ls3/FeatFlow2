@@ -553,16 +553,18 @@ contains
   !</subroutine>
   
     ! local variables
-    real(DP) :: dtime
+    real(DP) :: dtime,dtimedep
     real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
     real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    if (present(rcollection)) then
+    if (rcollection%Iquickaccess(1) .eq. 1) then
       dtime = rcollection%Dquickaccess(1)
+      dtimedep = 1.0_DP
     else
-      dtime = 0.0_DP
+      dtime = 1.0_DP
+      dtimedep = 0.0_DP
     end if
     
     ddiffusionWeight = rcollection%Dquickaccess(4) 
@@ -574,7 +576,11 @@ contains
     dkappaWeight = rcollection%Dquickaccess(10) 
     dnu = rcollection%Dquickaccess(11)
     
-    Dcoefficients(:,:,:) = 1.0_DP - 2.0_DP * dnu
+    ! Time-dependent reference:
+    !
+    ! dtime*(1.0_DP - 2.0_DP * dnu) + dtimedep * Dpoints(1,:,:)**2
+    
+    Dcoefficients(1,:,:) = 0.0_DP
 
   end subroutine
 
@@ -652,16 +658,18 @@ contains
   !</subroutine>
 
     ! local variables
-    real(DP) :: dtime
+    real(DP) :: dtime,dtimedep
     real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
     real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    if (present(rcollection)) then
+    if (rcollection%Iquickaccess(1) .eq. 1) then
       dtime = rcollection%Dquickaccess(1)
+      dtimedep = 1.0_DP
     else
-      dtime = 0.0_DP
+      dtime = 1.0_DP
+      dtimedep = 0.0_DP
     end if
     
     ddiffusionWeight = rcollection%Dquickaccess(4) 
@@ -673,7 +681,11 @@ contains
     dkappaWeight = rcollection%Dquickaccess(10) 
     dnu = rcollection%Dquickaccess(11)
     
-    Dcoefficients(:,:,:) = 1.0_DP - 2.0_DP * dnu
+    ! Time-dependent reference
+    !
+    ! dtime * (1.0_DP - 2.0_DP * dnu) + dtimedep*Dpoints(2,:,:)**2
+    
+    Dcoefficients(1,:,:) = 0.0_DP
 
   end subroutine
 
@@ -757,10 +769,10 @@ contains
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    if (present(rcollection)) then
+    if (rcollection%Iquickaccess(1) .eq. 1) then
       dtime = rcollection%Dquickaccess(1)
     else
-      dtime = 0.0_DP
+      dtime = 1.0_DP
     end if
     
     ddiffusionWeight = rcollection%Dquickaccess(4) 
@@ -771,10 +783,13 @@ contains
     dmuWeight = rcollection%Dquickaccess(9) 
     dkappaWeight = rcollection%Dquickaccess(10) 
     dnu = rcollection%Dquickaccess(11)
+
+    ! Time-dependent reference:
+    !
+    !   dtime* ( (Dpoints(1,:,:) + Dpoints(2,:,:)) * (2.0_DP + dmuWeight) + &
+    !   dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) )
     
-    Dcoefficients(1,:,:) = &
-        (Dpoints(1,:,:) + Dpoints(2,:,:)) * (2.0_DP + dmuWeight) + &
-        dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)
+    Dcoefficients(1,:,:) = 0.0_DP
 
   end subroutine
 
@@ -852,16 +867,18 @@ contains
   !</subroutine>
 
     ! local variables
-    real(DP) :: dtime
+    real(DP) :: dtime,dtimedep
     real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
     real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    if (present(rcollection)) then
+    if (rcollection%Iquickaccess(1) .eq. 1) then
       dtime = rcollection%Dquickaccess(1)
+      dtimedep = 1.0_DP
     else
-      dtime = 0.0_DP
+      dtime = 1.0_DP
+      dtimedep = 0.0_DP
     end if
     
     ddiffusionWeight = rcollection%Dquickaccess(4) 
@@ -872,11 +889,15 @@ contains
     dmuWeight = rcollection%Dquickaccess(9) 
     dkappaWeight = rcollection%Dquickaccess(10) 
     dnu = rcollection%Dquickaccess(11)
+
+    ! Time-dependent reference:
+    !
+    !   dconvectionWeight * 2.0_DP * dtime**2 * (Dpoints(1,:,:)**3 + Dpoints(2,:,:)**3) + &
+    !   dreactionWeight * dtime * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) + &
+    !   (-4.0_DP) * ddiffusionWeight * dtime + &
+    !   dtimedep * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)
     
-    Dcoefficients(1,:,:) = &
-        dconvectionWeight * 2.0_DP * (Dpoints(1,:,:)**3 + Dpoints(2,:,:)**3) + &
-        dreactionWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) + &
-        (-4.0_DP) * ddiffusionWeight
+    Dcoefficients(1,:,:) = 0.0
 
   end subroutine
 
@@ -1367,17 +1388,21 @@ contains
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    if (present(rcollection)) then
+    if (rcollection%Iquickaccess(1) .eq. 1) then
       dtime = rcollection%Dquickaccess(1)
       dtimeMax = rcollection%Dquickaccess(3)
       itimedependence = rcollection%Iquickaccess(1)
     else
       itimedependence = 0
-      dtime = 0.0_DP
+      dtime = 1.0_DP
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = Dpoints(1,:,:)**2
+    ! Time-dependent reference
+    !
+    !   dtime*Dpoints(1,:,:)**2
+
+    Dvalues(:,:) = 0.0_DP
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1465,17 +1490,21 @@ contains
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    if (present(rcollection)) then
+    if (rcollection%Iquickaccess(1) .eq. 1) then
       dtime = rcollection%Dquickaccess(1)
       dtimeMax = rcollection%Dquickaccess(3)
       itimedependence = rcollection%Iquickaccess(1)
     else
       itimedependence = 0
-      dtime = 0.0_DP
+      dtime = 1.0_DP
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = Dpoints(2,:,:)**2
+    ! Time-dependent reference:
+    !
+    !   dtime*Dpoints(2,:,:)**2
+
+    Dvalues(:,:) = 0.0_DP
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1563,17 +1592,21 @@ contains
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    if (present(rcollection)) then
+    if (rcollection%Iquickaccess(1) .eq. 1) then
       dtime = rcollection%Dquickaccess(1)
       dtimeMax = rcollection%Dquickaccess(3)
       itimedependence = rcollection%Iquickaccess(1)
     else
       itimedependence = 0
-      dtime = 0.0_DP
+      dtime = 1.0_DP
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)
+    ! Time-dependent reference:
+    !
+    !   dtime*(Dpoints(1,:,:)+Dpoints(2,:,:))
+
+    Dvalues(:,:) = 0.0_DP
 
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1661,17 +1694,21 @@ contains
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    if (present(rcollection)) then
+    if (rcollection%Iquickaccess(1) .eq. 1) then
       dtime = rcollection%Dquickaccess(1)
       dtimeMax = rcollection%Dquickaccess(3)
       itimedependence = rcollection%Iquickaccess(1)
     else
       itimedependence = 0
-      dtime = 0.0_DP
+      dtime = 1.0_DP
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2
+    ! Time-dependent reference
+    !
+    !    dtime*(Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)
+
+    Dvalues(:,:) = 0.0_DP
 
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -2049,7 +2086,7 @@ contains
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    if (present(rcollection)) then
+    if (rcollection%Iquickaccess(1) .eq. 1) then
       dtime = rcollection%Dquickaccess(1)
     else
       dtime = 0.0_DP
