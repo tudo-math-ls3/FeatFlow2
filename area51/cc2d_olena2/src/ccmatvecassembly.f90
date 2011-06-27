@@ -1830,7 +1830,7 @@ contains
       
         ! TO BE MODIFIED!
         call stdop_assembleSimpleMatrix (rmatrix%RmatrixBlock(3,4),&
-            DER_DERIV_X,DER_FUNC,&
+            DER_FUNC,DER_FUNC,&
             rnonlinearCCMatrix%dkappa*dweight2*rmatrix%RmatrixBlock(3,4)%dscaleFactor,&
             bclear=.false.)
         
@@ -2823,7 +2823,7 @@ contains
           
       ! K-matrix
       call stdop_assembleSimpleMatrix (rmatrixTemp,&
-          DER_DERIV_X,DER_FUNC,rnonlinearCCMatrix%dkappa*dweight2,bclear=.false.)
+          DER_FUNC,DER_FUNC,rnonlinearCCMatrix%dkappa*dweight2,bclear=.false.)
 
       call lsyssc_scalarMatVec (rmatrixTemp, &
           rvector%RvectorBlock(4), rdefect%RvectorBlock(3), &

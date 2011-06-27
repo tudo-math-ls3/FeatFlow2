@@ -455,8 +455,8 @@ contains
 !</subroutine>
     
     ! local variables
-    real(DP),dimension(3) :: Derr
-    real(DP) :: derrorVel, derrorP, denergy
+    real(DP),dimension(4) :: Derr
+    real(DP) :: derrorVel, derrorP, denergy, derrorC
     integer :: icalcL2,icalcH1,icalcEnergy
     integer :: iwriteErrorAnalysisL2,iwriteErrorAnalysisH1,iwriteKineticEnergy
     character(len=SYS_STRLEN) :: sfilenameErrorAnalysisL2
@@ -535,9 +535,15 @@ contains
                          ffunction_TargetP,rproblem%rcollection)
 
       derrorP = Derr(3)
+
+      call pperr_scalar (rsolution%RvectorBlock(4),PPERR_L2ERROR,Derr(4),&
+                         ffunction_TargetC,rproblem%rcollection)
+
+      derrorC = Derr(4)
       
       call output_line ('||u-reference||_L2 = '//trim(sys_sdEP(derrorVel,15,6)) )
       call output_line ('||p-reference||_L2 = '//trim(sys_sdEP(derrorP,15,6)) )
+      call output_line ('||c-reference||_L2 = '//trim(sys_sdEP(derrorC,15,6)) )
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
@@ -548,12 +554,13 @@ contains
             cflag, bfileExists,.true.)
         if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
           ! Write a headline
-          write (iunit,'(A)') '# timestep time ||u-reference||_L2 ||p-reference||_L2'
+          write (iunit,'(A)') '# timestep time ||u-reference||_L2 ||p-reference||_L2 ||c-reference||_L2'
         end if
         stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
             // trim(sys_sdEL(dtime,10)) // ' ' &
             // trim(sys_sdEL(derrorVel,10)) // ' ' &
-            // trim(sys_sdEL(derrorP,10))
+            // trim(sys_sdEL(derrorP,10)) // ' ' &
+            // trim(sys_sdEL(derrorC,10))
         write (iunit,'(A)') trim (stemp)
         close (iunit)
       end if

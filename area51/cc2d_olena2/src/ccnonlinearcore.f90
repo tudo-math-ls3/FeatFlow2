@@ -475,7 +475,7 @@ module ccnonlinearcore
     real(DP), dimension(5) :: DresidualCorr = 0.0_DP
     
     ! Auxiliary variable: Convergence criteria of the nonlinear solver
-    real(DP), dimension(5) :: DepsNL = 0.0_DP
+    real(DP), dimension(6) :: DepsNL = 0.0_DP
     
     ! Auxiliary variable: Last calculated damping parameter
     real(DP) :: domegaNL = 0.0_DP
@@ -1566,7 +1566,7 @@ contains
       ! local variables
       real(DP), dimension(5) :: Dresiduals
       real(DP) :: dresOld,drhoNL,ddelP,ddelU,dtmp,dresU,dresDIV,dres,dresINIT,dresC
-      real(DP) :: depsD,depsDiv,depsUR,depsPR,depsRES
+      real(DP) :: depsD,depsDiv,depsUR,depsPR,depsRES,depsC
       integer, dimension(5) :: Cnorms
 
       ! Calculate norms of the solution/defect vector
@@ -1669,15 +1669,16 @@ contains
         depsUR  = rnonlinearIteration%DepsNL(3)
         depsPR  = rnonlinearIteration%DepsNL(4)
         depsRES = rnonlinearIteration%DepsNL(5)*dresINIT ! -> ddampingD
+        depsC   = rnonlinearIteration%DepsNL(6)
         
         ! All residual information calculated.
         ! Check for divergence; use a 'NOT' for better NaN handling.
         bdivergence = .not. (dres/dresINIT .lt. 1E5)
         
         ! Check for convergence
-        if((ddelU .le. depsUR).and.(ddelP .le. depsPR)   .and. &
-           (dresU .le. depsD) .and.(dresDiv .le. depsDiv).and. &
-           (dres .le. depsRES)) then
+        if((ddelU .le. depsUR) .and. (ddelP .le. depsPR).and. &
+           (dresU .le. depsD)  .and. (dresC .le. depsC) .and. &
+           (dresDiv .le. depsDiv) .and. (dres .le. depsRES)) then
           bconvergence = .true.
         else
           bconvergence = .false.
@@ -1856,6 +1857,9 @@ contains
 
     call parlst_getvalue_double (p_rsection, 'depsDiv', &
                                  rnlSolver%DepsAbs(3), rnlSolver%DepsAbs(3))
+
+    call parlst_getvalue_double (p_rsection, 'depsC', &
+                                 rnlSolver%DepsAbs(4), rnlSolver%DepsAbs(4))
 
     ! Initial damping parameter.
     call parlst_getvalue_double (p_rsection, 'domegaIni', &

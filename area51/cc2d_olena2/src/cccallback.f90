@@ -264,6 +264,15 @@ contains
       rcollection%Dquickaccess(2) = rproblem%rtimedependence%dtimeInit
       rcollection%Dquickaccess(3) = rproblem%rtimedependence%dtimeMax
     end select
+    
+    rcollection%Dquickaccess(4) = rproblem%rphysics%ddiffusionWeight
+    rcollection%Dquickaccess(5) = rproblem%rphysics%dconvectionWeight
+    rcollection%Dquickaccess(6) = rproblem%rphysics%dconvectionBeta1
+    rcollection%Dquickaccess(7) = rproblem%rphysics%dconvectionBeta2
+    rcollection%Dquickaccess(8) = rproblem%rphysics%dreactionWeight
+    rcollection%Dquickaccess(9) = rproblem%rphysics%dmuWeight
+    rcollection%Dquickaccess(10) = rproblem%rphysics%dkappaWeight
+    rcollection%Dquickaccess(11) = rproblem%rphysics%dnu
 
   end subroutine
   
@@ -336,7 +345,6 @@ contains
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
     type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTest
-
     ! The bilinear form which is currently being evaluated:
     type(t_bilinearForm), intent(in)                            :: rform
     
@@ -546,6 +554,8 @@ contains
   
     ! local variables
     real(DP) :: dtime
+    real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
+    real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -555,7 +565,16 @@ contains
       dtime = 0.0_DP
     end if
     
-    Dcoefficients(:,:,:) = 0.0_DP
+    ddiffusionWeight = rcollection%Dquickaccess(4) 
+    dconvectionWeight = rcollection%Dquickaccess(5) 
+    dconvectionBeta1 = rcollection%Dquickaccess(6) 
+    dconvectionBeta2 = rcollection%Dquickaccess(7) 
+    dreactionWeight = rcollection%Dquickaccess(8) 
+    dmuWeight = rcollection%Dquickaccess(9) 
+    dkappaWeight = rcollection%Dquickaccess(10) 
+    dnu = rcollection%Dquickaccess(11)
+    
+    Dcoefficients(:,:,:) = 1.0_DP - 2.0_DP * dnu
 
   end subroutine
 
@@ -634,6 +653,8 @@ contains
 
     ! local variables
     real(DP) :: dtime
+    real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
+    real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -643,7 +664,16 @@ contains
       dtime = 0.0_DP
     end if
     
-    Dcoefficients(:,:,:) = 0.0_DP
+    ddiffusionWeight = rcollection%Dquickaccess(4) 
+    dconvectionWeight = rcollection%Dquickaccess(5) 
+    dconvectionBeta1 = rcollection%Dquickaccess(6) 
+    dconvectionBeta2 = rcollection%Dquickaccess(7) 
+    dreactionWeight = rcollection%Dquickaccess(8) 
+    dmuWeight = rcollection%Dquickaccess(9) 
+    dkappaWeight = rcollection%Dquickaccess(10) 
+    dnu = rcollection%Dquickaccess(11)
+    
+    Dcoefficients(:,:,:) = 1.0_DP - 2.0_DP * dnu
 
   end subroutine
 
@@ -722,6 +752,8 @@ contains
 
     ! local variables
     real(DP) :: dtime
+    real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
+    real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -731,7 +763,18 @@ contains
       dtime = 0.0_DP
     end if
     
-    Dcoefficients(:,:,:) = 0.0_DP
+    ddiffusionWeight = rcollection%Dquickaccess(4) 
+    dconvectionWeight = rcollection%Dquickaccess(5) 
+    dconvectionBeta1 = rcollection%Dquickaccess(6) 
+    dconvectionBeta2 = rcollection%Dquickaccess(7) 
+    dreactionWeight = rcollection%Dquickaccess(8) 
+    dmuWeight = rcollection%Dquickaccess(9) 
+    dkappaWeight = rcollection%Dquickaccess(10) 
+    dnu = rcollection%Dquickaccess(11)
+    
+    Dcoefficients(1,:,:) = &
+        (Dpoints(1,:,:) + Dpoints(2,:,:)) * (2.0_DP + dmuWeight) + &
+        dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)
 
   end subroutine
 
@@ -810,6 +853,8 @@ contains
 
     ! local variables
     real(DP) :: dtime
+    real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
+    real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -819,7 +864,19 @@ contains
       dtime = 0.0_DP
     end if
     
-    Dcoefficients(:,:,:) = 0.0_DP
+    ddiffusionWeight = rcollection%Dquickaccess(4) 
+    dconvectionWeight = rcollection%Dquickaccess(5) 
+    dconvectionBeta1 = rcollection%Dquickaccess(6) 
+    dconvectionBeta2 = rcollection%Dquickaccess(7) 
+    dreactionWeight = rcollection%Dquickaccess(8) 
+    dmuWeight = rcollection%Dquickaccess(9) 
+    dkappaWeight = rcollection%Dquickaccess(10) 
+    dnu = rcollection%Dquickaccess(11)
+    
+    Dcoefficients(1,:,:) = &
+        dconvectionWeight * 2.0_DP * (Dpoints(1,:,:)**3 + Dpoints(2,:,:)**3) + &
+        dreactionWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) + &
+        (-4.0_DP) * ddiffusionWeight
 
   end subroutine
 
@@ -1320,7 +1377,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = Dpoints(1,:,:)**2
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1418,7 +1475,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = Dpoints(2,:,:)**2
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1516,7 +1573,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)
 
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1614,7 +1671,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2
 
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN

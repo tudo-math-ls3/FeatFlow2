@@ -30,6 +30,10 @@ depsD              = 1.0E-5
 
 depsDiv            = 1.0E-5
 
+# (absolute) limit for C-defects, standard = 1.0E-5
+
+depsC              = 1.0E-5
+
 # limit for U-changes, standard = 1.0E-5
 
 depsUR             = 1.0E-5
