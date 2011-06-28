@@ -1,13 +1,13 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 4
+nlmax = 6
 
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-#prmname = ./pre/QUAD.prm
+prmname = ./pre/QUAD.prm
 #prmname = ./pre/rect_01x0.1_quads.prm
 #prmname = ./pre/quadm5t5.prm
 #prmname = ./pre/isentrvort.prm
@@ -19,24 +19,24 @@ nlmax = 4
 #prmname = ./pre/dedeobstacle.prm
 #prmname = ./pre/damv1.prm
 #prmname = ./pre/ramp_5deg_inlet_quads.prm
-prmname = ./pre/ramp_5deg_quads.prm
+#prmname = ./pre/ramp_5deg_quads.prm
 
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-#triname = ./pre/QUAD.tri
+triname = ./pre/QUAD.tri
 #triname = ./pre/rect_01x0.1_quads.tri
 #triname = ./pre/quadm5t5.tri
 #triname = ./pre/isentrvort.tri
 #triname = ./pre/zehnm.tri
-triname = ./pre/threezylindergrob.tri
+#triname = ./pre/threezylindergrob.tri
 #triname = ./pre/RECT2x1.tri
 #triname = ./pre/QUAD4x4.tri
 #triname = ./pre/bartsimpson.tri
 #triname = ./pre/dedeobstacle.tri
 #triname = ./pre/damv1.tri
 #triname = ./pre/ramp_5deg_inlet_quads.tri
-triname = ./pre/ramp_5deg_quads.tri
+#triname = ./pre/ramp_5deg_quads.tri
 
 # What kind of finite elements do we use?
 # 0: DG T0
@@ -44,16 +44,16 @@ triname = ./pre/ramp_5deg_quads.tri
 # 2: DG T2
 # 3: DG Q1
 # 4: DG Q2
-FEkind = 1
+FEkind = 2
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.001
+dt = 100000000.0
 
 # Final time
-ttfinal = 1.7
+ttfinal = 1.0
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -80,7 +80,7 @@ limiter = 0
 #  8: Implicit Euler equations
 #  9: Implicit linear convection Newton-like implementation
 # 10: Implicit Euler equations Newton-like implementation
-timestepping = 10
+timestepping = 9
 
 # What type to build the RHS
 rhstype = 1
@@ -107,7 +107,7 @@ gravconst = 1.0
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 0
+extrapoints = 3
 
 # Name of output file
 ofile = ./gmv/u2d

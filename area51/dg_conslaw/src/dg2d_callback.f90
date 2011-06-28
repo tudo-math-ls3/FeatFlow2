@@ -360,7 +360,17 @@ contains
     !    end do
     !    end do
 
+! Euler: Isentropic vortex
+dt = 1.0_dp
 
+do i = 1, size(Dvalues,1)
+    do j = 1, size(Dvalues,2)
+       dx = Dpoints(1,i,j)
+       dy = Dpoints(2,i,j)
+       drad = sqrt(dx*dx+dy*dy)
+       Dvalues(i,j) = drad**3.0_dp !min(drad,1.0_dp)
+    end do
+    end do
 
 
 
@@ -2335,6 +2345,7 @@ contains
 
              ! Constant
              Dcoefficients (1,ipoint,iel) = 1.0_dp
+             Dcoefficients (1,ipoint,iel) = 0.0_dp
 
 
              !          ! For scalar problem
@@ -5657,7 +5668,7 @@ contains
 
   !<subroutine>
 
-  subroutine flux_dg_implicitConvection_sim_Newton (&
+  subroutine flux_dg_implicitConvection_sim_Newton_ss (&
        !              Dcoefficients,&
        !              DsolVals,&
     DfluxValues,&
@@ -5697,7 +5708,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
     type(t_vectorScalar), intent(in) :: rvectorSol
     integer, dimension(:), intent(in) :: IelementList
-    real(DP), dimension(:,:,:,:), intent(out) :: Dside
+    real(DP), dimension(:,:), intent(out) :: Dside
 
     !</input>
 
@@ -5709,6 +5720,12 @@ contains
 
     integer :: iedge, ipoint
     real(dp) :: dx, dy
+    
+    Dside(1,1) = 1.0_dp
+    Dside(2,1) = 0.0_dp
+    
+    Dside(1,2) = 0.0_dp
+    Dside(2,2) = 1.0_dp
 
 
     do iedge = 1, size(DfluxValues,3)
@@ -5716,8 +5733,7 @@ contains
 
           dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
           dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
-          !      dx = 1.0_dp
-          !      dy = 1.0_dp
+
 
           DfluxValues(1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
           !      DfluxValues(1,ipoint,iedge) = dx*normal(1,iedge) + dy*normal(2,iedge)
@@ -5727,29 +5743,18 @@ contains
              DfluxValues(1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
              DfluxValues(2,ipoint,iedge) = 0.0_dp
 
-             Dside(1,1,ipoint,iedge) = 1.0_dp
-             Dside(2,1,ipoint,iedge) = 0.0_dp
-             Dside(1,2,ipoint,iedge) = 0.0_dp
-             Dside(2,2,ipoint,iedge) = 0.0_dp
           else
+
              DfluxValues(1,ipoint,iedge) = 0.0_dp
              DfluxValues(2,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
 
-             Dside(1,1,ipoint,iedge) = 0.0_dp
-             Dside(2,1,ipoint,iedge) = 0.0_dp
-             Dside(1,2,ipoint,iedge) = 0.0_dp
-             Dside(2,2,ipoint,iedge) = 1.0_dp
           end if
-
-          !      Dside(1,ipoint,iedge) = 0.5_dp
-          !      Dside(2,ipoint,iedge) = 0.5_dp
-
 
        end do
     end do
 
 
-  end subroutine flux_dg_implicitConvection_sim_Newton
+  end subroutine flux_dg_implicitConvection_sim_Newton_ss
 
 
 
@@ -7751,6 +7756,756 @@ contains
     deallocate(DsolutionValues)
 
   end subroutine flux_dg_buildMatrixBlEdge2D_sim_iEuler_Newton_ss
+  
+  
+  
+  
+  
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine flux_convection_rhs_sc (rdiscretisation,rform, &
+       nelements,npointsPerElement,Dpoints, &
+       IdofsTest,rdomainIntSubset,&
+       Dcoefficients,rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+
+    !</input>
+
+    !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(nvar,itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:,:), intent(out)                      :: Dcoefficients
+    !</output>
+
+    !</subroutine>
+
+    integer :: iel, ipoint, ivar, nvar2d, currentvar,nterms
+    real(DP) :: dvx, dvy, dx, dy, dsol
+    ! (# of terms, ncubp, NEL, nvar2d)
+    real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
+    real(dp), dimension(3) :: dQ, DFx, DFy
+    real(dp), dimension(:), pointer :: p_ddata
+
+    nvar2d = 1
+
+    rdomainIntSubset%ielementDistribution = 1
+
+    ! rform%itermCount gives the number of additional terms, here 2
+    nterms = rform%itermCount
+
+    ! Allocate space for the solution values ! (# of terms, ncubp, NEL, nvar2d)
+    allocate(DsolutionValues(nterms,size(Dpoints,2),size(Dpoints,3),nvar2d))
+
+    ! First evaluate the solution in each point
+    do ivar = 1, nvar2d
+       call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(ivar), &
+            rdomainIntSubset, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
+    end do
+
+    !call    lsyssc_getbase_double(rcollection%p_rvectorQuickAccess1%RvectorBlock(3),p_ddata)
+    !    write(*,*) p_ddata
+
+
+
+
+    do iel = 1, size(Dcoefficients,4)
+       do ipoint = 1, size(Dcoefficients,3)
+
+          ! Get coordinates
+          dx = Dpoints(1,ipoint,iel)
+          dy = Dpoints(2,ipoint,iel)
+
+          ! Get solution      
+          dQ(1) = DsolutionValues(1,ipoint,iel,1)
+
+          ! Set the coefficients
+          Dcoefficients (1,1,ipoint,iel) = -dy*dQ(1)
+          Dcoefficients (1,2,ipoint,iel) = dx*dQ(1)
+
+
+
+       end do
+    end do
+
+    deallocate(DsolutionValues)
+
+  end subroutine flux_convection_rhs_sc
+  
+  
+  
+  
+  subroutine flux_convection_edge_sc_sim (&
+       !              Dcoefficients,&
+       !              DsolVals,&
+         DfluxValues,&
+         rvectorSolBlock,&
+         IelementList,&
+         normal,&
+         !              DpointsReal,&
+         rintSubSet,&
+         rcollection )
+
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    !  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+    real(DP), dimension(:,:), intent(in) :: normal
+    !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+    type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+    type(t_vectorBlock), intent(in) :: rvectorSolBlock
+    integer, dimension(:) , intent(in) :: IelementList
+    type(t_collection), intent(inout), target, optional :: rcollection
+
+    !</input>
+
+    !<output>
+    ! DfluxValues(nvar,ialbet,ncubp,NEL)
+    real(DP), dimension(:,:,:,:), intent(out) :: DfluxValues
+    !</output>
+
+
+    integer :: ipoint, iel
+    real(dp), dimension(2) :: Dvel
+    real(DP) :: dvn ,dx, dy, dr
+    real(dp), dimension(:,:,:), allocatable :: Dsolutionvalues
+
+    
+
+
+
+    ! If the solution (or its derivatives) has to be evaluated
+    allocate(Dsolutionvalues(2,ubound(DfluxValues,3),ubound(DfluxValues,4)))
+    ! Get values on the one side of the edge
+    call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
+         rIntSubset(1), DER_FUNC, Dsolutionvalues, 1)
+    ! Get values on the other side of the edge                               
+    call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
+         rIntSubset(2), DER_FUNC, Dsolutionvalues, 2)
+
+    ! Now we have
+    ! Dsolutionvalues(1,ipoint,iel) = DsolVals(ipoint,1,iel)
+    ! and
+    ! Dsolutionvalues(2,ipoint,iel) = DsolVals(ipoint,2,iel)
+    ! except on the elements, which are on the other side and where there is no other side (on the boundary)
+
+
+
+
+
+    do iel = 1, ubound(DfluxValues,4)
+
+       do ipoint= 1, ubound(DfluxValues,3)
+
+          !dx = DpointsReal(1,ipoint,iel)
+          !dy = DpointsReal(2,ipoint,iel)
+
+          dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iel)
+          dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
+
+          !      ! Zalesak
+          !      Dvel(1)=0.5_DP-dy
+          !      Dvel(2)=dx-0.5_DP
+
+          !      ! Constant velocity
+          !      Dvel(1)=1.0_dp
+          !      Dvel(2)=1.0_dp
+
+          ! Steady circular convection
+          Dvel(1)=-dy
+          Dvel(2)=dx
+
+          dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
+
+          if (IelementList(iel)==0) then
+          
+            if (abs(dx-1.0_dp)<10.0_dp*SYS_EPSREAL_DP) Dsolutionvalues(2,ipoint,iel) = 1.0_dp+dy
+            if ((dy.le.0.0_dp)) Dsolutionvalues(2,ipoint,iel) = dx
+          
+          end if
+          
+
+          ! Upwind flux
+          if (dvn.ge.0) then
+             DfluxValues(1,1,ipoint,iel) = dvn *Dsolutionvalues(1,ipoint,iel)
+          else
+             DfluxValues(1,1,ipoint,iel) = dvn *Dsolutionvalues(2,ipoint,iel)
+          end if
+
+          ! Centered Flux
+          !Dcoefficients(1,ipoint,iel) = 0.5_dp* dvn *(DsolVals(1,ipoint,iel)+DsolVals(2,ubound(Dcoefficients,2)-ipoint+1,iel))
+
+       end do ! ipoint
+    end do ! iel
+
+    !  ! Release the function parser
+    !  call fparser_release(rfparser)
+
+
+
+
+    deallocate(Dsolutionvalues)
+
+
+
+  end subroutine flux_convection_edge_sc_sim
+  
+  
+  
+  
+  
+  
+  
+  !<subroutine>
+
+  subroutine iConv_flux_dg_buildVectorBlEdge2D_sim_Newton (&
+       !              Dcoefficients,&
+       !              DsolVals,&
+         DfluxValues,&
+         rvectorSolBlock,&
+         IelementList,&
+         normal,&
+         !              DpointsReal,&
+         rintSubSet,&
+         rcollection )
+
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    !  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+    real(DP), dimension(:,:), intent(in) :: normal
+    !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+    type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+    type(t_vectorBlock), intent(in) :: rvectorSolBlock
+    integer, dimension(:) , intent(in) :: IelementList
+    type(t_collection), intent(inout), target, optional :: rcollection
+
+    !</input>
+
+    !<output>
+    ! DfluxValues(nvar,ialbet,ncubp,NEL)
+    real(DP), dimension(:,:,:,:), intent(out) :: DfluxValues
+    !</output>
+
+    !</subroutine>
+
+    integer :: ipoint, iel
+    real(dp), dimension(2) :: Dvel
+    real(DP) :: dvn ,dx, dy, dr
+    real(dp), dimension(:,:,:), allocatable :: Dsolutionvalues
+
+    
+
+
+
+    ! If the solution (or its derivatives) has to be evaluated
+    allocate(Dsolutionvalues(2,ubound(DfluxValues,3),ubound(DfluxValues,4)))
+    ! Get values on the one side of the edge
+    call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(1), &
+         rIntSubset(1), DER_FUNC, Dsolutionvalues, 1)
+    ! Get values on the other side of the edge                               
+    call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(1), &
+         rIntSubset(2), DER_FUNC, Dsolutionvalues, 2)
+
+    ! Now we have
+    ! Dsolutionvalues(1,ipoint,iel) = DsolVals(ipoint,1,iel)
+    ! and
+    ! Dsolutionvalues(2,ipoint,iel) = DsolVals(ipoint,2,iel)
+    ! except on the elements, which are on the other side and where there is no other side (on the boundary)
+
+
+
+
+
+    do iel = 1, ubound(DfluxValues,4)
+
+       do ipoint= 1, ubound(DfluxValues,3)
+
+          !dx = DpointsReal(1,ipoint,iel)
+          !dy = DpointsReal(2,ipoint,iel)
+
+          dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iel)
+          dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
+
+          !      ! Zalesak
+          !      Dvel(1)=0.5_DP-dy
+          !      Dvel(2)=dx-0.5_DP
+
+          !      ! Constant velocity
+          !      Dvel(1)=1.0_dp
+          !      Dvel(2)=1.0_dp
+
+          ! Steady circular convection
+          Dvel(1)=-dy
+          Dvel(2)=dx
+
+          dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
+
+          if (IelementList(iel)==0) then
+          
+            if (abs(dx-1.0_dp)<10.0_dp*SYS_EPSREAL_DP) Dsolutionvalues(2,ipoint,iel) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp
+            if ((dy.le.0.0_dp)) Dsolutionvalues(2,ipoint,iel) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp
+          
+          end if
+          
+
+          ! Upwind flux
+          if (dvn.ge.0.0_dp) then
+             DfluxValues(1,1,ipoint,iel) = dvn *Dsolutionvalues(1,ipoint,iel)
+          else
+             DfluxValues(1,1,ipoint,iel) = dvn *Dsolutionvalues(2,ipoint,iel)
+          end if
+
+          ! Centered Flux
+          !Dcoefficients(1,ipoint,iel) = 0.5_dp* dvn *(DsolVals(1,ipoint,iel)+DsolVals(2,ubound(Dcoefficients,2)-ipoint+1,iel))
+
+       end do ! ipoint
+    end do ! iel
+
+    !  ! Release the function parser
+    !  call fparser_release(rfparser)
+
+
+
+
+    deallocate(Dsolutionvalues)
+    
+    
+    
+  end subroutine iConv_flux_dg_buildVectorBlEdge2D_sim_Newton
+  
+  
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine iConv_flux_sys_block (rdiscretisation,rform, &
+       nelements,npointsPerElement,Dpoints, &
+       IdofsTest,rdomainIntSubset,&
+       Dcoefficients,rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+
+    !</input>
+
+    !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(nvar,itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:,:), intent(out)                      :: Dcoefficients
+    !</output>
+
+    !</subroutine>
+
+    
+    
+    integer :: iel, ipoint, ivar, nvar2d, currentvar,nterms
+    real(DP) :: dvx, dvy, dx, dy, dsol
+    ! (# of terms, ncubp, NEL, nvar2d)
+    real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
+    real(dp), dimension(3) :: dQ, DFx, DFy
+    real(dp), dimension(:), pointer :: p_ddata
+
+    nvar2d = 1
+
+    rdomainIntSubset%ielementDistribution = 1
+
+    ! rform%itermCount gives the number of additional terms, here 2
+    nterms = rform%itermCount
+
+    ! Allocate space for the solution values ! (# of terms, ncubp, NEL, nvar2d)
+    allocate(DsolutionValues(nterms,size(Dpoints,2),size(Dpoints,3),nvar2d))
+
+    ! First evaluate the solution in each point
+    do ivar = 1, nvar2d
+       call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(ivar), &
+            rdomainIntSubset, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
+    end do
+
+    !call    lsyssc_getbase_double(rcollection%p_rvectorQuickAccess1%RvectorBlock(3),p_ddata)
+    !    write(*,*) p_ddata
+
+
+
+
+    do iel = 1, size(Dcoefficients,4)
+       do ipoint = 1, size(Dcoefficients,3)
+
+          ! Get coordinates
+          dx = Dpoints(1,ipoint,iel)
+          dy = Dpoints(2,ipoint,iel)
+
+          ! Get solution      
+          dQ(1) = DsolutionValues(1,ipoint,iel,1)
+
+          ! Set the coefficients
+          Dcoefficients (1,1,ipoint,iel) = -dy*dQ(1)
+          Dcoefficients (1,2,ipoint,iel) = dx*dQ(1)
+
+
+
+       end do
+    end do
+
+    deallocate(DsolutionValues)
+    
+    
+
+  end subroutine iConv_flux_sys_block
+  
+  
+  
+  
+  ! ***************************************************************************
+
+  subroutine fcoeff_buildMatrixBl_sim_iConvNewton (rdiscretisationTrial,&
+       rdiscretisationTest, rform, nelements, npointsPerElement,&
+       Dpoints, IdofsTrial, IdofsTest, rdomainIntSubset,&
+       Dcoefficients, rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    use fsystem
+
+    !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+    !</input>
+
+    !<inputoutput>
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+    !</inputoutput>
+
+    !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(nblocksi,nblocksj,itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    ! So the coefficient-matrix is put to
+    ! Dcoefficients(:,:,iterm,ipoint,ielement)
+    real(DP), dimension(:,:,:,:,:), intent(out) :: Dcoefficients
+    !</output>
+
+    integer :: iel, ipoint
+    real(dp) :: dx, dy
+
+    ! Loop over all elements and cubature points
+    do iel = 1, size(Dpoints,3)
+       do ipoint = 1, size(Dpoints,2)
+
+          ! Get coordinates
+          dx = rdomainIntSubset%p_DcubPtsReal(1,ipoint,iel)
+          dy = rdomainIntSubset%p_DcubPtsReal(2,ipoint,iel)
+
+          ! Set coefficients (the velocity vector)
+          Dcoefficients(1,1,1,ipoint,iel) = -dy
+          Dcoefficients(1,1,2,ipoint,iel) =  dx
+          !        Dcoefficients(1,ipoint,iel) = dx
+          !        Dcoefficients(2,ipoint,iel) = dy
+
+       end do
+    end do
+          
+  end subroutine fcoeff_buildMatrixBl_sim_iConvNewton
+  
+  
+  
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine flux_dg_buildMatrixBlEdge2D_sim_iConv_Newton_ss (&
+ !            Dcoefficients,&
+ !            DsolVals,&
+              DfluxValues,&
+              rvectorSol,&
+              IelementList,&
+              Dside,&
+              normal,&
+!             DpointsReal,&
+              rintSubSet,&
+              rcollection )
+
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    !  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+
+    real(DP), dimension(:,:), intent(in) :: normal
+    !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+    type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+    type(t_collection), intent(inout), target, optional :: rcollection
+    type(t_vectorBlock), intent(in) :: rvectorSol
+    integer, dimension(:), intent(in) :: IelementList
+
+
+    !</input>
+
+    !<output>
+    ! The coefficient matrices * normal vector
+    ! nrows,ncolumns,nterms,ncubp,nelements
+    ! Write the matrix to
+    ! DfluxValues(:,:,iterm, icubp, ielement)
+    real(DP), dimension(:,:,:,:,:), intent(out) :: DfluxValues
+    ! The coefficients for the DOFs from each side of the edge
+    !  1  ,  0  : from the first element (up-/downwind)
+    !  0  ,  1  : from the outer element (up-/downwind)
+    ! 1/2 , 1/2 : fifty fifty            (Galerkin)
+    ! nrows,ncolumns,2 sides,nterms,ncubp,nelements
+    real(DP), dimension(:,:), intent(out) :: Dside
+    !</output>
+
+    !</subroutine>
+
+
+    integer :: iedge, ipoint
+    real(dp) :: dx, dy
+    
+    Dside(1,1) = 1.0_dp
+    Dside(2,1) = 0.0_dp
+    
+    Dside(1,2) = 0.0_dp
+    Dside(2,2) = 1.0_dp
+
+
+    do iedge = 1, size(DfluxValues,5)
+       do ipoint = 1, size(DfluxValues,4)
+
+          dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
+          dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
+
+
+          DfluxValues(1,1,1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
+          !      DfluxValues(1,ipoint,iedge) = dx*normal(1,iedge) + dy*normal(2,iedge)
+
+          if (DfluxValues(1,1,1,ipoint,iedge).ge.0.0_dp) then
+
+             DfluxValues(1,1,1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
+             DfluxValues(1,1,2,ipoint,iedge) = 0.0_dp
+
+          else
+
+             DfluxValues(1,1,1,ipoint,iedge) = 0.0_dp
+             DfluxValues(1,1,2,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
+
+          end if
+
+       end do
+    end do
+    
+    
+    
+    
+    
+
+  end subroutine flux_dg_buildMatrixBlEdge2D_sim_iConv_Newton_ss
+  
 
 
 end module dg2d_callback
