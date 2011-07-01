@@ -78,7 +78,7 @@ contains
     ! Shallow water : 3 (h, hu, hv)
     ! (h=Waterheights, u/v=speed in x/y-direction)
     ! Euler: 4 (rho, rho u, rho v, rho E)
-    integer, parameter :: nvar2d = 1
+    integer, parameter :: nvar2d = 4
 
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
@@ -2882,8 +2882,8 @@ contains
 
                 ! The linear solver stops, when this relative or absolut norm of
                 ! the residual is reached.
-                p_rsolverNode%depsRel = 1.0e-4
-                p_rsolverNode%depsAbs = 1.0e-6
+                p_rsolverNode%depsRel = 1.0e-8
+                p_rsolverNode%depsAbs = 1.0e-10
 
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
@@ -3439,15 +3439,15 @@ contains
 
 
 
-!    ! Output solution to vtk file
-!    sofile = './gmv/u2d_rho'
-!    call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-!    sofile = './gmv/u2d_rhou'
-!    call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
-!    sofile = './gmv/u2d_rhov'
-!    call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
-!    sofile = './gmv/u2d_rhoE'
-!    call dg2vtk(rsolBlock%Rvectorblock(4),iextraPoints,sofile,ifilenumber)
+    ! Output solution to vtk file
+    sofile = './gmv/u2d_rho'
+    call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+    sofile = './gmv/u2d_rhou'
+    call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
+    sofile = './gmv/u2d_rhov'
+    call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
+    sofile = './gmv/u2d_rhoE'
+    call dg2vtk(rsolBlock%Rvectorblock(4),iextraPoints,sofile,ifilenumber)
 
 
 

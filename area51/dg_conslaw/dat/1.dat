@@ -1,16 +1,16 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 6
+nlmax = 7
 
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-prmname = ./pre/QUAD.prm
+#prmname = ./pre/QUAD.prm
 #prmname = ./pre/rect_01x0.1_quads.prm
 #prmname = ./pre/quadm5t5.prm
-#prmname = ./pre/isentrvort.prm
+prmname = ./pre/isentrvort.prm
 #prmname = ./pre/zehnm.prm
 #prmname = ./pre/threezylindergrob.prm
 #prmname = ./pre/RECT2x1.prm
@@ -24,10 +24,10 @@ prmname = ./pre/QUAD.prm
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-triname = ./pre/QUAD.tri
+#triname = ./pre/QUAD.tri
 #triname = ./pre/rect_01x0.1_quads.tri
 #triname = ./pre/quadm5t5.tri
-#triname = ./pre/isentrvort.tri
+triname = ./pre/isentrvort.tri
 #triname = ./pre/zehnm.tri
 #triname = ./pre/threezylindergrob.tri
 #triname = ./pre/RECT2x1.tri
@@ -44,13 +44,13 @@ triname = ./pre/QUAD.tri
 # 2: DG T2
 # 3: DG Q1
 # 4: DG Q2
-FEkind = 2
+FEkind = 1
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 100000000.0
+dt = 0.001
 
 # Final time
 ttfinal = 1.0
@@ -80,7 +80,7 @@ limiter = 0
 #  8: Implicit Euler equations
 #  9: Implicit linear convection Newton-like implementation
 # 10: Implicit Euler equations Newton-like implementation
-timestepping = 9
+timestepping = 1
 
 # What type to build the RHS
 rhstype = 1
@@ -120,7 +120,7 @@ outtype = 2
 # Create files for video?
 # 0: No
 # 1: Yes
-makevideo = 1
+makevideo = 0
 
 # Make gmv snapshot every ... seconds (should be n*dt)
 videotimestep = 0.005
