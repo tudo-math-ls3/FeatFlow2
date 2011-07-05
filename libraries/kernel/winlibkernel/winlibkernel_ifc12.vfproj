@@ -192,7 +192,6 @@
 		<File RelativePath="..\..\..\kernel\Projection\schurapprox.f90"/>
 		<File RelativePath="..\..\..\kernel\Projection\spdiscprojection.f90"/></Filter>
 		<Filter Name="System">
-		<File RelativePath="..\..\..\kernel\System\afcutil.f90"/>
 		<File RelativePath="..\..\..\kernel\System\error.f90"/>
 		<File RelativePath="..\..\..\kernel\System\externalstorage.f90"/>
 		<File RelativePath="..\..\..\kernel\System\fparser.f90"/>
