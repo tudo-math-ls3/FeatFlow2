@@ -309,6 +309,9 @@ contains
       ! Calculate point values
       call cc_evaluatePoints (rvectorInt,dtimeInt,rproblem)
 
+      ! Calculate flux values
+      call cc_evaluateFlux (rvector,dtimeInt,rproblem)
+
       ! Calculate the divergence
       call cc_calculateDivergence (rvectorInt,rproblem)
 
@@ -320,6 +323,9 @@ contains
       
       ! Calculate point values
       call cc_evaluatePoints (rvector,dtime,rproblem)
+
+      ! Calculate flux values
+      call cc_evaluateFlux (rvector,dtime,rproblem)
 
       ! Calculate the divergence
       call cc_calculateDivergence (rvector,rproblem)
