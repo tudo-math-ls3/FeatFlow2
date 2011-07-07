@@ -22,6 +22,17 @@ ioutputUCD = 3
 
 sfilenameUCD = './gmv/u.vtk'
 
+# Write solution vector to a sequence of files.
+# =0: don't write
+# =1: write out, use formatted output.
+# =2: write out, use unformatted output.
+
+cwriteSolution = 0
+
+# Name/path of file for writing solution
+
+swriteSolutionFilename = ''
+
 
 ####################
 [TIME-PREPROCESSING]
@@ -80,10 +91,24 @@ ioutputUCD = 3
 
 sfilenameUCD = ''
 
+# Output format for the final solution.
+# =0: don't write
+# =1: write out, use formatted output (default).
+# =2: write out, use unformatted output.
+
+cwriteFinalSolution = 1
+
 # Filename prefix for output of the solution vector. If this is '',
 # the solution vector is not written out.
 
 sfinalSolutionFileName = ''
+
+# Output format for the final control.
+# =0: don't write
+# =1: write out, use formatted output (default).
+# =2: write out, use unformatted output.
+
+cwriteFinalControl = 1
 
 # Filename prefix for output of the control vector. If this is '',
 # the control vector is not written out.
