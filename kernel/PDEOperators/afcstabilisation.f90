@@ -1199,7 +1199,7 @@ contains
               rafcstab%NEQ+1, rafcstab%h_IsuperdiagEdgesIdx,&
               ST_NEWBLOCK_NOINIT, .false.)
         else
-          call output_line('Handle h_IsuperdiagEdgesIdx '&
+          call output_line('Handle h_IsuperdiagEdgesIdx '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1212,7 +1212,7 @@ contains
               rafcstab%NEQ+1, rafcstab%h_IsubdiagEdgesIdx,&
               ST_NEWBLOCK_NOINIT, .false.)
         else
-          call output_line('Handle h_IsubdiagEdgesIdx '&
+          call output_line('Handle h_IsubdiagEdgesIdx '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1225,7 +1225,7 @@ contains
               rafcstab%NEQ, rafcstab%h_DmatrixCoeffsAtNode,&
               ST_NEWBLOCK_NOINIT, .false.)
         else
-          call output_line('Handle h_DmatrixCoeffsAtNode '&
+          call output_line('Handle h_DmatrixCoeffsAtNode '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1237,7 +1237,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorDx,&
               rafcstab%NEQ, .false., .false.)
         else
-          call output_line('Vector p_rvectorDx '&
+          call output_line('Vector p_rvectorDx '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1249,7 +1249,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorPp,&
               rafcstab%NEQ, .false., .false.)
         else
-          call output_line('Vector p_rvectorPp '&
+          call output_line('Vector p_rvectorPp '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1261,7 +1261,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorPm,&
               rafcstab%NEQ, .false., .false.)
         else
-          call output_line('Vector p_rvectorPm '&
+          call output_line('Vector p_rvectorPm '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1273,7 +1273,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorQ,&
               rafcstab%NEQ, .false., .false.)
         else
-          call output_line('Vector p_rvectorQ '&
+          call output_line('Vector p_rvectorQ '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1285,7 +1285,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorQp,&
               rafcstab%NEQ, .false., .false.)
         else
-          call output_line('Vector p_rvectorQp '&
+          call output_line('Vector p_rvectorQp '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1297,7 +1297,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorQm,&
               rafcstab%NEQ, .false., .false.)
         else
-          call output_line('Vector p_rvectorQm '&
+          call output_line('Vector p_rvectorQm '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1309,7 +1309,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorRp,&
               rafcstab%NEQ, .false., .false.)
         else
-          call output_line('Vector p_rvectorRp '&
+          call output_line('Vector p_rvectorRp '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1321,7 +1321,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorRm,&
           rafcstab%NEQ, .false., .false.)
         else
-          call output_line('Vector p_rvectorRm '&
+          call output_line('Vector p_rvectorRm '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1333,7 +1333,7 @@ contains
           call lsysbl_resizeVectorBlock(rafcstab%p_rvectorPredictor,&
               rafcstab%NEQ, .false., .false.)
         else
-          call output_line('Vector p_rvectorPredictor '&
+          call output_line('Vector p_rvectorPredictor '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1355,7 +1355,7 @@ contains
               rafcstab%NEDGE, rafcstab%h_IverticesAtEdge,&
               ST_NEWBLOCK_NOINIT, .false.)
         else
-          call output_line('Handle h_IverticesAtEdge '&
+          call output_line('Handle h_IverticesAtEdge '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1368,7 +1368,7 @@ contains
               rafcstab%NEDGE, rafcstab%h_IsubdiagEdges,&
               ST_NEWBLOCK_NOINIT, .false.)
         else
-          call output_line('Handle h_IsubdiagEdges '&
+          call output_line('Handle h_IsubdiagEdges '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1381,7 +1381,7 @@ contains
               rafcstab%NEDGE, rafcstab%h_DcoefficientsAtEdge,&
               ST_NEWBLOCK_NOINIT, .false.)
         else
-          call output_line('Handle h_DcoefficientsAtEdge '&
+          call output_line('Handle h_DcoefficientsAtEdge '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1394,7 +1394,7 @@ contains
               rafcstab%NEDGE, rafcstab%h_DboundsAtEdge,&
               ST_NEWBLOCK_NOINIT, .false.)
         else
-          call output_line('Handle h_DboundsAtEdge '&
+          call output_line('Handle h_DboundsAtEdge '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1407,7 +1407,7 @@ contains
               rafcstab%NEDGE, rafcstab%h_DmatrixCoeffsAtEdge,&
               ST_NEWBLOCK_NOINIT, .false.)
         else
-          call output_line('Handle h_DmatrixCoeffsAtEdge '&
+          call output_line('Handle h_DmatrixCoeffsAtEdge '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1419,7 +1419,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorAlpha,&
               rafcstab%NEDGE, .false., .false.)
         else
-          call output_line('Vector p_rvectorAlpha '&
+          call output_line('Vector p_rvectorAlpha '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1430,7 +1430,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorFlux0,&
               rafcstab%NEDGE, .false., .false.)
         else
-          call output_line('Vector p_rvectorFlux0 '&
+          call output_line('Vector p_rvectorFlux0 '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1441,7 +1441,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorFlux,&
               rafcstab%NEDGE, .false., .false.)
         else
-          call output_line('Vector p_rvectorFlux '&
+          call output_line('Vector p_rvectorFlux '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1452,7 +1452,7 @@ contains
           call lsyssc_resizeVector(rafcstab%p_rvectorFluxPrel,&
               rafcstab%NEDGE, .false., .false.)
         else
-          call output_line('Vector p_rvectorFluxPrel '&
+          call output_line('Vector p_rvectorFluxPrel '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -3266,7 +3266,7 @@ contains
     ! Check if edge structure is owned by the stabilisation structure
     if (iand(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE) .eq.&
         AFCSTAB_SHARE_EDGESTRUCTURE) then
-      call output_line('Edge structure is not owned by stabilisation and '&
+      call output_line('Edge structure is not owned by stabilisation and '//&
           'therefore cannot be generated',&
           OU_CLASS_WARNING,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
       return
