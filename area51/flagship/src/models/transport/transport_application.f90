@@ -708,6 +708,7 @@ contains
 !</subroutine>
 
     ! section names
+    character(LEN=SYS_STRLEN) :: smass
     character(LEN=SYS_STRLEN) :: sconvection
     character(LEN=SYS_STRLEN) :: sdiffusion
 
@@ -718,6 +719,7 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! local variables
+    integer :: massAFC
     integer :: convectionAFC
     integer :: diffusionAFC
     integer :: iconvToTria
@@ -736,17 +738,23 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'iconvtotria', iconvToTria, 0)
     call parlst_getvalue_string(rparlist,&
-        ssectionName, 'diffusion', sdiffusion)
+        ssectionName, 'mass', smass, '')
     call parlst_getvalue_string(rparlist,&
-        ssectionName, 'convection', sconvection)
+        ssectionName, 'diffusion', sdiffusion, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'convection', sconvection, '')
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'convectionAFC', convectionAFC)
+        ssectionName, 'massAFC', massAFC, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'diffusionAFC', diffusionAFC)
+        ssectionName, 'convectionAFC', convectionAFC, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'diffusionAFC', diffusionAFC, 0)
 
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 1 ! one discretisation
-    rproblemDescriptor%nafcstab        = 2 ! convective and diffusive stabilisation
+    rproblemDescriptor%nafcstab        = max(massAFC,&
+                                             convectionAFC,&
+                                             diffusionAFC)
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 7
@@ -767,12 +775,17 @@ contains
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
 
-      ! Initialize the stabilisation structure for convection (if required)
+      ! Initialize the stabilisation structure for mass term (if required)
+      if (massAFC > 0)&
+          call afcstab_initFromParameterlist(rparlist, smass,&
+          p_rproblemLevel%Rafcstab(massAFC))
+
+      ! Initialize the stabilisation structure for convective term (if required)
       if (convectionAFC > 0)&
           call afcstab_initFromParameterlist(rparlist, sconvection,&
           p_rproblemLevel%Rafcstab(convectionAFC))
 
-      ! Initialize the stabilisation structure for diffusion (if required)
+      ! Initialize the stabilisation structure for diffusive term (if required)
       if (diffusionAFC > 0)&
           call afcstab_initFromParameterlist(rparlist, sdiffusion,&
           p_rproblemLevel%Rafcstab(diffusionAFC))
@@ -824,6 +837,7 @@ contains
     integer :: coeffMatrix_CY
     integer :: coeffMatrix_CZ
     integer :: coeffMatrix_S
+    integer :: massAFC
     integer :: convectionAFC
     integer :: diffusionAFC
     integer :: discretisation
@@ -845,27 +859,29 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'templatematrix', templateMatrix)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'systemmatrix', systemMatrix)
+        ssectionName, 'systemmatrix', systemMatrix, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'jacobianmatrix', jacobianMatrix)
+        ssectionName, 'jacobianmatrix', jacobianMatrix, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'transportmatrix', transportMatrix)
+        ssectionName, 'transportmatrix', transportMatrix, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_s', coeffMatrix_S)
+        ssectionName, 'coeffmatrix_s', coeffMatrix_S, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cx', coeffMatrix_CX)
+        ssectionName, 'coeffmatrix_cx', coeffMatrix_CX, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cy', coeffMatrix_CY)
+        ssectionName, 'coeffmatrix_cy', coeffMatrix_CY, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ)
+        ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'convectionAFC', convectionAFC)
+        ssectionName, 'massAFC', massAFC, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'diffusionAFC', diffusionAFC)
+        ssectionName, 'convectionAFC', convectionAFC, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'diffusionAFC', diffusionAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'discretisation', discretisation)
     call parlst_getvalue_int(rparlist,&
@@ -1259,7 +1275,7 @@ contains
           DER_DERIV3D_Z, DER_FUNC)
     end if
 
-
+    
     ! Resize stabilisation structure if necessary and remove the
     ! indicator for the subdiagonal edge structure. If they are
     ! needed, then they are re-generated on-the-fly.
@@ -1341,6 +1357,22 @@ contains
         call afcstab_CopyMatrixCoeffs(&
             rproblemLevel%Rafcstab(diffusionAFC),&
             rproblemLevel%Rmatrix(coeffMatrix_S:coeffMatrix_S), (/nmatrices/))
+      end if
+    end if
+
+    ! The same applies to the mass stabilisation structure
+    if (massAFC > 0) then
+      if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
+          .eq. AFCSTAB_UNDEFINED) then
+        call gfsc_initStabilisation(&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            rproblemLevel%Rafcstab(massAFC),&
+            p_rdiscretisation)
+      else
+        ! Resize stabilisation structure
+        call afcstab_resizeStabilisation(&
+            rproblemLevel%Rafcstab(massAFC),&
+            rproblemLevel%Rmatrix(templateMatrix))
       end if
     end if
 
@@ -1872,18 +1904,20 @@ contains
         
         ! Initialise stabilisation structure by hand
         rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
-        rafcstab%ctypePrelimiting   = AFCSTAB_NOPRELIMITING
-        rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
+        rafcstab%ctypePrelimiting   = AFCSTAB_PRELIMITING_NONE
+        rafcstab%ctypeAFCstabilisation = AFCSTAB_LINFCT_MASS
         call gfsc_initStabilisation(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
         call afcstab_generateVerticesAtEdge(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
 
         ! Compute the raw antidiffusive mass fluxes
-        call gfsc_buildFluxFCT(rafcstab, rvectorHigh, 0.0_DP, 0.0_DP, 1.0_DP,&
-            .true., p_rconsistentMassMatrix, rvectorHigh)
+        call gfsc_buildFluxFCT(rafcstab, rvectorHigh,&
+            0.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
+            AFCSTAB_FCTFLUX_EXPLICIT,&
+            p_rconsistentMassMatrix, rvectorHigh)
 
         ! Apply flux correction to solution profile
         call gfsc_buildConvectionVectorFCT(rafcstab,&
-            p_rlumpedMassMatrix, rvector, 1._DP, .false.,&
+            p_rlumpedMassMatrix, rvector, 1.0_DP, .false.,&
             AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 
         ! Release stabilisation structure
@@ -3798,6 +3832,10 @@ contains
       call transp_calcLinearisedFCT(p_rproblemLevel, rtimestep, rsolver,&
           rsolution, ssectionName, rcollection, rmatrix=rmatrix1,&
           rvector1=rvector1, rvector2=rvector2, rvector3=rvector3)
+
+      ! Perform linearised FEM-LPT post-processing
+      call transp_calcLinearisedLPT(p_rproblemLevel, rtimestep, rsolver,&
+          rsolution, ssectionName, rcollection, rvector1)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
