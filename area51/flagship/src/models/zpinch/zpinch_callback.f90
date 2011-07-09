@@ -1853,9 +1853,9 @@ contains
     ! Do we have to apply linearised FEM-FCT?
     if ((inviscidAFC .le. 0) .or. (convectionAFC .le. 0)) return
     if ((rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-         .ne. AFCSTAB_FEMFCT_LINEARISED) .or.&
+         .ne. AFCSTAB_LINFCT) .or.&
         (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
-         .ne. AFCSTAB_FEMFCT_LINEARISED)) return
+         .ne. AFCSTAB_LINFCT)) return
 
     ! Set positions of stabilisation structures
     IposAFC=(/inviscidAFC, convectionAFC/)
@@ -2405,11 +2405,11 @@ contains
 
       ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
-      call gfsc_buildFluxFCT(&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
-          rmatrix=rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
-          rxTimeDeriv=p_Rvector1(2))
+!!$      call gfsc_buildADFlux(&
+!!$          rproblemLevel%Rafcstab(convectionAFC),&
+!!$          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
+!!$          rmatrix=rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
+!!$          rxTimeDeriv=p_Rvector1(2))
 
       ! Release temporal memory
       if (.not.present(rmatrix))  call lsyssc_releaseMatrix(rmatrixTmp)
@@ -2421,9 +2421,9 @@ contains
 
       ! Build the raw antidiffusive fluxes without including the
       ! contribution from consistent mass matrix
-      call gfsc_buildFluxFCT(&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.)
+!!$      call gfsc_buildADFlux(&
+!!$          rproblemLevel%Rafcstab(convectionAFC),&
+!!$          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.)
     end if
 
 
@@ -2471,14 +2471,14 @@ contains
 !!$      
 !!$      ! Build the raw antidiffusive fluxes with contribution from
 !!$      ! consistent mass matrix
-!!$      call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
+!!$      call gfsc_buildADFlux(rproblemLevel%Rafcstab(convectionAFC),&
 !!$          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
 !!$          rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
 !!$          p_rpredictorTransport)
 !!$    else
 !!$      ! Build the raw antidiffusive fluxes without contribution from
 !!$      ! consistent mass matrix
-!!$      call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
+!!$      call gfsc_buildADFlux(rproblemLevel%Rafcstab(convectionAFC),&
 !!$          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.)
 !!$    end if
 
