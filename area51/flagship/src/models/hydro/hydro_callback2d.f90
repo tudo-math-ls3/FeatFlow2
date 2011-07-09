@@ -830,7 +830,7 @@ contains
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxScDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatCoeff, IEDGEmax-IEDGEset+1, IEDGEset)
+          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
@@ -1133,7 +1133,7 @@ contains
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxScDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatCoeff, IEDGEmax-IEDGEset+1, IEDGEset)
+          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
@@ -1490,7 +1490,7 @@ contains
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxRoeDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatCoeff, IEDGEmax-IEDGEset+1, IEDGEset)
+          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
@@ -1890,7 +1890,7 @@ contains
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxRoeDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatCoeff, IEDGEmax-IEDGEset+1, IEDGEset)
+          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
@@ -2198,7 +2198,7 @@ contains
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxRusDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatCoeff, IEDGEmax-IEDGEset+1, IEDGEset)
+          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
@@ -2509,7 +2509,7 @@ contains
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxRusDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatCoeff, IEDGEmax-IEDGEset+1, IEDGEset)
+          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
